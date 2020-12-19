@@ -30,7 +30,7 @@ module.exports = async (message, command) => {
     msg += '\n\n'
   }
   const helpMessage = msg + translate('commands.help.support', {
-    url: config.discordSupportURL
+    url: config.discordSupportURL || 'https://discord.gg/pudv7Rx'
   })
   return message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
     .then(() => {
