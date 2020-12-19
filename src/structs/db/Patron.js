@@ -31,14 +31,6 @@ class Patron extends Base {
     }
 
     /**
-     * @type {number}
-     */
-    this.pledge = this.getField('pledge')
-    if (this.pledge === undefined) {
-      throw new TypeError('pledge is undefined')
-    }
-
-    /**
      * Due to Patreon's unmaintained API, some people who paid 5 USD in a different currency such
      * as 4.5 euros will not receive the 5 USD benefits since Patreon reports the pldge as 4.5.
      *
@@ -47,6 +39,14 @@ class Patron extends Base {
      * @type {number|undefined}
      */
     this.pledgeOverride = this.getField('pledgeOverride')
+
+    /**
+     * @type {number}
+     */
+    this.pledge = this.pledgeOverride || this.getField('pledge')
+    if (this.pledge === undefined) {
+      throw new TypeError('pledge is undefined')
+    }
 
     /**
      * @type {string}
@@ -113,7 +113,7 @@ class Patron extends Base {
     if (!this.isActive()) {
       return config.feeds.max
     }
-    const pledge = this.pledgeOverride || this.pledge
+    const pledge = this.pledge
     if (pledge >= 2000) {
       return 140
     }
