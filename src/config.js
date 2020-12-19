@@ -240,6 +240,7 @@ exports.set = (override, skipValidation) => {
 
   // Web URL
   config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
+  config.discordSupportURL = process.env.DRSS_DISCORDSUPPORTURL || override.discordSupportURL || config.discordSupportURL
 
   // Delivery service
   config.deliveryServiceURL = process.env.MRSS_DELIVERYSERVICEURL || override.deliveryServiceURL || config.deliveryServiceURL

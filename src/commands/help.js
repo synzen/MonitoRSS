@@ -29,7 +29,9 @@ module.exports = async (message, command) => {
     }
     msg += '\n\n'
   }
-  const helpMessage = msg + translate('commands.help.support')
+  const helpMessage = msg + translate('commands.help.support', {
+    url: config.discordSupportURL
+  })
   return message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
     .then(() => {
       message.reply(translate('commands.help.checkDM'))
