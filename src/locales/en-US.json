@@ -116,7 +116,7 @@
       "description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
     },
     "sub.filters": {
-      "description": "OPen a menu to add filters to yourself (or test them) as a direct subscriber for a particular feed."
+      "description": "Open a menu to add filters to yourself (or test them) as a direct subscriber for a particular feed."
     },
     "test": {
       "args": {
