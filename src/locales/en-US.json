@@ -33,7 +33,7 @@
     },
     "compare": {
       "action": "Set comparisons to article checks",
-      "description": "Add additional positive/negative comparisons on articles for greater control over which articles get sent to your server.",
+      "description": "Add additional positive/negative comparisons on articles for greater control over which articles get sent to your server, such as blocking or re-sendign them.",
       "args": {
         "list": "List the current comparisons.",
         "(+|-)<property>": "The positive or negative article properties to add for comparison. More than one can be added."
