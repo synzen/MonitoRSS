@@ -39,7 +39,10 @@ module.exports = async (message, command) => {
   const translate = Translator.createLocaleTranslator(guildLocale)
   const arr = message.content.split(' ')
   if (arr.length === 1) {
-    return message.channel.send(translate('commands.compare.info', { infoURL: '(no URL available yet)', prefix }))
+    return message.channel.send(translate('commands.compare.info', {
+      infoURL: 'https://docs.monitorss.xyz/advanced-bot-customizations/np-comparisons',
+      prefix
+    }))
   }
   const reset = arr[1].trim() === 'reset'
   const list = arr[1].trim() === 'list'
