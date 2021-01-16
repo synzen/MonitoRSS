@@ -245,7 +245,8 @@ class Supporter extends Base {
   }
 
   async hasSlowRate () {
-    if (this.patron) {
+    // Slow rates may override patron settings
+    if (this.patron && this.slowRate !== true) {
       /** @type {import('./Patron')|undefined} */
       const patron = await this.findActivePatron()
       if (patron) {
