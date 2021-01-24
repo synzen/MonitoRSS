@@ -149,5 +149,36 @@ describe('Unit::structs/Article', function () {
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(false)
     })
+    it('blocks when using broad filters and negated filters in different categories', function () {
+      const filters = {
+        title: [
+          '~campaig'
+        ],
+        guid: [
+          '!60097a6bf64cf135e3323184'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.title = 'Sirius and Utopia Compete to Host Galactic Summit'
+      article.guid = '600accd53eb598007a0385f8'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(false)
+    })
+    it('passes with negated and regular in one category with regular in another, and the other matches', function () {
+      const filters = {
+        title: [
+          '!software',
+          'srfdhetgfj'
+        ],
+        author: [
+          'huntermc'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.title = "[UPDATE] Hunter's Harem [v0.4.3.2a]"
+      article.author = 'huntermc'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(true)
+    })
   })
 })
