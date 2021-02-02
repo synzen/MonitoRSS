@@ -23,9 +23,18 @@ class Patron extends Base {
     this.lastCharge = this.getField('lastCharge')
 
     /**
+     * Due to inconsistencies in Patreon's API, the pledge lifetime doesn't seem to be up to date.
+     *
+     * This is a temporary measure until payments are moved off of Patreon.
+     *
+     * @type {number|undefined}
+     */
+    this.pledgeLifetimeOverride = this.getField('pledgeLifetimeOverride')
+
+    /**
      * @type {number}
      */
-    this.pledgeLifetime = this.getField('pledgeLifetime')
+    this.pledgeLifetime = this.pledgeLifetimeOverride || this.getField('pledgeLifetime')
     if (this.pledgeLifetime === undefined) {
       throw new TypeError('pledgeLifetime is undefined')
     }
@@ -78,7 +87,9 @@ class Patron extends Base {
       _id: this._id,
       status: this.status,
       lastCharge: this.lastCharge,
+      pledgeLifetimeOverride: this.pledgeLifetimeOverride,
       pledgeLifetime: this.pledgeLifetime,
+      pledgeOverride: this.pledgeOverride,
       pledge: this.pledge,
       discord: this.discord,
       name: this.name,
