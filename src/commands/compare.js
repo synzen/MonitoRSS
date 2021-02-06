@@ -7,14 +7,20 @@ const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 /**
- * @param {string} str
+ * @param {string} command
  */
-function getValidInputs (str) {
-  const parts = str.split(' ')
+function getValidInputs (command) {
+  const parts = command.split(' ')
+  // Remove the command name, such as rss.compare
   parts.shift()
   const cleanedParts = parts
     .map(p => p.trim())
-    .filter((p, index) => p && parts.indexOf(p) === index && p.length > 1 && (p.startsWith('+') || p.startsWith('-')))
+    .filter((p, index, array) => {
+      const exists = !!p
+      const isNotDupe = parts.indexOf(p) === index
+      const hasCorrectSymbols = p.startsWith('+') || p.startsWith('-')
+      return exists && isNotDupe && hasCorrectSymbols
+    })
   return cleanedParts
 }
 
@@ -53,10 +59,6 @@ module.exports = async (message, command) => {
       const stringified = `\`${invalids.join('`,`')}\``
       return message.channel.send(translate('commands.compare.invalid', { errors: stringified }))
     }
-    // Temporary check
-    if (validProperties.length !== 1 || validProperties[0] !== '-title') {
-      return message.channel.send(translate('commands.compare.onlyTitle'))
-    }
   }
   const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
   const { selectedFeed: feed } = await runWithFeedsProfile(selectFeedNode, message)
@@ -75,6 +77,7 @@ module.exports = async (message, command) => {
   }
 
   const log = createLogger(message.guild.shard.id)
+
   if (reset) {
     feed.ncomparisons = []
     await feed.save()
@@ -83,12 +86,22 @@ module.exports = async (message, command) => {
       guild: message.guild
     }, 'Comparisons have been reset')
   } else {
-    feed.ncomparisons = ['title']
+    const newPValues = validProperties
+      .filter((prop) => prop.startsWith('+'))
+      .map((s) => s.replace('+', ''))
+    const newNValues = validProperties
+      .filter((prop) => prop.startsWith('-'))
+      .map((s) => s.replace('-', ''))
+    console.log(validProperties.join('\n'))
+    feed.ncomparisons = newNValues
+    feed.pcomparisons = newPValues
     await feed.save()
     const str = `\`${validProperties.join('`\n`')}\``
     await message.channel.send(translate('commands.compare.success', { added: str, url: feed.url }))
     log.info({
       guild: message.guild
-    }, `Comparisons have set ${JSON.stringify(feed.ncomparisons)}`)
+    }, `Comparisons have set ${JSON.stringify(validProperties)}`)
   }
 }
+
+module.exports.getValidInputs = getValidInputs
