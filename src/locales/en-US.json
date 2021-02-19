@@ -91,10 +91,10 @@
     },
     "prefix": {
       "action": "Commands Prefix Change",
-      "description": "Change the prefix used for commands from the default ({{prefix}}).",
+      "description": "Change the prefix used for commands from the default ({{defaultPrefix}}).",
       "args": {
         "<prefix>": "The prefix to use.",
-        "reset": "Reset prefix back to default ({{prefix}})."
+        "reset": "Reset prefix back to default ({{defaultPrefix}})."
       }
     },
     "refresh": {
