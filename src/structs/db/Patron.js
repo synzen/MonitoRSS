@@ -101,7 +101,8 @@ class Patron extends Base {
    * @returns {boolean}
    */
   isActive () {
-    const active = this.status === Patron.STATUS.ACTIVE
+    // As Patreon's API degrades, their status can be active even though it's not - in that case, the pledge may be 0
+    const active = this.status === Patron.STATUS.ACTIVE && this.pledge > 0
     if (active) {
       return true
     }
