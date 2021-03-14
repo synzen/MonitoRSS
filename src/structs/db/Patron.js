@@ -13,9 +13,18 @@ class Patron extends Base {
     }
 
     /**
+     * Due to inconsistencies in Patreon's API, the pledge status doesn't seem to be up to date.
+     *
+     * This is a temporary measure until payments are moved off of Patreon.
+     *
+     * @type {string|undefined}
+     */
+    this.statusOverride = this.getField('statusOverride')
+
+    /**
      * @type {string}
      */
-    this.status = this.getField('status')
+    this.status = this.statusOverride || this.getField('status')
 
     /**
      * @type {string}
