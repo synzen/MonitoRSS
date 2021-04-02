@@ -11,6 +11,14 @@ function envArray (name) {
 }
 
 exports.set = (override, skipValidation) => {
+  // APIS
+  if (!override.apis) {
+    override.apis = {}
+  }
+  const apis = config.apis
+  const apisOverride = override.apis
+  apis.pledge = process.env.DRSS_APIS_PLEDGE || apisOverride.pledge || apis.pledge
+
   // LOG
   if (!override.log) {
     override.log = {}
