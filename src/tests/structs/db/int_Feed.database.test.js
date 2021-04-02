@@ -80,6 +80,9 @@ describe('Int::structs/db/Feed Database', function () {
         database: {
           uri: 'mongodb://'
         },
+        apis: {
+          pledge: {}
+        },
         feeds: {}
       })
       const guildID = 'w246y3r5eh'
