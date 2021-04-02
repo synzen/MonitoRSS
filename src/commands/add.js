@@ -2,18 +2,19 @@ const getConfig = require('../config.js').get
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
-const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
+const Guild = require('../structs/Guild.js')
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message) => {
-  const [profile, supporter] = await Promise.all([
+  const guild = new Guild(message.guild.id)
+  const [profile, maxFeedsAllowed] = await Promise.all([
     Profile.get(message.guild.id),
-    Supporter.getValidSupporterOfGuild(message.guild.id)
+    guild.getMaxFeeds()
   ])
+
   const feeds = await Feed.getManyBy('guild', message.guild.id)
   const config = getConfig()
-  const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
   if (message.content.split(' ').length === 1) {

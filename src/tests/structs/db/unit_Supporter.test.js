@@ -342,25 +342,6 @@ describe('Unit::structs/db/Supporter', function () {
       })
     })
   })
-  describe('getFeedLimitsOfGuilds', function () {
-    it('returns guilds with their respsective supporter feed limits', async function () {
-      const validSupporters = [{
-        getMaxFeeds: () => 99,
-        guilds: ['a', 'b']
-      }, {
-        getMaxFeeds: () => 11,
-        guilds: ['c', 'd']
-      }]
-      jest.spyOn(Supporter, 'getValidSupporters').mockResolvedValue(validSupporters)
-      const returned = await Supporter.getFeedLimitsOfGuilds()
-      expect(returned).toBeInstanceOf(Map)
-      expect(Array.from(returned.keys())).toEqual(['a', 'b', 'c', 'd'])
-      expect(returned.get('a')).toEqual(99)
-      expect(returned.get('b')).toEqual(99)
-      expect(returned.get('c')).toEqual(11)
-      expect(returned.get('d')).toEqual(11)
-    })
-  })
   describe('hasSlowRate', () => {
     it('returns correctly for non-patron', async () => {
       const supporter = new Supporter({ ...initData })

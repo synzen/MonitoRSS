@@ -1,8 +1,10 @@
 process.env.TEST_ENV = true
 const Supporter = require('../../structs/db/Supporter.js')
+const Guild = require('../../structs/Guild.js')
 const pruneWebhooks = require('../../maintenance/pruneWebhooks')
 
 jest.mock('../../structs/db/Supporter.js')
+jest.mock('../../structs/Guild.js')
 
 describe('Unit::maintenance/pruneWebhooks', function () {
   const bot = {
@@ -278,7 +280,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
     })
   })
   describe('getDisableReason', function () {
-    it('returns empty string if unauthorized', async () => {
+    it('returns empty string if authorized', async () => {
       Supporter.enabled = true
       const webhookID = 'qwte'
       const feed = {
@@ -292,7 +294,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
           id: 'whatever'
         }
       })
-      Supporter.hasValidGuild.mockResolvedValue(true)
+      Guild.prototype.hasSupporterOrSubscriber.mockResolvedValue(true)
       const result = await pruneWebhooks.getDisableReason(bot, feed)
       expect(result).toEqual('')
     })
@@ -310,7 +312,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
           id: 'whatever'
         }
       })
-      Supporter.hasValidGuild.mockResolvedValue(false)
+      Guild.prototype.hasSupporterOrSubscriber.mockResolvedValue(false)
       const result = await pruneWebhooks.getDisableReason(bot, feed)
       expect(result).toEqual(`Disabling unauthorized supporter webhook from feed ${feed._id}`)
     })

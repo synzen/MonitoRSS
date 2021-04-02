@@ -1,5 +1,4 @@
 const moment = require('moment-timezone')
-const Supporter = require('../../../structs/db/Supporter.js')
 const Schedule = require('../../../structs/db/Schedule.js')
 const FailRecord = require('../../../structs/db/FailRecord.js')
 const { MenuEmbed, MenuVisual, MessageVisual } = require('discord.js-prompts')
@@ -9,6 +8,7 @@ const Translator = require('../../../structs/Translator.js')
 const handlePaginationError = require('../common/utils/handlePaginationError.js')
 const ArticleRateLimiter = require('../../../structs/ArticleMessageRateLimiter.js')
 const getConfig = require('../../../config.js').get
+const Guild = require('../../../structs/Guild.js')
 
 /**
  * @typedef {Object} Data
@@ -65,10 +65,12 @@ async function getChannelsAtLimit (feeds) {
  */
 async function listFeedVisual (data) {
   const { feeds, profile, guildID, channel, searchQuery } = data
-  const [supporter, schedules, supporterGuilds] = await Promise.all([
-    Supporter.getValidSupporterOfGuild(guildID),
+  const guild = new Guild(guildID)
+  const [supporter, subscription, schedules, supporterGuilds] = await Promise.all([
+    guild.getSupporter(guildID),
+    guild.getSubscription(),
     Schedule.getAll(),
-    Supporter.getValidFastGuilds()
+    Guild.getFastSupporterAndSubscriberGuildIds()
   ])
   const unqueriedFeeds = channel ? feeds.filter(f => f.channel === channel.id) : feeds
   const targetFeeds = queryFeeds(unqueriedFeeds, searchQuery)
@@ -84,22 +86,23 @@ async function listFeedVisual (data) {
 
   const config = getConfig()
   const failRecordsMap = {}
-  const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
+  const maxFeedsAllowed = await guild.getMaxFeeds()
 
   // Generate the info for each feed as an array, and push into another array
   const failRecords = await Promise.all(targetFeeds.map(feed => FailRecord.get(feed.url)))
-  const fetchedSchedules = await Promise.all(targetFeeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
+  const fetchedSchedules = await Promise.all(targetFeeds.map(feed => feed.determineSchedule(schedules, new Set(supporterGuilds))))
 
+  const supporterOrSubscriber = supporter || subscription
   for (const record of failRecords) {
     if (record) {
       failRecordsMap[record._id] = record
     }
   }
   let vipDetails = ''
-  if (supporter) {
+  if (supporterOrSubscriber) {
     vipDetails += '**Patron Until:** '
-    if (supporter.expireAt) {
-      const expireAt = moment(supporter.expireAt)
+    if (supporterOrSubscriber.expireAt) {
+      const expireAt = moment(supporterOrSubscriber.expireAt)
       const daysLeft = Math.round(moment.duration(expireAt.diff(moment())).asDays())
       vipDetails += `${expireAt.format('D MMMM YYYY')} (${daysLeft} days)\n`
     } else {
@@ -182,7 +185,7 @@ async function listFeedVisual (data) {
     // : translate('commands.list.unknown')
 
     // Patreon link
-    if (Supporter.enabled && !supporter) {
+    if (!supporter) {
       refreshRate += ' [－](https://www.patreon.com/monitorss)'
     }
 
