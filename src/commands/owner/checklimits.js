@@ -1,18 +1,10 @@
 const Feed = require('../../structs/db/Feed.js')
-const Supporter = require('../../structs/db/Supporter.js')
+const Guild = require('../../structs/Guild.js')
 const getConfig = require('../../config.js').get
 
 module.exports = async (message) => {
-  const supporters = await Supporter.getValidSupporters()
-  const supporterLimits = new Map()
+  const supporterLimits = await Guild.getAllUniqueFeedLimits()
   const config = getConfig()
-  for (const supporter of supporters) {
-    const limit = await supporter.getMaxFeeds()
-    const guilds = supporter.guilds
-    for (const id of guilds) {
-      supporterLimits.set(id, limit)
-    }
-  }
 
   const illegals = []
   const guildIds = message.client.guilds.cache.keyArray()

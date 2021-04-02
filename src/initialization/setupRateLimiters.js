@@ -1,6 +1,6 @@
-const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
 const ArticleMessageRateLimiter = require('../structs/ArticleMessageRateLimiter.js')
+const Guild = require('../structs/Guild.js')
 
 /**
  * @param {import('discord.js').Client} bot
@@ -12,7 +12,7 @@ async function setupRateLimiters (bot) {
       $in: guilds
     }
   })
-  const supporterGuilds = new Set(await Supporter.getValidGuilds())
+  const supporterGuilds = await Guild.getFastSupporterAndSubscriberGuildIds()
   for (var i = feeds.length - 1; i >= 0; --i) {
     const feed = feeds[i]
     const channel = bot.channels.cache.get(feed.channel)

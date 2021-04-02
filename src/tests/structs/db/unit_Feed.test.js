@@ -3,6 +3,7 @@ const Feed = require('../../../structs/db/Feed.js')
 const Schedule = require('../../../structs/db/Schedule.js')
 const Supporter = require('../../../structs/db/Supporter.js')
 const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
+const Guild = require('../../../structs/Guild.js')
 
 jest.mock('../../../structs/db/FilteredFormat.js')
 jest.mock('../../../structs/db/Schedule.js')
@@ -242,17 +243,35 @@ describe('Unit::structs/db/Feed', function () {
     })
   })
   describe('hasFastSupporterSchedule', function () {
-    it('returns correctly if array of guilds passed in', async function () {
+    it('returns correctly if set of guilds passed in', async function () {
       const feed = new Feed({ ...necessaryInit })
-      const supporterGuilds = ['a', 'b', 'c']
-      feed.guild = supporterGuilds[1]
+      const supporterGuilds = new Set(['a', 'b', 'c'])
+      feed.guild = 'a'
       await expect(feed.hasFastSupporterSchedule(supporterGuilds))
         .resolves.toEqual(true)
       feed.guild = 'd'
       await expect(feed.hasFastSupporterSchedule(supporterGuilds))
         .resolves.toEqual(false)
     })
-    it('returns correctly if no array passed in', async function () {
+    it('returns correctly if guild was found and has slow rate', async function () {
+      jest.spyOn(Guild.prototype, 'getSubscription')
+        .mockResolvedValue({
+          slowRate: true
+        })
+      const feed = new Feed({ ...necessaryInit })
+      await expect(feed.hasFastSupporterSchedule()).resolves.toEqual(false)
+    })
+    it('returns correctly if guild was found and does not have slow rate', async function () {
+      jest.spyOn(Guild.prototype, 'getSubscription')
+        .mockResolvedValue({
+          slowRate: false
+        })
+      const feed = new Feed({ ...necessaryInit })
+      await expect(feed.hasFastSupporterSchedule()).resolves.toEqual(true)
+    })
+    it('returns correctly for supporter if nothing passed in', async function () {
+      jest.spyOn(Guild.prototype, 'getSubscription')
+        .mockResolvedValue(null)
       jest.spyOn(Supporter, 'getValidSupporterOfGuild')
         .mockResolvedValueOnce({ hasSlowRate: async () => false })
         .mockResolvedValueOnce({ hasSlowRate: async () => true })

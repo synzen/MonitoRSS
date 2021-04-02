@@ -1,7 +1,5 @@
 const Base = require('./Base.js')
-const Supporter = require('./Supporter.js')
 const ProfileModel = require('../../models/Profile.js')
-const getConfig = require('../../config.js').get
 
 class Profile extends Base {
   /**
@@ -125,20 +123,6 @@ class Profile extends Base {
       Profile.setPrefix(this._id, prefix)
     } else {
       Profile.deletePrefix(this._id)
-    }
-  }
-
-  /**
-   * Returns the feed limit of this server
-   * @returns {number}
-   */
-  static async getFeedLimit (guildID) {
-    const supporter = await Supporter.getValidSupporterOfGuild(guildID)
-    const config = getConfig()
-    if (supporter) {
-      return supporter.getMaxFeeds()
-    } else {
-      return config.feeds.max
     }
   }
 

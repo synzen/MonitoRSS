@@ -127,22 +127,6 @@ describe('Unit::structs/db/Profile', function () {
       expect(Profile.prefixes.size).toEqual(0)
     })
   })
-  describe('static getFeedLimit', function () {
-    it('calls supporter get max feeds if supporter', async function () {
-      const maxFeeds = 22
-      const getMaxFeeds = jest.fn(() => maxFeeds)
-      Supporter.getValidSupporterOfGuild.mockResolvedValue({ getMaxFeeds })
-      const returned = await Profile.getFeedLimit()
-      expect(Supporter.getValidSupporterOfGuild).toHaveBeenCalledTimes(1)
-      expect(returned).toEqual(maxFeeds)
-    })
-    it('returns config max feeds if no supporter', async function () {
-      Supporter.getValidSupporterOfGuild.mockResolvedValue(null)
-      const returned = await Profile.getFeedLimit()
-      expect(Supporter.getValidSupporterOfGuild).toHaveBeenCalledTimes(1)
-      expect(returned).toEqual(config.get().feeds.max)
-    })
-  })
   describe('setPrefixAndSave', function () {
     it('saves', async function () {
       const prefix = 'qa3et4wr'

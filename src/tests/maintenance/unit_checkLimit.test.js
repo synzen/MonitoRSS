@@ -1,4 +1,5 @@
 process.env.TEST_ENV = true
+const Guild = require('../../structs/Guild.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const checkLimits = require('../../maintenance/checkLimits.js')
 const config = require('../../config.js')
@@ -11,6 +12,7 @@ jest.mock('../../config.js', () => ({
   }))
 }))
 jest.mock('../../structs/db/Supporter.js')
+jest.mock('../../structs/Guild.js')
 jest.mock('../../util/ipc.js')
 
 describe('Unit::maintenance/checkLimits', function () {
@@ -19,7 +21,7 @@ describe('Unit::maintenance/checkLimits', function () {
     Supporter.enabled = false
     Supporter.getValidSupporters
       .mockResolvedValue([])
-    Supporter.getFeedLimitsOfGuilds
+    Guild.getAllUniqueFeedLimits
       .mockResolvedValue(new Map())
   })
   afterEach(function () {
@@ -27,43 +29,6 @@ describe('Unit::maintenance/checkLimits', function () {
       feeds: {
         max: 2
       }
-    })
-  })
-  describe('getSupporterLimits', function () {
-    it('returns a map', async function () {
-      const value = await checkLimits.getSupporterLimits()
-      expect(value).toBeInstanceOf(Map)
-    })
-    it('returns correctly', async function () {
-      Supporter.enabled = true
-      const supporter1Guilds = ['a', 'b']
-      const supporter2Guilds = ['c', 'd']
-      const supporters = [{
-        getMaxFeeds: async () => 3,
-        guilds: supporter1Guilds
-      }, {
-        getMaxFeeds: async () => 10,
-        guilds: supporter2Guilds
-      }]
-      Supporter.getValidSupporters
-        .mockResolvedValue(supporters)
-      const value = await checkLimits.getSupporterLimits()
-      expect(value.get('a')).toEqual(3)
-      expect(value.get('b')).toEqual(3)
-      expect(value.get('c')).toEqual(10)
-      expect(value.get('d')).toEqual(10)
-    })
-    it('returns an empty map if supporters not enabled', async function () {
-      const supporter1Guilds = ['a', 'b']
-      const supporters = [{
-        getMaxFeeds: async () => 3,
-        guilds: supporter1Guilds
-      }]
-      Supporter.getValidSupporters
-        .mockResolvedValue(supporters)
-      const value = await checkLimits.getSupporterLimits()
-      expect(value.get('a')).toBeUndefined()
-      expect(value.get('b')).toBeUndefined()
     })
   })
   describe('limits', function () {
@@ -81,7 +46,7 @@ describe('Unit::maintenance/checkLimits', function () {
         enable: jest.fn(),
         disable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
         .mockResolvedValue(new Map())
       await checkLimits.limits(feeds)
       expect(feeds[1].enable).toHaveBeenCalledTimes(1)
@@ -115,7 +80,7 @@ describe('Unit::maintenance/checkLimits', function () {
         disable: jest.fn(),
         enable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
         .mockResolvedValue(new Map())
       await checkLimits.limits(feeds)
       expect(feeds[0].disable).not.toHaveBeenCalled()
@@ -145,7 +110,7 @@ describe('Unit::maintenance/checkLimits', function () {
         enable: jest.fn(),
         disable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
         .mockResolvedValue(new Map())
       await checkLimits.limits(feeds)
       expect(feeds[1].disable).not.toHaveBeenCalled()
@@ -171,7 +136,8 @@ describe('Unit::maintenance/checkLimits', function () {
         enable: jest.fn(),
         disable: jest.fn().mockResolvedValue('feed2')
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
+
         .mockResolvedValue(new Map())
       const result = await checkLimits.limits(feeds)
       expect(result.enabled).toEqual(['feed1'])
@@ -197,7 +163,8 @@ describe('Unit::maintenance/checkLimits', function () {
         disabled: 'Exceeded feed limit',
         disable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
+
         .mockResolvedValue(new Map([['a', 3]]))
       await checkLimits.limits(feeds)
       expect(feeds[2].disable).not.toHaveBeenCalledTimes(1)
@@ -238,7 +205,8 @@ describe('Unit::maintenance/checkLimits', function () {
         enable: jest.fn(),
         disable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
+
         .mockResolvedValue(new Map())
       await checkLimits.limits(feeds)
       expect(feeds[0].disable).not.toHaveBeenCalled()
@@ -271,7 +239,8 @@ describe('Unit::maintenance/checkLimits', function () {
         disabled: 'Exceeded feed limit',
         enable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
+
         .mockResolvedValue(new Map([['a', 3]]))
       await checkLimits.limits(feeds)
       expect(feeds[0].enable).not.toHaveBeenCalled()
@@ -300,7 +269,8 @@ describe('Unit::maintenance/checkLimits', function () {
         disabled: 'Exceeded feed limit',
         enable: jest.fn()
       }]
-      jest.spyOn(checkLimits, 'getSupporterLimits')
+      jest.spyOn(Guild, 'getAllUniqueFeedLimits')
+
         .mockResolvedValue(new Map())
       await checkLimits.limits(feeds)
       expect(feeds[0].enable).not.toHaveBeenCalled()
