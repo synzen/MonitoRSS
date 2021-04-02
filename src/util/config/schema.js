@@ -72,7 +72,12 @@ const advancedSchema = Joi.object({
   parallelRuns: Joi.number().greater(0).strict().default(1)
 })
 
+const apisSchema = Joi.object({
+  pledge: Joi.string().strict().allow('').default('')
+})
+
 const schema = Joi.object({
+  apis: apisSchema.default(apisSchema.validate({}).value),
   dev: Joi.number().strict().greater(-1),
   _vip: Joi.bool().strict(),
   _vipRefreshRateMinutes: Joi.number().strict(),
@@ -88,6 +93,7 @@ const schema = Joi.object({
 
 module.exports = {
   schemas: {
+    apis: apisSchema,
     log: logSchema,
     bot: botSchema,
     database: databaseSchema,
