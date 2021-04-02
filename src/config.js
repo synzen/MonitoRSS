@@ -13,11 +13,15 @@ function envArray (name) {
 exports.set = (override, skipValidation) => {
   // APIS
   if (!override.apis) {
-    override.apis = {}
+    override.apis = {
+      pledge: {}
+    }
   }
+  console.log(config)
   const apis = config.apis
   const apisOverride = override.apis
-  apis.pledge = process.env.DRSS_APIS_PLEDGE || apisOverride.pledge || apis.pledge
+  apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisOverride.pledge.url || apis.pledge.url
+  apis.pledge.accessToken = process.env.DRSS_APIS_PLEDGE_ACCESSTOKEN || apisOverride.pledge.accessToken || apis.pledge.accessToken
 
   // LOG
   if (!override.log) {
