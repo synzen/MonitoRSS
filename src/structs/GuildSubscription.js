@@ -1,5 +1,4 @@
 const configuration = require('../config')
-const fetch = require('node-fetch')
 
 class GuildSubscription {
   constructor ({
@@ -14,6 +13,10 @@ class GuildSubscription {
     this.expireAt = expireAt
   }
 
+  static getApiUrl () {
+    return configuration.get().apis.pledge
+  }
+
   static mapApiResponse (response) {
     return {
       guildId: response.guild_id,
@@ -24,45 +27,69 @@ class GuildSubscription {
   }
 
   static async getSubscription (guildId) {
-    const res = {
-      status: 200,
-      json: async () => ({
-        guild_id: guildId,
-        extra_feeds: 100,
-        refresh_rate: 1111,
-        expire_at: new Date('2029-09-09')
-      })
-    }
-    if (res.status === 200) {
-      const json = await res.json()
-      return new GuildSubscription(this.mapApiResponse(json))
-    }
-    if (res.status === 404) {
+    const apiUrl = this.getApiUrl()
+    if (!apiUrl) {
+      // The service is disabled/not configured
       return null
     }
-    throw new Error(`Bad status code ${res.status}`)
+    try {
+      const res = {
+        status: 200,
+        json: async () => ({
+          guild_id: guildId,
+          extra_feeds: 100,
+          refresh_rate: 1111,
+          expire_at: new Date('2029-09-09')
+        })
+      }
+      if (res.status === 200) {
+        const json = await res.json()
+        return new GuildSubscription(this.mapApiResponse(json))
+      }
+      if (res.status === 404) {
+        return null
+      }
+      throw new Error(`Bad status code ${res.status}`)
+    } catch (err) {
+      /**
+       * Errors should not be propagated to maintain normal functions.
+       */
+      return null
+    }
   }
 
   /**
    * @returns {Promise<GuildSubscription[]>}
    */
   static async getAllSubscriptions () {
-    const res = {
-      status: 200,
-      json: async () => [
-        {
-          guild_id: '240535022820392961',
-          extra_feeds: 100,
-          refresh_rate: 1111,
-          expire_at: new Date('2029-09-09')
-        }
-      ]
+    const apiUrl = this.getApiUrl()
+    if (!apiUrl) {
+      // The service is disabled/not configured
+      return []
     }
-    if (res.status === 200) {
-      const data = await res.json()
-      return data.map((sub) => new GuildSubscription(this.mapApiResponse(sub)))
+    try {
+      const res = {
+        status: 200,
+        json: async () => [
+          {
+            guild_id: '240535022820392961',
+            extra_feeds: 100,
+            refresh_rate: 1111,
+            expire_at: new Date('2029-09-09')
+          }
+        ]
+      }
+      if (res.status === 200) {
+        const data = await res.json()
+        return data.map((sub) => new GuildSubscription(this.mapApiResponse(sub)))
+      }
+      throw new Error(`Bad status code ${res.status}`)
+    } catch (err) {
+      /**
+       * Errors should not be propagated to maintain normal functions.
+       */
+      return []
     }
-    throw new Error(`Bad status code ${res.status}`)
   }
 
   hasSlowRate () {
