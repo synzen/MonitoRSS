@@ -17,7 +17,6 @@ exports.set = (override, skipValidation) => {
       pledge: {}
     }
   }
-  console.log(config)
   const apis = config.apis
   const apisOverride = override.apis
   apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisOverride.pledge.url || apis.pledge.url
