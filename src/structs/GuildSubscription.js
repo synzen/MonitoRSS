@@ -1,4 +1,5 @@
 const configuration = require('../config')
+const fetch = require('node-fetch')
 
 class GuildSubscription {
   constructor ({
@@ -13,7 +14,7 @@ class GuildSubscription {
     this.expireAt = expireAt
   }
 
-  static getApiUrl () {
+  static getApiConfig () {
     return configuration.get().apis.pledge
   }
 
@@ -27,21 +28,17 @@ class GuildSubscription {
   }
 
   static async getSubscription (guildId) {
-    const apiUrl = this.getApiUrl()
-    if (!apiUrl) {
+    const { url, accessToken } = this.getApiConfig()
+    if (!url) {
       // The service is disabled/not configured
       return null
     }
     try {
-      const res = {
-        status: 200,
-        json: async () => ({
-          guild_id: guildId,
-          extra_feeds: 100,
-          refresh_rate: 1111,
-          expire_at: new Date('2029-09-09')
-        })
-      }
+      const res = await fetch(`${url}/guilds/${guildId}`, {
+        headers: {
+          Authorization: accessToken
+        }
+      })
       if (res.status === 200) {
         const json = await res.json()
         return new GuildSubscription(this.mapApiResponse(json))
@@ -62,23 +59,17 @@ class GuildSubscription {
    * @returns {Promise<GuildSubscription[]>}
    */
   static async getAllSubscriptions () {
-    const apiUrl = this.getApiUrl()
-    if (!apiUrl) {
+    const { url, accessToken } = this.getApiConfig()
+    if (!url) {
       // The service is disabled/not configured
       return []
     }
     try {
-      const res = {
-        status: 200,
-        json: async () => [
-          {
-            guild_id: '240535022820392961',
-            extra_feeds: 100,
-            refresh_rate: 1111,
-            expire_at: new Date('2029-09-09')
-          }
-        ]
-      }
+      const res = await fetch(url, {
+        headers: {
+          Authorization: accessToken
+        }
+      })
       if (res.status === 200) {
         const data = await res.json()
         return data.map((sub) => new GuildSubscription(this.mapApiResponse(sub)))
