@@ -1,4 +1,4 @@
-const Supporter = require('../structs/db/Supporter.js')
+const Guild = require('../structs/Guild.js')
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -79,7 +79,8 @@ function getRemoveReason (bot, feed, webhookFetchResult) {
 async function getDisableReason (bot, feed) {
   const channel = bot.channels.cache.get(feed.channel)
   let disableReason = ''
-  if (Supporter.enabled && !(await Supporter.hasValidGuild(channel.guild.id))) {
+  const guild = new Guild(channel.guild.id)
+  if (!(await guild.hasSupporterOrSubscriber())) {
     disableReason = `Disabling unauthorized supporter webhook from feed ${feed._id}`
   }
   return disableReason
