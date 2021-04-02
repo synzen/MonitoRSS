@@ -72,8 +72,17 @@ const advancedSchema = Joi.object({
   parallelRuns: Joi.number().greater(0).strict().default(1)
 })
 
+const pledgeApiSchema = Joi.object({
+  url: Joi.string().allow('').default(''),
+  accessToken: Joi.string().strict().allow('').default('').when('url', {
+    is: Joi.string().strict().min(1),
+    then: Joi.string().strict().required(),
+    otherwise: Joi.string().strict().allow('')
+  })
+})
+
 const apisSchema = Joi.object({
-  pledge: Joi.string().strict().allow('').default('')
+  pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value)
 })
 
 const schema = Joi.object({
