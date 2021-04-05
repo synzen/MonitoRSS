@@ -38,14 +38,14 @@ class Guild {
   async getMaxFeeds () {
     const config = getConfig()
     const data = await this.getSubscription(this.id)
-    let maxGuilds = config.feeds.max
-    maxGuilds = data ? Math.max(maxGuilds, data.maxFeeds) : maxGuilds
+    let maxFeeds = config.feeds.max
+    maxFeeds = data ? Math.max(maxFeeds, data.maxFeeds) : maxFeeds
     // Check the supporter for backwards compatibility
     const supporter = await this.getSupporter(this.id)
     if (!supporter) {
-      return maxGuilds
+      return maxFeeds
     }
-    return Math.max(maxGuilds, await supporter.getMaxFeeds())
+    return Math.max(maxFeeds, await supporter.getMaxFeeds())
   }
 
   async hasSupporter () {
