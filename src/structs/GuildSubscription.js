@@ -34,7 +34,7 @@ class GuildSubscription {
       return null
     }
     try {
-      const res = await fetch(`${url}/guilds/${guildId}`, {
+      const res = await fetch(`${url}/api/guilds/${guildId}`, {
         headers: {
           Authorization: accessToken
         }
@@ -48,6 +48,7 @@ class GuildSubscription {
       }
       throw new Error(`Bad status code ${res.status}`)
     } catch (err) {
+      console.error(err)
       /**
        * Errors should not be propagated to maintain normal functions.
        */
@@ -65,7 +66,7 @@ class GuildSubscription {
       return []
     }
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`${url}/api/guilds`, {
         headers: {
           Authorization: accessToken
         }
@@ -76,6 +77,7 @@ class GuildSubscription {
       }
       throw new Error(`Bad status code ${res.status}`)
     } catch (err) {
+      console.error(err)
       /**
        * Errors should not be propagated to maintain normal functions.
        */
