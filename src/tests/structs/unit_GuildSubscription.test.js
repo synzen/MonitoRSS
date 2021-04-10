@@ -112,7 +112,7 @@ describe('Unit::structs/GuildSubscription', function () {
         json: async () => mockResponse
       })
       await GuildSubscription.getAllSubscriptions()
-      expect(fetch).toHaveBeenCalledWith(apiConfig.url, {
+      expect(fetch).toHaveBeenCalledWith(`${apiConfig.url}/guilds`, {
         headers: {
           Authorization: apiConfig.accessToken
         }
