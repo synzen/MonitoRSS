@@ -5,8 +5,8 @@ const ArticleRateLimiter = require('./ArticleMessageRateLimiter.js')
 const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
-const { default: PQueue } = require('p-queue')
 const { Webhook } = require('discord.js')
+const { RESTProducer } = require('@synzen/discord-rest')
 
 /**
  * Core delivery pipeline
@@ -21,18 +21,9 @@ class DeliveryPipeline {
     this.serviceEnabled = !!this.serviceURL
     /**
      * Created if this.serviceEnabled is true in setup()
-     * @type {import('zeromq').Push|null}
+     * @type {RESTProducer|null}
      */
-    this.serviceSock = null
-    /**
-     * A queue that only processes one task at a time. This
-     * is necessary for zeromq since only one async send call
-     * be be executed at any one time through
-     * this.serviceSock.send().
-     */
-    this.serviceQueue = new PQueue({
-      concurrency: 1
-    })
+    this.producer = null
     /**
      * ArticleQueues mapped by channel ID. For delivering
      * articles within this client and not an external
@@ -56,21 +47,20 @@ class DeliveryPipeline {
    * If the delivery service is enabled, connect the socket
    */
   async setup () {
+    const config = configuration.get()
     if (this.serviceEnabled) {
-      this.serviceSock = new (require('zeromq')).Push()
-      await this.serviceSock.connect(this.serviceURL)
+      this.producer = new RESTProducer(config.database.redis)
       this.log.info(`Delivery service at ${this.serviceURL} connected `)
     }
   }
 
   /**
-   * Convert the details of a new article to a buffer for
-   * transporting it to the delivery service over a socket
+   * Send an article to the service responsible for sending messages to Discord.
    *
    * @param {Object<string, any>} newArticle
    * @param {import('./ArticleMessage.js')} articleMessage
    */
-  async formatForService (newArticle, articleMessage) {
+  async sendToService (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
     // Assert that the medium (either a channel or webhook) still exists
     const medium = await articleMessage.getMedium(this.bot)
@@ -80,33 +70,19 @@ class DeliveryPipeline {
     // Make the fetch
     const apiPayloads = articleMessage.createAPIPayloads(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
-    const postActions = []
-    /**
-     * Auto-announce feature executed by the delivery service. It is currently disabled due to
-     * extremely long rate limits.
-     */
-    // if (medium.type === 'news') {
-    //   postActions.push({
-    //     type: 'announce'
-    //   })
-    // }
-    return apiPayloads.map(apiPayload => Buffer.from(JSON.stringify({
-      token: configuration.get().bot.token,
-      article: {
-        _id: article._id
-      },
-      feed: {
-        _id: feedObject._id,
-        url: feedObject.url,
+    return Promise.all(
+      apiPayloads.map(apiPayload => this.producer.enqueue(`https://discord.com/api${apiRoute}`, {
+        method: 'POST',
+        body: JSON.stringify(apiPayload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }, {
+        articleID: article._id,
+        feedURL: feedObject.url,
         channel: feedObject.channel
-      },
-      api: {
-        url: `https://discord.com/api${apiRoute}`,
-        body: apiPayload,
-        method: 'POST'
-      },
-      postActions
-    })))
+      }))
+    )
   }
 
   getChannel (newArticle) {
@@ -171,8 +147,7 @@ class DeliveryPipeline {
     const { article, feedObject } = newArticle
     await ArticleRateLimiter.assertWithinLimits(articleMessage, this.bot)
     if (this.serviceEnabled) {
-      const payloads = await this.formatForService(newArticle, articleMessage)
-      await Promise.all(payloads.map(buffer => this.serviceQueue.add(() => this.serviceSock.send(buffer))))
+      await this.sendToService(newArticle, articleMessage)
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)
     } else {
       // The articleMessage is within all limits
