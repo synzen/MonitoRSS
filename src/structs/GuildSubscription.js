@@ -34,7 +34,7 @@ class GuildSubscription {
       return null
     }
     try {
-      const res = await fetch(`${url}/api/guilds/${guildId}`, {
+      const res = await fetch(`${url}/guilds/${guildId}`, {
         headers: {
           Authorization: accessToken
         }
@@ -66,7 +66,7 @@ class GuildSubscription {
       return []
     }
     try {
-      const res = await fetch(`${url}/api/guilds`, {
+      const res = await fetch(`${url}/guilds`, {
         headers: {
           Authorization: accessToken
         }
