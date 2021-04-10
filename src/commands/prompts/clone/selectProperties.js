@@ -9,6 +9,7 @@ const referenceProperties = [
   'comparisons',
   'regexops',
   'filtered-formats',
+  'webhook',
   'all'
 ]
 

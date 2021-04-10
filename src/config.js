@@ -11,6 +11,17 @@ function envArray (name) {
 }
 
 exports.set = (override, skipValidation) => {
+  // APIS
+  if (!override.apis) {
+    override.apis = {
+      pledge: {}
+    }
+  }
+  const apis = config.apis
+  const apisOverride = override.apis
+  apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisOverride.pledge.url || apis.pledge.url
+  apis.pledge.accessToken = process.env.DRSS_APIS_PLEDGE_ACCESSTOKEN || apisOverride.pledge.accessToken || apis.pledge.accessToken
+
   // LOG
   if (!override.log) {
     override.log = {}
@@ -240,6 +251,7 @@ exports.set = (override, skipValidation) => {
 
   // Web URL
   config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
+  config.discordSupportURL = process.env.DRSS_DISCORDSUPPORTURL || override.discordSupportURL || config.discordSupportURL
 
   // Delivery service
   config.deliveryServiceURL = process.env.MRSS_DELIVERYSERVICEURL || override.deliveryServiceURL || config.deliveryServiceURL

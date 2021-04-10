@@ -5,6 +5,7 @@ const maintenance = require('../../maintenance/index.js')
 
 jest.mock('../../structs/db/Schedule.js')
 jest.mock('../../structs/db/Supporter.js')
+jest.mock('../../structs/Guild.js')
 jest.mock('../../structs/db/FailRecord.js')
 jest.mock('../../maintenance/index.js')
 

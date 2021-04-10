@@ -33,7 +33,7 @@
     },
     "compare": {
       "action": "Set comparisons to article checks",
-      "description": "Add additional positive/negative comparisons on articles for greater control over which articles get sent to your server.",
+      "description": "Add additional positive/negative comparisons on articles for greater control over which articles get sent to your server, such as blocking or re-sendign them.",
       "args": {
         "list": "List the current comparisons.",
         "(+|-)<property>": "The positive or negative article properties to add for comparison. More than one can be added."
@@ -91,10 +91,10 @@
     },
     "prefix": {
       "action": "Commands Prefix Change",
-      "description": "Change the prefix used for commands from the default ({{prefix}}).",
+      "description": "Change the prefix used for commands from the default ({{defaultPrefix}}).",
       "args": {
         "<prefix>": "The prefix to use.",
-        "reset": "Reset prefix back to default ({{prefix}})."
+        "reset": "Reset prefix back to default ({{defaultPrefix}})."
       }
     },
     "refresh": {
@@ -116,7 +116,7 @@
       "description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
     },
     "sub.filters": {
-      "description": "OPen a menu to add filters to yourself (or test them) as a direct subscriber for a particular feed."
+      "description": "Open a menu to add filters to yourself (or test them) as a direct subscriber for a particular feed."
     },
     "test": {
       "args": {
@@ -316,7 +316,7 @@
       "controlPanelLink": "Be sure to check out your control panel at {{url}} for easy feed management!",
       "description": "Arguments for commands are added after the command. For example: `{{prefix}}test simple`.\n\n**Argument Definitions**\n`a` = Directly add `a`\n`[a]` = Optionally add `a`\n`(a|b)` = Directly input `a` OR `b`\n`<a>` = Replace `a` with relevant content",
       "arguments": "Arguments",
-      "support": "\nSupport can be found at https://discord.gg/pudv7Rx",
+      "support": "\nSupport can be found at {{url}}",
       "checkDM": "Check your direct messages!"
     },
     "invite": {

@@ -13,9 +13,18 @@ class Patron extends Base {
     }
 
     /**
+     * Due to inconsistencies in Patreon's API, the pledge status doesn't seem to be up to date.
+     *
+     * This is a temporary measure until payments are moved off of Patreon.
+     *
+     * @type {string|undefined}
+     */
+    this.statusOverride = this.getField('statusOverride')
+
+    /**
      * @type {string}
      */
-    this.status = this.getField('status')
+    this.status = this.statusOverride || this.getField('status')
 
     /**
      * @type {string}
@@ -23,17 +32,36 @@ class Patron extends Base {
     this.lastCharge = this.getField('lastCharge')
 
     /**
+     * Due to inconsistencies in Patreon's API, the pledge lifetime doesn't seem to be up to date.
+     *
+     * This is a temporary measure until payments are moved off of Patreon.
+     *
+     * @type {number|undefined}
+     */
+    this.pledgeLifetimeOverride = this.getField('pledgeLifetimeOverride')
+
+    /**
      * @type {number}
      */
-    this.pledgeLifetime = this.getField('pledgeLifetime')
+    this.pledgeLifetime = this.pledgeLifetimeOverride || this.getField('pledgeLifetime')
     if (this.pledgeLifetime === undefined) {
       throw new TypeError('pledgeLifetime is undefined')
     }
 
     /**
+     * Due to Patreon's unmaintained API, some people who paid 5 USD in a different currency such
+     * as 4.5 euros will not receive the 5 USD benefits since Patreon reports the pldge as 4.5.
+     *
+     * This is a temporary measure until payments are moved off of Patreon.
+     *
+     * @type {number|undefined}
+     */
+    this.pledgeOverride = this.getField('pledgeOverride')
+
+    /**
      * @type {number}
      */
-    this.pledge = this.getField('pledge')
+    this.pledge = this.pledgeOverride || this.getField('pledge')
     if (this.pledge === undefined) {
       throw new TypeError('pledge is undefined')
     }
@@ -68,7 +96,9 @@ class Patron extends Base {
       _id: this._id,
       status: this.status,
       lastCharge: this.lastCharge,
+      pledgeLifetimeOverride: this.pledgeLifetimeOverride,
       pledgeLifetime: this.pledgeLifetime,
+      pledgeOverride: this.pledgeOverride,
       pledge: this.pledge,
       discord: this.discord,
       name: this.name,
@@ -80,7 +110,8 @@ class Patron extends Base {
    * @returns {boolean}
    */
   isActive () {
-    const active = this.status === Patron.STATUS.ACTIVE
+    // As Patreon's API degrades, their status can be active even though it's not - in that case, the pledge may be 0
+    const active = this.status === Patron.STATUS.ACTIVE && this.pledge > 0
     if (active) {
       return true
     }
@@ -103,19 +134,20 @@ class Patron extends Base {
     if (!this.isActive()) {
       return config.feeds.max
     }
-    if (this.pledge >= 2000) {
+    const pledge = this.pledge
+    if (pledge >= 2000) {
       return 140
     }
-    if (this.pledge >= 1500) {
+    if (pledge >= 1500) {
       return 105
     }
-    if (this.pledge >= 1000) {
+    if (pledge >= 1000) {
       return 70
     }
-    if (this.pledge >= 500) {
+    if (pledge >= 500) {
       return 35
     }
-    if (this.pledge >= 250) {
+    if (pledge >= 250) {
       return 15
     }
     return config.feeds.max

@@ -17,19 +17,25 @@ module.exports = async (message, command) => {
   for (const name in commandDescriptions) {
     const command = commandDescriptions[name]
     if (!command.description) continue
-    msg += `\`${prefix}${name}\` - ${command.description}`.replace(/{{prefix}}/g, prefix)
+    msg += `\`${prefix}${name}\` - ${command.description}`
+      .replace(/{{prefix}}/g, prefix)
+      .replace(/{{defaultPrefix}}/g, config.bot.prefix)
     const args = command.args
     if (args) {
       msg += `\n    **${translate('commands.help.arguments')}:**\n`
       const argsLength = Object.keys(args).length
       let i = 0
       for (const arg in args) {
-        msg += `      \`${arg}\` - ${args[arg]}${i++ === argsLength - 1 ? '' : '\n'}`.replace(/{{prefix}}/g, prefix)
+        msg += `      \`${arg}\` - ${args[arg]}${i++ === argsLength - 1 ? '' : '\n'}`
+          .replace(/{{prefix}}/g, prefix)
+          .replace(/{{defaultPrefix}}/g, config.bot.prefix)
       }
     }
     msg += '\n\n'
   }
-  const helpMessage = msg + translate('commands.help.support')
+  const helpMessage = msg + translate('commands.help.support', {
+    url: config.discordSupportURL || 'https://discord.gg/pudv7Rx'
+  })
   return message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
     .then(() => {
       message.reply(translate('commands.help.checkDM'))

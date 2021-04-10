@@ -399,7 +399,7 @@ module.exports = class Article {
       if (!VALID_PH_IMGS.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
       const imgNum = parseInt(arr[1].substr(arr[1].search(/[1-9]/), 1), 10) - 1
-      if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) continue
+      if (isNaN(imgNum) || imgNum > 4 || imgNum < 0 || !placeholderImgs[imgNum]) continue
       img = placeholderImgs[imgNum]
     }
     return img
@@ -577,7 +577,7 @@ module.exports = class Article {
    * @param {string[]} userFilters
    * @param {string} reference
    */
-  testArrayFilters (userFilters, reference) {
+  testArrayNegatedFilters (userFilters, reference, findBlocks) {
     // Deal with inverted first
     const filters = userFilters.map(word => new Filter(word))
     const invertedFilters = filters.filter(filter => filter.inverted)
@@ -594,12 +594,26 @@ module.exports = class Article {
       }
     }
 
-    if (regularFilters.length === 0) {
-      return {
-        ...returnData,
-        passed: true
-      }
+    return {
+      ...returnData,
+      passed: true
     }
+  }
+
+  /**
+   * @param {string[]} userFilters
+   * @param {string} reference
+   */
+  testArrayRegularFilters (userFilters, reference) {
+    // Deal with inverted first
+    const filters = userFilters.map(word => new Filter(word))
+    const invertedFilters = filters.filter(filter => filter.inverted)
+    const regularFilters = filters.filter(filter => !filter.inverted)
+    const returnData = {
+      inverted: invertedFilters.map(f => f.content),
+      regular: regularFilters.map(f => f.content)
+    }
+
     const passed = !!regularFilters.find(filter => filter.passes(reference))
     return {
       ...returnData,
@@ -642,6 +656,7 @@ module.exports = class Article {
     }
   }
 
+  // Filters are pending for a serious rewrite due to the complexity/debt involved here
   testFilters (filters) {
     const filterResults = new FilterResults()
     if (Object.keys(filters).length === 0) {
@@ -654,38 +669,62 @@ module.exports = class Article {
     if (!everyReferenceExists) {
       return filterResults
     }
-    let passed = false
+
     let hasOneBlock = false
+    // First check if any filters block this article
     for (const filterTypeName in filters) {
       const userFilters = filters[filterTypeName]
       const reference = this.getFilterReference(filterTypeName)
       if (!reference) {
         continue
       }
-      let invertedFilters = []
-      let regularFilters = []
-
       // Filters can either be an array of words or a string (regex)
       let results
       if (Array.isArray(userFilters)) {
-        results = this.testArrayFilters(userFilters, reference)
+        results = this.testArrayNegatedFilters(userFilters, reference)
       } else {
         results = this.testRegexFilter(userFilters, reference)
       }
-      passed = results.passed || passed
-      invertedFilters = invertedFilters.concat(results.inverted)
-      regularFilters = regularFilters.concat(results.regular)
+      const invertedFilters = results.inverted
+      const regularFilters = results.regular
       if (regularFilters.length > 0) {
         filterResults.add(filterTypeName, regularFilters, false)
       }
       if (invertedFilters.length > 0) {
         filterResults.add(filterTypeName, invertedFilters, true)
-        if (!results.passed) {
-          hasOneBlock = true
-        }
+      }
+      if (!results.passed) {
+        hasOneBlock = true
       }
     }
-    filterResults.passed = hasOneBlock ? false : passed
+    if (hasOneBlock) {
+      filterResults.passed = false
+      return filterResults
+    }
+    // Then do regular filters
+    let passed = false
+    let hasRegularFilters = false
+    for (const filterTypeName in filters) {
+      const userFilters = filters[filterTypeName]
+      const reference = this.getFilterReference(filterTypeName)
+      if (!reference) {
+        continue
+      }
+
+      // Filters can either be an array of words or a string (regex)
+      let results
+      if (Array.isArray(userFilters)) {
+        results = this.testArrayRegularFilters(userFilters, reference)
+      } else {
+        results = this.testRegexFilter(userFilters, reference)
+      }
+      if (results.regular.length > 0) {
+        hasRegularFilters = true
+      }
+      passed = results.passed || passed
+    }
+    // If there are no regular filters, then it should pass
+    filterResults.passed = hasRegularFilters ? passed : true
     return filterResults
   }
 

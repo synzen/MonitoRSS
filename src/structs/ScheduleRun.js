@@ -2,6 +2,7 @@ const EventEmitter = require('events').EventEmitter
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
 const Feed = require('./db/Feed.js')
+const Guild = require('./Guild.js')
 const Supporter = require('./db/Supporter.js')
 const ScheduleStats = require('./db/ScheduleStats.js')
 const ProcessorPool = require('./ProcessorPool.js')
@@ -177,7 +178,7 @@ class ScheduleRun extends EventEmitter {
   async getScheduleFeeds (feeds) {
     const [schedules, supporterGuilds] = await Promise.all([
       Schedule.getAll(),
-      Supporter.getValidFastGuilds()
+      Guild.getFastSupporterAndSubscriberGuildIds()
     ])
     const feedsLength = feeds.length
     const schedulesToFetch = []

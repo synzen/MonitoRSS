@@ -37,7 +37,7 @@ function selectPropertiesVisual (data) {
   const menu = new MenuEmbed(messageEmbed)
 
   for (let x = 0; x < embeds.length; ++x) {
-    const embed = embeds[0]
+    const embed = embeds[x]
     const val = listEmbedValues(embed)
     menu.addOption(translate('commands.embed.numberedEmbed', {
       number: x + 1

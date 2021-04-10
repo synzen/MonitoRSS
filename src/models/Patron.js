@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 
 const schema = new mongoose.Schema({
   _id: String,
+  statusOverride: String,
   status: String,
   lastCharge: Date,
   pledgeLifetime: {
