@@ -46,6 +46,7 @@ async function confirmFn (message, data) {
   const cloneComparisons = cloneAll || properties.includes('comparisons')
   const cloneRegexops = cloneAll || properties.includes('regexops')
   const cloneFilteredFormats = cloneAll || properties.includes('filtered-formats')
+  const cloneWebhook = cloneAll || properties.includes('webhook')
   const log = createLogger(message.client.shard.ids[0])
 
   const copyFromSubscribers = await sourceFeed.getSubscribers()
@@ -89,6 +90,15 @@ async function confirmFn (message, data) {
       updateSelected = true
     }
 
+    // Webhook
+    if (cloneWebhook) {
+      console.log(cloneWebhook, sourceFeed.webhook)
+      destinationFeed.webhook = sourceFeed.webhook
+        ? { ...sourceFeed.webhook }
+        : undefined
+      updateSelected = true
+    }
+
     if (updateSelected) {
       await destinationFeed.save()
     }
@@ -125,6 +135,8 @@ async function confirmFn (message, data) {
         return newFormat.save()
       }))
     }
+
+
   }
   log.info({
     guild: message.guild,

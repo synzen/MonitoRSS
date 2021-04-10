@@ -10,6 +10,7 @@ const dbName = 'test_int_feed'
 const config = require('../../../config.js')
 const Schedule = require('../../../structs/db/Schedule.js')
 const Patron = require('../../../structs/db/Patron.js')
+const Guild = require('../../../structs/Guild.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -17,7 +18,9 @@ const CON_OPTIONS = {
   autoIndex: false
 }
 
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  get: jest.fn()
+}))
 
 describe('Int::structs/db/Feed Database', function () {
   /** @type {import('mongoose').Connection} */
@@ -30,6 +33,7 @@ describe('Int::structs/db/Feed Database', function () {
     collection = con.db.collection('feeds')
   })
   beforeEach(async function () {
+    jest.resetAllMocks()
     await con.db.dropDatabase()
     config.get.mockReturnValue({
       database: {
@@ -75,7 +79,11 @@ describe('Int::structs/db/Feed Database', function () {
         _vip: true,
         database: {
           uri: 'mongodb://'
-        }
+        },
+        apis: {
+          pledge: {}
+        },
+        feeds: {}
       })
       const guildID = 'w246y3r5eh'
       const schedules = [{
@@ -114,6 +122,7 @@ describe('Int::structs/db/Feed Database', function () {
         guilds: [guildID],
         slowRate: true
       }]
+      jest.spyOn(Guild.prototype, 'getSubscription').mockResolvedValue(null)
       await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
       await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
       const feedData = {
@@ -211,7 +220,7 @@ describe('Int::structs/db/Feed Database', function () {
         name: 'default',
         refreshRateMinutes: 99
       }]
-      const supporterGuilds = [guildID]
+      const supporterGuilds = new Set([guildID])
       await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
       const feedData = {
         url: 'asdf',

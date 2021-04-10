@@ -141,25 +141,6 @@ class Supporter extends Base {
   }
 
   /**
-   * @returns {Map<string, number>} - Server ID as key, limit as number
-   */
-  static async getFeedLimitsOfGuilds () {
-    const supporters = await this.getValidSupporters()
-    const limits = new Map()
-    const promises = supporters.map(s => s.getMaxFeeds())
-    const limitFetches = await Promise.all(promises)
-    for (let i = 0; i < supporters.length; ++i) {
-      const supporter = supporters[i]
-      const maxFeeds = limitFetches[i]
-      const guilds = supporter.guilds
-      for (const guild of guilds) {
-        limits.set(guild, maxFeeds)
-      }
-    }
-    return limits
-  }
-
-  /**
    * @param {string} guildId
    * @returns {boolean}
    */
@@ -245,7 +226,8 @@ class Supporter extends Base {
   }
 
   async hasSlowRate () {
-    if (this.patron) {
+    // Slow rates may override patron settings
+    if (this.patron && this.slowRate !== true) {
       /** @type {import('./Patron')|undefined} */
       const patron = await this.findActivePatron()
       if (patron) {
