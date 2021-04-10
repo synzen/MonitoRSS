@@ -399,7 +399,7 @@ module.exports = class Article {
       if (!VALID_PH_IMGS.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
       const imgNum = parseInt(arr[1].substr(arr[1].search(/[1-9]/), 1), 10) - 1
-      if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) continue
+      if (isNaN(imgNum) || imgNum > 4 || imgNum < 0 || !placeholderImgs[imgNum]) continue
       img = placeholderImgs[imgNum]
     }
     return img
