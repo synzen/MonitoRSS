@@ -272,7 +272,7 @@ describe('Unit::structs/db/Feed', function () {
     it('returns correctly for supporter if nothing passed in', async function () {
       jest.spyOn(Guild.prototype, 'getSubscription')
         .mockResolvedValue(null)
-      jest.spyOn(Supporter, 'getValidSupporterOfGuild')
+      jest.spyOn(Guild.prototype, 'getSupporter')
         .mockResolvedValueOnce({ hasSlowRate: async () => false })
         .mockResolvedValueOnce({ hasSlowRate: async () => true })
       const feed = new Feed({ ...necessaryInit })
