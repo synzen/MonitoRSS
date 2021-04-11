@@ -1,7 +1,7 @@
 const Supporter = require('../../structs/db/Supporter.js')
 const Guild = require('../../structs/Guild.js')
 const GuildSubscription = require('../../structs/GuildSubscription.js')
-const getConfig = require('../../config').get
+const configuration = require('../../config')
 
 jest.mock('../../config.js', () => ({
   get: jest.fn(() => ({
@@ -13,6 +13,9 @@ jest.mock('../../config.js', () => ({
 }))
 
 describe('Unit::structs/Guild', function () {
+  beforeEach(() => {
+    jest.spyOn(Supporter, 'enabled', 'get').mockReturnValue(true)
+  })
   afterEach(function () {
     jest.restoreAllMocks()
   })
@@ -51,7 +54,7 @@ describe('Unit::structs/Guild', function () {
       expect(Array.from(returned)).toEqual(['a', 'b', 'c'])
     })
   })
-  describe('staticc getAllUniqueFeedLimits', function () {
+  describe('static getAllUniqueFeedLimits', function () {
     it('returns guilds with their respsective supporter feed limits', async function () {
       const validSupporters = [{
         getMaxFeeds: () => 99,
@@ -87,8 +90,10 @@ describe('Unit::structs/Guild', function () {
     let configMaxFeeds
     let guild
     beforeEach(() => {
-      configMaxFeeds = getConfig().feeds.max
+      configMaxFeeds = configuration.get().feeds.max
       guild = new Guild('id')
+      guild.getSupporter = jest.fn()
+      guild.getSubscription = jest.fn()
     })
     describe('subscription exists but supporter does not', () => {
       it('returns subscription max feeds', async () => {
@@ -129,7 +134,7 @@ describe('Unit::structs/Guild', function () {
       it('returns subscription max feeds if its greater than supporter and config', async () => {
         const supporterMaxFeeds = configMaxFeeds + 10
         const subscriptionMaxFeeds = configMaxFeeds + 100
-        jest.spyOn(Guild.prototype, 'getSubscription').mockResolvedValue({
+        jest.spyOn(guild, 'getSubscription').mockResolvedValue({
           maxFeeds: subscriptionMaxFeeds
         })
         jest.spyOn(guild, 'getSupporter').mockResolvedValue({

@@ -1,4 +1,4 @@
-const getConfig = require('../config').get
+const configuration = require('../config')
 const GuildSubscription = require('./GuildSubscription.js')
 const Supporter = require('./db/Supporter.js')
 
@@ -45,7 +45,7 @@ class Guild {
   }
 
   async getMaxFeeds () {
-    const config = getConfig()
+    const config = configuration.get()
     const data = await this.getSubscription(this.id)
     let maxFeeds = config.feeds.max
     if (!Supporter.enabled) {
