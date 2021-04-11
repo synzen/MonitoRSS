@@ -11,6 +11,9 @@ class Guild {
    * @returns {Promise<Map<string, number>>}
    */
   static async getAllUniqueFeedLimits () {
+    if (!Supporter.enabled) {
+      return new Map()
+    }
     const supporterLimits = new Map()
     const supporters = await Supporter.getValidSupporters()
     for (const supporter of supporters) {
@@ -28,10 +31,16 @@ class Guild {
   }
 
   async getSupporter () {
+    if (!Supporter.enabled) {
+      return null
+    }
     return Supporter.getValidSupporterOfGuild(this.id)
   }
 
   async getSubscription () {
+    if (!Supporter.enabled) {
+      return null
+    }
     return GuildSubscription.getSubscription(this.id)
   }
 
@@ -39,13 +48,17 @@ class Guild {
     const config = getConfig()
     const data = await this.getSubscription(this.id)
     let maxFeeds = config.feeds.max
+    if (!Supporter.enabled) {
+      return maxFeeds
+    }
     maxFeeds = data ? Math.max(maxFeeds, data.maxFeeds) : maxFeeds
     // Check the supporter for backwards compatibility
     const supporter = await this.getSupporter(this.id)
     if (!supporter) {
       return maxFeeds
     }
-    return Math.max(maxFeeds, await supporter.getMaxFeeds())
+    const supporterMaxFeeds = await supporter.getMaxFeeds()
+    return Math.max(maxFeeds, supporterMaxFeeds)
   }
 
   async hasSupporter () {
