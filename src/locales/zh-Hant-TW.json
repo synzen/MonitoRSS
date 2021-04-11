@@ -84,7 +84,7 @@
     },
     "move": {
       "description": "Open a menu to move a feed into another channel.",
-      "action": "Feed Channel Transfer"
+      "action": "轉移feed頻道"
     },
     "options": {
       "description": "Open a menu for miscellaneous feed options."
@@ -168,8 +168,8 @@
       "list": "The current list of users below will be notified through direct messaging when there are feed warnings/failures in this server:\n\n"
     },
     "backup": {
-      "noProfile": "This server does not have a profile.",
-      "noPermission": "Unable to send backup due to missing `Attach Files` permission."
+      "noProfile": "本伺服器尚無設定檔。",
+      "noPermission": "由於缺少`附加檔案`（`Attach Files`）權限，無法傳送備份。"
     },
     "clone": {
       "copyFrom": "Select the source to copy from.",
