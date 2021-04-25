@@ -6,7 +6,8 @@ jest.mock('../../config.js', () => ({
   get: jest.fn(() => ({
     _vipRefreshRateMinutes: 1234,
     feeds: {
-      max: 100
+      max: 100,
+      refreshRateMinutes: 10
     }
   }))
 }))
@@ -38,7 +39,58 @@ describe('Unit::structs/GuildSubscription', function () {
         guildId: mockResponse.guild_id,
         maxFeeds: config.feeds.max + mockResponse.extra_feeds,
         refreshRate: mockResponse.refresh_rate / 60,
-        expireAt: mockResponse.expire_at
+        expireAt: mockResponse.expire_at,
+        slowRate: false
+      })
+    })
+    it('returns slow rate if ignore refresh rate is true', () => {
+      const config = getConfig()
+      mockResponse = {
+        guild_id: 'abc',
+        extra_feeds: 100,
+        refresh_rate: 111,
+        expire_at: new Date('2029-09-09'),
+        ignore_refresh_rate_benefit: true
+      }
+      expect(GuildSubscription.mapApiResponse(mockResponse)).toEqual({
+        guildId: mockResponse.guild_id,
+        maxFeeds: config.feeds.max + mockResponse.extra_feeds,
+        refreshRate: mockResponse.refresh_rate / 60,
+        expireAt: mockResponse.expire_at,
+        slowRate: true
+      })
+    })
+    it('returns slow rate if response refresh rate is slower than config', () => {
+      const config = getConfig()
+      mockResponse = {
+        guild_id: 'abc',
+        extra_feeds: 100,
+        refresh_rate: config.feeds.refreshRateMinutes * 60 + 10,
+        expire_at: new Date('2029-09-09')
+      }
+      expect(GuildSubscription.mapApiResponse(mockResponse)).toEqual({
+        guildId: mockResponse.guild_id,
+        maxFeeds: config.feeds.max + mockResponse.extra_feeds,
+        refreshRate: mockResponse.refresh_rate / 60,
+        expireAt: mockResponse.expire_at,
+        slowRate: true
+      })
+    })
+    it('does not return slow rate if response refresh rate is faster than config', () => {
+      const config = getConfig()
+      mockResponse = {
+        guild_id: 'abc',
+        extra_feeds: 100,
+        refresh_rate: config.feeds.refreshRateMinutes * 60 / 2,
+        expire_at: new Date('2029-09-09'),
+        ignore_refresh_rate_benefit: false
+      }
+      expect(GuildSubscription.mapApiResponse(mockResponse)).toEqual({
+        guildId: mockResponse.guild_id,
+        maxFeeds: config.feeds.max + mockResponse.extra_feeds,
+        refreshRate: mockResponse.refresh_rate / 60,
+        expireAt: mockResponse.expire_at,
+        slowRate: false
       })
     })
   })
