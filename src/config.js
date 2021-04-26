@@ -18,6 +18,10 @@ function resolveBoolValue (envName, originalValue, overrideValue) {
       : originalValue
 }
 
+function resolveStringValue (envName, originalValue, overrideValue) {
+  return process.env[envName] || overrideValue || originalValue
+}
+
 exports.set = (override, skipValidation) => {
   // APIS
   if (!override.apis) {
@@ -47,6 +51,11 @@ exports.set = (override, skipValidation) => {
     'DRSS_APIS_DISCORDHTTPGATEWAY_ENABLED',
     apisDiscordHttpGateway.enabled,
     apisDiscordHttpGatewayOverride.enabled
+  )
+  apis.discordHttpGateway.redisUri = resolveStringValue(
+    'DRSS_APIS_DISCORDHTTPGATEWAY_REDISURI',
+    apisDiscordHttpGatewayOverride.redisUri,
+    apisDiscordHttpGateway.redisUri
   )
 
   // LOG
