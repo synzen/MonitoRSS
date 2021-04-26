@@ -29,7 +29,6 @@
     "feedparser": "^2.2.10",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.5.2",
-    "ioredis": "^4.27.1",
     "moment": "^2.29.1",
     "moment-timezone": "^0.5.32",
     "mongoose": "^5.11.8",
