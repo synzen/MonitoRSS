@@ -28,7 +28,11 @@ describe('Unit::structs/DeliveryPipeline', function () {
       })
     jest.spyOn(config, 'get')
       .mockReturnValue({
-        log: {}
+        log: {},
+        apis: {
+          pledge: {},
+          discordHttpGateway: {}
+        }
       })
   })
   afterEach(() => {
