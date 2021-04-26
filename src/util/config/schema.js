@@ -81,8 +81,18 @@ const pledgeApiSchema = Joi.object({
   })
 })
 
+const discordHttpGateway = Joi.object({
+  enabled: Joi.bool().strict().default(false),
+  redisUri: Joi.string().strict().allow('').default('').when('enabled', {
+    is: Joi.bool().valid(true).required(),
+    then: Joi.string().strict().required().disallow(''),
+    otherwise: Joi.string().strict().allow('').default('')
+  })
+})
+
 const apisSchema = Joi.object({
-  pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value)
+  pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value),
+  discordHttpGateway: discordHttpGateway.default(discordHttpGateway.validate({}).value)
 })
 
 const schema = Joi.object({

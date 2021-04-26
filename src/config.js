@@ -10,17 +10,44 @@ function envArray (name) {
   return value.split(',').map(s => s.trim())
 }
 
+function resolveBoolValue (envName, originalValue, overrideValue) {
+  return process.env[envName] !== undefined
+    ? process.env[envName] === 'true'
+    : overrideValue !== undefined
+      ? overrideValue
+      : originalValue
+}
+
 exports.set = (override, skipValidation) => {
   // APIS
   if (!override.apis) {
     override.apis = {
-      pledge: {}
+      pledge: {},
+      discordHttpGateway: {}
     }
   }
   const apis = config.apis
-  const apisOverride = override.apis
-  apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisOverride.pledge.url || apis.pledge.url
-  apis.pledge.accessToken = process.env.DRSS_APIS_PLEDGE_ACCESSTOKEN || apisOverride.pledge.accessToken || apis.pledge.accessToken
+
+  // APIS - Pledge
+  if (!override.apis.pledge) {
+    override.apis.pledge = {}
+  }
+  const pledge = apis.pledge
+  const apisPledgeOverride = override.apis.pledge
+  apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisPledgeOverride.url || pledge.url
+  apis.pledge.accessToken = process.env.DRSS_APIS_PLEDGE_ACCESSTOKEN || apisPledgeOverride.accessToken || pledge.accessToken
+
+  // APIS - Discord HTTP Gateway
+  if (!override.apis.discordHttpGateway) {
+    override.apis.discordHttpGateway = {}
+  }
+  const apisDiscordHttpGateway = apis.discordHttpGateway
+  const apisDiscordHttpGatewayOverride = override.apis.discordHttpGateway
+  apis.discordHttpGateway.enabled = resolveBoolValue(
+    'DRSS_APIS_DISCORDHTTPGATEWAY_ENABLED',
+    apisDiscordHttpGateway.enabled,
+    apisDiscordHttpGatewayOverride.enabled
+  )
 
   // LOG
   if (!override.log) {

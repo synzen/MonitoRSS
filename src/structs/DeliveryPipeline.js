@@ -17,8 +17,16 @@ class DeliveryPipeline {
     this.log = createLogger(this.bot.shard.ids[0])
     const config = configuration.get()
     this.logFiltered = config.log.unfiltered === true
-    this.serviceURL = config.deliveryServiceURL
-    this.serviceEnabled = !!this.serviceURL
+    const {
+      apis: {
+        discordHttpGateway: {
+          enabled: serviceEnabled,
+          redisUri: serviceRedisUri
+        }
+      }
+    } = config
+    this.serviceEnabled = serviceEnabled
+    this.serviceRedisUri = serviceRedisUri
     /**
      * Created if this.serviceEnabled is true in setup()
      * @type {RESTProducer|null}
@@ -47,10 +55,9 @@ class DeliveryPipeline {
    * If the delivery service is enabled, connect the socket
    */
   async setup () {
-    const config = configuration.get()
     if (this.serviceEnabled) {
-      this.producer = new RESTProducer(config.database.redis)
-      this.log.info(`Delivery service at ${this.serviceURL} connected `)
+      this.producer = new RESTProducer(this.serviceRedisUri)
+      this.log.info(`Delivery service at ${this.serviceRedisUri} enabled `)
     }
   }
 
