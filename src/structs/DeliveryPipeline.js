@@ -73,10 +73,7 @@ class DeliveryPipeline {
     return Promise.all(
       apiPayloads.map(apiPayload => this.producer.enqueue(`https://discord.com/api${apiRoute}`, {
         method: 'POST',
-        body: JSON.stringify(apiPayload),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        body: JSON.stringify(apiPayload)
       }, {
         articleID: article._id,
         feedURL: feedObject.url,
