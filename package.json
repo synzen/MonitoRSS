@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
+    "@synzen/discord-rest": "^0.6.0",
     "abort-controller": "^3.0.0",
     "bufferutil": "^4.0.1",
     "discord.js": "^12.5.1",
