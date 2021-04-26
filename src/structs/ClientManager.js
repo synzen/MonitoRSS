@@ -213,7 +213,6 @@ class ClientManager extends EventEmitter {
 
   async connectToDatabase () {
     const mongo = await connectDb(this.config.database.uri, this.config.database.connection)
-    console.log('connected')
     mongo.on('error', (error) => {
       this.log.fatal(error, 'MongoDB connection error')
       this.kill()
