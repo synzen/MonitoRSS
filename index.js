@@ -29,6 +29,7 @@ exports.ArticleTestMessage = require('./src/structs/ArticleTestMessage.js')
 exports.Client = require('./src/structs/Client.js')
 exports.ClientManager = require('./src/structs/ClientManager.js')
 exports.FeedData = require('./src/structs/FeedData.js')
+exports.Guild = require('./src/structs/Guild.js')
 exports.GuildData = require('./src/structs/GuildData.js')
 exports.Translator = require('./src/structs/Translator.js')
 
