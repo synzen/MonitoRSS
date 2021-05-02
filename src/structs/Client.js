@@ -13,6 +13,7 @@ const devLevels = require('../util/devLevels.js')
 const dumpHeap = require('../util/dumpHeap.js')
 const DeliveryPipeline = require('./DeliveryPipeline.js')
 const RateLimitCounter = require('./RateLimitHitCounter.js')
+const { RESTProducer } = require('@synzen/discord-rest')
 
 const STATES = {
   STOPPED: 'STOPPED',
@@ -52,6 +53,10 @@ class Client extends EventEmitter {
      * @type {import('pino').Logger}
      */
     this.log = createLogger('-')
+    /**
+     * @type {RESTProducer|null}
+     */
+    this.restProducer = null
     this.rateLimitCounter = new RateLimitCounter()
     this.rateLimitCounter.on('limitReached', () => {
       const config = getConfig()
@@ -60,6 +65,22 @@ class Client extends EventEmitter {
         this.sendKillMessage()
       }
     })
+  }
+
+  async setupRESTProducer () {
+    const config = getConfig()
+    const {
+      apis: {
+        discordHttpGateway: {
+          enabled: serviceEnabled,
+          redisUri: serviceRedisUri
+        }
+      }
+    } = config
+    if (serviceEnabled) {
+      return new RESTProducer(serviceRedisUri)
+    }
+    return null
   }
 
   async login (token) {
@@ -72,7 +93,8 @@ class Client extends EventEmitter {
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
       await client.login(token)
-      this.deliveryPipeline = await DeliveryPipeline.create(client)
+      this.restProducer = await this.setupRESTProducer()
+      this.deliveryPipeline = new DeliveryPipeline(client, this.restProducer)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
       this.shardID = client.shard.ids[0]
@@ -280,7 +302,7 @@ class Client extends EventEmitter {
       await initialize.setupCommands(disableCommands)
       const uri = config.database.uri
       this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
-      await maintenance.pruneWithBot(this.bot)
+      await maintenance.pruneWithBot(this.bot, this.restProducer)
       this.state = STATES.READY
       await initialize.setupRateLimiters(this.bot)
       this.log.info(`Commands have been ${config.bot.enableCommands ? 'enabled' : 'disabled'}.`)

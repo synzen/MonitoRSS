@@ -6,32 +6,20 @@ const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
 const { Webhook } = require('discord.js')
-const { RESTProducer } = require('@synzen/discord-rest')
 
 /**
  * Core delivery pipeline
  */
 class DeliveryPipeline {
-  constructor (bot) {
+  constructor (bot, restProducer) {
     this.bot = bot
     this.log = createLogger(this.bot.shard.ids[0])
     const config = configuration.get()
     this.logFiltered = config.log.unfiltered === true
-    const {
-      apis: {
-        discordHttpGateway: {
-          enabled: serviceEnabled,
-          redisUri: serviceRedisUri
-        }
-      }
-    } = config
-    this.serviceEnabled = serviceEnabled
-    this.serviceRedisUri = serviceRedisUri
     /**
-     * Created if this.serviceEnabled is true in setup()
      * @type {RESTProducer|null}
      */
-    this.producer = null
+    this.restProducer = restProducer
     /**
      * ArticleQueues mapped by channel ID. For delivering
      * articles within this client and not an external
@@ -40,25 +28,6 @@ class DeliveryPipeline {
      * @type {Map<string, ArticleQueue>}
      */
     this.queues = new Map()
-  }
-
-  /**
-   * @param {import('discord.js').Client} bot
-   */
-  static async create (bot) {
-    const pipeline = new DeliveryPipeline(bot)
-    await pipeline.setup()
-    return pipeline
-  }
-
-  /**
-   * If the delivery service is enabled, connect the socket
-   */
-  async setup () {
-    if (this.serviceEnabled) {
-      this.producer = new RESTProducer(this.serviceRedisUri)
-      this.log.info(`Delivery service at ${this.serviceRedisUri} enabled `)
-    }
   }
 
   /**
@@ -78,7 +47,7 @@ class DeliveryPipeline {
     const apiPayloads = articleMessage.createAPIPayloads(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
     return Promise.all(
-      apiPayloads.map(apiPayload => this.producer.enqueue(`https://discord.com/api${apiRoute}`, {
+      apiPayloads.map(apiPayload => this.restProducer.enqueue(`https://discord.com/api${apiRoute}`, {
         method: 'POST',
         body: JSON.stringify(apiPayload)
       }, {
@@ -150,7 +119,7 @@ class DeliveryPipeline {
   async sendNewArticle (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
     await ArticleRateLimiter.assertWithinLimits(articleMessage, this.bot)
-    if (this.serviceEnabled) {
+    if (this.restProducer) {
       await this.sendToService(newArticle, articleMessage)
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)
     } else {

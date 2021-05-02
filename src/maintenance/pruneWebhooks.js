@@ -26,8 +26,9 @@ function getRelevantFeeds (bot, feeds) {
 /**
  * @param {import('discord.js').Client} bot
  * @param {import('../structs/db/Feed.js')[]} relevantFeeds
+ * @param {import('@synzen/discord-rest').RESTProducer|null} restProducer
  */
-async function fetchChannelWebhooks (bot, relevantFeeds) {
+async function fetchChannelWebhooks (bot, relevantFeeds, restProducer) {
   const feedsLength = relevantFeeds.length
   const channelsToFetch = []
   for (var i = 0; i < feedsLength; ++i) {
@@ -37,7 +38,23 @@ async function fetchChannelWebhooks (bot, relevantFeeds) {
       channelsToFetch.push(channel)
     }
   }
-  const results = await Promise.allSettled(channelsToFetch.map(c => c.fetchWebhooks()))
+  const results = await Promise.allSettled(channelsToFetch.map(async c => {
+    if (!restProducer) {
+      return c.fetchWebhooks()
+    }
+    const { status, body } = await restProducer.fetch(`https://discord.com/api/channels/${c.id}/webhooks`, {
+      method: 'GET'
+    })
+    if (!String(status).startsWith('2')) {
+      // Add code field to maintain compatibility with discord.js error handling
+      const error = new Error(`Bad status code (${status})`)
+      error.code = body.code
+      throw error
+    }
+    const webhooksMap = new Map()
+    body.forEach(webhook => webhooksMap.set(webhook.id, webhook))
+    return webhooksMap
+  }))
   const map = new Map()
   for (var j = 0; j < results.length; ++j) {
     const channel = channelsToFetch[j]
@@ -94,13 +111,14 @@ async function getDisableReason (bot, feed) {
  * Remove all webhooks from feeds that don't exist
  * @param {import('discord.js').Client} bot
  * @param {import('../structs/db/Feed.js')[]} feeds
+ * @param {import('@synzen/discord-rest').RESTProducer|null} restProducer
  * @returns {number}
  */
-async function pruneWebhooks (bot, feeds) {
+async function pruneWebhooks (bot, feeds, restProducer) {
   const updates = []
   const log = createLogger(bot.shard.ids[0])
   const relevantFeeds = exports.getRelevantFeeds(bot, feeds)
-  const webhookFetchData = await exports.fetchChannelWebhooks(bot, relevantFeeds)
+  const webhookFetchData = await exports.fetchChannelWebhooks(bot, relevantFeeds, restProducer)
 
   // Parse the fetch results
   const relevantFeedsLength = relevantFeeds.length
