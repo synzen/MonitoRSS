@@ -73,6 +73,7 @@ const advancedSchema = Joi.object({
 })
 
 const pledgeApiSchema = Joi.object({
+  enabled: Joi.bool().strict().default(false),
   url: Joi.string().allow('').default(''),
   accessToken: Joi.string().strict().allow('').default('').when('url', {
     is: Joi.string().strict().min(1),
@@ -91,7 +92,6 @@ const discordHttpGateway = Joi.object({
 })
 
 const apisSchema = Joi.object({
-  enabled: Joi.bool().strict().default(false),
   pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value),
   discordHttpGateway: discordHttpGateway.default(discordHttpGateway.validate({}).value)
 })
