@@ -36,10 +36,15 @@ exports.set = (override, skipValidation) => {
   if (!override.apis.pledge) {
     override.apis.pledge = {}
   }
-  const pledge = apis.pledge
+  const apisPledge = apis.pledge
   const apisPledgeOverride = override.apis.pledge
-  apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisPledgeOverride.url || pledge.url
-  apis.pledge.accessToken = process.env.DRSS_APIS_PLEDGE_ACCESSTOKEN || apisPledgeOverride.accessToken || pledge.accessToken
+  apis.pledge.enabled = resolveBoolValue(
+    'DRSS_APIS_PLEDGE_ENABLED',
+    apisPledge.enabled,
+    apisPledgeOverride.enabled
+  )
+  apis.pledge.url = process.env.DRSS_APIS_PLEDGE_URL || apisPledgeOverride.url || apisPledge.url
+  apis.pledge.accessToken = process.env.DRSS_APIS_PLEDGE_ACCESSTOKEN || apisPledgeOverride.accessToken || apisPledge.accessToken
 
   // APIS - Discord HTTP Gateway
   if (!override.apis.discordHttpGateway) {

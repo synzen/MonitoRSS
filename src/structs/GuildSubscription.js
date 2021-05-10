@@ -35,8 +35,8 @@ class GuildSubscription {
   }
 
   static async getSubscription (guildId) {
-    const { url, accessToken } = this.getApiConfig()
-    if (!url) {
+    const { url, accessToken, enabled } = this.getApiConfig()
+    if (!enabled) {
       // The service is disabled/not configured
       return null
     }
@@ -67,8 +67,8 @@ class GuildSubscription {
    * @returns {Promise<GuildSubscription[]>}
    */
   static async getAllSubscriptions () {
-    const { url, accessToken } = this.getApiConfig()
-    if (!url) {
+    const { url, accessToken, enabled } = this.getApiConfig()
+    if (!enabled) {
       // The service is disabled/not configured
       return []
     }

@@ -91,6 +91,7 @@ const discordHttpGateway = Joi.object({
 })
 
 const apisSchema = Joi.object({
+  enabled: Joi.bool().strict().default(false),
   pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value),
   discordHttpGateway: discordHttpGateway.default(discordHttpGateway.validate({}).value)
 })
