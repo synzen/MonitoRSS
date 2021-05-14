@@ -577,16 +577,22 @@ module.exports = class Article {
    * @param {string[]} userFilters
    * @param {string} reference
    */
-  testArrayNegatedFilters (userFilters, reference, findBlocks) {
+  testArrayNegatedFilters (userFilters, reference) {
     // Deal with inverted first
     const filters = userFilters.map(word => new Filter(word))
     const invertedFilters = filters.filter(filter => filter.inverted)
     const regularFilters = filters.filter(filter => !filter.inverted)
-    const blocked = invertedFilters.find(filter => !filter.passes(reference))
     const returnData = {
       inverted: invertedFilters.map(f => f.content),
       regular: regularFilters.map(f => f.content)
     }
+    if (!reference) {
+      return {
+        ...returnData,
+        passed: true
+      }
+    }
+    const blocked = invertedFilters.find(filter => !filter.passes(reference))
     if (blocked) {
       return {
         ...returnData,
