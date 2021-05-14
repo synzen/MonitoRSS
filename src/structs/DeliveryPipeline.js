@@ -44,7 +44,9 @@ class DeliveryPipeline {
       throw new Error('Missing medium to send article via service')
     }
     // Make the fetch
-    const apiPayloads = articleMessage.createAPIPayloads(medium)
+    const apiPayloads = articleMessage.createAPIPayloads(
+      medium instanceof Webhook ? feedObject.webhook : null
+    )
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
     return Promise.all(
       apiPayloads.map(apiPayload => this.restProducer.enqueue(`https://discord.com/api${apiRoute}`, {
@@ -118,7 +120,7 @@ class DeliveryPipeline {
    */
   async sendNewArticle (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
-    await ArticleRateLimiter.assertWithinLimits(articleMessage, this.bot)
+    await ArticleRateLimiter.assertWithinLimits(articleMessage)
     if (this.restProducer) {
       await this.sendToService(newArticle, articleMessage)
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)

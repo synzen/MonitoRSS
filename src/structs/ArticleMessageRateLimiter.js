@@ -73,14 +73,9 @@ class ArticleRateLimiter {
 
   /**
    * @param {import('../structs/ArticleMessage.js')} articleMessage
-   * @param {import('discord.js').Client} bot
    */
-  static async assertWithinLimits (articleMessage, bot) {
-    const channel = articleMessage.getChannel(bot)
-    if (!channel) {
-      throw new Error('Missing channel for ArticleMessageRateLimiter satisfiesLimits')
-    }
-    const channelID = channel.id
+  static async assertWithinLimits (articleMessage) {
+    const channelID = articleMessage.feed.channel
     const articleLimiter = ArticleRateLimiter.getLimiter(channelID)
     if (articleLimiter.isAtLimit()) {
       ++ArticleRateLimiter.blocked
