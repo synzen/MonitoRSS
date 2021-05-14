@@ -614,6 +614,13 @@ module.exports = class Article {
       regular: regularFilters.map(f => f.content)
     }
 
+    if (!reference) {
+      return {
+        ...returnData,
+        passed: false
+      }
+    }
+
     const passed = !!regularFilters.find(filter => filter.passes(reference))
     return {
       ...returnData,
@@ -626,6 +633,13 @@ module.exports = class Article {
    * @param {string} reference
    */
   testRegexFilter (userFilter, reference) {
+    if (!reference) {
+      return {
+        inverted: [],
+        regular: [userFilter],
+        passed: false
+      }
+    }
     const filter = new FilterRegex(userFilter)
     const filterPassed = filter.passes(reference)
     if (filterPassed) {
@@ -661,12 +675,6 @@ module.exports = class Article {
     const filterResults = new FilterResults()
     if (Object.keys(filters).length === 0) {
       filterResults.passed = true
-      return filterResults
-    }
-    const everyReferenceExists = Object.keys(filters).every(type => !!this.getFilterReference(type))
-    filterResults.passed = everyReferenceExists
-    // If not every key in filters exists on the articles, auto-block it
-    if (!everyReferenceExists) {
       return filterResults
     }
 
@@ -707,12 +715,8 @@ module.exports = class Article {
     for (const filterTypeName in filters) {
       const userFilters = filters[filterTypeName]
       const reference = this.getFilterReference(filterTypeName)
-      if (!reference) {
-        continue
-      }
-
-      // Filters can either be an array of words or a string (regex)
       let results
+      // Filters can either be an array of words or a string (regex)
       if (Array.isArray(userFilters)) {
         results = this.testArrayRegularFilters(userFilters, reference)
       } else {
