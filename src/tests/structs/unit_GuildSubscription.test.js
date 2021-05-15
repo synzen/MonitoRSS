@@ -26,7 +26,8 @@ describe('Unit::structs/GuildSubscription', function () {
     }
     apiConfig = {
       url: 'https://www.google.com',
-      accessToken: 'accesstoken'
+      accessToken: 'accesstoken',
+      enabled: true
     }
   })
   afterEach(function () {
@@ -113,6 +114,15 @@ describe('Unit::structs/GuildSubscription', function () {
       fetch.mockRejectedValue(error)
       await expect(GuildSubscription.getSubscription()).resolves.toEqual(null)
     })
+    it('returns null if disabled', async () => {
+      jest.spyOn(GuildSubscription, 'getApiConfig').mockReturnValue({
+        ...apiConfig,
+        enabled: false
+      })
+      const error = new Error('asdsdf')
+      fetch.mockRejectedValue(error)
+      await expect(GuildSubscription.getSubscription()).resolves.toEqual(null)
+    })
     it('returns a GuildSubscription on success', async () => {
       jest.spyOn(GuildSubscription, 'getApiConfig').mockReturnValue(apiConfig)
       fetch.mockResolvedValue({
@@ -144,6 +154,15 @@ describe('Unit::structs/GuildSubscription', function () {
     it('returns empty array if an error ocurred', async () => {
       jest.spyOn(GuildSubscription, 'getApiConfig').mockReturnValue(apiConfig)
       const error = new Error('fetch err')
+      fetch.mockRejectedValue(error)
+      await expect(GuildSubscription.getAllSubscriptions()).resolves.toEqual([])
+    })
+    it('returns empty array if disabled', async () => {
+      jest.spyOn(GuildSubscription, 'getApiConfig').mockReturnValue({
+        ...apiConfig,
+        enabled: false
+      })
+      const error = new Error('asdsdf')
       fetch.mockRejectedValue(error)
       await expect(GuildSubscription.getAllSubscriptions()).resolves.toEqual([])
     })
