@@ -52,7 +52,8 @@ async function selectWebhookFn (message, data) {
   const customAvatarSrch = content.match(avatarRegex)
 
   const newWebhook = {
-    id: hook.id
+    id: hook.id,
+    url: hook.url
   }
   if (customNameSrch) {
     if (customNameSrch[1].length > 32 || customNameSrch[1].length < 2) {
