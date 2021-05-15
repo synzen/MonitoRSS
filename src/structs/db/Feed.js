@@ -159,6 +159,12 @@ class Feed extends FilterBase {
     this.pcomparisons = this.getField('pcomparisons', [])
   }
 
+  static get DISABLE_REASONS () {
+    return {
+      BAD_FORMAT: 'There was an issue sending an article due to an incorrectly-formatted text or embed. Update the feed and ensure it works to re-enable.'
+    }
+  }
+
   static get SPLIT_KEYS () {
     return ['char', 'prepend', 'append', 'maxLength']
   }
