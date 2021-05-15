@@ -276,8 +276,8 @@ class ScheduleManager extends EventEmitter {
     run.on('conFailure', this._onConnectionFailure.bind(this))
     run.on('conSuccess', this._onConnectionSuccess.bind(this))
     run.on('alertFail', this.alertFailRecord.bind(this))
-    // run.on('feedEnabled', this._onFeedEnabled.bind(this))
-    // run.on('feedDisabled', this._onFeedDisabled.bind(this))
+    run.on('feedEnabled', this._onFeedEnabled.bind(this))
+    run.on('feedDisabled', this._onFeedDisabled.bind(this))
     this.scheduleRuns.push(run)
     try {
       await run.run(this.debugFeedIDs)
