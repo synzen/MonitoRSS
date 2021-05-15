@@ -107,7 +107,8 @@ const schema = Joi.object({
   feeds: feedsSchema.default(feedsSchema.validate({}).value),
   advanced: advancedSchema.default(advancedSchema.validate({}).value),
   webURL: Joi.string().strict().allow('').allow('').default(''),
-  discordSupportURL: Joi.string().uri().strict().allow('')
+  discordSupportURL: Joi.string().uri().strict().allow(''),
+  disableFeedCycles: Joi.bool().strict().default(false)
 })
 
 module.exports = {

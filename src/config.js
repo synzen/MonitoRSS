@@ -294,6 +294,13 @@ exports.set = (override, skipValidation) => {
   config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
   config.discordSupportURL = process.env.DRSS_DISCORDSUPPORTURL || override.discordSupportURL || config.discordSupportURL
 
+  // Disale feed cycles
+  config.disableFeedCycles = resolveBoolValue(
+    'DRSS_DISABLEFEEDCYCLES',
+    config.disableFeedCycles,
+    override.disableFeedCycles
+  )
+
   // Other private ones
   config.dev = process.env.DRSS_DEV !== undefined
     ? Number(process.env.DRSS_DEV)

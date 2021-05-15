@@ -262,9 +262,11 @@ class ClientManager extends EventEmitter {
       // Aready running
       return
     }
-    if (!devLevels.disableCycles()) {
+    if (!devLevels.disableCycles() && !this.config.disableFeedCycles) {
       this.scheduleManager.beginTimers()
       this.log.info('Started fetch intervals')
+    } else {
+      this.log.info('Feed cycles disabled, either due to dev levels or config.disableFeedCycles');
     }
   }
 
