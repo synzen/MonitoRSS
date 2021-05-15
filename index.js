@@ -63,7 +63,8 @@ exports.migrations = {
 // Errors
 exports.errors = {
   FeedParserError: require('./src/structs/errors/FeedParserError.js'),
-  RequestError: require('./src/structs/errors/RequestError.js')
+  RequestError: require('./src/structs/errors/RequestError.js'),
+  BadRequestError: require('./src/structs/errors/http/BadRequestError')
 }
 
 /**
