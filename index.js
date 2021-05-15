@@ -33,6 +33,7 @@ exports.FeedData = require('./src/structs/FeedData.js')
 exports.Guild = require('./src/structs/Guild.js')
 exports.GuildData = require('./src/structs/GuildData.js')
 exports.Translator = require('./src/structs/Translator.js')
+exports.DeliveryPipeline = require('./src/structs/DeliveryPipeline.js')
 
 // Database Structures
 exports.Blacklist = require('./src/structs/db/Blacklist.js')

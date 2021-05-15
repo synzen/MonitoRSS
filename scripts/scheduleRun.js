@@ -3,7 +3,7 @@ const connectDatabase = require('../src/util/connectDatabase.js')
 const ScheduleManager = require('../src/structs/ScheduleManager.js')
 const setConfig = require('../src/config.js').set
 
-async function testScheduleRun (userConfig, runSettings) {
+async function testScheduleRun (userConfig, runSettings = {}) {
   let config = setConfig(userConfig)
   config = setConfig({
     ...config

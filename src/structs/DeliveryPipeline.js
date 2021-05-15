@@ -13,7 +13,7 @@ const { Webhook } = require('discord.js')
 class DeliveryPipeline {
   constructor (bot, restProducer) {
     this.bot = bot
-    this.log = createLogger(this.bot.shard.ids[0])
+    this.log = createLogger(this.bot ? this.bot.shard.ids[0] : '')
     const config = configuration.get()
     this.logFiltered = config.log.unfiltered === true
     /**
@@ -60,6 +60,29 @@ class DeliveryPipeline {
     )
   }
 
+  /**
+ * Send an article to the service responsible for sending messages to Discord.
+ *
+ * @param {Object<string, any>} newArticle
+ * @param {import('./ArticleMessage.js')} articleMessage
+ */
+  async sendToServiceWithoutBot (newArticle, articleMessage) {
+    const { article, feedObject } = newArticle
+    const feedWebhook = feedObject.webhook && !feedObject.webhook.disabled ? feedObject.webhook : null
+    const apiPayloads = articleMessage.createAPIPayloads(feedWebhook)
+    const apiRoute = feedWebhook ? feedWebhook.url : `https://discord.com/api/channels/${feedObject.channel}/messages`
+    return Promise.all(
+      apiPayloads.map(apiPayload => this.restProducer.enqueue(apiRoute, {
+        method: 'POST',
+        body: JSON.stringify(apiPayload)
+      }, {
+        articleID: article._id,
+        feedURL: feedObject.url,
+        channel: feedObject.channel
+      }))
+    )
+  }
+
   getChannel (newArticle) {
     const { feedObject } = newArticle
     return this.bot.channels.cache.get(feedObject.channel)
@@ -70,18 +93,14 @@ class DeliveryPipeline {
     return ArticleMessage.create(feedObject, article, debug)
   }
 
-  async deliver (newArticle, debug) {
-    const channel = this.getChannel(newArticle)
-    if (!channel) {
-      return
-    }
+  async deliver (newArticle, debug, withoutBot) {
     try {
       const articleMessage = await this.createArticleMessage(newArticle, debug)
       if (!articleMessage.passedFilters()) {
         return await this.handleArticleBlocked(newArticle)
       }
       this.log.debug(`Preparing to send new article ${newArticle.article._id} of feed ${newArticle.feedObject._id} to service`)
-      await this.sendNewArticle(newArticle, articleMessage)
+      await this.sendNewArticle(newArticle, articleMessage, withoutBot)
     } catch (err) {
       await this.handleArticleFailure(newArticle, err)
     }
@@ -97,7 +116,6 @@ class DeliveryPipeline {
 
   async handleArticleFailure (newArticle, err) {
     const { article, feedObject } = newArticle
-    const channel = this.getChannel(newArticle)
     await this.recordFailure(newArticle, err.message || 'N/A')
     if (err.message.includes('limited')) {
       this.log.debug({
@@ -110,19 +128,36 @@ class DeliveryPipeline {
     }, `Failed to deliver article ${article._id} (${article.link}) of feed ${feedObject._id}`)
     if (err.code === 50035) {
       // Invalid format within an embed for example
-      await channel.send(`Failed to send article <${article.link}>.\`\`\`${err.message}\`\`\``)
+      const message = `Failed to send article <${article.link}>.\`\`\`${err.message}\`\`\``
+      if (this.restProducer) {
+        await this.restProducer.enqueue(`https://discord.com/api/channels/${feedObject.channel}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({
+            content: message
+          })
+        })
+        this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)
+      } else {
+        const channel = this.getChannel(newArticle)
+        await channel.send(`Failed to send article <${article.link}>.\`\`\`${err.message}\`\`\``)
+      }
     }
   }
 
   /**
    * @param {Object<string, any>} newArticle
    * @param {import('./ArticleMessage.js')} articleMessage
+   * @param {boolean} withoutBot
    */
-  async sendNewArticle (newArticle, articleMessage) {
+  async sendNewArticle (newArticle, articleMessage, withoutBot) {
     const { article, feedObject } = newArticle
     await ArticleRateLimiter.assertWithinLimits(articleMessage)
     if (this.restProducer) {
-      await this.sendToService(newArticle, articleMessage)
+      if (withoutBot) {
+        await this.sendToServiceWithoutBot(newArticle, articleMessage)
+      } else {
+        await this.sendToService(newArticle, articleMessage)
+      }
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)
     } else {
       // The articleMessage is within all limits
