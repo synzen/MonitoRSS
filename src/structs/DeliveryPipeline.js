@@ -6,6 +6,7 @@ const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
 const { Webhook } = require('discord.js')
+const BadRequestError = require('./errors/http/BadRequestError.js')
 
 /**
  * Core delivery pipeline
@@ -71,8 +72,8 @@ class DeliveryPipeline {
     const feedWebhook = feedObject.webhook && !feedObject.webhook.disabled ? feedObject.webhook : null
     const apiPayloads = articleMessage.createAPIPayloads(feedWebhook)
     const apiRoute = feedWebhook ? feedWebhook.url : `https://discord.com/api/channels/${feedObject.channel}/messages`
-    return Promise.all(
-      apiPayloads.map(apiPayload => this.restProducer.enqueue(apiRoute, {
+    const results = await Promise.all(
+      apiPayloads.map(apiPayload => this.restProducer.fetch(apiRoute, {
         method: 'POST',
         body: JSON.stringify(apiPayload)
       }, {
@@ -81,6 +82,10 @@ class DeliveryPipeline {
         channel: feedObject.channel
       }))
     )
+
+    if (results.find((result) => result.status === 400)) {
+      throw new BadRequestError(feedObject._id)
+    }
   }
 
   getChannel (newArticle) {
@@ -103,6 +108,9 @@ class DeliveryPipeline {
       await this.sendNewArticle(newArticle, articleMessage, withoutBot)
     } catch (err) {
       await this.handleArticleFailure(newArticle, err)
+      if (withoutBot) {
+        throw err
+      }
     }
   }
 
