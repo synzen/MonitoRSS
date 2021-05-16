@@ -24,6 +24,17 @@ class ArticleRateLimiter {
     }
   }
 
+  static get ERRORS () {
+    return {
+      RATE_LIMITED_ARTICLE_ERROR: 'Rate limited article',
+      DAILY_LIMITED_ARTICLE_ERROR: 'Daily limited article'
+    }
+  }
+
+  static isRateLimitError (error) {
+    return Array.from(Object.values(this.ERRORS)).includes(error.message)
+  }
+
   static async updateArticlesBlocked () {
     if (this.blocked === 0 || !Supporter.isMongoDatabase) {
       return
@@ -79,11 +90,11 @@ class ArticleRateLimiter {
     const articleLimiter = ArticleRateLimiter.getLimiter(channelID)
     if (articleLimiter.isAtLimit()) {
       ++ArticleRateLimiter.blocked
-      throw new Error('Rate limited article')
+      throw new Error(this.ERRORS.RATE_LIMITED_ARTICLE_ERROR)
     }
     if (await articleLimiter.isAtDailyLimit()) {
       ++ArticleRateLimiter.blocked
-      throw new Error('Daily limited article')
+      throw new Error(this.ERRORS.DAILY_LIMITED_ARTICLE_ERROR)
     }
     ++ArticleRateLimiter.sent
     --articleLimiter.articlesRemaining

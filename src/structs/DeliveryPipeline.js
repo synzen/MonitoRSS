@@ -108,7 +108,7 @@ class DeliveryPipeline {
       await this.sendNewArticle(newArticle, articleMessage, withoutBot)
     } catch (err) {
       await this.handleArticleFailure(newArticle, err)
-      if (withoutBot) {
+      if (withoutBot && !ArticleRateLimiter.isRateLimitError(err)) {
         throw err
       }
     }
