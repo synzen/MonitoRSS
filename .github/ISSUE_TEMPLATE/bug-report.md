@@ -10,7 +10,7 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-*If this is an issue related to the public hosting bot, please use the Discord server instead and **do not post an issue here**.*
+*If this is an issue related to the public hosting bot, please use the support Discord server at https://discord.gg/pudv7Rx instead and **do not post an issue here**.*
 
 **To Reproduce**
 Steps to reproduce the behavior:
