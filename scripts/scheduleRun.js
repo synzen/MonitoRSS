@@ -8,12 +8,16 @@ async function testScheduleRun (userConfig, runSettings = {}) {
   config = setConfig({
     ...config
   })
+  const {
+    schedules: customSchedules,
+    testRuns
+  } = runSettings
   const con = await connectDatabase(config.database.uri, config.database.connection)
   console.log('Connected to database')
   await initialize.setupModels(con)
-  const schedules = await initialize.populateSchedules()
+  const schedules = await initialize.populateSchedules(customSchedules)
   const scheduleManager = new ScheduleManager()
-  scheduleManager.testRuns = runSettings.testRuns
+  scheduleManager.testRuns = testRuns
   scheduleManager.addSchedules(schedules)
   scheduleManager.beginTimers()
   return scheduleManager
