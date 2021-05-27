@@ -5,6 +5,7 @@ const EventEmitter = require('events').EventEmitter
 const getConfig = require('../config.js').get
 const devLevels = require('../util/devLevels.js')
 const dumpHeap = require('../util/dumpHeap.js')
+const DebugFeed = require('../structs/db/DebugFeed.js')
 
 /**
  * @typedef {string} FeedURL
@@ -280,7 +281,8 @@ class ScheduleManager extends EventEmitter {
     run.on('feedDisabled', this._onFeedDisabled.bind(this))
     this.scheduleRuns.push(run)
     try {
-      await run.run(this.debugFeedIDs)
+      const feedIds = await DebugFeed.getAllFeedIds()
+      await run.run(new Set([...this.debugFeedIDs, ...feedIds]))
       this.endRun(run, schedule)
     } catch (err) {
       this.log.error(err, 'Error during schedule run')
