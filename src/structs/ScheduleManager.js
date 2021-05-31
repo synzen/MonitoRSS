@@ -120,8 +120,9 @@ class ScheduleManager extends EventEmitter {
 
   /**
    * @param {import('./db/FailRecord.js')} record
+   * @param {import('./db/Feed.js')[]} associatedFeeds
    */
-  async alertFailRecord (record) {
+  async alertFailRecord (record, associatedFeeds) {
     if (devLevels.disableOutgoingMessages()) {
       return
     }
@@ -129,9 +130,9 @@ class ScheduleManager extends EventEmitter {
     const url = record._id
     record.alerted = true
     await record.save()
-    const feeds = await record.getAssociatedFeeds()
-    this.log.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
-    feeds.forEach(({ channel }) => {
+    const numberOfChannels = new Set(associatedFeeds.map((feed) => feed.channel))
+    this.log.info(`Sending fail notification for ${url} to ${numberOfChannels.size} channels`)
+    associatedFeeds.forEach(({ channel }) => {
       const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit after continuous (${config.feeds.hoursUntilFail} hours) connection failures (recorded reason: ${record.reason}). The feed will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
       this.emitAlert(channel, message)
     })
