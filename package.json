@@ -34,8 +34,8 @@
     "moment-timezone": "^0.5.33",
     "mongoose": "^5.12.7",
     "node-fetch": "^2.6.1",
-    "pino": "^6.11.3",
-    "pino-pretty": "^4.8.0",
+    "pino": "6.8.0",
+    "pino-pretty": "4.3.0",
     "utf-8-validate": "^5.0.2",
     "zeromq": "^6.0.0-beta.6",
     "zlib-sync": "^0.1.6"
