@@ -287,6 +287,27 @@ describe('Unit::LinkLogic', function () {
         expect(logic.isNewArticle(dbIDs, oldArticle, {}, true, new Map()))
           .toEqual(false)
       })
+      it('uses the feed article max age if available', function () {
+        const logicData = {
+          config: {
+            feeds: {
+              cycleMaxAge: 2
+            }
+          }
+        }
+        const oldDate = new Date()
+        oldDate.setDate(oldDate.getDate() - 4)
+        const oldArticle = {
+          ...article,
+          pubdate: oldDate
+        }
+        const feed = {
+          articleMaxAge: 10
+        }
+        const logic = new LinkLogic({ ...logicData })
+        expect(logic.isNewArticle(dbIDs, oldArticle, feed, true, new Map()))
+          .toEqual(true)
+      })
     })
   })
   describe('static shouldCheckDates', function () {

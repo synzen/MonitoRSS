@@ -23,6 +23,11 @@ const regexOpSchema = new mongoose.Schema({
 })
 
 const schema = new mongoose.Schema({
+  articleMaxAge: {
+    type: Number,
+    required: false,
+    min: 1
+  },
   title: {
     type: String,
     required: true

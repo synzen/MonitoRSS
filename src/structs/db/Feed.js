@@ -21,6 +21,7 @@ class Feed extends FilterBase {
    * @param {boolean} data.imgPreviews - Have Discord automatically show embeds for image links
    * @param {boolean} data.imgLinksExistence - Show image links in messages
    * @param {boolean} data.checkDates - Check dates for determining article newness
+   * @param {number} data.articleMaxAge - Number of days an article of this feed should be considered if date checks on
    * @param {boolean} data.formatTables - Format messages as if they're tables
    * @param {string[]} data.checkProperties - Properties to check to decide if articles are new
    */
@@ -157,6 +158,15 @@ class Feed extends FilterBase {
      * @type {string[]}
      */
     this.pcomparisons = this.getField('pcomparisons', [])
+
+    /**
+     * If date checks are enabled, this is the max number of days
+     * from now where an article may be considered new. If it's older,
+     * it will be blocked.
+     *
+     * @type {number|undefined}
+     */
+    this.articleMaxAge = this.getField('articleMaxAge')
   }
 
   static get DISABLE_REASONS () {
@@ -201,7 +211,8 @@ class Feed extends FilterBase {
       split: this.split,
       ncomparisons: this.ncomparisons,
       pcomparisons: this.pcomparisons,
-      regexOps: regexOpsMap
+      regexOps: regexOpsMap,
+      articleMaxAge: this.articleMaxAge
     }
     if (this._id) {
       data._id = this._id
