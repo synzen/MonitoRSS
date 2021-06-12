@@ -5,6 +5,7 @@ const { DiscordPromptRunner } = require('discord.js-prompts')
 const Profile = require('../structs/db/Profile.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
+const Supporter = require('../structs/db/Supporter.js')
 const Permissions = Discord.Permissions.FLAGS
 const getConfig = require('../config.js').get
 
@@ -62,6 +63,10 @@ class Command {
    */
   static disable () {
     this.enabled = false
+  }
+
+  static isOnlySupporters () {
+    return Supporter.restricted
   }
 
   /**

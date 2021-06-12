@@ -1,5 +1,6 @@
 const Command = require('../structs/Command.js')
 const createLogger = require('../util/logger/create.js')
+const config = require('../config')
 
 /**
  * Handle discord messages from ws
@@ -20,6 +21,12 @@ async function handler (message) {
   const command = Command.tryGetCommand(message, log)
   if (!command) {
     return log.trace('No valid command found')
+  }
+  if (Command.isOnlySupporters()) {
+    const visitUrl = config.get().apis.pledge.url.replace('/api', '')
+    return await message.channel.send(
+      `Sorry, only supporters have access to this bot. To become a supporter, visit ${visitUrl}`
+    )
   }
   try {
     // Check member
