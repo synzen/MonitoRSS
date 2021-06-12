@@ -22,13 +22,13 @@ async function handler (message) {
   if (!command) {
     return log.trace('No valid command found')
   }
-  if (Command.isOnlySupporters()) {
-    const visitUrl = config.get().apis.pledge.url.replace('/api', '')
-    return await message.channel.send(
-      `Sorry, only supporters have access to this bot. To become a supporter, visit ${visitUrl}`
-    )
-  }
   try {
+    if (await Command.blockIfNotSupporter(message)) {
+      const visitUrl = config.get().apis.pledge.url.replace('/api', '')
+      return await message.channel.send(
+        `Sorry, only supporters have access to this bot. To become a supporter, visit ${visitUrl}`
+      )
+    }
     // Check member
     const memberPerms = command.getMemberPermission()
     log.debug({
