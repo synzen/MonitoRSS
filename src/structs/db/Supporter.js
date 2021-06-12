@@ -59,6 +59,7 @@ class Supporter extends Base {
   static get keys () {
     return {
       ENABLED: '_vip',
+      RESTRICTED: '_vipRestricted',
       REFRESH_RATE: '_vipRefreshRateMinutes'
     }
   }
@@ -77,6 +78,15 @@ class Supporter extends Base {
   static get enabled () {
     const config = getConfig()
     return config[this.keys.ENABLED] === true
+  }
+
+  /**
+   * If only supporters may have access to this bot.
+   * @returns {true}
+   */
+  static get restricted () {
+    const config = getConfig()
+    return config[this.keys.RESTRICTED] === true
   }
 
   /**

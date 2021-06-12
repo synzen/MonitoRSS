@@ -307,8 +307,13 @@ exports.set = (override, skipValidation) => {
     : override.dev !== undefined
       ? override.dev
       : config.dev
+  config._vipRestricted = process.env.DRSS__VIPRESTRICTED !== undefined
+    ? Number(process.env.DRSS__VIPRESTRICTED)
+    : override._vipRestricted !== undefined
+      ? override._vipRestricted
+      : config._vipRestricted
   config._vip = process.env.DRSS__VIP !== undefined
-    ? Number(process.env.DRSS_ENV)
+    ? Number(process.env.DRSS__VIP)
     : override._vip !== undefined
       ? override._vip
       : config._vip

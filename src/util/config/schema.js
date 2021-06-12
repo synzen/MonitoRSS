@@ -100,6 +100,7 @@ const schema = Joi.object({
   apis: apisSchema.default(apisSchema.validate({}).value),
   dev: Joi.number().strict().greater(-1),
   _vip: Joi.bool().strict(),
+  _vipRestricted: Joi.bool().strict().default(false),
   _vipRefreshRateMinutes: Joi.number().strict(),
   log: logSchema.default(logSchema.validate({}).value),
   bot: botSchema.default(botSchema.validate({}).value),
