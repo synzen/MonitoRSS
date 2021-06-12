@@ -43,7 +43,8 @@ async function selectWebhookFn (message, data) {
   const nameRegex = /--name="(((?!(--name|--avatar)).)*)"/
   const avatarRegex = /--avatar="(((?!(--name|--avatar)).)*)"/
   const hookName = content.replace(nameRegex, '').replace(avatarRegex, '').trim()
-  const hooks = await message.channel.fetchWebhooks()
+  const feedChannel = await message.client.channels.fetch(feed.channel)
+  const hooks = await feedChannel.fetchWebhooks()
   const hook = hooks.find(h => h.name === hookName)
   if (!hook) {
     throw new Rejection(translate('commands.webhook.notFound', { name: hookName }))
@@ -77,10 +78,18 @@ async function selectWebhookFn (message, data) {
     clientMention: `<@${message.client.user.id}>`,
     link: feed.url
   })
-  await hook.send(connected, {
-    username: newWebhook.name,
-    avatarURL: newWebhook.avatar
-  })
+  if (message.channel.id === feedChannel) {
+    await hook.send(connected, {
+      username: newWebhook.name,
+      avatarURL: newWebhook.avatar
+    })
+  } else {
+    // Some may not want messages to be delivered outside of the current channel
+    await message.channel.send(translate('commands.webhook.addSuccess', {
+      link: feed.url,
+      channel: feed.channel
+    }))
+  }
   return data
 }
 

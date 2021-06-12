@@ -501,6 +501,7 @@
       "tooLong": "Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.",
       "noPermission": "I must have Manage Webhooks permission in this channel in order to work. Try again, or type `exit` to cancel.",
       "removeSuccess": "Successfully removed webhook from the feed <{{link}}>.",
+      "addSuccess": "Successfully connected the webhook to the feed <{{link}}>. Note that test articles will be sent in <#{{channel}}> via your webhook.",
       "connected": "I am now connected to {{clientMention}}, and will send feed articles for <{{link}}>!",
       "missingChannel": "The channel <#{{channelID}}> for the feed <{{link}}> is missing. Try again, or type `exit` to cancel."
     },
