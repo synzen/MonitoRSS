@@ -51,7 +51,7 @@ const feedsSchema = Joi.object({
   dateLanguageList: Joi.array().items(Joi.string().strict()).min(1).default(['en']),
   dateFallback: Joi.bool().strict().default(false),
   timeFallback: Joi.bool().strict().default(false),
-  max: Joi.number().strict().greater(-1).default(0),
+  max: Joi.number().strict().greater(-2).default(0),
   hoursUntilFail: Joi.number().strict().default(0),
   notifyFail: Joi.bool().strict().default(true),
   sendFirstCycle: Joi.bool().strict().default(true),
