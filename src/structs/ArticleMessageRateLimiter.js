@@ -64,7 +64,7 @@ class ArticleRateLimiter {
    * @param {boolean} isSupporterGuild
    */
   static create (channelID, isSupporterGuild) {
-    const highLimit = Supporter.enabled ? isSupporterGuild : true
+    const highLimit = Supporter.enabled ? isSupporterGuild : false
     const limiter = new ArticleRateLimiter(channelID, highLimit)
     this.limiters.set(channelID, limiter)
     return limiter
