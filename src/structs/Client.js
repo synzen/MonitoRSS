@@ -269,7 +269,7 @@ class Client extends EventEmitter {
     const alertMessage = `**ALERT**\n\n${message}`
     try {
       const profile = await Profile.get(fetchedChannel.guild.id)
-      if (!profile) {
+      if (!profile || !profile.alert || !profile.alert.length) {
         return this.sendChannelMessage(channelID, alertMessage)
       }
       const alertTo = profile.alert
