@@ -1,7 +1,7 @@
 {
   "generics": {
     "defaultSetting": "預設值為`{{value}}`。",
-    "backupReminder": "After completely setting up, it is recommended that you use {{prefix}}backup to have a personal backup of your settings.",
+    "backupReminder": "在完全設定好之後，建議您使用 {{prefix}}backup 以備份個人設定。",
     "channelUpper": "頻道",
     "channelLower": "頻道",
     "enabledUpper": "已啟用",
@@ -40,12 +40,12 @@
       }
     },
     "date": {
-      "description": "Open a menu to customize how dates are displayed."
+      "description": "開啟選單以自訂如何顯示日期。"
     },
     "dump": {
       "action": "Raw Placeholders Dump",
       "args": {
-        "original": "Output the original, untrimmed JSON form instead."
+        "original": "輸出原始JSON格式。"
       }
     },
     "embed": {
@@ -64,20 +64,20 @@
       "description": "傳送此機器人的邀請連結。"
     },
     "list": {
-      "description": "List all active feeds in server.",
+      "description": "列出本伺服器所有可用的feed。",
       "args": {
         "[<channel mention>] [<search query>]": "Mention a channel to only show feeds in that channel, and/or add a search query."
       }
     },
     "locale": {
-      "description": "Change the language of commands (if the desired language is supported)",
+      "description": "變更指令語言（如支援該語言）",
       "args": {
-        "<locale>": "The desired locale"
+        "<locale>": "希望使用之語言"
       }
     },
     "mention": {
-      "action": "Subscriber Customization",
-      "description": "Open a menu to add global/filtered subscriptions for roles/users to feeds."
+      "action": "自訂訂閱",
+      "description": "開啟選單以為身分組/使用者新增全域/過濾後之feed訂閱。"
     },
     "mention.filters": {
       "description": "Open a menu to manage filters for subscribers so they only get mentioned when its filters pass for any particular delivered article."
