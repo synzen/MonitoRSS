@@ -6,12 +6,14 @@ class GuildSubscription {
     guildId,
     maxFeeds,
     refreshRate,
-    expireAt
+    expireAt,
+    slowRate
   }) {
     this.guildId = guildId
     this.maxFeeds = maxFeeds
     this.refreshRate = refreshRate
     this.expireAt = expireAt
+    this.slowRate = slowRate
   }
 
   static getApiConfig () {
@@ -19,17 +21,22 @@ class GuildSubscription {
   }
 
   static mapApiResponse (response) {
+    const config = configuration.get()
+    const refreshRateMinutes = response.refresh_rate / 60
+    const ignoreFasterRefreshRate = response.ignore_refresh_rate_benefit
+    const slowRate = ignoreFasterRefreshRate || refreshRateMinutes >= config.feeds.refreshRateMinutes
     return {
       guildId: response.guild_id,
       maxFeeds: configuration.get().feeds.max + response.extra_feeds,
-      refreshRate: response.refresh_rate / 60,
-      expireAt: response.expire_at
+      refreshRate: refreshRateMinutes,
+      expireAt: response.expire_at,
+      slowRate
     }
   }
 
   static async getSubscription (guildId) {
-    const { url, accessToken } = this.getApiConfig()
-    if (!url) {
+    const { url, accessToken, enabled } = this.getApiConfig()
+    if (!enabled) {
       // The service is disabled/not configured
       return null
     }
@@ -60,8 +67,8 @@ class GuildSubscription {
    * @returns {Promise<GuildSubscription[]>}
    */
   static async getAllSubscriptions () {
-    const { url, accessToken } = this.getApiConfig()
-    if (!url) {
+    const { url, accessToken, enabled } = this.getApiConfig()
+    if (!enabled) {
       // The service is disabled/not configured
       return []
     }
