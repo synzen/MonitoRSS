@@ -2,6 +2,7 @@ const { Rejection, MessageVisual } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
+const Feed = require('../../../structs/db/Feed')
 
 /**
  * @typedef {Object} Data
@@ -94,11 +95,15 @@ async function selectPropertiesFn (message, data) {
       guild: message.guild,
       user: message.author
     }, `Embed[${targetEmbedIndex}] deleted`)
+    if (feed.disabled === Feed.DISABLE_REASONS.BAD_FORMAT) {
+      await feed.enable()
+    }
     return {
       ...data,
       reset: true
     }
   }
+
   // Clean values
   const properties = content
     .split(',')

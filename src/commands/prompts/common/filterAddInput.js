@@ -49,7 +49,7 @@ async function fn (message, data) {
     log.info({
       guild: message.guild,
       user: message.author,
-      target
+      feed: target
     }, `Added filters to ${feed.url}: ${add.join('\n')}`)
     await target.addFilters(filterCategory, add)
   }

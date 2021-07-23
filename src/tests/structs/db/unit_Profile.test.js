@@ -1,5 +1,4 @@
 process.env.TEST_ENV = true
-const config = require('../../../config.js')
 const Profile = require('../../../structs/db/Profile.js')
 const Supporter = require('../../../structs/db/Supporter.js')
 

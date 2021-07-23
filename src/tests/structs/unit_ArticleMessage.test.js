@@ -78,11 +78,9 @@ describe('Unit::ArticleMessage', function () {
     })
   })
   describe('getWebhookNameAvatar', function () {
-    it('returns default name and avatar if no custom settings', function () {
-      const avatarURL = 'ews4r357ytur'
+    it('returns default name if no custom settings', function () {
       const webhook = {
-        name: 'abc',
-        avatarURL: () => avatarURL
+        name: 'abc'
       }
       const feedData = {
         ...baseFeedData,
@@ -93,15 +91,12 @@ describe('Unit::ArticleMessage', function () {
       const m = new ArticleMessage({}, feedData)
       expect(m.getWebhookNameAvatar(webhook))
         .toEqual({
-          username: webhook.name,
-          avatarURL
+          username: webhook.name
         })
     })
     it('returns the custom name if it exists', function () {
-      const avatarURL = 'ews4r357ytur'
       const webhook = {
-        name: 'abc',
-        avatarURL: () => avatarURL
+        name: 'abc'
       }
       const feedData = {
         ...baseFeedData,
@@ -118,15 +113,12 @@ describe('Unit::ArticleMessage', function () {
       }
       expect(m.getWebhookNameAvatar(webhook))
         .toEqual({
-          username: customName.slice(0, 32),
-          avatarURL
+          username: customName.slice(0, 32)
         })
     })
     it('returns the custom avatar if it exists', function () {
-      const avatarURL = 'ews4r357ytur'
       const webhook = {
-        name: 'abc',
-        avatarURL: () => avatarURL
+        name: 'abc'
       }
       const feedData = {
         ...baseFeedData,

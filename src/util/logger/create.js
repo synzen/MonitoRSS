@@ -25,6 +25,7 @@ function createLogger (tag = '-', base = {}) {
       role: serializers.channel,
       user: serializers.user,
       message: serializers.message,
+      feed: serializers.feed,
       error: pino.stdSerializers.err
     },
     enabled: process.env.NODE_ENV !== 'test'

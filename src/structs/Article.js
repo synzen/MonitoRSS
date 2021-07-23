@@ -577,16 +577,22 @@ module.exports = class Article {
    * @param {string[]} userFilters
    * @param {string} reference
    */
-  testArrayNegatedFilters (userFilters, reference, findBlocks) {
+  testArrayNegatedFilters (userFilters, reference) {
     // Deal with inverted first
     const filters = userFilters.map(word => new Filter(word))
     const invertedFilters = filters.filter(filter => filter.inverted)
     const regularFilters = filters.filter(filter => !filter.inverted)
-    const blocked = invertedFilters.find(filter => !filter.passes(reference))
     const returnData = {
       inverted: invertedFilters.map(f => f.content),
       regular: regularFilters.map(f => f.content)
     }
+    if (!reference) {
+      return {
+        ...returnData,
+        passed: true
+      }
+    }
+    const blocked = invertedFilters.find(filter => !filter.passes(reference))
     if (blocked) {
       return {
         ...returnData,
@@ -614,6 +620,13 @@ module.exports = class Article {
       regular: regularFilters.map(f => f.content)
     }
 
+    if (!reference) {
+      return {
+        ...returnData,
+        passed: false
+      }
+    }
+
     const passed = !!regularFilters.find(filter => filter.passes(reference))
     return {
       ...returnData,
@@ -626,6 +639,13 @@ module.exports = class Article {
    * @param {string} reference
    */
   testRegexFilter (userFilter, reference) {
+    if (!reference) {
+      return {
+        inverted: [],
+        regular: [userFilter],
+        passed: false
+      }
+    }
     const filter = new FilterRegex(userFilter)
     const filterPassed = filter.passes(reference)
     if (filterPassed) {
@@ -661,12 +681,6 @@ module.exports = class Article {
     const filterResults = new FilterResults()
     if (Object.keys(filters).length === 0) {
       filterResults.passed = true
-      return filterResults
-    }
-    const everyReferenceExists = Object.keys(filters).every(type => !!this.getFilterReference(type))
-    filterResults.passed = everyReferenceExists
-    // If not every key in filters exists on the articles, auto-block it
-    if (!everyReferenceExists) {
       return filterResults
     }
 
@@ -707,12 +721,8 @@ module.exports = class Article {
     for (const filterTypeName in filters) {
       const userFilters = filters[filterTypeName]
       const reference = this.getFilterReference(filterTypeName)
-      if (!reference) {
-        continue
-      }
-
-      // Filters can either be an array of words or a string (regex)
       let results
+      // Filters can either be an array of words or a string (regex)
       if (Array.isArray(userFilters)) {
         results = this.testArrayRegularFilters(userFilters, reference)
       } else {

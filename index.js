@@ -25,12 +25,15 @@ exports.models = {
 // Structures
 exports.Article = require('./src/structs/Article.js')
 exports.ArticleMessage = require('./src/structs/ArticleMessage.js')
+exports.ArticleMessageRateLimiter = require('./src/structs/ArticleMessageRateLimiter')
 exports.ArticleTestMessage = require('./src/structs/ArticleTestMessage.js')
 exports.Client = require('./src/structs/Client.js')
 exports.ClientManager = require('./src/structs/ClientManager.js')
 exports.FeedData = require('./src/structs/FeedData.js')
+exports.Guild = require('./src/structs/Guild.js')
 exports.GuildData = require('./src/structs/GuildData.js')
 exports.Translator = require('./src/structs/Translator.js')
+exports.DeliveryPipeline = require('./src/structs/DeliveryPipeline.js')
 
 // Database Structures
 exports.Blacklist = require('./src/structs/db/Blacklist.js')
@@ -60,7 +63,8 @@ exports.migrations = {
 // Errors
 exports.errors = {
   FeedParserError: require('./src/structs/errors/FeedParserError.js'),
-  RequestError: require('./src/structs/errors/RequestError.js')
+  RequestError: require('./src/structs/errors/RequestError.js'),
+  BadRequestError: require('./src/structs/errors/http/BadRequestError')
 }
 
 /**

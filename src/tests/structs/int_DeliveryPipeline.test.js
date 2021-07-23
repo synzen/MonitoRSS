@@ -28,7 +28,11 @@ describe('Unit::structs/DeliveryPipeline', function () {
       })
     jest.spyOn(config, 'get')
       .mockReturnValue({
-        log: {}
+        log: {},
+        apis: {
+          pledge: {},
+          discordHttpGateway: {}
+        }
       })
   })
   afterEach(() => {
@@ -105,7 +109,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
         .mockReturnValue(articleMessage)
       const sendNewArticle = jest.spyOn(pipeline, 'sendNewArticle')
       await pipeline.deliver(newArticle)
-      expect(sendNewArticle).toHaveBeenCalledWith(newArticle, articleMessage)
+      expect(sendNewArticle).toHaveBeenCalledWith(newArticle, articleMessage, undefined)
     })
     it('rejects if failure handling throws', async () => {
       const pipeline = new DeliveryPipeline(Bot())

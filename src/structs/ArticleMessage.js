@@ -221,13 +221,12 @@ class ArticleMessage {
   }
 
   /**
-   * @param {import('discord.js').Webhook} [webhook]
+   * @param {Object<string, any>} [feedWebhook] A feed's webhook object if it exists
    */
-  getWebhookNameAvatar (webhook) {
+  getWebhookNameAvatar (feedWebhook) {
     const { feed, parsedArticle } = this
     const options = {
-      username: webhook.name,
-      avatarURL: webhook.avatarURL()
+      username: feedWebhook.name
     }
     if (feed.webhook.name) {
       options.username = parsedArticle.convertKeywords(feed.webhook.name).slice(0, 32)
@@ -271,16 +270,15 @@ class ArticleMessage {
     }
   }
 
-  createOptions (embeds, medium) {
-    const isWebhook = medium instanceof Discord.Webhook
+  createOptions (embeds, feedWebhook) {
     const options = {
       allowedMentions: {
         parse: ['roles', 'users', 'everyone']
       }
     }
-    if (isWebhook) {
+    if (feedWebhook) {
       options.embeds = embeds
-      const webhookSettings = this.getWebhookNameAvatar(medium)
+      const webhookSettings = this.getWebhookNameAvatar(feedWebhook)
       options.username = webhookSettings.username
       options.avatarURL = webhookSettings.avatarURL
     } else {
@@ -293,9 +291,9 @@ class ArticleMessage {
   /**
    * Create an API payload meant for use with the delivery microservice
    */
-  createAPIPayload (medium) {
+  createAPIPayload (feedWebhook) {
     const { text, embeds } = this.generateMessage()
-    const options = this.createOptions(embeds, medium)
+    const options = this.createOptions(embeds, feedWebhook)
     // First convert camel case properties to snake case
     const transformed = {
       ...options,
@@ -316,8 +314,8 @@ class ArticleMessage {
    * Create multiple API payloads from one payload if its text content
    * exceeds 2000 characters
    */
-  createAPIPayloads (medium) {
-    const apiPayload = this.createAPIPayload(medium)
+  createAPIPayloads (feedWebhook) {
+    const apiPayload = this.createAPIPayload(feedWebhook)
     const text = apiPayload.content
     if (!apiPayload.split || text.length < 2000) {
       return [apiPayload]
@@ -327,7 +325,6 @@ class ArticleMessage {
     if (apiPayload.split) {
       textParts = Discord.Util.splitMessage(text)
     }
-    const isWebhook = medium instanceof Discord.Webhook
     const payloadParts = []
     for (let i = 0; i < textParts.length; ++i) {
       const thisApiPayload = {
@@ -339,9 +336,9 @@ class ArticleMessage {
       delete thisApiPayload.embeds
       const isLastElement = i === textParts.length - 1
       // Channel messages use a "embed" object field and cannot have multiple embeds
-      const channelEmbed = isWebhook || !isLastElement || !apiPayload.embed ? undefined : apiPayload.embed
+      const channelEmbed = feedWebhook || !isLastElement || !apiPayload.embed ? undefined : apiPayload.embed
       // Webhook messages uses a "embeds" array field and can have multiple embeds
-      const webhookEmbeds = !isWebhook || !isLastElement ? undefined : apiPayload.embeds
+      const webhookEmbeds = !feedWebhook || !isLastElement ? undefined : apiPayload.embeds
       if (channelEmbed) {
         thisApiPayload.embed = channelEmbed
       } else if (webhookEmbeds) {
@@ -352,9 +349,9 @@ class ArticleMessage {
     return payloadParts
   }
 
-  createTextAndOptions (medium) {
+  createTextAndOptions (feedWebhook) {
     const { text, embeds } = this.generateMessage()
-    const options = this.createOptions(embeds, medium)
+    const options = this.createOptions(embeds, feedWebhook)
     return {
       text,
       options
@@ -384,7 +381,8 @@ class ArticleMessage {
     if (!medium) {
       throw new Error('Missing medium to send message to')
     }
-    const { text, options } = this.createTextAndOptions(medium)
+    const feedWebhook = medium instanceof Discord.Webhook ? this.feed.webhook : null
+    const { text, options } = this.createTextAndOptions(feedWebhook)
     // Send the message, and repeat attempt if failed
     try {
       return await medium.send(text, options)
