@@ -43,6 +43,10 @@ describe('Unit::structs/DeliveryPipeline', function () {
         .mockReturnValue({
           log: {
             unfiltered: true
+          },
+          apis: {
+            pledge: {},
+            discordHttpGateway: {}
           }
         })
       const pipeline = new DeliveryPipeline(bot)
@@ -148,6 +152,10 @@ describe('Unit::structs/DeliveryPipeline', function () {
       config.get.mockReturnValue({
         log: {
           unfiltered: false
+        },
+        apis: {
+          pledge: {},
+          discordHttpGateway: {}
         }
       })
     })

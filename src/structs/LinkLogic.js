@@ -49,10 +49,6 @@ class LinkLogic extends EventEmitter {
      * @type {Map<string, Map<string, Set<string>>>}
      */
     this.sentReferences = new Map()
-
-    const cutoffDay = new Date()
-    cutoffDay.setDate(cutoffDay.getDate() - config.feeds.cycleMaxAge)
-    this.cutoffDay = cutoffDay
   }
 
   _logDebug (feedID, message, object) {
@@ -187,7 +183,11 @@ class LinkLogic extends EventEmitter {
    * @param {Object<string, any>} feed
    */
   isNewArticle (dbIDs, article, feed, checkDates, comparisonReferences) {
-    const { sentReferences, cutoffDay } = this
+    const { sentReferences, config } = this
+    const cutoffDay = new Date()
+    const useMaxAge = feed.articleMaxAge != null ? feed.articleMaxAge : config.feeds.cycleMaxAge
+    cutoffDay.setDate(cutoffDay.getDate() - useMaxAge)
+
     const feedID = feed._id
     const sentReferencesOfFeed = sentReferences.get(feed._id)
     const articleID = article._id

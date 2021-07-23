@@ -21,7 +21,11 @@ async function checkLimits (feeds) {
     const feed = feeds[i]
     const guild = feed.guild
     const supporterLimit = supporterLimits.get(guild)
-    const guildLimit = supporterLimit === undefined ? config.feeds.max : supporterLimit
+    const guildLimit = supporterLimit !== undefined
+      ? supporterLimit
+      : config._vipRestricted === true
+        ? -1 // If vip restricted, every non-supporter should have 0 feeds
+        : config.feeds.max
     let feedCount = feedCounts.get(guild) || 0
 
     // Ignore all unrelated disabled feeds and don't count them

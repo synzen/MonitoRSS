@@ -11,8 +11,9 @@ const MISSING_CODES = new Set([10011, 10013, 10007])
 /**
  * @param {import('discord.js').Client} bot
  * @param {SubscriberDetails[]} subscribersDetails
+ * @param {import('@synzen/discord-rest').RESTProducer|null} restProducer
  */
-async function fetchSubscribers (subscribersDetails) {
+async function fetchSubscribers (subscribersDetails, restProducer) {
   const idsToFetch = new Set()
   for (var i = subscribersDetails.length - 1; i >= 0; --i) {
     const { subscriber } = subscribersDetails[i]
@@ -26,7 +27,21 @@ async function fetchSubscribers (subscribersDetails) {
       continue
     }
     ids.push(subscriber.id)
-    fetches.push(guild.members.fetch(subscriber.id))
+    if (!restProducer) {
+      fetches.push(guild.members.fetch(subscriber.id))
+    } else {
+      fetches.push(restProducer.fetch(`https://discord.com/api/guilds/${guild.id}/members/${subscriber.id}`, {
+        method: 'GET'
+      })
+        .then((res) => {
+          if (!String(res.status).startsWith('2')) {
+            const error = new Error(`Bad status code (${res.status})`)
+            error.code = res.body.code
+            throw error
+          }
+          return res.body
+        }))
+    }
     idsToFetch.delete(subscriber.id)
   }
   const results = await Promise.allSettled(fetches)
@@ -47,9 +62,10 @@ async function fetchSubscribers (subscribersDetails) {
  * 2. Remove all subscribers that don't exist in Discord
  * @param {import('discord.js').Client} bot
  * @param {import('../structs/db/Feed.js')[]} feeds
+ * @param {import('@synzen/discord-rest').RESTProducer|null} restProducer
  * @returns {number}
  */
-async function pruneSubscribers (bot, feeds) {
+async function pruneSubscribers (bot, feeds, restProducer) {
   const log = createLogger(bot.shard.ids[0])
   const subscribers = await Subscriber.getAll()
   /** @type {Map<string, import('../structs/db/Feed.js')>} */
@@ -82,7 +98,7 @@ async function pruneSubscribers (bot, feeds) {
       deletions.push(subscriber.delete())
     }
   }
-  const results = await exports.fetchSubscribers(relevantSubscribers)
+  const results = await exports.fetchSubscribers(relevantSubscribers, restProducer)
   const brokenSubscribers = new Set()
   results.forEach((result, subscriberID) => {
     if (result.status === 'rejected' && MISSING_CODES.has(result.reason.code)) {

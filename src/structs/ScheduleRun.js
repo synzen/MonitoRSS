@@ -161,12 +161,14 @@ class ScheduleRun extends EventEmitter {
   }
 
   /**
+   * @param {import('./db/Feed.js')[]} scheduleFeeds
    * @param {Map<string, import('./db/FailRecord.js')} failRecordMap
    */
-  alertFailRecords (failRecordMap) {
+  alertFailRecords (scheduleFeeds, failRecordMap) {
     failRecordMap.forEach(record => {
       if (record.hasFailed() && !record.alerted) {
-        this.emit('alertFail', record)
+        const associatedFeeds = scheduleFeeds.filter(({ url }) => url === record._id)
+        this.emit('alertFail', record, associatedFeeds)
       }
     })
   }
@@ -406,7 +408,7 @@ class ScheduleRun extends EventEmitter {
     const scheduleFeeds = await this.getScheduleFeeds(feeds)
     this.log.debug('3 Got feeds of this schedule, getting fail record map')
     const failRecordsMap = await this.getFailRecordsMap(scheduleFeeds)
-    this.alertFailRecords(failRecordsMap)
+    this.alertFailRecords(scheduleFeeds, failRecordsMap)
     this.log.debug('4 Got fail record map, getting elgibile feeds')
     const eligibleFeeds = await this.getEligibleFeeds(scheduleFeeds, failRecordsMap, debugFeedIDs)
     this.log.debug(`5 Got eligibile feeds (${eligibleFeeds.length}/${scheduleFeeds.length}/${feeds.length}), converting all to JSON`)

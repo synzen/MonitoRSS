@@ -135,8 +135,6 @@ async function confirmFn (message, data) {
         return newFormat.save()
       }))
     }
-
-
   }
   log.info({
     guild: message.guild,

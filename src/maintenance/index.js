@@ -35,8 +35,9 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
 
 /**
  * @param {import('discord.js').Client} bot
+ * @param {import('@synzen/discord-rest').RESTProducer} restProducer
  */
-async function pruneWithBot (bot) {
+async function pruneWithBot (bot, restProducer) {
   const log = createLogger(bot.shard.ids[0])
   const guilds = bot.guilds.cache.keyArray()
   log.debug('Pruning with bot. Fetching feeds')
@@ -47,9 +48,9 @@ async function pruneWithBot (bot) {
   })
   log.debug(`Fetched ${feeds.length} feeds for pruning`)
   await Promise.all([
-    pruneSubscribers.pruneSubscribers(bot, feeds),
-    pruneProfileAlerts(bot),
-    pruneWebhooks.pruneWebhooks(bot, feeds)
+    pruneSubscribers.pruneSubscribers(bot, feeds, restProducer),
+    pruneProfileAlerts(bot, restProducer),
+    pruneWebhooks.pruneWebhooks(bot, feeds, restProducer)
   ])
   await checkPermissions.feeds(bot, feeds)
 }

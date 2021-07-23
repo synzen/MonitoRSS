@@ -17,7 +17,7 @@ function visual (data) {
   const { profile, selectedFeed: feed } = data
   const translate = Translator.createProfileTranslator(profile)
 
-  if (!feed.hasFilters()) {
+  if (!feed.hasFilters() && !feed.hasRFilters()) {
     return new MessageVisual(translate('commands.filters.noFilters', {
       link: feed.url
     }))
@@ -28,12 +28,18 @@ function visual (data) {
     link: feed.url,
     channel: `<#${feed.channel}>`
   })
-  for (const filterCat in feed.filters) {
-    output += `\n\n**${filterCat}**`
-    const filterContent = feed.filters[filterCat]
-    filterContent.forEach((filter) => {
-      output += `\n${filter}`
-    })
+  if (feed.hasRFilters()) {
+    for (const filterCat in feed.rfilters) {
+      output += `\n\n**${filterCat}**\n\`${feed.rfilters[filterCat]}\``
+    }
+  } else {
+    for (const filterCat in feed.filters) {
+      output += `\n\n**${filterCat}**`
+      const filterContent = feed.filters[filterCat]
+      filterContent.forEach((filter) => {
+        output += `\n${filter}`
+      })
+    }
   }
 
   return new MessageVisual(output, {
