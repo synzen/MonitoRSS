@@ -51,7 +51,7 @@ const feedsSchema = Joi.object({
   dateLanguageList: Joi.array().items(Joi.string().strict()).min(1).default(['en']),
   dateFallback: Joi.bool().strict().default(false),
   timeFallback: Joi.bool().strict().default(false),
-  max: Joi.number().strict().greater(-1).default(0),
+  max: Joi.number().strict().greater(-2).default(0),
   hoursUntilFail: Joi.number().strict().default(0),
   notifyFail: Joi.bool().strict().default(true),
   sendFirstCycle: Joi.bool().strict().default(true),
@@ -73,6 +73,7 @@ const advancedSchema = Joi.object({
 })
 
 const pledgeApiSchema = Joi.object({
+  enabled: Joi.bool().strict().default(false),
   url: Joi.string().allow('').default(''),
   accessToken: Joi.string().strict().allow('').default('').when('url', {
     is: Joi.string().strict().min(1),
@@ -81,14 +82,25 @@ const pledgeApiSchema = Joi.object({
   })
 })
 
+const discordHttpGateway = Joi.object({
+  enabled: Joi.bool().strict().default(false),
+  redisUri: Joi.string().strict().allow('').default('').when('enabled', {
+    is: Joi.bool().valid(true).required(),
+    then: Joi.string().strict().required().disallow(''),
+    otherwise: Joi.string().strict().allow('').default('')
+  })
+})
+
 const apisSchema = Joi.object({
-  pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value)
+  pledge: pledgeApiSchema.default(pledgeApiSchema.validate({}).value),
+  discordHttpGateway: discordHttpGateway.default(discordHttpGateway.validate({}).value)
 })
 
 const schema = Joi.object({
   apis: apisSchema.default(apisSchema.validate({}).value),
   dev: Joi.number().strict().greater(-1),
   _vip: Joi.bool().strict(),
+  _vipRestricted: Joi.bool().strict().default(false),
   _vipRefreshRateMinutes: Joi.number().strict(),
   log: logSchema.default(logSchema.validate({}).value),
   bot: botSchema.default(botSchema.validate({}).value),
@@ -96,8 +108,8 @@ const schema = Joi.object({
   feeds: feedsSchema.default(feedsSchema.validate({}).value),
   advanced: advancedSchema.default(advancedSchema.validate({}).value),
   webURL: Joi.string().strict().allow('').allow('').default(''),
-  deliveryServiceURL: Joi.string().uri().strict().allow(''),
-  discordSupportURL: Joi.string().uri().strict().allow('')
+  discordSupportURL: Joi.string().uri().strict().allow(''),
+  disableFeedCycles: Joi.bool().strict().default(false)
 })
 
 module.exports = {
