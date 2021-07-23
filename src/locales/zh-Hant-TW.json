@@ -11,7 +11,7 @@
   },
   "commandDescriptions": {
     "add": {
-      "description": "Add an RSS feed to the channel this command is used in. Multiple feeds can be added by separation with `>`.",
+      "description": "新增RSS feed至使用此指令的頻道。多個feed可透過使用`>`分隔同時新增。",
       "args": {
         "<link>": "feed網址。"
       }
