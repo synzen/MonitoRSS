@@ -17,10 +17,10 @@
       }
     },
     "alert": {
-      "description": "Set up user direct messaging for feed warnings/failures.",
+      "description": "設定用於傳送feed警告/失敗的使用者私訊。",
       "args": {
-        "add <user id/mention>": "Add a user to direct message.",
-        "remove <user id/mention>": "Remove a user from direct messaging.",
+        "add <user id/mention>": "新增要傳送私訊的使用者。",
+        "remove <user id/mention>": "移除要傳送私訊的使用者。",
         "list": "已啟用私人訊息的使用者清單。"
       }
     },
