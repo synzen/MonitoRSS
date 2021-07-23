@@ -24,6 +24,17 @@ class ArticleRateLimiter {
     }
   }
 
+  static get ERRORS () {
+    return {
+      RATE_LIMITED_ARTICLE_ERROR: 'Rate limited article',
+      DAILY_LIMITED_ARTICLE_ERROR: 'Daily limited article'
+    }
+  }
+
+  static isRateLimitError (error) {
+    return Array.from(Object.values(this.ERRORS)).includes(error.message)
+  }
+
   static async updateArticlesBlocked () {
     if (this.blocked === 0 || !Supporter.isMongoDatabase) {
       return
@@ -53,7 +64,7 @@ class ArticleRateLimiter {
    * @param {boolean} isSupporterGuild
    */
   static create (channelID, isSupporterGuild) {
-    const highLimit = Supporter.enabled ? isSupporterGuild : true
+    const highLimit = Supporter.enabled ? isSupporterGuild : false
     const limiter = new ArticleRateLimiter(channelID, highLimit)
     this.limiters.set(channelID, limiter)
     return limiter
@@ -73,22 +84,17 @@ class ArticleRateLimiter {
 
   /**
    * @param {import('../structs/ArticleMessage.js')} articleMessage
-   * @param {import('discord.js').Client} bot
    */
-  static async assertWithinLimits (articleMessage, bot) {
-    const channel = articleMessage.getChannel(bot)
-    if (!channel) {
-      throw new Error('Missing channel for ArticleMessageRateLimiter satisfiesLimits')
-    }
-    const channelID = channel.id
+  static async assertWithinLimits (articleMessage) {
+    const channelID = articleMessage.feed.channel
     const articleLimiter = ArticleRateLimiter.getLimiter(channelID)
     if (articleLimiter.isAtLimit()) {
       ++ArticleRateLimiter.blocked
-      throw new Error('Rate limited article')
+      throw new Error(this.ERRORS.RATE_LIMITED_ARTICLE_ERROR)
     }
     if (await articleLimiter.isAtDailyLimit()) {
       ++ArticleRateLimiter.blocked
-      throw new Error('Daily limited article')
+      throw new Error(this.ERRORS.DAILY_LIMITED_ARTICLE_ERROR)
     }
     ++ArticleRateLimiter.sent
     --articleLimiter.articlesRemaining

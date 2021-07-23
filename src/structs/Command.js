@@ -3,8 +3,10 @@ const fsPromises = require('fs').promises
 const Discord = require('discord.js')
 const { DiscordPromptRunner } = require('discord.js-prompts')
 const Profile = require('../structs/db/Profile.js')
+const Guild = require('../structs/Guild.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
+const Supporter = require('../structs/db/Supporter.js')
 const Permissions = Discord.Permissions.FLAGS
 const getConfig = require('../config.js').get
 
@@ -62,6 +64,20 @@ class Command {
    */
   static disable () {
     this.enabled = false
+  }
+
+  /**
+   * Check if a message should only be accepted if it's a patron
+   * @param {import('discord.js').Message} message
+   * @returns
+   */
+  static async blockIfNotSupporter (message) {
+    if (!Supporter.restricted) {
+      return false
+    }
+    const guild = new Guild(message.guild.id)
+    const supporter = await guild.hasSupporterOrSubscriber()
+    return !supporter
   }
 
   /**

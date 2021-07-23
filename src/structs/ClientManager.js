@@ -187,12 +187,11 @@ class ClientManager extends EventEmitter {
       if (Supporter.isMongoDatabase) {
         this.mongo = await this.connectToDatabase()
       }
-      await initialize.checkDeliveryService()
       await initialize.setupModels(this.mongo)
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
-      await this.shardingManager.spawn(shardCount || undefined)
+      await this.shardingManager.spawn(shardCount || undefined, 5500, 240000)
     } catch (err) {
       if (err.headers) {
         const isJSON = err.headers.get('content-type') === 'application/json'
@@ -263,9 +262,11 @@ class ClientManager extends EventEmitter {
       // Aready running
       return
     }
-    if (!devLevels.disableCycles()) {
+    if (!devLevels.disableCycles() && !this.config.disableFeedCycles) {
       this.scheduleManager.beginTimers()
       this.log.info('Started fetch intervals')
+    } else {
+      this.log.info('Feed cycles disabled, either due to dev levels or config.disableFeedCycles');
     }
   }
 

@@ -38,9 +38,20 @@ function message (message) {
   return `${message.content}`
 }
 
+/**
+ * @param {import('../../structs/db/Feed')} feed
+ */
+function feed (feed) {
+  if (!feed) {
+    return feed
+  }
+  return `${feed._id}`
+}
+
 module.exports = {
   guild,
   channel,
   user,
-  message
+  message,
+  feed
 }

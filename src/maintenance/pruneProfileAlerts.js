@@ -5,9 +5,10 @@ const DELETE_CODES = new Set([10007, 10013, 50035])
 
 /**
  * @param {import('discord.js').Client} bot
+ * @param {import('@synzen/discord-rest').RESTProducer|null} restProducer
  * @returns {number}
  */
-async function pruneProfileAlerts (bot) {
+async function pruneProfileAlerts (bot, restProducer) {
   const log = createLogger(bot.shard.ids[0])
   /** @type {Profile[]} */
   const profiles = await Profile.getAll()
@@ -29,7 +30,18 @@ async function pruneProfileAlerts (bot) {
         continue
       }
       try {
-        await guild.members.fetch(memberID)
+        if (!restProducer) {
+          await guild.members.fetch(memberID)
+        } else {
+          const res = await restProducer.fetch(`https://discord.com/api/guilds/${guild.id}/members/${memberID}`, {
+            method: 'GET'
+          })
+          if (!String(res.status).startsWith('2')) {
+            const error = new Error(`Bad status code (${res.status})`)
+            error.code = res.body.code
+            throw error
+          }
+        }
       } catch (err) {
         // Either unknown member, user, or invalid ID
         if (DELETE_CODES.has(err.code)) {

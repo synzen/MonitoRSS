@@ -180,5 +180,44 @@ describe('Unit::structs/Article', function () {
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(true)
     })
+    it('passes for negated filters if the property does not exist', () => {
+      const filters = {
+        title: [
+          '!holla-go'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.description = 'unrelated'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(true)
+    })
+    it('passes properly for negated filters on non-existent property and regular filters on existent property', () => {
+      const filters = {
+        title: [
+          '!holla-go'
+        ],
+        description: [
+          'unrelated'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.description = 'unrelated'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(true)
+    })
+    it('blocks properly for negated filters on non-existent property and regular filters on existent property', () => {
+      const filters = {
+        title: [
+          '!holla-go'
+        ],
+        description: [
+          '!unrelated'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.description = 'unrelated'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(false)
+    })
   })
 })

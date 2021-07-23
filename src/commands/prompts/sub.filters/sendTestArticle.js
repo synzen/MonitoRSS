@@ -3,6 +3,7 @@ const ArticleMessage = require('../../../structs/ArticleMessage.js')
 const FeedFetcher = require('../../../util/FeedFetcher.js')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
+const Discord = require('discord.js')
 
 /**
  * @typedef {Object} Data
@@ -31,7 +32,9 @@ async function sendTestArticleVisual (data) {
   }
   const articleMessage = await ArticleMessage.create(feed, article)
   const articleMessageChannel = articleMessage.getChannel(channel.client)
-  const { text, options } = articleMessage.createTextAndOptions(articleMessageChannel)
+  const { text, options } = articleMessage.createTextAndOptions(
+    articleMessageChannel instanceof Discord.Webhook ? feed.webhook : null
+  )
 
   return new MessageVisual(text, {
     ...options,

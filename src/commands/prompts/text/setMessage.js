@@ -3,6 +3,7 @@ const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 const createLogger = require('../../../util/logger/create.js')
+const Feed = require('../../../structs/db/Feed')
 
 /**
  * @typedef {Object} Data
@@ -46,6 +47,9 @@ async function setMessageFn (message, data) {
     selectedFeed.text = text
   }
   await selectedFeed.save()
+  if (selectedFeed.disabled === Feed.DISABLE_REASONS.BAD_FORMAT) {
+    await selectedFeed.enable()
+  }
   log.info({
     guild: message.guild,
     text
