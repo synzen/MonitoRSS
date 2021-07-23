@@ -316,5 +316,23 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       const result = await pruneWebhooks.getDisableReason(bot, feed)
       expect(result).toEqual(`Disabling unauthorized supporter webhook from feed ${feed._id}`)
     })
+    it('returns empty string if supporter is not enabled', async () => {
+      Supporter.enabled = false
+      const webhookID = 'qwte'
+      const feed = {
+        _id: 'abc',
+        webhook: {
+          id: webhookID
+        }
+      }
+      bot.channels.cache.get.mockReturnValue({
+        guild: {
+          id: 'whatever'
+        }
+      })
+      Guild.prototype.hasSupporterOrSubscriber.mockResolvedValue(false)
+      const result = await pruneWebhooks.getDisableReason(bot, feed)
+      expect(result).toEqual('')
+    })
   })
 })

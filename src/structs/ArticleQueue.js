@@ -115,7 +115,9 @@ class ArticleQueue {
       throw new Error('Missing medium to send article via service')
     }
     // Make the fetch
-    const apiPayload = articleMessage.createAPIPayload(medium)
+    const apiPayload = articleMessage.createAPIPayload(
+      medium instanceof Webhook ? articleData.newArticle.feedObject.webhook : null
+    )
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
     let res
     try {

@@ -2,6 +2,8 @@ const { Rejection, MessageVisual } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
+const Feed = require('../../../structs/db/Feed')
+
 const prettyNames = new Map([
   ['title', 'Title'],
   ['description', 'Description'],
@@ -77,12 +79,17 @@ async function setPropertyFn (message, data) {
     feed.text = undefined
   }
   await feed.save()
+  if (feed.disabled === Feed.DISABLE_REASONS.BAD_FORMAT) {
+    await feed.enable()
+  }
+
   // Log it
   const log = createLogger()
   log.info({
     guild: message.guild,
     user: message.author
   }, `Embed[${targetEmbedIndex}] property ${thisPropertyKey} updated to ${finalValue}`)
+
   // Return the data
   const newData = {
     ...data,
