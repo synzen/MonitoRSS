@@ -283,6 +283,10 @@ class ScheduleManager extends EventEmitter {
     this.scheduleRuns.push(run)
     try {
       const feedIds = await DebugFeed.getAllFeedIds()
+      if (feedIds.size > 0) {
+        // New way to track feeds to debug - existing behavior is left in for backwards compat
+        this.debugFeedIDs = feedIds
+      }
       await run.run(new Set([...this.debugFeedIDs, ...feedIds]))
       this.endRun(run, schedule)
     } catch (err) {
@@ -317,14 +321,6 @@ class ScheduleManager extends EventEmitter {
         this.run(schedule)
       }, schedule.refreshRateMinutes * 60000))
     })
-  }
-
-  addDebugFeedID (feedID) {
-    this.debugFeedIDs.add(feedID)
-  }
-
-  removeDebugFeedID (feedID) {
-    this.debugFeedIDs.delete(feedID)
   }
 
   isDebugging (feedID) {
