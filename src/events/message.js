@@ -23,12 +23,6 @@ async function handler (message) {
     return log.trace('No valid command found')
   }
   try {
-    if (await Command.blockIfNotSupporter(message)) {
-      const visitUrl = config.get().apis.pledge.url.replace('/api', '')
-      return await message.channel.send(
-        `Sorry, only supporters have access to this bot. To become a supporter, visit ${visitUrl}`
-      )
-    }
     // Check member
     const memberPerms = command.getMemberPermission()
     log.debug({
@@ -44,6 +38,14 @@ async function handler (message) {
     if (!Command.enabled && !Command.isOwnerID(author.id)) {
       return log.info(`Command ${command.name} disabled, only owners allowed`)
     }
+    
+    if (await Command.blockIfNotSupporter(message)) {
+      const visitUrl = config.get().apis.pledge.url.replace('/api', '')
+      return await message.channel.send(
+        `Sorry, only supporters have access to this bot. To become a supporter, visit ${visitUrl}`
+      )
+    }
+
     // Check bot
     const botPerms = command.getBotPermissions()
     log.debug({
