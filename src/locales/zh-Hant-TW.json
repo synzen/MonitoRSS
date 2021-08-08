@@ -169,7 +169,7 @@
     },
     "backup": {
       "noProfile": "本伺服器尚無設定檔。",
-      "noPermission": "由於缺少`附加檔案`（`Attach Files`）權限，無法傳送備份。"
+      "noPermission": "由於缺少附加檔案（`Attach Files`）權限，無法傳送備份。"
     },
     "clone": {
       "copyFrom": "",
@@ -440,7 +440,7 @@
       "resetSuccess": "指令前綴已重設為預設值（{{prefix}}）。",
       "requirements": "",
       "cannotUseDefault": "",
-      "setSuccess": "已成功將指令前綴變更為「{{prefix}}」。"
+      "setSuccess": "已成功將指令前綴變更為 \"{{prefix}}\"。"
     },
     "refresh": {
       "noFailLimit": "",
@@ -572,7 +572,7 @@
         "promptAdd": "",
         "addSuccess": "",
         "addFailed": "",
-        "updatedFor": "已更新`{{name}}`的訂閱。",
+        "updatedFor": "已更新{{name}}的訂閱。",
         "testFiltersSubscriber": "",
         "testFilters": "",
         "removeFilterConfirm": "",
