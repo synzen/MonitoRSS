@@ -39,7 +39,7 @@ async function handler (message) {
       return log.info(`Command ${command.name} disabled, only owners allowed`)
     }
 
-    if (await Command.blockIfNotSupporter(message)) {
+    if (!Command.isOwnerID(author.id) && await Command.blockIfNotSupporter(message)) {
       const visitUrl = config.get().apis.pledge.url.replace('/api', '')
       return await message.channel.send(
         `Sorry, only supporters have access to this bot. To become a supporter, visit ${visitUrl}`
