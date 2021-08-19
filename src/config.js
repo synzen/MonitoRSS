@@ -142,6 +142,11 @@ exports.set = (override, skipValidation) => {
       ? botOverride.exitOnExcessRateLimits
       : bot.exitOnExcessRateLimits
   bot.userAgent = process.env.DRSS_BOT_USERAGENT || botOverride.userAgent || bot.userAgent
+  bot.feedParseTimeoutMs = process.env.DRSS_BOT_FEEDPARSETIMEOUTMS !== undefined
+    ? Number(process.env.DRSS_BOT_FEEDPARSETIMEOUTMS)
+    : botOverride.feedParseTimeoutMs !== undefined
+      ? botOverride.feedParseTimeoutMs
+      : bot.feedParseTimeoutMs
   bot.feedRequestTimeoutMs = process.env.DRSS_BOT_FEEDREQUESTTIMEOUTMS !== undefined
     ? Number(process.env.DRSS_BOT_FEEDREQUESTTIMEOUTMS)
     : botOverride.feedRequestTimeoutMs !== undefined
