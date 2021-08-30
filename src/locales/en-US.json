@@ -315,7 +315,7 @@
     "help": {
       "controlPanelLink": "Be sure to check out your control panel at {{url}} for easy feed management!",
       "description": "Arguments for commands are added after the command. For example: `{{prefix}}test simple`.\n\n**Argument Definitions**\n`a` = Directly add `a`\n`[a]` = Optionally add `a`\n`(a|b)` = Directly input `a` OR `b`\n`<a>` = Replace `a` with relevant content",
-      "arguments": "Arguments",
+      "arguments": "Arguments:",
       "support": "\nSupport can be found at {{url}}",
       "checkDM": "Check your direct messages!"
     },
