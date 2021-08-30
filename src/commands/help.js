@@ -22,7 +22,7 @@ module.exports = async (message, command) => {
       .replace(/{{defaultPrefix}}/g, config.bot.prefix)
     const args = command.args
     if (args) {
-      msg += `\n    **${translate('commands.help.arguments')}:**\n`
+      msg += `\n    **${translate('commands.help.arguments')}**\n`
       const argsLength = Object.keys(args).length
       let i = 0
       for (const arg in args) {
