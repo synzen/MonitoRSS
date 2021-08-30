@@ -315,7 +315,7 @@
     "help": {
       "controlPanelLink": "Não deixe de conferir seu painel de controle em {{url}} para facilitar o gerenciamento de feeds!",
       "description": "",
-      "arguments": "Argumentos",
+      "arguments": "Argumentos:",
       "support": "\nSuporte pode ser encontrado em https://discord.gg/pudv7Rx",
       "checkDM": "Verifique suas mensagens diretas! 😉"
     },
