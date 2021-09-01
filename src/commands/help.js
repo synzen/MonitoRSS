@@ -38,7 +38,7 @@ module.exports = async (message, command) => {
   })
   return message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
     .then(() => {
-      message.reply(translate('commands.help.checkDM'))
+      message.channel.send(`<@${message.author.id}>${translate('commands.help.checkDM')}`)
         .catch(err => {
           const log = createLogger(message.guild.shard.id)
           log.warn({
