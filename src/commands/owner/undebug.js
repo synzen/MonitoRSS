@@ -1,11 +1,16 @@
-const ipc = require('../../util/ipc.js')
 const createLogger = require('../../util/logger/create.js')
+const DebugFeed = require('../../structs/db/DebugFeed')
 
 module.exports = async (message) => {
   const content = message.content.split(' ')
   if (content.length !== 2) return
   const feedID = content[1]
-  ipc.send(ipc.TYPES.REMOVE_DEBUG_FEEDID, feedID)
+  const found = await DebugFeed.getByQuery({
+    feedId: feedID
+  })
+  if (found) {
+    await found.delete()
+  }
   const log = createLogger(message.guild.shard.id)
   log.owner({
     user: message.author
