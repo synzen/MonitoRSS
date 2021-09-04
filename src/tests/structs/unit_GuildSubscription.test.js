@@ -32,6 +32,7 @@ describe('Unit::structs/GuildSubscription', function () {
   })
   afterEach(function () {
     jest.restoreAllMocks()
+    jest.spyOn(console, 'error').mockImplementation(() => {})
   })
   describe('static mapApiResponse', () => {
     it('returns correctly', () => {
@@ -180,7 +181,7 @@ describe('Unit::structs/GuildSubscription', function () {
       jest.spyOn(GuildSubscription, 'getApiConfig').mockReturnValue(apiConfig)
       fetch.mockResolvedValue({
         status: 200,
-        json: async () => mockResponse
+        json: async () => [mockResponse]
       })
       await GuildSubscription.getAllSubscriptions()
       expect(fetch).toHaveBeenCalledWith(`${apiConfig.url}/guilds`, {

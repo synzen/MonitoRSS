@@ -25,7 +25,10 @@ describe('Unit::FeedFetcher', function () {
     jest.restoreAllMocks()
     fetch.mockReset()
     config.get.mockReturnValue({
-      _vip: false
+      _vip: false,
+      bot: {
+        feedParseTimeout: 10000
+      }
     })
   })
   it('throws an error if it is instantiated', function () {
