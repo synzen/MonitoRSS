@@ -315,9 +315,9 @@
     "help": {
       "controlPanelLink": "",
       "description": "",
-      "arguments": "引數",
+      "arguments": "引數：",
       "support": "",
-      "checkDM": "請檢查您的私訊！"
+      "checkDM": " ，請檢查您的私訊！"
     },
     "invite": {
       "text": ""
