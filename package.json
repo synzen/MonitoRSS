@@ -1,6 +1,6 @@
 {
   "name": "monitorss",
-  "version": "6.13.30",
+  "version": "6.13.31",
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
