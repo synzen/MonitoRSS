@@ -47,7 +47,7 @@ function escapeRegExp (str) {
   return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
-function regexReplace (string, searchOptions, replacement, replacementDirect) {
+function regexReplace (string, searchOptions, replacement, replacementDirect, fallbackValue) {
   if (typeof searchOptions !== 'object') throw new TypeError(`Expected RegexOp search key to have an object value, found ${typeof searchOptions} instead`)
   if (replacementDirect) return string.replace(new RegExp(searchOptions.regex, searchOptions.flags), replacementDirect) // Allow direct input into the search function, and ignore "match" and "group" in the regexOp.search
   const flags = !searchOptions.flags ? 'g' : searchOptions.flags.includes('g') ? searchOptions.flags : searchOptions.flags + 'g' // Global flag must be included to prevent infinite loop during .exec
@@ -60,8 +60,10 @@ function regexReplace (string, searchOptions, replacement, replacementDirect) {
     match = regExp.exec(string)
     if (match) matches.push(match)
   } while (match)
-  if (matches.length === 0) return string
-  else {
+
+  if (matches.length === 0) {
+    return fallbackValue != null ? fallbackValue : string
+  } else {
     const mi = matches[matchIndex || 0]
     if (!mi) return string
     else match = mi[groupNum || 0]
@@ -104,7 +106,7 @@ function evalRegexConfig (feed, text, placeholderName) {
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
       if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
       const clone = Object.assign({}, customPlaceholders)
-      const replacement = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.replacementDirect)
+      const replacement = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.replacementDirect, regexOp.fallbackValue)
       customPlaceholders[regexOp.name] = replacement === clone[regexOp.name] && regexOp.emptyOnNoMatch === true ? '\u200b' : replacement
     }
   } else return null
