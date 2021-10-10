@@ -18,6 +18,7 @@ const regexOpSchema = new mongoose.Schema({
     match: Number,
     group: Number
   },
+  fallbackValue: String,
   replacement: String,
   replacementDirect: String
 })
