@@ -91,13 +91,13 @@ class FlattenedJSON {
         const entry = item[i]
         const thisKeyNameWithPrevious = `${keyNameWithPrevious}[${i}]`
         if (FlattenedJSON.isObject(entry)) {
-          return () => this._trampolineIteration(this._iterateOverObject, entry, thisKeyNameWithPrevious)
+          this._trampolineIteration(this._iterateOverObject, entry, thisKeyNameWithPrevious)
         } else {
           this.results[thisKeyNameWithPrevious] = entry
         }
       }
     } else if (FlattenedJSON.isObject(item)) {
-      return () => this._trampolineIteration(this._iterateOverObject, item, keyNameWithPrevious)
+      this._trampolineIteration(this._iterateOverObject, item, keyNameWithPrevious)
     } else {
       this.results[keyNameWithPrevious] = cleanup(this.feed, item)
     }
