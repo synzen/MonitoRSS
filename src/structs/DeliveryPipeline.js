@@ -104,7 +104,7 @@ class DeliveryPipeline {
       if (!articleMessage.passedFilters()) {
         return await this.handleArticleBlocked(newArticle)
       }
-      this.log.debug(`Preparing to send new article ${newArticle.article._id} of feed ${newArticle.feedObject._id} to service`)
+      this.log.debug(`Preparing to send new article ${newArticle.article._id} of feed ${newArticle.feedObject._id}`)
       await this.sendNewArticle(newArticle, articleMessage, withoutBot)
     } catch (err) {
       await this.handleArticleFailure(newArticle, err)
@@ -169,6 +169,15 @@ class DeliveryPipeline {
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)
     } else {
       // The articleMessage is within all limits
+      const medium = await articleMessage.getMedium(this.bot)
+      if (!medium) {
+        /**
+         * Do not enqueue the article if the medium is not found. This can happen if the medium was deleted,
+         * or the article does not belong to this shard.
+         */
+        this.log.debug(`No medium found for article ${article._id} of feed ${feedObject._id}. This article may be delegated to another shard.`)
+        return
+      }
       const channelID = feedObject.channel
       const queue = this.getQueueForChannel(channelID)
       queue.enqueue(newArticle, articleMessage)

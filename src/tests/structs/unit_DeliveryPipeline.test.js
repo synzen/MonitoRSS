@@ -202,17 +202,30 @@ describe('Unit::structs/DeliveryPipeline', function () {
         })
       enqueue.mockReset()
     })
-    it('enqueues the article', async () => {
+    it('enqueues the article if medium is found', async () => {
       const bot = Bot()
       const pipeline = new DeliveryPipeline(bot)
       const newArticle = NewArticle()
       const articleMessage = {
-        foo: 'baz'
+        foo: 'baz',
+        getMedium: jest.fn().mockResolvedValue({}),
       }
 
       await pipeline.sendNewArticle(newArticle, articleMessage)
       expect(enqueue)
         .toHaveBeenCalledWith(newArticle, articleMessage)
+    })
+    it('does not enqueue the article if medium is missing', async () => {
+      const bot = Bot()
+      const pipeline = new DeliveryPipeline(bot)
+      const newArticle = NewArticle()
+      const articleMessage = {
+        foo: 'baz',
+        getMedium: jest.fn().mockResolvedValue(null),
+      }
+
+      await pipeline.sendNewArticle(newArticle, articleMessage)
+      expect(enqueue).not.toHaveBeenCalled()
     })
   })
   describe('record functions', () => {
