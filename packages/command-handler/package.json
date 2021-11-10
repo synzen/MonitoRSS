@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "jest"
@@ -24,6 +25,7 @@
     "class-validator": "^0.13.1",
     "discord-api-types": "^0.24.0",
     "discord.js": "^13.3.1",
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "@monitorss/feed-fetcher": "0.0.1"
   }
 }
