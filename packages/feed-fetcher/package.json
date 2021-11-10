@@ -1,5 +1,5 @@
 {
-  "name": "@monitorss/feedfetcher",
+  "name": "@monitorss/feed-fetcher",
   "version": "0.0.1",
   "description": "",
   "main": "build/index.js",
