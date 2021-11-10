@@ -1,5 +1,5 @@
 {
-  "name": "commmand-handler",
+  "name": "@monitorss/command-handler",
   "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
