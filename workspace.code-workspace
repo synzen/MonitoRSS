@@ -1,14 +1,17 @@
 {
   "folders": [
-	{
-		"path": "."
-	},
-	{
-		"path": "packages\\command-handler"
-	},
-	{
-		"path": "packages\\feed-fetcher"
-	}
-],
+		{
+			"path": "."
+		},
+		{
+			"path": "packages\\command-handler"
+		},
+		{
+			"path": "packages\\feed-fetcher"
+		},
+		{
+			"path": "packages\\models"
+		}
+	],
   "settings": {}
 }
