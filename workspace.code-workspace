@@ -1,0 +1,14 @@
+{
+  "folders": [
+	{
+		"path": "."
+	},
+	{
+		"path": "packages\\command-handler"
+	},
+	{
+		"path": "packages\\feed-fetcher"
+	}
+],
+  "settings": {}
+}
