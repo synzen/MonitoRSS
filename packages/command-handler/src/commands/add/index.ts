@@ -10,7 +10,8 @@ export default {
       .setName('url')
       .setDescription('The URL of the feed.')
       .setRequired(true)),
-  execute: async (interaction) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  execute: async (interaction, models) => {
     const feedUrl = interaction.options.getString('url');
     await interaction.deferReply();
 

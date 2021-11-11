@@ -1,35 +1,42 @@
 import { Client, Intents } from 'discord.js';
 import commands from './commands';
 import config from './config';
+import connect from '@monitorss/models';
 
-const client = new Client({ 
-  intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-  ],  
-});
+async function shard() {
+  const models = await connect(config.MONGO_URI);
 
-client.on('interactionCreate', interaction => {
-  if (!interaction.isCommand()) {
-    return;
-  }
+  const client = new Client({ 
+    intents: [
+      Intents.FLAGS.GUILDS,
+      Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+    ],  
+  });
 
-  const { commandName } = interaction;
-  const command = commands.get(commandName);
+  client.on('interactionCreate', interaction => {
+    if (!interaction.isCommand()) {
+      return;
+    }
 
-  if (!command) {
-    return;
-  }
+    const { commandName } = interaction;
+    const command = commands.get(commandName);
 
-  try {
-    command.execute(interaction);
-  } catch (err) {
-    console.error(err);
-  }
-});
+    if (!command) {
+      return;
+    }
 
-client.once('ready', () => {
-  console.log('Ready!');
-});
+    try {
+      command.execute(interaction, models);
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-client.login(config.BOT_TOKEN);
+  client.once('ready', () => {
+    console.log('Ready!');
+  });
+
+  client.login(config.BOT_TOKEN);
+}
+
+shard();

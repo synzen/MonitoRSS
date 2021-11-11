@@ -15,6 +15,10 @@ class Config {
   @IsString()
   @IsOptional()
   TESTING_GUILD_ID = process.env.TESTING_GUILD_ID as string;
+
+  @IsString()
+  @IsNotEmpty()
+  MONGO_URI = process.env.MONGO_URI as string;
 }
 
 const config = new Config();
