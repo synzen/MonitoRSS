@@ -2,4 +2,5 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
+  "jest.jestCommandLine": "jest",
 }

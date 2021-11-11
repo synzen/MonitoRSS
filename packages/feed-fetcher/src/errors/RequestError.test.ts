@@ -4,7 +4,6 @@ describe('RequestError', () => {
   describe('isCloudflare', () => {
     it('returns correctly', () => {
       const error = new RequestError(RequestError.CODES.BLOCKED_BY_CLOUDFLARE, 'mesage');
-      console.log(error instanceof RequestError);
       expect(error.isCloudflare()).toBe(true);
     });
   });
