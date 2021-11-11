@@ -1,4 +1,4 @@
-import { Client, Intents } from 'discord.js';
+import { Client } from 'discord.js';
 import commands from './commands';
 import config from './config';
 import connect from '@monitorss/models';
@@ -7,10 +7,7 @@ async function shard() {
   const models = await connect(config.MONGO_URI);
 
   const client = new Client({ 
-    intents: [
-      Intents.FLAGS.GUILDS,
-      Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-    ],  
+    intents: [],  
   });
 
   client.on('interactionCreate', interaction => {
