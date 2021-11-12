@@ -1,6 +1,6 @@
 import { Collection, Db, Document, ObjectId } from 'mongodb';
 import { setupTests, teardownTests } from '../utils/testing';
-import FeedRepository from './FeedRepository';
+import FeedRepository, { Feed } from './FeedRepository';
 
 describe('FeedRepository', () => {
   let feedRepo: FeedRepository;
@@ -23,29 +23,40 @@ describe('FeedRepository', () => {
   });
 
   describe('insert', () => {
-    it('inserts', async () => {
-      const toCreate = {
-        channel: 'hello',
-        guild: '123',
-        title: 'hhh',
-        url: 'http://www.google.com',
-      };
+    const toCreate: Feed = {
+      channel: 'hello',
+      guild: '123',
+      title: 'hhh',
+      url: 'http://www.google.com',
+    } as const;
 
-      await feedRepo.insert(toCreate);
+    it('inserts', async () => {
+      await feedRepo.insert({ ...toCreate });
 
       const result = await collection.find().toArray();
       expect(result.length).toBe(1);
       expect(result[0]).toMatchObject(toCreate);
     });
-    it('throws if there is an invalid type in input', async () => {
-      const toCreate = {
-        channel: 'hello',
-        guild: 123,
-        title: 'hhh',
-        url: 'http://www.google.com',
-      };
+    it('sets default values for the relevant fields', async () => {
+      await feedRepo.insert({ ...toCreate });
 
-      await expect(feedRepo.insert(toCreate as any)).rejects.toThrowError();
+      const result = await collection.find().toArray();
+      expect(result[0]).toMatchObject({
+        filters: {},
+        rfilters: {},
+        embeds: [],
+        ncomparisons: [],
+        pcomparisons: [],
+        regexOps: {},
+      });
+    });
+    it('throws if there is an invalid type in input', async () => {
+
+      await expect(feedRepo.insert({
+        ...toCreate,
+        guild: 123,
+      } as any))
+        .rejects.toThrowError();
     });
   });
 

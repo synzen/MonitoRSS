@@ -8,6 +8,8 @@ const feedSchema = z.object({
   url: z.string().min(1),
   guild: z.string().min(1),
   channel: z.string().min(1),
+  filters: z.record(z.string(), z.array(z.string())).default({}),
+  rfilters: z.record(z.string(), z.string()).default({}),
   webhook: z.object({
     id: z.string().min(1),
     name: z.string().optional(),
@@ -39,8 +41,8 @@ const feedSchema = z.object({
       name: z.string().min(1),
       value: z.string().min(1),
       inline: z.boolean().optional(),
-    })).optional(),
-  })).optional(),
+    })).default([]),
+  })).default([]),
   disabled: z.boolean().optional(),
   checkTitles: z.boolean().optional(),
   checkDates: z.boolean().optional(),
@@ -48,9 +50,9 @@ const feedSchema = z.object({
   imgLinksExistence: z.boolean().optional(),
   formatTables: z.boolean().optional(),
   directSubscribers: z.boolean().optional(),
-  ncomparisons: z.array(z.string().min(1)).optional(),
-  pcomparisons: z.array(z.string().min(1)).optional(),
-  regexOps: z.map(z.string().min(1), z.object({
+  ncomparisons: z.array(z.string().min(1)).default([]),
+  pcomparisons: z.array(z.string().min(1)).default([]),
+  regexOps: z.record(z.string().min(1), z.object({
     name: z.string().min(1),
     search: z.object({
       regex: z.string().min(1),
@@ -61,10 +63,10 @@ const feedSchema = z.object({
     fallbackValue: z.string().optional(),
     replacement: z.string().optional(),
     replacementDirect: z.string().optional(),
-  })).optional(),
+  })).default({}),
 });
 
-type FeedType = z.infer<typeof feedSchema>;
+export type Feed = z.input<typeof feedSchema>;
 
 class FeedRepository {
 
@@ -80,14 +82,25 @@ class FeedRepository {
     return new FeedRepository(mongoDb);
   }
 
-  async insert(data: FeedType): Promise<void> {
-    const parsed = await feedSchema.parseAsync(data);
-    await this.collection.insertOne(parsed);
+  async insert(data: Feed): Promise<void> {
+    const now = new Date();
+    const parsed = await feedSchema.parse(data);
+    console.log(parsed);
+    await this.collection.insertOne({
+      ...parsed,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
-  async update(id: ObjectId, data: Partial<FeedType>): Promise<void> {
-    const parsed = await feedSchema.partial().parseAsync(data);
-    await this.collection.updateOne({ _id: id }, { $set: parsed });
+  async update(id: ObjectId, data: Partial<Feed>): Promise<void> {
+    const parsed = await feedSchema.partial().parse(data);
+    await this.collection.updateOne({ _id: id }, {
+      $set: {
+        ...parsed,
+        updatedAt: new Date(),
+      },
+    });
   }
 }
 
