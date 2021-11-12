@@ -35,6 +35,7 @@
     "typescript": "^4.4.4"
   },
   "dependencies": {
+    "dayjs": "^1.10.7",
     "mongodb": "^4.1.4",
     "mongodb-memory-server": "^8.0.2",
     "zod": "^3.11.6"
