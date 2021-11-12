@@ -109,6 +109,10 @@ class FeedRepository {
 
     return res as FeedOutput[];
   }
+
+  async countInGuild(guildId: string): Promise<number> {
+    return this.collection.countDocuments({ guild: guildId });
+  }
 }
 
 export default FeedRepository;

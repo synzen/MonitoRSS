@@ -122,4 +122,31 @@ describe('FeedRepository', () => {
       ]));
     });
   });
+
+  describe('countInGuild', () => {
+    it('returns correctly', async () => {
+      const guild = '123';
+      const feedsToCreate: Feed[] = [{
+        channel: '123',
+        guild,
+        title: 'hhh',
+        url: 'http://www.google1.com',
+      }, {
+        channel: '123',
+        guild,
+        title: 'hhh',
+        url: 'http://www.google2.com',
+      }, {
+        channel: '123',
+        guild: guild + 'new',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+      }];
+
+      await collection.insertMany(feedsToCreate);
+
+      const result = await feedRepo.countInGuild(guild);
+      expect(result).toBe(2);
+    });
+  });
 });
