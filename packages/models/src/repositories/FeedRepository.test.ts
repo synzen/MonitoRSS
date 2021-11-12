@@ -90,4 +90,36 @@ describe('FeedRepository', () => {
       });
     });
   });
+
+  describe('findByChannelId', () => {
+    it('returns all the feeds in a channel', async () => {
+      const channel = '123';
+      const feedsToCreate: Feed[] = [{
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google1.com',
+      }, {
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google2.com',
+      }, {
+        channel: channel + 'diff',
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+      }];
+
+      await collection.insertMany(feedsToCreate);
+
+      const result = await feedRepo.findByField('channel', channel);
+      expect(result).toHaveLength(2);
+      const urls = result.map(r => r.url);
+      expect(urls).toEqual(expect.arrayContaining([
+        feedsToCreate[0].url,
+        feedsToCreate[1].url,
+      ]));
+    });
+  });
 });

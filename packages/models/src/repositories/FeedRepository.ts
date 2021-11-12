@@ -67,6 +67,7 @@ const feedSchema = z.object({
 });
 
 export type Feed = z.input<typeof feedSchema>;
+export type FeedOutput = z.output<typeof feedSchema>;
 
 class FeedRepository {
 
@@ -101,6 +102,12 @@ class FeedRepository {
         updatedAt: new Date(),
       },
     });
+  }
+
+  async findByField(key: keyof Feed, value: any): Promise<FeedOutput[]> {
+    const res = await this.collection.find({ [key]: value }).toArray();
+
+    return res as FeedOutput[];
   }
 }
 

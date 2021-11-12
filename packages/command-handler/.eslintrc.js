@@ -19,6 +19,7 @@ module.exports = {
   ],
   rules: {
     'react/jsx-filename-extension': 'off',
+    "newline-before-return": "error",
     'curly': 'error',
     "eol-last": ["error"],
     "max-len": ["error", { "code": 100 }],

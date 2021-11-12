@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import FeedRepository from './repositories/FeedRepository';
+import FeedRepository, { Feed } from './repositories/FeedRepository';
 
 export interface Models {
   Feed: FeedRepository;
@@ -17,3 +17,7 @@ async function connect(uri: string) {
 }
 
 export default connect;
+export {  
+  Feed,
+  FeedRepository,
+};
