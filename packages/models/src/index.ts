@@ -1,8 +1,12 @@
 import { MongoClient } from 'mongodb';
 import FeedRepository, { Feed } from './repositories/FeedRepository';
+import SupporterRepository, { Supporter } from './repositories/SupporterRepository';
+import PatronRepository, { Patron } from './repositories/PatronRepository';
 
 export interface Models {
   Feed: FeedRepository;
+  Supporter: SupporterRepository;
+  Patron: PatronRepository;
 }
 
 async function connect(uri: string) {
@@ -11,6 +15,8 @@ async function connect(uri: string) {
 
   const models: Models = {
     Feed: FeedRepository.getRepository(db),
+    Supporter: SupporterRepository.getRepository(db),
+    Patron: PatronRepository.getRepository(db),
   };
 
   return models;
@@ -20,4 +26,8 @@ export default connect;
 export {  
   Feed,
   FeedRepository,
+  SupporterRepository,
+  Supporter,
+  Patron,
+  PatronRepository,
 };

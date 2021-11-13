@@ -11,7 +11,8 @@ export default {
       .setName('url')
       .setDescription('The URL of the feed.')
       .setRequired(true)),
-  execute: async (interaction, models) => {
+  execute: async (interaction, models) => { 
+    // TODO: Check feed limits
     const { guildId, channelId } = interaction;
 
     if (!guildId || !channelId) {
