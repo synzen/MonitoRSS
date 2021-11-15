@@ -14,7 +14,7 @@ const supporterSchema = z.object({
 });
 
 export type Supporter = z.input<typeof supporterSchema>;
-export type FeedOutput = z.output<typeof supporterSchema>;
+export type SupporterOutput = z.output<typeof supporterSchema> & Document;
 
 class SupporterRepository {
 
@@ -37,8 +37,8 @@ class SupporterRepository {
    * @param guildId The guild ID.
    * @returns All the supporters who is currently backing this guild.
    */
-  findWithGuild(guildId: string) {
-    return this.collection.find({
+  async findWithGuild(guildId: string): Promise<SupporterOutput[]> {
+    const supporters = await this.collection.find({
       guilds: guildId,
       $or: [
         { expireAt: { $exists: false } },
@@ -46,6 +46,8 @@ class SupporterRepository {
         { expireAt: { $gt: new Date(Date.now()) } },
       ],
     }).toArray();
+
+    return supporters as SupporterOutput[];
   }
 }
 

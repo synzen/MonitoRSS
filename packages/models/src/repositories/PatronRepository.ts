@@ -15,7 +15,7 @@ const patronSchema = z.object({
 });
 
 export type Patron = z.input<typeof patronSchema>;
-export type FeedOutput = z.output<typeof patronSchema>;
+export type PatronOutput = z.output<typeof patronSchema> & Document;
 
 class PatronRepository {
 
@@ -46,8 +46,8 @@ class PatronRepository {
    * @param discordId The patron's connected Discord user ID
    * @returns All the patrons who has connected their Discord account with the given ID
    */
-  findByDiscordId(discordId: string) {
-    return this.collection.find({
+  async findByDiscordId(discordId: string): Promise<PatronOutput[]> {
+    const found = await this.collection.find({
       $or: [{
         discord: discordId,
         status: PatronRepository.STATUS.ACTIVE,
@@ -59,6 +59,8 @@ class PatronRepository {
         },
       }],
     }).toArray();
+
+    return found as PatronOutput[];
   }
 }
 
