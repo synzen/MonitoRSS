@@ -29,6 +29,10 @@ const configSchema = z.object({
         return (data.enabled && data.host && data.accessToken) || !data.enabled;
       }
       , 'Host and access token for subscription API must be set when enabled'),
+  }).default({
+    subscriptions: {
+      enabled: false,
+    },
   }),
 });
 
