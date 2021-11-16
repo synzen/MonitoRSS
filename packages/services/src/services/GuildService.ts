@@ -1,10 +1,17 @@
-import { ModelExports } from '@monitorss/models';
+import { FeedFetcher } from '@monitorss/feed-fetcher';
+import { Feed, ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
+import UserError from '../errors/UserError';
 import SubscriptionService from './SubscriptionService';
 
 export interface IGuildService {
   getFeedLimit(guildId: string): Promise<number>
+}
+
+interface FeedAdditionResult {
+  url: string;
+  error?: string;
 }
 
 @injectable()
@@ -14,6 +21,48 @@ export default class GuildService implements IGuildService {
     @inject(SubscriptionService) private subscriptionService: SubscriptionService,
     @inject('ModelExports') private readonly models: ModelExports,
   ) {}
+
+  static errors = {
+    EXCEEDED_FEED_LIMIT: 'You will exceed your feed limit',
+    EXISTS_IN_CHANNEL: 'Already exists in this channel',
+  };
+
+  async verifyAndAddFeeds(guildId: string, channelId: string, urls: string[]) {
+    const remaining = await this.getRemainingFeedCount(guildId);
+
+    if (remaining <= 0 || urls.length > remaining) {
+      throw new UserError(GuildService.errors.EXCEEDED_FEED_LIMIT);
+    }
+
+    const urlsInChannel = new Set((await this.models.Feed.findByField('channel', channelId))
+      .map((f) => f.url));
+
+    const saveResults = await Promise.allSettled(
+      urls.map(async (url) => {
+        if (urlsInChannel.has(url)) {
+          throw new Error(GuildService.errors.EXISTS_IN_CHANNEL);
+        }
+
+        const toSave = await this.getFeedToSave(guildId, channelId, url);
+        await this.models.Feed.insert(toSave);
+        
+        return url;
+      }),
+    );
+
+    const addResults: FeedAdditionResult[] = saveResults
+      .map((result, index) => {
+        const url = urls[index];
+
+        if (result.status === 'rejected') {
+          return { url, error: result.reason.message  };
+        }
+
+        return { url };
+      });
+
+    return addResults;
+  }
 
   public async getFeedLimit(guildId: string): Promise<number> {
     const [maxFeedsInSubscription, maxFeedsAsSupporter] = await Promise.all([
@@ -25,6 +74,27 @@ export default class GuildService implements IGuildService {
       maxFeedsAsSupporter,
       maxFeedsInSubscription,
     );
+  }
+
+  private async getRemainingFeedCount(guildId: string) {
+    const [ currentTotal, max ] = await Promise.all([
+      this.models.Feed.countInGuild(guildId),
+      this.getFeedLimit(guildId),
+    ]);
+
+    return max - currentTotal;
+  }
+
+  private async getFeedToSave(guildId: string, channelId: string, url: string): Promise<Feed> {
+    const feedFetcher = new FeedFetcher();
+    const { articleList } = await feedFetcher.fetchFeed(url);
+    
+    return {
+      url,
+      title: articleList[0]?.meta?.title || 'Untitled',
+      channel: channelId,
+      guild: guildId,
+    };
   }
 
   private async getFeedLimitFromSubscription(guildId: string) {

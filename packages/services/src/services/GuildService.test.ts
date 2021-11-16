@@ -1,5 +1,14 @@
 import 'reflect-metadata';
+import { FeedFetcher } from '@monitorss/feed-fetcher';
+import UserError from '../errors/UserError';
 import GuildService from './GuildService';
+import { mocked } from 'ts-jest/utils';
+
+jest.mock('@monitorss/feed-fetcher', () => ({
+  FeedFetcher: jest.fn(),
+}));
+
+const mockedFeedFetcher = mocked(FeedFetcher);
 
 describe('GuildService', () => {
   let service: GuildService;
@@ -7,6 +16,11 @@ describe('GuildService', () => {
     getSubscriptionOfGuild: jest.fn(),
   };
   let models = {
+    Feed: {
+      countInGuild: jest.fn(),
+      findByField: jest.fn(),
+      insert: jest.fn(),
+    },
     Patron: {
       findByDiscordId: jest.fn(),
     },
@@ -24,6 +38,62 @@ describe('GuildService', () => {
     subscriptionService.getSubscriptionOfGuild.mockResolvedValue(null);
     models.Patron.findByDiscordId.mockResolvedValue([]);
     models.Supporter.findWithGuild.mockResolvedValue([]);
+  });
+
+  describe('verifyAndAddFeeds', () => {
+    describe('throws a UserError', () => {
+      it('throws a UserError when the guild is at the feed limit', async () => {
+        models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds);
+        await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1'])).rejects
+          .toThrow(UserError);
+      });
+      it('throws a UserError when the new urls will exceed the feed limit', async () => {
+        models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
+        await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1', 'url2'])).rejects
+          .toThrow(UserError);
+      });
+    });
+    it('returns an error with the url if it already exists in channel', async () => {
+      const urlsToAdd = ['url1', 'url2'];
+      models.Feed.countInGuild.mockResolvedValue(0);
+      models.Feed.findByField.mockResolvedValue([{ url: urlsToAdd[1] }]);
+      mockedFeedFetcher.mockImplementation(() => {
+        return {
+          fetchFeed: jest.fn().mockResolvedValue({
+            articleList: [],
+          }),
+        } as any;
+      });
+
+      const results = await service.verifyAndAddFeeds('guild-id', 'channel-id', urlsToAdd);
+      expect(results).toEqual(
+        expect.arrayContaining([{
+          url: urlsToAdd[1], error: GuildService.errors.EXISTS_IN_CHANNEL,
+        }]),
+      );
+    });
+    it('returns no error if url is successfully added', async () => {
+      const urlsToAdd = ['url1', 'url2'];
+      models.Feed.countInGuild.mockResolvedValue(0);
+      models.Feed.findByField.mockResolvedValue([]);
+      mockedFeedFetcher.mockImplementation(() => {
+        return {
+          fetchFeed: jest.fn().mockResolvedValue({
+            articleList: [],
+          }),
+        } as any;
+      });
+
+      const results = await service.verifyAndAddFeeds('guild-id', 'channel-id', urlsToAdd);
+      expect(results).toHaveLength(2);
+      expect(results).toEqual(
+        expect.arrayContaining([{
+          url: urlsToAdd[1],
+        }, {
+          url: urlsToAdd[0],
+        }]),
+      );
+    });
   });
 
   describe('getFeedLimit', () => {
