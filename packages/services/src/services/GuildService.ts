@@ -1,4 +1,4 @@
-import { Models } from '@monitorss/models';
+import { ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
 import SubscriptionService from './SubscriptionService';
@@ -12,7 +12,7 @@ export default class GuildService implements IGuildService {
   constructor(
     @inject('Config') private readonly config: Config,
     @inject(SubscriptionService) private subscriptionService: SubscriptionService,
-    @inject('Models') private readonly models: Models,
+    @inject('ModelExports') private readonly models: ModelExports,
   ) {}
 
   public async getFeedLimit(guildId: string): Promise<number> {
