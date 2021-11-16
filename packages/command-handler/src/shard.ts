@@ -5,14 +5,16 @@ import setupServices from '@monitorss/services';
 
 async function shard() {
   const services = await setupServices({
-    mongoUri: config.MONGO_URI,
+    mongoUri: config.mongoUri,
     apis: {
       subscriptions: {
-        host: 'config',
+        enabled: config.apis.subscriptions.enabled,
+        host: config.apis.subscriptions.host,
+        accessToken: config.apis.subscriptions.accessToken,
       },
     },
-    defaultMaxFeeds: 15,
-    defaultRefreshRateMinutes: 10,
+    defaultMaxFeeds: config.defaultMaxFeeds,
+    defaultRefreshRateMinutes: config.defaultRefreshRateMinutes,
   });
 
   const client = new Client({ 
@@ -42,7 +44,7 @@ async function shard() {
     console.log('Ready!');
   });
 
-  client.login(config.BOT_TOKEN);
+  client.login(config.botToken);
 }
 
 shard();

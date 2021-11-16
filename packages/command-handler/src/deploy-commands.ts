@@ -4,8 +4,8 @@ import config from './config';
 import commands from './commands';
 
 const { clientId, token } = {
-  token: config.BOT_TOKEN,
-  clientId: config.BOT_CLIENT_ID,
+  token: config.botToken,
+  clientId: config.botClientId,
 };
 
 const commandsJSON = Array.from(commands.values()).map(command => command.data.toJSON());
@@ -15,7 +15,7 @@ const rest = new REST({ version: '9' }).setToken(token);
 (async () => {
   try {
     await rest.put(
-      Routes.applicationGuildCommands(clientId, config.TESTING_GUILD_ID),
+      Routes.applicationGuildCommands(clientId, config.testingGuildId),
       { body: commandsJSON },
     );
 
