@@ -1,10 +1,19 @@
 import { Client } from 'discord.js';
 import commands from './commands';
 import config from './config';
-import connect from '@monitorss/models';
+import setupServices from '@monitorss/services';
 
 async function shard() {
-  const models = await connect(config.MONGO_URI);
+  const services = await setupServices({
+    mongoUri: config.MONGO_URI,
+    apis: {
+      subscriptions: {
+        host: 'config',
+      },
+    },
+    defaultMaxFeeds: 15,
+    defaultRefreshRateMinutes: 10,
+  });
 
   const client = new Client({ 
     intents: [],  
@@ -23,7 +32,7 @@ async function shard() {
     }
 
     try {
-      command.execute(interaction, models);
+      command.execute(interaction, services);
     } catch (err) {
       console.error(err);
     }

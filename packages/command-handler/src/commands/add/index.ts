@@ -1,7 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { Command } from '../command.interface';
-import feedIsUniqueInChannel from './feed-is-unique-in-channel';
-import getFeedToSave from './get-feed-to-save';
 
 export default {
   data: new SlashCommandBuilder()
@@ -11,7 +9,7 @@ export default {
       .setName('url')
       .setDescription('The URL of the feed.')
       .setRequired(true)),
-  execute: async (interaction, models) => { 
+  execute: async (interaction, services) => { 
     // TODO: Check feed limits
     const { guildId, channelId } = interaction;
 
@@ -30,15 +28,8 @@ export default {
       return;
     }
 
-    if (!feedIsUniqueInChannel(channelId, feedUrl, models.Feed)) {
-      await interaction.editReply('That feed is already in this channel.');
-      
-      return;
-    }
-
     try {
-      const toSave = await getFeedToSave(guildId, channelId, feedUrl);
-      await models.Feed.insert(toSave);
+      await services.guildService.verifyAndAddFeeds(guildId, channelId, [feedUrl]);
       await interaction.editReply(`${feedUrl} looks good, saved.`);
     } catch (err) {
       console.log('Unable to add feed', err);
