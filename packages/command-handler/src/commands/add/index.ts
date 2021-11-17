@@ -14,11 +14,7 @@ const getPrettyErrorMessage = (error: 'EXCEEDED_FEED_LIMIT' | 'EXISTS_IN_CHANNEL
     return 'This feed is already in this channel.';
   }
 
-  if (error === 'INTERNAL') {
-    return 'An internal error occurred.';
-  }
-
-  return 'An unknown error occurred.';
+  return '';
 };
 
 export default {
@@ -52,9 +48,9 @@ export default {
     try {
       const results = await services.guildService.verifyAndAddFeeds(guildId, channelId, urls);
       const resultsText = results
-        .map(({ url, error }) => {
+        .map(({ url, error, message }) => {
           if (error) {
-            return `🇽 **${url}** (${getPrettyErrorMessage(error)})`;
+            return `🇽 **${url}** (${getPrettyErrorMessage(error) || message})`;
           } else {
             return `✅ **${url}**`;
           }

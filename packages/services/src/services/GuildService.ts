@@ -25,7 +25,12 @@ export default class GuildService implements IGuildService {
    * @param channelId The channel ID in the guild to add the feed to
    * @param inputUrls The feed URLs to add
    * @returns Returns an array of results for each URL. If there was an error, the "error"
-   * field of a result object will be populated.
+   * field of a result object will be populated. The possible errors are:
+   * 
+   * - `EXCEEDED_FEED_LIMIT`: The guild has reached its feed limit
+   * - `EXISTS_IN_CHANNEL`: The feed already exists in the channel
+   * - `INTERNAL`: An unknown error occurred. The internal error message may be surfaced up
+   *    to the user.
    */
   async verifyAndAddFeeds(guildId: string, channelId: string, inputUrls: string[]) {
     const normalizedUrls = [...new Set(inputUrls.map(url => normalizeUrl(url)))];
