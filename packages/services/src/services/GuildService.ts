@@ -8,11 +8,6 @@ export interface IGuildService {
   getFeedLimit(guildId: string): Promise<number>
 }
 
-interface FeedAdditionResult {
-  url: string;
-  error?: string;
-}
-
 @injectable()
 export default class GuildService implements IGuildService {
   constructor(
@@ -39,31 +34,27 @@ export default class GuildService implements IGuildService {
     const urlsInChannel = new Set((await this.models.Feed.findByField('channel', channelId))
       .map((f) => f.url));
 
-    const saveResults = await Promise.allSettled(
+    return Promise.all(
       urls.map(async (url) => {
-        if (urlsInChannel.has(url)) {
-          throw new Error(GuildService.errors.EXISTS_IN_CHANNEL);
-        }
+        try {
+          if (urlsInChannel.has(url)) {
+            throw new Error(GuildService.errors.EXISTS_IN_CHANNEL);
+          }
 
-        const toSave = await this.getFeedToSave(guildId, channelId, url);
-        await this.models.Feed.insert(toSave);
-        
-        return url;
+          const toSave = await this.getFeedToSave(guildId, channelId, url);
+          await this.models.Feed.insert(toSave);
+          
+          return {
+            url,
+          };
+        } catch (err) {
+          return {
+            url,
+            error: (err as Error).message,
+          };
+        }
       }),
     );
-
-    const addResults: FeedAdditionResult[] = saveResults
-      .map((result, index) => {
-        const url = urls[index];
-
-        if (result.status === 'rejected') {
-          return { url, error: result.reason.message  };
-        }
-
-        return { url };
-      });
-
-    return addResults;
   }
 
   public async getFeedLimit(guildId: string): Promise<number> {
