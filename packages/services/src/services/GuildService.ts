@@ -4,6 +4,7 @@ import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
 import SubscriptionService from './SubscriptionService';
 import normalizeUrl from 'normalize-url';
+import ERROR_CODES from './constants/error-codes';
 
 export interface IGuildService {
   getFeedLimit(guildId: string): Promise<number>
@@ -17,11 +18,15 @@ export default class GuildService implements IGuildService {
     @inject('ModelExports') private readonly models: ModelExports,
   ) {}
 
-  static errors = {
-    EXCEEDED_FEED_LIMIT: 'You will exceed your feed limit',
-    EXISTS_IN_CHANNEL: 'Already exists in this channel',
-  };
-
+  /**
+   * Verify and add a set of feed URLs to a guild's channel.
+   *
+   * @param guildId The guild ID to add the feed to
+   * @param channelId The channel ID in the guild to add the feed to
+   * @param inputUrls The feed URLs to add
+   * @returns Returns an array of results for each URL. If there was an error, the "error"
+   * field of a result object will be populated.
+   */
   async verifyAndAddFeeds(guildId: string, channelId: string, inputUrls: string[]) {
     const normalizedUrls = [...new Set(inputUrls.map(url => normalizeUrl(url)))];
     const remaining = await this.getRemainingFeedCount(guildId);
@@ -29,7 +34,8 @@ export default class GuildService implements IGuildService {
     if (remaining <= 0 || normalizedUrls.length > remaining) {
       return normalizedUrls.map((url) => ({
         url,
-        error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+        error: ERROR_CODES.EXCEEDED_FEED_LIMIT,
+        message: 'The feed limit will be exceeded for this guild.',
       }));
     }
 
@@ -40,7 +46,11 @@ export default class GuildService implements IGuildService {
       normalizedUrls.map(async (url) => {
         try {
           if (urlsInChannel.has(url)) {
-            throw new Error(GuildService.errors.EXISTS_IN_CHANNEL);
+            return {
+              url,
+              error: ERROR_CODES.EXISTS_IN_CHANNEL,
+              message: 'The feed already exists in this channel',
+            };
           }
 
           const toSave = await this.getFeedToSave(guildId, channelId, url);
@@ -52,7 +62,8 @@ export default class GuildService implements IGuildService {
         } catch (err) {
           return {
             url,
-            error: (err as Error).message,
+            error: ERROR_CODES.INTERNAL,
+            message: (err as Error).message,
           };
         }
       }),

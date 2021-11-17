@@ -29,3 +29,4 @@ async function setup(inputConfig: Config): Promise<Services> {
 }
 
 export default setup; 
+export { default as ERROR_CODES } from './services/constants/error-codes';

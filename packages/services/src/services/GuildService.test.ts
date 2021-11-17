@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { FeedFetcher } from '@monitorss/feed-fetcher';
 import GuildService from './GuildService';
 import { mocked } from 'ts-jest/utils';
+import ERROR_CODES from './constants/error-codes';
 
 jest.mock('@monitorss/feed-fetcher', () => ({
   FeedFetcher: jest.fn(),
@@ -49,7 +50,8 @@ describe('GuildService', () => {
       await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', urls)).resolves
         .toEqual([{
           url: urls[0],
-          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+          error: ERROR_CODES.EXCEEDED_FEED_LIMIT,
+          message: expect.any(String),
         }]);
     });
     it('returns errors when the new urls will exceed the feed limit', async () => {
@@ -62,10 +64,12 @@ describe('GuildService', () => {
         .resolves
         .toEqual([{
           url: urls[0],
-          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+          error: ERROR_CODES.EXCEEDED_FEED_LIMIT,
+          message: expect.any(String),
         }, {
           url: urls[1],
-          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+          error: ERROR_CODES.EXCEEDED_FEED_LIMIT,
+          message: expect.any(String),
         }]);
     });
     it('normalizes and de-duplicates links', async () => {
@@ -79,10 +83,12 @@ describe('GuildService', () => {
         .resolves
         .toEqual([{
           url: urls[0],
-          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+          error: ERROR_CODES.EXCEEDED_FEED_LIMIT,
+          message: expect.any(String),
         }, {
           url: urls[1],
-          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+          error: ERROR_CODES.EXCEEDED_FEED_LIMIT,
+          message: expect.any(String),
         }]);
     });
     it('returns an error with the url if it already exists in channel', async () => {
@@ -100,7 +106,9 @@ describe('GuildService', () => {
       const results = await service.verifyAndAddFeeds('guild-id', 'channel-id', urlsToAdd);
       expect(results).toEqual(
         expect.arrayContaining([{
-          url: urlsToAdd[1], error: GuildService.errors.EXISTS_IN_CHANNEL,
+          url: urlsToAdd[1],
+          error: ERROR_CODES.EXISTS_IN_CHANNEL,
+          message: expect.any(String),
         }]),
       );
     });

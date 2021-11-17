@@ -1,6 +1,26 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { Command } from '../command.interface';
 
+function parseUrls(text: string): string[] {
+  return text.split('>').map((url) => url.trim());
+}
+
+const getPrettyErrorMessage = (error: 'EXCEEDED_FEED_LIMIT' | 'EXISTS_IN_CHANNEL' | 'INTERNAL') => {
+  if (error === 'EXCEEDED_FEED_LIMIT') {
+    return 'You will exceed the maximum number of feeds for this server.';
+  }
+
+  if (error === 'EXISTS_IN_CHANNEL') {
+    return 'This feed is already in this channel.';
+  }
+
+  if (error === 'INTERNAL') {
+    return 'An internal error occurred.';
+  }
+
+  return 'An unknown error occurred.';
+};
+
 export default {
   data: new SlashCommandBuilder()
     .setName('add')
@@ -18,18 +38,30 @@ export default {
       return;
     }
 
-    const feedUrl = interaction.options.getString('url');
+    const input = interaction.options.getString('url');
     await interaction.deferReply();
 
-    if (!feedUrl) {
+    if (!input) {
       await interaction.editReply('You must provide a URL.');
       
       return;
     }
 
+    const urls = parseUrls(input);
+
     try {
-      await services.guildService.verifyAndAddFeeds(guildId, channelId, [feedUrl]);
-      await interaction.editReply(`${feedUrl} looks good, saved.`);
+      const results = await services.guildService.verifyAndAddFeeds(guildId, channelId, urls);
+      const resultsText = results
+        .map(({ url, error }) => {
+          if (error) {
+            return `🇽 **${url}** (${getPrettyErrorMessage(error)})`;
+          } else {
+            return `✅ **${url}**`;
+          }
+        })
+        .join('\n');
+      
+      await interaction.editReply(resultsText);
     } catch (err) {
       console.log('Unable to add feed', err);
       await interaction.editReply(`Unable to add feed: ${(err as Error).message}`);
