@@ -68,6 +68,23 @@ describe('GuildService', () => {
           error: GuildService.errors.EXCEEDED_FEED_LIMIT,
         }]);
     });
+    it('normalizes and de-duplicates links', async () => {
+      models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
+      const urls = [
+        'http://url1.com',
+        'http://url2.com',
+        'http://url2.com/',
+      ];
+      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', urls))
+        .resolves
+        .toEqual([{
+          url: urls[0],
+          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+        }, {
+          url: urls[1],
+          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+        }]);
+    });
     it('returns an error with the url if it already exists in channel', async () => {
       const urlsToAdd = ['http://url1.com', 'http://url2.com'];
       models.Feed.countInGuild.mockResolvedValue(0);

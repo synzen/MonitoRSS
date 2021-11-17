@@ -22,11 +22,12 @@ export default class GuildService implements IGuildService {
     EXISTS_IN_CHANNEL: 'Already exists in this channel',
   };
 
-  async verifyAndAddFeeds(guildId: string, channelId: string, urls: string[]) {
+  async verifyAndAddFeeds(guildId: string, channelId: string, inputUrls: string[]) {
+    const normalizedUrls = [...new Set(inputUrls.map(url => normalizeUrl(url)))];
     const remaining = await this.getRemainingFeedCount(guildId);
 
-    if (remaining <= 0 || urls.length > remaining) {
-      return urls.map((url) => ({
+    if (remaining <= 0 || normalizedUrls.length > remaining) {
+      return normalizedUrls.map((url) => ({
         url,
         error: GuildService.errors.EXCEEDED_FEED_LIMIT,
       }));
@@ -36,9 +37,7 @@ export default class GuildService implements IGuildService {
       .map((f) => f.url));
 
     return Promise.all(
-      urls.map(async (inputUrl) => {
-        const url = normalizeUrl(inputUrl);
-        
+      normalizedUrls.map(async (url) => {
         try {
           if (urlsInChannel.has(url)) {
             throw new Error(GuildService.errors.EXISTS_IN_CHANNEL);
