@@ -10,8 +10,8 @@ class FeedParserError extends Error {
    * @param message User-friendly error message
    * @returns An instance of FeedParserError
    */
-  static InvalidFeed(message: string = `That is a not a valid feed. Note that you cannot add just
-    any link. You may check if it is a valid feed by using online RSS feed validators`,
+  static InvalidFeed(message: string = 'That is a not a valid feed. Note that you cannot add just' +
+    ' any link. You may check if it is a valid feed by using online RSS feed validators',
   ) {
     return new FeedParserError(message);
   }
