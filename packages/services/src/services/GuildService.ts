@@ -2,7 +2,6 @@ import { FeedFetcher } from '@monitorss/feed-fetcher';
 import { Feed, ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
-import UserError from '../errors/UserError';
 import SubscriptionService from './SubscriptionService';
 
 export interface IGuildService {
@@ -31,7 +30,10 @@ export default class GuildService implements IGuildService {
     const remaining = await this.getRemainingFeedCount(guildId);
 
     if (remaining <= 0 || urls.length > remaining) {
-      throw new UserError(GuildService.errors.EXCEEDED_FEED_LIMIT);
+      return urls.map((url) => ({
+        url,
+        error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+      }));
     }
 
     const urlsInChannel = new Set((await this.models.Feed.findByField('channel', channelId))

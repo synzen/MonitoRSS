@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { FeedFetcher } from '@monitorss/feed-fetcher';
-import UserError from '../errors/UserError';
 import GuildService from './GuildService';
 import { mocked } from 'ts-jest/utils';
 
@@ -41,17 +40,24 @@ describe('GuildService', () => {
   });
 
   describe('verifyAndAddFeeds', () => {
-    describe('throws a UserError', () => {
-      it('throws a UserError when the guild is at the feed limit', async () => {
-        models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds);
-        await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1'])).rejects
-          .toThrow(UserError);
-      });
-      it('throws a UserError when the new urls will exceed the feed limit', async () => {
-        models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
-        await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1', 'url2'])).rejects
-          .toThrow(UserError);
-      });
+    it('returns errors when the guild is at the feed limit', async () => {
+      models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds);
+      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1'])).resolves
+        .toEqual([{
+          url: 'url1',
+          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+        }]);
+    });
+    it('returns errors when the new urls will exceed the feed limit', async () => {
+      models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
+      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1', 'url2'])).resolves
+        .toEqual([{
+          url: 'url1',
+          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+        }, {
+          url: 'url2',
+          error: GuildService.errors.EXCEEDED_FEED_LIMIT,
+        }]);
     });
     it('returns an error with the url if it already exists in channel', async () => {
       const urlsToAdd = ['url1', 'url2'];
