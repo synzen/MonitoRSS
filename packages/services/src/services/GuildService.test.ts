@@ -7,6 +7,7 @@ jest.mock('@monitorss/feed-fetcher', () => ({
   FeedFetcher: jest.fn(),
 }));
 
+
 const mockedFeedFetcher = mocked(FeedFetcher);
 
 describe('GuildService', () => {
@@ -42,25 +43,33 @@ describe('GuildService', () => {
   describe('verifyAndAddFeeds', () => {
     it('returns errors when the guild is at the feed limit', async () => {
       models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds);
-      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1'])).resolves
+      const urls = [
+        'http://url1.com',
+      ];
+      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', urls)).resolves
         .toEqual([{
-          url: 'url1',
+          url: urls[0],
           error: GuildService.errors.EXCEEDED_FEED_LIMIT,
         }]);
     });
     it('returns errors when the new urls will exceed the feed limit', async () => {
       models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
-      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', ['url1', 'url2'])).resolves
+      const urls = [
+        'http://url1.com',
+        'http://url2.com',
+      ];
+      await expect(service.verifyAndAddFeeds('guild-id', 'channel-id', urls))
+        .resolves
         .toEqual([{
-          url: 'url1',
+          url: urls[0],
           error: GuildService.errors.EXCEEDED_FEED_LIMIT,
         }, {
-          url: 'url2',
+          url: urls[1],
           error: GuildService.errors.EXCEEDED_FEED_LIMIT,
         }]);
     });
     it('returns an error with the url if it already exists in channel', async () => {
-      const urlsToAdd = ['url1', 'url2'];
+      const urlsToAdd = ['http://url1.com', 'http://url2.com'];
       models.Feed.countInGuild.mockResolvedValue(0);
       models.Feed.findByField.mockResolvedValue([{ url: urlsToAdd[1] }]);
       mockedFeedFetcher.mockImplementation(() => {
@@ -79,7 +88,7 @@ describe('GuildService', () => {
       );
     });
     it('returns no error if url is successfully added', async () => {
-      const urlsToAdd = ['url1', 'url2'];
+      const urlsToAdd = ['http://url1.com', 'http://url2.com'];
       models.Feed.countInGuild.mockResolvedValue(0);
       models.Feed.findByField.mockResolvedValue([]);
       mockedFeedFetcher.mockImplementation(() => {

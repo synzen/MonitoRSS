@@ -40,6 +40,7 @@
     "@monitorss/models": "1.0.0",
     "@monitorss/feed-fetcher": "1.0.0",
     "inversify": "^6.0.1",
+    "normalize-url": "^4.5.1",
     "reflect-metadata": "^0.1.13",
     "undici": "^4.10.0",
     "zod": "^3.11.6"

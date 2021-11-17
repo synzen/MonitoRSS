@@ -3,6 +3,7 @@ import { Feed, ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
 import SubscriptionService from './SubscriptionService';
+import normalizeUrl from 'normalize-url';
 
 export interface IGuildService {
   getFeedLimit(guildId: string): Promise<number>
@@ -35,7 +36,9 @@ export default class GuildService implements IGuildService {
       .map((f) => f.url));
 
     return Promise.all(
-      urls.map(async (url) => {
+      urls.map(async (inputUrl) => {
+        const url = normalizeUrl(inputUrl);
+        
         try {
           if (urlsInChannel.has(url)) {
             throw new Error(GuildService.errors.EXISTS_IN_CHANNEL);
