@@ -32,12 +32,8 @@ export abstract class AbstractLogger<T extends LoggerOptions> {
 
   protected abstract createLogger(options: T): InternalCommonLogger;
 
-  log(level: InternalCommonLoggerLogLevel, data?: Record<string, any> | Error) {
-    if (data instanceof Error) {
-      this.logger.log(level, data);
-    } else {
-      this.logger.log(level, this.constructMetaObject(data));
-    }
+  log(level: InternalCommonLoggerLogLevel, data?: Record<string, any>) {
+    this.logger.log(level, this.constructMetaObject(data));
   }
 
   private constructMetaObject(extraData?: Record<string, any>) {
