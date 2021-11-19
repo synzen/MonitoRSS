@@ -14,6 +14,12 @@ const configSchema = z.object({
   defaultMaxFeeds: z.number().default(
     Number(process.env.DEFAULT_MAX_FEEDS as string),
   ),
+  logging: z.object({
+    datadog: z.object({
+      envs: z.array(z.string()),
+      levels: z.array(z.enum(['debug', 'info', 'warn', 'error'])),
+    }),
+  }),
   apis: z.object({
     subscriptions: z.object({
       enabled: z.boolean().default(
