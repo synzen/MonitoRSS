@@ -4,6 +4,9 @@
   "description": "",
   "main": "build/index.js",
   "types": "build/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepublish": "tsc",
     "build": "tsc",
