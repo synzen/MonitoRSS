@@ -1,8 +1,8 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
-import { Container } from 'inversify';
-import { containerTypes } from '../../events/interaction-create';
+import { inject, injectable } from 'inversify';
 import {
+  commandContainerSymbols,
   CommandLogger,
   CommandServices,
   CommandTranslate,
@@ -28,18 +28,13 @@ const getPrettyErrorMessage = (
   return '';
 };
 
+@injectable()
 class CommandAdd implements CommandInterface {
-  commandServices: CommandServices;
+  @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
 
-  translate: CommandTranslate;
+  @inject(commandContainerSymbols.CommandLogger) logger!: CommandLogger;
 
-  logger: CommandLogger;
-
-  constructor(container: Container) {
-    this.commandServices = container.get<CommandServices>(containerTypes.CommandServices);
-    this.translate = container.get<CommandTranslate>(containerTypes.CommandTranslate);
-    this.logger = container.get<CommandLogger>(containerTypes.CommandLogger);
-  }
+  @inject(commandContainerSymbols.CommandTranslate) translate!: CommandTranslate;
 
   static data = new SlashCommandBuilder()
     .setName('add')
