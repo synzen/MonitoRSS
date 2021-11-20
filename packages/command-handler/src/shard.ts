@@ -2,6 +2,7 @@ import { Client } from 'discord.js';
 import commands from './commands';
 import config from './config';
 import setupServices from '@monitorss/services';
+import logger from './utils/logger';
 
 async function shard() {
   const services = await setupServices({
@@ -21,7 +22,7 @@ async function shard() {
     intents: [],  
   });
 
-  client.on('interactionCreate', interaction => {
+  client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) {
       return;
     }
@@ -34,14 +35,22 @@ async function shard() {
     }
 
     try {
-      command.execute(interaction, services);
-    } catch (err) {
-      console.error(err);
+      await command.execute(interaction, services);
+    } catch (error) {
+      logger.error(`Failed to execute command ${commandName}`, error as Error, {
+        interaction: {
+          guildId: interaction.guildId,
+          channelId: interaction.channelId,
+          userId: interaction.member.user.id,
+          name: interaction.commandName,
+          options: interaction.options.data,
+        },
+      });
     }
   });
 
   client.once('ready', () => {
-    console.log('Ready!');
+    logger.info(`Client shard ${client.shard?.ids[0]} ready`);
   });
 
   client.login(config.botToken);

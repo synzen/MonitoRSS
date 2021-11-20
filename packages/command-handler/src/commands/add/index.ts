@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
+import logger from '../../utils/logger';
 import { Command } from '../command.interface';
 
 function parseUrls(text: string): string[] {
@@ -59,7 +60,7 @@ export default {
       
       await interaction.editReply(resultsText);
     } catch (err) {
-      console.log('Unable to add feed', err);
+      logger.error('Unable to add feed', err as Error);
       await interaction.editReply(`Unable to add feed: ${(err as Error).message}`);
     }
   },
