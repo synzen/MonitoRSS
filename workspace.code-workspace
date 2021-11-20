@@ -19,5 +19,7 @@
 			"path": "packages\\logger"
 		}
 	],
-  "settings": {}
+	"settings": {
+		"terminal.integrated.tabs.title": "${workspaceFolder}"
+	}
 }
