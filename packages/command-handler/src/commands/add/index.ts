@@ -65,7 +65,7 @@ class CommandAdd implements CommandInterface {
       const resultsText = results
         .map(({ url, error, message }) => {
           if (error) {
-            return `🇽 **${url}** (${getPrettyErrorMessage(this.translate, error) || message})`;
+            return `❌ **${url}** (${getPrettyErrorMessage(this.translate, error) || message})`;
           } else {
             return `✅ **${url}**`;
           }
