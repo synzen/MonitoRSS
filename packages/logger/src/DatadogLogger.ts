@@ -31,9 +31,11 @@ export default class DatadogLogger extends AbstractLogger<DatadogLoggerOptions> 
     // https://docs.datadoghq.com/logs/log_collection/nodejs/?tab=winston30
     const httpTransport = new winston.transports.Http({
       host: 'http-intake.logs.datadoghq.com',
-      path: `/v1/input/${apiKey}?ddsource=${source}&service=${service}`,
+      path: `/api/v2/logs?dd-api-key=${apiKey}&ddsource=${source}&service=${service}`,
       ssl: true,
     });
+
+    console.log('shoudld log', this.shouldLog);
 
     return winston.createLogger({
       exitOnError: false,
@@ -41,6 +43,9 @@ export default class DatadogLogger extends AbstractLogger<DatadogLoggerOptions> 
       format: winston.format.json(),
       transports: [
         httpTransport,
+      ],
+      exceptionHandlers: [
+        new winston.transports.Console(),
       ],
     });
   }
