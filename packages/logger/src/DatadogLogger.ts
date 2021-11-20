@@ -35,8 +35,6 @@ export default class DatadogLogger extends AbstractLogger<DatadogLoggerOptions> 
       ssl: true,
     });
 
-    console.log('shoudld log', this.shouldLog);
-
     return winston.createLogger({
       exitOnError: false,
       silent: !this.shouldLog,
