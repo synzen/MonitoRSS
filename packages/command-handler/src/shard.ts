@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Client } from 'discord.js';
 import config from './config';
 import setupServices from '@monitorss/services';

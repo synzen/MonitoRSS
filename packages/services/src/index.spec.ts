@@ -1,6 +1,6 @@
 import { Config } from './config-schema';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import setup, { Services } from './index';
+import setup, { MonitoServices } from './index';
 import { SubscriptionAPIResponse } from './services/SubscriptionService';
 import { request } from 'undici';
 import { mocked } from 'ts-jest/utils';
@@ -14,7 +14,7 @@ const requestMocked = mocked(request);
 describe('Index integration', () => {
   let config: Config;
   let mongodb: MongoMemoryServer;
-  let services: Services;
+  let services: MonitoServices;
 
   beforeEach(async () => {
     mongodb = await MongoMemoryServer.create();

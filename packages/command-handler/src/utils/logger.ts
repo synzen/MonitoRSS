@@ -1,4 +1,5 @@
 import setupLogger, { MonitoLogger } from '@monitorss/logger';
+import { injectable } from 'inversify';
 import config from '../config';
 
 let datadogConfig: {
@@ -15,8 +16,7 @@ if (config.logging.datadog.apiKey) {
   console.warn('Datadog logger is not set');
 }
 
-
-
+@injectable()
 class Logger {
   logger: MonitoLogger;
 

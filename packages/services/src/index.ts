@@ -6,14 +6,14 @@ import { GuildService, SubscriptionService } from './services';
 import { MongoClient } from 'mongodb';
 import ProfileService from './services/ProfileService';
 
-export interface Services {
+export interface MonitoServices {
   mongoDbClient: MongoClient;
   guildService: GuildService;
   subscriptionService: SubscriptionService;
   profileService: ProfileService;
 }
 
-async function setup(inputConfig: Config): Promise<Services> {
+async function setup(inputConfig: Config): Promise<MonitoServices> {
   const config = configSchema.parse(inputConfig);
   const modelExports = await connect(config.mongoUri);
 

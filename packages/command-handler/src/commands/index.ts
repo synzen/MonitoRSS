@@ -1,10 +1,11 @@
-import add from './add';
-import { Command } from './command.interface';
-import ping from './ping';
+import { Container } from 'inversify';
+import CommandAdd from './add';
+import CommandInterface from './command.interface';
+import CommandPing from './ping';
 
-const mapOfCommands = new Map([
-  [ping.data.name, ping],
-  [add.data.name, add],
-]) as Map<string, Command>;
+const mapOfCommands = new Map<string, new (container: Container) => CommandInterface>([
+  [CommandPing.data.name, CommandPing],
+  [CommandAdd.data.name, CommandAdd],
+]);
 
 export default mapOfCommands;

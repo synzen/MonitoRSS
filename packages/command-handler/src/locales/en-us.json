@@ -1,0 +1,6 @@
+{
+  "commands.add.error_exceeded_feed_limit": "You will exceed the maximum number of feeds for this server. Try removing a feed first.",
+  "commands.add.error_exists_in_channel": "This feed is already in this channel.",
+  "commands.add.error_missing_url": "You must provide a URL as an option.",
+  "commands.add.error_unable_to_add_feed": "Unable to add feed"
+}

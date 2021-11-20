@@ -1,12 +1,15 @@
-import { CacheType, CommandInteraction } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { Command } from '../command.interface';
+import CommandInterface from '../command.interface';
 
-export default {
-  data: new SlashCommandBuilder()
+class CommandPing implements CommandInterface {
+  static data = new SlashCommandBuilder()
     .setName('ping')
-    .setDescription('Replies with Pong!'),
-  execute: async (interaction: CommandInteraction<CacheType>) => {
+    .setDescription('Replies with Pong!');
+
+  async execute(interaction: CommandInteraction): Promise<void> {
     await interaction.reply('Pong!');
-  },
-} as Command;
+  }
+}
+
+export default CommandPing;
