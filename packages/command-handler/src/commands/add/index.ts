@@ -1,5 +1,4 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import logger from '../../utils/logger';
 import { Command } from '../command.interface';
 
 function parseUrls(text: string): string[] {
