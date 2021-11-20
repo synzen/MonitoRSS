@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@monitorss/feed-fetcher": "^1.0.0",
-    "@monitorss/models": "^1.0.0",
+    "@monitorss/models": "^1.0.1",
     "inversify": "^6.0.1",
     "normalize-url": "^4.5.1",
     "reflect-metadata": "^0.1.13",
