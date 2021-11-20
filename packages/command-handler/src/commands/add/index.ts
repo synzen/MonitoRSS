@@ -60,7 +60,9 @@ export default {
       
       await interaction.editReply(resultsText);
     } catch (err) {
-      logger.error('Unable to add feed', err as Error);
+      services.logger.error('Unable to add feed', err as Error, {
+        urls,
+      });
       await interaction.editReply(`Unable to add feed: ${(err as Error).message}`);
     }
   },

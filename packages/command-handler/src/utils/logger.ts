@@ -1,4 +1,4 @@
-import setupLogger from '@monitorss/logger';
+import setupLogger, { MonitoLogger } from '@monitorss/logger';
 import config from '../config';
 
 let datadogConfig: {
@@ -15,36 +15,70 @@ if (config.logging.datadog.apiKey) {
   console.warn('Datadog logger is not set');
 }
 
-const internalLogger = setupLogger({
-  env: process.env.NODE_ENV || 'local',
-  datadog: datadogConfig,
-  enableDebugLogs: config.logging.enableDebugLogs,
-});
 
-const logger = {
-  debug: (message: string, data?: Record<string, any>) => internalLogger.debug(message, data),
-  info: (message: string, data?: Record<string, any>) => internalLogger.info(message, data),
-  warn: (message: string, data?: Record<string, any>) => internalLogger.warn(message, data),
-  error: (
+
+class Logger {
+  logger: MonitoLogger;
+
+  context?: Record<string, any>;
+
+  constructor() {
+    this.logger = setupLogger({
+      env: process.env.NODE_ENV || 'local',
+      datadog: datadogConfig,
+      enableDebugLogs: config.logging.enableDebugLogs,
+    });
+  }
+
+  setContext(context: Record<string, any>) {
+    this.context = context;
+
+    return this;
+  }
+
+  debug(message: string, data?: Record<string, any>) {
+    this.logger.debug(message, {
+      ...this.context,
+      ...data,
+    });
+  }
+
+  info(message: string, data?: Record<string, any>) {
+    this.logger.info(message, {
+      ...this.context,
+      ...data,
+    });
+  }
+
+  warn(message: string, data?: Record<string, any>) {
+    this.logger.warn(message, {
+      ...this.context,
+      ...data,
+    });
+  }
+
+  error(
     message: string,
     error?: Error | Record<string, any>,
     data?: Record<string, any>,
-  ) => {
+  ) {
     if (error instanceof Error) {
-      internalLogger.error(
+      this.logger.error(
         message,
         {
           stack: error?.stack?.split('\n'),
+          ...this.context,
           ...data,
         });
     } else {
-      internalLogger.error(
+      this.logger.error(
         message, {
+          ...this.context,
           ...error,
           ...data,
         });
     }
-  }, 
-};
+  }
+}
 
-export default logger;
+export default Logger;

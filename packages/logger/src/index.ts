@@ -120,4 +120,6 @@ const setupLogger = (config: Config) => {
   return logger;
 };
 
+export type MonitoLogger = ReturnType<typeof setupLogger>;
+
 export default setupLogger;

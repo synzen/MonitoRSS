@@ -2,10 +2,10 @@ import { Client } from 'discord.js';
 import commands from './commands';
 import config from './config';
 import setupServices from '@monitorss/services';
-import logger from './utils/logger';
+import Logger from './utils/logger';
 
 async function shard() {
-  const services = await setupServices({
+  const monitoServices = await setupServices({
     mongoUri: config.mongoUri,
     apis: {
       subscriptions: {
@@ -34,23 +34,30 @@ async function shard() {
       return;
     }
 
+    const logger = new Logger().setContext({
+      interaction: {
+        guildId: interaction.guildId,
+        channelId: interaction.channelId,
+        userId: interaction.member.user.id,
+        name: interaction.commandName,
+        options: interaction.options.data,
+      },
+    });
+
     try {
-      await command.execute(interaction, services);
+      await command.execute(interaction, {
+        ...monitoServices,
+        logger,
+      });
     } catch (error) {
       logger.error(`Failed to execute command ${commandName}`, error as Error, {
-        interaction: {
-          guildId: interaction.guildId,
-          channelId: interaction.channelId,
-          userId: interaction.member.user.id,
-          name: interaction.commandName,
-          options: interaction.options.data,
-        },
+
       });
     }
   });
 
   client.once('ready', () => {
-    logger.info(`Client shard ${client.shard?.ids[0]} ready`);
+    new Logger().info(`Client shard ${client.shard?.ids[0]} ready`);
   });
 
   client.login(config.botToken);
