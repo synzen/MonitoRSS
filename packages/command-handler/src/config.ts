@@ -4,31 +4,34 @@ import { z } from 'zod';
 dotenv.config();
 
 const configSchema = z.object({
-  botToken: z.string().min(1).default(process.env.BOT_TOKEN as string),
-  botClientId: z.string().min(1).default(process.env.BOT_CLIENT_ID as string),
-  testingGuildId: z.string().min(1).default(process.env.TESTING_GUILD_ID as string),
-  mongoUri: z.string().min(1).default(process.env.MONGO_URI as string),
+  botToken: z.string().min(1).default(process.env.MRSS_BOT_TOKEN as string),
+  botClientId: z.string().min(1).default(process.env.MRSS_BOT_CLIENT_ID as string),
+  testingGuildId: z.string().min(1).default(process.env.MRSS_TESTING_GUILD_ID as string),
+  mongoUri: z.string().min(1).default(process.env.MRSS_MONGO_URI as string),
   defaultRefreshRateMinutes: z.number().default(
-    Number(process.env.DEFAULT_REFRESH_RATE_MINUTES as string),
+    Number(process.env.MRSS_DEFAULT_REFRESH_RATE_MINUTES as string),
   ),
   defaultMaxFeeds: z.number().default(
-    Number(process.env.DEFAULT_MAX_FEEDS as string),
+    Number(process.env.MRSS_DEFAULT_MAX_FEEDS as string),
   ),
   logging: z.object({
+    enableDebugLogs: z.boolean(),
     datadog: z.object({
-      envs: z.array(z.string()),
-      levels: z.array(z.enum(['debug', 'info', 'warn', 'error'])),
+      apiKey: z.string(),
+      service: z.string(),
     }),
+  }).default({
+    enableDebugLogs: process.env.MRSS_LOGGING_ENABLE_DEBUG_LOGS === 'true',
+    datadog: {
+      apiKey: process.env.MRSS_LOGGING_DATADOG_API_KEY as string,
+      service: process.env.MRSS_LOGGING_DATADOG_SERVICE || 'command-handler',
+    },
   }),
   apis: z.object({
     subscriptions: z.object({
-      enabled: z.boolean().default(
-        process.env.API_SUBSCRIPTIONS_ENABLED === 'true',
-      ),
-      host: z.string().min(1).default(process.env.API_SUBSCRIPTIONS_HOST as string),
-      accessToken: z.string().min(1).default(
-        process.env.API_SUBSCRIPTIONS_ACCESS_TOKEN as string,
-      ),
+      enabled: z.boolean(),
+      host: z.string().min(1),
+      accessToken: z.string().min(1),
     })
       .partial()  
       .refine(data => {
@@ -37,7 +40,9 @@ const configSchema = z.object({
       , 'Host and access token for subscription API must be set when enabled'),
   }).default({
     subscriptions: {
-      enabled: false,
+      enabled: process.env.MRSS_API_SUBSCRIPTIONS_ENABLED === 'true',
+      host: process.env.MRSS_API_SUBSCRIPTIONS_HOST as string,
+      accessToken: process.env.MRSS_API_SUBSCRIPTIONS_ACCESS_TOKEN as string,
     },
   }),
 });
