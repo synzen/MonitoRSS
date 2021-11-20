@@ -17,7 +17,7 @@ const setLoggingTransports = (loggers: Loggers) => {
   const createArrayLoggers = (
     level: InternalCommonLoggerLogLevel,
     loggerArr: LoggerType[],
-  ) => (message: string, meta: Record<string, any>) => {
+  ) => (message: string, meta?: Record<string, any>) => {
     loggerArr.forEach(logger => logger.log(level, {
       message,
       ...meta,
