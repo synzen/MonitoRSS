@@ -16,7 +16,9 @@ export default class ConsolePrettyLogger extends AbstractLogger<ConsoleJSONLogge
           level, message, timestamp, ...rest
         }) => {
 
-          const stringifiedRest = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : '';
+          const stringifiedRest = Object.keys(rest).length > 0
+            ? ` ${JSON.stringify(rest, null, 2)}`
+            : '';
 
           return `${timestamp} ${level}: ${message}${stringifiedRest}`;
         }),
