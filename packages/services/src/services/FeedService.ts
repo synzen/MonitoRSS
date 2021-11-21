@@ -1,4 +1,4 @@
-import { ModelExports } from '@monitorss/models';
+import { Feed, ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 
 @injectable()
@@ -9,6 +9,10 @@ export default class FeedService {
 
   async findByGuild(guildId: string) {
     return this.models.Feed.findByField('guild', guildId);
+  }
+
+  async count(query: Partial<Feed>) {
+    return this.models.Feed.count(query);
   }
 
   async removeOne(feedId: string) {

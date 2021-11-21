@@ -112,6 +112,17 @@ class FeedRepository {
     return res as FeedOutput[];
   }
 
+  async find(query: Partial<Feed>, page = 0, limit = 10): Promise<FeedOutput[]> {
+    const skip = page * limit;
+    const res = await this.collection.find(query).limit(limit).skip(skip).toArray();
+
+    return res as FeedOutput[];
+  }
+
+  async count(query: Partial<Feed>): Promise<number> {
+    return this.collection.countDocuments(query);
+  }
+
   async countInGuild(guildId: string): Promise<number> {
     return this.collection.countDocuments({ guild: guildId });
   }

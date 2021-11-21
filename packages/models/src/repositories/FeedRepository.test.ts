@@ -91,6 +91,61 @@ describe('FeedRepository', () => {
     });
   });
 
+  describe('find', () => {
+    it('returns all the feeds that matches the query', async () => {
+      const channel = '123';
+      const feedsToCreate: Feed[] = [{
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google1.com',
+      }, {
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google2.com',
+      }, {
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+      }];
+
+      await collection.insertMany(feedsToCreate);
+
+      const result = await feedRepo.find({
+        channel,
+        url: feedsToCreate[0].url,
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject(feedsToCreate[0]);
+    });
+
+    it('works with pagination', async () => {
+      const feedsToCreate: Feed[] = new Array(5).fill(0).map((_, i) => {
+        return {
+          channel: 'channel-id',
+          guild: `${i}`,
+          title: 'hhh',
+          url: 'http://www.google.com',
+        };
+      });
+
+      
+      await collection.insertMany(feedsToCreate);
+      const page = 1;
+      const limit = 2;
+      const result = await feedRepo.find({
+        channel: 'channel-id',
+        url: feedsToCreate[0].url,
+      }, page, limit);
+      
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject(feedsToCreate[2]);
+      expect(result[1]).toMatchObject(feedsToCreate[3]);
+    });
+  });
+
   describe('findByChannelId', () => {
     it('returns all the feeds in a channel', async () => {
       const channel = '123';
@@ -120,6 +175,34 @@ describe('FeedRepository', () => {
         feedsToCreate[0].url,
         feedsToCreate[1].url,
       ]));
+    });
+  });
+
+  describe('count', () => {
+    it('returns correctly', async () => {
+      const feedsToCreate: Feed[] = [{
+        channel: '123',
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google1.com',
+      }, {
+        channel: '456',
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google2.com',
+      }, {
+        channel: '123',
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+      }];
+
+      await collection.insertMany(feedsToCreate);
+
+      const result = await feedRepo.count({
+        channel: '456',
+      });
+      expect(result).toBe(1);
     });
   });
 
