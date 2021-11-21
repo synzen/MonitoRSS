@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import formatString from './format-string';
 
 const localesDir = path.join(__dirname, '..', 'locales');
 
@@ -20,7 +21,7 @@ const locales = fs
 
 
 // TODO: Add support for string formatting
-function translate(locale: string, toTranslate: string) {
+function translate(locale: string, toTranslate: string, data?: Record<string, any>) {
   const localeObject = locales.get(locale);
 
   if (!localeObject) {
@@ -33,12 +34,12 @@ function translate(locale: string, toTranslate: string) {
     throw new Error(`Translation ${toTranslate} not found`);
   }
 
-  return localeString;
+  return formatString(localeString, data);
 }
 
 
 export function createLocaleTranslator(locale = 'en-us') {
-  return (toTranslate: string) => translate(locale, toTranslate);
+  return (toTranslate: string, data?: Record<string, any>) => translate(locale, toTranslate, data);
 }
 
 

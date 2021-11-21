@@ -5,7 +5,7 @@ export interface CommandProfile {
   locale?: string;
 }
 
-export type CommandTranslate = (toTranslate: string) => string;
+export type CommandTranslate = (toTranslate: string, data?: Record<string, any>) => string;
 
 export type CommandServices = MonitoServices;
 
