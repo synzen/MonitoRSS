@@ -25,7 +25,7 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
   container.bind<ProfileService>(ProfileService).to(ProfileService);
 
   return {
-    mongoDbClient: modelExports.mongoDbClient,
+    mongoDbClient: modelExports.mongoDbClient as MongoClient,
     guildService: container.get<GuildService>(GuildService),
     subscriptionService: container.get<SubscriptionService>(SubscriptionService),
     profileService: container.get<ProfileService>(ProfileService),

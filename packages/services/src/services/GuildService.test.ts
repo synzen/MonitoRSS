@@ -21,6 +21,7 @@ describe('GuildService', () => {
       countInGuild: jest.fn(),
       findByField: jest.fn(),
       insert: jest.fn(),
+      removeById: jest.fn(),
     },
     Patron: {
       findByDiscordId: jest.fn(),
@@ -39,6 +40,31 @@ describe('GuildService', () => {
     subscriptionService.getSubscriptionOfGuild.mockResolvedValue(null);
     models.Patron.findByDiscordId.mockResolvedValue([]);
     models.Supporter.findWithGuild.mockResolvedValue([]);
+  });
+
+  describe('getFeeds', () => {
+    it('returns the found feeds of the guild', async () => {
+      models.Feed.findByField.mockResolvedValue([{
+        id: '1',
+      }, {
+        id: '2',
+      }]);
+
+      const feeds = await service.getFeeds('123');
+
+      expect(feeds).toEqual([{
+        id: '1',
+      }, {
+        id: '2',
+      }]);
+    });
+  });
+
+  describe('removeFeed', () => {
+    it('removes the feed by id', async () => {
+      await service.removeFeed('123');
+      expect(models.Feed.removeById).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('verifyAndAddFeeds', () => {

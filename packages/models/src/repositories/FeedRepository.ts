@@ -67,7 +67,9 @@ const feedSchema = z.object({
 });
 
 export type Feed = z.input<typeof feedSchema>;
-export type FeedOutput = z.output<typeof feedSchema>;
+export type FeedOutput = z.output<typeof feedSchema> & {
+  _id: ObjectId
+};
 
 class FeedRepository {
 
@@ -112,6 +114,14 @@ class FeedRepository {
 
   async countInGuild(guildId: string): Promise<number> {
     return this.collection.countDocuments({ guild: guildId });
+  }
+
+  async removeById(id: string) {
+    if (!ObjectId.isValid(id)) {
+      throw new Error(`Failed to remove feed ID ${id} since it is not an ObjectId`);
+    }
+
+    await this.collection.deleteOne({ _id: new ObjectId(id) });
   }
 }
 

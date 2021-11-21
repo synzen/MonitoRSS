@@ -149,4 +149,39 @@ describe('FeedRepository', () => {
       expect(result).toBe(2);
     });
   });
+
+  describe('removeById', () => {
+    it('removes by id', async () => {
+      const guild = '123';
+      const feedsToCreate: Feed[] = [{
+        channel: '123',
+        guild,
+        title: 'hhh',
+        url: 'http://www.google1.com',
+      }, {
+        channel: '123',
+        guild,
+        title: 'hhh',
+        url: 'http://www.google2.com',
+      }, {
+        channel: '123',
+        guild: guild + 'new',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+      }];
+
+      await collection.insertMany(feedsToCreate);
+      const found = await collection.find().toArray();
+      expect(found).toHaveLength(3);
+      
+      await feedRepo.removeById(found[0]._id);
+      const foundAfter = await collection.find().toArray();
+      expect(foundAfter).toHaveLength(2);
+    });
+    it('throws if the id is not a valid ObjectId', async () => {
+      const id = '123';
+      await expect(feedRepo.removeById(id))
+        .rejects.toThrowError();
+    });
+  });
 });

@@ -18,6 +18,14 @@ export default class GuildService implements IGuildService {
     @inject('ModelExports') private readonly models: ModelExports,
   ) {}
 
+  async getFeeds(guildId: string) {
+    return this.models.Feed.findByField('guild', guildId);
+  }
+
+  async removeFeed(feedId: string) {
+    await this.models.Feed.removeById(feedId);
+  }
+
   /**
    * Verify and add a set of feed URLs to a guild's channel.
    *
