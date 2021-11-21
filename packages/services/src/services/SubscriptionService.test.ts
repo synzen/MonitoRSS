@@ -20,6 +20,7 @@ describe('SubscriptionService', () => {
   };
   let subscriptionService: SubscriptionService;
   let mockResponse: SubscriptionAPIResponse;
+  console.error = jest.fn();
 
   beforeEach(() => {
     jest.resetAllMocks();
