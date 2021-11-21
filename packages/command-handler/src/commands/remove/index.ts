@@ -21,6 +21,10 @@ class CommandRemove implements CommandInterface {
 
     const feeds = await this.commandServices.feedService.findByGuild(interaction.guild?.id);
 
+    if (feeds.length === 0) {
+      return interaction.reply('There are no feeds to remove.');
+    }
+
     // TODO: Handle more than 100 feeds
     const row = new MessageActionRow()
       .addComponents(
@@ -30,7 +34,7 @@ class CommandRemove implements CommandInterface {
           .addOptions(feeds.map(feed => ({
             label: feed.title,
             value: feed._id.toHexString(),
-            description: feed.url,
+            description: `${feed.url} in channel ${interaction.channelId}`,
           }))),
       );
 
