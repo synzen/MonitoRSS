@@ -18,6 +18,8 @@ const locales = fs
     return mapOfLocales;
   }, new Map<string, Record<string, string>>());
 
+
+// TODO: Add support for string formatting
 function translate(locale: string, toTranslate: string) {
   const localeObject = locales.get(locale);
 

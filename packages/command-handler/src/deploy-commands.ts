@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import config from './config';
@@ -8,7 +9,10 @@ const { clientId, token } = {
   clientId: config.botClientId,
 };
 
-const commandsJSON = Array.from(commands.values()).map(command => command.data.toJSON());
+const commandsJSON = Array.from(commands.values()).map(command => {
+  // @ts-ignore
+  return command.data.toJSON();
+});
 
 const rest = new REST({ version: '9' }).setToken(token);
 
