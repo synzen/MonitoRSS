@@ -5,12 +5,14 @@ import connect from '@monitorss/models';
 import { GuildService, SubscriptionService } from './services';
 import { MongoClient } from 'mongodb';
 import ProfileService from './services/ProfileService';
+import FeedService from './services/FeedService';
 
 export interface MonitoServices {
   mongoDbClient: MongoClient;
   guildService: GuildService;
   subscriptionService: SubscriptionService;
   profileService: ProfileService;
+  feedService: FeedService;
 }
 
 async function setup(inputConfig: Config): Promise<MonitoServices> {
@@ -23,12 +25,14 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
   container.bind<GuildService>(GuildService).to(GuildService);
   container.bind<SubscriptionService>(SubscriptionService).to(SubscriptionService);
   container.bind<ProfileService>(ProfileService).to(ProfileService);
+  container.bind<FeedService>(FeedService).to(FeedService);
 
   return {
     mongoDbClient: modelExports.mongoDbClient as MongoClient,
     guildService: container.get<GuildService>(GuildService),
     subscriptionService: container.get<SubscriptionService>(SubscriptionService),
     profileService: container.get<ProfileService>(ProfileService),
+    feedService: container.get<FeedService>(FeedService),
   };
 }
 

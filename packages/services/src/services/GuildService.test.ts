@@ -42,31 +42,6 @@ describe('GuildService', () => {
     models.Supporter.findWithGuild.mockResolvedValue([]);
   });
 
-  describe('getFeeds', () => {
-    it('returns the found feeds of the guild', async () => {
-      models.Feed.findByField.mockResolvedValue([{
-        id: '1',
-      }, {
-        id: '2',
-      }]);
-
-      const feeds = await service.getFeeds('123');
-
-      expect(feeds).toEqual([{
-        id: '1',
-      }, {
-        id: '2',
-      }]);
-    });
-  });
-
-  describe('removeFeed', () => {
-    it('removes the feed by id', async () => {
-      await service.removeFeed('123');
-      expect(models.Feed.removeById).toHaveBeenCalledTimes(1);
-    });
-  });
-
   describe('verifyAndAddFeeds', () => {
     it('returns errors when the guild is at the feed limit', async () => {
       models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds);

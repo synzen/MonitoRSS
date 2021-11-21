@@ -116,6 +116,16 @@ class FeedRepository {
     return this.collection.countDocuments({ guild: guildId });
   }
 
+  async findById(id: string): Promise<FeedOutput | null> {
+    if (!ObjectId.isValid(id)) {
+      throw new Error(`Failed to find feed ID ${id} since it is not an ObjectId`);
+    }
+
+    const res = await this.collection.findOne({ _id: new ObjectId(id) });
+
+    return res as FeedOutput;
+  }
+
   async removeById(id: string) {
     if (!ObjectId.isValid(id)) {
       throw new Error(`Failed to remove feed ID ${id} since it is not an ObjectId`);
