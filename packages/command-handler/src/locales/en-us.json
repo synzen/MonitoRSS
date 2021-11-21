@@ -3,5 +3,6 @@
   "commands.add.error_exists_in_channel": "This feed is already in this channel.",
   "commands.add.error_missing_url": "You must provide a URL as an option.",
   "commands.add.error_unable_to_add_feed": "Unable to add feed",
-  "responses.remove-feed.success": "✅ Successfully removed {url}!"
+  "responses.remove-feed.success": "✅ Successfully removed {url}!",
+  "responses.remove-feed.not_found": "This is an invalid feed. It was most likely removed already."
 }

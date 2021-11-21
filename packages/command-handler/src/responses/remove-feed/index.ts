@@ -22,12 +22,22 @@ export default class ResponseRemoveFeed implements ResponseInterface {
   static customId = 'remove-feed';
 
   async execute(interaction: SelectMenuInteraction): Promise<void> {
-    // const feedId = interaction.values[0];
+    const feedId = interaction.values[0];
 
-    await interaction.deferReply();
+    const foundFeed = await this.commandServices.feedService.findById(feedId);
+    
+    if (!foundFeed || foundFeed.guild !== interaction.guildId) {
+      await interaction.reply(this.translate('responses.remove-feed.not_found'));
+      return;
+    }
 
-    // TODO: Potentially add more restrictions on the feed removal by checking guild id
-    // await this.commandServices.guildService.removeFeed(feedId);
-    await interaction.editReply(this.translate('responses.remove-feed.success'));
+    await this.commandServices.feedService.removeOne(feedId);
+
+    await interaction.update({
+      content: this.translate('responses.remove-feed.success', {
+        url: foundFeed.url,
+      }),
+      components: []
+    })
   }
 }

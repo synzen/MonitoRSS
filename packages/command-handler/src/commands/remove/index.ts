@@ -19,7 +19,7 @@ class CommandRemove implements CommandInterface {
       return;
     }
 
-    const feeds = await this.commandServices.guildService.getFeeds(interaction.guild?.id);
+    const feeds = await this.commandServices.feedService.findByGuild(interaction.guild?.id);
 
     // TODO: Handle more than 100 feeds
     const row = new MessageActionRow()
