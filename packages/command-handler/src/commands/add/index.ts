@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction } from 'discord.js';
+import { ChannelType } from 'discord-api-types';
+import { CommandInteraction, TextChannel } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import {
   commandContainerSymbols,
@@ -43,10 +44,16 @@ class CommandAdd implements CommandInterface {
       .setName('url')
       .setDescription('The URL(s) of the feed. You may add multiple feed URLs be separating them '
         + 'with `>`.')
-      .setRequired(true));
+      .setRequired(true))
+    .addChannelOption((option) => option
+      .setName('channel')
+      .setDescription('The channel that the feed(s) will be added to')
+      .setRequired(true)
+      .addChannelType(ChannelType.GuildText),
+    );
 
   async execute(interaction: CommandInteraction): Promise<void> {
-    const { guildId, channelId } = interaction;
+    const { guildId } = interaction;
 
     const input = interaction.options.getString('url');
     await interaction.deferReply();
@@ -60,8 +67,10 @@ class CommandAdd implements CommandInterface {
     const urls = parseUrls(input);
 
     try {
+      const channel = interaction.options.getChannel('channel') as TextChannel;
+
       const results = await this.commandServices
-        .guildService.verifyAndAddFeeds(guildId, channelId, urls);
+        .guildService.verifyAndAddFeeds(guildId, channel.id, urls);
       const resultsText = results
         .map(({ url, error, message }) => {
           if (error) {
