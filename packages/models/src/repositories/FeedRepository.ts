@@ -107,14 +107,18 @@ class FeedRepository {
   }
 
   async findByField(key: keyof Feed, value: any): Promise<FeedOutput[]> {
-    const res = await this.collection.find({ [key]: value }).toArray();
+    const res = await this.collection.find({ [key]: value }).sort({
+      createdAt: 1,
+    }).toArray();
 
     return res as FeedOutput[];
   }
 
   async find(query: Partial<Feed>, page = 0, limit = 10): Promise<FeedOutput[]> {
     const skip = page * limit;
-    const res = await this.collection.find(query).limit(limit).skip(skip).toArray();
+    const res = await this.collection.find(query).limit(limit).skip(skip).sort({
+      createdAt: 1,
+    }).toArray();
 
     return res as FeedOutput[];
   }

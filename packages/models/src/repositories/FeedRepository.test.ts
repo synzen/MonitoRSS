@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { Collection, Db, Document, ObjectId } from 'mongodb';
 import { setupTests, teardownTests } from '../utils/testing';
 import FeedRepository, { Feed } from './FeedRepository';
@@ -123,11 +124,13 @@ describe('FeedRepository', () => {
 
     it('works with pagination', async () => {
       const feedsToCreate: Feed[] = new Array(5).fill(0).map((_, i) => {
+        const createdAt = dayjs().add(i, 'day').toDate();
         return {
           channel: 'channel-id',
           guild: `${i}`,
           title: 'hhh',
           url: 'http://www.google.com',
+          createdAt,
         };
       });
 
@@ -144,9 +147,41 @@ describe('FeedRepository', () => {
       expect(result[0]).toMatchObject(feedsToCreate[2]);
       expect(result[1]).toMatchObject(feedsToCreate[3]);
     });
+    it('returns the results sorted by created at ascending', async () => {
+      const channel = '123';
+      const feedsToCreate = [{
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google1.com',
+        createdAt: new Date(2030, 1, 2),
+      }, {
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google2.com',
+        createdAt: new Date(2020, 1, 1),
+      }, {
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+        createdAt: new Date(2040, 1, 1),
+      }];
+
+      await collection.insertMany(feedsToCreate);
+
+      const result = await feedRepo.find({
+        channel,
+      });
+      expect(result).toHaveLength(feedsToCreate.length);
+      expect(result[0]).toMatchObject(feedsToCreate[1]);
+      expect(result[1]).toMatchObject(feedsToCreate[0]);
+      expect(result[2]).toMatchObject(feedsToCreate[2]);
+    });
   });
 
-  describe('findByChannelId', () => {
+  describe('findByField', () => {
     it('returns all the feeds in a channel', async () => {
       const channel = '123';
       const feedsToCreate: Feed[] = [{
@@ -175,6 +210,36 @@ describe('FeedRepository', () => {
         feedsToCreate[0].url,
         feedsToCreate[1].url,
       ]));
+    });
+    it('returns all the feeds sorted by ascending created at date', async () => {
+      const channel = '123';
+      const feedsToCreate = [{
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google1.com',
+        createdAt: new Date(2030, 1, 2),
+      }, {
+        channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google2.com',
+        createdAt: new Date(2020, 1, 1),
+      }, {
+        channel: channel,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+        createdAt: new Date(2040, 1, 1),
+      }];
+
+      await collection.insertMany(feedsToCreate);
+
+      const result = await feedRepo.findByField('channel', channel);
+      expect(result).toHaveLength(feedsToCreate.length);
+      expect(result[0]).toMatchObject(feedsToCreate[1]);
+      expect(result[1]).toMatchObject(feedsToCreate[0]);
+      expect(result[2]).toMatchObject(feedsToCreate[2]);
     });
   });
 
