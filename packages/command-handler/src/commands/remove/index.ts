@@ -1,8 +1,5 @@
 import {
   CommandInteraction,
-  MessageActionRow,
-  MessageButton,
-  MessageSelectMenu,
   TextChannel,
 } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
@@ -10,6 +7,12 @@ import CommandInterface from '../command.interface';
 import { inject, injectable } from 'inversify';
 import { commandContainerSymbols, CommandServices } from '../../types/command-container.type';
 import { ChannelType } from 'discord-api-types';
+import selectFeedComponents from '../../utils/select-feed-components';
+import InteractionCustomId, {
+  InteractionActions,
+  InteractionPaginationData,
+  InteractionTasks,
+} from '../../types/interaction-custom-id.type';
 
 @injectable()
 class CommandRemove implements CommandInterface {
@@ -27,52 +30,35 @@ class CommandRemove implements CommandInterface {
 
   async execute(interaction: CommandInteraction): Promise<void> {
     const guildId = interaction.guild?.id;
+    const channelId = interaction.channel?.id;
 
-    if (!guildId) {
+    if (!guildId || !channelId) {
       return;
     }
 
-    const feeds = await this.commandServices.feedService.findByGuild(interaction.guild?.id);
+    const feedCount = await this.commandServices.feedService.count({
+      guild: interaction.guild?.id,
+      channel: interaction.channel?.id,
+    });
 
-    if (feeds.length === 0) {
+    if (feedCount === 0) {
       return interaction.reply('There are no feeds to remove.');
     }
 
     const channel = interaction.options.getChannel('channel') as TextChannel;
-
-    // TODO: Handle more than 100 feeds
-    const row = new MessageActionRow()
-      .addComponents(
-        new MessageSelectMenu()
-          .setCustomId('remove-feed')
-          .setPlaceholder('Please select a feed')
-          .addOptions(feeds.map(feed => ({
-            label: feed.title,
-            value: feed._id.toHexString(),
-            description: `${feed.url} in channel ${channel.name}`,
-          }))),
-      );
-
-    const buttonRow = new MessageActionRow()
-      .addComponents(
-        new MessageButton()
-          .setCustomId('previous-feeds')
-          .setLabel('Back')
-          .setStyle('SECONDARY'),
-        new MessageButton()
-          .setCustomId('label')
-          .setLabel('Page 1/2')
-          .setStyle('SECONDARY')
-          .setDisabled(true),
-        new MessageButton()
-          .setCustomId('next-feeds')
-          .setLabel('Next')
-          .setStyle('SECONDARY'),
-      );
   
+    const customIdObject: InteractionCustomId<InteractionPaginationData> = {
+      task: InteractionTasks.LIST_FEEDS,
+      action: InteractionActions.REMOVE_FEED,
+      data: {
+        pageNumber: 0,
+      },
+    };
+
     await interaction.reply({
       content: 'Select a feed below to remove',
-      components: [row, buttonRow],
+      components: await selectFeedComponents(
+        this.commandServices, guildId, channel.id, customIdObject),
     });
   }
 }

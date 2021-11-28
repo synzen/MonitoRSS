@@ -69,6 +69,12 @@ class CommandAdd implements CommandInterface {
     try {
       const channel = interaction.options.getChannel('channel') as TextChannel;
 
+      if (!channel) {
+        await interaction.editReply(this.translate('commands.add.error_missing_channel'));
+
+        return;
+      }
+
       const results = await this.commandServices
         .guildService.verifyAndAddFeeds(guildId, channel.id, urls);
       const resultsText = results

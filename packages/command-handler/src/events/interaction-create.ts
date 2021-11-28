@@ -1,5 +1,10 @@
 import { MonitoServices } from '@monitorss/services';
-import { CommandInteraction, Interaction, SelectMenuInteraction } from 'discord.js';
+import {
+  ButtonInteraction,
+  CommandInteraction,
+  Interaction,
+  SelectMenuInteraction,
+} from 'discord.js';
 import { Container } from 'inversify';
 import mapOfCommands from '../commands';
 import mapOfResponses from '../responses';
@@ -12,6 +17,7 @@ import {
   commandContainerSymbols,
 } from '../types/command-container.type';
 import Logger from '../utils/logger';
+import parseInteractionCustomId from '../utils/parse-interaction.custom-id';
 import { createLocaleTranslator } from '../utils/translate';
 
 async function handleCommandInteraction(
@@ -42,16 +48,22 @@ async function handleCommandInteraction(
 }
 
 async function handleCommandResponse(
-  interaction: SelectMenuInteraction,
+  interaction: SelectMenuInteraction | ButtonInteraction,
   container: Container,
 ) {
-  const { customId } = interaction;
+  const { customId: customIdString } = interaction;
+  const customIdObject = parseInteractionCustomId<Record<string, any>>(customIdString);
+
+  if (!customIdObject) {    
+    return;
+  }
+
   const logger = container.get<CommandLogger>(commandContainerSymbols.CommandLogger);
 
-  const Response = mapOfResponses.get(customId);
+  const Response = mapOfResponses.get(customIdObject.task);
 
   if (!Response) {
-    logger.debug(`No response found for custom id ${customId}`);
+    logger.debug(`No response found for custom id ${customIdObject.task}`);
 
     return;
   }
@@ -60,14 +72,13 @@ async function handleCommandResponse(
   logger.setContext({
     ...logger.context,
     response: {
-      customId,
-      values: interaction.values,
+      customId: customIdObject,
     },
   });
 
   container.bind(Response).to(Response);
   const response = container.get<ResponseInterface>(Response);
-  await response.execute(interaction);
+  await response.execute(interaction, customIdObject);
 }
 
 async function interactionCreate(
@@ -102,7 +113,7 @@ async function interactionCreate(
   try {
     if (interaction.isCommand()) {
       await handleCommandInteraction(interaction, container);
-    } else if (interaction.isSelectMenu()) {
+    } else if (interaction.isSelectMenu() || interaction.isButton()) {
       await handleCommandResponse(interaction, container);
     }
   } catch (error) {

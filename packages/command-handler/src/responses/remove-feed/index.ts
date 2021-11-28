@@ -19,7 +19,7 @@ export default class ResponseRemoveFeed implements ResponseInterface {
   /**
    * The ID that will be used for recognizing Discord interactions that this response can handle.
    */
-  static customId = 'remove-feed';
+  static TASK_ID = 'remove-feed';
 
   async execute(interaction: SelectMenuInteraction): Promise<void> {
     const feedId = interaction.values[0];
@@ -28,6 +28,7 @@ export default class ResponseRemoveFeed implements ResponseInterface {
     
     if (!foundFeed || foundFeed.guild !== interaction.guildId) {
       await interaction.reply(this.translate('responses.remove-feed.not_found'));
+      
       return;
     }
 
@@ -37,7 +38,7 @@ export default class ResponseRemoveFeed implements ResponseInterface {
       content: this.translate('responses.remove-feed.success', {
         url: foundFeed.url,
       }),
-      components: []
-    })
+      components: [],
+    });
   }
 }
