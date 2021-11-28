@@ -5,9 +5,10 @@ function parseInteractionCustomId<T>(data: string): InteractionCustomId<T> | nul
     const customIdObject = JSON.parse(data);
 
     return {
-      action: customIdObject.action,
+      finalTask: customIdObject.finalTask,
       task: customIdObject.task,
       data: customIdObject.data,
+      executeFinalTask: customIdObject.executeFinalTask,
     };
   } catch (error) {
     return null;

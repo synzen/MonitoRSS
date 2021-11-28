@@ -3,12 +3,9 @@
  * Action - The action to take when the interaction is clicked
  */
 
-export enum InteractionActions {
-  REMOVE_FEED = 'REMOVE_FEED',
-}
-
 export enum InteractionTasks {
   LIST_FEEDS = 'LIST_FEEDS',
+  REMOVE_FEED = 'REMOVE_FEED',
   ON_CLICK_PREVIOUS_PAGE = 'ON_CLICK_PREVIOUS_PAGE',
   ON_CLICK_NEXT_PAGE = 'ON_CLICK_NEXT_PAGE',
 }
@@ -18,9 +15,10 @@ export interface InteractionPaginationData {
 }
 
 interface InteractionCustomId<Data extends Record<string, any>> {
-  action: InteractionActions;
+  finalTask: InteractionTasks;
   task: InteractionTasks;
-  data?: Data
+  data?: Data;
+  executeFinalTask?: boolean;
 }
 
 export default InteractionCustomId;

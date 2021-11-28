@@ -12,9 +12,7 @@ import {
 } from '../../types/command-container.type';
 import { ChannelType } from 'discord-api-types';
 import selectFeedComponents from '../../utils/select-feed-components';
-import InteractionCustomId, {
-  InteractionActions,
-  InteractionPaginationData,
+import {
   InteractionTasks,
 } from '../../types/interaction-custom-id.type';
 
@@ -53,18 +51,10 @@ class CommandRemove implements CommandInterface {
 
     const channel = interaction.options.getChannel('channel') as TextChannel;
   
-    const customIdObject: InteractionCustomId<InteractionPaginationData> = {
-      task: InteractionTasks.LIST_FEEDS,
-      action: InteractionActions.REMOVE_FEED,
-      data: {
-        pageNumber: 0,
-      },
-    };
-
     await interaction.reply({
       content: this.translate('commands.remove.select_feed_to_remove'),
       components: await selectFeedComponents(
-        this.commandServices, guildId, channel.id, customIdObject),
+        this.commandServices, guildId, channel.id, InteractionTasks.REMOVE_FEED),
     });
   }
 }

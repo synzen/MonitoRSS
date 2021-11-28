@@ -7,7 +7,7 @@ import {
   CommandTranslate,
 } from '../../types/command-container.type';
 import InteractionCustomId, {
-  InteractionPaginationData, InteractionTasks,
+  InteractionPaginationData,
 } from '../../types/interaction-custom-id.type';
 import selectFeedComponents from '../../utils/select-feed-components';
 import ResponseInterface from '../response.interface';
@@ -41,11 +41,8 @@ export default class ResponseListFeeds implements ResponseInterface {
         this.commandServices,
         interaction.guildId,
         interaction.channelId,
-        {
-          task: InteractionTasks.LIST_FEEDS,
-          action: customIdObject.action,
-          data: customIdObject.data,
-        },
+        customIdObject.finalTask,
+        customIdObject.data?.pageNumber,
       ),
     });
   }

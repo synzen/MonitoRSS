@@ -1,6 +1,6 @@
 import { MessageActionRow, MessageButton, MessageSelectMenu } from 'discord.js';
 import { CommandServices } from '../types/command-container.type';
-import InteractionCustomId, {
+import  {
   InteractionPaginationData, InteractionTasks,
 } from '../types/interaction-custom-id.type';
 import createInteractionCustomId from './create-interaction-custom-id';
@@ -11,13 +11,12 @@ async function selectFeedComponents(
   commandServices: CommandServices,
   guildId: string,
   channelId: string,
-  customIdObject: InteractionCustomId<InteractionPaginationData>,
+  finalTask: InteractionTasks,
+  currentPageNumber = 0,
 ) {
-  if (customIdObject.data?.pageNumber == null || isNaN(customIdObject.data.pageNumber)) {
+  if (currentPageNumber == null || isNaN(currentPageNumber)) {
     throw new Error('currentPageNumber must be a number');
   }
-
-  const currentPageNumber = customIdObject.data.pageNumber;
 
   const [
     totalFeedCount,
@@ -45,7 +44,14 @@ async function selectFeedComponents(
   const previousPageNumber = Math.max(currentPageNumber - 1, 0);
   const nextPageNumber = Math.min(currentPageNumber + 1, lastPageNumber);
 
-  const selectMenuCustomId = createInteractionCustomId(customIdObject);
+  const selectMenuCustomId = createInteractionCustomId({
+    task: InteractionTasks.LIST_FEEDS,
+    finalTask,
+    executeFinalTask: true,
+    data: {
+      pageNumber: currentPageNumber,
+    },
+  });
 
   const row = new MessageActionRow()
     .addComponents(
@@ -60,7 +66,7 @@ async function selectFeedComponents(
     );
 
   const previousButtonCustomId = createInteractionCustomId<InteractionPaginationData>({
-    action: customIdObject.action,
+    finalTask,
     task: InteractionTasks.ON_CLICK_PREVIOUS_PAGE,
     data: {
       pageNumber: previousPageNumber,
@@ -68,7 +74,7 @@ async function selectFeedComponents(
   });
 
   const nextButtonCustomId = createInteractionCustomId<InteractionPaginationData>({
-    action: customIdObject.action,
+    finalTask,
     task: InteractionTasks.ON_CLICK_NEXT_PAGE,
     data: {
       pageNumber: nextPageNumber,
