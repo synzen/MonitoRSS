@@ -11,6 +11,10 @@ export default class FeedService {
     return this.models.Feed.findByField('guild', guildId);
   }
 
+  async find(query: Partial<Feed>, page = 0, limit = 10): Promise<Feed[]> {
+    return this.models.Feed.find(query, page, limit);
+  }
+
   async count(query: Partial<Feed>) {
     return this.models.Feed.count(query);
   }

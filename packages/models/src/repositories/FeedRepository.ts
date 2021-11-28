@@ -66,7 +66,9 @@ const feedSchema = z.object({
   })).default({}),
 });
 
-export type Feed = z.input<typeof feedSchema>;
+export type Feed = z.input<typeof feedSchema> & {
+  _id: ObjectId;
+};
 export type FeedOutput = z.output<typeof feedSchema> & {
   _id: ObjectId
 };
@@ -85,10 +87,9 @@ class FeedRepository {
     return new FeedRepository(mongoDb);
   }
 
-  async insert(data: Feed): Promise<void> {
+  async insert(data: Omit<Feed, '_id'>): Promise<void> {
     const now = new Date();
     const parsed = await feedSchema.parse(data);
-    console.log(parsed);
     await this.collection.insertOne({
       ...parsed,
       createdAt: now,

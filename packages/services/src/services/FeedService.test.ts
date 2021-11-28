@@ -9,6 +9,7 @@ describe('FeedService', () => {
       findByField: jest.fn(),
       insert: jest.fn(),
       removeById: jest.fn(),
+      find: jest.fn(),
     },
   };
 
@@ -32,6 +33,20 @@ describe('FeedService', () => {
       }, {
         id: '2',
       }]);
+    });
+  });
+
+  describe('find', () =>{ 
+    it('returns the found feeds', async () => {
+      const foundFeeds = [{
+        id: '1',
+      }, {
+        id: '2',
+      }];
+
+      models.Feed.find.mockResolvedValue(foundFeeds);
+      const feeds = await service.find({});
+      expect(feeds).toEqual(foundFeeds);
     });
   });
 

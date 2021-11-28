@@ -1,5 +1,5 @@
 import { FeedFetcher } from '@monitorss/feed-fetcher';
-import { Feed, ModelExports } from '@monitorss/models';
+import { ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
 import SubscriptionService from './SubscriptionService';
@@ -96,13 +96,17 @@ export default class GuildService implements IGuildService {
     return max - currentTotal;
   }
 
-  private async getFeedToSave(guildId: string, channelId: string, url: string): Promise<Feed> {
+  private async getFeedToSave(
+    guildId: string,
+    channelId: string,
+    url: string,
+  ) {
     const feedFetcher = new FeedFetcher();
     const { articleList } = await feedFetcher.fetchFeed(url);
     
     return {
       url,
-      title: articleList[0]?.meta?.title || 'Untitled',
+      title: articleList[0]?.meta?.title as string || 'Untitled',
       channel: channelId,
       guild: guildId,
     };

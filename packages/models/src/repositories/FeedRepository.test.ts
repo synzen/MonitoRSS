@@ -25,6 +25,7 @@ describe('FeedRepository', () => {
 
   describe('insert', () => {
     const toCreate: Feed = {
+      _id: new ObjectId(),
       channel: 'hello',
       guild: '123',
       title: 'hhh',
@@ -96,16 +97,19 @@ describe('FeedRepository', () => {
     it('returns all the feeds that matches the query', async () => {
       const channel = '123';
       const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
         channel,
         guild: '123',
         title: 'hhh',
         url: 'http://www.google1.com',
       }, {
+        _id: new ObjectId(),
         channel,
         guild: '123',
         title: 'hhh',
         url: 'http://www.google2.com',
       }, {
+        _id: new ObjectId(),
         channel,
         guild: '123',
         title: 'hhh',
@@ -126,6 +130,7 @@ describe('FeedRepository', () => {
       const feedsToCreate: Feed[] = new Array(5).fill(0).map((_, i) => {
         const createdAt = dayjs().add(i, 'day').toDate();
         return {
+          _id: new ObjectId(),
           channel: 'channel-id',
           guild: `${i}`,
           title: 'hhh',
@@ -185,17 +190,20 @@ describe('FeedRepository', () => {
     it('returns all the feeds in a channel', async () => {
       const channel = '123';
       const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
         channel,
         guild: '123',
         title: 'hhh',
         url: 'http://www.google1.com',
       }, {
         channel,
+        _id: new ObjectId(),
         guild: '123',
         title: 'hhh',
         url: 'http://www.google2.com',
       }, {
         channel: channel + 'diff',
+        _id: new ObjectId(),
         guild: '123',
         title: 'hhh',
         url: 'http://www.google3.com',
@@ -246,16 +254,19 @@ describe('FeedRepository', () => {
   describe('count', () => {
     it('returns correctly', async () => {
       const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
         channel: '123',
         guild: '123',
         title: 'hhh',
         url: 'http://www.google1.com',
       }, {
+        _id: new ObjectId(),
         channel: '456',
         guild: '123',
         title: 'hhh',
         url: 'http://www.google2.com',
       }, {
+        _id: new ObjectId(),
         channel: '123',
         guild: '123',
         title: 'hhh',
@@ -275,16 +286,19 @@ describe('FeedRepository', () => {
     it('returns correctly', async () => {
       const guild = '123';
       const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
         channel: '123',
         guild,
         title: 'hhh',
         url: 'http://www.google1.com',
       }, {
+        _id: new ObjectId(),
         channel: '123',
         guild,
         title: 'hhh',
         url: 'http://www.google2.com',
       }, {
+        _id: new ObjectId(),
         channel: '123',
         guild: guild + 'new',
         title: 'hhh',
@@ -301,11 +315,12 @@ describe('FeedRepository', () => {
   describe('findById', () => {
     it('finds by id', async () => {
       const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
         channel: '123',
         guild: '123',
         title: 'hhh',
         url: 'http://www.google1.com',
-      }, {
+      }, {        _id: new ObjectId(),
         channel: '123',
         guild: '123',
         title: 'hhh',
@@ -330,16 +345,19 @@ describe('FeedRepository', () => {
     it('removes by id', async () => {
       const guild = '123';
       const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
         channel: '123',
         guild,
         title: 'hhh',
         url: 'http://www.google1.com',
       }, {
+        _id: new ObjectId(),
         channel: '123',
         guild,
         title: 'hhh',
         url: 'http://www.google2.com',
       }, {
+        _id: new ObjectId(),
         channel: '123',
         guild: guild + 'new',
         title: 'hhh',
