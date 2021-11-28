@@ -5,7 +5,11 @@ import {
 import { SlashCommandBuilder } from '@discordjs/builders';
 import CommandInterface from '../command.interface';
 import { inject, injectable } from 'inversify';
-import { commandContainerSymbols, CommandServices } from '../../types/command-container.type';
+import {
+  commandContainerSymbols,
+  CommandServices,
+  CommandTranslate,
+} from '../../types/command-container.type';
 import { ChannelType } from 'discord-api-types';
 import selectFeedComponents from '../../utils/select-feed-components';
 import InteractionCustomId, {
@@ -17,6 +21,8 @@ import InteractionCustomId, {
 @injectable()
 class CommandRemove implements CommandInterface {
   @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
+
+  @inject(commandContainerSymbols.CommandTranslate) translate!: CommandTranslate;
 
   static data = new SlashCommandBuilder()
     .setName('remove')
@@ -42,7 +48,7 @@ class CommandRemove implements CommandInterface {
     });
 
     if (feedCount === 0) {
-      return interaction.reply('There are no feeds to remove.');
+      return interaction.reply(this.translate('commands.remove.no_feeds_to_remove'));
     }
 
     const channel = interaction.options.getChannel('channel') as TextChannel;
@@ -56,7 +62,7 @@ class CommandRemove implements CommandInterface {
     };
 
     await interaction.reply({
-      content: 'Select a feed below to remove',
+      content: this.translate('commands.remove.select_feed_to_remove'),
       components: await selectFeedComponents(
         this.commandServices, guildId, channel.id, customIdObject),
     });
