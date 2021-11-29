@@ -7,7 +7,9 @@ export default class ConsolePrettyLogger extends AbstractLogger<ConsoleJSONLogge
   protected createLogger() {
     return winston.createLogger({
       transports: [
-        new winston.transports.Console(),
+        new winston.transports.Console({
+          level: 'debug',
+        }),
       ],
       format: winston.format.combine(
         winston.format.timestamp(),
