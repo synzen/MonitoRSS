@@ -1,7 +1,7 @@
 import { ButtonInteraction } from 'discord.js';
 import { Container } from 'inversify';
-import mapOfResponses from '../../interactions/buttons';
-import ButtonsInterface from '../../interactions/buttons/buttons.interface';
+import mapOfResponses from '../../interaction-handlers/buttons';
+import ButtonsInterface from '../../interaction-handlers/buttons/buttons.interface';
 import { commandContainerSymbols, CommandLogger } from '../../types/command-container.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
 

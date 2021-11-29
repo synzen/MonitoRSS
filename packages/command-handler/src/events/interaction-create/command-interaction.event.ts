@@ -1,6 +1,6 @@
 import { CommandInteraction } from 'discord.js';
 import { Container } from 'inversify';
-import mapOfCommands from '../../interactions/commands';
+import mapOfCommands from '../../interaction-handlers/commands';
 import { commandContainerSymbols, CommandLogger } from '../../types/command-container.type';
 
 async function commandInteractionEvent(

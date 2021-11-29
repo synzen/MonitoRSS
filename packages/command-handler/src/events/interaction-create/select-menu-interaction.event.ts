@@ -1,7 +1,7 @@
 import { SelectMenuInteraction } from 'discord.js';
 import { Container } from 'inversify';
-import mapOfResponses from '../../interactions/select-menus';
-import SelectMenusInterface from '../../interactions/select-menus/select-menus.interface';
+import mapOfResponses from '../../interaction-handlers/select-menus';
+import SelectMenusInterface from '../../interaction-handlers/select-menus/select-menus.interface';
 import { commandContainerSymbols, CommandLogger } from '../../types/command-container.type';
 import InteractionCustomId from '../../types/interaction-custom-id.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
