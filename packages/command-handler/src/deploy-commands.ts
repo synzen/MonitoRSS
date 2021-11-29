@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import config from './config';
-import commands from './commands';
+import commands from './interactions/commands';
 
 const { clientId, token } = {
   token: config.botToken,

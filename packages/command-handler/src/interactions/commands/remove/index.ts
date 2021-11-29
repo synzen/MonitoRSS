@@ -9,12 +9,12 @@ import {
   commandContainerSymbols,
   CommandServices,
   CommandTranslate,
-} from '../../types/command-container.type';
+} from '../../../types/command-container.type';
 import { ChannelType } from 'discord-api-types';
-import selectFeedComponents from '../../utils/select-feed-components';
+import selectFeedComponents from '../../../utils/select-feed-components';
 import {
   InteractionTasks,
-} from '../../types/interaction-custom-id.type';
+} from '../../../types/interaction-custom-id.type';
 
 @injectable()
 class CommandRemove implements CommandInterface {

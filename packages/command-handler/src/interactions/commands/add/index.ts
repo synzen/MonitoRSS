@@ -7,7 +7,7 @@ import {
   CommandLogger,
   CommandServices,
   CommandTranslate,
-} from '../../types/command-container.type';
+} from '../../../types/command-container.type';
 import CommandInterface from '../command.interface';
 
 function parseUrls(text: string): string[] {
