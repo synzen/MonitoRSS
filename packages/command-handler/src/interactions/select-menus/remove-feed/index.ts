@@ -5,11 +5,11 @@ import {
   CommandLogger,
   CommandServices,
   CommandTranslate,
-} from '../../types/command-container.type';
-import ResponseInterface from '../response.interface';
+} from '../../../types/command-container.type';
+import SelectMenusInterface from '../select-menus.interface';
 
 @injectable()
-export default class ResponseRemoveFeed implements ResponseInterface {
+export default class ResponseRemoveFeed implements SelectMenusInterface {
   @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
 
   @inject(commandContainerSymbols.CommandLogger) logger!: CommandLogger;

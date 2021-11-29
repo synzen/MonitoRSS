@@ -5,15 +5,15 @@ import {
   CommandLogger,
   CommandServices,
   CommandTranslate,
-} from '../../types/command-container.type';
+} from '../../../types/command-container.type';
 import InteractionCustomId, {
   InteractionPaginationData,
-} from '../../types/interaction-custom-id.type';
-import selectFeedComponents from '../../utils/select-feed-components';
-import ResponseInterface from '../response.interface';
+} from '../../../types/interaction-custom-id.type';
+import selectFeedComponents from '../../../utils/select-feed-components';
+import ButtonsInterface from '../buttons.interface';
 
 @injectable()
-export default class ResponseListFeeds implements ResponseInterface {
+export default class ResponseListFeeds implements ButtonsInterface {
   @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
 
   @inject(commandContainerSymbols.CommandLogger) logger!: CommandLogger;

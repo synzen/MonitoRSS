@@ -1,7 +1,7 @@
 import { SelectMenuInteraction } from 'discord.js';
 import { Container } from 'inversify';
-import mapOfResponses from '../../responses';
-import ResponseInterface from '../../responses/response.interface';
+import mapOfResponses from '../../interactions/select-menus';
+import SelectMenusInterface from '../../interactions/select-menus/select-menus.interface';
 import { commandContainerSymbols, CommandLogger } from '../../types/command-container.type';
 import InteractionCustomId from '../../types/interaction-custom-id.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
@@ -49,7 +49,7 @@ async function selectMenuInteractionEvent(
   });
 
   container.bind(Response).to(Response);
-  const response = container.get<ResponseInterface>(Response);
+  const response = container.get<SelectMenusInterface>(Response);
   await response.execute(interaction, customIdObject);
 }
 
