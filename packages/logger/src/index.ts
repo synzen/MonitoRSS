@@ -86,7 +86,7 @@ const setupLogger = (config: Config) => {
 
 
   const debugTransports: LoggerType[] = config.enableDebugLogs
-    ? [new ConsolePrettyLogger({})]
+    ? [consoleLogger]
     : [];
   const infoTransports: LoggerType[] = [
     consoleLogger,
