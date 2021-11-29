@@ -1,5 +1,5 @@
 import { MessageActionRow, MessageButton, MessageSelectMenu } from 'discord.js';
-import { CommandServices } from '../types/command-container.type';
+import { InteractionServices } from '../interaction-handlers/interaction-container.type';
 import  {
   InteractionPaginationData, InteractionTasks,
 } from '../types/interaction-custom-id.type';
@@ -8,7 +8,7 @@ import createInteractionCustomId from './create-interaction-custom-id';
 const FEEDS_PER_PAGE = 1;
 
 async function selectFeedComponents(
-  commandServices: CommandServices,
+  interactionServices: InteractionServices,
   guildId: string,
   channelId: string,
   finalTask: InteractionTasks,
@@ -22,11 +22,11 @@ async function selectFeedComponents(
     totalFeedCount,
     feeds,
   ] = await Promise.all([
-    commandServices.feedService.count({
+    interactionServices.feedService.count({
       guild: guildId,
       channel: channelId,
     }),
-    commandServices.feedService.find({
+    interactionServices.feedService.find({
       guild: guildId,
       channel: channelId,
     }, currentPageNumber, FEEDS_PER_PAGE),

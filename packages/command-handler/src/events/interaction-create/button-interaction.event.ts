@@ -2,7 +2,10 @@ import { ButtonInteraction } from 'discord.js';
 import { Container } from 'inversify';
 import mapOfResponses from '../../interaction-handlers/buttons';
 import ButtonsInterface from '../../interaction-handlers/buttons/buttons.interface';
-import { commandContainerSymbols, CommandLogger } from '../../types/command-container.type';
+import {
+  InteractionContainerSymbols,
+  InteractionLogger,
+} from '../../interaction-handlers/interaction-container.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
 
 async function buttonInteractionEvent(
@@ -16,7 +19,7 @@ async function buttonInteractionEvent(
     return;
   }
 
-  const logger = container.get<CommandLogger>(commandContainerSymbols.CommandLogger);
+  const logger = container.get<InteractionLogger>(InteractionContainerSymbols.Logger);
 
   const Response = mapOfResponses.get(customIdObject.task);
 

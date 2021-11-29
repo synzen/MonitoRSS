@@ -1,7 +1,10 @@
 import { CommandInteraction } from 'discord.js';
 import { Container } from 'inversify';
 import mapOfCommands from '../../interaction-handlers/commands';
-import { commandContainerSymbols, CommandLogger } from '../../types/command-container.type';
+import { 
+  InteractionContainerSymbols,
+  InteractionLogger,
+} from '../../interaction-handlers/interaction-container.type';
 
 async function commandInteractionEvent(
   interaction: CommandInteraction,
@@ -9,7 +12,7 @@ async function commandInteractionEvent(
 ) {
   const { commandName } = interaction;
   const Command = mapOfCommands.get(commandName);
-  const logger = container.get<CommandLogger>(commandContainerSymbols.CommandLogger);
+  const logger = container.get<InteractionLogger>(InteractionContainerSymbols.Logger);
 
   if (!Command) {
     logger.debug(`No command found for ${commandName}`);

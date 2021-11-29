@@ -1,9 +1,10 @@
 import { ButtonInteraction } from 'discord.js';
 import { inject, injectable } from 'inversify';
-import { 
-  InteractionServices,
+import {
   InteractionContainerSymbols,
   InteractionLogger,
+  InteractionServices,
+  InteractionTranslate,
 } from '../../interaction-container.type';
 import InteractionCustomId, {
   InteractionPaginationData,
@@ -12,10 +13,12 @@ import selectFeedComponents from '../../../utils/select-feed-components';
 import ButtonsInterface from '../buttons.interface';
 
 @injectable()
-export default class FeedListPageChangeButton implements ButtonsInterface {
+export default class ResponseListFeeds implements ButtonsInterface {
   @inject(InteractionContainerSymbols.Services) services!: InteractionServices;
 
   @inject(InteractionContainerSymbols.Logger) logger!: InteractionLogger;
+
+  @inject(InteractionContainerSymbols.Translate) translate!: InteractionTranslate;
 
   /**
    * The ID that will be used for recognizing Discord interactions that this response can handle.

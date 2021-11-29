@@ -4,12 +4,12 @@ import {
 } from 'discord.js';
 import { Container } from 'inversify';
 import { 
-  CommandProfile,
-  CommandLogger,  
-  CommandTranslate,
-  CommandServices,
-  commandContainerSymbols,
-} from '../../types/command-container.type';
+  InteractionProfile,
+  InteractionLogger,  
+  InteractionTranslate,
+  InteractionServices,
+  InteractionContainerSymbols,
+} from '../../interaction-handlers/interaction-container.type';
 import Logger from '../../utils/logger';
 import { createLocaleTranslator } from '../../utils/translate';
 import buttonInteractionEvent from './button-interaction.event';
@@ -37,12 +37,12 @@ async function interactionCreate(
   
   const profile = await monitoServices.profileService.findOne(interaction.guildId);
   const container = new Container();
-  container.bind<CommandServices>(commandContainerSymbols.CommandServices)
+  container.bind<InteractionServices>(InteractionContainerSymbols.Services)
     .toConstantValue(monitoServices);
-  container.bind<CommandLogger>(commandContainerSymbols.CommandLogger).toConstantValue(logger);
-  container.bind<CommandProfile | null>(commandContainerSymbols.CommandProfile)
+  container.bind<InteractionLogger>(InteractionContainerSymbols.Logger).toConstantValue(logger);
+  container.bind<InteractionProfile | null>(InteractionContainerSymbols.Profile)
     .toConstantValue(profile);
-  container.bind<CommandTranslate>(commandContainerSymbols.CommandTranslate)
+  container.bind<InteractionTranslate>(InteractionContainerSymbols.Translate)
     .toConstantValue(createLocaleTranslator(profile?.locale));
 
   try {

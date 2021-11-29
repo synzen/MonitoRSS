@@ -3,11 +3,11 @@ import { ChannelType } from 'discord-api-types';
 import { CommandInteraction, TextChannel } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import {
-  commandContainerSymbols,
-  CommandLogger,
-  CommandServices,
-  CommandTranslate,
-} from '../../../types/command-container.type';
+  InteractionContainerSymbols,
+  InteractionLogger,
+  InteractionServices,
+  InteractionTranslate,
+} from '../../interaction-container.type';
 import CommandInterface from '../command.interface';
 
 function parseUrls(text: string): string[] {
@@ -15,7 +15,7 @@ function parseUrls(text: string): string[] {
 }
 
 const getPrettyErrorMessage = (
-  translate: CommandTranslate, 
+  translate: InteractionTranslate, 
   error: 'EXCEEDED_FEED_LIMIT' | 'EXISTS_IN_CHANNEL' | 'INTERNAL',
 ) => {
   if (error === 'EXCEEDED_FEED_LIMIT') {
@@ -31,11 +31,11 @@ const getPrettyErrorMessage = (
 
 @injectable()
 class CommandAdd implements CommandInterface {
-  @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
+  @inject(InteractionContainerSymbols.Services) services!: InteractionServices;
 
-  @inject(commandContainerSymbols.CommandLogger) logger!: CommandLogger;
+  @inject(InteractionContainerSymbols.Logger) logger!: InteractionLogger;
 
-  @inject(commandContainerSymbols.CommandTranslate) translate!: CommandTranslate;
+  @inject(InteractionContainerSymbols.Translate) translate!: InteractionTranslate;
 
   static data = new SlashCommandBuilder()
     .setName('add')
@@ -75,7 +75,7 @@ class CommandAdd implements CommandInterface {
         return;
       }
 
-      const results = await this.commandServices
+      const results = await this.services
         .guildService.verifyAndAddFeeds(guildId, channel.id, urls);
       const resultsText = results
         .map(({ url, error, message }) => {
