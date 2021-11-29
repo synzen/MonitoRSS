@@ -8,7 +8,7 @@ import {
 } from '../../interaction-container.type';
 import InteractionCustomId, {
   InteractionPaginationData,
-} from '../../../types/interaction-custom-id.type';
+} from '../../interaction-custom-id.type';
 import selectFeedComponents from '../../../utils/select-feed-components';
 import ButtonsInterface from '../buttons.interface';
 

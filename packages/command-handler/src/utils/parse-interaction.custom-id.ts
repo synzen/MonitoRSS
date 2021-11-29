@@ -1,4 +1,4 @@
-import InteractionCustomId from '../types/interaction-custom-id.type';
+import InteractionCustomId from '../interaction-handlers/interaction-custom-id.type';
 
 function parseInteractionCustomId<T>(data: string): InteractionCustomId<T> | null {
   try {

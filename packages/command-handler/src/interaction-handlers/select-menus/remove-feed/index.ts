@@ -16,11 +16,6 @@ export default class RemoveFeedSelectMenu implements SelectMenusInterface {
 
   @inject(InteractionContainerSymbols.Translate) translate!: InteractionTranslate;
 
-  /**
-   * The ID that will be used for recognizing Discord interactions that this response can handle.
-   */
-  static TASK_ID = 'remove-feed';
-
   async execute(interaction: SelectMenuInteraction): Promise<void> {
     const feedId = interaction.values[0];
 

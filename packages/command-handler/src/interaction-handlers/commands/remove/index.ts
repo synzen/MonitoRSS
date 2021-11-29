@@ -12,9 +12,7 @@ import {
 } from '../../interaction-container.type';
 import { ChannelType } from 'discord-api-types';
 import selectFeedComponents from '../../../utils/select-feed-components';
-import {
-  InteractionTasks,
-} from '../../../types/interaction-custom-id.type';
+import { InteractionTask } from '../../interaction-tasks.constants';
 
 @injectable()
 class CommandRemove implements CommandInterface {
@@ -56,7 +54,7 @@ class CommandRemove implements CommandInterface {
     await interaction.reply({
       content: this.translate('commands.remove.select_feed_to_remove'),
       components: await selectFeedComponents(
-        this.services, guildId, channel.id, InteractionTasks.REMOVE_FEED),
+        this.services, guildId, channel.id, InteractionTask.REMOVE_FEED),
     });
   }
 }

@@ -6,7 +6,7 @@ import {
   InteractionContainerSymbols,
   InteractionLogger,
 } from '../../interaction-handlers/interaction-container.type';
-import InteractionCustomId from '../../types/interaction-custom-id.type';
+import InteractionCustomId from '../../interaction-handlers/interaction-custom-id.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
 
 function getTaskFromCustomId<T>(customId: InteractionCustomId<T>) {

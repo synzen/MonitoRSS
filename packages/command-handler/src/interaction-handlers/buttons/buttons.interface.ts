@@ -1,5 +1,5 @@
 import { ButtonInteraction } from 'discord.js';
-import InteractionCustomId from '../../types/interaction-custom-id.type';
+import InteractionCustomId from '../interaction-custom-id.type';
 
 interface ButtonsInterface {
   execute(

@@ -1,8 +1,9 @@
 import { MessageActionRow, MessageButton, MessageSelectMenu } from 'discord.js';
 import { InteractionServices } from '../interaction-handlers/interaction-container.type';
 import  {
-  InteractionPaginationData, InteractionTasks,
-} from '../types/interaction-custom-id.type';
+  InteractionPaginationData,
+} from '../interaction-handlers/interaction-custom-id.type';
+import { InteractionTask } from '../interaction-handlers/interaction-tasks.constants';
 import createInteractionCustomId from './create-interaction-custom-id';
 
 const FEEDS_PER_PAGE = 1;
@@ -11,7 +12,7 @@ async function selectFeedComponents(
   interactionServices: InteractionServices,
   guildId: string,
   channelId: string,
-  finalTask: InteractionTasks,
+  finalTask: InteractionTask,
   currentPageNumber = 0,
 ) {
   if (currentPageNumber == null || isNaN(currentPageNumber)) {
@@ -45,7 +46,7 @@ async function selectFeedComponents(
   const nextPageNumber = Math.min(currentPageNumber + 1, lastPageNumber);
 
   const selectMenuCustomId = createInteractionCustomId({
-    task: InteractionTasks.LIST_FEEDS,
+    task: InteractionTask.LIST_FEEDS,
     finalTask,
     executeFinalTask: true,
     data: {
@@ -67,7 +68,7 @@ async function selectFeedComponents(
 
   const previousButtonCustomId = createInteractionCustomId<InteractionPaginationData>({
     finalTask,
-    task: InteractionTasks.ON_CLICK_PREVIOUS_PAGE,
+    task: InteractionTask.ON_CLICK_PREVIOUS_PAGE,
     data: {
       pageNumber: previousPageNumber,
     },
@@ -75,7 +76,7 @@ async function selectFeedComponents(
 
   const nextButtonCustomId = createInteractionCustomId<InteractionPaginationData>({
     finalTask,
-    task: InteractionTasks.ON_CLICK_NEXT_PAGE,
+    task: InteractionTask.ON_CLICK_NEXT_PAGE,
     data: {
       pageNumber: nextPageNumber,
     },
