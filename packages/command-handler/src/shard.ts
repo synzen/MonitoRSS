@@ -3,7 +3,7 @@ import { Client } from 'discord.js';
 import config from './config';
 import setupServices from '@monitorss/services';
 import interactionCreate from './events/interaction-create';
-import ready from './events/ready';
+import ready from './events/ready/ready';
 
 async function shard() {
   const monitoServices = await setupServices({
