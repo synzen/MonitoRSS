@@ -13,7 +13,7 @@ import selectFeedComponents from '../../../utils/select-feed-components';
 import ButtonsInterface from '../buttons.interface';
 
 @injectable()
-export default class ResponseListFeeds implements ButtonsInterface {
+export default class FeedListPageChangeButton implements ButtonsInterface {
   @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
 
   @inject(commandContainerSymbols.CommandLogger) logger!: CommandLogger;

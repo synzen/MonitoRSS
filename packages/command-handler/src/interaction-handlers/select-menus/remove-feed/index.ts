@@ -9,7 +9,7 @@ import {
 import SelectMenusInterface from '../select-menus.interface';
 
 @injectable()
-export default class ResponseRemoveFeed implements SelectMenusInterface {
+export default class RemoveFeedSelectMenu implements SelectMenusInterface {
   @inject(commandContainerSymbols.CommandServices) commandServices!: CommandServices;
 
   @inject(commandContainerSymbols.CommandLogger) logger!: CommandLogger;
