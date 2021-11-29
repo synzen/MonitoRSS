@@ -8,7 +8,7 @@ import {
 } from '../../interaction-handlers/interaction-container.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
 
-async function buttonInteractionEvent(
+async function buttonEvent(
   interaction: ButtonInteraction,
   container: Container,
 ) {
@@ -42,4 +42,4 @@ async function buttonInteractionEvent(
   await response.execute(interaction, customIdObject);
 }
 
-export default buttonInteractionEvent;
+export default buttonEvent;

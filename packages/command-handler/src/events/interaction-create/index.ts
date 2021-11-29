@@ -12,11 +12,11 @@ import {
 } from '../../interaction-handlers/interaction-container.type';
 import Logger from '../../utils/logger';
 import { createLocaleTranslator } from '../../utils/translate';
-import buttonInteractionEvent from './button-interaction.event';
-import commandInteractionEvent from './command-interaction.event';
-import selectMenuInteractionEvent from './select-menu-interaction.event';
+import buttonEvent from './button.event';
+import commandEvent from './command.event';
+import selectMenuEvent from './select-menu.event';
 
-async function interactionCreate(
+export default async function interactionCreateEvent(
   interaction: Interaction,
   monitoServices: MonitoServices,
 ) {
@@ -47,16 +47,13 @@ async function interactionCreate(
 
   try {
     if (interaction.isCommand()) {
-      await commandInteractionEvent(interaction, container);
+      await commandEvent(interaction, container);
     } else if (interaction.isSelectMenu()) {
-      await selectMenuInteractionEvent(interaction, container);
+      await selectMenuEvent(interaction, container);
     } else if (interaction.isButton()) {
-      await buttonInteractionEvent(interaction, container);
+      await buttonEvent(interaction, container);
     }
   } catch (error) {
     logger.error('Failed to handle interaction', error as Error);
   }
-
 }
-
-export default interactionCreate;
