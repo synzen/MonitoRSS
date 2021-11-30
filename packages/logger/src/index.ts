@@ -81,6 +81,7 @@ interface Config {
 }
 
 const setupLogger = (config: Config) => {
+  // console.log('SETTING UP BOIII');
   const consoleLogger = new ConsolePrettyLogger({});  
 
 

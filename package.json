@@ -17,26 +17,11 @@
   },
   "homepage": "https://github.com/MonitoRSS/monitorss#readme",
   "devDependencies": {
-    "@types/feedparser": "^2.2.4",
-    "@types/jest": "^27.0.2",
-    "@types/node": "^16.11.6",
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
-    "eslint": "^7.32.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-airbnb-typescript": "^14.0.1",
-    "eslint-plugin-import": "^2.25.2",
-    "jest": "^27.3.1",
-    "lerna": "^4.0.0",
-    "ts-jest": "^27.0.7",
-    "ts-node": "^10.4.0",
-    "typescript": "^4.4.4",
-    "@monitorss/logger": "file:packages\\logger",
-    "@monitorss/services": "file:packages\\services",
-    "@monitorss/models": "file:packages\\models",
     "@monitorss/feed-fetcher": "file:packages\\feed-fetcher",
-    "commmand-handler": "file:packages\\command-handler"
-  },
-  "dependencies": {
+    "@monitorss/logger": "file:packages\\logger",
+    "@monitorss/models": "file:packages\\models",
+    "@monitorss/services": "file:packages\\services",
+    "@monitorss/commmand-handler": "file:packages\\command-handler",
+    "lerna": "^4.0.0"
   }
 }
