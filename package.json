@@ -19,11 +19,11 @@
   },
   "homepage": "https://github.com/MonitoRSS/monitorss#readme",
   "devDependencies": {
+    "@monitorss/commmand-handler": "file:packages\\command-handler",
     "@monitorss/feed-fetcher": "file:packages\\feed-fetcher",
     "@monitorss/logger": "file:packages\\logger",
     "@monitorss/models": "file:packages\\models",
     "@monitorss/services": "file:packages\\services",
-    "@monitorss/commmand-handler": "file:packages\\command-handler",
     "lerna": "^4.0.0"
   }
 }
