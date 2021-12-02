@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "lerna run build --parallel --stream",
+    "link": "lerna link"
   },
   "repository": {
     "type": "git",
