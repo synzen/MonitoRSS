@@ -1,6 +1,6 @@
 {
   "name": "@monitorss/services",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -40,8 +40,8 @@
     "typescript": "^4.4.4"
   },
   "dependencies": {
-    "@monitorss/feed-fetcher": "^1.0.0",
-    "@monitorss/models": "^1.0.1",
+    "@monitorss/feed-fetcher": "^1.0.1",
+    "@monitorss/models": "^1.0.2",
     "inversify": "^6.0.1",
     "normalize-url": "^4.5.1",
     "reflect-metadata": "^0.1.13",
