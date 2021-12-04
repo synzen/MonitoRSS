@@ -6,6 +6,8 @@ import { GuildService, SubscriptionService } from './services';
 import { Db, MongoClient } from 'mongodb';
 import ProfileService from './services/ProfileService';
 import FeedService from './services/FeedService';
+import SupporterService from './services/SupporterService';
+import PatronService from './services/PatronService';
 
 export interface MonitoServices {
   mongoDbClient: MongoClient;
@@ -13,6 +15,8 @@ export interface MonitoServices {
   subscriptionService: SubscriptionService;
   profileService: ProfileService;
   feedService: FeedService;
+  supporterService: SupporterService;
+  patronService: PatronService;
 }
 
 async function setup(inputConfig: Config): Promise<MonitoServices> {
@@ -28,6 +32,8 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
   container.bind<SubscriptionService>(SubscriptionService).to(SubscriptionService);
   container.bind<ProfileService>(ProfileService).to(ProfileService);
   container.bind<FeedService>(FeedService).to(FeedService);
+  container.bind<SupporterService>(SupporterService).to(SupporterService);
+  container.bind<PatronService>(PatronService).to(PatronService);
 
   return {
     mongoDbClient: modelExports.mongoDbClient as MongoClient,
@@ -35,6 +41,8 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
     subscriptionService: container.get<SubscriptionService>(SubscriptionService),
     profileService: container.get<ProfileService>(ProfileService),
     feedService: container.get<FeedService>(FeedService),
+    supporterService: container.get<SupporterService>(SupporterService),
+    patronService: container.get<PatronService>(PatronService),
   };
 }
 

@@ -1,11 +1,12 @@
 import { FeedFetcher } from '@monitorss/feed-fetcher';
-import { ModelExports } from '@monitorss/models';
 import { inject, injectable } from 'inversify';
 import { Config } from '../config-schema';
 import SubscriptionService from './SubscriptionService';
 import normalizeUrl from 'normalize-url';
 import ERROR_CODES from './constants/error-codes';
 import FeedService from './FeedService';
+import SupporterService from './SupporterService';
+import PatronService from './PatronService';
 
 export interface IGuildService {
   getFeedLimit(guildId: string): Promise<number>
@@ -16,8 +17,9 @@ export default class GuildService implements IGuildService {
   constructor(
     @inject('Config') private readonly config: Config,
     @inject(SubscriptionService) private subscriptionService: SubscriptionService,
-    @inject('ModelExports') private readonly models: ModelExports,
     @inject(FeedService) private readonly feedService: FeedService,
+    @inject(SupporterService) private readonly supporterService: SupporterService,
+    @inject(PatronService) private readonly patronService: PatronService,
   ) {}
 
   /**
@@ -93,7 +95,9 @@ export default class GuildService implements IGuildService {
 
   private async getRemainingFeedCount(guildId: string) {
     const [ currentTotal, max ] = await Promise.all([
-      this.models.Feed.countInGuild(guildId),
+      this.feedService.count({
+        guild: guildId,
+      }),
       this.getFeedLimit(guildId),
     ]);
 
@@ -125,7 +129,7 @@ export default class GuildService implements IGuildService {
 
   private async getFeedLimitFromSupporter(guildId: string) {
     const { defaultMaxFeeds } = this.config;
-    const supporters = await this.models.Supporter.findWithGuild(guildId);
+    const supporters = await this.supporterService.findWithGuild(guildId);
 
     const maxFeedsOfDifferentSupporters = await Promise.all(
       supporters.map(s => {
@@ -133,7 +137,7 @@ export default class GuildService implements IGuildService {
           return s.maxFeeds ?? defaultMaxFeeds;
         }
 
-        return this.getFeedLimitFromPatron(s._id);
+        return this.getFeedLimitFromPatron(String(s._id));
       }),
     );
     
@@ -142,8 +146,10 @@ export default class GuildService implements IGuildService {
 
   private async getFeedLimitFromPatron(discordId: string): Promise<number> {
     const { defaultMaxFeeds } = this.config;
-    const patrons = await this.models.Patron.findByDiscordId(discordId);
+    const patrons = await this.patronService.findByDiscordId(discordId);
     const feedLimits = patrons.map((p) => this.getFeedLimitFromPatronPledge(p.pledge));
+    console.log(this.patronService);
+    console.log(patrons);
 
     return Math.max(...feedLimits, defaultMaxFeeds);
   }

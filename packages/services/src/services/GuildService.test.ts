@@ -16,19 +16,16 @@ describe('GuildService', () => {
   let subscriptionService = {
     getSubscriptionOfGuild: jest.fn(),
   };
-  let models = {
-    Feed: {
-      countInGuild: jest.fn(),
-      findByField: jest.fn(),
-      insert: jest.fn(),
-      removeById: jest.fn(),
-    },
-    Patron: {
-      findByDiscordId: jest.fn(),
-    },
-    Supporter: {
-      findWithGuild: jest.fn(),
-    },
+  const feedService = {
+    find: jest.fn(),
+    insertOne: jest.fn(),
+    count: jest.fn(),
+  };
+  const patronService = {
+    findByDiscordId: jest.fn(),
+  };
+  const supporterService = {
+    findWithGuild: jest.fn(),
   };
   let config = {
     defaultMaxFeeds: 10,
@@ -36,15 +33,21 @@ describe('GuildService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    service = new GuildService(config as any, subscriptionService as any, models as any);
+    service = new GuildService(
+      config as any,
+      subscriptionService as any,
+      feedService as any,
+      supporterService as any,
+      patronService as any,
+    );
     subscriptionService.getSubscriptionOfGuild.mockResolvedValue(null);
-    models.Patron.findByDiscordId.mockResolvedValue([]);
-    models.Supporter.findWithGuild.mockResolvedValue([]);
+    patronService.findByDiscordId.mockResolvedValue([]);
+    supporterService.findWithGuild.mockResolvedValue([]);
   });
 
   describe('verifyAndAddFeeds', () => {
     it('returns errors when the guild is at the feed limit', async () => {
-      models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds);
+      feedService.count.mockResolvedValue(config.defaultMaxFeeds);
       const urls = [
         'http://url1.com',
       ];
@@ -56,7 +59,7 @@ describe('GuildService', () => {
         }]);
     });
     it('returns errors when the new urls will exceed the feed limit', async () => {
-      models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
+      feedService.count.mockResolvedValue(config.defaultMaxFeeds - 1);
       const urls = [
         'http://url1.com',
         'http://url2.com',
@@ -74,7 +77,7 @@ describe('GuildService', () => {
         }]);
     });
     it('normalizes and de-duplicates links', async () => {
-      models.Feed.countInGuild.mockResolvedValue(config.defaultMaxFeeds - 1);
+      feedService.count.mockResolvedValue(config.defaultMaxFeeds - 1);
       const urls = [
         'http://url1.com',
         'http://url2.com',
@@ -94,8 +97,8 @@ describe('GuildService', () => {
     });
     it('returns an error with the url if it already exists in channel', async () => {
       const urlsToAdd = ['http://url1.com', 'http://url2.com'];
-      models.Feed.countInGuild.mockResolvedValue(0);
-      models.Feed.findByField.mockResolvedValue([{ url: urlsToAdd[1] }]);
+      feedService.count.mockResolvedValue(0);
+      feedService.find.mockResolvedValue([{ url: urlsToAdd[1] }]);
       mockedFeedFetcher.mockImplementation(() => {
         return {
           fetchFeed: jest.fn().mockResolvedValue({
@@ -115,8 +118,8 @@ describe('GuildService', () => {
     });
     it('returns no error if url is successfully added', async () => {
       const urlsToAdd = ['http://url1.com', 'http://url2.com'];
-      models.Feed.countInGuild.mockResolvedValue(0);
-      models.Feed.findByField.mockResolvedValue([]);
+      feedService.count.mockResolvedValue(0);
+      feedService.find.mockResolvedValue([]);
       mockedFeedFetcher.mockImplementation(() => {
         return {
           fetchFeed: jest.fn().mockResolvedValue({
@@ -161,7 +164,7 @@ describe('GuildService', () => {
     });
     describe('when supporter exists but subscription does not', () => {
       it('returns the max feeds of all matched supporters', async () => {
-        models.Supporter.findWithGuild.mockResolvedValue([{
+        supporterService.findWithGuild.mockResolvedValue([{
           maxFeeds: 100,
         }, {
           maxFeeds: 200,
@@ -174,7 +177,7 @@ describe('GuildService', () => {
         );
       });
       it('returns default feed limit if no supporters found', async () => {
-        models.Supporter.findWithGuild.mockResolvedValue([]);
+        supporterService.findWithGuild.mockResolvedValue([]);
 
         await expect(service.getFeedLimit(guildId)).resolves.toEqual(
           config.defaultMaxFeeds,
@@ -191,8 +194,8 @@ describe('GuildService', () => {
           _id: 3,
           patron: true,
         }];
-        models.Supporter.findWithGuild.mockResolvedValue(supporters);
-        models.Patron.findByDiscordId.mockImplementation((id) => id === supporters[2]._id
+        supporterService.findWithGuild.mockResolvedValue(supporters);
+        patronService.findByDiscordId.mockImplementation((id) => id === String(supporters[2]._id)
           ? [{
             _id: 3,
             pledge: 500,
@@ -219,8 +222,8 @@ describe('GuildService', () => {
           _id: 3,
           patron: true,
         }];
-        models.Supporter.findWithGuild.mockResolvedValue(supporters);
-        models.Patron.findByDiscordId.mockImplementation((id) => id === supporters[2]._id
+        supporterService.findWithGuild.mockResolvedValue(supporters);
+        patronService.findByDiscordId.mockImplementation((id) => id === String(supporters[2]._id)
           ? [{
             _id: 3,
             pledge: 500,
