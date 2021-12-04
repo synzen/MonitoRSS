@@ -6,6 +6,6 @@
   "commands.add.error_missing_channel": "A channel must be defined for the feed to be added in.",
   "commands.remove.no_feeds_to_remove": "There are no feeds to remove.", 
   "commands.remove.select_feed_to_remove": "Select a feed to remove.",
-  "responses.remove-feed.success": "✅ Successfully removed {url}!",
+  "responses.remove-feed.success": "✅ Successfully removed {url}",
   "responses.remove-feed.not_found": "This is an invalid feed. It was most likely removed already."
 }
