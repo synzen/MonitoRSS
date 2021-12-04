@@ -82,13 +82,13 @@ export default class FeedService {
 
   static COLLECTION_NAME = 'feeds';
 
-  async findByGuild(guildId: string) {
+  async findByGuild(guildId: string): Promise<FeedOutput[]> {
     return this.getCollection().find({ guild: guildId }).sort({
       createdAt: 1,
-    }).toArray();
+    }).toArray() as Promise<FeedOutput[]>;
   }
 
-  async find(query: Partial<Feed>, page = 0, limit = 10): Promise<Feed[]> {
+  async find(query: Partial<Feed>, page = 0, limit = 10): Promise<FeedOutput[]> {
     const skip = page * limit;
     const res = await this.getCollection().find(query).limit(limit).skip(skip).sort({
       createdAt: 1,
@@ -105,8 +105,8 @@ export default class FeedService {
     await this.getCollection().deleteOne({ _id: new ObjectId(feedId) });
   }
 
-  async findById(feedId: string) {
-    return this.getCollection().findOne({ _id: new ObjectId(feedId) });
+  async findById(feedId: string): Promise<FeedOutput | null> {
+    return this.getCollection().findOne({ _id: new ObjectId(feedId) }) as Promise<FeedOutput>;
   }
 
   async insertOne(toInsert: FeedInput): Promise<Feed> {

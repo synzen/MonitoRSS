@@ -27,10 +27,12 @@ export default class ProfileService {
 
   static COLLECTION_NAME = 'feeds';
 
-  async findOne(guildId: string) {
-    return this.getCollection().findOne({
+  async findOne(guildId: string): Promise<ProfileOutput | null> {
+    const found = await this.getCollection().findOne({
       _id: guildId as any,
     });
+    
+    return found as ProfileOutput || null;
   }
 
   private getCollection() {
