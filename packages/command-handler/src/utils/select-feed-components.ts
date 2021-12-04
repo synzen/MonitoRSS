@@ -59,6 +59,7 @@ async function selectFeedComponents(
       new MessageSelectMenu()
         .setCustomId(selectMenuCustomId)
         .setPlaceholder('Please select a feed')
+        .setMaxValues(feeds.length)
         .addOptions(feeds.map(feed => ({
           label: feed.title,
           value: feed._id.toHexString(),

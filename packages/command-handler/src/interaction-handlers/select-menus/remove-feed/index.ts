@@ -17,22 +17,40 @@ export default class RemoveFeedSelectMenu implements SelectMenusInterface {
   @inject(InteractionContainerSymbols.Translate) translate!: InteractionTranslate;
 
   async execute(interaction: SelectMenuInteraction): Promise<void> {
-    const feedId = interaction.values[0];
+    const feedIds = interaction.values;
 
-    const foundFeed = await this.services.feedService.findById(feedId);
-    
-    if (!foundFeed || foundFeed.guild !== interaction.guildId) {
-      await interaction.reply(this.translate('responses.remove-feed.not_found'));
+    const foundFeeds = await Promise.all(feedIds.map(async (feedId) => {
+      const feed = await this.services.feedService.findById(feedId);
       
+      if (feed && feed.guild === interaction.guildId) {
+        return feed;
+      }
+
+      return null;
+    }));
+
+    const existingFeeds = foundFeeds.filter(Boolean);
+
+    if (!existingFeeds.length) {
+      await interaction.reply(this.translate('responses.remove-feed.not_found'));
+
       return;
     }
 
-    await this.services.feedService.removeOne(feedId);
+    await Promise
+      .all(existingFeeds.map((feed) => this
+        .services.feedService.removeOne(String(feed?._id) as string)));
+
+    const responseStrings = existingFeeds
+      .map((feed) => {
+        return this.translate('responses.remove-feed.success', {
+          url: feed?.url,
+        });
+      });
+
 
     await interaction.update({
-      content: this.translate('responses.remove-feed.success', {
-        url: foundFeed.url,
-      }),
+      content: responseStrings.join('\n'),
       components: [],
     });
   }
