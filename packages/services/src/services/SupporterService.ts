@@ -24,7 +24,7 @@ export default class SupporterService {
     @inject('MongoDB') private readonly db: Db,
   ) {}
 
-  static COLLECTION_NAME = 'feeds';
+  static COLLECTION_NAME = 'supporters';
   
   async findWithGuild(guildId: string) {
     const supporters = await this.getCollection().find({
