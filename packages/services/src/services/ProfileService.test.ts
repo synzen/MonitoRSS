@@ -1,27 +1,43 @@
 import 'reflect-metadata';
+import { Collection, Db, Document } from 'mongodb';
+import { setupTests, teardownTests } from '../utils/setup-test';
 import ProfileService from './ProfileService';
 
 describe('ProfileService', () => {
-  const models = {
-    Profile: {
-      findOne: jest.fn(),
-    },
-  };
-  let profileService: ProfileService;
+  let service: ProfileService;
+  let db: Db;
+  const collectionName = ProfileService.COLLECTION_NAME;
+  let collection: Collection<Document>;
 
-  beforeEach(() => {
-    jest.resetAllMocks();
-    profileService = new ProfileService(models as any);
+  beforeAll(async () => {
+    db = await setupTests();
+    collection = db.collection(collectionName);
+
+    service = new ProfileService(db);
+  });
+  beforeEach(async  () => {
+    jest.restoreAllMocks();
+    await db.dropDatabase();
+  });
+  
+  afterAll(async () => {
+    await teardownTests();
   });
 
   describe('findOne', () => {
-    it('returns the profile', async () => {
-      const profile = {
+    it('finds all active patrons with that discord ID', async () => {
+      const toCreate = [{
         _id: '123',
-      };
-      models.Profile.findOne.mockResolvedValue(profile);
-      const found = await profileService.findOne('guildId');
-      expect(found).toBe(profile);
+        name: 'guild1',
+        timezone: 'utc',
+      }, {
+        _id: '456',
+        name: 'guild2',
+        timezone: 'est',
+      }];
+      await collection.insertMany([...toCreate] as any);
+      const found = await service.findOne(toCreate[1]._id);
+      expect(found?.name).toEqual(toCreate[1].name);
     });
   });
 });
