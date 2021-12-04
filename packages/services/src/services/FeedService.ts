@@ -66,6 +66,7 @@ const feedSchema = z.object({
   })).default({}),
 });
 
+export type FeedInput = z.input<typeof feedSchema>;
 export type Feed = z.input<typeof feedSchema> & {
   _id: ObjectId;
 };
@@ -106,6 +107,15 @@ export default class FeedService {
 
   async findById(feedId: string) {
     return this.getCollection().findOne({ _id: new ObjectId(feedId) });
+  }
+
+  async insertOne(toInsert: FeedInput): Promise<Feed> {
+    const inserted = await this.getCollection().insertOne(toInsert);
+    
+    return {
+      ...toInsert,
+      _id: inserted.insertedId,
+    };
   }
 
   private getCollection() {

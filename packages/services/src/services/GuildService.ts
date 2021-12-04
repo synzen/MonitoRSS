@@ -5,6 +5,7 @@ import { Config } from '../config-schema';
 import SubscriptionService from './SubscriptionService';
 import normalizeUrl from 'normalize-url';
 import ERROR_CODES from './constants/error-codes';
+import FeedService from './FeedService';
 
 export interface IGuildService {
   getFeedLimit(guildId: string): Promise<number>
@@ -16,6 +17,7 @@ export default class GuildService implements IGuildService {
     @inject('Config') private readonly config: Config,
     @inject(SubscriptionService) private subscriptionService: SubscriptionService,
     @inject('ModelExports') private readonly models: ModelExports,
+    @inject(FeedService) private readonly feedService: FeedService,
   ) {}
 
   /**
@@ -44,7 +46,9 @@ export default class GuildService implements IGuildService {
       }));
     }
 
-    const urlsInChannel = new Set((await this.models.Feed.findByField('channel', channelId))
+    const urlsInChannel = new Set((await this.feedService.find({
+      channel: channelId,
+    }))
       .map((f) => f.url));
 
     return Promise.all(
@@ -59,7 +63,7 @@ export default class GuildService implements IGuildService {
           }
 
           const toSave = await this.getFeedToSave(guildId, channelId, url);
-          await this.models.Feed.insert(toSave);
+          await this.feedService.insertOne(toSave);
           
           return {
             url,

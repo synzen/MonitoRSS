@@ -1,20 +1,11 @@
-import { Collection, Db, Document, ObjectId } from 'mongodb';
 import 'reflect-metadata';
+import { Collection, Db, Document, ObjectId } from 'mongodb';
 import { setupTests, teardownTests } from '../utils/setup-test';
 import FeedService, { Feed } from './FeedService';
 import dayjs from 'dayjs';
 
 describe('FeedService', () => {
   let service: FeedService;
-  let models = {
-    Feed: {
-      countInGuild: jest.fn(),
-      findByGuild: jest.fn(),
-      insert: jest.fn(),
-      removeById: jest.fn(),
-      find: jest.fn(),
-    },
-  };
   let db: Db;
   let collection: Collection<Document>;
 
@@ -24,7 +15,7 @@ describe('FeedService', () => {
   });
   beforeEach(async () => {
     jest.resetAllMocks();
-    service = new FeedService( models as any, db);
+    service = new FeedService( db);
   });
   afterEach(async () => {
     await db.dropDatabase();
@@ -265,6 +256,36 @@ describe('FeedService', () => {
       await service.removeOne(found[0]._id.toHexString());
       const foundAfter = await collection.find().toArray();
       expect(foundAfter).toHaveLength(2);
+    });
+  });
+
+  describe('insert', () => {
+    it('inserts one', async () => {
+      const toInsert = {
+        channel: 'channel-id',
+        guild: 'guild-id',
+        title: 'title',
+        url: 'http://www.google.com',
+      };
+      await service.insertOne(toInsert);
+
+      const found = await collection.find().toArray();
+      expect(found).toHaveLength(1);
+      expect(found[0]).toMatchObject(toInsert);
+    });
+    it('returns the created feed with the id', async () => {
+      const toInsert = {
+        channel: 'channel-id',
+        guild: 'guild-id',
+        title: 'title',
+        url: 'http://www.google.com',
+      };
+      const result = await service.insertOne(toInsert);
+
+      expect(result).toMatchObject({
+        ...toInsert, 
+        _id: expect.any(ObjectId),
+      });
     });
   });
 });
