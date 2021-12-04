@@ -148,8 +148,6 @@ export default class GuildService implements IGuildService {
     const { defaultMaxFeeds } = this.config;
     const patrons = await this.patronService.findByDiscordId(discordId);
     const feedLimits = patrons.map((p) => this.getFeedLimitFromPatronPledge(p.pledge));
-    console.log(this.patronService);
-    console.log(patrons);
 
     return Math.max(...feedLimits, defaultMaxFeeds);
   }

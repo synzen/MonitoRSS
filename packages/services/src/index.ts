@@ -1,7 +1,6 @@
 import { Container } from 'inversify';
 import 'reflect-metadata';
 import configSchema, { Config } from './config-schema';
-import connect from '@monitorss/models';
 import { GuildService, SubscriptionService } from './services';
 import { Db, MongoClient } from 'mongodb';
 import ProfileService from './services/ProfileService';
@@ -21,12 +20,10 @@ export interface MonitoServices {
 
 async function setup(inputConfig: Config): Promise<MonitoServices> {
   const config = configSchema.parse(inputConfig);
-  const modelExports = await connect(config.mongoUri);
   const client = await MongoClient.connect(config.mongoUri);
 
   const container = new Container();
   container.bind<Config>('Config').toConstantValue(config);
-  container.bind<typeof modelExports>('ModelExports').toConstantValue(modelExports);
   container.bind<Db>('MongoDB').toConstantValue(client.db());
   container.bind<GuildService>(GuildService).to(GuildService);
   container.bind<SubscriptionService>(SubscriptionService).to(SubscriptionService);
@@ -36,7 +33,7 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
   container.bind<PatronService>(PatronService).to(PatronService);
 
   return {
-    mongoDbClient: modelExports.mongoDbClient as MongoClient,
+    mongoDbClient: client,
     guildService: container.get<GuildService>(GuildService),
     subscriptionService: container.get<SubscriptionService>(SubscriptionService),
     profileService: container.get<ProfileService>(ProfileService),
