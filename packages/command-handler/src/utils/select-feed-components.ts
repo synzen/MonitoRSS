@@ -6,7 +6,7 @@ import  {
 import { InteractionTask } from '../interaction-handlers/interaction-tasks.constants';
 import createInteractionCustomId from './create-interaction-custom-id';
 
-const FEEDS_PER_PAGE = 1;
+const FEEDS_PER_PAGE = 10;
 
 async function selectFeedComponents(
   interactionServices: InteractionServices,
