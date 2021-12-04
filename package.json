@@ -22,7 +22,6 @@
     "@monitorss/commmand-handler": "file:packages\\command-handler",
     "@monitorss/feed-fetcher": "file:packages\\feed-fetcher",
     "@monitorss/logger": "file:packages\\logger",
-    "@monitorss/models": "file:packages\\models",
     "@monitorss/services": "file:packages\\services",
     "lerna": "^4.0.0"
   }
