@@ -1,6 +1,6 @@
 {
   "name": "@monitorss/command-handler",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "publishConfig": {
@@ -26,7 +26,7 @@
     "@discordjs/builders": "^0.8.2",
     "@discordjs/rest": "^0.1.0-canary.0",
     "@monitorss/logger": "^1.0.1",
-    "@monitorss/services": "^1.0.2",
+    "@monitorss/services": "^1.0.3",
     "discord-api-types": "^0.24.0",
     "discord.js": "^13.3.1",
     "dotenv": "^10.0.0",
