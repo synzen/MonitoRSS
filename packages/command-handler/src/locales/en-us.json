@@ -7,6 +7,7 @@
   "commands.remove.no_feeds_to_remove": "There are no feeds to remove.", 
   "commands.remove.select_feed_to_remove": "Select up to 10 feeds to remove.",
   "commands.invite.text": "Invite me to your server with this link:\n\n{url}",
+  "commands.locale.success": "✅ The locale for this server has been successfully set to {locale}.",
   "responses.remove-feed.success": "✅ Successfully removed {url}",
   "responses.remove-feed.not_found": "Failed to remove feeds. They were most likely deleted already."
 }
