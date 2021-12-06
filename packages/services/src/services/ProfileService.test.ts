@@ -40,4 +40,19 @@ describe('ProfileService', () => {
       expect(found?.name).toEqual(toCreate[1].name);
     });
   });
+
+  describe('setLocale', () => {
+    it('sets the locale of the profile', async () => {
+      const toCreate = {
+        _id: '123',
+        name: 'guild1',
+        locale: 'en-us',
+      };
+      const newLocale = 'en-gb';
+      await collection.insertOne(toCreate as any);
+      await service.setLocale(toCreate._id, newLocale);
+      const found = await collection.findOne({ _id: toCreate._id as any });
+      expect(found?.locale).toEqual(newLocale);
+    });
+  });
 });

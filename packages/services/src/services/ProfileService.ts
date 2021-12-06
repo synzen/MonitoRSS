@@ -35,6 +35,16 @@ export default class ProfileService {
     return found as ProfileOutput || null;
   }
 
+  async setLocale(guildId: string, locale: string) {
+    await this.getCollection().updateOne({
+      _id: guildId as any,
+    }, {
+      $set: {
+        locale,
+      },
+    });
+  }
+
   private getCollection() {
     return this.db.collection(ProfileService.COLLECTION_NAME);
   }
