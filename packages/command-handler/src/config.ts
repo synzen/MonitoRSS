@@ -6,6 +6,7 @@ dotenv.config();
 const configSchema = z.object({
   botToken: z.string().min(1).default(process.env.MRSS_BOT_TOKEN as string),
   botClientId: z.string().min(1).default(process.env.MRSS_BOT_CLIENT_ID as string),
+  botInviteUrl: z.string().url().min(1).default(process.env.MRSS_BOT_INVITE_URL as string),
   testingGuildId: z.string().min(1).default(process.env.MRSS_TESTING_GUILD_ID as string),
   mongoUri: z.string().min(1).default(process.env.MRSS_MONGO_URI as string),
   defaultRefreshRateMinutes: z.number().default(
