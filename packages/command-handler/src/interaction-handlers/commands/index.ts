@@ -1,6 +1,7 @@
 import CommandAdd from './add';
 import CommandInterface from './command.interface';
 import CommandInvite from './invite';
+import CommandList from './list';
 import CommandLocale from './locale';
 import CommandPing from './ping';
 import CommandRefresh from './refresh';
@@ -15,6 +16,7 @@ const mapOfCommands = new Map<string, new () => CommandInterface>([
   [CommandInvite.data.name, CommandInvite],
   [CommandLocale.data.name, CommandLocale],
   [CommandRefresh.data.name, CommandRefresh],
+  [CommandList.data.name, CommandList],
 ]);
 
 export default mapOfCommands;
