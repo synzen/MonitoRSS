@@ -2,12 +2,15 @@
   "commands.add.error_exceeded_feed_limit": "You will exceed the maximum number of feeds for this server. Try removing a feed first.",
   "commands.add.error_exists_in_channel": "This feed is already in this channel.",
   "commands.add.error_missing_url": "You must provide a URL as an option.",
-  "commands.add.error_unable_to_add_feed": "Unable to add feed",
+  "commands.add.error_unable_to_add_feed": "Unable to add feed.",
   "commands.add.error_missing_channel": "A channel must be defined for the feed to be added in.",
   "commands.remove.no_feeds_to_remove": "There are no feeds to remove.", 
   "commands.remove.select_feed_to_remove": "Select up to 10 feeds to remove.",
-  "commands.invite.text": "Invite me to your server with this link:\n\n{url}",
+  "commands.invite.text": "Invite me to your server with this link:\n\n<{url}>",
   "commands.locale.success": "✅ The locale for this server has been successfully set to {locale}.",
-  "responses.remove-feed.success": "✅ Successfully removed {url}",
+  "commands.refresh.no_failed_feeds": "None of your feeds have failed, and so none of them need to be refreshed.",
+  "commands.refresh.successful_url": "✅ Successfully refreshed feed <{url}>.",
+  "commands.refresh.failed_url": "❌ Failed to refresh feed <{url}>. Please check that if the feed is working correctly.",
+  "responses.remove-feed.success": "✅ Successfully removed <{url}>.",
   "responses.remove-feed.not_found": "Failed to remove feeds. They were most likely deleted already."
 }

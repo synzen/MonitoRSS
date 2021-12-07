@@ -9,6 +9,10 @@ const configSchema = z.object({
   botInviteUrl: z.string().url().min(1).default(process.env.MRSS_BOT_INVITE_URL as string),
   testingGuildId: z.string().min(1).default(process.env.MRSS_TESTING_GUILD_ID as string),
   mongoUri: z.string().min(1).default(process.env.MRSS_MONGO_URI as string),
+  feedDefaultUserAgent: z.string().min(1).default(
+    process.env.MRSS_FEED_DEFAULT_USER_AGENT as string
+    || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
+  ),
   defaultRefreshRateMinutes: z.number().default(
     Number(process.env.MRSS_DEFAULT_REFRESH_RATE_MINUTES as string),
   ),
