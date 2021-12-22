@@ -99,4 +99,30 @@ describe('SupporterService', () => {
       expect(found.guilds).toContain(guildId);
     });
   });
+  describe('removeGuildFromSupporter', () => {
+    it('throws if the supporter id is not a valid ObjectId', async () => {
+      const supporterId = 'invalidid';
+
+      await expect(service.removeGuildFromSupporter(supporterId, 'guildid')).rejects.toThrow();
+    });
+    it('throws if the supporter is not found', async () => {
+      const supporterId = new ObjectId().toHexString();
+
+      await expect(service.removeGuildFromSupporter(supporterId, 'guildid')).rejects.toThrow();
+    });
+    it('removes all instances of the guild from the supporter', async () => {
+      const guildId = 'guildid';
+      const supporterId = new ObjectId().toHexString();
+      const toCreate = [{
+        _id: new ObjectId(supporterId),
+        guilds: [guildId, guildId],
+      }];
+      await collection.insertMany([...toCreate]);
+
+      await service.removeGuildFromSupporter(supporterId, guildId);
+
+      const found = await collection.findOne({ _id: new ObjectId(supporterId) }) as SupporterOutput;
+      expect(found.guilds).toHaveLength(0);
+    });
+  });
 });

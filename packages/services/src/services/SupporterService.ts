@@ -46,7 +46,8 @@ export default class SupporterService {
 
     const supporterObjectId = new ObjectId(supporterId);
 
-    const supporter = await this.getCollection().findOne({ _id: supporterObjectId });
+    const supporter = await this.getCollection()
+      .findOne({ _id: supporterObjectId }) as SupporterOutput;
 
     if (!supporter) {
       throw new Error(`Supporter ${supporterId} not found`);
@@ -59,6 +60,31 @@ export default class SupporterService {
       }, {
         $set: {
           guilds: supporter.guilds,
+        },
+      });
+    }
+  }
+
+  async removeGuildFromSupporter(supporterId: string, guildId: string): Promise<void> {
+    if (!ObjectId.isValid(supporterId)) {
+      throw new Error('Supporter ID is a valid ObjectId');
+    }
+
+    const supporterObjectId = new ObjectId(supporterId);
+
+    const supporter = await this.getCollection()
+      .findOne({ _id: supporterObjectId }) as SupporterOutput;
+
+    if (!supporter) {
+      throw new Error(`Supporter ${supporterId} not found`);
+    }
+
+    if (supporter.guilds.includes(guildId)) {
+      await this.getCollection().updateOne({
+        _id: supporterObjectId,
+      }, {
+        $pull: {
+          guilds: guildId,
         },
       });
     }
