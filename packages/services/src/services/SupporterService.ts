@@ -51,14 +51,8 @@ export default class SupporterService {
   }
 
   async addGuildToSupporter(supporterId: string, guildId: string): Promise<void> {
-    if (!ObjectId.isValid(supporterId)) {
-      throw new Error('Supporter ID is not a valid ObjectId');
-    }
-
-    const supporterObjectId = new ObjectId(supporterId);
-
     const supporter = await this.getCollection()
-      .findOne({ _id: supporterObjectId }) as SupporterOutput;
+      .findOne({ _id: supporterId as any }) as SupporterOutput;
 
     if (!supporter) {
       throw new Error(`Supporter ${supporterId} not found`);
@@ -67,7 +61,7 @@ export default class SupporterService {
     if (!supporter.guilds.includes(guildId)) {
       supporter.guilds.push(guildId);
       await this.getCollection().updateOne({
-        _id: supporterObjectId,
+        _id: supporterId as any,
       }, {
         $set: {
           guilds: supporter.guilds,
@@ -77,14 +71,8 @@ export default class SupporterService {
   }
 
   async removeGuildFromSupporter(supporterId: string, guildId: string): Promise<void> {
-    if (!ObjectId.isValid(supporterId)) {
-      throw new Error('Supporter ID is not a valid ObjectId');
-    }
-
-    const supporterObjectId = new ObjectId(supporterId);
-
     const supporter = await this.getCollection()
-      .findOne({ _id: supporterObjectId }) as SupporterOutput;
+      .findOne({ _id: supporterId as any }) as SupporterOutput;
 
     if (!supporter) {
       throw new Error(`Supporter ${supporterId} not found`);
@@ -92,7 +80,7 @@ export default class SupporterService {
 
     if (supporter.guilds.includes(guildId)) {
       await this.getCollection().updateOne({
-        _id: supporterObjectId,
+        _id: supporterId as any,
       }, {
         $pull: {
           guilds: guildId,

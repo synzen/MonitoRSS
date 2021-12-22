@@ -89,70 +89,60 @@ describe('SupporterService', () => {
     });
   });
   describe('addGuildToSupporter', () => {
-    it('throws if an invalid object id is passed as supporter ID', async () => {
-      const supporterId = 'invalidid';
-
-      await expect(service.addGuildToSupporter(supporterId, 'guildid')).rejects.toThrow();
-    });
     it('throws if no supporter was found', async () => {
-      const supporterId = new ObjectId().toHexString();
+      const supporterId = 'supporter-id';
 
       await expect(service.addGuildToSupporter(supporterId, 'guildid')).rejects.toThrow();
     });
     it('adds the guild to the supporter', async () => {
       const guildId = 'guildid';
-      const supporterId = new ObjectId().toHexString();
+      const supporterId = 'supporter-id';
       const toCreate = [{
-        _id: new ObjectId(supporterId),
+        _id: supporterId,
         guilds: ['guildid1', 'guildid2'],
       }];
-      await collection.insertMany([...toCreate]);
+      await collection.insertMany([...toCreate] as any);
 
       await service.addGuildToSupporter(supporterId, guildId);
 
-      const found = await collection.findOne({ _id: new ObjectId(supporterId) }) as SupporterOutput;
+      const found = await collection.findOne({ _id: supporterId as any }) as SupporterOutput;
       expect(found.guilds).toHaveLength(3);
       expect(found.guilds).toContain(guildId);
     });
     it('does not add duplicate guilds to the supporter', async () => {
       const guildId = 'guildid';
-      const supporterId = new ObjectId().toHexString();
+      const supporterId = 'supporter-id';
       const toCreate = [{
-        _id: new ObjectId(supporterId),
+        _id: supporterId,
         guilds: [guildId],
       }];
-      await collection.insertMany([...toCreate]);
+      await collection.insertMany([...toCreate] as any);
 
       await service.addGuildToSupporter(supporterId, guildId);
 
-      const found = await collection.findOne({ _id: new ObjectId(supporterId) }) as SupporterOutput;
+      const found = await collection.findOne({ _id: supporterId as any }) as SupporterOutput;
       expect(found.guilds).toHaveLength(1);
       expect(found.guilds).toContain(guildId);
     });
   });
   describe('removeGuildFromSupporter', () => {
-    it('throws if the supporter id is not a valid ObjectId', async () => {
-      const supporterId = 'invalidid';
-
-      await expect(service.removeGuildFromSupporter(supporterId, 'guildid')).rejects.toThrow();
-    });
     it('throws if the supporter is not found', async () => {
-      const supporterId = new ObjectId().toHexString();
+      const supporterId = 'supporter-id';
 
       await expect(service.removeGuildFromSupporter(supporterId, 'guildid')).rejects.toThrow();
     });
     it('removes all instances of the guild from the supporter', async () => {
       const guildId = 'guildid';
-      const supporterId = new ObjectId().toHexString();
+      const supporterId = 'supporter-id';
       const toCreate = [{
-        _id: new ObjectId(supporterId),
+        _id: supporterId as any,
         guilds: [guildId, guildId],
       }];
       await collection.insertMany([...toCreate]);
 
       await service.removeGuildFromSupporter(supporterId, guildId);
 
-      const found = await collection.findOne({ _id: new ObjectId(supporterId) }) as SupporterOutput;
+      const found = await collection.findOne({ _id: supporterId as any }) as SupporterOutput;
       expect(found.guilds).toHaveLength(0);
     });
   });
