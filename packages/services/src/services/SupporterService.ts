@@ -28,7 +28,7 @@ export default class SupporterService {
 
   async findById(supporterId: string): Promise<SupporterOutput | null> {
     if (!ObjectId.isValid(supporterId)) {
-      throw new Error('Supporter ID is a valid ObjectId');
+      throw new Error('Supporter ID is not a valid ObjectId');
     }
 
     return this.getCollection().findOne({ 
@@ -56,7 +56,7 @@ export default class SupporterService {
 
   async addGuildToSupporter(supporterId: string, guildId: string): Promise<void> {
     if (!ObjectId.isValid(supporterId)) {
-      throw new Error('Supporter ID is a valid ObjectId');
+      throw new Error('Supporter ID is not a valid ObjectId');
     }
 
     const supporterObjectId = new ObjectId(supporterId);
@@ -82,7 +82,7 @@ export default class SupporterService {
 
   async removeGuildFromSupporter(supporterId: string, guildId: string): Promise<void> {
     if (!ObjectId.isValid(supporterId)) {
-      throw new Error('Supporter ID is a valid ObjectId');
+      throw new Error('Supporter ID is not a valid ObjectId');
     }
 
     const supporterObjectId = new ObjectId(supporterId);
