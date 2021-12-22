@@ -2,6 +2,7 @@ import { inject, injectable } from 'inversify';
 import { Db, ObjectId } from 'mongodb';
 import { z } from 'zod';
 import dayjs from 'dayjs';
+import { Config } from '../config-schema';
 
 const patronSchema = z.object({
   statusOverride: z.string().optional(),
@@ -24,6 +25,7 @@ export type PatronOutput = z.output<typeof patronSchema> & {
 export default class PatronService {
   constructor(
     @inject('MongoDB') private readonly db: Db,
+    @inject('Config') private readonly config: Config,
   ) {}
 
   static COLLECTION_NAME = 'patrons';
@@ -59,6 +61,40 @@ export default class PatronService {
     }).toArray();
 
     return found as PatronOutput[];
+  }
+
+  async getFeedLimitFromDiscordId(discordId: string): Promise<number> {
+    const { defaultMaxFeeds } = this.config;
+    const patrons = await this.findByDiscordId(discordId);
+    const feedLimits = patrons.map((p) => this.getFeedLimitFromPatronPledge(p.pledge));
+
+    return Math.max(...feedLimits, defaultMaxFeeds);
+  }
+
+  private getFeedLimitFromPatronPledge(pledge: number): number {
+    const { defaultMaxFeeds } = this.config;
+
+    if (pledge >= 2000) {
+      return 140;
+    }
+
+    if (pledge >= 1500) {
+      return 105;
+    }
+
+    if (pledge >= 1000) {
+      return 70;
+    }
+
+    if (pledge >= 500) {
+      return 35;
+    }
+
+    if (pledge >= 250) {
+      return 15;
+    }
+
+    return defaultMaxFeeds;
   }
   
   private getCollection() {

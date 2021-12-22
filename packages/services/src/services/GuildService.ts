@@ -137,44 +137,10 @@ export default class GuildService implements IGuildService {
           return s.maxFeeds ?? defaultMaxFeeds;
         }
 
-        return this.getFeedLimitFromPatron(String(s._id));
+        return this.patronService.getFeedLimitFromDiscordId(String(s._id));
       }),
     );
     
     return Math.max(...maxFeedsOfDifferentSupporters, defaultMaxFeeds);
-  }
-
-  private async getFeedLimitFromPatron(discordId: string): Promise<number> {
-    const { defaultMaxFeeds } = this.config;
-    const patrons = await this.patronService.findByDiscordId(discordId);
-    const feedLimits = patrons.map((p) => this.getFeedLimitFromPatronPledge(p.pledge));
-
-    return Math.max(...feedLimits, defaultMaxFeeds);
-  }
-
-  private getFeedLimitFromPatronPledge(pledge: number): number {
-    const { defaultMaxFeeds } = this.config;
-
-    if (pledge >= 2000) {
-      return 140;
-    }
-
-    if (pledge >= 1500) {
-      return 105;
-    }
-
-    if (pledge >= 1000) {
-      return 70;
-    }
-
-    if (pledge >= 500) {
-      return 35;
-    }
-
-    if (pledge >= 250) {
-      return 15;
-    }
-
-    return defaultMaxFeeds;
   }
 }

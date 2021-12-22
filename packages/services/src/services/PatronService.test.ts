@@ -9,12 +9,15 @@ describe('PatronService', () => {
   let db: Db;
   const collectionName = PatronService.COLLECTION_NAME;
   let collection: Collection<Document>;
+  let config = {
+    defaultMaxFeeds: 10,
+  };
 
   beforeAll(async () => {
     db = await setupTests();
     collection = db.collection(collectionName);
 
-    repo = new PatronService(db);
+    repo = new PatronService(db, config as any);
   });
   beforeEach(async  () => {
     jest.restoreAllMocks();
@@ -65,6 +68,29 @@ describe('PatronService', () => {
       const discord = '1234';
       const found = await repo.findByDiscordId(discord);
       expect(found).toHaveLength(0);
+    });
+  });
+  
+  describe('getFeedLimitFromPatronPledge', () => {
+    it('returns 140 for >= 2000 for pledge', function () {
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      expect(repo['getFeedLimitFromPatronPledge'](2100)).toEqual(140);
+    });
+    it('returns 70 for >= 1000 for pledge', function () {
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      expect(repo['getFeedLimitFromPatronPledge'](1100)).toEqual(70);
+    });
+    it('returns 35 for >= 500 for pledge', function () {
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      expect(repo['getFeedLimitFromPatronPledge'](500)).toEqual(35);
+    });
+    it('returns 15 for >= 250 for pledge', function () {
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      expect(repo['getFeedLimitFromPatronPledge'](250)).toEqual(15);
+    });
+    it('returns default for < 250 for pledge', function () {
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      expect(repo['getFeedLimitFromPatronPledge'](100)).toEqual(config.defaultMaxFeeds);
     });
   });
 });

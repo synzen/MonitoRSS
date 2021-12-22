@@ -22,7 +22,7 @@ describe('GuildService', () => {
     count: jest.fn(),
   };
   const patronService = {
-    findByDiscordId: jest.fn(),
+    getFeedLimitFromDiscordId: jest.fn(),
   };
   const supporterService = {
     findWithGuild: jest.fn(),
@@ -41,7 +41,7 @@ describe('GuildService', () => {
       patronService as any,
     );
     subscriptionService.getSubscriptionOfGuild.mockResolvedValue(null);
-    patronService.findByDiscordId.mockResolvedValue([]);
+    patronService.getFeedLimitFromDiscordId.mockResolvedValue(config.defaultMaxFeeds);
     supporterService.findWithGuild.mockResolvedValue([]);
   });
 
@@ -195,13 +195,11 @@ describe('GuildService', () => {
           patron: true,
         }];
         supporterService.findWithGuild.mockResolvedValue(supporters);
-        patronService.findByDiscordId.mockImplementation((id) => id === String(supporters[2]._id)
-          ? [{
-            _id: 3,
-            pledge: 500,
-          }]
-          : [],
-        );
+        patronService.getFeedLimitFromDiscordId
+          .mockImplementation((id) => id === String(supporters[2]._id)
+            ? 35
+            : config.defaultMaxFeeds,
+          );
         await expect(service.getFeedLimit(guildId)).resolves.toEqual(
           35,
         );
@@ -223,40 +221,14 @@ describe('GuildService', () => {
           patron: true,
         }];
         supporterService.findWithGuild.mockResolvedValue(supporters);
-        patronService.findByDiscordId.mockImplementation((id) => id === String(supporters[2]._id)
-          ? [{
-            _id: 3,
-            pledge: 500,
-          }]
-          : [],
-        );
+        patronService.getFeedLimitFromDiscordId
+          .mockImplementation((id) => id === String(supporters[2]._id)
+            ? 35 : config.defaultMaxFeeds,
+          );
         await expect(service.getFeedLimit(guildId)).resolves.toEqual(
           35,
         );
       });
-    });
-  });
-
-  describe('getFeedLimitFromPatronPledge', () => {
-    it('returns 140 for >= 2000 for pledge', function () {
-      // eslint-disable-next-line @typescript-eslint/dot-notation
-      expect(service['getFeedLimitFromPatronPledge'](2100)).toEqual(140);
-    });
-    it('returns 70 for >= 1000 for pledge', function () {
-      // eslint-disable-next-line @typescript-eslint/dot-notation
-      expect(service['getFeedLimitFromPatronPledge'](1100)).toEqual(70);
-    });
-    it('returns 35 for >= 500 for pledge', function () {
-      // eslint-disable-next-line @typescript-eslint/dot-notation
-      expect(service['getFeedLimitFromPatronPledge'](500)).toEqual(35);
-    });
-    it('returns 15 for >= 250 for pledge', function () {
-      // eslint-disable-next-line @typescript-eslint/dot-notation
-      expect(service['getFeedLimitFromPatronPledge'](250)).toEqual(15);
-    });
-    it('returns default for < 250 for pledge', function () {
-      // eslint-disable-next-line @typescript-eslint/dot-notation
-      expect(service['getFeedLimitFromPatronPledge'](100)).toEqual(config.defaultMaxFeeds);
     });
   });
 });
