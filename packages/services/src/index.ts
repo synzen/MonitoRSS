@@ -8,6 +8,7 @@ import FeedService from './services/FeedService';
 import SupporterService from './services/SupporterService';
 import PatronService from './services/PatronService';
 import FailRecordService from './services/FailRecordService';
+import DiscordUserService from './services/DiscordUserService';
 
 export interface MonitoServices {
   mongoDbClient: MongoClient;
@@ -18,6 +19,7 @@ export interface MonitoServices {
   supporterService: SupporterService;
   patronService: PatronService;
   failRecordService: FailRecordService;
+  discordUserService: DiscordUserService;
 }
 
 async function setup(inputConfig: Config): Promise<MonitoServices> {
@@ -34,6 +36,7 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
   container.bind<SupporterService>(SupporterService).to(SupporterService);
   container.bind<PatronService>(PatronService).to(PatronService);
   container.bind<FailRecordService>(FailRecordService).to(FailRecordService);
+  container.bind<DiscordUserService>(DiscordUserService).to(DiscordUserService);
 
   return {
     mongoDbClient: client,
@@ -44,6 +47,7 @@ async function setup(inputConfig: Config): Promise<MonitoServices> {
     supporterService: container.get<SupporterService>(SupporterService),
     patronService: container.get<PatronService>(PatronService),
     failRecordService: container.get<FailRecordService>(FailRecordService),
+    discordUserService: container.get<DiscordUserService>(DiscordUserService),
   };
 }
 
