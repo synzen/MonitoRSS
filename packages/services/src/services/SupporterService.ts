@@ -38,6 +38,31 @@ export default class SupporterService {
   
     return supporters as SupporterOutput[];
   }
+
+  async addGuildToPatron(supporterId: string, guildId: string): Promise<void> {
+    if (!ObjectId.isValid(supporterId)) {
+      throw new Error('Supporter ID is a valid ObjectId');
+    }
+
+    const supporterObjectId = new ObjectId(supporterId);
+
+    const supporter = await this.getCollection().findOne({ _id: supporterObjectId });
+
+    if (!supporter) {
+      throw new Error(`Supporter ${supporterId} not found`);
+    }
+
+    if (!supporter.guilds.includes(guildId)) {
+      supporter.guilds.push(guildId);
+      await this.getCollection().updateOne({
+        _id: supporterObjectId,
+      }, {
+        $set: {
+          guilds: supporter.guilds,
+        },
+      });
+    }
+  }
   
   private getCollection() {
     return this.db.collection(SupporterService.COLLECTION_NAME);
