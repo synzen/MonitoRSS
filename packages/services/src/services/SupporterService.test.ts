@@ -24,38 +24,33 @@ describe('SupporterService', () => {
     await teardownTests();
   });
 
-  describe('findById', () => {
-    it('throws if the id is not a valid ObjectId', async () => {
-      const id = 'not-valid';
-
-      await expect(service.findById(id)).rejects.toThrow('Supporter ID is a valid ObjectId');
-    });
+  describe('findByDiscordId', () => {
     it('should return the supporter', async () => {
-      const id = '5e8f8b5e6a5c6e0017c8d8c8';
+      const id = '1234';
       const supporter = {
-        _id: new ObjectId(id),
+        _id: id,
         name: 'Test',
         guilds: [],
       };
 
-      await collection.insertOne(supporter);
+      await collection.insertOne(supporter as any);
 
-      const result = await service.findById(id);
+      const result = await service.findByDiscordId(id);
 
       expect(result).toEqual(supporter);
     });
     it('does not return a supporter if their expire date is in the past', async () => {
-      const id = '5e8f8b5e6a5c6e0017c8d8c8';
+      const id = '1234';
       const supporter = {
-        _id: new ObjectId(id),
+        _id: id,
         name: 'Test',
         guilds: [],
         expireAt: new Date('2020-01-01'),
       };
 
-      await collection.insertOne(supporter);
+      await collection.insertOne(supporter as any);
 
-      const result = await service.findById(id);
+      const result = await service.findByDiscordId(id);
 
       expect(result).toBeNull();
     });

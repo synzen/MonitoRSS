@@ -16,7 +16,7 @@ export default class DiscordUserService {
    * @returns If the Discord user is a supporter.
    */
   async isSupporter(discordUserId: string): Promise<boolean> {
-    const supporter = await this.supporterService.findById(discordUserId);
+    const supporter = await this.supporterService.findByDiscordId(discordUserId);
 
     if (supporter) {
       return true;

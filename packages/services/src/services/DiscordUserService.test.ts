@@ -4,7 +4,7 @@ import DiscordUserService from './DiscordUserService';
 describe('DiscordUserService', () => {
   let service: DiscordUserService;
   let supporterService = {
-    findById: jest.fn(),
+    findByDiscordId: jest.fn(),
   };
   let patronService = {
     findByDiscordId: jest.fn(),
@@ -17,7 +17,7 @@ describe('DiscordUserService', () => {
 
   describe('isSupporter', () => {
     it('returns true if the user is a supporter', async () => {
-      supporterService.findById.mockResolvedValue({} as any);
+      supporterService.findByDiscordId.mockResolvedValue({} as any);
 
       const result = await service.isSupporter('test');
 

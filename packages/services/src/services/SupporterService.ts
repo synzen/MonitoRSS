@@ -26,13 +26,9 @@ export default class SupporterService {
 
   static COLLECTION_NAME = 'supporters';
 
-  async findById(supporterId: string): Promise<SupporterOutput | null> {
-    if (!ObjectId.isValid(supporterId)) {
-      throw new Error('Supporter ID is not a valid ObjectId');
-    }
-
+  async findByDiscordId(discordId: string): Promise<SupporterOutput | null> {
     return this.getCollection().findOne({ 
-      _id: new ObjectId(supporterId),
+      _id: discordId as any,
       $or: [
         { expireAt: { $exists: false } },
         // Use Date.now to more easily mock the date in tests
