@@ -39,7 +39,7 @@ export default class SupporterService {
     return supporters as SupporterOutput[];
   }
 
-  async addGuildToPatron(supporterId: string, guildId: string): Promise<void> {
+  async addGuildToSupporter(supporterId: string, guildId: string): Promise<void> {
     if (!ObjectId.isValid(supporterId)) {
       throw new Error('Supporter ID is a valid ObjectId');
     }

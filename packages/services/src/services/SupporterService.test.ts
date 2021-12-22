@@ -57,16 +57,16 @@ describe('SupporterService', () => {
       expect(found[0]._id).toEqual(inserted0Id);
     });
   });
-  describe('addGuildToPatron', () => {
+  describe('addGuildToSupporter', () => {
     it('throws if an invalid object id is passed as supporter ID', async () => {
       const supporterId = 'invalidid';
 
-      await expect(service.addGuildToPatron(supporterId, 'guildid')).rejects.toThrow();
+      await expect(service.addGuildToSupporter(supporterId, 'guildid')).rejects.toThrow();
     });
     it('throws if no supporter was found', async () => {
       const supporterId = new ObjectId().toHexString();
 
-      await expect(service.addGuildToPatron(supporterId, 'guildid')).rejects.toThrow();
+      await expect(service.addGuildToSupporter(supporterId, 'guildid')).rejects.toThrow();
     });
     it('adds the guild to the supporter', async () => {
       const guildId = 'guildid';
@@ -77,7 +77,7 @@ describe('SupporterService', () => {
       }];
       await collection.insertMany([...toCreate]);
 
-      await service.addGuildToPatron(supporterId, guildId);
+      await service.addGuildToSupporter(supporterId, guildId);
 
       const found = await collection.findOne({ _id: new ObjectId(supporterId) }) as SupporterOutput;
       expect(found.guilds).toHaveLength(3);
@@ -92,7 +92,7 @@ describe('SupporterService', () => {
       }];
       await collection.insertMany([...toCreate]);
 
-      await service.addGuildToPatron(supporterId, guildId);
+      await service.addGuildToSupporter(supporterId, guildId);
 
       const found = await collection.findOne({ _id: new ObjectId(supporterId) }) as SupporterOutput;
       expect(found.guilds).toHaveLength(1);
