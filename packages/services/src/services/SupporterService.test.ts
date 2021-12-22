@@ -44,6 +44,21 @@ describe('SupporterService', () => {
 
       expect(result).toEqual(supporter);
     });
+    it('does not return a supporter if their expire date is in the past', async () => {
+      const id = '5e8f8b5e6a5c6e0017c8d8c8';
+      const supporter = {
+        _id: new ObjectId(id),
+        name: 'Test',
+        guilds: [],
+        expireAt: new Date('2020-01-01'),
+      };
+
+      await collection.insertOne(supporter);
+
+      const result = await service.findById(id);
+
+      expect(result).toBeNull();
+    });
   });
   describe('findWithGuild', () => {
     it('finds all supporters who has added this guild', async () => {

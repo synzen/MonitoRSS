@@ -33,6 +33,11 @@ export default class SupporterService {
 
     return this.getCollection().findOne({ 
       _id: new ObjectId(supporterId),
+      $or: [
+        { expireAt: { $exists: false } },
+        // Use Date.now to more easily mock the date in tests
+        { expireAt: { $gt: new Date(Date.now()) } },
+      ],
     }) as Promise<SupporterOutput | null>;
   }
   
