@@ -25,6 +25,16 @@ export default class SupporterService {
   ) {}
 
   static COLLECTION_NAME = 'supporters';
+
+  async findById(supporterId: string): Promise<SupporterOutput | null> {
+    if (!ObjectId.isValid(supporterId)) {
+      throw new Error('Supporter ID is a valid ObjectId');
+    }
+
+    return this.getCollection().findOne({ 
+      _id: new ObjectId(supporterId),
+    }) as Promise<SupporterOutput | null>;
+  }
   
   async findWithGuild(guildId: string) {
     const supporters = await this.getCollection().find({

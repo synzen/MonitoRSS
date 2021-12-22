@@ -24,6 +24,27 @@ describe('SupporterService', () => {
     await teardownTests();
   });
 
+  describe('findById', () => {
+    it('throws if the id is not a valid ObjectId', async () => {
+      const id = 'not-valid';
+
+      await expect(service.findById(id)).rejects.toThrow('Supporter ID is a valid ObjectId');
+    });
+    it('should return the supporter', async () => {
+      const id = '5e8f8b5e6a5c6e0017c8d8c8';
+      const supporter = {
+        _id: new ObjectId(id),
+        name: 'Test',
+        guilds: [],
+      };
+
+      await collection.insertOne(supporter);
+
+      const result = await service.findById(id);
+
+      expect(result).toEqual(supporter);
+    });
+  });
   describe('findWithGuild', () => {
     it('finds all supporters who has added this guild', async () => {
       const toCreate = [{
