@@ -71,6 +71,30 @@ export default class PatronService {
     return Math.max(...feedLimits, defaultMaxFeeds);
   }
 
+  async getGuildLimitFromDiscordId(discordId: string): Promise<number> {
+    const patron = await this.findByDiscordId(discordId);
+
+    if (!patron) {
+      return 1;
+    }
+
+    const totalPledgeLifetime = patron.reduce((acc, p) => acc + p.pledgeLifetime, 0);
+
+    if (totalPledgeLifetime >= 2500) {
+      return 4;
+    }
+
+    if (totalPledgeLifetime >= 1500) {
+      return 3;
+    }
+
+    if (totalPledgeLifetime >= 500) {
+      return 2;
+    }
+
+    return 1;
+  }
+
   private getFeedLimitFromPatronPledge(pledge: number): number {
     const { defaultMaxFeeds } = this.config;
 
