@@ -50,6 +50,7 @@ export default class PatronService {
         status: PatronService.STATUS.ACTIVE,
         pledge: { $gt: 0 },
       }, {
+        discord: discordId,
         status: PatronService.STATUS.DECLINED,
         lastCharge: {
           $gte: dayjs().subtract(4, 'days').toDate(),

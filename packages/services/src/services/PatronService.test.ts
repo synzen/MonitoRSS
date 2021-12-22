@@ -61,5 +61,10 @@ describe('PatronService', () => {
       expect(found).toHaveLength(1);
       expect(found[0]._id).toEqual(insertedIds[1]);
     });
+    it('returns an empty array if no matching patrons for the discord id are found', async () => {
+      const discord = '1234';
+      const found = await repo.findByDiscordId(discord);
+      expect(found).toHaveLength(0);
+    });
   });
 });
