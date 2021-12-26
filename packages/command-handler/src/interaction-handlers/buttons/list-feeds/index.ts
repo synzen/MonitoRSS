@@ -6,7 +6,8 @@ import {
   InteractionServices,
   InteractionTranslate,
 } from '../../interaction-container.type';
-import InteractionCustomId, {
+import {
+  InteractionCustomIdParsed,
   InteractionPaginationData,
 } from '../../interaction-custom-id.type';
 import selectFeedComponents from '../../../utils/select-feed-components';
@@ -27,7 +28,7 @@ export default class ResponseListFeeds implements ButtonsInterface {
 
   async execute(
     interaction: ButtonInteraction,
-    customIdObject: InteractionCustomId<InteractionPaginationData>,
+    customIdObject: InteractionCustomIdParsed<InteractionPaginationData>,
   ): Promise<void> {
     const pageNumber = Number(customIdObject.data?.pageNumber);
 
