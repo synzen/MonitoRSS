@@ -17,6 +17,9 @@ async function shard() {
     },
     defaultMaxFeeds: config.defaultMaxFeeds,
     defaultRefreshRateMinutes: config.defaultRefreshRateMinutes,
+    vipEnabled: config.vipEnabled,
+    vipRefreshRateMinutes: config.vipRefreshRateMinutes,
+    vipRestrictedCommands: config.vipRestrictedCommands,
   });
 
   const client = new Client({ 

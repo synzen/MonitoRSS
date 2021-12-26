@@ -41,6 +41,14 @@ class CommandList implements CommandInterface {
     const failedStatuses = await this.services.failRecordService
       .getFailedStatuses(feeds.map((feed) => feed.url));
 
+    const feedSchedules = await this.services.feedSchedulingService.determineSchedules(
+      feeds.map((feed) => ({
+        id: String(feed._id),
+        url: feed.url,
+        guildId: feed.guild,
+      })),
+    );
+
     const feedTextList = feeds
       .map((feed, index) => {
         const failStatus = failedStatuses[index];
@@ -53,6 +61,8 @@ class CommandList implements CommandInterface {
           channel: feed.channel,
         })}\n${this.translate('commands.list.entry_status', {
           status: statusText,
+        })}\n${this.translate('commands.list.entry_refresh_rate', {
+          refreshRate: feedSchedules[index]?.refreshRateMinutes || 'N/A',
         })}`;
       });
 
