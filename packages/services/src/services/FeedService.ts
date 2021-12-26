@@ -134,6 +134,14 @@ export default class FeedService {
     return this.getCollection().findOne({ _id: new ObjectId(feedId) }) as Promise<FeedOutput>;
   }
 
+  async findByIds(feedIds: string[]): Promise<FeedOutput[]> {
+    return this.getCollection().find({
+      _id: {
+        $in: feedIds.map(id => new ObjectId(id)),
+      },
+    }).toArray() as Promise<FeedOutput[]>;
+  }
+
   async insertOne(toInsert: FeedInput): Promise<Feed> {
     const inserted = await this.getCollection().insertOne(toInsert);
     

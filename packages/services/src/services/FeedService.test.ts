@@ -292,6 +292,31 @@ describe('FeedService', () => {
       expect(result).toMatchObject(feed);
     });
   });
+
+  describe('findByIds', () => {
+    it('returns the found feeds', async () => {
+      const feedsToCreate = [{
+        _id: new ObjectId(),
+        guildId: '1',
+        channelId: '1',
+      }, {
+        _id: new ObjectId(),
+        guildId: '2',
+        channelId: '1',
+      }, {
+        _id: new ObjectId(),
+        guildId: '3',
+        channelId: '1',
+      }];
+      await collection.insertMany(feedsToCreate);
+      const result = await service.findByIds(
+        feedsToCreate.map(f => f._id.toHexString()).slice(0, 2),
+      );
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject(feedsToCreate[0]);
+      expect(result[1]).toMatchObject(feedsToCreate[1]);
+    });
+  });
   
   describe('removeById', () => {
     it('removes by id', async () => {
