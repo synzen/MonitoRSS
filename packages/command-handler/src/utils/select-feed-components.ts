@@ -14,6 +14,7 @@ async function selectFeedComponents(
   channelId: string,
   finalTask: InteractionTask,
   currentPageNumber = 0,
+  excludeFeedIds: string[] = [],
 ) {
   if (currentPageNumber == null || isNaN(currentPageNumber)) {
     throw new Error('currentPageNumber must be a number');
@@ -26,11 +27,17 @@ async function selectFeedComponents(
     interactionServices.feedService.count({
       guild: guildId,
       channel: channelId,
+    }, {
+      excludeFeedIds,
     }),
     interactionServices.feedService.find({
       guild: guildId,
       channel: channelId,
-    }, currentPageNumber, FEEDS_PER_PAGE),
+    }, {
+      page: currentPageNumber,
+      limit: FEEDS_PER_PAGE,
+      excludeFeedIds,
+    }),
   ]);
 
   if (feeds.length === 0) {

@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { Db, ObjectId } from 'mongodb';
+import { Db, Filter, ObjectId } from 'mongodb';
 import { z } from 'zod';
 
 const feedSchema = z.object({
@@ -88,17 +88,42 @@ export default class FeedService {
     }).toArray() as Promise<FeedOutput[]>;
   }
 
-  async find(query: Partial<Feed>, page = 0, limit = 10): Promise<FeedOutput[]> {
+  async find(query: Filter<Feed>, options: {
+    page?: number,
+    limit?: number,
+    excludeFeedIds?: string[]
+  } = {
+    page: 0,
+    limit: 10,
+    excludeFeedIds: [],
+  }): Promise<FeedOutput[]> {
+    const page = options.page ?? 0;
+    const limit = options.limit ?? 10;
+    const excludeFeedIds = options.excludeFeedIds || [];
     const skip = page * limit;
-    const res = await this.getCollection().find(query).limit(limit).skip(skip).sort({
+    const res = await this.getCollection().find({
+      ...query,
+      _id: {
+        $nin: excludeFeedIds.map(id => new ObjectId(id)),
+      },
+    }).limit(limit).skip(skip).sort({
       createdAt: 1,
     }).toArray();
 
     return res as FeedOutput[];
   }
 
-  async count(query: Partial<Feed>) {
-    return this.getCollection().count(query);
+  async count(query: Filter<Feed>, options?: {
+    excludeFeedIds?: string[]
+  }) {
+    const excludeFeedIds = options?.excludeFeedIds || [];
+
+    return this.getCollection().count({
+      ...query,
+      _id: {
+        $nin: excludeFeedIds.map(id => new ObjectId(id)),
+      },
+    });
   }
 
   async removeOne(feedId: string) {
@@ -119,6 +144,6 @@ export default class FeedService {
   }
 
   private getCollection() {
-    return this.db.collection(FeedService.COLLECTION_NAME);
+    return this.db.collection<Feed>(FeedService.COLLECTION_NAME);
   }
 }

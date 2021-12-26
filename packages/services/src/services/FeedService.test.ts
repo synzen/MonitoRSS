@@ -142,11 +142,43 @@ describe('FeedService', () => {
       const result = await service.find({
         channel: 'channel-id',
         url: feedsToCreate[0].url,
-      }, page, limit);
+      }, {
+        page,
+        limit,
+      });
       
       expect(result).toHaveLength(2);
       expect(result[0]).toMatchObject(feedsToCreate[2]);
       expect(result[1]).toMatchObject(feedsToCreate[3]);
+    });
+    it('works with exclude feed ids', async () => {
+      const feedsToCreate: Feed[] = new Array(3).fill(0).map((_, i) => {
+        const createdAt = dayjs().add(i, 'day').toDate();
+        
+        return {
+          _id: new ObjectId(),
+          channel: 'channel-id',
+          guild: `${i}`,
+          title: 'hhh',
+          url: 'http://www.google.com',
+          createdAt,
+        };
+      });
+
+      const excludeFeedIds = [
+        feedsToCreate[0]._id.toHexString(),
+        feedsToCreate[1]._id.toHexString(),
+      ];
+      await collection.insertMany(feedsToCreate);
+      const result = await service.find({
+        channel: 'channel-id',
+        url: feedsToCreate[0].url,
+      }, {
+        excludeFeedIds,
+      });
+      
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject(feedsToCreate[2]);
     });
     it('returns the results sorted by created at ascending', async () => {
       const channel = '123';
@@ -209,6 +241,41 @@ describe('FeedService', () => {
       const result = await service.count({
         channel: '456',
       });
+      expect(result).toBe(1);
+    });
+    it('works with exclude feed ids', async () => {
+      const channelId = 'channel-id';
+      const feedsToCreate: Feed[] = [{
+        _id: new ObjectId(),
+        channel: channelId,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google1.com',
+      }, {
+        _id: new ObjectId(),
+        channel: channelId,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google2.com',
+      }, {
+        _id: new ObjectId(),
+        channel: channelId,
+        guild: '123',
+        title: 'hhh',
+        url: 'http://www.google3.com',
+      }];
+
+      await collection.insertMany(feedsToCreate);
+      const excludeFeedIds = [
+        feedsToCreate[0]._id.toHexString(),
+        feedsToCreate[1]._id.toHexString(),
+      ];
+      const result = await service.count({
+        channel: channelId,
+      }, {
+        excludeFeedIds,
+      });
+      
       expect(result).toBe(1);
     });
   });

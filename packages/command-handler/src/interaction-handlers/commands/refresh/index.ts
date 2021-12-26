@@ -28,8 +28,6 @@ class CommandRefresh implements CommandInterface {
     const allFeeds = await this.services.feedService.findByGuild(interaction.guildId);
     const allFeedUrls = Array.from(new Set(allFeeds.map(feed => feed.url)));
     
-    console.log(allFeedUrls);
-
     const statuses = await this.services.failRecordService.getFailedStatuses(allFeedUrls);
 
     if (statuses.every((hasFailed) => !hasFailed)) {
