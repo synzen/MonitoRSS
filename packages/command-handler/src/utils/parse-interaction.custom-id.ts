@@ -1,14 +1,17 @@
-import InteractionCustomId from '../interaction-handlers/interaction-custom-id.type';
+import {
+  InteractionCustomIdParsed,
+  InteractionCustomIdPayload,
+} from '../interaction-handlers/interaction-custom-id.type';
 
-function parseInteractionCustomId<T>(data: string): InteractionCustomId<T> | null {
+function parseInteractionCustomId<T>(data: string): InteractionCustomIdParsed<T> | null {
   try {
-    const customIdObject = JSON.parse(data);
+    const customIdObject = JSON.parse(data) as InteractionCustomIdPayload<T>;
 
     return {
-      finalTask: customIdObject.finalTask,
-      task: customIdObject.task,
-      data: customIdObject.data,
-      executeFinalTask: customIdObject.executeFinalTask,
+      finalTask: customIdObject.ft,
+      task: customIdObject.t,
+      data: customIdObject.d,
+      executeFinalTask: customIdObject.eft,
     };
   } catch (error) {
     return null;

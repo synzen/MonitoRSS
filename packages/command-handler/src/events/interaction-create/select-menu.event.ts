@@ -6,10 +6,12 @@ import {
   InteractionContainerSymbols,
   InteractionLogger,
 } from '../../interaction-handlers/interaction-container.type';
-import InteractionCustomId from '../../interaction-handlers/interaction-custom-id.type';
+import {
+  InteractionCustomIdParsed,
+} from '../../interaction-handlers/interaction-custom-id.type';
 import parseInteractionCustomId from '../../utils/parse-interaction.custom-id';
 
-function getTaskFromCustomId<T>(customId: InteractionCustomId<T>) {
+function getTaskFromCustomId<T>(customId: InteractionCustomIdParsed<T>) {
   if (customId.executeFinalTask) {
     return customId.finalTask;
   }

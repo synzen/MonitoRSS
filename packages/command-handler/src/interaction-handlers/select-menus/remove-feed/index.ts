@@ -2,7 +2,6 @@ import { SelectMenuInteraction } from 'discord.js';
 import { inject, injectable } from 'inversify';
 import {
   InteractionContainerSymbols,
-  InteractionLogger,
   InteractionServices,
   InteractionTranslate,
 } from '../../interaction-container.type';
@@ -11,8 +10,6 @@ import SelectMenusInterface from '../select-menus.interface';
 @injectable()
 export default class RemoveFeedSelectMenu implements SelectMenusInterface {
   @inject(InteractionContainerSymbols.Services) services!: InteractionServices;
-
-  @inject(InteractionContainerSymbols.Logger) logger!: InteractionLogger;
 
   @inject(InteractionContainerSymbols.Translate) translate!: InteractionTranslate;
 
