@@ -1,4 +1,4 @@
-import { CommandInteraction } from 'discord.js';
+import { CommandInteraction, Util } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import CommandInterface from '../command.interface';
 import { inject, injectable } from 'inversify';
@@ -7,6 +7,7 @@ import {
   InteractionServices,
   InteractionTranslate, 
 } from '../../interaction-container.type';
+import sendSegmentedInteractionText from '../../../utils/send-segmented-interaction-text';
 
 @injectable()
 class CommandList implements CommandInterface {
@@ -67,12 +68,11 @@ class CommandList implements CommandInterface {
       });
 
     const someHasFailed = failedStatuses.some(hasFailed => hasFailed);
+    const replyText = `${someHasFailed
+      ? this.translate('commands.list.failed_warning')
+      : ''}\n\n${feedTextList.join('\n\n')}`;
 
-    await interaction.editReply({
-      content: `${someHasFailed
-        ? this.translate('commands.list.failed_warning')
-        : ''}\n\n${feedTextList.join('\n\n')}`,
-    });
+    await sendSegmentedInteractionText(replyText, interaction);
   }
 }
 
