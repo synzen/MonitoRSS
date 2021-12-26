@@ -7,6 +7,7 @@ import CommandPatron from './patron';
 import CommandPing from './ping';
 import CommandRefresh from './refresh';
 import CommandRemove from './remove';
+import CommandSub from './sub';
 import CommandVersion from './version';
 
 const mapOfCommands = new Map<string, new () => CommandInterface>([
@@ -19,6 +20,7 @@ const mapOfCommands = new Map<string, new () => CommandInterface>([
   [CommandPatron.data.name, CommandPatron],
   [CommandRefresh.data.name, CommandRefresh],
   [CommandList.data.name, CommandList],
+  [CommandSub.data.name, CommandSub],
 ]);
 
 export default mapOfCommands;

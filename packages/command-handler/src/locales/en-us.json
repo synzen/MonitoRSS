@@ -21,9 +21,17 @@
   "commands.patron.list_servers": "Your patron servers:\n\n{servers}",
   "commands.patron.not_patron": "You must be a patron to use this command.",
   "commands.patron.remove_server_success": "✅ The server {server} has been removed from your list of patron servers.",
+  "commands.sub.add_select_feeds": "Select up to 10 feeds to add yourself to. Only feeds with direct subscribers enabled are shown.",
+  "commands.sub.add_no_feeds_available": "There are no feeds available to subscribe to. There are either no feeds, no feeds with direct subscribers enabled, or you are already subscribed to all of the available feeds.",
+  "commands.sub.remove_select_feeds": "Select up to 10 feeds to remove yourself from.",
+  "commands.sub.list": "You are being mentioned for the following feeds:\n\n{feeds}",
+  "commands.sub.list_no_feeds": "You are not currently being mentioned for any feeds.",
   "commands.refresh.no_failed_feeds": "None of your feeds have failed, and so none of them need to be refreshed.",
   "commands.refresh.successful_url": "✅ Successfully refreshed feed <{url}>.",
   "commands.refresh.failed_url": "❌ Failed to refresh feed <{url}>. Please check that if the feed is working correctly.",
   "responses.remove-feed.success": "✅ Successfully removed <{url}>.",
-  "responses.remove-feed.not_found": "Failed to remove feeds. They were most likely deleted already."
+  "responses.remove-feed.not_found": "Failed to remove feeds. They were most likely deleted already.",
+  "responses.sub-add-user.feed_not_found": "Failed to add user to feed(s). Some feed(s) were most likely deleted.",
+  "responses.sub-add-user.success": "✅ You will now mentioned for the feeds:\n\n{feeds}",
+  "responses.sub-remove-user.success": "✅ You will no longer be mentioned for the feeds:\n\n{feeds}"
 }

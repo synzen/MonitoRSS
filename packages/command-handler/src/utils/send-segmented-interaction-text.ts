@@ -10,12 +10,23 @@ import { ButtonInteraction, CommandInteraction, SelectMenuInteraction, Util } fr
 async function sendSegmentedInteractionText(
   text: string,
   interaction: CommandInteraction | SelectMenuInteraction | ButtonInteraction,
+  options: {
+    deferred?: boolean
+  } = {
+    deferred: true,
+  },
 ) {
   const splitText = Util.splitMessage(text, { maxLength: 2000 });
 
-  await interaction.editReply({
-    content: splitText[0],
-  });
+  if (options.deferred) {
+    await interaction.editReply({
+      content: splitText[0],
+    });
+  } else {
+    await interaction.reply({
+      content: splitText[0],
+    });
+  }
 
   if (splitText.length > 1) {
     await interaction.guild?.channels.fetch(interaction.channelId);
