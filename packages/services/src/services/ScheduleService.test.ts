@@ -8,15 +8,13 @@ describe('ScheduleService', () => {
   let db: Db;
   const collectionName = ScheduleService.COLLECTION_NAME;
   let collection: Collection<Document>;
-  let config;
 
   beforeAll(async () => {
     db = await setupTests();
     collection = db.collection(collectionName);
-    config = {};
-
-    service = new ScheduleService(db, config as any);
+    service = new ScheduleService(db);
   });
+
   beforeEach(async  () => {
     jest.restoreAllMocks();
     await db.dropDatabase();

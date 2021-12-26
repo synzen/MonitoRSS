@@ -4,6 +4,9 @@ const configSchema = z.object({
   mongoUri: z.string().min(1),
   defaultRefreshRateMinutes: z.number(),
   defaultMaxFeeds: z.number(),
+  vipRefreshRateMinutes: z.number().default(2),
+  vipRestrictedCommands: z.boolean().default(false),
+  vipEnabled: z.boolean().default(false),
   apis: z.object({
     subscriptions: z.object({
       enabled: z.boolean(),
@@ -17,6 +20,6 @@ const configSchema = z.object({
   }),
 });
 
-export type Config = z.input<typeof configSchema>;
+export type Config = z.output<typeof configSchema>;
 
 export default configSchema;

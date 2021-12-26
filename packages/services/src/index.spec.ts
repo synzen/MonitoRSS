@@ -31,6 +31,9 @@ describe('Index integration', () => {
       defaultMaxFeeds: 5,
       defaultRefreshRateMinutes: 10,
       mongoUri,
+      vipEnabled: false,
+      vipRefreshRateMinutes: 2,
+      vipRestrictedCommands: false,
     };
 
     services = await setup(config);
