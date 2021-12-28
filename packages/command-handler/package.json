@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/MonitoRSS/commmand-handler#readme",
   "dependencies": {
-    "@discordjs/builders": "^0.8.2",
+    "@discordjs/builders": "^0.10.0",
     "@discordjs/rest": "^0.1.0-canary.0",
     "@monitorss/feed-fetcher": "^1.0.1",
     "@monitorss/logger": "^1.0.1",
