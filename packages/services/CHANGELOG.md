@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.2.0](https://github.com/MonitoRSS/typescript-template/compare/@monitorss/services@1.1.0...@monitorss/services@1.2.0) (2021-12-28)
+
+
+### Features
+
+* **services:** Add FeedSchedulingService ([5af0199](https://github.com/MonitoRSS/typescript-template/commit/5af0199d34e91edb0d174cd8a565a4153d75c48e))
+* **services:** Add FeedSubscriberService ([cce6d78](https://github.com/MonitoRSS/typescript-template/commit/cce6d786daae6fc82547cc50f15ae73c3965a8a2))
+* **services:** Add ScheduleService ([a287cb2](https://github.com/MonitoRSS/typescript-template/commit/a287cb23e9ac0483b5af7bfe6df15c102b8eb6b6))
+
+
+
+
+
 # [1.1.0](https://github.com/MonitoRSS/typescript-template/compare/@monitorss/services@1.0.3...@monitorss/services@1.1.0) (2021-12-23)
 
 

@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.2.0](https://github.com/MonitoRSS/commmand-handler/compare/@monitorss/command-handler@1.1.0...@monitorss/command-handler@1.2.0) (2021-12-28)
+
+
+### Bug Fixes
+
+* **command-handler:** Fix >2000 char failing in list command ([e2948e3](https://github.com/MonitoRSS/commmand-handler/commit/e2948e321eac0a2967bff0eb012f950ff01a6ed8))
+* **command-handler:** Fix transpilation type errors ([3ea8817](https://github.com/MonitoRSS/commmand-handler/commit/3ea8817a711fccae0901a3ad09fbc44595b69bee))
+
+
+### Features
+
+* **command-handler:** Add refresh rates to list command ([18f5261](https://github.com/MonitoRSS/commmand-handler/commit/18f5261ec9a2c7268ec7bc2d26bcbc493d20da57))
+* **command-handler:** Add sub command ([e58c5c7](https://github.com/MonitoRSS/commmand-handler/commit/e58c5c7658e7d8b7a20d5fa782fac47674e75ca1))
+
+
+
+
+
 # [1.1.0](https://github.com/MonitoRSS/commmand-handler/compare/@monitorss/command-handler@1.0.3...@monitorss/command-handler@1.1.0) (2021-12-23)
 
 
