@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.3.0](https://github.com/MonitoRSS/commmand-handler/compare/@monitorss/command-handler@1.2.0...@monitorss/command-handler@1.3.0) (2022-01-05)
+
+
+### Features
+
+* **command-handler:** Update @discordjs/builders ([2bdff7d](https://github.com/MonitoRSS/commmand-handler/commit/2bdff7d577b0a0b2c4dc4b7a2ee747dbbcab15a2))
+
+
+
+
+
 # [1.2.0](https://github.com/MonitoRSS/commmand-handler/compare/@monitorss/command-handler@1.1.0...@monitorss/command-handler@1.2.0) (2021-12-28)
 
 
