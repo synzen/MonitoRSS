@@ -10,6 +10,7 @@ interface Loggers {
   info: LoggerType[]
   warn: LoggerType[]
   error: LoggerType[]
+  datadog: LoggerType[]
 }
 
 const setLoggingTransports = (loggers: Loggers) => {
@@ -42,6 +43,10 @@ const setLoggingTransports = (loggers: Loggers) => {
      * Used in situations where business functionality is not working as expected.
      */
     error: createArrayLoggers('error', loggers.error),
+    /**
+     * When we only want to send data to Datadog.
+     */
+    datadog: createArrayLoggers('info', loggers.datadog),
   };
 };
 
@@ -98,6 +103,7 @@ const setupLogger = (config: Config) => {
   const errorTransports: LoggerType[] = [
     consoleLogger,
   ];
+  const datadogTransports: LoggerType[] = [];
 
   if (config.datadog) {
     const datadogLogger = new DatadogLogger({
@@ -109,6 +115,7 @@ const setupLogger = (config: Config) => {
     });
     warnTransports.push(datadogLogger);
     errorTransports.push(datadogLogger);
+    datadogTransports.push(datadogLogger);
   }
 
   const logger = setLoggingTransports({
@@ -116,6 +123,7 @@ const setupLogger = (config: Config) => {
     info: infoTransports,
     warn: warnTransports,
     error: errorTransports,
+    datadog: datadogTransports,
   });
 
   return logger;
