@@ -1,25 +1,31 @@
 {
   "folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "packages\\command-handler"
-		},
-		{
-			"path": "packages\\feed-fetcher"
-		},
-		{
-			"path": "packages\\models"
-		},
-		{
-			"path": "packages\\services"
-		},
-		{
-			"path": "packages\\logger"
-		}
-	],
-	"settings": {
-		"terminal.integrated.tabs.title": "${workspaceFolder}"
-	}
+    {
+      "path": "."
+    },
+    {
+      "path": "packages\\command-handler"
+    },
+    {
+      "path": "packages\\feed-fetcher"
+    },
+    {
+      "path": "packages\\models"
+    },
+    {
+      "path": "packages\\services"
+    },
+    {
+      "path": "packages\\logger"
+    },
+    {
+      "path": "packages\\backend-api"
+    },
+    {
+      "path": "packages\\control-panel"
+    }
+  ],
+  "settings": {
+    "terminal.integrated.tabs.title": "${workspaceFolder}"
+  }
 }
