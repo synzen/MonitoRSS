@@ -11,7 +11,7 @@ interface RequestOptions {
 }
 
 @Injectable()
-export class DiscordAPI {
+export class DiscordAPIService {
   API_URL = DISCORD_API_BASE_URL;
   API_VERSION = DISCORD_API_VERSION;
   BOT_TOKEN: string;

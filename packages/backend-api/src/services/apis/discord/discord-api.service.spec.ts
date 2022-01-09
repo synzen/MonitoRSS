@@ -3,17 +3,17 @@ import {
   DISCORD_API_BASE_URL,
   DISCORD_API_VERSION,
 } from '../../../constants/discord';
-import { DiscordAPI } from './discord-api';
+import { DiscordAPIService } from './discord-api.service';
 
-describe('DiscordAPI', () => {
-  let discordApi: DiscordAPI;
+describe('DiscordAPIService', () => {
+  let discordApi: DiscordAPIService;
   const configService = {
     get: jest.fn(),
   };
 
   beforeEach(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    discordApi = new DiscordAPI(configService as any);
+    discordApi = new DiscordAPIService(configService as any);
   });
 
   describe('executeBotRequest', () => {
