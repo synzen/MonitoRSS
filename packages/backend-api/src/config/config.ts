@@ -4,7 +4,7 @@ import path from 'path';
 const envFiles: Record<string, string> = {
   development: '.env.development',
   production: '.env.production',
-  local: 'env.local',
+  local: '.env.local',
 };
 
 const envFilePath = path.join(
