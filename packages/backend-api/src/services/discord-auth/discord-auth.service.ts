@@ -5,7 +5,8 @@ import {
   DISCORD_API_BASE_URL,
   DISCORD_AUTH_ENDPOINT,
   DISCORD_TOKEN_ENDPOINT,
-} from 'src/constants/discord';
+  DISCORD_TOKEN_REVOCATION_ENDPOINT,
+} from '../../constants/discord';
 
 export interface DiscordAuthToken {
   access_token: string;
@@ -124,6 +125,47 @@ class DiscordAuthService {
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
     return this.formatTokenWithExpiresAt(tokenObject);
+  }
+
+  /**
+   * Revoke a Discord token.
+   *
+   * @param token The Discord token object
+   */
+  async revokeToken(token: DiscordAuthToken) {
+    await Promise.all([
+      this.revokeAccessOrRefreshToken(token, 'access'),
+      this.revokeAccessOrRefreshToken(token, 'refresh'),
+    ]);
+  }
+
+  private async revokeAccessOrRefreshToken(
+    token: DiscordAuthToken,
+    tokenType: 'access' | 'refresh',
+  ) {
+    const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
+
+    const revokeAccessParams = new URLSearchParams({
+      token: tokenType === 'access' ? token.access_token : token.refresh_token,
+      client_id: this.CLIENT_ID,
+      client_secret: this.CLIENT_SECRET,
+    });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      body: revokeAccessParams,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to revoke ${tokenType} token (${res.status}): ${JSON.stringify(
+          await res.json(),
+        )}`,
+      );
+    }
   }
 
   /**
