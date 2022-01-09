@@ -14,7 +14,15 @@ export class DiscordAuthController {
   }
 
   @Get('callback')
-  discordCallback(@Query('code') code?: string) {
+  discordCallback(
+    @Res() res: FastifyReply,
+    @Query('code') code?: string,
+    @Query('error') error?: string,
+  ) {
+    if (error === 'access_denied') {
+      return res.redirect(301, '/');
+    }
+
     if (!code) {
       return 'No code provided';
     }
