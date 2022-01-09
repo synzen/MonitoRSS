@@ -4,7 +4,7 @@ import {
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from '../../constants/discord';
-import DiscordAuthService, { DiscordAuthToken } from './discord-auth.service';
+import { DiscordAuthService, DiscordAuthToken } from './discord-auth.service';
 
 describe('DiscordAuthService', () => {
   let service: DiscordAuthService;

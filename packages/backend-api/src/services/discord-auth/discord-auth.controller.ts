@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
-import DiscordAuthService from './discord-auth.service';
+import { DiscordAuthService } from './discord-auth.service';
 import { FastifyReply } from 'fastify';
 
 @Controller('discord')

@@ -17,7 +17,7 @@ export interface DiscordAuthToken {
 }
 
 @Injectable()
-class DiscordAuthService {
+export class DiscordAuthService {
   OAUTH_SCOPES = 'identify guilds';
   OAUTH_REDIRECT_URI = '';
   CLIENT_ID = '';
@@ -187,5 +187,3 @@ class DiscordAuthService {
     return formatted;
   }
 }
-
-export default DiscordAuthService;
