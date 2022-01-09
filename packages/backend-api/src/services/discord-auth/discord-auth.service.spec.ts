@@ -13,6 +13,7 @@ describe('DiscordAuthService', () => {
   };
 
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     service = new DiscordAuthService(configService as any);
     service.CLIENT_ID = 'client-id';
     service.CLIENT_SECRET = 'client-secret';
