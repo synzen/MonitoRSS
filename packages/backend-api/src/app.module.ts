@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import config from './config/config';
 import { validateConfig } from './config/config.validate';
 import { DiscordAuthModule } from './services/discord-auth/discord-auth.module';
+import { DiscordUserModule } from './services/discord-user/discord-user.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { DiscordAuthModule } from './services/discord-auth/discord-auth.module';
       validate: validateConfig,
     }),
     DiscordAuthModule,
+    DiscordUserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
