@@ -27,7 +27,7 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(8000);
+  await app.listen(config.get('port') || 8000, '0.0.0.0');
 }
 
 bootstrap();
