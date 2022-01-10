@@ -14,8 +14,8 @@ export class DiscordAuthController {
   }
 
   @Get('callback')
-  discordCallback(
-    @Res() res: FastifyReply,
+  async discordCallback(
+    @Res({ passthrough: true }) res: FastifyReply,
     @Query('code') code?: string,
     @Query('error') error?: string,
   ) {
@@ -27,6 +27,8 @@ export class DiscordAuthController {
       return 'No code provided';
     }
 
-    return this.discordAuthService.createAccessToken(code);
+    const accessToken = await this.discordAuthService.createAccessToken(code);
+
+    return accessToken;
   }
 }

@@ -30,6 +30,7 @@
     "class-validator": "^0.13.2",
     "dotenv": "^10.0.0",
     "fastify": "^3.25.3",
+    "fastify-secure-session": "^3.0.0",
     "node-fetch": "^2.6.6",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
