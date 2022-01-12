@@ -9,6 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^1.1.1",
     "@chakra-ui/react": "^1.7.4",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
@@ -16,7 +17,8 @@
     "eslint-config-airbnb-typescript": "^16.1.0",
     "framer-motion": "^5.5.6",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "react-router-dom": "^6.2.1"
   },
   "devDependencies": {
     "@testing-library/dom": "^8.11.1",

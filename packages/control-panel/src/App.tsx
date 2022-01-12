@@ -1,51 +1,37 @@
 import { useState } from 'react';
-import logo from './logo.svg';
 import './App.css';
+import {
+  Flex, Heading, Input, InputGroup, InputLeftElement, Stack,
+} from '@chakra-ui/react';
+import { SearchIcon } from '@chakra-ui/icons';
+import Menu from './components/Menu';
 
-function App() {
+const App: React.FC = () => {
   const [count, setCount] = useState(0);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React!</p>
-        <p>
-          <button type="button" onClick={() => setCount((thisCount) => thisCount + 1)}>
-            count is:
-            {' '}
-            {count}
-          </button>
-        </p>
-        <p>
-          Edit
-          {' '}
-          <code>App.tsx</code>
-          {' '}
-          and save to test HMR updates.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-          {' | '}
-          <a
-            className="App-link"
-            href="https://vitejs.dev/guide/features.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vite Docs
-          </a>
-        </p>
-      </header>
-    </div>
+    <Flex
+      justifyContent="center"
+      alignItems="center"
+      width="100%"
+      height="100vh"
+    >
+      <Stack maxWidth="600px" width="100%" spacing={8}>
+        <Heading>Select your server</Heading>
+        <Stack spacing={4}>
+          <InputGroup>
+            <InputLeftElement
+              pointerEvents="none"
+            >
+              <SearchIcon color="gray.300" />
+            </InputLeftElement>
+            <Input placeholder="Search..." />
+          </InputGroup>
+          <Menu />
+        </Stack>
+      </Stack>
+    </Flex>
   );
-}
+};
 
 export default App;

@@ -15,6 +15,8 @@ module.exports = {
   },
   "rules": {
     "react/jsx-uses-react": "off",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "react/function-component-definition": [2, { "namedComponents": "arrow-function" }],
+    "react/require-default-props": "off"
   }
 }
