@@ -32,7 +32,7 @@ class BannedFeed extends Base {
    *
    * @param {string} urlPattern
    * @param {string} guildId
-   * @returns {Promise<BannedFeed[]>}
+   * @returns {Promise<BannedFeed|null>}
    */
   static async findForUrl (urlPattern, guildId) {
     const patternToUse = urlPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
