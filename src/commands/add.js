@@ -4,6 +4,7 @@ const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const Feed = require('../structs/db/Feed.js')
 const Guild = require('../structs/Guild.js')
+const BannedFeed = require('../structs/db/BannedFeed')
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message) => {
@@ -41,8 +42,12 @@ module.exports = async (message) => {
     const curLink = linkList[i]
     const linkItem = curLink.split(' ')
     const link = linkItem[0].trim()
+
+    const associatedBannedFeed = await BannedFeed.findForUrl(link, message.guild.id)
+
     if (!link.startsWith('http')) {
       failedAddLinks[link] = translate('commands.add.improperFormat')
+
       continue
     } else if (maxFeedsAllowed !== 0 && feeds.length + checkedSoFar >= maxFeedsAllowed) {
       log.info({
@@ -54,6 +59,13 @@ module.exports = async (message) => {
       } else {
         limitExceeded = true
       }
+
+      continue
+    } else if (associatedBannedFeed) {
+      failedAddLinks[link] = translate('commands.add.bannedFeed', {
+        reason: associatedBannedFeed.reason || 'unknown'
+      })
+
       continue
     }
 

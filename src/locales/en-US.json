@@ -145,6 +145,7 @@
       "correctSyntax": "The correct syntax is {{prefix}}add https://www.some_url_here.com. Multiple links can be added at once, separated by `>`.",
       "improperFormat": "Invalid/improperly-formatted link.",
       "processing": "Processing...",
+      "bannedFeed": "This feed is banned (Reason: {{reason}}).",
       "limitReached": "Maximum feed limit of {{max}} reached.",
       "alreadyExists": "Already exists for this channel.",
       "success": "The following feeds have been successfully added to **this channel**",

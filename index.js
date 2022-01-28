@@ -5,6 +5,7 @@ const config = require('./src/config.js')
 // Models
 exports.models = {
   Article: require('./src/models/Article.js'),
+  BannedFeed: require('./src/models/BannedFeed.js'),
   Blacklist: require('./src/models/Blacklist.js'),
   DeliveryRecord: require('./src/models/DeliveryRecord.js'),
   FailRecord: require('./src/models/FailRecord.js'),
@@ -36,6 +37,7 @@ exports.Translator = require('./src/structs/Translator.js')
 exports.DeliveryPipeline = require('./src/structs/DeliveryPipeline.js')
 
 // Database Structures
+exports.BannedFeed = require('./src/structs/db/BannedFeed.js')
 exports.Blacklist = require('./src/structs/db/Blacklist.js')
 exports.FailRecord = require('./src/structs/db/FailRecord.js')
 exports.Feed = require('./src/structs/db/Feed.js')
