@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
-  urlPattern: {
+  url: {
     type: String,
     required: true
   },
@@ -14,10 +14,6 @@ const schema = new mongoose.Schema({
 })
 
 schema.add(Version)
-
-schema.index({
-  urlPattern: 'text'
-})
 
 exports.schema = schema
 /** @type {import('mongoose').Model} */

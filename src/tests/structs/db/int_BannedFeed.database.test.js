@@ -33,35 +33,37 @@ describe('Int::structs/db/BannedFeed Database', function () {
   })
 
   describe('findForUrl', () => {
-    it('returns the record for a partially matching case-insensitive url', async () => {
-      const url = 'https://www.reddit.com/r/'
-      const guildId = 'guild-id'
-      await collection.insertOne({
-        urlPattern: 'REDDIT.com',
-        guilds: [guildId]
-      })
-      const record = await BannedFeed.findForUrl(url, guildId)
-      expect(record).toBeDefined()
-    })
-
     it('does not return a record for a url that matches but for a guild that does not apply', async () => {
       const url = 'https://www.reddit.com/r/'
       await collection.insertOne({
-        urlPattern: url,
-        guilds: ['123']
+        url: url,
+        guildIds: ['123']
       })
       const record = await BannedFeed.findForUrl(url, '456')
-      expect(record).toBeDefined()
+      expect(record).toBeNull()
+    })
+
+    it('does not return a record if the url does not match', async () => {
+      const url = 'a'
+      const guildId = 'guild-id'
+      await collection.insertOne({
+        url: 'b',
+        guildIds: []
+      })
+      const record = await BannedFeed.findForUrl(url, guildId)
+      expect(record).toBeNull()
     })
 
     it('returns the record for exact matches', async () => {
       const url = 'https://www.reddit.com/r/'
+      const guildId = 'guild-id'
       await collection.insertOne({
-        urlPattern: url,
-        guilds: ['guild-id']
+        url: url,
+        guildIds: [guildId]
       })
-      const record = await BannedFeed.findForUrl(url, 'guild-id')
-      expect(record).toBeDefined()
+      const record = await BannedFeed.findForUrl(url, guildId)
+      console.log(await collection.find().toArray())
+      expect(record).not.toBeNull()
     })
   })
 

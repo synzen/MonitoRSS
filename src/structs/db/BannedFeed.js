@@ -9,9 +9,9 @@ class BannedFeed extends Base {
      * The URL of the feed
      * @type {string}
      */
-    this.urlPattern = this.getField('urlPattern')
-    if (this.urlPattern === undefined) {
-      throw new TypeError('urlPattern is undefined')
+    this.url = this.getField('url')
+    if (this.url === undefined) {
+      throw new TypeError('url is undefined')
     }
 
     /**
@@ -28,23 +28,17 @@ class BannedFeed extends Base {
   }
 
   /**
-   * Find if a urlPattern is banned in a guild.
+   * Find if a url is banned in a guild.
    *
-   * @param {string} urlPattern
+   * @param {string} url
    * @param {string} guildId
    * @returns {Promise<BannedFeed|null>}
    */
-  static async findForUrl (urlPattern, guildId) {
-    const patternToUse = urlPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
+  static async findForUrl (url, guildId) {
     return BannedFeed.getByQuery({
-      $text: {
-        $search: patternToUse
-      },
+      url: url,
       $or: [{
-        guildIds: {
-          $in: [guildId]
-        }
+        guildIds: guildId
       }, {
         guildIds: {
           $size: 0
@@ -55,7 +49,7 @@ class BannedFeed extends Base {
 
   toObject () {
     return {
-      urlPattern: this.urlPattern,
+      url: this.url,
       reason: this.reason,
       guildIds: this.guildIds
     }

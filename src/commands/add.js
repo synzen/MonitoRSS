@@ -62,6 +62,7 @@ module.exports = async (message) => {
 
       continue
     } else if (associatedBannedFeed) {
+      console.log(associatedBannedFeed)
       failedAddLinks[link] = translate('commands.add.bannedFeed', {
         reason: associatedBannedFeed.reason || 'unknown'
       })
