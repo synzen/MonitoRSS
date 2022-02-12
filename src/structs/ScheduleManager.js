@@ -72,6 +72,7 @@ class ScheduleManager extends EventEmitter {
       this.log.error(err, `Failed to record url fail record ${url} with reason ${reason}`)
     }
     this.urlFailuresRecording.delete(url)
+    this.emit('connectionFailure', url, reason)
   }
 
   /**
