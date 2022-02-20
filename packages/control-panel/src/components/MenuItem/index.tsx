@@ -1,34 +1,39 @@
 import {
   Avatar,
-  Badge, Box, chakra, HStack, Text, useColorModeValue as mode,
+  Box,
+  chakra,
+  HStack,
+  Text,
+  useColorModeValue as mode,
 } from '@chakra-ui/react';
 
 interface MenuItemProps {
-  href: string
   title: string
-  isNew?: boolean
   icon?: string
   children?: React.ReactNode
+  onClick: () => void
 }
 
 const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
   const {
-    title, children, href, isNew, icon,
+    title, children, icon, onClick,
   } = props;
 
   return (
     <chakra.a
+      as="button"
       display="block"
       px="5"
       py="3"
-      href={href}
+      width="100%"
       rounded="lg"
       transition="0.2s background"
+      onClick={onClick}
       textAlign="left"
       _hover={{ bg: mode('gray.50', 'gray.600') }}
     >
       <HStack spacing={4}>
-        <Avatar name="Dan" src="https://bit.ly/dan-abramov" />
+        <Avatar name="Dan" src={icon || 'https://bit.ly/dan-abramov'} />
         <Box as="dl">
           <Text
             display="inline-block"
@@ -40,11 +45,6 @@ const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
           >
             {title}
           </Text>
-          {isNew && (
-          <Badge aria-hidden variant="solid" fontSize="10px" mt="-1" ms="2" colorScheme="blue">
-            New
-          </Badge>
-          )}
           <Text as="dd" fontSize="sm" color={mode('gray.600', 'gray.400')}>
             {children}
           </Text>

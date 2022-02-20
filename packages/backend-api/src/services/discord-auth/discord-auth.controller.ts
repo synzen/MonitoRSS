@@ -1,6 +1,7 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Query, Res, Session } from '@nestjs/common';
 import { DiscordAuthService } from './discord-auth.service';
 import { FastifyReply } from 'fastify';
+import { Session as FastifySession } from 'fastify-secure-session';
 
 @Controller('discord')
 export class DiscordAuthController {
@@ -16,6 +17,7 @@ export class DiscordAuthController {
   @Get('callback')
   async discordCallback(
     @Res({ passthrough: true }) res: FastifyReply,
+    @Session() session: FastifySession,
     @Query('code') code?: string,
     @Query('error') error?: string,
   ) {
@@ -28,6 +30,7 @@ export class DiscordAuthController {
     }
 
     const accessToken = await this.discordAuthService.createAccessToken(code);
+    session.set('accessToken', accessToken);
 
     return accessToken;
   }
