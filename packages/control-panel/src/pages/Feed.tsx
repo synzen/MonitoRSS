@@ -1,17 +1,39 @@
 import { CheckCircleIcon } from '@chakra-ui/icons';
 import {
-  Flex, Grid, Heading, Stack, Tab, TabList, TabPanel, TabPanels, Tabs, Text,
+  Alert,
+  AlertIcon,
+  Box,
+  Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
+import { useQuery } from 'react-query';
+import { Navigate, useParams } from 'react-router-dom';
+import ApiAdapterError from '../adapters/ApiAdapterError';
+import getFeed, { GetFeedOutput } from '../adapters/feeds/getFeed';
 import CategoryText from '../components/CategoryText';
 import DashboardContent from '../components/DashboardContent';
+import Loading from '../components/Loading';
 import Navbar from '../components/Navbar';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
-import FeedMiscOptions from './FeedMiscOptions';
 
 const Feed: React.FC = () => {
-  const { feedId } = useParams<RouteParams>();
+  const { serverId, feedId } = useParams<RouteParams>();
+
+  if (!serverId) {
+    return <Navigate to="/servers" />;
+  }
+
+  if (!feedId) {
+    return <Navigate to={`/servers/${serverId}/feeds`} />;
+  }
+
+  const { data, status, error } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
+    ['feed', serverId, feedId],
+    async () => getFeed({
+      serverId,
+      feedId,
+    }),
+  );
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',
@@ -23,11 +45,25 @@ const Feed: React.FC = () => {
     enabled: !!feedId,
   }];
 
+  const feed = data?.result;
+
   return (
     <Stack>
       <Navbar
         breadcrumbItems={breadcrumbItems}
       />
+      {status === 'loading' && (
+      <Box textAlign="center" paddingY="5rem">
+        <Loading />
+      </Box>
+      )}
+      {status === 'error' && (
+      <Alert status="error">
+        <AlertIcon />
+        {error?.message}
+      </Alert>
+      )}
+      {status === 'success' && data && (
       <DashboardContent>
         <Stack spacing={12}>
           <Stack>
@@ -36,13 +72,13 @@ const Feed: React.FC = () => {
                 size="lg"
                 marginRight={4}
               >
-                New York Times
+                {feed?.title}
 
               </Heading>
               <CheckCircleIcon fontSize="2xl" color="green.500" verticalAlign="middle" />
             </Flex>
             <Text>
-              https://www.nytimes.com/
+              {feed?.url}
             </Text>
           </Stack>
           <Grid
@@ -54,9 +90,13 @@ const Feed: React.FC = () => {
             columnGap="20"
             rowGap={{ base: '8', lg: '14' }}
           >
-            <CategoryText title="Channel">#new-york-tikmes</CategoryText>
-            <CategoryText title="Refresh Rate">10 minutes</CategoryText>
-            <CategoryText title="Since">12 August 2021</CategoryText>
+            <CategoryText title="Channel">{feed?.channel}</CategoryText>
+            <CategoryText title="Refresh Rate">
+              {feed?.refreshRateSeconds}
+              {' '}
+              seconds
+            </CategoryText>
+            <CategoryText title="Since">{feed?.createdAt}</CategoryText>
           </Grid>
         </Stack>
         {/* <Stack width="min">
@@ -65,6 +105,7 @@ const Feed: React.FC = () => {
           <Button as={Link} to="misc-options">Edit Misc Options</Button>
         </Stack> */}
       </DashboardContent>
+      )}
     </Stack>
   );
 };

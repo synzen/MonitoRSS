@@ -33,7 +33,7 @@ const fakeArticle = {
 };
 
 const FeedMessage: React.FC = () => {
-  const { serverId, feedId } = useParams<RouteParams>();
+  const { feedId } = useParams<RouteParams>();
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',

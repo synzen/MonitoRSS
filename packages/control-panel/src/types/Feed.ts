@@ -39,6 +39,7 @@ const FeedEmbed = z.object({
 });
 
 export const FeedSchema = FeedSummarySchema.merge(z.object({
+  refreshRateSeconds: z.number(),
   text: z.string(),
   embeds: z.array(FeedEmbed),
 }));

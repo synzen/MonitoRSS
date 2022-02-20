@@ -8,6 +8,8 @@ const mockFeeds: Feed[] = [{
   status: 'ok',
   embeds: [],
   text: '',
+  createdAt: new Date().toISOString(),
+  refreshRateSeconds: 60,
 }];
 
 export default mockFeeds;

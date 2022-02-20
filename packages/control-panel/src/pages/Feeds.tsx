@@ -13,30 +13,33 @@ import {
   Th,
   Thead,
   Tr,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { useQuery } from 'react-query';
-import { useNavigate, useParams } from 'react-router-dom';
-import getFeeds from '../adapters/feeds/getFeeds';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import getFeeds, { GetFeedsOutput } from '../adapters/feeds/getFeeds';
 import DashboardContent from '../components/DashboardContent';
 import Loading from '../components/Loading';
 import Navbar from '../components/Navbar';
 import { FeedSummary } from '../types/FeedSummary';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
+import ApiAdapterError from '../adapters/ApiAdapterError';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
-  const { data, status } = useQuery(['feeds', serverId], async () => {
-    if (!serverId) {
-      throw new Error('No server ID selected');
-    }
 
-    return getFeeds({
+  if (!serverId) {
+    return <Navigate to="/servers" />;
+  }
+
+  const { data, status, error } = useQuery<GetFeedsOutput, ApiAdapterError>(
+    ['feeds', serverId],
+    async () => getFeeds({
       serverId,
-    });
-  }, {
-    enabled: !!serverId,
-  });
+    }),
+  );
 
   const navigate = useNavigate();
 
@@ -56,11 +59,22 @@ const Feeds: React.FC = () => {
         breadcrumbItems={breadcrumbItems}
       />
       <DashboardContent>
+        {(status === 'loading') && (
+        <Box textAlign="center" paddingY="5rem">
+          <Loading size="lg" />
+        </Box>
+        )}
+        {status === 'error' && (
+        <Alert status="error">
+          <AlertIcon />
+          {error?.message}
+        </Alert>
+        )}
+        {status === 'success' && data && (
         <Stack spacing="6">
           {/* <Heading as="h2" size="md">Current Feeds</Heading> */}
           <Stack spacing="4">
             <Flex justifyContent="space-between">
-
               <InputGroup>
                 <InputLeftElement
                   pointerEvents="none"
@@ -71,12 +85,6 @@ const Feeds: React.FC = () => {
               </InputGroup>
               <Button colorScheme="blue">Add New</Button>
             </Flex>
-            {status === 'loading' && (
-              <Box textAlign="center" paddingY="5rem">
-                <Loading size="lg" />
-              </Box>
-            )}
-            {status === 'success' && data && (
             <Box overflow="auto">
               <Table size="lg" variant="simple" width="100%">
                 <Thead>
@@ -110,29 +118,14 @@ const Feeds: React.FC = () => {
                       <Td>{row.title}</Td>
                       <Td>{row.url}</Td>
                       <Td>{row.channel}</Td>
-                      {/* <Td isNumeric>{row.refreshRate}</Td> */}
-                      {/* <Td>
-                          <Menu>
-                            <MenuButton size="sm" as={Button} rightIcon={<ChevronDownIcon />}>
-                              Actions
-                            </MenuButton>
-                            <MenuList>
-                              <MenuItem>Download</MenuItem>
-                              <MenuItem>Create a Copy</MenuItem>
-                              <MenuItem>Mark as Draft</MenuItem>
-                              <MenuItem>Delete</MenuItem>
-                              <MenuItem>Attend a Workshop</MenuItem>
-                            </MenuList>
-                          </Menu>
-                        </Td> */}
                     </Tr>
                   ))}
                 </Tbody>
               </Table>
             </Box>
-            )}
           </Stack>
         </Stack>
+        )}
       </DashboardContent>
     </Stack>
   );
