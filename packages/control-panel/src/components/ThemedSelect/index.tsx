@@ -15,9 +15,12 @@ interface Props {
   selectedValue?: string;
   options: SelectOption[];
   loading?: boolean;
+  onChangedValue: (value: string) => void;
 }
 
-const ThemedSelect: React.FC<Props> = ({ selectedValue, options, loading }) => {
+const ThemedSelect: React.FC<Props> = ({
+  selectedValue, options, loading, onChangedValue,
+}) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
     menu: (provided) => ({
       ...provided,
@@ -60,6 +63,7 @@ const ThemedSelect: React.FC<Props> = ({ selectedValue, options, loading }) => {
       // @ts-ignore
       styles={styles}
       value={selectedOption}
+      onChange={(option) => (option ? onChangedValue(option.value) : null)}
       // components={{
       //   Option: IconOption,
       // }}

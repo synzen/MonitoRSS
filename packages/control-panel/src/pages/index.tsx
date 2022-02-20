@@ -129,6 +129,7 @@ const DashboardContent: React.FC<{ content: React.ReactNode }> = ({ content }) =
                 label: server.name,
                 value: server.id,
               })) || []}
+              onChangedValue={(value) => onPathChanged(`/servers/${value}/feeds`)}
             />
             {/* <Flex px="3" py="4" minH="12" align="center">
           <Text fontWeight="bold" fontSize="sm" lineHeight="1.25rem">
