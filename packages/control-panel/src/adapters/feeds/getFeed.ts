@@ -3,7 +3,6 @@ import { FeedSchema } from '../../types/Feed';
 import fetchRest from '../utils/fetchRest';
 
 export interface GetFeedInput {
-  serverId: string
   feedId: string
 }
 
@@ -14,7 +13,7 @@ const GetFeedOutputSchema = z.object({
 export type GetFeedOutput = z.infer<typeof GetFeedOutputSchema>;
 
 const getFeed = async (options: GetFeedInput): Promise<GetFeedOutput> => fetchRest(
-  `/api/v1/servers/${options.serverId}/feeds/${options.feedId}`,
+  `/api/v1/feeds/${options.feedId}`,
   {
     validateSchema: GetFeedOutputSchema,
   },

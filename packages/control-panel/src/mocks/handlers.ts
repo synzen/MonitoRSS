@@ -26,7 +26,7 @@ const handlers = [
     }),
   )),
 
-  rest.get('/api/v1/servers/:serverId/feeds/:feedId', (req, res, ctx) => res(
+  rest.get('/api/v1/feeds/:feedId', (req, res, ctx) => res(
     ctx.status(200),
     ctx.json<GetFeedOutput>({
       result: mockFeeds[0],

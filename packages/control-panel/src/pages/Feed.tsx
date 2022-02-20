@@ -11,10 +11,9 @@ import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
 const Feed: React.FC = () => {
-  const { serverId, feedId } = useParams<RouteParams>();
+  const { feedId } = useParams<RouteParams>();
 
   const { data, status, error } = useFeed({
-    serverId,
     feedId,
   });
 

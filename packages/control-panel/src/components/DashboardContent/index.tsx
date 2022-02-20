@@ -8,39 +8,31 @@ interface Props {
   error?: Error | null
 }
 
-const DashboardContent: React.FC<Props> = ({ loading, error, children }) => {
-  if (loading) {
-    return (
-      <Box textAlign="center" paddingY="5rem">
-        <Loading />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert status="error">
-        <AlertIcon />
-        {error.message}
-      </Alert>
-    );
-  }
-
-  return (
-    <Flex
+const DashboardContent: React.FC<Props> = ({ loading, error, children }) => (
+  <Flex
+    width="100%"
+    justifyContent="center"
+  >
+    <Box
+      maxWidth="7xl"
       width="100%"
-      justifyContent="center"
+      px="8"
+      paddingY="6"
     >
-      <Box
-        maxWidth="7xl"
-        width="100%"
-        px="8"
-        paddingY="6"
-      >
-        {children}
-      </Box>
-    </Flex>
-  );
-};
+      {loading && (
+        <Box textAlign="center" paddingY="5rem">
+          <Loading />
+        </Box>
+      )}
+      {error && (
+        <Alert status="error">
+          <AlertIcon />
+          {error.message}
+        </Alert>
+      )}
+      {!loading && !error && children}
+    </Box>
+  </Flex>
+);
 
 export default DashboardContent;
