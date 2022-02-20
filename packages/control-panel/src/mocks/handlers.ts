@@ -10,6 +10,10 @@ import mockFeedArticles from './data/feedArticles';
 import mockFeedSummaries from './data/feeds';
 
 const handlers = [
+  rest.get('/api/discord/login', (req, res, ctx) => res(
+    ctx.json({
+    }),
+  )),
   rest.get('/api/v1/servers', (req, res, ctx) => res(
     ctx.status(200),
     ctx.json<GetServersOutput>({

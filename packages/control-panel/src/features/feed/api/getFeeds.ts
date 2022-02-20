@@ -11,9 +11,9 @@ export interface GetFeedsInput {
 }
 
 const GetFeedsOutputSchema = object({
-  results: array(FeedSummarySchema),
-  total: number(),
-});
+  results: array(FeedSummarySchema).required(),
+  total: number().required(),
+}).required();
 
 export type GetFeedsOutput = InferType<typeof GetFeedsOutputSchema>;
 

@@ -8,7 +8,7 @@ export interface GetFeedInput {
 
 const GetFeedOutputSchema = object({
   result: FeedSchema,
-});
+}).required();
 
 export type GetFeedOutput = InferType<typeof GetFeedOutputSchema>;
 

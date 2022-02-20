@@ -3,14 +3,14 @@ import {
 } from 'yup';
 
 const Placeholder = object({
-  name: string(),
-  value: string(),
-});
+  name: string().required(),
+  value: string().required(),
+}).required();
 
 export const FeedArticlesSchema = object({
-  id: string(),
-  title: string(),
-  placeholders: array(Placeholder),
-});
+  id: string().required(),
+  title: string().required(),
+  placeholders: array(Placeholder).required(),
+}).required();
 
 export type FeedArticle = InferType<typeof FeedArticlesSchema>;

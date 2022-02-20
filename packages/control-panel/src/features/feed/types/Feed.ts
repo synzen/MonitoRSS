@@ -38,12 +38,12 @@ const FeedEmbed = object({
   disabled: string().optional(),
   ncomparisons: array(string()).optional(),
   pcomparisons: array(string()).optional(),
-});
+}).required();
 
 export const FeedSchema = FeedSummarySchema.concat(object({
-  refreshRateSeconds: number(),
-  text: string(),
-  embeds: array(FeedEmbed),
-}));
+  refreshRateSeconds: number().required(),
+  text: string().required(),
+  embeds: array(FeedEmbed).required(),
+})).required();
 
 export type Feed = InferType<typeof FeedSchema>;

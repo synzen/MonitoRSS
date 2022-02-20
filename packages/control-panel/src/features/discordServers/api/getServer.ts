@@ -10,8 +10,8 @@ export interface GetServersInput {
 }
 
 const GetServersOutputSchema = object({
-  results: array(DiscordServerSchema),
-  total: number(),
+  results: array(DiscordServerSchema).required(),
+  total: number().required(),
 });
 
 export type GetServersOutput = InferType<typeof GetServersOutputSchema>;
