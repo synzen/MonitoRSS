@@ -1,15 +1,17 @@
-import {
-  Button, InputGroup, InputRightElement, Textarea,
-} from '@chakra-ui/react';
-import { Formik } from 'formik';
+import { Form, Formik } from 'formik';
+import { InferType, object, string } from 'yup';
+import { Button, Stack } from '@chakra-ui/react';
+import { FormikTextarea } from '@/components/FormikTextarea';
 
 interface Props {
   text: string
 }
 
-interface FormValues {
-  text: string
-}
+const FormSchema = object({
+  text: string().required(),
+});
+
+type FormValues = InferType<typeof FormSchema>;
 
 export const TextForm: React.FC<Props> = ({ text }) => {
   const initialValues: FormValues = {
@@ -19,46 +21,36 @@ export const TextForm: React.FC<Props> = ({ text }) => {
   return (
     <Formik
       initialValues={initialValues}
+      validationSchema={FormSchema}
       onSubmit={(values, { setSubmitting }) => {
+        console.log(values);
         setTimeout(() => {
           setSubmitting(false);
         }, 2000);
       }}
     >
       {({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
         isSubmitting,
+        isValid,
       }) => (
-        <form onSubmit={handleSubmit}>
-          <InputGroup>
-            <Textarea
+        <Form>
+          <Stack>
+            <FormikTextarea
               name="text"
-              value={values.text}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="Message"
-              size="lg"
-              isInvalid={!!touched.text && !!errors.text}
+              textareaProps={{
+                'aria-label': 'Feed text',
+              }}
             />
-            <InputRightElement
+            <Button
               type="submit"
-              disabled={isSubmitting}
+              colorScheme="blue"
+              isLoading={isSubmitting}
+              disabled={!isValid || isSubmitting}
             >
-              <Button
-                type="submit"
-                variantColor="blue"
-                isLoading={isSubmitting}
-              >
-                Submit
-              </Button>
-            </InputRightElement>
-          </InputGroup>
-        </form>
+              Save
+            </Button>
+          </Stack>
+        </Form>
       )}
     </Formik>
   );
