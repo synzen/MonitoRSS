@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import {
   ButtonGroup,
-  Code, Heading, IconButton, Stack, Text, Textarea,
+  Code, Heading, IconButton, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { DashboardContent, Navbar } from '@/components';
@@ -10,6 +10,7 @@ import {
 } from '../features/feed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
+import { TextForm } from '@/features/feed/components/TextForm';
 
 const FeedMessage: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
@@ -58,7 +59,7 @@ const FeedMessage: React.FC = () => {
               + ' used to create an empty message, but only if an embed is used. Regular formatting'
               + ' such as bold and etc. is also available.'}
             </Text>
-            <Textarea />
+            <TextForm text={feed?.text || ''} />
           </Stack>
           <Stack spacing="4">
             <Stack direction="row" justifyContent="space-between">
