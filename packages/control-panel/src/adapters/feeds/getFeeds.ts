@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FeedSchema } from '../../types/Feed';
+import { FeedSummarySchema } from '../../types/FeedSummary';
 import fetchRest from '../utils/fetchRest';
 
 export interface GetFeedsInput {
@@ -9,7 +9,7 @@ export interface GetFeedsInput {
 }
 
 const GetFeedsOutputSchema = z.object({
-  results: z.array(FeedSchema),
+  results: z.array(FeedSummarySchema),
   total: z.number(),
 });
 

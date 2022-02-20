@@ -1,6 +1,6 @@
-import { Feed } from '../../types/Feed';
+import { FeedSummary } from '../../types/FeedSummary';
 
-const mockFeeds: Feed[] = [{
+const mockFeedSummaries: FeedSummary[] = [{
   id: '1',
   title: 'New York Times',
   url: 'https://www.feed1.com',
@@ -20,4 +20,4 @@ const mockFeeds: Feed[] = [{
   status: 'ok',
 }];
 
-export default mockFeeds;
+export default mockFeedSummaries;

@@ -20,7 +20,7 @@ import getFeeds from '../adapters/feeds/getFeeds';
 import DashboardContent from '../components/DashboardContent';
 import Loading from '../components/Loading';
 import Navbar from '../components/Navbar';
-import { Feed } from '../types/Feed';
+import { FeedSummary } from '../types/FeedSummary';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
@@ -46,8 +46,8 @@ const Feeds: React.FC = () => {
     enabled: true,
   }];
 
-  const onClickFeedRow = (row: Feed) => {
-    navigate(row.id);
+  const onClickFeedRow = (feed: FeedSummary) => {
+    navigate(feed.id);
   };
 
   return (
