@@ -71,7 +71,7 @@ const FeedMessage: React.FC = () => {
               divider={<StackDivider />}
             >
               {fakeArticle.placeholders.map((placeholder) => (
-                <Stack display="inline-block">
+                <Stack display="inline-block" key={placeholder.value}>
                   <Code>{placeholder.name}</Code>
                   <Text>{placeholder.value}</Text>
                 </Stack>
