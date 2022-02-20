@@ -20,7 +20,7 @@ const Feed: React.FC = () => {
   const { data, status, error } = useFeed({
     serverId,
     feedId,
-  } as { serverId: string, feedId: string });
+  });
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',
@@ -39,7 +39,7 @@ const Feed: React.FC = () => {
       <Navbar
         breadcrumbItems={breadcrumbItems}
       />
-      {status === 'loading' && (
+      {(status === 'loading' || status === 'idle') && (
       <Box textAlign="center" paddingY="5rem">
         <Loading />
       </Box>
