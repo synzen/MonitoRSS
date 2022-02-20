@@ -5,7 +5,7 @@ import {
   Box,
   Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
-import { Navigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import CategoryText from '../components/CategoryText';
 import DashboardContent from '../components/DashboardContent';
 import Loading from '../components/Loading';
@@ -17,18 +17,10 @@ import RouteParams from '../types/RouteParams';
 const Feed: React.FC = () => {
   const { serverId, feedId } = useParams<RouteParams>();
 
-  if (!serverId) {
-    return <Navigate to="/servers" />;
-  }
-
-  if (!feedId) {
-    return <Navigate to={`/servers/${serverId}/feeds`} />;
-  }
-
   const { data, status, error } = useFeed({
     serverId,
     feedId,
-  });
+  } as { serverId: string, feedId: string });
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',

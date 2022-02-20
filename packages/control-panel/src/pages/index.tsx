@@ -30,40 +30,72 @@ const Pages: React.FC = () => (
     />
     <Route
       path="/servers/:serverId"
-      element={<DashboardContent content={<ServerDasboard />} />}
+      element={(
+        <DashboardContent>
+          <ServerDasboard />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/server-settings"
-      element={<DashboardContent content={<ServerDasboard />} />}
+      element={(
+        <DashboardContent>
+          <ServerDasboard />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/feeds"
-      element={<DashboardContent content={<Feeds />} />}
+      element={(
+        <DashboardContent>
+          <Feeds />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId"
-      element={<DashboardContent content={<Feed />} />}
+      element={(
+        <DashboardContent requireFeed>
+          <Feed />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/message"
-      element={<DashboardContent content={<FeedMessage />} />}
+      element={(
+        <DashboardContent requireFeed>
+          <FeedMessage />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/filters"
-      element={<DashboardContent content={<FeedFilters />} />}
+      element={(
+        <DashboardContent requireFeed>
+          <FeedFilters />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/subscribers"
-      element={<DashboardContent content={<FeedSubscribers />} />}
+      element={(
+        <DashboardContent requireFeed>
+          <FeedSubscribers />
+        </DashboardContent>
+)}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/misc-options"
-      element={<DashboardContent content={<FeedMiscOptions />} />}
+      element={(
+        <DashboardContent requireFeed>
+          <FeedMiscOptions />
+        </DashboardContent>
+)}
     />
   </Routes>
 );
 
-const DashboardContent: React.FC<{ content: React.ReactNode }> = ({ content }) => {
+const DashboardContent: React.FC<{ requireFeed?: boolean }> = ({ requireFeed, children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { feedId, serverId } = useParams();
@@ -105,6 +137,10 @@ const DashboardContent: React.FC<{ content: React.ReactNode }> = ({ content }) =
 
   if (!serverId) {
     return <Navigate to="/servers" />;
+  }
+
+  if (!feedId && requireFeed) {
+    return <Navigate to={`/servers/${serverId}/feeds`} />;
   }
 
   return (
@@ -162,7 +198,7 @@ const DashboardContent: React.FC<{ content: React.ReactNode }> = ({ content }) =
         overflow="auto"
       >
         <Box width="100%">
-          {content}
+          {children}
         </Box>
       </Flex>
     </Flex>
