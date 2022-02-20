@@ -5,14 +5,12 @@ import {
   Box,
   Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
-import { useQuery } from 'react-query';
 import { Navigate, useParams } from 'react-router-dom';
-import ApiAdapterError from '../adapters/ApiAdapterError';
-import getFeed, { GetFeedOutput } from '../adapters/feeds/getFeed';
 import CategoryText from '../components/CategoryText';
 import DashboardContent from '../components/DashboardContent';
 import Loading from '../components/Loading';
 import Navbar from '../components/Navbar';
+import useFeed from '../hooks/useFeed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
@@ -27,13 +25,10 @@ const Feed: React.FC = () => {
     return <Navigate to={`/servers/${serverId}/feeds`} />;
   }
 
-  const { data, status, error } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
-    ['feed', serverId, feedId],
-    async () => getFeed({
-      serverId,
-      feedId,
-    }),
-  );
+  const { data, status, error } = useFeed({
+    serverId,
+    feedId,
+  });
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',

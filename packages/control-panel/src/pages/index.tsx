@@ -1,15 +1,13 @@
 import { Box, Flex, Stack } from '@chakra-ui/react';
-import { useQuery } from 'react-query';
 import {
   Navigate,
   Route, Routes, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
-import ApiAdapterError from '../adapters/ApiAdapterError';
-import getServers, { GetServersOutput } from '../adapters/servers/getServer';
 import Loading from '../components/Loading';
 import ManageFeedLinks from '../components/Sidebar/ManageFeedLinks';
 import ManageServerLinks from '../components/Sidebar/ManageServerLinks';
 import ThemedSelect from '../components/ThemedSelect';
+import useDiscordServers from '../hooks/useDiscordServers';
 import Feed from './Feed';
 import FeedFilters from './FeedFilters';
 import FeedMessage from './FeedMessage';
@@ -73,7 +71,7 @@ const DashboardContent: React.FC<{ content: React.ReactNode }> = ({ content }) =
     status,
     data,
     error,
-  } = useQuery<GetServersOutput, ApiAdapterError>('servers', async () => getServers());
+  } = useDiscordServers();
 
   const onPathChanged = (path: string) => {
     navigate(path, {

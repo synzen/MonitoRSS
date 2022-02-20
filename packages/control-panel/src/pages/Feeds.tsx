@@ -16,16 +16,14 @@ import {
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
-import { useQuery } from 'react-query';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
-import getFeeds, { GetFeedsOutput } from '../adapters/feeds/getFeeds';
 import DashboardContent from '../components/DashboardContent';
 import Loading from '../components/Loading';
 import Navbar from '../components/Navbar';
 import { FeedSummary } from '../types/FeedSummary';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
-import ApiAdapterError from '../adapters/ApiAdapterError';
+import useFeeds from '../hooks/useFeeds';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
@@ -34,12 +32,9 @@ const Feeds: React.FC = () => {
     return <Navigate to="/servers" />;
   }
 
-  const { data, status, error } = useQuery<GetFeedsOutput, ApiAdapterError>(
-    ['feeds', serverId],
-    async () => getFeeds({
-      serverId,
-    }),
-  );
+  const { data, status, error } = useFeeds({
+    serverId,
+  });
 
   const navigate = useNavigate();
 

@@ -12,12 +12,10 @@ import {
   Stack,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { useQuery } from 'react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import ApiAdapterError from '../adapters/ApiAdapterError';
-import getServers, { GetServersOutput } from '../adapters/servers/getServer';
 import Loading from '../components/Loading';
 import Menu from '../components/Menu';
+import useDiscordServers from '../hooks/useDiscordServers';
 
 const Servers: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +23,7 @@ const Servers: React.FC = () => {
     status,
     data,
     error,
-  } = useQuery<GetServersOutput, ApiAdapterError>('servers', async () => getServers());
+  } = useDiscordServers();
 
   return (
     <Flex
