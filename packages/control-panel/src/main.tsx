@@ -8,7 +8,7 @@ import App from './App';
 import theme from './utils/theme';
 import setupMockBrowserWorker from './mocks/browser';
 
-if (import.meta.env.DEV) {
+if (import.meta.env.MODE === 'development-mockapi') {
   setupMockBrowserWorker().then((worker) => worker.start());
 }
 

@@ -2,6 +2,7 @@
   "name": "@monitorss/control-panel",
   "version": "0.0.0",
   "scripts": {
+    "dev-mockapi": "vite --mode development-mockapi",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
