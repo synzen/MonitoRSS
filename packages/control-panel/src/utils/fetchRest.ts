@@ -39,12 +39,16 @@ const handleStatusCode = async (res: Response) => {
   if (res.status === 400) {
     const json = await res.json();
 
-    throw new ApiAdapterError(json.message || 'Unknown error');
+    throw new ApiAdapterError(json.message || 'Unknown error', {
+      statusCode: res.status,
+    });
   }
 
   const errorMessage = getStatusCodeErrorMessage(res.status);
 
-  throw new ApiAdapterError(errorMessage);
+  throw new ApiAdapterError(errorMessage, {
+    statusCode: res.status,
+  });
 };
 
 export default fetchRest;
