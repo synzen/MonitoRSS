@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { array, InferType, object } from 'yup';
 import { FeedArticlesSchema } from '../types';
 import fetchRest from '../../../utils/fetchRest';
 
@@ -6,11 +6,11 @@ export interface GetFeedArticlesInput {
   feedId: string
 }
 
-const GetFeedArticlesSchema = z.object({
-  result: z.array(FeedArticlesSchema),
+const GetFeedArticlesSchema = object({
+  result: array(FeedArticlesSchema),
 });
 
-export type GetFeedArticlesOutput = z.infer<typeof GetFeedArticlesSchema>;
+export type GetFeedArticlesOutput = InferType<typeof GetFeedArticlesSchema>;
 
 export const getFeedArticles = async (
   options: GetFeedArticlesInput,

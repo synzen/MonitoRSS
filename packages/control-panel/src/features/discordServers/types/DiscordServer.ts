@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { InferType, object, string } from 'yup';
 
-export const DiscordServerSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  icon: z.string().optional(),
+export const DiscordServerSchema = object({
+  id: string(),
+  name: string(),
+  icon: string().optional(),
 });
 
-export type DiscordServer = z.infer<typeof DiscordServerSchema>;
+export type DiscordServer = InferType<typeof DiscordServerSchema>;

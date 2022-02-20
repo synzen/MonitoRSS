@@ -1,10 +1,10 @@
-import { z } from 'zod';
+import { AnySchema } from 'yup';
 import ApiAdapterError from './ApiAdapterError';
 import getStatusCodeErrorMessage from './getStatusCodeErrorMessage';
 
 interface FetchOptions<T> {
   requestOptions?: RequestInit
-  validateSchema: z.Schema<T>
+  validateSchema: AnySchema<T>
 }
 
 const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise<T> => {
@@ -15,15 +15,17 @@ const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise
   const json = await res.json();
 
   if (fetchOptions?.validateSchema) {
-    const validationResult = await fetchOptions.validateSchema.safeParseAsync(json);
+    try {
+      const validationResult = await fetchOptions.validateSchema.validate(json, {
+        strict: true,
+        abortEarly: false,
+      });
 
-    if (validationResult.success) {
-      return validationResult.data;
+      return validationResult;
+    } catch (err) {
+      console.error(err);
+      throw new ApiAdapterError('API contract violation. Try again later.');
     }
-
-    console.error(validationResult.error);
-
-    throw new ApiAdapterError('API contract violation. Try again later.');
   }
 
   return json;

@@ -1,4 +1,6 @@
-import { z } from 'zod';
+import {
+  array, InferType, number, object,
+} from 'yup';
 import { FeedSummarySchema } from '../types';
 import fetchRest from '../../../utils/fetchRest';
 
@@ -8,12 +10,12 @@ export interface GetFeedsInput {
   offset?: number;
 }
 
-const GetFeedsOutputSchema = z.object({
-  results: z.array(FeedSummarySchema),
-  total: z.number(),
+const GetFeedsOutputSchema = object({
+  results: array(FeedSummarySchema),
+  total: number(),
 });
 
-export type GetFeedsOutput = z.infer<typeof GetFeedsOutputSchema>;
+export type GetFeedsOutput = InferType<typeof GetFeedsOutputSchema>;
 
 export const getFeeds = async (options: GetFeedsInput): Promise<GetFeedsOutput> => {
   const searchParams = new URLSearchParams({

@@ -1,12 +1,12 @@
-import { z } from 'zod';
+import { InferType, object, string } from 'yup';
 
-export const FeedSummarySchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.enum(['ok', 'failed']),
-  url: z.string(),
-  channel: z.string(),
-  createdAt: z.string().transform((value) => new Date(value).toISOString()),
+export const FeedSummarySchema = object({
+  id: string(),
+  title: string(),
+  status: string().oneOf(['ok', 'failed']),
+  url: string(),
+  channel: string(),
+  createdAt: string().transform((value) => new Date(value).toISOString()),
 });
 
-export type FeedSummary = z.infer<typeof FeedSummarySchema>;
+export type FeedSummary = InferType<typeof FeedSummarySchema>;

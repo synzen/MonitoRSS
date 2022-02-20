@@ -23,7 +23,7 @@
     "react-query": "^3.34.15",
     "react-router-dom": "^6.2.1",
     "react-select": "^5.2.2",
-    "zod": "^3.11.6"
+    "yup": "^0.32.11"
   },
   "devDependencies": {
     "@testing-library/dom": "^8.11.1",

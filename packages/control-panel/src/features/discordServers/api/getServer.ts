@@ -1,4 +1,6 @@
-import { z } from 'zod';
+import {
+  array, InferType, number, object,
+} from 'yup';
 import { DiscordServerSchema } from '../types/DiscordServer';
 import fetchRest from '../../../utils/fetchRest';
 
@@ -7,12 +9,12 @@ export interface GetServersInput {
   offset?: number;
 }
 
-const GetServersOutputSchema = z.object({
-  results: z.array(DiscordServerSchema),
-  total: z.number(),
+const GetServersOutputSchema = object({
+  results: array(DiscordServerSchema),
+  total: number(),
 });
 
-export type GetServersOutput = z.infer<typeof GetServersOutputSchema>;
+export type GetServersOutput = InferType<typeof GetServersOutputSchema>;
 
 export const getServers = async (options?: GetServersInput): Promise<GetServersOutput> => {
   const searchParams = new URLSearchParams({

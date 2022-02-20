@@ -1,14 +1,16 @@
-import { z } from 'zod';
+import {
+  array, InferType, object, string,
+} from 'yup';
 
-const Placeholder = z.object({
-  name: z.string(),
-  value: z.string(),
+const Placeholder = object({
+  name: string(),
+  value: string(),
 });
 
-export const FeedArticlesSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  placeholders: z.array(Placeholder),
+export const FeedArticlesSchema = object({
+  id: string(),
+  title: string(),
+  placeholders: array(Placeholder),
 });
 
-export type FeedArticle = z.infer<typeof FeedArticlesSchema>;
+export type FeedArticle = InferType<typeof FeedArticlesSchema>;

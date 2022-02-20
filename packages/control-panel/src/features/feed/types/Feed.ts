@@ -1,47 +1,49 @@
-import { z } from 'zod';
+import {
+  array, boolean, InferType, number, object, string,
+} from 'yup';
 import { FeedSummarySchema } from './FeedSummary';
 
-const FeedEmbed = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  url: z.string().optional(),
-  timestamp: z.enum(['now', 'article']).optional(),
-  footer: z.object({
-    text: z.string().optional(),
-    iconUrl: z.string().optional(),
+const FeedEmbed = object({
+  title: string().optional(),
+  description: string().optional(),
+  url: string().optional(),
+  timestamp: string().oneOf(['now', 'article']).optional(),
+  footer: object({
+    text: string().optional(),
+    iconUrl: string().optional(),
   }).optional(),
-  thumbnail: z.object({
-    url: z.string().optional(),
+  thumbnail: object({
+    url: string().optional(),
   }).optional(),
-  image: z.object({
-    url: z.string().optional(),
+  image: object({
+    url: string().optional(),
   }).optional(),
-  author: z.object({
-    name: z.string().optional(),
-    url: z.string().optional(),
-    iconUrl: z.string().optional(),
+  author: object({
+    name: string().optional(),
+    url: string().optional(),
+    iconUrl: string().optional(),
   }).optional(),
-  color: z.number().optional(),
-  fields: z.array(z.object({
-    name: z.string().optional(),
-    value: z.string().optional(),
-    inline: z.boolean().optional(),
+  color: number().optional(),
+  fields: array(object({
+    name: string().optional(),
+    value: string().optional(),
+    inline: boolean().optional(),
   })).optional(),
-  checkTitle: z.boolean().optional(),
-  checkDates: z.boolean().optional(),
-  imgPreviews: z.boolean().optional(),
-  imgLinksExistence: z.boolean().optional(),
-  formatTables: z.boolean().optional(),
-  directSubscribers: z.boolean().optional(),
-  disabled: z.string().optional(),
-  ncomparisons: z.array(z.string()).optional(),
-  pcomparisons: z.array(z.string()).optional(),
+  checkTitle: boolean().optional(),
+  checkDates: boolean().optional(),
+  imgPreviews: boolean().optional(),
+  imgLinksExistence: boolean().optional(),
+  formatTables: boolean().optional(),
+  directSubscribers: boolean().optional(),
+  disabled: string().optional(),
+  ncomparisons: array(string()).optional(),
+  pcomparisons: array(string()).optional(),
 });
 
-export const FeedSchema = FeedSummarySchema.merge(z.object({
-  refreshRateSeconds: z.number(),
-  text: z.string(),
-  embeds: z.array(FeedEmbed),
+export const FeedSchema = FeedSummarySchema.concat(object({
+  refreshRateSeconds: number(),
+  text: string(),
+  embeds: array(FeedEmbed),
 }));
 
-export type Feed = z.infer<typeof FeedSchema>;
+export type Feed = InferType<typeof FeedSchema>;
