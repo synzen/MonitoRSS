@@ -7,7 +7,7 @@ interface Props {
   feedId?: string
 }
 
-const useFeed = ({ serverId, feedId }: Props) => useQuery<GetFeedOutput, ApiAdapterError>(
+const useFeed = ({ serverId, feedId }: Props) => useQuery<GetFeedOutput, ApiAdapterError | Error>(
   ['feed', {
     serverId,
     feedId,

@@ -7,33 +7,13 @@ import { useParams } from 'react-router-dom';
 import DashboardContent from '../components/DashboardContent';
 import EmbedForm from '../components/EmbedForm';
 import Navbar from '../components/Navbar';
+import useFeedArticles from '../hooks/useFeedArticles';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
-const fakeArticle = {
-  placeholders: [{
-    name: 'title',
-    value: 'My Feed',
-  }, {
-    name: 'description',
-    value: 'This is a description',
-  }, {
-    name: 'url',
-    value: 'https://www.example.com',
-  }, {
-    name: 'image1',
-    value: 'https://www.example.com/image1.png',
-  }, {
-    name: 'image2',
-    value: 'https://www.example.com/image2.png',
-  }, {
-    name: 'image3',
-    value: 'https://www.example.com/image3.png',
-  }],
-};
-
 const FeedMessage: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const { articles, status: articlesStatus, error: articlesError } = useFeedArticles({ feedId });
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',
@@ -52,7 +32,10 @@ const FeedMessage: React.FC = () => {
   return (
     <Stack>
       <Navbar breadcrumbItems={breadcrumbItems} />
-      <DashboardContent>
+      <DashboardContent
+        error={articlesError}
+        loading={articlesStatus === 'loading' || articlesStatus === 'idle'}
+      >
         <Stack spacing="8">
           <Stack spacing="4">
             <Heading size="md">Placeholders</Heading>
@@ -70,7 +53,7 @@ const FeedMessage: React.FC = () => {
               overflow="auto"
               divider={<StackDivider />}
             >
-              {fakeArticle.placeholders.map((placeholder) => (
+              {articles[0]?.placeholders.map((placeholder) => (
                 <Stack display="inline-block" key={placeholder.value}>
                   <Code>{placeholder.name}</Code>
                   <Text>{placeholder.value}</Text>

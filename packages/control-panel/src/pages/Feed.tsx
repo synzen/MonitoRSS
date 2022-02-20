@@ -1,14 +1,10 @@
 import { CheckCircleIcon } from '@chakra-ui/icons';
 import {
-  Alert,
-  AlertIcon,
-  Box,
   Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import CategoryText from '../components/CategoryText';
 import DashboardContent from '../components/DashboardContent';
-import Loading from '../components/Loading';
 import Navbar from '../components/Navbar';
 import useFeed from '../hooks/useFeed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
@@ -39,19 +35,10 @@ const Feed: React.FC = () => {
       <Navbar
         breadcrumbItems={breadcrumbItems}
       />
-      {(status === 'loading' || status === 'idle') && (
-      <Box textAlign="center" paddingY="5rem">
-        <Loading />
-      </Box>
-      )}
-      {status === 'error' && (
-      <Alert status="error">
-        <AlertIcon />
-        {error?.message}
-      </Alert>
-      )}
-      {status === 'success' && data && (
-      <DashboardContent>
+      <DashboardContent
+        error={error}
+        loading={status === 'loading' || status === 'idle'}
+      >
         <Stack spacing={12}>
           <Stack>
             <Flex alignItems="center">
@@ -92,7 +79,6 @@ const Feed: React.FC = () => {
           <Button as={Link} to="misc-options">Edit Misc Options</Button>
         </Stack> */}
       </DashboardContent>
-      )}
     </Stack>
   );
 };
