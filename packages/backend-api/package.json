@@ -50,6 +50,7 @@
     "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-unused-imports": "^2.0.0",
     "jest": "^27.0.6",
     "nock": "^13.2.1",
     "prettier": "^2.3.2",
