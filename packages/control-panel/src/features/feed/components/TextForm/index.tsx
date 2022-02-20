@@ -2,8 +2,11 @@ import { Form, Formik } from 'formik';
 import { InferType, object, string } from 'yup';
 import { Button, Stack } from '@chakra-ui/react';
 import { FormikTextarea } from '@/components/FormikTextarea';
+import { updateFeed } from '@/features/feed';
+import { notifyError } from '@/utils/notifyError';
 
 interface Props {
+  feedId: string
   text: string
 }
 
@@ -13,7 +16,7 @@ const FormSchema = object({
 
 type FormValues = InferType<typeof FormSchema>;
 
-export const TextForm: React.FC<Props> = ({ text }) => {
+export const TextForm: React.FC<Props> = ({ feedId, text }) => {
   const initialValues: FormValues = {
     text,
   };
@@ -22,11 +25,17 @@ export const TextForm: React.FC<Props> = ({ text }) => {
     <Formik
       initialValues={initialValues}
       validationSchema={FormSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        console.log(values);
-        setTimeout(() => {
-          setSubmitting(false);
-        }, 2000);
+      onSubmit={async (values) => {
+        try {
+          await updateFeed({
+            feedId,
+            details: {
+              text: values.text,
+            },
+          });
+        } catch (err) {
+          notifyError('Failed to update text', err as Error);
+        }
       }}
     >
       {({

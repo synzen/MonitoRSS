@@ -59,7 +59,7 @@ const FeedMessage: React.FC = () => {
               + ' used to create an empty message, but only if an embed is used. Regular formatting'
               + ' such as bold and etc. is also available.'}
             </Text>
-            <TextForm text={feed?.text || ''} />
+            <TextForm feedId={feedId as string} text={feed?.text || ''} />
           </Stack>
           <Stack spacing="4">
             <Stack direction="row" justifyContent="space-between">
