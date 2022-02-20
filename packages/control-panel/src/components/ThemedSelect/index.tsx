@@ -18,7 +18,7 @@ interface Props {
   onChangedValue: (value: string) => void;
 }
 
-const ThemedSelect: React.FC<Props> = ({
+export const ThemedSelect: React.FC<Props> = ({
   selectedValue, options, loading, onChangedValue,
 }) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
@@ -86,5 +86,3 @@ const ThemedSelect: React.FC<Props> = ({
 //     </Option>
 //   );
 // };
-
-export default ThemedSelect;

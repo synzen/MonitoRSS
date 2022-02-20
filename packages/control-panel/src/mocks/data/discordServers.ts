@@ -1,4 +1,4 @@
-import { DiscordServer } from '../../types/DiscordServer';
+import { DiscordServer } from '../../features/discordServers/types/DiscordServer';
 
 const mockDiscordServers: DiscordServer[] = [{
   id: '1',

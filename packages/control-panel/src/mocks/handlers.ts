@@ -1,9 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { rest } from 'msw';
-import { GetFeedOutput } from '../adapters/feeds/getFeed';
-import { GetFeedArticlesOutput } from '../adapters/feeds/getFeedArticles';
-import { GetFeedsOutput } from '../adapters/feeds/getFeeds';
-import { GetServersOutput } from '../adapters/servers/getServer';
+import { GetServersOutput } from '../features/discordServers/api/getServer';
+import { GetFeedArticlesOutput, GetFeedOutput, GetFeedsOutput } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
 import mockFeeds from './data/feed';
 import mockFeedArticles from './data/feedArticles';

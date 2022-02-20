@@ -1,14 +1,14 @@
 import {
   Alert, AlertIcon, Box, Flex,
 } from '@chakra-ui/react';
-import Loading from '../Loading';
+import { Loading } from '../Loading';
 
 interface Props {
   loading?: boolean
   error?: Error | null
 }
 
-const DashboardContent: React.FC<Props> = ({ loading, error, children }) => (
+export const DashboardContent: React.FC<Props> = ({ loading, error, children }) => (
   <Flex
     width="100%"
     justifyContent="center"
@@ -34,5 +34,3 @@ const DashboardContent: React.FC<Props> = ({ loading, error, children }) => (
     </Box>
   </Flex>
 );
-
-export default DashboardContent;

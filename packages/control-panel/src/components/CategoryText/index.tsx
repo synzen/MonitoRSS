@@ -5,7 +5,7 @@ interface DescriptionProps extends StackProps {
   children: React.ReactNode
 }
 
-const CategoryText: React.FC<DescriptionProps> = ({ title, children }) => (
+export const CategoryText: React.FC<DescriptionProps> = ({ title, children }) => (
   <Stack as="dl" spacing="1">
     <Text
       as="dt"
@@ -22,5 +22,3 @@ const CategoryText: React.FC<DescriptionProps> = ({ title, children }) => (
     </Text>
   </Stack>
 );
-
-export default CategoryText;

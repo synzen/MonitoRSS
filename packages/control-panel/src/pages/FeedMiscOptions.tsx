@@ -6,8 +6,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import DashboardContent from '../components/DashboardContent';
-import Navbar from '../components/Navbar';
+import { DashboardContent, Navbar } from '@/components';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 

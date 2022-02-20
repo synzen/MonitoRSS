@@ -17,13 +17,10 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
-import DashboardContent from '../components/DashboardContent';
-import Loading from '../components/Loading';
-import Navbar from '../components/Navbar';
-import { FeedSummary } from '../types/FeedSummary';
+import { DashboardContent, Loading, Navbar } from '@/components';
+import { FeedSummary, useFeeds } from '../features/feed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
-import useFeeds from '../hooks/useFeeds';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();

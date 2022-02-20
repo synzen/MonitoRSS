@@ -1,4 +1,4 @@
-import { Feed } from '../../types/Feed';
+import { Feed } from '../../features/feed';
 
 const mockFeeds: Feed[] = [{
   id: '1',
@@ -7,7 +7,7 @@ const mockFeeds: Feed[] = [{
   channel: '#general',
   status: 'ok',
   embeds: [],
-  text: '',
+  text: 'Feed Text Here',
   createdAt: new Date().toISOString(),
   refreshRateSeconds: 60,
 }];

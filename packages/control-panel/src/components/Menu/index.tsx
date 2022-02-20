@@ -4,7 +4,7 @@ import {
   useColorModeValue as mode,
 } from '@chakra-ui/react';
 import * as React from 'react';
-import MenuItem from '../MenuItem';
+import { MenuItem } from './MenuItem';
 
 interface Props {
   onSelectedValue: (value: string) => void
@@ -18,7 +18,7 @@ interface Props {
   }>
 }
 
-const Menu: React.FC<Props> = ({
+export const Menu: React.FC<Props> = ({
   onSelectedValue, items, shown,
 }) => {
   const onClickMenuItem = (value: string) => {
@@ -60,5 +60,3 @@ const Menu: React.FC<Props> = ({
     </Box>
   );
 };
-
-export default Menu;

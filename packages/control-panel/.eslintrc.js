@@ -53,6 +53,16 @@ module.exports = {
         "args": "after-used",
         "argsIgnorePattern": "^_"
       }
-    ]
+    ],
+    "import/prefer-default-export": "off",
+    "import/extensions": [
+      "error",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+   ]
   }
 }

@@ -13,9 +13,8 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { Link, useNavigate } from 'react-router-dom';
-import Loading from '../components/Loading';
-import Menu from '../components/Menu';
-import useDiscordServers from '../hooks/useDiscordServers';
+import { Loading, Menu } from '@/components';
+import { useDiscordServers } from '../features/discordServers';
 
 const Servers: React.FC = () => {
   const navigate = useNavigate();

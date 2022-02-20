@@ -9,24 +9,11 @@ import {
 } from '@chakra-ui/react';
 import NavbarBreadcrumbItem from '../../types/NavbarBreadcrumbItem';
 
-const items: Array<NavbarBreadcrumbItem> = [
-  {
-    id: 'home',
-    content: 'Home',
-    enabled: true,
-  },
-  {
-    id: 'feeds',
-    content: 'Feeds',
-    enabled: true,
-  },
-];
-
 interface Props {
   breadcrumbItems: Array<NavbarBreadcrumbItem>;
 }
 
-const Navbar: React.FC<Props> = ({ children, breadcrumbItems }) => (
+export const Navbar: React.FC<Props> = ({ breadcrumbItems }) => (
   <Box as="header" bg={useColorModeValue('white', 'gray.800')} borderBottomWidth="1px">
     <Box mx="auto" py="4" px={{ base: '6', md: '8' }} maxWidth="7xl">
       <Flex as="nav" justify="space-between">
@@ -55,5 +42,3 @@ const Navbar: React.FC<Props> = ({ children, breadcrumbItems }) => (
     </Box>
   </Box>
 );
-
-export default Navbar;

@@ -4,6 +4,4 @@ interface Props {
   size?: SpinnerProps['size']
 }
 
-const Loading: React.FC<Props> = ({ size }) => <Spinner size={size || 'lg'} />;
-
-export default Loading;
+export const Loading: React.FC<Props> = ({ size }) => <Spinner size={size || 'lg'} />;

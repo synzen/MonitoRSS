@@ -3,11 +3,9 @@ import {
   Navigate,
   Route, Routes, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
-import Loading from '../components/Loading';
-import ManageFeedLinks from '../components/Sidebar/ManageFeedLinks';
-import ManageServerLinks from '../components/Sidebar/ManageServerLinks';
-import ThemedSelect from '../components/ThemedSelect';
-import useDiscordServers from '../hooks/useDiscordServers';
+import { Loading, ThemedSelect } from '@/components';
+import { SidebarDiscordServerLinks, useDiscordServers } from '../features/discordServers';
+import { SidebarFeedLinks } from '../features/feed';
 import Feed from './Feed';
 import FeedFilters from './FeedFilters';
 import FeedMessage from './FeedMessage';
@@ -174,14 +172,14 @@ const DashboardContent: React.FC<{ requireFeed?: boolean }> = ({ requireFeed, ch
           <Stack px="3" spacing="6">
             <Stack spacing="3">
               {!feedId && (
-                <ManageServerLinks
+                <SidebarDiscordServerLinks
                   currentPath={location.pathname}
                   onChangePath={onPathChanged}
                   serverId={serverId}
                 />
               )}
               {feedId && (
-                <ManageFeedLinks
+                <SidebarFeedLinks
                   currentPath={location.pathname}
                   feedId={feedId}
                   serverId={serverId}

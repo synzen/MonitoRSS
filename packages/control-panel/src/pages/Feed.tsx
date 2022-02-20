@@ -3,10 +3,8 @@ import {
   Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import CategoryText from '../components/CategoryText';
-import DashboardContent from '../components/DashboardContent';
-import Navbar from '../components/Navbar';
-import useFeed from '../hooks/useFeed';
+import { CategoryText, DashboardContent, Navbar } from '@/components';
+import { useFeed } from '../features/feed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 

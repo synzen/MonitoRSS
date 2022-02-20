@@ -4,12 +4,10 @@ import {
   Code, Heading, IconButton, Stack, Text, Textarea,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import DashboardContent from '../components/DashboardContent';
-import EmbedForm from '../components/EmbedForm';
-import FeedArticlesPlaceholders from '../components/FeedArticlesPlaceholders';
-import Navbar from '../components/Navbar';
-import useFeed from '../hooks/useFeed';
-import useFeedArticles from '../hooks/useFeedArticles';
+import { DashboardContent, Navbar } from '@/components';
+import {
+  EmbedForm, FeedArticlesPlaceholders, useFeed, useFeedArticles,
+} from '../features/feed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
