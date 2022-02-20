@@ -9,6 +9,8 @@ describe('DiscordUserService', () => {
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     service = new DiscordUserService(discordApiService as any);
+
+    jest.spyOn(discordApiService, 'executeBearerRequest').mockResolvedValue([]);
   });
 
   describe('getGuilds', () => {

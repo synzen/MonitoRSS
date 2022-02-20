@@ -23,7 +23,6 @@ async function bootstrap() {
     cookie: {
       path: '/',
       httpOnly: true,
-      signed: true,
     },
   });
 
