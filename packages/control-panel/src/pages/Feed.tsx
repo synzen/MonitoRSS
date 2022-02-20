@@ -13,7 +13,7 @@ import RouteParams from '../types/RouteParams';
 const Feed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
 
-  const { data, status, error } = useFeed({
+  const { feed, status, error } = useFeed({
     feedId,
   });
 
@@ -26,8 +26,6 @@ const Feed: React.FC = () => {
     content: feedId,
     enabled: !!feedId,
   }];
-
-  const feed = data?.result;
 
   return (
     <Stack>

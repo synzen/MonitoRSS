@@ -1,19 +1,14 @@
 import { useQuery } from 'react-query';
 import ApiAdapterError from '../adapters/ApiAdapterError';
-import getFeedArticles from '../adapters/feeds/getFeedArticles';
-import { FeedArticle } from '../types/FeedArticle';
+import getFeedArticles, { GetFeedArticlesOutput } from '../adapters/feeds/getFeedArticles';
 
 interface Props {
   feedId?: string
 }
 
-interface UseFeedArticlesData {
-  articles: FeedArticle[]
-}
-
 const useFeedArticles = ({ feedId }: Props) => {
   const { data, status, error } = useQuery<
-  UseFeedArticlesData, ApiAdapterError | Error
+  GetFeedArticlesOutput, ApiAdapterError | Error
   >(
     ['feed-articles', {
       feedId,
@@ -23,13 +18,9 @@ const useFeedArticles = ({ feedId }: Props) => {
         throw new Error('Missing feed selection');
       }
 
-      const response = await getFeedArticles({
+      return getFeedArticles({
         feedId,
       });
-
-      return {
-        articles: response.result,
-      };
     },
     {
       enabled: !!feedId,
@@ -37,7 +28,7 @@ const useFeedArticles = ({ feedId }: Props) => {
   );
 
   return {
-    articles: data?.articles || [],
+    articles: data?.result || [],
     status,
     error,
   };

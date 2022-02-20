@@ -6,6 +6,8 @@ const Placeholder = z.object({
 });
 
 export const FeedArticlesSchema = z.object({
+  id: z.string(),
+  title: z.string(),
   placeholders: z.array(Placeholder),
 });
 

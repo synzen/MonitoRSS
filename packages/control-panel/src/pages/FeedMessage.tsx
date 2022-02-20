@@ -1,18 +1,23 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import {
   ButtonGroup,
-  Code, Heading, IconButton, Select, Stack, StackDivider, Text, Textarea,
+  Code, Heading, IconButton, Stack, Text, Textarea,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import DashboardContent from '../components/DashboardContent';
 import EmbedForm from '../components/EmbedForm';
+import FeedArticlesPlaceholders from '../components/FeedArticlesPlaceholders';
 import Navbar from '../components/Navbar';
+import useFeed from '../hooks/useFeed';
 import useFeedArticles from '../hooks/useFeedArticles';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
 const FeedMessage: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const { feed, status: feedStatus, error: feedError } = useFeed({
+    feedId,
+  });
   const { articles, status: articlesStatus, error: articlesError } = useFeedArticles({ feedId });
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
@@ -33,33 +38,18 @@ const FeedMessage: React.FC = () => {
     <Stack>
       <Navbar breadcrumbItems={breadcrumbItems} />
       <DashboardContent
-        error={articlesError}
-        loading={articlesStatus === 'loading' || articlesStatus === 'idle'}
+        error={feedError}
+        loading={feedStatus === 'loading' || feedStatus === 'idle'}
       >
         <Stack spacing="8">
           <Stack spacing="4">
             <Heading size="md">Placeholders</Heading>
             <Text>Below are the available placeholders for the selected article.</Text>
-            <Select>
-              <option>Option 1</option>
-              <option>Option 2</option>
-            </Select>
-            <Stack
-              borderRadius="8"
-              borderStyle="solid"
-              borderWidth="1px"
-              maxHeight="350px"
-              padding="4"
-              overflow="auto"
-              divider={<StackDivider />}
-            >
-              {articles[0]?.placeholders.map((placeholder) => (
-                <Stack display="inline-block" key={placeholder.value}>
-                  <Code>{placeholder.name}</Code>
-                  <Text>{placeholder.value}</Text>
-                </Stack>
-              ))}
-            </Stack>
+            <FeedArticlesPlaceholders
+              articles={articles}
+              loading={articlesStatus === 'loading' || articlesStatus === 'idle'}
+              error={articlesError}
+            />
           </Stack>
           <Stack spacing="4">
             <Heading size="md">Text</Heading>

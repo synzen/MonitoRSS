@@ -1,6 +1,8 @@
 import { FeedArticle } from '../../types/FeedArticle';
 
 const mockFeedArticles: FeedArticle[] = [{
+  id: '1',
+  title: 'Daily News Report',
   placeholders: [{
     name: 'title',
     value: 'My Feed',
