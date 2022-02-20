@@ -69,6 +69,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             Message
           </SidebarLink>
           <SidebarLink
+            disabled
             icon={FiFilter}
             active={currentPath === paths.FEED_FILTERS}
             onClick={() => onClickNavLink(paths.FEED_FILTERS)}
@@ -76,6 +77,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             Filters
           </SidebarLink>
           <SidebarLink
+            disabled
             icon={FiAtSign}
             active={currentPath === paths.FEED_SUBSCRIBERS}
             onClick={() => onClickNavLink(paths.FEED_SUBSCRIBERS)}
@@ -91,6 +93,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             Webhooks
           </SidebarLink>
           <SidebarLink
+            disabled
             icon={FiSliders}
             active={currentPath === paths.FEED_MISC_OPTIONS}
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}
