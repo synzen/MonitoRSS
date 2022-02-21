@@ -1,16 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
-import { PartialUserGuildFormatted } from './types/PartialUserGuild.type';
-
-export interface DiscordPartialGuild {
-  id: string;
-  name: string;
-  icon: string;
-  owner: boolean;
-  permissions: string;
-  features: string[];
-}
+import {
+  PartialUserGuild,
+  PartialUserGuildFormatted,
+} from './types/PartialUserGuild.type';
 
 @Injectable()
 export class DiscordUsersService {
@@ -37,10 +31,19 @@ export class DiscordUsersService {
     const endpoint = this.BASE_ENDPOINT + `/@me/guilds`;
 
     const guilds = await this.discordApiService.executeBearerRequest<
-      DiscordPartialGuild[]
+      PartialUserGuild[]
     >(accessToken, endpoint);
 
-    return guilds.map((guild) => ({
+    const MANAGE_CHANNEL_PERMISSION = 16;
+
+    const guildsWithPermission = guilds.filter(
+      (guild) =>
+        guild.owner ||
+        (guild.permissions & MANAGE_CHANNEL_PERMISSION) ===
+          MANAGE_CHANNEL_PERMISSION,
+    );
+
+    return guildsWithPermission.map((guild) => ({
       ...guild,
       iconUrl:
         `https://cdn.discordapp.com/icons` +

@@ -49,6 +49,42 @@ describe('DiscordUsersService', () => {
         },
       ]);
     });
+
+    it('excludes guilds with no permissions', async () => {
+      const accessToken = 'abc';
+      const guilds = [
+        {
+          id: 'guild_id',
+          name: 'test',
+          icon: 'icon_hash',
+          owner: false,
+          permissions: 0,
+        },
+      ];
+      discordApiService.executeBearerRequest.mockResolvedValue(guilds);
+
+      const result = await service.getGuilds(accessToken);
+
+      expect(result).toEqual([]);
+    });
+
+    it('includes guilds with manage channel permissions', async () => {
+      const accessToken = 'abc';
+      const guilds = [
+        {
+          id: 'guild_id',
+          name: 'test',
+          icon: 'icon_hash',
+          owner: false,
+          permissions: 16,
+        },
+      ];
+      discordApiService.executeBearerRequest.mockResolvedValue(guilds);
+
+      const result = await service.getGuilds(accessToken);
+
+      expect(result).toHaveLength(1);
+    });
   });
 
   describe('getUser', () => {
