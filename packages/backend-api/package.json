@@ -37,6 +37,7 @@
     "mongodb-memory-server": "^8.4.0",
     "mongoose": "^6.2.2",
     "node-fetch": "^2.6.7",
+    "qs": "^6.10.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0"

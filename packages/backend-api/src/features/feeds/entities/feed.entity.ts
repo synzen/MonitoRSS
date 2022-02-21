@@ -25,6 +25,11 @@ export class Feed {
 
   @Prop()
   channel: string;
+
+  @Prop({
+    required: false,
+  })
+  addedAt?: Date;
 }
 
 export type FeedDocument = Feed & Document;

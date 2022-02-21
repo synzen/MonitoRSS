@@ -1,12 +1,21 @@
-import { VersioningType } from '@nestjs/common';
+import { Module, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   NestFastifyApplication,
   FastifyAdapter,
 } from '@nestjs/platform-fastify';
+import { useContainer } from 'class-validator';
 import secureSession from 'fastify-secure-session';
 import { AppModule } from './app.module';
+
+/**
+ * Required  because Nest's app.select() does not work for dynamic modules
+ */
+@Module({
+  imports: [AppModule.forRoot()],
+})
+class StaticAppModule {}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -16,6 +25,7 @@ async function bootstrap() {
     }),
   );
 
+  useContainer(app.select(StaticAppModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
