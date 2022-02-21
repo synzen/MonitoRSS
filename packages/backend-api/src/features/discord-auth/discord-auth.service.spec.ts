@@ -3,7 +3,7 @@ import {
   DISCORD_API_BASE_URL,
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
-} from '../constants/discord';
+} from '../../constants/discord';
 import { DiscordAuthService, DiscordAuthToken } from './discord-auth.service';
 
 describe('DiscordAuthService', () => {

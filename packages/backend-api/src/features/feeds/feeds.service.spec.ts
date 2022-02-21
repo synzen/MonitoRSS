@@ -2,8 +2,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
-} from '../utils/integration-tests';
-import { MongooseTestModule } from '../utils/mongoose-test.module';
+} from '../../utils/integration-tests';
+import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import { FeedFeature } from './entities/Feed.entity';
 import { FeedsService } from './feeds.service';
 

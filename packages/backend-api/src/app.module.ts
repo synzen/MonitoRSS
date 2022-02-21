@@ -5,9 +5,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config/config';
 import { validateConfig } from './config/config.validate';
-import { DiscordAuthModule } from './discord-auth/discord-auth.module';
-import { DiscordUserModule } from './discord-users/discord-users.module';
-import { FeedsModule } from './feeds/feeds.module';
+import { DiscordAuthModule } from './features/discord-auth/discord-auth.module';
+import { DiscordUserModule } from './features/discord-users/discord-users.module';
+import { FeedsModule } from './features/feeds/feeds.module';
 
 @Module({
   imports: [

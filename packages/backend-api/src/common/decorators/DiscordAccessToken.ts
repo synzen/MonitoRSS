@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { SessionAccessToken } from 'src/discord-auth/types/SessionAccessToken.type';
+import { SessionAccessToken } from 'src/features/discord-auth/types/SessionAccessToken.type';
 
 export const discordAccessTokenFactory = (
   data: unknown,

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DiscordAPIService } from '../services/apis/discord/discord-api.service';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
 import { PartialUserGuildFormatted } from './types/PartialUserGuild.type';
 
