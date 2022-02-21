@@ -7,6 +7,7 @@ import {
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from '../constants/discord';
+import { SessionAccessToken } from './types/SessionAccessToken.type';
 
 export interface DiscordAuthToken {
   access_token: string;
@@ -88,7 +89,7 @@ export class DiscordAuthService {
     return this.formatTokenWithExpiresAt(tokenObject);
   }
 
-  async refreshToken(token: DiscordAuthToken) {
+  async refreshToken(token: DiscordAuthToken): Promise<SessionAccessToken> {
     const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
 
     const searchParams = new URLSearchParams({
@@ -125,6 +126,18 @@ export class DiscordAuthService {
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
     return this.formatTokenWithExpiresAt(tokenObject);
+  }
+
+  /**
+   * Check whether an access token that's been stored in the user's session is expired.
+   * @param sessionToken The access token stored in the user's session
+   * @returns Whether the access token is expired
+   */
+  isTokenExpired(sessionToken: SessionAccessToken) {
+    const now = new Date().getTime() / 1000;
+    const expiresAt = sessionToken.expiresAt;
+
+    return now > expiresAt;
   }
 
   /**
@@ -175,7 +188,9 @@ export class DiscordAuthService {
    * @param tokenObject The token object returned by Discord
    * @returns The formatted token object containing expiresAt
    */
-  private formatTokenWithExpiresAt(tokenObject: DiscordAuthToken) {
+  private formatTokenWithExpiresAt(
+    tokenObject: DiscordAuthToken,
+  ): SessionAccessToken {
     const now = new Date();
     // expiresAt must be in seconds to match expire_in
     const expiresAt = Math.round(now.getTime() / 1000) + tokenObject.expires_in;

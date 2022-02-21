@@ -50,4 +50,35 @@ describe('DiscordUsersService', () => {
       ]);
     });
   });
+
+  describe('getUser', () => {
+    it('calls the correct api endpoint', async () => {
+      const accessToken = 'abc';
+      await service.getUser(accessToken);
+
+      expect(discordApiService.executeBearerRequest).toHaveBeenCalledWith(
+        accessToken,
+        '/users/@me',
+      );
+    });
+
+    it('returns the user', async () => {
+      const accessToken = 'abc';
+      const user = {
+        id: 'user_id',
+        username: 'test',
+        avatar: 'icon_hash',
+      };
+      discordApiService.executeBearerRequest.mockResolvedValue(user);
+
+      const result = await service.getUser(accessToken);
+
+      expect(result).toEqual({
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        avatarUrl: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
+      });
+    });
+  });
 });

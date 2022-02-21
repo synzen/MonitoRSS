@@ -1,0 +1,24 @@
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { DiscordAccessToken } from '../common/decorators/DiscordAccessToken';
+import { DiscordOAuth2Guard } from '../common/guards/DiscordOAuth2.guard';
+import { DiscordUsersService } from './discord-users.service';
+import { GetMeOutputDto } from './dto';
+
+@Controller('discord-users')
+@UseGuards(DiscordOAuth2Guard)
+export class DiscordUsersController {
+  constructor(private readonly discordUsersService: DiscordUsersService) {}
+
+  @Get('@me')
+  async getMe(
+    @DiscordAccessToken() accessToken: string,
+  ): Promise<GetMeOutputDto> {
+    const user = await this.discordUsersService.getUser(accessToken);
+
+    return {
+      id: user.id,
+      username: user.username,
+      iconUrl: user.avatarUrl,
+    };
+  }
+}

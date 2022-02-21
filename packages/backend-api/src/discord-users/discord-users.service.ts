@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DiscordAPIService } from '../services/apis/discord/discord-api.service';
+import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
 
 export interface DiscordPartialGuild {
   id: string;
@@ -44,5 +45,30 @@ export class DiscordUsersService {
         `https://cdn.discordapp.com/icons` +
         `/${guild.id}/${guild.icon}.${iconFormat}?size=${iconSize}`,
     }));
+  }
+
+  /**
+   * Get a user via their OAuth2 access token.
+   *
+   * @param accessToken The user's OAuth2 access token
+   * @returns The user's information
+   */
+  async getUser(accessToken: string): Promise<DiscordUserFormatted> {
+    const endpoint = this.BASE_ENDPOINT + `/@me`;
+
+    const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
+      accessToken,
+      endpoint,
+    );
+
+    const toReturn: DiscordUserFormatted = {
+      ...user,
+    };
+
+    if (user.avatar) {
+      toReturn.avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+    }
+
+    return toReturn;
   }
 }

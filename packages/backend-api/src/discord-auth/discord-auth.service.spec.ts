@@ -130,6 +130,22 @@ describe('DiscordAuthService', () => {
     });
   });
 
+  describe('isTokenExpired', () => {
+    it('returns true correctly', () => {
+      const token = {
+        expiresAt: new Date().getTime() / 1000 - 10000,
+      };
+      expect(service.isTokenExpired(token as never)).toBe(true);
+    });
+
+    it('returns false correctly', () => {
+      const token = {
+        expiresAt: new Date().getTime() / 1000 + 10000,
+      };
+      expect(service.isTokenExpired(token as never)).toBe(false);
+    });
+  });
+
   describe('revokeToken', () => {
     let expectedAccessTokenUrlSearchParams: URLSearchParams;
     let expectedRefreshTokenUrlSearchParams: URLSearchParams;

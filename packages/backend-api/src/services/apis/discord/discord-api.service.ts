@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'node-fetch';
-import {
-  DISCORD_API_BASE_URL,
-  DISCORD_API_VERSION,
-} from '../../../constants/discord';
+import { DISCORD_API_BASE_URL } from '../../../constants/discord';
 import { RESTHandler } from '@synzen/discord-rest';
 
 interface RequestOptions {
@@ -14,7 +11,6 @@ interface RequestOptions {
 @Injectable()
 export class DiscordAPIService {
   API_URL = DISCORD_API_BASE_URL;
-  API_VERSION = DISCORD_API_VERSION;
   BOT_TOKEN: string;
   restHandler: RESTHandler;
 
@@ -33,7 +29,7 @@ export class DiscordAPIService {
     endpoint: string,
     options?: RequestOptions,
   ): Promise<T> {
-    const url = `${this.API_URL}/${this.API_VERSION}${endpoint}`;
+    const url = `${this.API_URL}${endpoint}`;
     const res = await this.restHandler.fetch(url, {
       method: options?.method || 'GET',
       headers: {
@@ -42,7 +38,7 @@ export class DiscordAPIService {
       },
     });
 
-    this.handleJSONResponseError(res);
+    await this.handleJSONResponseError(res);
 
     return res.json();
   }
@@ -60,7 +56,7 @@ export class DiscordAPIService {
     endpoint: string,
     options?: RequestOptions,
   ): Promise<T> {
-    const url = `${this.API_URL}/${this.API_VERSION}${endpoint}`;
+    const url = `${this.API_URL}${endpoint}`;
     const res = await this.restHandler.fetch(url, {
       method: options?.method || 'GET',
       headers: {
@@ -69,15 +65,15 @@ export class DiscordAPIService {
       },
     });
 
-    this.handleJSONResponseError(res);
+    await this.handleJSONResponseError(res);
 
     return res.json();
   }
 
-  private handleJSONResponseError(res: Response): void {
+  private async handleJSONResponseError(res: Response): Promise<void> {
     if (!res.ok && res.status < 500) {
       throw new Error(
-        `Discord API request failed (${JSON.stringify(res.json())})`,
+        `Discord API request failed (${JSON.stringify(await res.json())})`,
       );
     }
 

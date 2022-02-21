@@ -1,10 +1,6 @@
 import nock from 'nock';
-import {
-  DISCORD_API_BASE_URL,
-  DISCORD_API_VERSION,
-} from '../../../constants/discord';
+import { DISCORD_API_BASE_URL } from '../../../constants/discord';
 import { DiscordAPIService } from './discord-api.service';
-
 describe('DiscordAPIService', () => {
   let discordApi: DiscordAPIService;
   const configService = {
@@ -21,7 +17,7 @@ describe('DiscordAPIService', () => {
       const endpoint = `/guilds/123456789/members/123456789`;
 
       nock(DISCORD_API_BASE_URL)
-        .get(`/${DISCORD_API_VERSION}${endpoint}`)
+        .get(endpoint)
         .matchHeader('Authorization', `Bot ${discordApi.BOT_TOKEN}`)
         .matchHeader('Content-Type', 'application/json')
         .reply(500, {
@@ -35,7 +31,7 @@ describe('DiscordAPIService', () => {
       const endpoint = `/guilds/123456789/members/123456789`;
 
       nock(DISCORD_API_BASE_URL)
-        .get(`/${DISCORD_API_VERSION}${endpoint}`)
+        .get(endpoint)
         .matchHeader('Authorization', `Bot ${discordApi.BOT_TOKEN}`)
         .matchHeader('Content-Type', 'application/json')
         .reply(200, {
@@ -55,7 +51,7 @@ describe('DiscordAPIService', () => {
       const endpoint = `/guilds/123456789/members/123456789`;
 
       nock(DISCORD_API_BASE_URL)
-        .get(`/${DISCORD_API_VERSION}${endpoint}`)
+        .get(endpoint)
         .matchHeader('Authorization', `Bearer ${accessToken}`)
         .matchHeader('Content-Type', 'application/json')
         .reply(500, {
@@ -72,7 +68,7 @@ describe('DiscordAPIService', () => {
       const endpoint = `/guilds/123456789/members/123456789`;
 
       nock(DISCORD_API_BASE_URL)
-        .get(`/${DISCORD_API_VERSION}${endpoint}`)
+        .get(endpoint)
         .matchHeader('Authorization', `Bearer ${accessToken}`)
         .matchHeader('Content-Type', 'application/json')
         .reply(200, {
