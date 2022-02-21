@@ -13,6 +13,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Loading, Menu } from '@/components';
 import { useDiscordServers } from '../features/discordServers';
 
@@ -23,13 +24,14 @@ const Servers: React.FC = () => {
     data,
     error,
   } = useDiscordServers();
+  const [search, setSearch] = useState('');
 
   return (
     <Flex
       justifyContent="center"
       alignItems="center"
       width="100%"
-      height="100vh"
+      marginTop="8rem"
     >
       <Stack
         maxWidth="lg"
@@ -49,6 +51,7 @@ const Servers: React.FC = () => {
             padding="4"
             rounded="lg"
             shadow="lg"
+            height="500px"
           >
             <InputGroup>
               <InputLeftElement
@@ -56,7 +59,7 @@ const Servers: React.FC = () => {
               >
                 <SearchIcon color="gray.300" />
               </InputLeftElement>
-              <Input placeholder="Search..." />
+              <Input placeholder="Search..." onChange={(e) => setSearch(e.target.value)} />
             </InputGroup>
             {status === 'loading' && (
               <Box textAlign="center">
@@ -65,13 +68,18 @@ const Servers: React.FC = () => {
             )}
             {status === 'success' && data && (
               <Menu
-                items={data.results.map((server) => ({
-                  id: server.id,
-                  title: server.name,
-                  value: server.id,
-                  description: '',
-                  icon: server.iconUrl,
-                }))}
+                items={data.results
+                  .filter((server) => (search
+                    ? server.name.toLowerCase().includes(search.toLowerCase())
+                    : true
+                  ))
+                  .map((server) => ({
+                    id: server.id,
+                    title: server.name,
+                    value: server.id,
+                    description: '',
+                    icon: server.iconUrl,
+                  }))}
                 onSelectedValue={(value) => navigate(`/servers/${value}/feeds`)}
                 shown
               />
