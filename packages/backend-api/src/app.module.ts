@@ -7,6 +7,7 @@ import config from './config/config';
 import { validateConfig } from './config/config.validate';
 import { DiscordAuthModule } from './discord-auth/discord-auth.module';
 import { DiscordUserModule } from './discord-users/discord-users.module';
+import { FeedsModule } from './feeds/feeds.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DiscordUserModule } from './discord-users/discord-users.module';
     }),
     DiscordAuthModule,
     DiscordUserModule,
+    FeedsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

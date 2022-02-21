@@ -4,18 +4,20 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 let memoryServer: MongoMemoryServer;
 
+interface Options {
+  mongooseOptions?: MongooseModuleOptions;
+}
+
 @Module({})
 export class MongooseTestModule {
-  static async forRoot(
-    mongooseOptions?: MongooseModuleOptions,
-  ): Promise<DynamicModule> {
+  static async forRoot(options?: Options): Promise<DynamicModule> {
     memoryServer = await MongoMemoryServer.create();
 
     return {
       module: MongooseTestModule,
       imports: [
         MongooseModule.forRoot(await memoryServer.getUri(), {
-          ...mongooseOptions,
+          ...options?.mongooseOptions,
         }),
       ],
     };
