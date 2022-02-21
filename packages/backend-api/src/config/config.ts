@@ -23,7 +23,7 @@ export default () => ({
   discordClientId: process.env.DISCORD_CLIENT_ID,
   discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
   discordRedirectUri: process.env.DISCORD_REDIRECT_URI,
-  mongodbUri: process.env.MONGODB_URI,
+  mongodbUri: process.env.MONGODB_URI as string,
   defaultRefreshRateMinutes: parseInt(
     process.env.DEFAULT_REFRESH_RATE_MINUTES as string,
     10,

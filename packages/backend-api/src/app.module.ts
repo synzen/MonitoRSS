@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config/config';
@@ -21,4 +22,13 @@ import { DiscordUserModule } from './discord-users/discord-users.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  static forRoot(): DynamicModule {
+    const configValues = config();
+
+    return {
+      module: AppModule,
+      imports: [MongooseModule.forRoot(configValues.mongodbUri)],
+    };
+  }
+}
