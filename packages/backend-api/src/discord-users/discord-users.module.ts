@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DiscordApiModule } from '../services/apis/discord/discord-api.module';
-import { DiscordUserService } from './discord-user.service';
+import { DiscordUsersService } from './discord-users.service';
 
 @Module({
   imports: [DiscordApiModule],
   controllers: [],
-  providers: [DiscordUserService],
-  exports: [DiscordUserService],
+  providers: [DiscordUsersService],
+  exports: [DiscordUsersService],
 })
 export class DiscordUserModule {}

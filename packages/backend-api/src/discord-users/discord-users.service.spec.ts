@@ -1,14 +1,14 @@
-import { DiscordUserService } from './discord-user.service';
+import { DiscordUsersService } from './discord-users.service';
 
-describe('DiscordUserService', () => {
-  let service: DiscordUserService;
+describe('DiscordUsersService', () => {
+  let service: DiscordUsersService;
   const discordApiService = {
     executeBearerRequest: jest.fn(),
   };
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    service = new DiscordUserService(discordApiService as any);
+    service = new DiscordUsersService(discordApiService as any);
 
     jest.spyOn(discordApiService, 'executeBearerRequest').mockResolvedValue([]);
   });

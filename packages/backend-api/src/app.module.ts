@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import config from './config/config';
 import { validateConfig } from './config/config.validate';
 import { DiscordAuthModule } from './discord-auth/discord-auth.module';
-import { DiscordUserModule } from './discord-user/discord-user.module';
+import { DiscordUserModule } from './discord-users/discord-users.module';
 
 @Module({
   imports: [

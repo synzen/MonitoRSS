@@ -11,7 +11,7 @@ export interface DiscordPartialGuild {
 }
 
 @Injectable()
-export class DiscordUserService {
+export class DiscordUsersService {
   BASE_ENDPOINT = '/users';
 
   constructor(private readonly discordApiService: DiscordAPIService) {}
