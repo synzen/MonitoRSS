@@ -23,7 +23,7 @@ const handlers = [
     }),
   )),
 
-  rest.get('/api/v1/servers/:serverId/feeds', (req, res, ctx) => res(
+  rest.get('/api/v1/discord-servers/:serverId/feeds', (req, res, ctx) => res(
     ctx.json<GetFeedsOutput>({
       total: mockFeedSummaries.length,
       results: mockFeedSummaries,

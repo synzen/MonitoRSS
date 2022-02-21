@@ -24,7 +24,7 @@ export const getFeeds = async (options: GetFeedsInput): Promise<GetFeedsOutput> 
   });
 
   return fetchRest(
-    `/api/v1/servers/${options.serverId}/feeds?${searchParams}`,
+    `/api/v1/discord-servers/${options.serverId}/feeds?${searchParams}`,
     {
       validateSchema: GetFeedsOutputSchema,
     },
