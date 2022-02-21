@@ -6,7 +6,7 @@ export const FeedSummarySchema = object({
   status: string().oneOf(['ok', 'failed']).required(),
   url: string().required(),
   channel: string().required(),
-  createdAt: string().transform((value) => new Date(value).toISOString()).required(),
+  createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
 });
 
 export type FeedSummary = InferType<typeof FeedSummarySchema>;
