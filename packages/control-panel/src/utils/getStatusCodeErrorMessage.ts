@@ -16,7 +16,7 @@ const getStatusCodeErrorMessage = (statusCode: number) => {
 
   if (statusCode === 403) { return messages.FORBIDDEN; }
 
-  if (statusCodeStr.startsWith('4')) { return messages.BAD_REQUEST; }
+  if (statusCode === 400) { return messages.BAD_REQUEST; }
 
   return UNEXPECTED_ERROR;
 };
