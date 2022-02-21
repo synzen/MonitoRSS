@@ -16,7 +16,7 @@ const handlers = [
     ctx.status(200),
     ctx.json<GetDiscordMeOutput>(mockDiscordUser),
   )),
-  rest.get('/api/v1/servers', (req, res, ctx) => res(
+  rest.get('/api/v1/discord-users/@me/servers', (req, res, ctx) => res(
     ctx.json<GetServersOutput>({
       total: mockDiscordServers.length,
       results: mockDiscordServers,
