@@ -19,7 +19,7 @@ class StaticAppModule {}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forRoot(),
+    StaticAppModule,
     new FastifyAdapter({
       logger: true,
     }),
