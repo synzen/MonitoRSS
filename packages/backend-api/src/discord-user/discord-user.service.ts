@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DiscordAPIService } from '../apis/discord/discord-api.service';
+import { DiscordAPIService } from '../services/apis/discord/discord-api.service';
 
 export interface DiscordPartialGuild {
   id: string;

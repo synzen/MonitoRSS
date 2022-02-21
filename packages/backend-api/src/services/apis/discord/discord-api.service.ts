@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import fetch, { Response } from 'node-fetch';
+import { Response } from 'node-fetch';
 import {
   DISCORD_API_BASE_URL,
   DISCORD_API_VERSION,
 } from '../../../constants/discord';
+import { RESTHandler } from '@synzen/discord-rest';
 
 interface RequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -15,9 +16,11 @@ export class DiscordAPIService {
   API_URL = DISCORD_API_BASE_URL;
   API_VERSION = DISCORD_API_VERSION;
   BOT_TOKEN: string;
+  restHandler: RESTHandler;
 
   constructor(private readonly configService: ConfigService) {
     this.BOT_TOKEN = configService.get<string>('discordBotToken') as string;
+    this.restHandler = new RESTHandler();
   }
 
   /**
@@ -31,7 +34,7 @@ export class DiscordAPIService {
     options?: RequestOptions,
   ): Promise<T> {
     const url = `${this.API_URL}/${this.API_VERSION}${endpoint}`;
-    const res = await fetch(url, {
+    const res = await this.restHandler.fetch(url, {
       method: options?.method || 'GET',
       headers: {
         Authorization: `Bot ${this.BOT_TOKEN}`,
@@ -58,7 +61,7 @@ export class DiscordAPIService {
     options?: RequestOptions,
   ): Promise<T> {
     const url = `${this.API_URL}/${this.API_VERSION}${endpoint}`;
-    const res = await fetch(url, {
+    const res = await this.restHandler.fetch(url, {
       method: options?.method || 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,

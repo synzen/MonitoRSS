@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DiscordApiModule } from '../apis/discord/discord-api.module';
+import { DiscordApiModule } from '../services/apis/discord/discord-api.module';
 import { DiscordUserService } from './discord-user.service';
 
 @Module({

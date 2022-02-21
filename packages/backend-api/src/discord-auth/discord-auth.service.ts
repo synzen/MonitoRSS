@@ -6,7 +6,7 @@ import {
   DISCORD_AUTH_ENDPOINT,
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
-} from '../../constants/discord';
+} from '../constants/discord';
 
 export interface DiscordAuthToken {
   access_token: string;

@@ -4,8 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config/config';
 import { validateConfig } from './config/config.validate';
-import { DiscordAuthModule } from './services/discord-auth/discord-auth.module';
-import { DiscordUserModule } from './services/discord-user/discord-user.module';
+import { DiscordAuthModule } from './discord-auth/discord-auth.module';
+import { DiscordUserModule } from './discord-user/discord-user.module';
 
 @Module({
   imports: [
