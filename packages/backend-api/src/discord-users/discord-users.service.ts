@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DiscordAPIService } from '../services/apis/discord/discord-api.service';
 import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
+import { PartialUserGuildFormatted } from './types/PartialUserGuild.type';
 
 export interface DiscordPartialGuild {
   id: string;
@@ -30,7 +31,7 @@ export class DiscordUsersService {
       guildIconSize?: string;
       guildIconFormat?: 'png' | 'jpeg' | 'webp' | 'gif';
     },
-  ) {
+  ): Promise<PartialUserGuildFormatted[]> {
     const iconSize = options?.guildIconSize || '128';
     const iconFormat = options?.guildIconFormat || 'png';
     const endpoint = this.BASE_ENDPOINT + `/@me/guilds`;
@@ -41,7 +42,7 @@ export class DiscordUsersService {
 
     return guilds.map((guild) => ({
       ...guild,
-      icon_url:
+      iconUrl:
         `https://cdn.discordapp.com/icons` +
         `/${guild.id}/${guild.icon}.${iconFormat}?size=${iconSize}`,
     }));

@@ -70,7 +70,7 @@ const Servers: React.FC = () => {
                   title: server.name,
                   value: server.id,
                   description: '',
-                  icon: server.icon,
+                  icon: server.iconUrl,
                 }))}
                 onSelectedValue={(value) => navigate(`/servers/${value}/feeds`)}
                 shown

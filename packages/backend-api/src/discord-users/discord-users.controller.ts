@@ -3,6 +3,7 @@ import { DiscordAccessToken } from '../common/decorators/DiscordAccessToken';
 import { DiscordOAuth2Guard } from '../common/guards/DiscordOAuth2.guard';
 import { DiscordUsersService } from './discord-users.service';
 import { GetMeOutputDto } from './dto';
+import { GetMyServersOutputDto } from './dto/GetMyServersOutput.dto';
 
 @Controller('discord-users')
 @UseGuards(DiscordOAuth2Guard)
@@ -19,6 +20,24 @@ export class DiscordUsersController {
       id: user.id,
       username: user.username,
       iconUrl: user.avatarUrl,
+    };
+  }
+
+  @Get('@me/servers')
+  async getMyServers(
+    @DiscordAccessToken() accessToken: string,
+  ): Promise<GetMyServersOutputDto> {
+    const guilds = await this.discordUsersService.getGuilds(accessToken);
+
+    const data = guilds.map((guild) => ({
+      id: guild.id,
+      name: guild.name,
+      iconUrl: guild.iconUrl,
+    }));
+
+    return {
+      results: data,
+      total: data.length,
     };
   }
 }

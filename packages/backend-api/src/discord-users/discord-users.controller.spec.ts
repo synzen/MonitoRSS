@@ -4,6 +4,7 @@ describe('DiscordUsersController', () => {
   let controller: DiscordUsersController;
   const discordUsersService = {
     getUser: jest.fn(),
+    getGuilds: jest.fn(),
   };
 
   beforeEach(() => {
@@ -30,6 +31,29 @@ describe('DiscordUsersController', () => {
       await expect(controller.getMe(discordAccessToken)).resolves.toEqual(
         expectedResponse,
       );
+    });
+  });
+
+  describe('getMyServers', () => {
+    it('returns the response correctly', async () => {
+      const discordAccessToken = 'token';
+      const discordGuilds = [
+        {
+          id: 'guild_id',
+          name: 'test',
+          iconUrl: 'iconUrl',
+        },
+      ];
+      discordUsersService.getGuilds.mockResolvedValue(discordGuilds);
+
+      const expectedResponse = {
+        results: discordGuilds,
+        total: 1,
+      };
+
+      await expect(
+        controller.getMyServers(discordAccessToken),
+      ).resolves.toEqual(expectedResponse);
     });
   });
 });

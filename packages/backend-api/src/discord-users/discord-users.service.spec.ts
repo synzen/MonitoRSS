@@ -43,7 +43,7 @@ describe('DiscordUsersService', () => {
       expect(result).toEqual([
         {
           ...guilds[0],
-          icon_url:
+          iconUrl:
             `https://cdn.discordapp.com/icons` +
             `/${guilds[0].id}/${guilds[0].icon}.png?size=128`,
         },
