@@ -15,6 +15,7 @@ import FeedSubscribers from './FeedSubscribers';
 import Home from './Home';
 import ServerDasboard from './ServerDashboard';
 import Servers from './Servers';
+import { RequireAuth } from '@/features/auth';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -24,70 +25,90 @@ const Pages: React.FC = () => (
     />
     <Route
       path="/servers"
-      element={<Servers />}
+      element={(
+        <RequireAuth>
+          <Servers />
+        </RequireAuth>
+    )}
     />
     <Route
       path="/servers/:serverId"
       element={(
-        <DashboardContent>
-          <ServerDasboard />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent>
+            <ServerDasboard />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/server-settings"
       element={(
-        <DashboardContent>
-          <ServerDasboard />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent>
+            <ServerDasboard />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/feeds"
       element={(
-        <DashboardContent>
-          <Feeds />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent>
+            <Feeds />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId"
       element={(
-        <DashboardContent requireFeed>
-          <Feed />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent requireFeed>
+            <Feed />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/message"
       element={(
-        <DashboardContent requireFeed>
-          <FeedMessage />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent requireFeed>
+            <FeedMessage />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/filters"
       element={(
-        <DashboardContent requireFeed>
-          <FeedFilters />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent requireFeed>
+            <FeedFilters />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/subscribers"
       element={(
-        <DashboardContent requireFeed>
-          <FeedSubscribers />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent requireFeed>
+            <FeedSubscribers />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/misc-options"
       element={(
-        <DashboardContent requireFeed>
-          <FeedMiscOptions />
-        </DashboardContent>
+        <RequireAuth>
+          <DashboardContent requireFeed>
+            <FeedMiscOptions />
+          </DashboardContent>
+        </RequireAuth>
 )}
     />
   </Routes>
