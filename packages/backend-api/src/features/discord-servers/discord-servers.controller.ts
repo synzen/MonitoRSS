@@ -12,6 +12,7 @@ export class DiscordServersController {
 
   @Get(':serverId/feeds')
   @UseGuards(BotHasServerGuard)
+  // @UseGuards(UserManagesServerGuard)
   async getServerFeeds(
     @Param('serverId') serverId: string,
     @NestedQuery(TransformValidationPipe)

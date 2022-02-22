@@ -1,22 +1,23 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { mocked } from 'ts-jest/utils';
+import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
 import { discordAccessTokenFactory } from './DiscordAccessToken';
+
+jest.mock('../../utils/get-access-token-from-session');
+
+const mockedGetAccessTokenFromRequest = mocked(getAccessTokenFromRequest);
 
 describe('DiscordAccessToken decorator', () => {
   let context: ExecutionContext;
   const storedAccessToken = {
     access_token: 'abc',
   };
-  const sessionGet = jest.fn();
 
   beforeEach(() => {
     jest.resetAllMocks();
     context = {
       switchToHttp: () => ({
-        getRequest: () => ({
-          session: {
-            get: sessionGet,
-          },
-        }),
+        getRequest: () => ({}),
       }),
     } as never;
   });
@@ -28,7 +29,7 @@ describe('DiscordAccessToken decorator', () => {
   });
 
   it('returns the access token', () => {
-    sessionGet.mockReturnValue(storedAccessToken);
+    mockedGetAccessTokenFromRequest.mockReturnValue(storedAccessToken as never);
     const accessToken = discordAccessTokenFactory(context, context);
 
     expect(accessToken).toBe(storedAccessToken.access_token);

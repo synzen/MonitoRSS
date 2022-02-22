@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { SessionAccessToken } from 'src/features/discord-auth/types/SessionAccessToken.type';
+import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
 
 export const discordAccessTokenFactory = (
   data: unknown,
@@ -12,9 +12,7 @@ export const discordAccessTokenFactory = (
 ) => {
   const request = ctx.switchToHttp().getRequest() as FastifyRequest;
 
-  const accessToken = request.session.get('accessToken') as
-    | SessionAccessToken
-    | undefined;
+  const accessToken = getAccessTokenFromRequest(request);
 
   if (!accessToken) {
     throw new UnauthorizedException();
