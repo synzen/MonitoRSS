@@ -11,8 +11,8 @@ import { stopMemoryServer } from './mongoose-test.module';
 let testingModule: TestingModule;
 let app: NestFastifyApplication;
 
-export async function setupEndpointTests(metadata: ModuleMetadata) {
-  const testingModule = await Test.createTestingModule({
+export function setupEndpointTests(metadata: ModuleMetadata) {
+  const uncompiledModule = Test.createTestingModule({
     ...metadata,
     imports: [
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -23,18 +23,25 @@ export async function setupEndpointTests(metadata: ModuleMetadata) {
         isGlobal: true,
       }),
     ],
-  }).compile();
+  });
 
-  app = testingModule.createNestApplication<NestFastifyApplication>(
-    new FastifyAdapter(),
-  );
-  useContainer(app, { fallbackOnErrors: true });
-  await app.init();
-  await app.getHttpAdapter().getInstance().ready();
+  const init = async () => {
+    testingModule = await uncompiledModule.compile();
+    app = testingModule.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
+    useContainer(app, { fallbackOnErrors: true });
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+
+    return {
+      app,
+    };
+  };
 
   return {
-    module,
-    app,
+    uncompiledModule,
+    init,
   };
 }
 

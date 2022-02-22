@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
+import { DiscordGuild } from '../../common/types/DiscordGuild';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import {
   FailRecord,
   FailRecordModel,
@@ -13,6 +16,7 @@ export class DiscordServersService {
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(FailRecord.name)
     private readonly failRecordModel: FailRecordModel,
+    private readonly discordApiService: DiscordAPIService,
   ) {}
 
   async getServerFeeds(
@@ -51,5 +55,23 @@ export class DiscordServersService {
     }));
 
     return detailedFeeds;
+  }
+
+  async getServer(serverId: string) {
+    try {
+      const guild: DiscordGuild =
+        await this.discordApiService.executeBotRequest(`/guilds/${serverId}`);
+
+      return guild;
+    } catch (err) {
+      if (
+        err instanceof DiscordAPIError &&
+        err.statusCode === HttpStatus.FORBIDDEN
+      ) {
+        return null;
+      }
+
+      throw err;
+    }
   }
 }

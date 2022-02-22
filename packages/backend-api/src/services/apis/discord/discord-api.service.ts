@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Response } from 'node-fetch';
 import { DISCORD_API_BASE_URL } from '../../../constants/discord';
 import { RESTHandler } from '@synzen/discord-rest';
+import { DiscordAPIError } from '../../../common/errors/DiscordAPIError';
 
 interface RequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -72,14 +73,16 @@ export class DiscordAPIService {
 
   private async handleJSONResponseError(res: Response): Promise<void> {
     if (!res.ok && res.status < 500) {
-      throw new Error(
+      throw new DiscordAPIError(
         `Discord API request failed (${JSON.stringify(await res.json())})`,
+        res.status,
       );
     }
 
     if (!res.ok) {
-      throw new Error(
+      throw new DiscordAPIError(
         `Discord API request failed (${res.status} - Discord internal error)`,
+        res.status,
       );
     }
   }

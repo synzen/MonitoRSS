@@ -1,4 +1,5 @@
 import nock from 'nock';
+import { DiscordAPIError } from '../../../common/errors/DiscordAPIError';
 import { DISCORD_API_BASE_URL } from '../../../constants/discord';
 import { DiscordAPIService } from './discord-api.service';
 describe('DiscordAPIService', () => {
@@ -24,7 +25,9 @@ describe('DiscordAPIService', () => {
           message: 'Internal server error',
         });
 
-      await expect(discordApi.executeBotRequest(endpoint)).rejects.toThrow();
+      await expect(discordApi.executeBotRequest(endpoint)).rejects.toThrow(
+        DiscordAPIError,
+      );
     });
 
     it('returns the response', async () => {
@@ -60,7 +63,7 @@ describe('DiscordAPIService', () => {
 
       await expect(
         discordApi.executeBearerRequest(accessToken, endpoint),
-      ).rejects.toThrow();
+      ).rejects.toThrow(DiscordAPIError);
     });
 
     it('returns the response', async () => {

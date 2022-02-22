@@ -1,15 +1,17 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { NestedQuery } from '../../common/decorators/NestedQuery';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { DiscordServersService } from './discord-servers.service';
 import { GetServerFeedsInputDto } from './dto/GetServerFeedsInput.dto';
 import { GetServerFeedsOutputDto } from './dto/GetServerFeedsOutput.dto';
+import { BotHasServerGuard } from './guards/BotHasServer.guard';
 
 @Controller('discord-servers')
 export class DiscordServersController {
   constructor(private readonly discordServersService: DiscordServersService) {}
 
   @Get(':serverId/feeds')
+  @UseGuards(BotHasServerGuard)
   async getServerFeeds(
     @Param('serverId') serverId: string,
     @NestedQuery(TransformValidationPipe)

@@ -1,4 +1,7 @@
+import { HttpStatus } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
+import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { createTestFailRecord } from '../../test/data/failrecords.test-data';
 import { createTestFeed } from '../../test/data/feeds.test-data';
 import {
@@ -19,10 +22,19 @@ describe('DiscordServersService', () => {
   let service: DiscordServersService;
   let feedModel: FeedModel;
   let failRecordModel: FailRecordModel;
+  let discordApiService: DiscordAPIService;
 
   beforeEach(async () => {
     const { module } = await setupIntegrationTests({
-      providers: [DiscordServersService],
+      providers: [
+        DiscordServersService,
+        {
+          provide: DiscordAPIService,
+          useValue: {
+            executeBotRequest: jest.fn(),
+          },
+        },
+      ],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([FeedFeature, FailRecordFeature]),
@@ -34,6 +46,7 @@ describe('DiscordServersService', () => {
     failRecordModel = module.get<FailRecordModel>(
       getModelToken(FailRecord.name),
     );
+    discordApiService = module.get<DiscordAPIService>(DiscordAPIService);
   });
 
   afterEach(async () => {
@@ -141,6 +154,41 @@ describe('DiscordServersService', () => {
       const count = await service.countServerFeeds(guild);
 
       expect(count).toEqual(2);
+    });
+  });
+
+  describe('getServer', () => {
+    it('returns the guild', async () => {
+      const mockGuild = {
+        id: 'server-1',
+      };
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockResolvedValue(mockGuild);
+
+      const guild = await service.getServer(mockGuild.id);
+
+      expect(guild).toEqual(mockGuild);
+    });
+
+    it('returns null if the bot was forbidden', async () => {
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockRejectedValue(
+          new DiscordAPIError('Forbidden', HttpStatus.FORBIDDEN),
+        );
+
+      const guild = await service.getServer('server-1');
+
+      expect(guild).toBeNull();
+    });
+
+    it('throws for an unhandled error', async () => {
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockRejectedValue(new Error('Unhandled error'));
+
+      await expect(service.getServer('server-1')).rejects.toThrow();
     });
   });
 });
