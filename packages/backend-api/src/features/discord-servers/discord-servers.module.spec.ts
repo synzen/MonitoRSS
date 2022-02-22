@@ -12,6 +12,8 @@ import nock from 'nock';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { HttpStatus } from '@nestjs/common';
+import { DISCORD_API_BASE_URL } from '../../constants/discord';
+import { DiscordGuild } from '../../common/types/DiscordGuild';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -19,20 +21,8 @@ describe('DiscordServersModule', () => {
   let discordApiService: DiscordAPIService;
 
   beforeEach(async () => {
-    const { uncompiledModule, init } = setupEndpointTests({
+    const { init } = setupEndpointTests({
       imports: [DiscordServersModule, MongooseTestModule.forRoot()],
-      providers: [
-        {
-          provide: DiscordAPIService,
-          useValue: {
-            executeBotRequest: jest.fn(),
-          },
-        },
-      ],
-    });
-
-    uncompiledModule.overrideProvider(DiscordAPIService).useValue({
-      executeBotRequest: jest.fn(),
     });
 
     ({ app } = await init());
@@ -51,15 +41,14 @@ describe('DiscordServersModule', () => {
 
     beforeEach(() => {
       // Mock the guild being returned in the BotHasServerGuard
-      jest
-        .spyOn(discordApiService, 'executeBotRequest')
-        .mockImplementation(async (url) => {
-          if (url.startsWith('/guilds')) {
-            return {
-              id: '1',
-            };
-          }
-        });
+      nock(DISCORD_API_BASE_URL)
+        .get(`/guilds/${serverId}`)
+        .reply(200, {
+          id: serverId,
+          name: 'Test Guild',
+          icon: '',
+          roles: [],
+        } as DiscordGuild);
     });
 
     it('returns 400 if bot has no access to discord server', async () => {
