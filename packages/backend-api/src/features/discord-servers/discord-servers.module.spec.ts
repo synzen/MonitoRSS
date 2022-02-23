@@ -14,18 +14,31 @@ import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
+import { Session } from '../../common/types/Session';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
   let discordApiService: DiscordAPIService;
+  let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
+  const standardRequestOptions = {
+    headers: {
+      cookie: '',
+    },
+  };
 
   beforeEach(async () => {
     const { init } = setupEndpointTests({
       imports: [DiscordServersModule, MongooseTestModule.forRoot()],
     });
 
-    ({ app } = await init());
+    ({ app, setAccessToken } = await init());
+
+    // To do - set up an endpoint to use the session middleware, set the session, and then run tests
+
+    standardRequestOptions.headers.cookie = await setAccessToken({
+      access_token: 'accessToken',
+    } as Session['accessToken']);
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
     discordApiService = app.get<DiscordAPIService>(DiscordAPIService);
@@ -63,6 +76,7 @@ describe('DiscordServersModule', () => {
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
+        ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
@@ -72,6 +86,7 @@ describe('DiscordServersModule', () => {
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?offset=0`,
+        ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(400);
@@ -80,6 +95,7 @@ describe('DiscordServersModule', () => {
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?limit=10`,
+        ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(400);
@@ -88,10 +104,21 @@ describe('DiscordServersModule', () => {
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?limit=10&offset=foo`,
+        ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(400);
     });
+
+    it('returns 401 if no access token set via header cookie', async () => {
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
     it('returns the correct response', async () => {
       await feedModel.insertMany([
         createTestFeed({
@@ -105,6 +132,7 @@ describe('DiscordServersModule', () => {
       const { statusCode, body } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?limit=10&offset=0`,
+        ...standardRequestOptions,
       });
 
       const parsedBody = JSON.parse(body);

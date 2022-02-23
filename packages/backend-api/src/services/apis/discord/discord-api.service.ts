@@ -17,7 +17,13 @@ export class DiscordAPIService {
 
   constructor(private readonly configService: ConfigService) {
     this.BOT_TOKEN = configService.get<string>('discordBotToken') as string;
-    this.restHandler = new RESTHandler();
+    this.restHandler = new RESTHandler({
+      /**
+       * RESTHandler creates a node interval behind the scenes with this boolean, stopping
+       * tests from tearing down gracefully.
+       */
+      delayOnInvalidThreshold: process.env.NODE_ENV === 'test' ? false : true,
+    });
   }
 
   /**

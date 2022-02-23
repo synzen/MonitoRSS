@@ -24,4 +24,4 @@ export class MongooseTestModule {
   }
 }
 
-export const stopMemoryServer = () => memoryServer.stop();
+export const stopMemoryServer = () => memoryServer?.stop();
