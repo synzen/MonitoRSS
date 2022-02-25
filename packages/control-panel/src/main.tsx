@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import App from './App';
 import theme from './utils/theme';
 import setupMockBrowserWorker from './mocks/browser';
+import { ForceDarkMode } from './components/ForceDarkMode';
 
 if (import.meta.env.MODE === 'development-mockapi') {
   setupMockBrowserWorker().then((worker) => worker.start());
@@ -21,7 +22,9 @@ ReactDOM.render(
       <ChakraProvider>
         <ColorModeScript initialColorMode={theme.config.initialColorMode} />
         <QueryClientProvider client={queryClient}>
-          <App />
+          <ForceDarkMode>
+            <App />
+          </ForceDarkMode>
         </QueryClientProvider>
       </ChakraProvider>
     </BrowserRouter>
