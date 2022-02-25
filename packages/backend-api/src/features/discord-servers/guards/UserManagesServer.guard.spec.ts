@@ -1,6 +1,6 @@
 import {
-  BadRequestException,
   ExecutionContext,
+  ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { getAccessTokenFromRequest } from '../../../utils/get-access-token-from-session';
@@ -59,7 +59,7 @@ describe('UserManagesServerGuard', () => {
     jest.spyOn(discordUsersService, 'getGuilds').mockResolvedValue([]);
 
     await expect(guard.canActivate(context)).rejects.toThrow(
-      BadRequestException,
+      ForbiddenException,
     );
   });
 
