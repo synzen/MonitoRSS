@@ -6,6 +6,7 @@ import { DiscordServersService } from './discord-servers.service';
 import { GetServerFeedsInputDto } from './dto/GetServerFeedsInput.dto';
 import { GetServerFeedsOutputDto } from './dto/GetServerFeedsOutput.dto';
 import { BotHasServerGuard } from './guards/BotHasServer.guard';
+import { UserManagesServerGuard } from './guards/UserManagesServer.guard';
 
 @Controller('discord-servers')
 @UseGuards(DiscordOAuth2Guard)
@@ -14,7 +15,7 @@ export class DiscordServersController {
 
   @Get(':serverId/feeds')
   @UseGuards(BotHasServerGuard)
-  // @UseGuards(UserManagesServerGuard)
+  @UseGuards(UserManagesServerGuard)
   async getServerFeeds(
     @Param('serverId') serverId: string,
     @NestedQuery(TransformValidationPipe)

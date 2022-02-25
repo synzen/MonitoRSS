@@ -14,6 +14,7 @@ import { HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { Session } from '../../common/types/Session';
+import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -51,8 +52,7 @@ describe('DiscordServersModule', () => {
   describe('GET /discord-servers/:serverId/feeds', () => {
     const serverId = '633432788015644722';
 
-    beforeEach(() => {
-      // Mock the guild being returned in the BotHasServerGuard
+    const mockGetServer = () => {
       nock(DISCORD_API_BASE_URL)
         .get(`/guilds/${serverId}`)
         .reply(200, {
@@ -61,11 +61,29 @@ describe('DiscordServersModule', () => {
           icon: '',
           roles: [],
         } as DiscordGuild);
-    });
+    };
+
+    const mockGetUserGuilds = (partialGuild?: Partial<PartialUserGuild>) => {
+      nock(DISCORD_API_BASE_URL)
+        .get(`/users/@me/guilds`)
+        .reply(200, [
+          {
+            id: serverId,
+            owner: true,
+            permissions: 16,
+            ...partialGuild,
+          },
+        ]);
+    };
+
+    const mockAllDiscordEndpoints = () => {
+      mockGetServer();
+      mockGetUserGuilds();
+    };
 
     it('returns 400 if bot has no access to discord server', async () => {
-      nock.cleanAll();
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
         method: 'GET',
@@ -76,7 +94,39 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
+    it('returns forbidden if user does own server', async () => {
+      mockGetServer();
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns forbidden if user does not manage server', async () => {
+      mockGetServer();
+      mockGetUserGuilds({
+        permissions: 0,
+        owner: false,
+      });
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
     it('returns 400 if limit is missing', async () => {
+      mockGetServer();
+      mockGetUserGuilds();
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?offset=0`,
@@ -86,6 +136,7 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(400);
     });
     it('returns 400 if offset is missing', async () => {
+      mockAllDiscordEndpoints();
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?limit=10`,
@@ -95,6 +146,7 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(400);
     });
     it('returns 400 if offset is not a number', async () => {
+      mockAllDiscordEndpoints();
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?limit=10&offset=foo`,
@@ -105,6 +157,7 @@ describe('DiscordServersModule', () => {
     });
 
     it('returns 401 if no access token set via header cookie', async () => {
+      mockAllDiscordEndpoints();
       const { statusCode } = await app.inject({
         method: 'GET',
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
@@ -114,6 +167,7 @@ describe('DiscordServersModule', () => {
     });
 
     it('returns the correct response', async () => {
+      mockAllDiscordEndpoints();
       await feedModel.insertMany([
         createTestFeed({
           guild: serverId,

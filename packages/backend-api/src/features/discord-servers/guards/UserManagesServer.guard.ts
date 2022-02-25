@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -28,7 +28,7 @@ export class UserManagesServerGuard implements CanActivate {
     const guilds = await this.discordUsersService.getGuilds(accessToken);
 
     if (!guilds.find((guild) => guild.id === serverId)) {
-      throw new BadRequestException('Server not found');
+      throw new ForbiddenException();
     }
 
     return true;
