@@ -64,9 +64,11 @@ export class DiscordServersService {
 
       return guild;
     } catch (err) {
+      const statusCodeForNull = [HttpStatus.NOT_FOUND, HttpStatus.FORBIDDEN];
+
       if (
         err instanceof DiscordAPIError &&
-        err.statusCode === HttpStatus.FORBIDDEN
+        statusCodeForNull.includes(err.statusCode)
       ) {
         return null;
       }

@@ -10,7 +10,6 @@ import { Feed, FeedModel } from '../feeds/entities/Feed.entity';
 import { DiscordServersModule } from './discord-servers.module';
 import nock from 'nock';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
@@ -65,13 +64,8 @@ describe('DiscordServersModule', () => {
     });
 
     it('returns 400 if bot has no access to discord server', async () => {
-      jest
-        .spyOn(discordApiService, 'executeBotRequest')
-        .mockImplementation(async (url) => {
-          if (url.startsWith('/guilds')) {
-            throw new DiscordAPIError('', HttpStatus.FORBIDDEN);
-          }
-        });
+      nock.cleanAll();
+      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
 
       const { statusCode } = await app.inject({
         method: 'GET',

@@ -182,6 +182,17 @@ describe('DiscordServersService', () => {
 
       expect(guild).toBeNull();
     });
+    it('returns null if 404 is returned', async () => {
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockRejectedValue(
+          new DiscordAPIError('Not Found', HttpStatus.NOT_FOUND),
+        );
+
+      const guild = await service.getServer('server-1');
+
+      expect(guild).toBeNull();
+    });
 
     it('throws for an unhandled error', async () => {
       jest
