@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
+const VITE_ENV = process.env.ENV
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +14,7 @@ export default defineConfig({
     }
   },
   server: {
-    proxy: {
+    proxy: VITE_ENV === 'development-mockapi' ? {} : {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,

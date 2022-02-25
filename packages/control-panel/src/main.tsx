@@ -1,3 +1,4 @@
+import './utils/i18n';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
