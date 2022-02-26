@@ -9,7 +9,6 @@ import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import { Feed, FeedModel } from '../feeds/entities/Feed.entity';
 import { DiscordServersModule } from './discord-servers.module';
 import nock from 'nock';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
@@ -19,7 +18,6 @@ import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
-  let discordApiService: DiscordAPIService;
   let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
   const standardRequestOptions = {
     headers: {
@@ -41,7 +39,6 @@ describe('DiscordServersModule', () => {
     } as Session['accessToken']);
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
-    discordApiService = app.get<DiscordAPIService>(DiscordAPIService);
   });
 
   afterEach(async () => {
