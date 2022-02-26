@@ -25,9 +25,12 @@ export class UserManagesServerGuard implements CanActivate {
     }
 
     const accessToken = this.getUserAccessToken(request);
-    const guilds = await this.discordUsersService.getGuilds(accessToken);
+    const managesGuild = await this.discordUsersService.managesGuild(
+      accessToken,
+      serverId,
+    );
 
-    if (!guilds.find((guild) => guild.id === serverId)) {
+    if (!managesGuild) {
       throw new ForbiddenException();
     }
 

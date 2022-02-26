@@ -33,18 +33,14 @@ describe('UserManagesServerGuard', () => {
     } as never;
 
     discordUsersService = {
-      getGuilds: jest.fn(),
+      managesGuild: jest.fn(),
     } as never;
 
     mockedGetAccessTokenFromRequest.mockReturnValue({
       access_token: 'access-token',
     } as never);
 
-    jest.spyOn(discordUsersService, 'getGuilds').mockResolvedValue([
-      {
-        id: serverId,
-      },
-    ] as never);
+    jest.spyOn(discordUsersService, 'managesGuild').mockResolvedValue(true);
 
     guard = new UserManagesServerGuard(discordUsersService);
   });
@@ -56,7 +52,7 @@ describe('UserManagesServerGuard', () => {
   });
 
   it('throws bad request if guild was not found', async () => {
-    jest.spyOn(discordUsersService, 'getGuilds').mockResolvedValue([]);
+    jest.spyOn(discordUsersService, 'managesGuild').mockResolvedValue(false);
 
     await expect(guard.canActivate(context)).rejects.toThrow(
       ForbiddenException,

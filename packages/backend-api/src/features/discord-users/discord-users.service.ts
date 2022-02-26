@@ -51,6 +51,12 @@ export class DiscordUsersService {
     }));
   }
 
+  async managesGuild(accessToken: string, guildId: string): Promise<boolean> {
+    const guilds = await this.getGuilds(accessToken);
+
+    return guilds.some((guild) => guild.id === guildId);
+  }
+
   /**
    * Get a user via their OAuth2 access token.
    *
