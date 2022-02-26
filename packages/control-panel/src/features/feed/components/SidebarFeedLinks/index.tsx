@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   FiHome, FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiShare2, FiArrowLeft,
 } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { SidebarLink } from '../../../../components/SidebarLink';
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
 export const SidebarFeedLinks: React.FC<Props> = ({
   currentPath, serverId, feedId, onChangePath,
 }) => {
+  const { t } = useTranslation();
+
   const onClickNavLink = (path: string) => {
     onChangePath(path);
   };
@@ -39,7 +42,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
         textAlign="left"
         justifyContent="left"
       >
-        Manage Servers
+        {t('components.sidebar.feed.backToManageServer')}
       </Button>
       <Stack spacing="1">
         <Text
@@ -51,7 +54,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
           color="gray.500"
           mb="3"
         >
-          Manage Feed
+          {t('components.sidebar.feed.manage')}
         </Text>
         <Stack spacing="2">
           <SidebarLink
@@ -59,14 +62,14 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={currentPath === paths.FEED_OVERVIEW}
             onClick={() => onClickNavLink(paths.FEED_OVERVIEW)}
           >
-            Overview
+            {t('components.sidebar.feed.overview')}
           </SidebarLink>
           <SidebarLink
             icon={FiMessageCircle}
             active={currentPath === paths.FEED_MESSAGES}
             onClick={() => onClickNavLink(paths.FEED_MESSAGES)}
           >
-            Message
+            {t('components.sidebar.feed.message')}
           </SidebarLink>
           <SidebarLink
             disabled
@@ -74,7 +77,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={currentPath === paths.FEED_FILTERS}
             onClick={() => onClickNavLink(paths.FEED_FILTERS)}
           >
-            Filters
+            {t('components.sidebar.feed.filters')}
           </SidebarLink>
           <SidebarLink
             disabled
@@ -82,7 +85,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={currentPath === paths.FEED_SUBSCRIBERS}
             onClick={() => onClickNavLink(paths.FEED_SUBSCRIBERS)}
           >
-            Subscribers
+            {t('components.sidebar.feed.subscribers')}
           </SidebarLink>
           <SidebarLink
             disabled
@@ -90,7 +93,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={currentPath === paths.FEED_MISC_OPTIONS}
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}
           >
-            Webhooks
+            {t('components.sidebar.feed.webhooks')}
           </SidebarLink>
           <SidebarLink
             disabled
@@ -98,7 +101,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={currentPath === paths.FEED_MISC_OPTIONS}
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}
           >
-            Misc Options
+            {t('components.sidebar.feed.miscoptions')}
           </SidebarLink>
         </Stack>
       </Stack>

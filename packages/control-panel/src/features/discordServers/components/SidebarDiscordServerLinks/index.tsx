@@ -1,4 +1,5 @@
 import { Stack, Text } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { FiRss, FiSettings } from 'react-icons/fi';
 import { SidebarLink } from '../../../../components/SidebarLink';
 
@@ -11,6 +12,8 @@ interface Props {
 export const SidebarDiscordServerLinks: React.FC<Props> = ({
   currentPath, serverId, onChangePath,
 }) => {
+  const { t } = useTranslation();
+
   const onClickNavLink = (path: string) => {
     onChangePath(path);
   };
@@ -31,14 +34,14 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
         color="gray.500"
         mb="3"
       >
-        Manage Server
+        {t('components.sidebar.server.manage')}
       </Text>
       <SidebarLink
         icon={FiRss}
         active={currentPath.startsWith(paths.SERVER_FEEDS)}
         onClick={() => onClickNavLink(paths.SERVER_FEEDS)}
       >
-        Feeds
+        {t('components.sidebar.server.feeds')}
       </SidebarLink>
       <SidebarLink
         icon={FiSettings}
@@ -47,7 +50,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
           onClickNavLink(paths.SERVER_SETTINGS);
         }}
       >
-        Settings
+        {t('components.sidebar.server.settings')}
       </SidebarLink>
     </Stack>
 

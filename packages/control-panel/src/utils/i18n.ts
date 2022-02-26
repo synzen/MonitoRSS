@@ -1,22 +1,18 @@
-import i18n from 'i18next';
+/* eslint-disable import/extensions */
+import i18n, { Resource } from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import en from '../locales/en-us/translation.json';
 
-const resources = {
+const resources: Resource = {
   en: {
-    translation: {
-      'Welcome to React': 'Welcome to React and react-i18next',
-    },
-  },
-  fr: {
-    translation: {
-      'Welcome to React': 'Bienvenue à React et react-i18next',
-    },
+    translation: en,
   },
 };
 
 i18n
   .use(initReactI18next) // passes i18n down to react-i18next
   .init({
+    fallbackLng: 'en',
     lng: 'en',
     resources,
     interpolation: {

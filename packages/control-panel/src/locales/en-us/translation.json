@@ -1,0 +1,38 @@
+{
+  "pages": {
+    "feeds": {
+      "title": "Feeds",
+      "status": "Status",
+      "url": "URL",
+      "add": "Add New",
+      "channel": "Channel",
+      "search": "Search by id, title, name or url"
+    }
+  },
+  "components": {
+    "sidebar": {
+      "server": {
+        "manage": "Manage Server",
+        "feeds": "Feeds",
+        "settings": "Settings"
+      },
+      "feed": {
+        "manage": "Manage Feed",
+        "backToManageServer": "Manage Server",
+        "overview": "Overview",
+        "message": "Message",
+        "filters": "Filters",
+        "subscribers": "Subscribers",
+        "webhooks": "Webhooks",
+        "miscoptions": "Misc Options"
+      }
+    }
+  },
+  "features": {
+    "feeds": {
+      "components": {
+
+      }
+    }
+  }
+}

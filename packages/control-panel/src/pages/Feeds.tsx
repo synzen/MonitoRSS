@@ -17,6 +17,7 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DashboardContent, Loading, Navbar } from '@/components';
 import { FeedSummary, useFeeds } from '../features/feed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
@@ -24,6 +25,7 @@ import RouteParams from '../types/RouteParams';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
+  const { t } = useTranslation();
 
   if (!serverId) {
     return <Navigate to="/servers" />;
@@ -37,7 +39,7 @@ const Feeds: React.FC = () => {
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',
-    content: 'Feeds',
+    content: t('pages.feeds.title'),
     enabled: true,
   }];
 
@@ -73,18 +75,18 @@ const Feeds: React.FC = () => {
                 >
                   <SearchIcon color="gray.400" />
                 </InputLeftElement>
-                <Input width="sm" placeholder="Search feeds by id, name, or url" />
+                <Input width="sm" placeholder={t('pages.feeds.search')} />
               </InputGroup>
-              <Button colorScheme="blue">Add New</Button>
+              <Button colorScheme="blue">{t('pages.feeds.add')}</Button>
             </Flex>
             <Box overflow="auto">
               <Table size="lg" variant="simple" width="100%">
                 <Thead>
                   <Tr>
-                    <Th>Status</Th>
-                    <Th>Title</Th>
-                    <Th>Url</Th>
-                    <Th>Channel</Th>
+                    <Th>{t('pages.feeds.status')}</Th>
+                    <Th>{t('pages.feeds.title')}</Th>
+                    <Th>{t('pages.feeds.url')}</Th>
+                    <Th>{t('pages.feeds.channel')}</Th>
                     {/* <Th isNumeric>Refresh Rate</Th> */}
                     {/* <Th>Actions</Th> */}
                   </Tr>
