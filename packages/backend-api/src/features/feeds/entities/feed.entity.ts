@@ -1,5 +1,6 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types, Model } from 'mongoose';
+import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
 
 @Schema({
   collection: 'feeds',
@@ -25,6 +26,45 @@ export class Feed {
 
   @Prop()
   channel: string;
+
+  @Prop({
+    type: [FeedEmbedSchema],
+    default: [],
+  })
+  embeds: FeedEmbed[];
+
+  @Prop()
+  disabled?: string;
+
+  @Prop()
+  checkTitles?: boolean;
+
+  @Prop()
+  checkDates?: boolean;
+
+  @Prop()
+  imgPreviews?: boolean;
+
+  @Prop()
+  imgLinksExistence?: boolean;
+
+  @Prop()
+  formatTables?: boolean;
+
+  @Prop()
+  directSubscribers?: boolean;
+
+  @Prop({
+    type: [String],
+    default: [],
+  })
+  ncomparisons?: string[];
+
+  @Prop({
+    type: [String],
+    default: [],
+  })
+  pcomparisons?: string[];
 
   @Prop({
     required: false,

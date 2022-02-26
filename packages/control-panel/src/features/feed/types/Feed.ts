@@ -25,17 +25,10 @@ const FeedEmbed = object({
   }).optional(),
   color: number().optional(),
   fields: array(object({
-    name: string().optional(),
-    value: string().optional(),
+    name: string(),
+    value: string(),
     inline: boolean().optional(),
   })).optional(),
-  checkTitle: boolean().optional(),
-  checkDates: boolean().optional(),
-  imgPreviews: boolean().optional(),
-  imgLinksExistence: boolean().optional(),
-  formatTables: boolean().optional(),
-  directSubscribers: boolean().optional(),
-  disabled: string().optional(),
   ncomparisons: array(string()).optional(),
   pcomparisons: array(string()).optional(),
 }).required();
@@ -44,6 +37,13 @@ export const FeedSchema = FeedSummarySchema.concat(object({
   refreshRateSeconds: number().required(),
   text: string().required(),
   embeds: array(FeedEmbed).required(),
+  checkTitles: boolean().optional(),
+  checkDates: boolean().optional(),
+  imgPreviews: boolean().optional(),
+  imgLinksExistence: boolean().optional(),
+  formatTables: boolean().optional(),
+  directSubscribers: boolean().optional(),
+  disabled: string().optional(),
 })).required();
 
 export type Feed = InferType<typeof FeedSchema>;

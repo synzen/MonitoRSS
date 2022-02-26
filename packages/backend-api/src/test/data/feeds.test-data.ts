@@ -9,6 +9,7 @@ const boilerplate: Feed = {
   url: 'url-1',
   text: 'text-1',
   addedAt: new Date(),
+  embeds: [],
 };
 
 export const createTestFeed = (override?: Partial<Feed>): Feed => ({
