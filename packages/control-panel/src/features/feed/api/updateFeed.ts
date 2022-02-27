@@ -1,4 +1,4 @@
-import { InferType } from 'yup';
+import { InferType, object } from 'yup';
 import { FeedSchema, Feed } from '../types';
 import fetchRest from '@/utils/fetchRest';
 
@@ -9,7 +9,9 @@ export interface UpdateFeedInput {
   }
 }
 
-const UpdatFeedOutputSchema = FeedSchema;
+const UpdatFeedOutputSchema = object({
+  result: FeedSchema,
+});
 
 export type UpdateFeedOutput = InferType<typeof UpdatFeedOutputSchema>;
 

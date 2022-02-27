@@ -8,7 +8,13 @@ interface FetchOptions<T> {
 }
 
 const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise<T> => {
-  const res = await fetch(url, fetchOptions?.requestOptions);
+  const res = await fetch(url, {
+    ...fetchOptions?.requestOptions,
+    headers: {
+      'Content-Type': 'application/json',
+      ...fetchOptions?.requestOptions?.headers,
+    }
+  });
 
   await handleStatusCode(res);
 
