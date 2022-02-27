@@ -4,7 +4,7 @@ import {
   Box, Code, Select, Stack, StackDivider, Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
-import { FeedArticle } from '../../../../types/FeedArticle';
+import { FeedArticle } from '../../types/FeedArticle';
 
 interface Props {
   loading?: boolean
@@ -52,7 +52,7 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ loading, articles, e
         overflow="auto"
         divider={<StackDivider />}
       >
-        {selectedArticle?.placeholders.map((placeholder) => (
+        {selectedArticle.placeholders.public.map((placeholder) => (
           <Stack display="inline-block" key={placeholder.value}>
             <Code>{placeholder.name}</Code>
             <Text>{placeholder.value}</Text>
