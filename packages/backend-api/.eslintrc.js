@@ -35,6 +35,7 @@ module.exports = {
         "prev": 'block-like',
         "next": '*'
       }
-    ]
+    ],
+    "@typescript-eslint/ban-ts-comment": "off"
   },
 };

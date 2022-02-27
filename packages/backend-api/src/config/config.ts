@@ -39,4 +39,5 @@ export default () => ({
   apiSubscriptionsAccessToken: process.env.API_SUBSCRIPTIONS_ACCESS_TOKEN || '',
   sessionSecret: process.env.SESSION_SECRET,
   sessionSalt: process.env.SESSION_SALT,
+  feedUserAgent: process.env.FEED_USER_AGENT,
 });

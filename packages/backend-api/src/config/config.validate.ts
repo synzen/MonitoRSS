@@ -55,17 +55,20 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  API_SUBSCRIPTIONS_HOST: string;
+  API_SUBSCRIPTIONS_HOST?: string;
 
   @IsString()
   @IsOptional()
-  API_SUBSCRIPTIONS_ACCESS_TOKEN: string;
+  API_SUBSCRIPTIONS_ACCESS_TOKEN?: string;
 
   @IsString()
   SESSION_SECRET: string;
 
   @IsString()
   SESSION_SALT: string;
+
+  @IsString()
+  FEED_USER_AGENT: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {
