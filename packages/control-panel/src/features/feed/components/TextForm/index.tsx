@@ -41,6 +41,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text }) => {
       {({
         isSubmitting,
         isValid,
+        values,
       }) => (
         <Form>
           <Stack>
@@ -54,7 +55,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text }) => {
               type="submit"
               colorScheme="blue"
               isLoading={isSubmitting}
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isSubmitting || text === values.text}
             >
               Save
             </Button>

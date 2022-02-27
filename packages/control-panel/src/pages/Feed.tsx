@@ -21,7 +21,7 @@ const Feed: React.FC = () => {
     enabled: true,
   }, {
     id: 'feed',
-    content: feedId,
+    content: feed?.title || '',
     enabled: !!feedId,
   }];
 

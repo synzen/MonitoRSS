@@ -24,7 +24,7 @@ const FeedMessage: React.FC = () => {
     enabled: true,
   }, {
     id: 'feed',
-    content: feedId,
+    content: feed?.title,
     enabled: true,
   }, {
     id: 'message',

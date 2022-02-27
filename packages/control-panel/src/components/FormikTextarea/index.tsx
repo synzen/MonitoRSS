@@ -22,7 +22,6 @@ TextareaProps
     resize="none"
     ref={ref}
     minRows={4}
-    placeholder="hell oworld"
     as={ResizeTextarea}
     {...props}
   />
