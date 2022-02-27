@@ -4,7 +4,7 @@ import {
 
 const Placeholder = object({
   name: string().required(),
-  value: string().required(),
+  value: string().defined(),
 }).required();
 
 export const FeedArticlesSchema = object({

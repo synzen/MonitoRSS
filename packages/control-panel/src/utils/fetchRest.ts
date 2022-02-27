@@ -1,4 +1,4 @@
-import { AnySchema } from 'yup';
+import { AnySchema, ValidationError } from 'yup';
 import ApiAdapterError from './ApiAdapterError';
 import getStatusCodeErrorMessage from './getStatusCodeErrorMessage';
 
@@ -23,8 +23,9 @@ const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise
 
       return validationResult;
     } catch (err) {
-      console.error(err);
-      throw new ApiAdapterError('API contract violation. Try again later.');
+      const yupErr = err as ValidationError;
+      console.error(url, yupErr.errors);
+      throw new ApiAdapterError('API contract violation detected. Try again later.');
     }
   }
 

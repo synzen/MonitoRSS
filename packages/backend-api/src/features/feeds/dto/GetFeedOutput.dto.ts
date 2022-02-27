@@ -34,6 +34,12 @@ export interface FeedEmbedOutputDto {
 }
 
 interface FeedOutputDto {
+  id: string;
+  title: string;
+  status: 'ok' | 'failed';
+  url: string;
+  channel: string;
+  createdAt: string;
   refreshRateSeconds: number;
   text: string;
   embeds: FeedEmbedOutputDto[];
@@ -54,6 +60,12 @@ export class GetFeedOutputDto {
   static fromEntity(feed: FeedWithRefreshRate): GetFeedOutputDto {
     return {
       result: {
+        id: feed._id.toHexString(),
+        channel: feed.channel,
+        createdAt: feed.addedAt.toISOString(),
+        status: 'ok',
+        title: feed.title,
+        url: feed.url,
         refreshRateSeconds: feed.refreshRateSeconds,
         text: feed.text || '',
         checkDates: feed.checkDates,

@@ -35,7 +35,7 @@ const FeedEmbed = object({
 
 export const FeedSchema = FeedSummarySchema.concat(object({
   refreshRateSeconds: number().required(),
-  text: string().required(),
+  text: string().defined(),
   embeds: array(FeedEmbed).required(),
   checkTitles: boolean().optional(),
   checkDates: boolean().optional(),

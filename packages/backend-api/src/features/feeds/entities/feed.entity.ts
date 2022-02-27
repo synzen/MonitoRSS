@@ -66,10 +66,8 @@ export class Feed {
   })
   pcomparisons?: string[];
 
-  @Prop({
-    required: false,
-  })
-  addedAt?: Date;
+  @Prop()
+  addedAt: Date;
 }
 
 export type FeedDocument = Feed & Document;
