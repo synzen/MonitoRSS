@@ -6,7 +6,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { DashboardContent, Navbar } from '@/components';
 import {
-  EmbedForm, FeedArticlesPlaceholders, useFeed, useFeedArticles,
+  EmbedForm, FeedArticlesPlaceholders, useFeed,
 } from '../features/feed';
 import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
@@ -17,7 +17,6 @@ const FeedMessage: React.FC = () => {
   const { feed, status: feedStatus, error: feedError } = useFeed({
     feedId,
   });
-  const { articles, status: articlesStatus, error: articlesError } = useFeedArticles({ feedId });
 
   const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
     id: 'feeds',
@@ -45,9 +44,7 @@ const FeedMessage: React.FC = () => {
             <Heading size="md">Placeholders</Heading>
             <Text>Below are the available placeholders for the selected article.</Text>
             <FeedArticlesPlaceholders
-              articles={articles}
-              loading={articlesStatus === 'loading' || articlesStatus === 'idle'}
-              error={articlesError}
+              feedId={feedId}
             />
           </Stack>
           <Stack spacing="4">

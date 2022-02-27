@@ -1,22 +1,22 @@
 import {
   Alert,
-  AlertIcon,
-  Box, Code, Select, Stack, StackDivider, Text,
+  AlertIcon, Code, Select, Stack, StackDivider, Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
-import { FeedArticle } from '../../types/FeedArticle';
+import { Loading } from '@/components';
+import { useFeedArticles } from '../../hooks/useFeedArticles';
 
 interface Props {
-  loading?: boolean
-  error?: Error | null
-  articles: FeedArticle[]
+  feedId?: string
 }
 
-export const FeedArticlesPlaceholders: React.FC<Props> = ({ loading, articles, error }) => {
+export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
   const [articleIndex, setArticleIndex] = useState(0);
 
-  if (loading) {
-    return <Box>Loading</Box>;
+  const { articles, status, error } = useFeedArticles({ feedId });
+
+  if (status === 'loading' || status === 'idle') {
+    return <Loading />;
   }
 
   if (error) {
