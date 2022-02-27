@@ -8,6 +8,7 @@ import { notifyError } from '@/utils/notifyError';
 interface Props {
   feedId: string
   text: string
+  onUpdated: () => Promise<any>
 }
 
 const FormSchema = object({
@@ -16,7 +17,7 @@ const FormSchema = object({
 
 type FormValues = InferType<typeof FormSchema>;
 
-export const TextForm: React.FC<Props> = ({ feedId, text }) => {
+export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
   const initialValues: FormValues = {
     text,
   };
@@ -33,6 +34,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text }) => {
               text: values.text,
             },
           });
+          await onUpdated();
         } catch (err) {
           notifyError('Failed to update text', err as Error);
         }

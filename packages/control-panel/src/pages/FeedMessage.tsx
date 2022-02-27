@@ -14,7 +14,9 @@ import { TextForm } from '@/features/feed/components/TextForm';
 
 const FeedMessage: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
-  const { feed, status: feedStatus, error: feedError } = useFeed({
+  const {
+    feed, status: feedStatus, error: feedError, refetch,
+  } = useFeed({
     feedId,
   });
 
@@ -56,7 +58,11 @@ const FeedMessage: React.FC = () => {
               + ' used to create an empty message, but only if an embed is used. Regular formatting'
               + ' such as bold and etc. is also available.'}
             </Text>
-            <TextForm feedId={feedId as string} text={feed?.text || ''} />
+            <TextForm
+              feedId={feedId as string}
+              text={feed?.text || ''}
+              onUpdated={refetch}
+            />
           </Stack>
           <Stack spacing="4">
             <Stack direction="row" justifyContent="space-between">

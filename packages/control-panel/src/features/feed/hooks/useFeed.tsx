@@ -7,7 +7,9 @@ interface Props {
 }
 
 export const useFeed = ({ feedId }: Props) => {
-  const { data, status, error } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
+  const {
+    data, status, error, refetch,
+  } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
     ['feed', {
       feedId,
     }],
@@ -29,5 +31,6 @@ export const useFeed = ({ feedId }: Props) => {
     feed: data?.result,
     status,
     error,
+    refetch,
   };
 };
