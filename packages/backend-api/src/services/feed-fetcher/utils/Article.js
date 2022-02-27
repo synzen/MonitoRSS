@@ -40,6 +40,20 @@ const BASE_REGEX_PHS = [
  *
  */
 
+/**
+ * @typedef {Object} PlaceholderJSON
+ * @property {string} name
+ * @property {string} value
+ *
+ */
+
+/**
+ * @param {Object} ArticleJSON
+ * @property {string} id
+ * @property {string} title
+ * @property {Record<'public'|'private'|'raw'|'regex', PlaceholderJSON[]>} placeholders
+ */
+
 function dateHasNoTime(date) {
   // Determine if the time is T00:00:00.000Z
   const timeParts = [
@@ -362,6 +376,7 @@ module.exports = class Article {
   constructor(raw, feedData, defaultOptions) {
     const feed = feedData.feed;
     const profile = feedData.profile || {};
+    this.defaultOptions = defaultOptions;
     this.id = raw._id || null;
     this.feed = feed;
     this.profile = profile;
@@ -903,9 +918,13 @@ module.exports = class Article {
     return content;
   }
 
-  getRawPlaceholders() {
+  getRawPlaceholders(defaultOptions) {
     if (!this.flattenedJSON) {
-      this.flattenedJSON = new FlattenedJSON(this.raw, this.feed);
+      this.flattenedJSON = new FlattenedJSON(
+        this.raw,
+        this.feed,
+        defaultOptions,
+      );
     }
 
     return this.flattenedJSON.results;
@@ -1213,6 +1232,10 @@ module.exports = class Article {
     );
   }
 
+  /**
+   *
+   * @returns {ArticleJSON}
+   */
   toJSON() {
     const data = {
       id: this.id || '',
@@ -1254,7 +1277,7 @@ module.exports = class Article {
     }
 
     // Raw
-    const rawPlaceholders = this.getRawPlaceholders();
+    const rawPlaceholders = this.getRawPlaceholders(this.defaultOptions);
 
     for (const rawPlaceholder in rawPlaceholders) {
       data.placeholders.raw.push({

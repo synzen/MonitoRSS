@@ -14,6 +14,7 @@ import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { getModelToken } from '@nestjs/mongoose';
 import { Feed, FeedModel } from './entities/Feed.entity';
 import { createTestFeed } from '../../test/data/feeds.test-data';
+import path from 'path';
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
@@ -189,6 +190,99 @@ describe('FeedsModule', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('GET /feeds/:feedId/articles', () => {
+    const feedUrl = 'https://rss-feed.com/feed.xml';
+
+    beforeEach(() => {
+      const url = new URL(feedUrl);
+      const feedFilePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        'test',
+        'data',
+        'feed.xml',
+      );
+
+      nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
+        'Content-Type': 'application/xml',
+      });
+    });
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${feedId}/articles`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if use does not have permission of guild of feed', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+          url: feedUrl,
+        }),
+      );
+
+      mockGetMeServers([
+        {
+          id: createdFeed.guild + '1',
+          name: 'Test Guild 3',
+          owner: true,
+          permissions: 0,
+        },
+      ]);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${createdFeed._id}/articles`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns the feed articles', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+          url: feedUrl,
+        }),
+      );
+
+      mockGetMeServers();
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${createdFeed._id}/articles`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+
+      const articles = parsedBody.result;
+
+      for (let i = 0; i < articles.length; i++) {
+        expect(articles[i]).toEqual(
+          expect.objectContaining({
+            id: expect.any(String),
+            title: expect.any(String),
+            placeholders: expect.objectContaining({
+              public: expect.any(Array),
+              private: expect.any(Array),
+              raw: expect.any(Array),
+              regex: expect.any(Array),
+            }),
+          }),
+        );
+      }
     });
   });
 });

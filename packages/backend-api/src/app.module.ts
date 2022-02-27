@@ -9,7 +9,6 @@ import { DiscordAuthModule } from './features/discord-auth/discord-auth.module';
 import { DiscordServersModule } from './features/discord-servers/discord-servers.module';
 import { DiscordUserModule } from './features/discord-users/discord-users.module';
 import { FeedsModule } from './features/feeds/feeds.module';
-import { FeedFetcherModule } from './services/feed-fetcher/feed-fetcher.module';
 
 @Module({
   imports: [
@@ -23,7 +22,6 @@ import { FeedFetcherModule } from './services/feed-fetcher/feed-fetcher.module';
     DiscordUserModule,
     DiscordServersModule,
     FeedsModule,
-    FeedFetcherModule,
   ],
   controllers: [AppController],
   providers: [AppService],

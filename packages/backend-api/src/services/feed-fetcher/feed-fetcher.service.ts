@@ -8,16 +8,22 @@ import ArticleIDResolver from './utils/ArticleIDResolver';
 // @ts-ignore
 import Article from './utils/Article';
 
+interface FetchFeedOptions {
+  formatTables?: boolean;
+  imgLinksExistence?: boolean;
+  imgPreviews?: boolean;
+}
+
 @Injectable()
 export class FeedFetcherService {
   constructor(private readonly configService: ConfigService) {}
 
-  async fetchFeed(url: string) {
+  async fetchFeed(url: string, options?: FetchFeedOptions) {
     const inputStream = await this.fetchFeedStream(url);
 
     const { articleList, idType } = await this.parseFeed(inputStream);
 
-    const articles = this.convertRawObjectsToArticles(articleList);
+    const articles = this.convertRawObjectsToArticles(articleList, options);
 
     return {
       articles,
@@ -25,7 +31,7 @@ export class FeedFetcherService {
     };
   }
 
-  async fetchFeedStream(url: string): Promise<NodeJS.ReadableStream> {
+  private async fetchFeedStream(url: string): Promise<NodeJS.ReadableStream> {
     const userAgent = this.configService.get<string>('feedUserAgent');
 
     const res = await fetch(url, {
@@ -109,17 +115,16 @@ export class FeedFetcherService {
     });
   }
 
-  convertRawObjectsToArticles(feedparserItems: FeedParser.Item[]): Article[] {
+  private convertRawObjectsToArticles(
+    feedparserItems: FeedParser.Item[],
+    feedOptions?: FetchFeedOptions,
+  ): Article[] {
     return feedparserItems.map(
       (item) =>
         new Article(
           item,
           {
-            feed: {
-              formatTables: false,
-              imgLinksExistence: true,
-              imgPreviews: true,
-            },
+            feed: feedOptions || {},
           },
           {
             dateFallback: false,
