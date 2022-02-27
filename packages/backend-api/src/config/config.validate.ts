@@ -24,6 +24,10 @@ class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
+  DISCORD_BOT_TOKEN: string;
+
+  @IsString()
+  @MinLength(1)
   DISCORD_CLIENT_ID: string;
 
   @IsString()

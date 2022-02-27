@@ -20,6 +20,7 @@ dotenv.config({
 
 export default () => ({
   port: parseInt(process.env.PORT as string, 10),
+  discordBotToken: process.env.DISCORD_BOT_TOKEN,
   discordClientId: process.env.DISCORD_CLIENT_ID,
   discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
   discordRedirectUri: process.env.DISCORD_REDIRECT_URI,
