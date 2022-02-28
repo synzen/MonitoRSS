@@ -15,7 +15,14 @@ interface Props {
 
 export const Navbar: React.FC<Props> = ({ breadcrumbItems }) => (
   <Box as="header" bg={useColorModeValue('white', 'gray.800')} borderBottomWidth="1px">
-    <Box mx="auto" py="4" px={{ base: '6', md: '8' }} maxWidth="7xl">
+    <Box
+      mx="auto"
+      py="4"
+      px={{ base: '6', md: '8' }}
+      maxWidth="7xl"
+      whiteSpace="nowrap"
+      overflow="auto"
+    >
       <Flex as="nav" justify="space-between">
         {/* {children} */}
         <Breadcrumb spacing="8px" separator={<ChevronRightIcon color="gray.500" />}>

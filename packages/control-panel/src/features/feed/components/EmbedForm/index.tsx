@@ -57,7 +57,7 @@ export const EmbedForm: React.FC = () => {
           {tabs.map((tab) => (
             <TabPanel
               paddingX="8"
-              paddingY="0"
+              paddingY={tabOrientation === 'horizontal' ? '8' : '0'}
               key={tab.title}
             >
               {tab.content}
