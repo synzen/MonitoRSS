@@ -73,7 +73,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
         borderRightWidth="1px"
       >
         <Stack spacing="12">
-          <Stack px="3">
+          {/* <Stack px="3">
             <ThemedSelect
               selectedValue={serverId}
               options={data?.results.map((server) => ({
@@ -82,7 +82,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
               })) || []}
               onChangedValue={(value) => onPathChanged(`/servers/${value}/feeds`)}
             />
-          </Stack>
+          </Stack> */}
           <Stack px="3" spacing="6">
             <Stack spacing="3">
               {!feedId && (

@@ -2,6 +2,7 @@ import { Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { FiRss, FiSettings } from 'react-icons/fi';
 import { SidebarLink } from '../../../../components/SidebarLink';
+import { DiscordServerSearchSelect } from '../DiscordServerSearchSelect';
 
 interface Props {
   currentPath: string
@@ -36,6 +37,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
       >
         {t('components.sidebar.server.manage')}
       </Text>
+      <DiscordServerSearchSelect />
       <SidebarLink
         icon={FiRss}
         active={currentPath.startsWith(paths.SERVER_FEEDS)}

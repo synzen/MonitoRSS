@@ -4,11 +4,10 @@ import {
   Code, Heading, IconButton, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { DashboardContent, Navbar } from '@/components';
+import { DashboardContent } from '@/components';
 import {
   EmbedForm, FeedArticlesPlaceholders, useFeed,
 } from '../features/feed';
-import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 import { TextForm } from '@/features/feed/components/TextForm';
 
@@ -20,28 +19,14 @@ const FeedMessage: React.FC = () => {
     feedId,
   });
 
-  const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
-    id: 'feeds',
-    content: 'Feeds',
-    enabled: true,
-  }, {
-    id: 'feed',
-    content: feed?.title,
-    enabled: true,
-  }, {
-    id: 'message',
-    content: 'Message',
-    enabled: true,
-  }];
-
   return (
     <Stack>
-      <Navbar breadcrumbItems={breadcrumbItems} />
       <DashboardContent
         error={feedError}
         loading={feedStatus === 'loading' || feedStatus === 'idle'}
       >
         <Stack spacing="8">
+          <Heading size="lg">Message</Heading>
           <Stack spacing="4">
             <Heading size="md">Placeholders</Heading>
             <Text>Below are the available placeholders for the selected article.</Text>

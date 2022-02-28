@@ -3,9 +3,8 @@ import {
   Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { CategoryText, DashboardContent, Navbar } from '@/components';
+import { CategoryText, DashboardContent } from '@/components';
 import { useFeed } from '../features/feed';
-import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
 const Feed: React.FC = () => {
@@ -15,21 +14,8 @@ const Feed: React.FC = () => {
     feedId,
   });
 
-  const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
-    id: 'feeds',
-    content: 'Feeds',
-    enabled: true,
-  }, {
-    id: 'feed',
-    content: feed?.title || '',
-    enabled: !!feedId,
-  }];
-
   return (
     <Stack>
-      <Navbar
-        breadcrumbItems={breadcrumbItems}
-      />
       <DashboardContent
         error={error}
         loading={status === 'loading' || status === 'idle'}

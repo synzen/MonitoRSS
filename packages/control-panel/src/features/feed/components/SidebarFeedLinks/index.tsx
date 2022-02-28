@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { SidebarLink } from '../../../../components/SidebarLink';
+import { FeedSearchSelect } from '../FeedSearchSelect';
 
 interface Props {
   currentPath: string
@@ -57,6 +58,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
           {t('components.sidebar.feed.manage')}
         </Text>
         <Stack spacing="2">
+          <FeedSearchSelect />
           <SidebarLink
             icon={FiHome}
             active={currentPath === paths.FEED_OVERVIEW}
