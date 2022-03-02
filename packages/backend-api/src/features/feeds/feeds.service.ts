@@ -23,19 +23,23 @@ export class FeedsService {
   ) {}
 
   async getFeed(feedId: string): Promise<FeedWithRefreshRate | null> {
-    const feed: Feed = await this.feedModel.findById(feedId).lean();
+    const feeds = await this.findFeeds(
+      {
+        _id: new Types.ObjectId(feedId),
+      },
+      {
+        limit: 1,
+        skip: 0,
+      },
+    );
 
-    if (!feed) {
+    const matchedFeed = feeds[0];
+
+    if (!matchedFeed) {
       return null;
     }
 
-    const feedStatuses = await this.getFeedStatuses([feed]);
-
-    return {
-      ...feed,
-      status: feedStatuses[0].status,
-      refreshRateSeconds: 10,
-    };
+    return matchedFeed;
   }
 
   async getServerFeeds(
@@ -111,23 +115,7 @@ export class FeedsService {
     return feeds[0];
   }
 
-  async getFeedStatuses(feed: Feed[]): Promise<{ status: FeedStatus }[]> {
-    const feedUrls = feed.map((feed) => feed.url);
-
-    const failRecords = await this.failRecord.find({
-      url: { $in: feedUrls },
-    });
-
-    const detailedFeeds = feed.map((feed) => ({
-      status: failRecords.some((record) => record._id === feed.url)
-        ? FeedStatus.FAILED
-        : FeedStatus.OK,
-    }));
-
-    return detailedFeeds;
-  }
-
-  private async findFeeds(
+  async findFeeds(
     filter: FilterQuery<FeedDocument>,
     options: {
       limit: number;
@@ -166,10 +154,16 @@ export class FeedsService {
       },
     ]);
 
-    return feeds.map((feed) => ({
+    const withStatuses = feeds.map((feed) => ({
       ...feed,
       status: feed.failRecord ? FeedStatus.FAILED : FeedStatus.OK,
       refreshRateSeconds: 10,
     }));
+
+    withStatuses.forEach((feed) => {
+      delete feed.failRecord;
+    });
+
+    return withStatuses;
   }
 }

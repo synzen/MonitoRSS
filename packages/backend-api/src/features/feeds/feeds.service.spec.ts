@@ -256,43 +256,120 @@ describe('FeedsService', () => {
 
       expect(updatedFeed).toBeNull();
     });
+
+    it('returns status ok', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
+      const result = await service.refresh(createdFeed._id.toString());
+
+      expect(result.status).toEqual(FeedStatus.OK);
+    });
   });
 
-  describe('getFeedStatuses', () => {
-    it('returns the statuses of the feeds', async () => {
-      const guild = 'server-1';
-      const feedsToInsert = [
-        createTestFeed({
-          addedAt: new Date(2020),
-          title: '2020',
-          guild,
-          url: 'url-1',
-        }),
-        createTestFeed({
-          addedAt: new Date(2019),
-          title: '2019',
-          guild,
-          url: 'url-2',
-        }),
-      ];
+  describe('findFeeds', () => {
+    const defaultOptions = {
+      skip: 0,
+      limit: 1000,
+    };
 
+    it('does not return feeds that do not match filters', async () => {
+      const feedUrl = 'https://example.com/feed';
+      const feeds = await feedModel.create([
+        createTestFeed({
+          url: feedUrl,
+        }),
+        createTestFeed({
+          url: feedUrl + '1',
+        }),
+      ]);
+      const result = await service.findFeeds(
+        {
+          url: feeds[0].url,
+        },
+        defaultOptions,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].url).toEqual(feeds[0].url);
+    });
+
+    it('respects skip and limit', async () => {
+      const feeds = await feedModel.create(
+        createTestFeed({
+          url: '2020',
+          addedAt: new Date(2020, 1, 1),
+        }),
+        createTestFeed({
+          url: '2019',
+          addedAt: new Date(2019, 1, 1),
+        }),
+        createTestFeed({
+          url: '2021',
+          addedAt: new Date(2021, 1, 1),
+        }),
+      );
+      const result = await service.findFeeds(
+        {},
+        {
+          skip: 1,
+          limit: 1,
+        },
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].url).toEqual(feeds[0].url);
+    });
+
+    it('returns feed status failed correctly', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
       const faiLRecordsToInsert = [
         createTestFailRecord({
-          _id: feedsToInsert[0].url,
+          _id: createdFeed.url,
         }),
       ];
-
-      const insertedFeeds = await feedModel.insertMany(feedsToInsert);
       await failRecordModel.insertMany(faiLRecordsToInsert);
+      const result = await service.findFeeds(
+        {
+          _id: createdFeed._id,
+        },
+        defaultOptions,
+      );
 
-      const statuses = await service.getFeedStatuses(insertedFeeds);
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          status: FeedStatus.FAILED,
+        }),
+      );
+    });
+    it('returns feed status OK correctly', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
+      const result = await service.findFeeds(
+        {
+          _id: createdFeed._id,
+        },
+        defaultOptions,
+      );
 
-      expect(statuses[0]).toEqual({
-        status: FeedStatus.FAILED,
-      });
-      expect(statuses[1]).toEqual({
-        status: FeedStatus.OK,
-      });
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          status: FeedStatus.OK,
+        }),
+      );
+    });
+
+    it('returns refresh rates', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
+      const result = await service.findFeeds(
+        {
+          _id: createdFeed._id,
+        },
+        defaultOptions,
+      );
+
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          refreshRateSeconds: expect.any(Number),
+        }),
+      );
     });
   });
 });
