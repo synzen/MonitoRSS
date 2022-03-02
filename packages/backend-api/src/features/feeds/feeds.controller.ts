@@ -27,6 +27,16 @@ export class FeedsController {
     return GetFeedOutputDto.fromEntity(feed);
   }
 
+  @Get(':feedId/refresh')
+  @UseGuards(UserManagesFeedServerGuard)
+  async refreshFeed(
+    @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
+  ): Promise<GetFeedOutputDto> {
+    const updatedFeed = await this.feedsService.refresh(feed._id);
+
+    return GetFeedOutputDto.fromEntity(updatedFeed);
+  }
+
   @Patch(':feedId')
   @UseGuards(UserManagesFeedServerGuard)
   async updateFeed(

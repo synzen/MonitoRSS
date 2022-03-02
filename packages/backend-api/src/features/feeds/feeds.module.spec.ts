@@ -101,6 +101,18 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
+    it('returns 404 if the feed does not exist', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${new Types.ObjectId()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
     it('returns the feed', async () => {
       mockGetMeServers();
 
@@ -113,6 +125,78 @@ describe('FeedsModule', () => {
       const { statusCode, body } = await app.inject({
         method: 'GET',
         url: `/feeds/${feed._id}`,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(statusCode).toEqual(HttpStatus.OK);
+      expect(parsedBody).toEqual({
+        result: expect.any(Object),
+      });
+    });
+  });
+
+  describe('GET /feeds/:feedId/refresh', () => {
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${feedId}/refresh`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if use does not have permission of guild of feed', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      mockGetMeServers([
+        {
+          id: createdFeed.guild + '1',
+          name: 'Test Guild 3',
+          owner: true,
+          permissions: 0,
+        },
+      ]);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${createdFeed._id}/refresh`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 404 if the feed does not exist', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${new Types.ObjectId()}/refresh`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns the feed', async () => {
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        guild: guildId,
+      });
+
+      await feedModel.create(feed);
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${feed._id}/refresh`,
         ...standardRequestOptions,
       });
 

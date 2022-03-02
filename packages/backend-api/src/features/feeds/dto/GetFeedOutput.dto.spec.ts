@@ -15,6 +15,12 @@ describe('GetFeedOutputDto', () => {
 
       expect(result).toEqual({
         result: {
+          id: feed._id.toHexString(),
+          channel: feed.channel,
+          title: feed.title,
+          status: 'ok',
+          url: feed.url,
+          createdAt: feed.addedAt.toISOString(),
           refreshRateSeconds: feedWithRefreshRate.refreshRateSeconds,
           text: feed.text || '',
           checkDates: feed.checkDates,
