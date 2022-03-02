@@ -156,7 +156,9 @@ export class FeedsService {
 
     const withStatuses = feeds.map((feed) => ({
       ...feed,
-      status: feed.failRecord ? FeedStatus.FAILED : FeedStatus.OK,
+      status: this.isValidFailRecord(feed.failRecord || null)
+        ? FeedStatus.FAILED
+        : FeedStatus.OK,
       refreshRateSeconds: 10,
     }));
 
@@ -165,5 +167,28 @@ export class FeedsService {
     });
 
     return withStatuses;
+  }
+
+  /**
+   * See if a fail record should be valid and eligible for a refresh. If a fail record is invalid,
+   * then it's still on cycle.
+   *
+   * @param failRecord The fail record to check
+   * @param requiredLifetimeHours How long the fail record should be in the database to consider
+   *  feeds as failures. Hardcoded as 18 for now to match the config until a separate service is
+   *  ready to handle fail records.
+   * @returns
+   */
+  private isValidFailRecord(
+    failRecord: FailRecord | null,
+    requiredLifetimeHours = 18,
+  ) {
+    if (!failRecord) {
+      return false;
+    }
+
+    const requiredLifetimeSeconds = requiredLifetimeHours * 60 * 60;
+
+    return failRecord.failedAt.getTime() + requiredLifetimeSeconds > Date.now();
   }
 }

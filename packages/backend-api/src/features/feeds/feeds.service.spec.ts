@@ -371,5 +371,31 @@ describe('FeedsService', () => {
         }),
       );
     });
+
+    it('does not return failed status for fail records within the past 18 hours', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
+
+      const failRecordDate = new Date();
+      failRecordDate.setHours(failRecordDate.getHours() - 2);
+      const faiLRecordsToInsert = [
+        createTestFailRecord({
+          _id: createdFeed.url,
+          failedAt: failRecordDate,
+        }),
+      ];
+      await failRecordModel.insertMany(faiLRecordsToInsert);
+      const result = await service.findFeeds(
+        {
+          _id: createdFeed._id,
+        },
+        defaultOptions,
+      );
+
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          status: FeedStatus.OK,
+        }),
+      );
+    });
   });
 });
