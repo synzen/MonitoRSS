@@ -63,7 +63,7 @@ export class GetFeedOutputDto {
         id: feed._id.toHexString(),
         channel: feed.channel,
         createdAt: feed.addedAt.toISOString(),
-        status: 'ok',
+        status: feed.status,
         title: feed.title,
         url: feed.url,
         refreshRateSeconds: feed.refreshRateSeconds,
