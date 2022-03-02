@@ -13,7 +13,7 @@ const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise
     headers: {
       'Content-Type': 'application/json',
       ...fetchOptions?.requestOptions?.headers,
-    }
+    },
   });
 
   await handleStatusCode(res);

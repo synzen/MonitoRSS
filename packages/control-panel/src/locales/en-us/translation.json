@@ -7,6 +7,14 @@
       "add": "Add New",
       "channel": "Channel",
       "search": "Search by id, title, name or url"
+    },
+    "feed": {
+      "connectionFailureTitle": "Disabled due to too many connection failures",
+      "connectionFailureText": "This feed has been disabled because there were too many connection failures within a short period of time ({{reason}}).",
+      "channelLabel": "Channel",
+      "refreshRateLabel": "Refresh Rate",
+      "refreshRateValue": "{{seconds}} seconds",
+      "createdAtLabel": "Since"
     }
   },
   "components": {
@@ -29,9 +37,13 @@
     }
   },
   "features": {
-    "feeds": {
+    "feed": {
       "components": {
-
+        "refreshButton": {
+          "text": "Refresh",
+          "failure": "Failed to refresh feed",
+          "success": "Feed successfully refreshed"
+        }
       }
     }
   }

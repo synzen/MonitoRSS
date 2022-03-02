@@ -1,16 +1,26 @@
-import { CheckCircleIcon } from '@chakra-ui/icons';
+import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Box,
   Flex, Grid, Heading, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CategoryText, DashboardContent } from '@/components';
 import { useFeed } from '../features/feed';
 import RouteParams from '../types/RouteParams';
+import { RefreshButton } from '@/features/feed/components/RefreshButton';
 
 const Feed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const { t } = useTranslation();
 
-  const { feed, status, error } = useFeed({
+  const {
+    feed, status, error, refetch,
+  } = useFeed({
     feedId,
   });
 
@@ -21,20 +31,56 @@ const Feed: React.FC = () => {
         loading={status === 'loading' || status === 'idle'}
       >
         <Stack spacing={12}>
-          <Stack>
-            <Flex alignItems="center">
-              <Heading
-                size="lg"
-                marginRight={4}
-              >
-                {feed?.title}
+          <Stack spacing={6}>
+            <Stack>
+              <Flex alignItems="center">
+                <Heading
+                  size="lg"
+                  marginRight={4}
+                >
+                  {feed?.title}
 
-              </Heading>
-              <CheckCircleIcon fontSize="2xl" color="green.500" verticalAlign="middle" />
-            </Flex>
-            <Text>
-              {feed?.url}
-            </Text>
+                </Heading>
+                {feed?.status === 'ok' && (
+                <CheckCircleIcon
+                  fontSize="2xl"
+                  color="green.500"
+                  verticalAlign="middle"
+                />
+                )}
+                {feed?.status === 'failed' && (
+                <WarningIcon
+                  fontSize="2xl"
+                  color="red.500"
+                  verticalAlign="middle"
+                />
+                )}
+              </Flex>
+              <Text>
+                {feed?.url}
+              </Text>
+            </Stack>
+            <Alert status="error" hidden={feed?.status !== 'failed'}>
+              <AlertIcon />
+              <Box>
+                <AlertTitle>
+                  {t('pages.feed.connectionFailureTitle')}
+                </AlertTitle>
+                <AlertDescription display="block">
+                  {t('pages.feed.connectionFailureText', {
+                    reason: 'Reason',
+                  })}
+                  <Box marginTop="1rem">
+                    {feedId && (
+                    <RefreshButton
+                      feedId={feedId}
+                      onSuccess={() => refetch()}
+                    />
+                    )}
+                  </Box>
+                </AlertDescription>
+              </Box>
+            </Alert>
           </Stack>
           <Grid
             templateColumns={{
@@ -45,13 +91,13 @@ const Feed: React.FC = () => {
             columnGap="20"
             rowGap={{ base: '8', lg: '14' }}
           >
-            <CategoryText title="Channel">{feed?.channel}</CategoryText>
-            <CategoryText title="Refresh Rate">
-              {feed?.refreshRateSeconds}
-              {' '}
-              seconds
+            <CategoryText title={t('pages.feed.channelLabel')}>{feed?.channel}</CategoryText>
+            <CategoryText title={t('pages.feed.refreshRateLabel')}>
+              {t('pages.feed.refreshRateValue', {
+                seconds: feed?.refreshRateSeconds,
+              })}
             </CategoryText>
-            <CategoryText title="Since">{feed?.createdAt}</CategoryText>
+            <CategoryText title={t('pages.feed.createdAtLabel')}>{feed?.createdAt}</CategoryText>
           </Grid>
         </Stack>
         {/* <Stack width="min">

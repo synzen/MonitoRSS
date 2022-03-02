@@ -1,4 +1,4 @@
-import { FeedSummary } from '../../types/FeedSummary';
+import { FeedSummary } from '@/features/feed';
 
 const mockFeedSummaries: FeedSummary[] = [{
   id: '1',

@@ -10,8 +10,12 @@ import theme from './utils/theme';
 import setupMockBrowserWorker from './mocks/browser';
 import { ForceDarkMode } from './components/ForceDarkMode';
 
-if (import.meta.env.MODE === 'development-mockapi') {
-  setupMockBrowserWorker().then((worker) => worker.start());
+async function prepare() {
+  if (import.meta.env.MODE === 'development-mockapi') {
+    return setupMockBrowserWorker().then((worker) => worker.start());
+  }
+
+  return Promise.resolve();
 }
 
 const queryClient = new QueryClient({
@@ -23,18 +27,20 @@ const queryClient = new QueryClient({
   },
 });
 
-ReactDOM.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ChakraProvider>
-        <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-        <QueryClientProvider client={queryClient}>
-          <ForceDarkMode>
-            <App />
-          </ForceDarkMode>
-        </QueryClientProvider>
-      </ChakraProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root'),
-);
+prepare().then(() => {
+  ReactDOM.render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <ChakraProvider>
+          <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+          <QueryClientProvider client={queryClient}>
+            <ForceDarkMode>
+              <App />
+            </ForceDarkMode>
+          </QueryClientProvider>
+        </ChakraProvider>
+      </BrowserRouter>
+    </React.StrictMode>,
+    document.getElementById('root'),
+  );
+});

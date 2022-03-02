@@ -37,12 +37,21 @@ const handlers = [
   )),
 
   rest.patch('/api/v1/feeds/:feedId', (req, res, ctx) => res(
-    ctx.json<UpdateFeedOutput>(mockFeeds[0]),
+    ctx.json<UpdateFeedOutput>({
+      result: mockFeeds[0],
+    }),
   )),
 
   rest.get('/api/v1/feeds/:feedId/articles', (req, res, ctx) => res(
     ctx.json<GetFeedArticlesOutput>({
       result: mockFeedArticles,
+    }),
+  )),
+
+  rest.get('/api/v1/feeds/:feedId/refresh', (req, res, ctx) => res(
+    ctx.status(200),
+    ctx.json<GetFeedOutput>({
+      result: mockFeeds[0],
     }),
   )),
 ];

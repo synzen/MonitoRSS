@@ -1,7 +1,6 @@
 import {
   array, boolean, InferType, number, object, string,
 } from 'yup';
-import { FeedSummarySchema } from './FeedSummary';
 
 const FeedEmbed = object({
   title: string().optional(),
@@ -33,7 +32,16 @@ const FeedEmbed = object({
   pcomparisons: array(string()).optional(),
 }).required();
 
-export const FeedSchema = FeedSummarySchema.concat(object({
+export const FeedSchema = object({
+  // From FeedSumarySchema, copied over since TypeScript doesn't work well with yup's .concat()
+  id: string().required(),
+  title: string().required(),
+  status: string().oneOf(['ok', 'failed']).required(),
+  url: string().required(),
+  channel: string().required(),
+  createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
+
+  // Extra details
   refreshRateSeconds: number().required(),
   text: string().defined(),
   embeds: array(FeedEmbed).required(),
@@ -44,6 +52,6 @@ export const FeedSchema = FeedSummarySchema.concat(object({
   formatTables: boolean().optional(),
   directSubscribers: boolean().optional(),
   disabled: string().optional(),
-})).required();
+});
 
 export type Feed = InferType<typeof FeedSchema>;
