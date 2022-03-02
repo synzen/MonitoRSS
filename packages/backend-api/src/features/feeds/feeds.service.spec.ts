@@ -105,45 +105,6 @@ describe('FeedsService', () => {
 
       expect(foundTitles).toEqual(['2021', '2020']);
     });
-
-    it('returns with the correct statuses', async () => {
-      const guild = 'server-1';
-      const feedsToInsert = [
-        createTestFeed({
-          addedAt: new Date(2020),
-          title: '2020',
-          guild,
-          url: 'url-1',
-        }),
-        createTestFeed({
-          addedAt: new Date(2019),
-          title: '2019',
-          guild,
-          url: 'url-2',
-        }),
-      ];
-
-      const faiLRecordsToInsert = [
-        createTestFailRecord({
-          _id: feedsToInsert[0].url,
-        }),
-      ];
-
-      await feedModel.insertMany(feedsToInsert);
-      await failRecordModel.insertMany(faiLRecordsToInsert);
-
-      const found = await service.getServerFeeds(guild, {
-        limit: 10,
-        offset: 0,
-      });
-
-      expect(
-        found.find((feed) => feed.url === feedsToInsert[0].url)?.status,
-      ).toEqual(FeedStatus.FAILED);
-      expect(
-        found.find((feed) => feed.url === feedsToInsert[1].url)?.status,
-      ).toEqual(FeedStatus.OK);
-    });
   });
 
   describe('countServerFeeds', () => {
@@ -324,6 +285,7 @@ describe('FeedsService', () => {
       const faiLRecordsToInsert = [
         createTestFailRecord({
           _id: createdFeed.url,
+          failedAt: new Date(1990, 1, 1),
         }),
       ];
       await failRecordModel.insertMany(faiLRecordsToInsert);
@@ -391,11 +353,7 @@ describe('FeedsService', () => {
         defaultOptions,
       );
 
-      expect(result[0]).toEqual(
-        expect.objectContaining({
-          status: FeedStatus.OK,
-        }),
-      );
+      expect(result[0].status).toEqual(FeedStatus.OK);
     });
   });
 });

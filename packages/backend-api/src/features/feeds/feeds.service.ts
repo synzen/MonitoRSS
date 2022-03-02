@@ -6,6 +6,7 @@ import { Types, FilterQuery } from 'mongoose';
 import _ from 'lodash';
 import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
 import { FeedStatus } from './types/FeedStatus.type';
+import dayjs from 'dayjs';
 
 interface UpdateFeedInput {
   text?: string;
@@ -187,8 +188,8 @@ export class FeedsService {
       return false;
     }
 
-    const requiredLifetimeSeconds = requiredLifetimeHours * 60 * 60;
+    const hoursDiff = dayjs().diff(dayjs(failRecord.failedAt), 'hours');
 
-    return failRecord.failedAt.getTime() + requiredLifetimeSeconds > Date.now();
+    return hoursDiff >= requiredLifetimeHours;
   }
 }
