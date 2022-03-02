@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Feed, FeedModel } from './entities/Feed.entity';
+import { Feed, FeedDocument, FeedModel } from './entities/Feed.entity';
 import { FeedWithRefreshRate } from './types/FeedWithRefreshRate';
-import { Types } from 'mongoose';
+import { Types, FilterQuery } from 'mongoose';
 import _ from 'lodash';
 import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
 import { FeedStatus } from './types/FeedStatus.type';
 
 interface UpdateFeedInput {
   text?: string;
+}
+
+interface PopulatedFeed extends Feed {
+  failRecord?: FailRecord;
 }
 
 @Injectable()
@@ -41,20 +45,17 @@ export class FeedsService {
       offset: number;
     },
   ): Promise<FeedWithRefreshRate[]> {
-    const feeds = await this.feedModel
-      .find({ guild: serverId })
-      .limit(options.limit)
-      .skip(options.offset)
-      .sort({ addedAt: -1 })
-      .lean();
+    const feeds = await this.findFeeds(
+      {
+        guild: serverId,
+      },
+      {
+        limit: options.limit,
+        skip: options.offset,
+      },
+    );
 
-    const feedStatuses = await this.getFeedStatuses(feeds);
-
-    return feeds.map((feed, i) => ({
-      ...feed,
-      status: feedStatuses[i].status,
-      refreshRateSeconds: 10,
-    }));
+    return feeds;
   }
 
   async countServerFeeds(serverId: string): Promise<number> {
@@ -75,13 +76,17 @@ export class FeedsService {
       throw new Error(`Feed ${feedId} does not exist`);
     }
 
-    const feedStatuses = await this.getFeedStatuses([feed]);
+    const foundFeeds = await this.findFeeds(
+      {
+        _id: new Types.ObjectId(feedId),
+      },
+      {
+        limit: 1,
+        skip: 0,
+      },
+    );
 
-    return {
-      ...feed,
-      status: feedStatuses[0].status,
-      refreshRateSeconds: 10,
-    };
+    return foundFeeds[0];
   }
 
   async refresh(feedId: string | Types.ObjectId): Promise<FeedWithRefreshRate> {
@@ -93,13 +98,17 @@ export class FeedsService {
 
     await this.failRecord.deleteOne({ _id: feed.url });
 
-    const feedStatuses = await this.getFeedStatuses([feed]);
+    const feeds = await this.findFeeds(
+      {
+        _id: new Types.ObjectId(feedId),
+      },
+      {
+        limit: 1,
+        skip: 0,
+      },
+    );
 
-    return {
-      ...feed,
-      ...feedStatuses[0],
-      refreshRateSeconds: 10,
-    };
+    return feeds[0];
   }
 
   async getFeedStatuses(feed: Feed[]): Promise<{ status: FeedStatus }[]> {
@@ -116,5 +125,51 @@ export class FeedsService {
     }));
 
     return detailedFeeds;
+  }
+
+  private async findFeeds(
+    filter: FilterQuery<FeedDocument>,
+    options: {
+      limit: number;
+      skip: number;
+    },
+  ): Promise<FeedWithRefreshRate[]> {
+    const feeds: PopulatedFeed[] = await this.feedModel.aggregate([
+      {
+        $match: filter,
+      },
+      {
+        $sort: {
+          addedAt: -1,
+        },
+      },
+      {
+        $skip: options.skip,
+      },
+      {
+        $limit: options.limit,
+      },
+      {
+        $lookup: {
+          from: 'fail_records',
+          localField: 'url',
+          foreignField: '_id',
+          as: 'failRecord',
+        },
+      },
+      {
+        $addFields: {
+          failRecord: {
+            $first: '$failRecord',
+          },
+        },
+      },
+    ]);
+
+    return feeds.map((feed) => ({
+      ...feed,
+      status: feed.failRecord ? FeedStatus.FAILED : FeedStatus.OK,
+      refreshRateSeconds: 10,
+    }));
   }
 }
