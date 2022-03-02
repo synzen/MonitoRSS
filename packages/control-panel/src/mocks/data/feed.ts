@@ -17,6 +17,7 @@ const mockFeeds: Feed[] = [{
   formatTables: false,
   imgLinksExistence: false,
   imgPreviews: false,
+  failReason: undefined,
 }];
 
 export default mockFeeds;

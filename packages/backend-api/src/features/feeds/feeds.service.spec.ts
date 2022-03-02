@@ -282,13 +282,12 @@ describe('FeedsService', () => {
 
     it('returns feed status failed correctly', async () => {
       const createdFeed = await feedModel.create(createTestFeed());
-      const faiLRecordsToInsert = [
-        createTestFailRecord({
-          _id: createdFeed.url,
-          failedAt: new Date(1990, 1, 1),
-        }),
-      ];
-      await failRecordModel.insertMany(faiLRecordsToInsert);
+      const failRecord = createTestFailRecord({
+        _id: createdFeed.url,
+        failedAt: new Date(1990, 1, 1),
+        reason: 'test-fail-reason',
+      });
+      await failRecordModel.create(failRecord);
       const result = await service.findFeeds(
         {
           _id: createdFeed._id,
@@ -296,11 +295,8 @@ describe('FeedsService', () => {
         defaultOptions,
       );
 
-      expect(result[0]).toEqual(
-        expect.objectContaining({
-          status: FeedStatus.FAILED,
-        }),
-      );
+      expect(result[0].status).toEqual(FeedStatus.FAILED);
+      expect(result[0].failReason).toEqual(failRecord.reason);
     });
     it('returns feed status OK correctly', async () => {
       const createdFeed = await feedModel.create(createTestFeed());
@@ -339,13 +335,13 @@ describe('FeedsService', () => {
 
       const failRecordDate = new Date();
       failRecordDate.setHours(failRecordDate.getHours() - 2);
-      const faiLRecordsToInsert = [
+      const failRecordsToInsert = [
         createTestFailRecord({
           _id: createdFeed.url,
           failedAt: failRecordDate,
         }),
       ];
-      await failRecordModel.insertMany(faiLRecordsToInsert);
+      await failRecordModel.insertMany(failRecordsToInsert);
       const result = await service.findFeeds(
         {
           _id: createdFeed._id,

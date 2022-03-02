@@ -42,6 +42,7 @@ export const FeedSchema = object({
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
 
   // Extra details
+  failReason: string().optional(),
   refreshRateSeconds: number().required(),
   text: string().defined(),
   embeds: array(FeedEmbed).required(),

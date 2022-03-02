@@ -160,6 +160,7 @@ export class FeedsService {
       status: this.isValidFailRecord(feed.failRecord || null)
         ? FeedStatus.FAILED
         : FeedStatus.OK,
+      failReason: feed.failRecord?.reason,
       refreshRateSeconds: 10,
     }));
 
