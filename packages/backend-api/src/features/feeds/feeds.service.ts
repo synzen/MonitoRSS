@@ -5,6 +5,7 @@ import { FeedWithRefreshRate } from './types/FeedWithRefreshRate';
 import { Types } from 'mongoose';
 import _ from 'lodash';
 import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
+import { FeedStatus } from './types/FeedStatus.type';
 
 interface UpdateFeedInput {
   text?: string;
@@ -24,10 +25,40 @@ export class FeedsService {
       return null;
     }
 
+    const feedStatuses = await this.getFeedStatuses([feed]);
+
     return {
       ...feed,
+      status: feedStatuses[0].status,
       refreshRateSeconds: 10,
     };
+  }
+
+  async getServerFeeds(
+    serverId: string,
+    options: {
+      limit: number;
+      offset: number;
+    },
+  ): Promise<FeedWithRefreshRate[]> {
+    const feeds = await this.feedModel
+      .find({ guild: serverId })
+      .limit(options.limit)
+      .skip(options.offset)
+      .sort({ addedAt: -1 })
+      .lean();
+
+    const feedStatuses = await this.getFeedStatuses(feeds);
+
+    return feeds.map((feed, i) => ({
+      ...feed,
+      status: feedStatuses[i].status,
+      refreshRateSeconds: 10,
+    }));
+  }
+
+  async countServerFeeds(serverId: string): Promise<number> {
+    return this.feedModel.countDocuments({ serverId });
   }
 
   async updateOne(
@@ -44,8 +75,11 @@ export class FeedsService {
       throw new Error(`Feed ${feedId} does not exist`);
     }
 
+    const feedStatuses = await this.getFeedStatuses([feed]);
+
     return {
       ...feed,
+      status: feedStatuses[0].status,
       refreshRateSeconds: 10,
     };
   }
@@ -59,9 +93,28 @@ export class FeedsService {
 
     await this.failRecord.deleteOne({ _id: feed.url });
 
+    const feedStatuses = await this.getFeedStatuses([feed]);
+
     return {
       ...feed,
+      ...feedStatuses[0],
       refreshRateSeconds: 10,
     };
+  }
+
+  async getFeedStatuses(feed: Feed[]): Promise<{ status: FeedStatus }[]> {
+    const feedUrls = feed.map((feed) => feed.url);
+
+    const failRecords = await this.failRecord.find({
+      url: { $in: feedUrls },
+    });
+
+    const detailedFeeds = feed.map((feed) => ({
+      status: failRecords.some((record) => record._id === feed.url)
+        ? FeedStatus.FAILED
+        : FeedStatus.OK,
+    }));
+
+    return detailedFeeds;
   }
 }

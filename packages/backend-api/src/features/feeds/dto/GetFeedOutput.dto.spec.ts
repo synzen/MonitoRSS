@@ -1,4 +1,5 @@
 import { createTestFeed } from '../../../test/data/feeds.test-data';
+import { FeedStatus } from '../types/FeedStatus.type';
 import { FeedWithRefreshRate } from '../types/FeedWithRefreshRate';
 import { GetFeedOutputDto } from './GetFeedOutput.dto';
 
@@ -9,6 +10,7 @@ describe('GetFeedOutputDto', () => {
       const feedWithRefreshRate: FeedWithRefreshRate = {
         ...feed,
         refreshRateSeconds: 10,
+        status: FeedStatus.OK,
       };
 
       const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
@@ -18,7 +20,7 @@ describe('GetFeedOutputDto', () => {
           id: feed._id.toHexString(),
           channel: feed.channel,
           title: feed.title,
-          status: 'ok',
+          status: feedWithRefreshRate.status,
           url: feed.url,
           createdAt: feed.addedAt.toISOString(),
           refreshRateSeconds: feedWithRefreshRate.refreshRateSeconds,

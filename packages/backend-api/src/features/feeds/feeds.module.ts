@@ -17,5 +17,6 @@ import { FailRecordFeature } from './entities/fail-record.entity';
     MongooseModule.forFeature([FeedFeature, FailRecordFeature]),
     FeedFetcherModule,
   ],
+  exports: [FeedsService, MongooseModule.forFeature([FeedFeature])],
 })
 export class FeedsModule {}

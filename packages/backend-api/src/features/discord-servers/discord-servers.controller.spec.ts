@@ -1,7 +1,8 @@
 import { createTestFeed } from '../../test/data/feeds.test-data';
+import { FeedStatus } from '../feeds/types/FeedStatus.type';
 import { DiscordServersController } from './discord-servers.controller';
 import { DiscordServersService } from './discord-servers.service';
-import { DetailedFeed, DetailedFeedStatus } from './types/DetailedFeed.type';
+import { DetailedFeed } from './types/DetailedFeed.type';
 
 describe('DiscordServersController', () => {
   let controller: DiscordServersController;
@@ -21,11 +22,11 @@ describe('DiscordServersController', () => {
       const mockFeeds: DetailedFeed[] = [
         {
           ...createTestFeed(),
-          status: DetailedFeedStatus.OK,
+          status: FeedStatus.OK,
         },
         {
           ...createTestFeed(),
-          status: DetailedFeedStatus.FAILED,
+          status: FeedStatus.FAILED,
         },
       ];
 

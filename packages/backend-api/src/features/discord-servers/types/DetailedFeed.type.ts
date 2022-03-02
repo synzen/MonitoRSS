@@ -1,10 +1,6 @@
 import { Feed } from '../../feeds/entities/Feed.entity';
+import { FeedStatus } from '../../feeds/types/FeedStatus.type';
 
-export enum DetailedFeedStatus {
-  OK = 'ok',
-  FAILED = 'failed',
+export interface DetailedFeed extends Feed {
+  status: FeedStatus;
 }
-
-export type DetailedFeed = Feed & {
-  status: DetailedFeedStatus;
-};

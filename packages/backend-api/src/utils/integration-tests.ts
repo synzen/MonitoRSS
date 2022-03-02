@@ -6,7 +6,7 @@ import { stopMemoryServer } from './mongoose-test.module';
 let testingModule: TestingModule;
 
 export async function setupIntegrationTests(metadata: ModuleMetadata) {
-  testingModule = await Test.createTestingModule({
+  const uncompiledModule = Test.createTestingModule({
     ...metadata,
     imports: [
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -17,10 +17,19 @@ export async function setupIntegrationTests(metadata: ModuleMetadata) {
         isGlobal: true,
       }),
     ],
-  }).compile();
+  });
+
+  const init = async () => {
+    testingModule = await uncompiledModule.compile();
+
+    return {
+      module: testingModule,
+    };
+  };
 
   return {
-    module: testingModule,
+    uncompiledModule,
+    init,
   };
 }
 

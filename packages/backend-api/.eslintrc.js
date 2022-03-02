@@ -16,6 +16,12 @@ module.exports = {
   },
   ignorePatterns: ['.eslintrc.js'],
   rules: {
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto"
+      },
+    ],
     "unused-imports/no-unused-imports": "error",
     'react/jsx-filename-extension': 'off',
     "newline-before-return": "error",
