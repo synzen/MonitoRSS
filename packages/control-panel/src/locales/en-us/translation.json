@@ -10,7 +10,8 @@
     },
     "feed": {
       "connectionFailureTitle": "Disabled due to too many connection failures",
-      "connectionFailureText": "This feed has been disabled because there were too many connection failures within a short period of time ({{reason}}).",
+      "connectionFailureText": "There has been too many connection failures within a short period of time ({{reason}}). You can try re-enabling it, but it will be re-disabled if it fails again.",
+      "unknownReason": "unknown reason",
       "channelLabel": "Channel",
       "refreshRateLabel": "Refresh Rate",
       "refreshRateValue": "{{seconds}} seconds",
@@ -40,9 +41,9 @@
     "feed": {
       "components": {
         "refreshButton": {
-          "text": "Refresh",
-          "failure": "Failed to refresh feed",
-          "success": "Feed successfully refreshed"
+          "text": "Re-enable",
+          "failure": "Failed to re-enable feed",
+          "success": "Feed has been enabled will be re-attempted"
         }
       }
     }
