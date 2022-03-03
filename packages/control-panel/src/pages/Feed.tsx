@@ -5,7 +5,7 @@ import {
   AlertIcon,
   AlertTitle,
   Box,
-  Flex, Grid, Heading, Stack, Text,
+  Flex, Grid, Heading, HStack, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -33,14 +33,7 @@ const Feed: React.FC = () => {
         <Stack spacing={12}>
           <Stack spacing={6}>
             <Stack>
-              <Flex alignItems="center">
-                <Heading
-                  size="lg"
-                  marginRight={4}
-                >
-                  {feed?.title}
-
-                </Heading>
+              <HStack alignItems="center">
                 {feed?.status === 'ok' && (
                 <CheckCircleIcon
                   fontSize="2xl"
@@ -55,7 +48,13 @@ const Feed: React.FC = () => {
                   verticalAlign="middle"
                 />
                 )}
-              </Flex>
+                <Heading
+                  size="lg"
+                  marginRight={4}
+                >
+                  {feed?.title}
+                </Heading>
+              </HStack>
               <Text>
                 {feed?.url}
               </Text>
@@ -68,7 +67,7 @@ const Feed: React.FC = () => {
                 </AlertTitle>
                 <AlertDescription display="block">
                   {t('pages.feed.connectionFailureText', {
-                    reason: 'Reason',
+                    reason: feed?.failReason || t('pages.feed.unknownReason'),
                   })}
                   <Box marginTop="1rem">
                     {feedId && (

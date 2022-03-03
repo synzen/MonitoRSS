@@ -10,6 +10,8 @@ import mockFeeds from './data/feed';
 import mockFeedArticles from './data/feedArticles';
 import mockFeedSummaries from './data/feeds';
 import mockDiscordUser from './data/discordUser';
+import { GetDiscordServerWebhooksOutput } from '@/features/discordWebhooks';
+import mockDiscordWebhooks from './data/discordWebhooks';
 
 const handlers = [
   rest.get('/api/v1/discord-users/@me', (req, res, ctx) => res(
@@ -27,6 +29,12 @@ const handlers = [
     ctx.json<GetFeedsOutput>({
       total: mockFeedSummaries.length,
       results: mockFeedSummaries,
+    }),
+  )),
+
+  rest.get('/api/v1/discord-servers/:serverId/webhooks', (req, res, ctx) => res(
+    ctx.json<GetDiscordServerWebhooksOutput>({
+      results: mockDiscordWebhooks,
     }),
   )),
 
