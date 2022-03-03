@@ -12,6 +12,7 @@ import ServerDasboard from './ServerDashboard';
 import Servers from './Servers';
 import { RequireAuth } from '@/features/auth';
 import { PageContent } from '@/components/PageContent';
+import Webhooks from './Webhooks';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -53,6 +54,16 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <PageContent>
             <Feeds />
+          </PageContent>
+        </RequireAuth>
+    )}
+    />
+    <Route
+      path="/servers/:serverId/webhooks"
+      element={(
+        <RequireAuth>
+          <PageContent>
+            <Webhooks />
           </PageContent>
         </RequireAuth>
     )}

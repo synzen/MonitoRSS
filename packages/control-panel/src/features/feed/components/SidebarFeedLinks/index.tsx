@@ -91,14 +91,6 @@ export const SidebarFeedLinks: React.FC<Props> = ({
           </SidebarLink>
           <SidebarLink
             disabled
-            icon={FiShare2}
-            active={currentPath === paths.FEED_MISC_OPTIONS}
-            onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}
-          >
-            {t('components.sidebar.feed.webhooks')}
-          </SidebarLink>
-          <SidebarLink
-            disabled
             icon={FiSliders}
             active={currentPath === paths.FEED_MISC_OPTIONS}
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}

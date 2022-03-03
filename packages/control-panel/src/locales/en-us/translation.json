@@ -23,7 +23,8 @@
       "server": {
         "manage": "Manage Server",
         "feeds": "Feeds",
-        "settings": "Settings"
+        "settings": "Settings",
+        "webhooks": "Webhooks"
       },
       "feed": {
         "manage": "Manage Feed",

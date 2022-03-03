@@ -18,9 +18,8 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DashboardContent, Loading, Navbar } from '@/components';
+import { DashboardContent, Loading } from '@/components';
 import { FeedSummary, useFeeds } from '../features/feed';
-import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
 import RouteParams from '../types/RouteParams';
 
 const Feeds: React.FC = () => {
@@ -37,21 +36,12 @@ const Feeds: React.FC = () => {
 
   const navigate = useNavigate();
 
-  const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
-    id: 'feeds',
-    content: t('pages.feeds.title'),
-    enabled: true,
-  }];
-
   const onClickFeedRow = (feed: FeedSummary) => {
     navigate(feed.id);
   };
 
   return (
     <Stack>
-      <Navbar
-        breadcrumbItems={breadcrumbItems}
-      />
       <DashboardContent>
         {(status === 'loading') && (
         <Box textAlign="center" paddingY="5rem">
