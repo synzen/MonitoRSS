@@ -4,10 +4,12 @@ import { GetDiscordWebhooksOutput, getDiscordWebhooks } from '../api';
 
 interface Props {
   serverId?: string
+  isWebhooksEnabled?: boolean
 }
 
 export const useDiscordWebhooks = ({
   serverId,
+  isWebhooksEnabled,
 }: Props) => {
   const { data, status, error } = useQuery<
   GetDiscordWebhooksOutput, ApiAdapterError
@@ -25,7 +27,7 @@ export const useDiscordWebhooks = ({
       });
     },
     {
-      enabled: !!serverId,
+      enabled: !!serverId && isWebhooksEnabled,
     },
   );
 
