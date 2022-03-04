@@ -6,7 +6,7 @@ import { GetDiscordWebhooksInputDto } from '../dto/get-discord-webhooks.input.dt
 
 @Injectable()
 export class UserManagesWebhookServerGuard extends BaseUserManagesServerGuard {
-  getServerId(request: FastifyRequest): string | undefined {
+  async getServerId(request: FastifyRequest) {
     const query = qs.parse(
       request.query as string,
     ) as unknown as GetDiscordWebhooksInputDto;

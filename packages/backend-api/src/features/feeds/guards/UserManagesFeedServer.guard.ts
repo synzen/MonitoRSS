@@ -1,26 +1,19 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { getAccessTokenFromRequest } from '../../../utils/get-access-token-from-session';
-import { DiscordUsersService } from '../../discord-users/discord-users.service';
+import { BaseUserManagesServerGuard } from '../../../common/guards/BaseUserManagesServer.guard';
+import { DiscordAuthService } from '../../discord-auth/discord-auth.service';
 import { FeedsService } from '../feeds.service';
 
 @Injectable()
-export class UserManagesFeedServerGuard implements CanActivate {
+export class UserManagesFeedServerGuard extends BaseUserManagesServerGuard {
   constructor(
-    private readonly discordUsersService: DiscordUsersService,
     private readonly feedsService: FeedsService,
-  ) {}
+    protected readonly discordAuthService: DiscordAuthService,
+  ) {
+    super(discordAuthService);
+  }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest() as FastifyRequest;
-
+  async getServerId(request: FastifyRequest): Promise<string | undefined> {
     const { feedId } = request.params as Record<string, never>;
 
     if (!feedId) {
@@ -35,26 +28,6 @@ export class UserManagesFeedServerGuard implements CanActivate {
       throw new NotFoundException(`Feed ${feedId} not found`);
     }
 
-    const accessToken = this.getUserAccessToken(request);
-    const managesGuild = await this.discordUsersService.managesGuild(
-      accessToken,
-      feed.guild,
-    );
-
-    if (!managesGuild) {
-      throw new ForbiddenException();
-    }
-
-    return true;
-  }
-
-  private getUserAccessToken(request: FastifyRequest) {
-    const accessToken = getAccessTokenFromRequest(request);
-
-    if (!accessToken) {
-      throw new UnauthorizedException();
-    }
-
-    return accessToken.access_token;
+    return feed.guild;
   }
 }

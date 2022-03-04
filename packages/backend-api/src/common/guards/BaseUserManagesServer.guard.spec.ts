@@ -7,21 +7,21 @@ import { mocked } from 'ts-jest/utils';
 import { BaseUserManagesServerGuard } from './BaseUserManagesServer.guard';
 import { FastifyRequest } from 'fastify';
 import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
-import { DiscordUsersService } from '../../features/discord-users/discord-users.service';
+import { DiscordAuthService } from '../../features/discord-auth/discord-auth.service';
 
 jest.mock('../../utils/get-access-token-from-session');
 
 const mockedGetAccessTokenFromRequest = mocked(getAccessTokenFromRequest);
 
 class TestUserManagesServer extends BaseUserManagesServerGuard {
-  getServerId(request: FastifyRequest): string | undefined {
+  async getServerId(request: FastifyRequest) {
     return (request.params as Record<string, never>).serverId;
   }
 }
 
 describe('BaseUserManagesServerGuard', () => {
   let guard: TestUserManagesServer;
-  let discordUsersService: DiscordUsersService;
+  let discordAuthService: DiscordAuthService;
   const getRequest = jest.fn();
   let context: ExecutionContext;
   const serverId = 'server-id';
@@ -39,17 +39,17 @@ describe('BaseUserManagesServerGuard', () => {
       }),
     } as never;
 
-    discordUsersService = {
-      managesGuild: jest.fn(),
+    discordAuthService = {
+      userManagesGuild: jest.fn(),
     } as never;
 
     mockedGetAccessTokenFromRequest.mockReturnValue({
       access_token: 'access-token',
     } as never);
 
-    jest.spyOn(discordUsersService, 'managesGuild').mockResolvedValue(true);
+    jest.spyOn(discordAuthService, 'userManagesGuild').mockResolvedValue(true);
 
-    guard = new TestUserManagesServer(discordUsersService);
+    guard = new TestUserManagesServer(discordAuthService);
   });
 
   it('returns true if guild was found', async () => {
@@ -59,7 +59,7 @@ describe('BaseUserManagesServerGuard', () => {
   });
 
   it('throws bad request if guild was not found', async () => {
-    jest.spyOn(discordUsersService, 'managesGuild').mockResolvedValue(false);
+    jest.spyOn(discordAuthService, 'userManagesGuild').mockResolvedValue(false);
 
     await expect(guard.canActivate(context)).rejects.toThrow(
       ForbiddenException,

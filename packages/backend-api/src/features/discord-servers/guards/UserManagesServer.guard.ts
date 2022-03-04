@@ -4,7 +4,7 @@ import { BaseUserManagesServerGuard } from '../../../common/guards/BaseUserManag
 
 @Injectable()
 export class UserManagesServerGuard extends BaseUserManagesServerGuard {
-  getServerId(request: FastifyRequest): string | undefined {
+  async getServerId(request: FastifyRequest) {
     const { serverId } = request.params as Record<string, never>;
 
     return serverId;

@@ -7,6 +7,9 @@ import {
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from '../../constants/discord';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
+import { MANAGE_CHANNEL_PERMISSION } from './constants/permissions';
 import { SessionAccessToken } from './types/SessionAccessToken.type';
 
 export interface DiscordAuthToken {
@@ -24,7 +27,10 @@ export class DiscordAuthService {
   CLIENT_ID = '';
   CLIENT_SECRET = '';
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly discordApiService: DiscordAPIService,
+  ) {
     this.CLIENT_ID = this.configService.get<string>(
       'discordClientId',
     ) as string;
@@ -179,6 +185,22 @@ export class DiscordAuthService {
         )}`,
       );
     }
+  }
+
+  async userManagesGuild(userAccessToken: string, guildId: string) {
+    const endpoint = `/users/@me/guilds`;
+    const guilds = await this.discordApiService.executeBearerRequest<
+      PartialUserGuild[]
+    >(userAccessToken, endpoint);
+
+    const guildsWithPermission = guilds.filter(
+      (guild) =>
+        guild.owner ||
+        (guild.permissions & MANAGE_CHANNEL_PERMISSION) ===
+          MANAGE_CHANNEL_PERMISSION,
+    );
+
+    return guildsWithPermission.some((guild) => guild.id === guildId);
   }
 
   /**

@@ -6,19 +6,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { DiscordUsersService } from '../../features/discord-users/discord-users.service';
+import { DiscordAuthService } from '../../features/discord-auth/discord-auth.service';
 import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
 
 @Injectable()
 export abstract class BaseUserManagesServerGuard implements CanActivate {
-  constructor(private readonly discordUsersService: DiscordUsersService) {}
+  constructor(protected readonly discordAuthService: DiscordAuthService) {}
 
-  abstract getServerId(request: FastifyRequest): string | undefined;
+  abstract getServerId(request: FastifyRequest): Promise<string | undefined>;
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest() as FastifyRequest;
 
-    const serverId = this.getServerId(request);
+    const serverId = await this.getServerId(request);
 
     if (!serverId) {
       throw new Error(
@@ -27,7 +27,7 @@ export abstract class BaseUserManagesServerGuard implements CanActivate {
     }
 
     const accessToken = this.getUserAccessToken(request);
-    const managesGuild = await this.discordUsersService.managesGuild(
+    const managesGuild = await this.discordAuthService.userManagesGuild(
       accessToken,
       serverId,
     );

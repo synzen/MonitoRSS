@@ -16,7 +16,7 @@ describe('UserManagesServerGuard', () => {
             serverId,
           },
         } as never),
-      ).toBe(serverId);
+      ).resolves.toEqual(serverId);
     });
   });
 });

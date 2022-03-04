@@ -8,13 +8,18 @@ import { DiscordAuthService, DiscordAuthToken } from './discord-auth.service';
 
 describe('DiscordAuthService', () => {
   let service: DiscordAuthService;
+  const discordApiService = {
+    executeBearerRequest: jest.fn(),
+  };
   const configService = {
     get: jest.fn(),
   };
 
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    service = new DiscordAuthService(configService as any);
+    service = new DiscordAuthService(
+      configService as never,
+      discordApiService as never,
+    );
     service.CLIENT_ID = 'client-id';
     service.CLIENT_SECRET = 'client-secret';
   });
@@ -242,6 +247,36 @@ describe('DiscordAuthService', () => {
       await expect(
         service.revokeToken(mockDiscordToken),
       ).rejects.toThrowError();
+    });
+  });
+
+  describe('userManagesGuild', () => {
+    it('returns true if the guild was found', async () => {
+      const accessToken = 'abc';
+      const guilds = [
+        {
+          id: 'guild_id',
+          name: 'test',
+          icon: 'icon_hash',
+          owner: false,
+          permissions: 16,
+        },
+      ];
+      jest
+        .spyOn(discordApiService, 'executeBearerRequest')
+        .mockResolvedValue(guilds);
+      const result = await service.userManagesGuild(accessToken, guilds[0].id);
+
+      expect(result).toBe(true);
+    });
+    it('returns false if the guild was not found', async () => {
+      const accessToken = 'abc';
+      jest
+        .spyOn(discordApiService, 'executeBearerRequest')
+        .mockResolvedValue([]);
+      const result = await service.userManagesGuild(accessToken, 'random-id');
+
+      expect(result).toBe(false);
     });
   });
 });

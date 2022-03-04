@@ -117,30 +117,4 @@ describe('DiscordUsersService', () => {
       });
     });
   });
-
-  describe('managesGuild', () => {
-    it('returns true if the guild was found', async () => {
-      const accessToken = 'abc';
-      const guilds = [
-        {
-          id: 'guild_id',
-          name: 'test',
-          icon: 'icon_hash',
-          owner: false,
-          permissions: 16,
-        },
-      ];
-      jest.spyOn(service, 'getGuilds').mockResolvedValue(guilds);
-      const result = await service.managesGuild(accessToken, guilds[0].id);
-
-      expect(result).toBe(true);
-    });
-    it('returns false if the guild was not found', async () => {
-      const accessToken = 'abc';
-      jest.spyOn(service, 'getGuilds').mockResolvedValue([]);
-      const result = await service.managesGuild(accessToken, 'random-id');
-
-      expect(result).toBe(false);
-    });
-  });
 });
