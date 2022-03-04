@@ -8,6 +8,7 @@ import { validateConfig } from './config/config.validate';
 import { DiscordAuthModule } from './features/discord-auth/discord-auth.module';
 import { DiscordServersModule } from './features/discord-servers/discord-servers.module';
 import { DiscordUserModule } from './features/discord-users/discord-users.module';
+import { DiscordWebhooksModule } from './features/discord-webhooks/discord-webhooks.module';
 import { FeedsModule } from './features/feeds/feeds.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { FeedsModule } from './features/feeds/feeds.module';
     DiscordUserModule,
     DiscordServersModule,
     FeedsModule,
+    DiscordWebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

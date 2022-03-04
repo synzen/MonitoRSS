@@ -32,8 +32,6 @@ describe('DiscordServersModule', () => {
 
     ({ app, setAccessToken } = await init());
 
-    // To do - set up an endpoint to use the session middleware, set the session, and then run tests
-
     standardRequestOptions.headers.cookie = await setAccessToken({
       access_token: 'accessToken',
     } as Session['accessToken']);
