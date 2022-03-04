@@ -1,16 +1,16 @@
 import { useQuery } from 'react-query';
 import ApiAdapterError from '@/utils/ApiAdapterError';
-import { getDiscordServerWebhooks, GetDiscordServerWebhooksOutput } from '../api';
+import { GetDiscordWebhooksOutput, getDiscordWebhooks } from '../api';
 
 interface Props {
   serverId?: string
 }
 
-export const useDiscordServerWebhooks = ({
+export const useDiscordWebhooks = ({
   serverId,
 }: Props) => {
   const { data, status, error } = useQuery<
-  GetDiscordServerWebhooksOutput, ApiAdapterError
+  GetDiscordWebhooksOutput, ApiAdapterError
   >(
     ['discord-server-webhooks', {
       serverId,
@@ -20,7 +20,7 @@ export const useDiscordServerWebhooks = ({
         throw new Error('Missing server selection when getting server webhooks');
       }
 
-      return getDiscordServerWebhooks({
+      return getDiscordWebhooks({
         serverId,
       });
     },

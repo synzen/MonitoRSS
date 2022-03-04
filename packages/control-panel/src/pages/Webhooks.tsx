@@ -4,7 +4,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import RouteParams from '@/types/RouteParams';
-import { useDiscordServerWebhooks } from '@/features/discordWebhooks';
+import { useDiscordWebhooks } from '@/features/discordWebhooks';
 import { DashboardContent } from '@/components';
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
 const Webhooks: React.FC<Props> = () => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
-  const { data, status, error } = useDiscordServerWebhooks({
+  const { data, status, error } = useDiscordWebhooks({
     serverId,
   });
 

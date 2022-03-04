@@ -10,7 +10,7 @@ import mockFeeds from './data/feed';
 import mockFeedArticles from './data/feedArticles';
 import mockFeedSummaries from './data/feeds';
 import mockDiscordUser from './data/discordUser';
-import { GetDiscordServerWebhooksOutput } from '@/features/discordWebhooks';
+import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
 import mockDiscordWebhooks from './data/discordWebhooks';
 
 const handlers = [
@@ -33,7 +33,7 @@ const handlers = [
   )),
 
   rest.get('/api/v1/discord-servers/:serverId/webhooks', (req, res, ctx) => res(
-    ctx.json<GetDiscordServerWebhooksOutput>({
+    ctx.json<GetDiscordWebhooksOutput>({
       results: mockDiscordWebhooks,
     }),
   )),
