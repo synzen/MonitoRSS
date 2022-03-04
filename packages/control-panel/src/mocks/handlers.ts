@@ -32,7 +32,7 @@ const handlers = [
     }),
   )),
 
-  rest.get('/api/v1/discord-servers/:serverId/webhooks', (req, res, ctx) => res(
+  rest.get('/api/v1/webhooks', (req, res, ctx) => res(
     ctx.json<GetDiscordWebhooksOutput>({
       results: mockDiscordWebhooks,
     }),
