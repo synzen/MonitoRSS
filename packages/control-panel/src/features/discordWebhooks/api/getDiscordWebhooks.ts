@@ -24,7 +24,7 @@ GetDiscordWebhooksOutput
     },
   });
 
-  return fetchRest(`/api/v1/webhooks?${query}`, {
+  return fetchRest(`/api/v1/discord-webhooks?${query}`, {
     validateSchema: GetDiscordWebhooksOutputSchema,
   });
 };

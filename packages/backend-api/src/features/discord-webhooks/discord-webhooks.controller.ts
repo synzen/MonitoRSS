@@ -3,7 +3,8 @@ import { NestedQuery } from '../../common/decorators/NestedQuery';
 import { DiscordOAuth2Guard } from '../../common/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { DiscordWebhooksService } from './discord-webhooks.service';
-import { GetWebhooksInputDto } from './dto/get-webhooks.input.dto';
+import { GetDiscordWebhooksInputDto } from './dto/get-discord-webhooks.input.dto';
+import { GetDiscordWebhooksOutputDto } from './dto/get-discord-webhooks.output.dto';
 import { UserManagesWebhookServerGuard } from './guards/UserManagesWebhookServer.guard';
 
 @Controller('discord-webhooks')
@@ -17,8 +18,13 @@ export class DiscordWebhooksController {
   @UseGuards(UserManagesWebhookServerGuard)
   async getWebhooks(
     @NestedQuery(TransformValidationPipe)
-    getWebhooksInputDto: GetWebhooksInputDto,
-  ) {
-    console.log(getWebhooksInputDto);
+    getWebhooksInputDto: GetDiscordWebhooksInputDto,
+  ): Promise<GetDiscordWebhooksOutputDto> {
+    const serverId = getWebhooksInputDto.filters.serverId;
+    const webhooks = await this.discordWebhooksService.getWebhooksOfServer(
+      serverId,
+    );
+
+    return GetDiscordWebhooksOutputDto.fromEntities(webhooks);
   }
 }

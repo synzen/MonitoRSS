@@ -5,8 +5,6 @@ const messages = {
   INTERNAL_SERVER_ERROR: 'Internal Server Error',
 } as const;
 
-const UNEXPECTED_ERROR = 'Unexpected Error';
-
 const getStatusCodeErrorMessage = (statusCode: number) => {
   const statusCodeStr = statusCode.toString();
 
@@ -18,7 +16,7 @@ const getStatusCodeErrorMessage = (statusCode: number) => {
 
   if (statusCode === 400) { return messages.BAD_REQUEST; }
 
-  return UNEXPECTED_ERROR;
+  return `UNEXPECTED_ERROR: ${statusCode}`;
 };
 
 export default getStatusCodeErrorMessage;

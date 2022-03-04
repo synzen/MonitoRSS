@@ -11,6 +11,11 @@ import { Session } from '../../common/types/Session';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { DiscordWebhooksModule } from './discord-webhooks.module';
 import * as qs from 'qs';
+import {
+  DiscordWebhook,
+  DiscordWebhookType,
+} from './types/discord-webhook.type';
+import { ConfigService } from '@nestjs/config';
 
 describe('DiscordWebhooksModule', () => {
   let app: NestFastifyApplication;
@@ -20,6 +25,8 @@ describe('DiscordWebhooksModule', () => {
       cookie: '',
     },
   };
+  let configService: ConfigService;
+  const botClientId = 'bot-client-id';
 
   beforeEach(async () => {
     const { init } = setupEndpointTests({
@@ -31,6 +38,13 @@ describe('DiscordWebhooksModule', () => {
     standardRequestOptions.headers.cookie = await setAccessToken({
       access_token: 'accessToken',
     } as Session['accessToken']);
+
+    configService = app.get(ConfigService);
+    jest.spyOn(configService, 'get').mockImplementation((key) => {
+      if (key === 'discordClientId') {
+        return botClientId;
+      }
+    });
   });
 
   afterEach(async () => {
@@ -40,6 +54,15 @@ describe('DiscordWebhooksModule', () => {
 
   describe('GET /discord-webhooks', () => {
     const serverId = '633432788015644722';
+    const sampleWebhooks: DiscordWebhook[] = [
+      {
+        id: '12345',
+        type: DiscordWebhookType.INCOMING,
+        channel_id: '12345',
+        application_id: botClientId,
+        name: 'test',
+      },
+    ];
     const standardQuery = qs.stringify({
       filters: {
         serverId,
@@ -57,6 +80,12 @@ describe('DiscordWebhooksModule', () => {
             ...partialGuild,
           },
         ]);
+    };
+
+    const mockGetServerWebhooks = () => {
+      nock(DISCORD_API_BASE_URL)
+        .get(`/guilds/${serverId}/webhooks`)
+        .reply(200, sampleWebhooks);
     };
 
     it('returns forbidden if user does not own requested server', async () => {
@@ -89,14 +118,23 @@ describe('DiscordWebhooksModule', () => {
 
     it('returns the correct response', async () => {
       mockGetUserGuilds();
+      mockGetServerWebhooks();
 
-      const { statusCode } = await app.inject({
+      const { statusCode, body } = await app.inject({
         method: 'GET',
         url: `/discord-webhooks?${standardQuery}`,
         ...standardRequestOptions,
       });
 
       expect(statusCode).toEqual(200);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody.results).toEqual([
+        {
+          id: '12345',
+          channelId: '12345',
+          name: 'test',
+        },
+      ]);
     });
   });
 });
