@@ -16,6 +16,10 @@
       "refreshRateLabel": "Refresh Rate",
       "refreshRateValue": "{{seconds}} seconds",
       "createdAtLabel": "Since"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "addNew": "Add New"
     }
   },
   "components": {

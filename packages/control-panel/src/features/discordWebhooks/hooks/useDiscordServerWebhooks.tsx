@@ -30,7 +30,7 @@ export const useDiscordServerWebhooks = ({
   );
 
   return {
-    data,
+    data: data?.results,
     status,
     error,
   };

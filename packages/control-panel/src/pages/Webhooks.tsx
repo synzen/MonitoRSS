@@ -1,4 +1,6 @@
-import { Box, Heading, Stack } from '@chakra-ui/react';
+import {
+  Avatar, Button, Flex, Heading, HStack, Stack, Text,
+} from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import RouteParams from '@/types/RouteParams';
@@ -22,10 +24,39 @@ const Webhooks: React.FC<Props> = () => {
       error={error}
     >
       <Stack spacing="8">
-        <Heading size="lg">Webhooks</Heading>
-        <Box>
-          Webhooks!
-        </Box>
+        <Flex justifyContent="space-between">
+          <Heading size="lg">{t('pages.webhooks.title')}</Heading>
+          <Button colorScheme="blue">{t('pages.webhooks.addNew')}</Button>
+        </Flex>
+        <Stack spacing="4">
+          {data?.map((webhook) => (
+            <HStack
+              background="gray.700"
+              borderRadius="lg"
+              padding="4"
+              justifyContent="space-between"
+            >
+              <HStack
+                overflow="hidden"
+                marginRight="10"
+                spacing="4"
+              >
+                <Avatar
+                  name={webhook.name}
+                  src={webhook.avatarUrl}
+                />
+                <Text
+                  textOverflow="ellipsis"
+                  overflow="hidden"
+                  display="block"
+                >
+                  {webhook.name}
+
+                </Text>
+              </HStack>
+            </HStack>
+          ))}
+        </Stack>
       </Stack>
     </DashboardContent>
   );
