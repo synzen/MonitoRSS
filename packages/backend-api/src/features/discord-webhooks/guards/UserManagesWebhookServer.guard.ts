@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { BaseUserManagesServerGuard } from '../../../common/guards/BaseUserManagesServer.guard';
+import { BaseUserManagesServerGuard } from '../../discord-auth/guards/BaseUserManagesServer.guard';
 import * as qs from 'qs';
 import { GetDiscordWebhooksInputDto } from '../dto/get-discord-webhooks.input.dto';
 

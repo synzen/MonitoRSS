@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify';
-import { SessionAccessToken } from '../features/discord-auth/types/SessionAccessToken.type';
+import { SessionAccessToken } from '../types/SessionAccessToken.type';
 
 export const getAccessTokenFromRequest = (
   request: FastifyRequest,

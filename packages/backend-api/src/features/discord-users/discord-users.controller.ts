@@ -1,6 +1,6 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { DiscordAccessToken } from '../../common/decorators/DiscordAccessToken';
-import { DiscordOAuth2Guard } from '../../common/guards/DiscordOAuth2.guard';
+import { DiscordAccessToken } from '../discord-auth/decorators/DiscordAccessToken';
+import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { DiscordUsersService } from './discord-users.service';
 import { GetMeOutputDto } from './dto';
 import { GetMyServersOutputDto } from './dto/GetMyServersOutput.dto';

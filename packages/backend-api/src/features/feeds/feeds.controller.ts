@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
-import { DiscordOAuth2Guard } from '../../common/guards/DiscordOAuth2.guard';
+import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
 import { GetFeedArticlesOutputDto } from './dto/GetFeedArticlesOutput.dto';

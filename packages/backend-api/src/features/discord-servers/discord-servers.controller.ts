@@ -1,6 +1,6 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { NestedQuery } from '../../common/decorators/NestedQuery';
-import { DiscordOAuth2Guard } from '../../common/guards/DiscordOAuth2.guard';
+import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { DiscordServersService } from './discord-servers.service';
 import { GetServerFeedsInputDto } from './dto/GetServerFeedsInput.dto';

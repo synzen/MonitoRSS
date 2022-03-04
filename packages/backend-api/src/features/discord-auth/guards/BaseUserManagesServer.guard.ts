@@ -6,8 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { DiscordAuthService } from '../../features/discord-auth/discord-auth.service';
-import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
+import { DiscordAuthService } from '../discord-auth.service';
+import { getAccessTokenFromRequest } from '../utils/get-access-token-from-session';
 
 @Injectable()
 export abstract class BaseUserManagesServerGuard implements CanActivate {

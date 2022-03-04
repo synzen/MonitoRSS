@@ -6,10 +6,10 @@ import {
 import { mocked } from 'ts-jest/utils';
 import { BaseUserManagesServerGuard } from './BaseUserManagesServer.guard';
 import { FastifyRequest } from 'fastify';
-import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
-import { DiscordAuthService } from '../../features/discord-auth/discord-auth.service';
+import { getAccessTokenFromRequest } from '../utils/get-access-token-from-session';
+import { DiscordAuthService } from '../discord-auth.service';
 
-jest.mock('../../utils/get-access-token-from-session');
+jest.mock('../utils/get-access-token-from-session');
 
 const mockedGetAccessTokenFromRequest = mocked(getAccessTokenFromRequest);
 

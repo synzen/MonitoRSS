@@ -5,8 +5,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { DiscordAuthService } from '../../features/discord-auth/discord-auth.service';
-import { SessionAccessToken } from '../../features/discord-auth/types/SessionAccessToken.type';
+import { DiscordAuthService } from '../discord-auth.service';
+import { SessionAccessToken } from '../types/SessionAccessToken.type';
 
 @Injectable()
 export class DiscordOAuth2Guard implements CanActivate {

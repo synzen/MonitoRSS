@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { BaseUserManagesServerGuard } from '../../../common/guards/BaseUserManagesServer.guard';
+import { BaseUserManagesServerGuard } from '../../discord-auth/guards/BaseUserManagesServer.guard';
 
 @Injectable()
 export class UserManagesServerGuard extends BaseUserManagesServerGuard {

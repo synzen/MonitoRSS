@@ -1,9 +1,9 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { mocked } from 'ts-jest/utils';
-import { getAccessTokenFromRequest } from '../../utils/get-access-token-from-session';
+import { getAccessTokenFromRequest } from '../utils/get-access-token-from-session';
 import { discordAccessTokenFactory } from './DiscordAccessToken';
 
-jest.mock('../../utils/get-access-token-from-session');
+jest.mock('../utils/get-access-token-from-session');
 
 const mockedGetAccessTokenFromRequest = mocked(getAccessTokenFromRequest);
 

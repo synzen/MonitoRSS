@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { BaseUserManagesServerGuard } from '../../../common/guards/BaseUserManagesServer.guard';
+import { BaseUserManagesServerGuard } from '../../discord-auth/guards/BaseUserManagesServer.guard';
 import { DiscordAuthService } from '../../discord-auth/discord-auth.service';
 import { FeedsService } from '../feeds.service';
 

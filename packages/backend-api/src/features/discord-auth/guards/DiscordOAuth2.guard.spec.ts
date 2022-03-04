@@ -1,5 +1,5 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { DiscordAuthService } from '../../features/discord-auth/discord-auth.service';
+import { DiscordAuthService } from '../discord-auth.service';
 import { DiscordOAuth2Guard } from './DiscordOAuth2.guard';
 
 describe('DiscordOAuth2 Guard', () => {
