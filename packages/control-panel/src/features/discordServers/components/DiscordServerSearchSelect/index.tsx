@@ -25,12 +25,13 @@ export const DiscordServerSearchSelect: React.FC<Props> = () => {
 
   return (
     <ThemedSelect
-      onChangedValue={onChangedValue}
+      onChange={onChangedValue}
       loading={loading}
-      selectedValue={serverId}
+      value={serverId}
       options={data?.results.map((server) => ({
         value: server.id,
         label: server.name,
+        icon: server.iconUrl,
       })) || []}
     />
   );

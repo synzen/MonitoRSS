@@ -126,14 +126,14 @@ export const SettingsForm: React.FC<Props> = ({
               onClick={() => reset()}
               disabled={!isDirty || isSubmitting}
             >
-              Reset
+              {t('features.feed.components.sidebar.resetButton')}
             </Button>
             <Button
               type="submit"
               colorScheme="blue"
               disabled={isSubmitting || !isDirty}
             >
-              Save
+              {t('features.feed.components.sidebar.saveButton')}
             </Button>
           </HStack>
         </Flex>
