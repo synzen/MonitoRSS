@@ -20,12 +20,8 @@ export class DiscordWebhooksService {
         `/guilds/${serverId}/webhooks`,
       );
 
-    const botClientId = this.configService.get<string>('discordClientId');
-
     return webhooks.filter(
-      (webhook) =>
-        webhook.application_id === botClientId &&
-        webhook.type === DiscordWebhookType.INCOMING,
+      (webhook) => webhook.type === DiscordWebhookType.INCOMING,
     );
   }
 

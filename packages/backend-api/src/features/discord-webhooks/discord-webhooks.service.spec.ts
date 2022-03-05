@@ -28,7 +28,7 @@ describe('DiscordWebhooksService', () => {
   });
 
   describe('getWebhooksOfServer', () => {
-    it('should return webhooks of server that belongs to the bot', async () => {
+    it('should return the incoming webhooks of server', async () => {
       const serverId = 'serverId';
       const webhooks: DiscordWebhook[] = [
         {
@@ -70,33 +70,6 @@ describe('DiscordWebhooksService', () => {
           type: DiscordWebhookType.CHANNEL_FOLLOWER,
           channel_id: '12345',
           application_id: botClientId,
-          name: 'test2',
-        },
-      ];
-
-      jest
-        .spyOn(discordApiService, 'executeBotRequest')
-        .mockResolvedValue(webhooks);
-
-      const result = await service.getWebhooksOfServer(serverId);
-
-      expect(result).toEqual([]);
-    });
-    it('does not return webhooks that do not belong to the bot', async () => {
-      const serverId = 'serverId';
-      const webhooks: DiscordWebhook[] = [
-        {
-          id: '12345',
-          type: DiscordWebhookType.INCOMING,
-          channel_id: '12345',
-          application_id: botClientId + '-random',
-          name: 'test',
-        },
-        {
-          id: '12345',
-          type: DiscordWebhookType.INCOMING,
-          channel_id: '12345',
-          application_id: botClientId + '-random',
           name: 'test2',
         },
       ];
