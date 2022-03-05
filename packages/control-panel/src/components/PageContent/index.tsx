@@ -5,7 +5,7 @@ import {
   Navigate, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
 import { SidebarDiscordServerLinks, useDiscordServers } from '@/features/discordServers';
-import { Loading, ThemedSelect } from '..';
+import { Loading } from '..';
 import { SidebarFeedLinks } from '@/features/feed';
 
 interface Props {
@@ -18,7 +18,6 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
   const { feedId, serverId } = useParams();
   const {
     status,
-    data,
     error,
   } = useDiscordServers();
 
@@ -73,16 +72,6 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
         borderRightWidth="1px"
       >
         <Stack spacing="12">
-          {/* <Stack px="3">
-            <ThemedSelect
-              selectedValue={serverId}
-              options={data?.results.map((server) => ({
-                label: server.name,
-                value: server.id,
-              })) || []}
-              onChangedValue={(value) => onPathChanged(`/servers/${value}/feeds`)}
-            />
-          </Stack> */}
           <Stack px="3" spacing="6">
             <Stack spacing="3">
               {!feedId && (

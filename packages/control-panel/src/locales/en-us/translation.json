@@ -59,7 +59,8 @@
           "settings": "Settings",
           "webhookFormLabel": "Webhook",
           "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
-          "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails."
+          "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
+          "updateSuccess": "Successfully updated feed"
         }
       }
     }

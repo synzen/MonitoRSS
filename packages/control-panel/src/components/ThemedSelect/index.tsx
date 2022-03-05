@@ -1,8 +1,13 @@
-import { useColorModeValue } from '@chakra-ui/react';
+import {
+  Avatar, HStack, Text, useColorModeValue,
+} from '@chakra-ui/react';
 import Select, {
-  GroupBase, StylesConfig,
+  GroupBase, StylesConfig, components,
 } from 'react-select';
+// import Option from 'react-select/dist/declarations/src/components/Option';
 import getChakraColor from '../../utils/getChakraColor';
+
+const { Option } = components;
 
 interface SelectOption {
   value: string;
@@ -12,16 +17,29 @@ interface SelectOption {
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
 
 interface Props {
-  selectedValue?: string;
+  value?: string
   options: SelectOption[];
   loading?: boolean;
   isDisabled?: boolean
   id?: string
-  onChangedValue: (value: string) => void;
+  onBlur?: () => void
+  onChange: (value: string) => void
+  name?: string
+  ref?: React.Ref<any>
+  isClearable?: boolean
 }
 
 export const ThemedSelect: React.FC<Props> = ({
-  selectedValue, options, loading, onChangedValue, id, isDisabled,
+  value,
+  options,
+  loading,
+  onChange,
+  onBlur,
+  id,
+  isDisabled,
+  name,
+  ref,
+  isClearable,
 }) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
     menu: (provided) => ({
@@ -58,7 +76,7 @@ export const ThemedSelect: React.FC<Props> = ({
     }),
   });
 
-  const selectedOption = options.find((option) => option.value === selectedValue);
+  const selectedOption = options.find((option) => option.value === value);
 
   return (
     <Select
@@ -66,29 +84,39 @@ export const ThemedSelect: React.FC<Props> = ({
       isDisabled={loading || isDisabled}
       isLoading={loading}
       options={options}
+      onBlur={onBlur}
+      name={name}
+      ref={ref}
+      isClearable={isClearable}
       // @ts-ignore
       styles={styles}
-      value={selectedOption}
-      onChange={(option) => (option ? onChangedValue(option.value) : null)}
-      // components={{
-      //   Option: IconOption,
-      // }}
+      value={selectedOption || ''}
+      onChange={(option) => {
+        onChange((option as SelectOption)?.value || '');
+      }}
+      components={{
+        Option: IconOption,
+      }}
     />
   );
 };
 
-// type IconOptionProps = Parameters<typeof Option>[0];
+type IconOptionProps = Parameters<typeof Option>[0];
 
-// const IconOption: React.FC<IconOptionProps> = (props) => {
-//   const { data } = props;
+const IconOption: React.FC<IconOptionProps> = (props) => {
+  const { data } = props;
 
-//   const castedData = data as SelectOption;
+  const castedData = data as SelectOption;
 
-//   return (
-//   // eslint-disable-next-line react/jsx-props-no-spreading
-//     <Option {...props}>
-//       <Avatar src={castedData.icon} name={castedData.value} />
-//       {castedData.label}
-//     </Option>
-//   );
-// };
+  return (
+  // eslint-disable-next-line react/jsx-props-no-spreading
+    <Option {...props}>
+      <HStack alignItems="center">
+        <Avatar src={castedData.icon} name={castedData.value} size="xs" />
+        <Text>
+          {castedData.label}
+        </Text>
+      </HStack>
+    </Option>
+  );
+};

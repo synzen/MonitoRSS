@@ -2,7 +2,7 @@ import { DiscordWebhook } from '@/features/discordWebhooks';
 
 const mockDiscordWebhooks: DiscordWebhook[] = [{
   id: '1',
-  avatarUrl: 'https://via.placeholder.com/150',
+  avatarUrl: '',
   channelId: '1',
   name: 'New York Times',
 }, {

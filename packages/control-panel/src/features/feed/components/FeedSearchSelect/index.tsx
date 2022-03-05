@@ -25,9 +25,9 @@ export const FeedSearchSelect: React.FC<Props> = () => {
 
   return (
     <ThemedSelect
-      onChangedValue={onChangedValue}
+      onChange={onChangedValue}
       loading={loading}
-      selectedValue={feedId}
+      value={feedId}
       options={data?.results.map((feed) => ({
         value: feed.id,
         label: feed.title,

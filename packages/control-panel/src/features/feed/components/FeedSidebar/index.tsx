@@ -3,12 +3,8 @@ import {
   AlertDescription,
   AlertTitle,
   Box,
-  Button,
   Divider,
   Flex,
-  FormControl,
-  FormHelperText,
-  FormLabel,
   Heading,
   HStack,
   SlideFade,
@@ -17,12 +13,13 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { CategoryText, Loading, ThemedSelect } from '@/components';
+import { CategoryText, Loading } from '@/components';
 import { useFeed } from '../../hooks';
 import { FeedStatusIcon } from '../FeedStatusIcon';
 import { RefreshButton } from '../RefreshButton';
 import RouteParams from '@/types/RouteParams';
 import { useDiscordServer } from '@/features/discordServers';
+import { SettingsForm } from './SettingsForm';
 
 interface Props {
   feedId?: string;
@@ -38,7 +35,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
     feedId,
   });
 
-  if (!feedId) {
+  if (!feedId || !serverId) {
     return null;
   }
 
@@ -128,35 +125,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
             {t('features.feed.components.sidebar.settings')}
           </Heading>
           <Divider />
-          <Stack spacing={3}>
-            <FormControl>
-              <FormLabel htmlFor="webhook">
-                {t('features.feed.components.sidebar.webhookFormLabel')}
-
-              </FormLabel>
-              <ThemedSelect
-                id="webhook"
-                isDisabled={webhooksDisabled}
-                options={[{
-                  label: 'Webhook1',
-                  value: 'webhook1',
-                }]}
-                onChangedValue={console.log}
-              />
-              <FormHelperText>
-                {!webhooksDisabled
-                  && t('features.feed.components.sidebar.webhooksInputHelperText')}
-                {webhooksDisabled && (
-                  <Text color="orange.500">
-                    {t('features.feed.components.sidebar.webhooksPremiumDisabled')}
-                  </Text>
-                )}
-              </FormHelperText>
-            </FormControl>
-            <Flex justifyContent="flex-end">
-              <Button>Save</Button>
-            </Flex>
-          </Stack>
+          <SettingsForm feedId={feedId} serverId={serverId} />
         </Stack>
       </Stack>
     </Stack>

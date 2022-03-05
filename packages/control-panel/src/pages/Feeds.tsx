@@ -95,7 +95,7 @@ const Feeds: React.FC = () => {
                     </Th>
                     <Th>{t('pages.feeds.tableUrl')}</Th>
                     <Th>{t('pages.feeds.tableChannel')}</Th>
-                    <Th />
+                    <Th isNumeric />
                   </Tr>
                 </Thead>
                 <Tbody>
@@ -109,7 +109,7 @@ const Feeds: React.FC = () => {
                         cursor: 'pointer',
                       }}
                       _focus={{
-                        outline: `solid 2px ${getChakraColor('gray.500')}`,
+                        outline: `solid 1px ${getChakraColor('gray.500')}`,
                       }}
                       onClick={() => onClickFeedRow(feed)}
                       onKeyDown={(e) => {
@@ -140,7 +140,7 @@ const Feeds: React.FC = () => {
                       <Td>
                         <Text color="muted">{feed.channel}</Text>
                       </Td>
-                      <Td>
+                      <Td isNumeric>
                         <IconButton
                           icon={<FiChevronRight fontSize="1.25rem" />}
                           onClick={() => navigateToFeed(feed.id)}
