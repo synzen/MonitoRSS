@@ -5,12 +5,18 @@ describe('DiscordUsersService', () => {
   const discordApiService = {
     executeBearerRequest: jest.fn(),
   };
+  const supportersService = {
+    getBenefitsOfServers: jest.fn(),
+  };
 
   beforeEach(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    service = new DiscordUsersService(discordApiService as any);
+    service = new DiscordUsersService(
+      discordApiService as never,
+      supportersService as never,
+    );
 
     jest.spyOn(discordApiService, 'executeBearerRequest').mockResolvedValue([]);
+    jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([]);
   });
 
   describe('getGuilds', () => {
@@ -38,16 +44,82 @@ describe('DiscordUsersService', () => {
       ];
       discordApiService.executeBearerRequest.mockResolvedValue(guilds);
 
-      const result = await service.getGuilds(accessToken);
-
-      expect(result).toEqual([
+      supportersService.getBenefitsOfServers.mockResolvedValue([
         {
-          ...guilds[0],
-          iconUrl:
-            `https://cdn.discordapp.com/icons` +
-            `/${guilds[0].id}/${guilds[0].icon}.png?size=128`,
+          maxFeeds: 10,
+          webhooks: true,
         },
       ]);
+
+      const result = await service.getGuilds(accessToken);
+
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ...guilds[0],
+            iconUrl:
+              `https://cdn.discordapp.com/icons` +
+              `/${guilds[0].id}/${guilds[0].icon}.png?size=128`,
+          }),
+        ]),
+      );
+    });
+
+    it('returns the benefits correctly', async () => {
+      const accessToken = 'abc';
+      const guilds = [
+        {
+          id: 'guild_id',
+          name: 'test',
+          icon: 'icon_hash',
+          owner: true,
+          permissions: '123',
+          features: ['123'],
+        },
+        {
+          id: 'guild_id_2',
+          name: 'test',
+          icon: 'icon_hash',
+          owner: true,
+          permissions: '123',
+          features: ['123'],
+        },
+      ];
+      discordApiService.executeBearerRequest.mockResolvedValue(guilds);
+
+      const benefitsResponse = [
+        {
+          maxFeeds: 10,
+          webhooks: true,
+        },
+        {
+          maxFeeds: 20,
+          webhooks: true,
+        },
+      ];
+      supportersService.getBenefitsOfServers.mockResolvedValue(
+        benefitsResponse,
+      );
+
+      const result = await service.getGuilds(accessToken);
+
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            benefits: {
+              maxFeeds: benefitsResponse[0].maxFeeds,
+              webhooks: benefitsResponse[0].webhooks,
+            },
+          }),
+          expect.objectContaining({
+            ...guilds[1],
+            benefits: {
+              maxFeeds: benefitsResponse[1].maxFeeds,
+              webhooks: benefitsResponse[1].webhooks,
+            },
+          }),
+        ]),
+      );
     });
 
     it('excludes guilds with no permissions', async () => {
@@ -62,7 +134,12 @@ describe('DiscordUsersService', () => {
         },
       ];
       discordApiService.executeBearerRequest.mockResolvedValue(guilds);
-
+      supportersService.getBenefitsOfServers.mockResolvedValue([
+        {
+          maxFeeds: 10,
+          webhooks: true,
+        },
+      ]);
       const result = await service.getGuilds(accessToken);
 
       expect(result).toEqual([]);
@@ -80,7 +157,12 @@ describe('DiscordUsersService', () => {
         },
       ];
       discordApiService.executeBearerRequest.mockResolvedValue(guilds);
-
+      supportersService.getBenefitsOfServers.mockResolvedValue([
+        {
+          maxFeeds: 10,
+          webhooks: true,
+        },
+      ]);
       const result = await service.getGuilds(accessToken);
 
       expect(result).toHaveLength(1);

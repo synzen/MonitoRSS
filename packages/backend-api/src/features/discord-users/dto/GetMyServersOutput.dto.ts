@@ -1,8 +1,11 @@
 interface PartialUserGuild {
   id: string;
   name: string;
-  icon?: string;
   iconUrl?: string;
+  benefits: {
+    maxFeeds: number;
+    webhooks: boolean;
+  };
 }
 
 export interface GetMyServersOutputDto {

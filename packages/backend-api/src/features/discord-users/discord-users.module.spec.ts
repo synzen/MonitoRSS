@@ -138,6 +138,10 @@ describe('DiscordServersModule', () => {
           id: server.id,
           name: server.name,
           iconUrl: expect.any(String),
+          benefits: {
+            maxFeeds: expect.any(Number),
+            webhooks: expect.any(Boolean),
+          },
         })),
         total: mockServers.length,
       });

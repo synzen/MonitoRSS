@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config/config';
 import { validateConfig } from './config/config.validate';
+import testConfig from './config/test-config';
 import { DiscordAuthModule } from './features/discord-auth/discord-auth.module';
 import { DiscordServersModule } from './features/discord-servers/discord-servers.module';
 import { DiscordUserModule } from './features/discord-users/discord-users.module';
@@ -14,12 +15,6 @@ import { SupportersModule } from './features/supporters/supporters.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      ignoreEnvFile: true,
-      load: [config],
-      validate: validateConfig,
-    }),
     DiscordAuthModule,
     DiscordUserModule,
     DiscordServersModule,
@@ -36,7 +31,22 @@ export class AppModule {
 
     return {
       module: AppModule,
-      imports: [MongooseModule.forRoot(configValues.mongodbUri)],
+      imports: [
+        MongooseModule.forRoot(configValues.mongodbUri),
+        ConfigModule.forRoot({
+          isGlobal: true,
+          ignoreEnvFile: true,
+          load: [process.env.NODE_ENV === 'test' ? testConfig : config],
+          validate: validateConfig,
+        }),
+      ],
+    };
+  }
+
+  static forTest(): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [],
     };
   }
 }

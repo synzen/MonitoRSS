@@ -33,6 +33,10 @@ export class DiscordUsersController {
       id: guild.id,
       name: guild.name,
       iconUrl: guild.iconUrl,
+      benefits: {
+        maxFeeds: guild.benefits.maxFeeds,
+        webhooks: guild.benefits.webhooks,
+      },
     }));
 
     return {

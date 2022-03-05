@@ -13,7 +13,7 @@ export class SupportersService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getBenefitsOfServer(serverIds: string[]) {
+  async getBenefitsOfServers(serverIds: string[]) {
     const aggregate: Array<{ maxFeeds: number; guilds: string[] }> =
       await this.supporterModel.aggregate([
         {
@@ -81,6 +81,10 @@ export class SupportersService {
       'defaultMaxFeeds',
     ) as number;
 
+    if (defaultMaxFeeds == null) {
+      throw new Error('defaultMaxFeeds is not set');
+    }
+
     serverIds.forEach((serverId) => {
       maxFeedsCounter.set(serverId, defaultMaxFeeds);
 
@@ -99,7 +103,9 @@ export class SupportersService {
     return serverIds.map((serverId) => ({
       maxFeeds: maxFeedsCounter.get(serverId) as number,
       serverId,
-      webhook: true,
+      webhooks: aggregate.some((aggregateResult) =>
+        aggregateResult.guilds.includes(serverId),
+      ),
     }));
   }
 }

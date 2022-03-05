@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { equal } from 'assert';
 import { Session, SessionKey } from '../common/types/Session';
+import testConfig from '../config/test-config';
 
 let testingModule: TestingModule;
 let app: NestFastifyApplication;
@@ -26,6 +27,7 @@ export function setupEndpointTests(metadata: ModuleMetadata) {
       ConfigModule.forRoot({
         ignoreEnvFile: true,
         isGlobal: true,
+        load: [testConfig],
       }),
     ],
   });

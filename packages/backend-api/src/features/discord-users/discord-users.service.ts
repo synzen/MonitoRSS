@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { SupportersService } from '../supporters/supporters.service';
 import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
 import {
   PartialUserGuild,
@@ -10,7 +11,10 @@ import {
 export class DiscordUsersService {
   BASE_ENDPOINT = '/users';
 
-  constructor(private readonly discordApiService: DiscordAPIService) {}
+  constructor(
+    private readonly discordApiService: DiscordAPIService,
+    private readonly supportersService: SupportersService,
+  ) {}
 
   /**
    * Get a user's guilds.
@@ -43,12 +47,25 @@ export class DiscordUsersService {
           MANAGE_CHANNEL_PERMISSION,
     );
 
-    return guildsWithPermission.map((guild) => ({
-      ...guild,
-      iconUrl:
-        `https://cdn.discordapp.com/icons` +
-        `/${guild.id}/${guild.icon}.${iconFormat}?size=${iconSize}`,
-    }));
+    const guildIds = guildsWithPermission.map((guild) => guild.id);
+    const guildBenefits = await this.supportersService.getBenefitsOfServers(
+      guildIds,
+    );
+
+    return guildsWithPermission.map((guild, index) => {
+      const benefits = guildBenefits[index];
+
+      return {
+        ...guild,
+        iconUrl:
+          `https://cdn.discordapp.com/icons` +
+          `/${guild.id}/${guild.icon}.${iconFormat}?size=${iconSize}`,
+        benefits: {
+          maxFeeds: benefits.maxFeeds,
+          webhooks: benefits.webhooks,
+        },
+      };
+    });
   }
 
   /**

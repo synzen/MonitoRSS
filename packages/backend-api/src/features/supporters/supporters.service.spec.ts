@@ -56,8 +56,31 @@ describe('SupportersService', () => {
     await teardownIntegrationTests();
   });
 
-  describe('getBenefitsOfServer', () => {
+  describe('getBenefitsOfServers', () => {
     const serverId = 'server-id';
+
+    it('always returns results for every input server id', async () => {
+      const serverIds = ['1', '2', '3'];
+
+      const result = await supportersService.getBenefitsOfServers(serverIds);
+      expect(result).toEqual([
+        {
+          maxFeeds: defaultMaxFeeds,
+          serverId: serverIds[0],
+          webhooks: false,
+        },
+        {
+          maxFeeds: defaultMaxFeeds,
+          serverId: serverIds[1],
+          webhooks: false,
+        },
+        {
+          maxFeeds: defaultMaxFeeds,
+          serverId: serverIds[2],
+          webhooks: false,
+        },
+      ]);
+    });
 
     describe('when there is no patron', () => {
       it('returns the supporter max feeds if supporter is not expired', async () => {
@@ -70,7 +93,7 @@ describe('SupportersService', () => {
 
         await supporterModel.create(supporter);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
 
         expect(result[0].maxFeeds).toEqual(supporter.maxFeeds);
       });
@@ -85,13 +108,13 @@ describe('SupportersService', () => {
 
         await supporterModel.create(supporter);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
 
         expect(result[0].maxFeeds).toEqual(defaultMaxFeeds);
       });
 
       it('returns the default max feeds if supporter is not found', async () => {
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
 
         expect(result[0].maxFeeds).toEqual(defaultMaxFeeds);
       });
@@ -105,9 +128,24 @@ describe('SupportersService', () => {
 
         await supporterModel.create(supporter);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
 
         expect(result[0].maxFeeds).toEqual(supporter.maxFeeds);
+      });
+
+      it('returns webhook false for a supporter that expired', async () => {
+        const supporter = await createTestSupporter({
+          _id: userDiscordId,
+          guilds: [serverId],
+          maxFeeds: 10,
+          expireAt: dayjs().subtract(10, 'day').toDate(),
+        });
+
+        await supporterModel.create(supporter);
+
+        const result = await supportersService.getBenefitsOfServers([serverId]);
+
+        expect(result[0].webhooks).toBeFalsy();
       });
     });
     describe('when there is a patron', () => {
@@ -127,7 +165,7 @@ describe('SupportersService', () => {
         await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
         expect(result[0].maxFeeds).toBe(supporterToInsert.maxFeeds);
       });
 
@@ -148,7 +186,7 @@ describe('SupportersService', () => {
         await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
         expect(result[0].maxFeeds).toEqual(supporterToInsert.maxFeeds);
       });
 
@@ -169,7 +207,7 @@ describe('SupportersService', () => {
         await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
         expect(result[0].maxFeeds).toBe(defaultMaxFeeds);
       });
 
@@ -189,7 +227,7 @@ describe('SupportersService', () => {
         await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
-        const result = await supportersService.getBenefitsOfServer([serverId]);
+        const result = await supportersService.getBenefitsOfServers([serverId]);
         expect(result[0].maxFeeds).toBe(defaultMaxFeeds);
       });
     });
@@ -218,7 +256,7 @@ describe('SupportersService', () => {
 
       await supporterModel.create(supportersToInsert);
 
-      const result = await supportersService.getBenefitsOfServer([
+      const result = await supportersService.getBenefitsOfServers([
         serverId1,
         serverId2,
       ]);
@@ -248,12 +286,12 @@ describe('SupportersService', () => {
 
       await supporterModel.create(supportersToInsert);
 
-      const result = await supportersService.getBenefitsOfServer([
+      const result = await supportersService.getBenefitsOfServers([
         serverId1,
         serverId2,
       ]);
       expect(result).toHaveLength(2);
-      expect(result.every((r) => r.webhook)).toBe(true);
+      expect(result.every((r) => r.webhooks)).toBe(true);
     });
 
     it('returns max feeds correctly when a single guild has multiple supporters', async () => {
@@ -283,7 +321,7 @@ describe('SupportersService', () => {
 
       await supporterModel.create(supportersToInsert);
 
-      const result = await supportersService.getBenefitsOfServer([
+      const result = await supportersService.getBenefitsOfServers([
         serverId1,
         serverId2,
       ]);

@@ -24,12 +24,12 @@ const Webhooks: React.FC<Props> = () => {
   });
   const { data, status, error } = useDiscordWebhooks({
     serverId,
-    isWebhooksEnabled: serverData?.isWebhooksEnabled,
+    isWebhooksEnabled: serverData?.benefits.webhooks,
   });
 
   console.log(serverData);
 
-  if (!serverData?.isWebhooksEnabled) {
+  if (!serverData?.benefits.webhooks) {
     return (
       <DashboardContent>
         <Alert

@@ -8,4 +8,8 @@ export interface PartialUserGuild {
 
 export type PartialUserGuildFormatted = PartialUserGuild & {
   iconUrl?: string;
+  benefits: {
+    maxFeeds: number;
+    webhooks: boolean;
+  };
 };
