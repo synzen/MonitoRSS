@@ -10,6 +10,7 @@ import { DiscordServersModule } from './features/discord-servers/discord-servers
 import { DiscordUserModule } from './features/discord-users/discord-users.module';
 import { DiscordWebhooksModule } from './features/discord-webhooks/discord-webhooks.module';
 import { FeedsModule } from './features/feeds/feeds.module';
+import { SupportersModule } from './features/supporters/supporters.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { FeedsModule } from './features/feeds/feeds.module';
     DiscordServersModule,
     FeedsModule,
     DiscordWebhooksModule,
+    SupportersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
