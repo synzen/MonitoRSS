@@ -1,16 +1,13 @@
-import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertDescription,
-  AlertIcon,
   AlertTitle,
-  Box,
-  Flex, Grid, Heading, HStack, Stack, Text,
+  Box, Grid, Heading, HStack, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CategoryText, DashboardContent } from '@/components';
-import { useFeed } from '../features/feed';
+import { FeedStatusIcon, useFeed } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
 
@@ -34,20 +31,7 @@ const Feed: React.FC = () => {
           <Stack spacing={6}>
             <Stack>
               <HStack alignItems="center">
-                {feed?.status === 'ok' && (
-                <CheckCircleIcon
-                  fontSize="2xl"
-                  color="green.500"
-                  verticalAlign="middle"
-                />
-                )}
-                {feed?.status === 'failed' && (
-                <WarningIcon
-                  fontSize="2xl"
-                  color="red.500"
-                  verticalAlign="middle"
-                />
-                )}
+                <FeedStatusIcon status={feed?.status || 'ok'} />
                 <Heading
                   size="lg"
                   marginRight={4}
@@ -60,7 +44,6 @@ const Feed: React.FC = () => {
               </Text>
             </Stack>
             <Alert status="error" hidden={feed?.status !== 'failed'}>
-              <AlertIcon />
               <Box>
                 <AlertTitle>
                   {t('pages.feed.connectionFailureTitle')}

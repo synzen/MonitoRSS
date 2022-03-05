@@ -19,7 +19,7 @@ import {
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DashboardContent, Loading } from '@/components';
-import { FeedSummary, useFeeds } from '../features/feed';
+import { FeedStatusIcon, FeedSummary, useFeeds } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 
 const Feeds: React.FC = () => {
@@ -98,7 +98,9 @@ const Feeds: React.FC = () => {
                         // eslint-disable-next-line react/no-array-index-key
                       key={index}
                     >
-                      <Td>{row.status}</Td>
+                      <Td>
+                        <FeedStatusIcon status={row.status} />
+                      </Td>
                       <Td>{row.title}</Td>
                       <Td>{row.url}</Td>
                       <Td>{row.channel}</Td>
