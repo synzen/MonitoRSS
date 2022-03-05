@@ -3,10 +3,12 @@
     "feeds": {
       "title": "Feeds",
       "status": "Status",
-      "url": "URL",
       "add": "Add New",
-      "channel": "Channel",
-      "search": "Search by id, title, name or url"
+      "tableTitle": "Title",
+      "tableUrl": "URL",
+      "tableStatus": "Status",
+      "tableChannel": "Channel",
+      "tableSearch": "Search by id, title, name or url"
     },
     "feed": {
       "connectionFailureTitle": "Disabled due to too many connection failures",
@@ -21,7 +23,7 @@
       "title": "Webhooks",
       "addNew": "Add New",
       "notEnabledTitle": "This server does not have webhooks enabled",
-      "notEnabledDescription": "You must be a supporter to access this feature.",
+      "notEnabledDescription": "This server must be backed by a supporter to access this.",
       "description": "Only webhooks that are created and managed by the bot will be listed here."
     }
   },
@@ -52,6 +54,12 @@
           "text": "Re-enable",
           "failure": "Failed to re-enable feed",
           "success": "Feed has been enabled will be re-attempted"
+        },
+        "sidebar": {
+          "settings": "Settings",
+          "webhookFormLabel": "Webhook",
+          "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
+          "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails."
         }
       }
     }

@@ -48,6 +48,7 @@ const handlers = [
   )),
 
   rest.get('/api/v1/feeds/:feedId', (req, res, ctx) => res(
+    ctx.delay(500),
     ctx.json<GetFeedOutput>({
       result: mockFeeds[0],
     }),

@@ -5,7 +5,7 @@ const mockFeeds: Feed[] = [{
   title: 'New York Times',
   url: 'https://www.feed1.com',
   channel: '#general',
-  status: 'failed',
+  status: 'ok',
   embeds: [],
   text: 'Feed Text Here',
   createdAt: new Date().toISOString(),

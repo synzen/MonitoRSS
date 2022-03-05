@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-props-no-spreading */
 import { Stack, StackProps, Text } from '@chakra-ui/react';
 
 interface DescriptionProps extends StackProps {
@@ -5,8 +6,8 @@ interface DescriptionProps extends StackProps {
   children: React.ReactNode
 }
 
-export const CategoryText: React.FC<DescriptionProps> = ({ title, children }) => (
-  <Stack as="dl" spacing="1">
+export const CategoryText: React.FC<DescriptionProps> = ({ title, children, ...styles }) => (
+  <Stack as="dl" spacing="1" {...styles}>
     <Text
       as="dt"
       fontWeight="bold"

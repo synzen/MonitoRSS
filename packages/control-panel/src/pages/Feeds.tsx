@@ -1,64 +1,80 @@
 import { SearchIcon } from '@chakra-ui/icons';
 import {
   Box,
-  Button,
   Flex,
   Input,
   InputGroup,
   InputLeftElement,
   Stack,
-  Table,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
   Alert,
   AlertIcon,
+  Heading,
+  HStack,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Text,
+  Tbody,
+  Td,
+  Badge,
+  IconButton,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  useBreakpointValue,
 } from '@chakra-ui/react';
-import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DashboardContent, Loading } from '@/components';
-import { FeedStatusIcon, FeedSummary, useFeeds } from '../features/feed';
+import { useState } from 'react';
+import { FiChevronRight } from 'react-icons/fi';
+import { Loading } from '@/components';
+import { FeedSummary, useFeeds } from '../features/feed';
 import RouteParams from '../types/RouteParams';
+import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
+import getChakraColor from '@/utils/getChakraColor';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
   const { t } = useTranslation();
-
-  if (!serverId) {
-    return <Navigate to="/servers" />;
-  }
+  const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
 
   const { data, status, error } = useFeeds({
     serverId,
   });
 
+  const [focusedFeedId, setFocusedFeedId] = useState('');
+
   const navigate = useNavigate();
 
   const onClickFeedRow = (feed: FeedSummary) => {
-    navigate(feed.id);
+    // navigate(feed.id);
+    setFocusedFeedId(feed.id);
+  };
+
+  const navigateToFeed = (feedId: string) => {
+    navigate(feedId);
   };
 
   return (
-    <Stack>
-      <DashboardContent>
-        {(status === 'loading') && (
+    <HStack height="100%" alignItems="flex-start">
+      {(status === 'loading') && (
         <Box textAlign="center" paddingY="5rem">
           <Loading size="lg" />
         </Box>
-        )}
-        {status === 'error' && (
+      )}
+      {status === 'error' && (
         <Alert status="error">
           <AlertIcon />
           {error?.message}
         </Alert>
-        )}
-        {status === 'success' && data && (
-        <Stack spacing="6">
-          {/* <Heading as="h2" size="md">Current Feeds</Heading> */}
+      )}
+      {status === 'success' && data && (
+        <Stack spacing="6" flex="1" overflow="auto">
+          <Heading size="lg" paddingX="8" paddingTop="8">Feeds</Heading>
           <Stack spacing="4">
-            <Flex justifyContent="space-between">
+            <Flex justifyContent="space-between" flexWrap="wrap" paddingX="8">
               <InputGroup>
                 <InputLeftElement
                   pointerEvents="none"
@@ -67,43 +83,73 @@ const Feeds: React.FC = () => {
                 </InputLeftElement>
                 <Input width="sm" placeholder={t('pages.feeds.search')} />
               </InputGroup>
-              <Button colorScheme="blue">{t('pages.feeds.add')}</Button>
+              {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
             </Flex>
             <Box overflow="auto">
-              <Table size="lg" variant="simple" width="100%">
+              <Table whiteSpace="nowrap" marginBottom="5">
                 <Thead>
                   <Tr>
-                    <Th>{t('pages.feeds.status')}</Th>
-                    <Th>{t('pages.feeds.title')}</Th>
-                    <Th>{t('pages.feeds.url')}</Th>
-                    <Th>{t('pages.feeds.channel')}</Th>
-                    {/* <Th isNumeric>Refresh Rate</Th> */}
-                    {/* <Th>Actions</Th> */}
+                    <Th>{t('pages.feeds.tableStatus')}</Th>
+                    <Th>
+                      {t('pages.feeds.tableTitle')}
+                    </Th>
+                    <Th>{t('pages.feeds.tableUrl')}</Th>
+                    <Th>{t('pages.feeds.tableChannel')}</Th>
+                    <Th />
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {data.results.map((row, index) => (
+                  {data.results.map((feed) => (
                     <Tr
-                      onClick={() => onClickFeedRow(row)}
-                      _focus={{
-                        backgroundColor: 'gray.700',
-                        cursor: 'pointer',
-                        outline: 'none',
-                      }}
-                      _hover={{
-                        backgroundColor: 'gray.700',
-                        cursor: 'pointer',
-                      }}
+                      key={feed.id}
                       tabIndex={0}
-                        // eslint-disable-next-line react/no-array-index-key
-                      key={index}
+                      bg={focusedFeedId === feed.id ? 'gray.700' : undefined}
+                      // outline={focusedFeedId === feed.id
+                      //   ? `solid 2px ${getChakraColor('gray.500')}`
+                      //   : undefined}
+                      _hover={{
+                        bg: 'gray.700',
+                        cursor: 'pointer',
+                      }}
+                      _focus={{
+                        outline: `solid 2px ${getChakraColor('gray.500')}`,
+                      }}
+                      onClick={() => onClickFeedRow(feed)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          onClickFeedRow(feed);
+                        }
+                      }}
                     >
                       <Td>
-                        <FeedStatusIcon status={row.status} />
+                        <Badge
+                          size="sm"
+                          colorScheme={feed.status === 'ok' ? 'green' : 'red'}
+                        >
+                          {feed.status}
+                        </Badge>
                       </Td>
-                      <Td>{row.title}</Td>
-                      <Td>{row.url}</Td>
-                      <Td>{row.channel}</Td>
+                      <Td>
+                        {feed.title}
+                      </Td>
+                      <Td
+                        maxWidth="30rem"
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                      >
+                        {feed.url}
+                      </Td>
+                      <Td>
+                        <Text color="muted">{feed.channel}</Text>
+                      </Td>
+                      <Td>
+                        <IconButton
+                          icon={<FiChevronRight fontSize="1.25rem" />}
+                          onClick={() => navigateToFeed(feed.id)}
+                          aria-label="Customize"
+                        />
+                      </Td>
                     </Tr>
                   ))}
                 </Tbody>
@@ -111,9 +157,38 @@ const Feeds: React.FC = () => {
             </Box>
           </Stack>
         </Stack>
-        )}
-      </DashboardContent>
-    </Stack>
+      )}
+      {focusedFeedId && (
+      <Box
+        display={{ base: 'none', xl: 'block' }}
+        borderLeftWidth="1px"
+        marginLeft="0"
+        marginInlineStart="0 !important"
+        height="100%"
+        minWidth={{ base: 'none', xl: 'md', '2xl': 'lg' }}
+        width={{ base: 'none', xl: 'md', '2xl': 'lg' }}
+      >
+        <FeedSidebar feedId={focusedFeedId} />
+      </Box>
+      )}
+      {sidebarEnabled && (
+      <Drawer
+        autoFocus={false}
+        size="md"
+        isOpen={!!focusedFeedId}
+        onClose={() => {
+          setFocusedFeedId('');
+        }}
+        placement="right"
+      >
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <FeedSidebar feedId={focusedFeedId} />
+        </DrawerContent>
+      </Drawer>
+      )}
+    </HStack>
   );
 };
 

@@ -15,21 +15,26 @@ interface Props {
   selectedValue?: string;
   options: SelectOption[];
   loading?: boolean;
+  isDisabled?: boolean
+  id?: string
   onChangedValue: (value: string) => void;
 }
 
 export const ThemedSelect: React.FC<Props> = ({
-  selectedValue, options, loading, onChangedValue,
+  selectedValue, options, loading, onChangedValue, id, isDisabled,
 }) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
     menu: (provided) => ({
       ...provided,
       backgroundColor: getChakraColor('gray.700'),
+      height: '40px',
     }),
     control: (provided, state) => ({
       ...provided,
-      background: 'none',
+      background: getChakraColor('gray.800'),
       color: 'white',
+      height: '40px',
+      paddingLeft: '8px',
       borderColor: state.isFocused
         ? getChakraColor('gray.600')
         : getChakraColor('gray.700'),
@@ -57,7 +62,8 @@ export const ThemedSelect: React.FC<Props> = ({
 
   return (
     <Select
-      isDisabled={loading}
+      id={id}
+      isDisabled={loading || isDisabled}
       isLoading={loading}
       options={options}
       // @ts-ignore
