@@ -205,6 +205,27 @@ describe('FeedsService', () => {
       expect(updatedFeed?.webhook?.id).toEqual(newWebhookId);
     });
 
+    it('removes the webhook object if webhook id is empty', async () => {
+      const oldWebhookId = 'old-webhook-id';
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          webhook: {
+            id: oldWebhookId,
+          },
+        }),
+      );
+
+      await service.updateOne(createdFeed._id.toString(), {
+        webhook: {
+          id: '',
+        },
+      });
+
+      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.webhook).toBeUndefined();
+    });
+
     it('does not update the text if undefined is passed', async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({

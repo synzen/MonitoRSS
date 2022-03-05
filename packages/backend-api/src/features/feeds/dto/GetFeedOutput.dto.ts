@@ -106,7 +106,7 @@ export class GetFeedOutputDto {
       },
     };
 
-    if (feed.webhook) {
+    if (feed.webhook?.id) {
       resultSoFar.result.webhook = {
         id: feed.webhook.id,
       };

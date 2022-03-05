@@ -64,7 +64,7 @@ describe('GetFeedOutputDto', () => {
       });
     });
 
-    it('does not add the webhook object if there is no webhook', () => {
+    it('does not add the webhook object if there is no webhook object', () => {
       const feed = createTestFeed({});
       const feedWithRefreshRate: FeedWithRefreshRate = {
         ...feed,
@@ -73,6 +73,20 @@ describe('GetFeedOutputDto', () => {
       };
 
       delete feedWithRefreshRate.webhook;
+
+      const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
+      expect(result.result.webhook).toBeUndefined();
+    });
+    it('does not add the webhook object if there is no webhook id', () => {
+      const feed = createTestFeed({});
+      const feedWithRefreshRate: FeedWithRefreshRate = {
+        ...feed,
+        refreshRateSeconds: 10,
+        status: FeedStatus.OK,
+        webhook: {
+          id: '',
+        },
+      };
 
       const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
       expect(result.result.webhook).toBeUndefined();

@@ -82,6 +82,7 @@ export class FeedsService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateObject: Record<string, any> = {
       $set: {},
+      $unset: {},
     };
 
     if (strippedUpdateObject.text != null) {
@@ -89,19 +90,21 @@ export class FeedsService {
     }
 
     if (strippedUpdateObject.webhook?.id != null) {
-      updateObject.$set.webhook = {
-        id: strippedUpdateObject.webhook.id,
-      };
+      if (!strippedUpdateObject.webhook?.id) {
+        updateObject.$unset.webhook = '';
+      } else {
+        updateObject.$set.webhook = {
+          id: strippedUpdateObject.webhook.id,
+        };
+      }
     }
 
-    const res = await this.feedModel.updateOne(
+    await this.feedModel.updateOne(
       {
         _id: feedId,
       },
       updateObject,
     );
-
-    console.log(await this.feedModel.find());
 
     const foundFeeds = await this.findFeeds(
       {

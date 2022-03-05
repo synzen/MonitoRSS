@@ -39,7 +39,7 @@ export const SettingsForm: React.FC<Props> = ({
     data: discordServerData,
     status: discordServerStatus,
   } = useDiscordServer({ serverId });
-  const { data: discordWebhooks } = useDiscordWebhooks({
+  const { data: discordWebhooks, status: discordWebhooksStatus } = useDiscordWebhooks({
     serverId,
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
@@ -66,10 +66,13 @@ export const SettingsForm: React.FC<Props> = ({
         webhookId: formData.webhookId,
       },
     });
-    await getFeed({
+    const updatedFeed = await getFeed({
       feedId,
     });
     await notifySuccess(t('features.feed.components.sidebar.updateSuccess'));
+    reset({
+      webhookId: updatedFeed.result.webhook?.id || '',
+    });
   };
 
   if (!feed || !discordServerData) {
@@ -92,6 +95,7 @@ export const SettingsForm: React.FC<Props> = ({
             control={control}
             render={({ field }) => (
               <ThemedSelect
+                loading={discordWebhooksStatus === 'loading'}
                 isDisabled={webhooksDisabled || isSubmitting}
                 isClearable
                 options={discordWebhooks?.map((webhook) => ({
@@ -127,7 +131,7 @@ export const SettingsForm: React.FC<Props> = ({
             <Button
               type="submit"
               colorScheme="blue"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isDirty}
             >
               Save
             </Button>

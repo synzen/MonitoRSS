@@ -51,6 +51,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
       spacing={6}
       overflow="auto"
       padding="10"
+      height="100%"
       as={SlideFade}
       in={!!feed}
       unmountOnExit
