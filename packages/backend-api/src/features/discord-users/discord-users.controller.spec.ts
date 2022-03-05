@@ -1,4 +1,5 @@
 import { DiscordUsersController } from './discord-users.controller';
+import { GetMeOutputDto } from './dto';
 import { PartialUserGuildFormatted } from './types/PartialUserGuild.type';
 
 describe('DiscordUsersController', () => {
@@ -20,13 +21,25 @@ describe('DiscordUsersController', () => {
         id: 'id',
         username: 'username',
         avatarUrl: 'avatarUrl',
+        supporter: {
+          guilds: ['1'],
+          maxFeeds: 10,
+          maxGuilds: 10,
+          expireAt: new Date(),
+        },
       };
       discordUsersService.getUser.mockResolvedValue(discordUser);
 
-      const expectedResponse = {
+      const expectedResponse: GetMeOutputDto = {
         id: discordUser.id,
         username: discordUser.username,
         iconUrl: discordUser.avatarUrl,
+        supporter: {
+          guilds: discordUser.supporter.guilds,
+          maxFeeds: discordUser.supporter.maxFeeds,
+          maxGuilds: discordUser.supporter.maxGuilds,
+          expireAt: discordUser.supporter.expireAt,
+        },
       };
 
       await expect(controller.getMe(discordAccessToken)).resolves.toEqual(

@@ -20,7 +20,7 @@ describe('DiscordServersService', () => {
     countServerFeeds: jest.fn(),
   };
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     jest.resetAllMocks();
     const { uncompiledModule, init } = await setupIntegrationTests({
       providers: [DiscordServersService, DiscordAPIService],
@@ -38,7 +38,7 @@ describe('DiscordServersService', () => {
     service = module.get<DiscordServersService>(DiscordServersService);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await teardownIntegrationTests();
   });
 

@@ -7,6 +7,7 @@ describe('DiscordUsersService', () => {
   };
   const supportersService = {
     getBenefitsOfServers: jest.fn(),
+    getBenefitsOfDiscordUser: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -17,6 +18,13 @@ describe('DiscordUsersService', () => {
 
     jest.spyOn(discordApiService, 'executeBearerRequest').mockResolvedValue([]);
     jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([]);
+    jest
+      .spyOn(supportersService, 'getBenefitsOfDiscordUser')
+      .mockResolvedValue({
+        maxFeeds: 0,
+        maxGuilds: 0,
+        guilds: [],
+      });
   });
 
   describe('getGuilds', () => {
@@ -187,7 +195,16 @@ describe('DiscordUsersService', () => {
         username: 'test',
         avatar: 'icon_hash',
       };
+      const supporterBenefits = {
+        guilds: ['1'],
+        maxFeeds: 10,
+        maxGuilds: 10,
+        expireAt: new Date(),
+      };
       discordApiService.executeBearerRequest.mockResolvedValue(user);
+      supportersService.getBenefitsOfDiscordUser.mockResolvedValue(
+        supporterBenefits,
+      );
 
       const result = await service.getUser(accessToken);
 
@@ -196,6 +213,12 @@ describe('DiscordUsersService', () => {
         username: user.username,
         avatar: user.avatar,
         avatarUrl: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
+        supporter: {
+          guilds: supporterBenefits.guilds,
+          maxFeeds: supporterBenefits.maxFeeds,
+          maxGuilds: supporterBenefits.maxGuilds,
+          expireAt: supporterBenefits.expireAt,
+        },
       });
     });
   });

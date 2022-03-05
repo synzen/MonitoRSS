@@ -21,7 +21,7 @@ describe('DiscordServersModule', () => {
     },
   };
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { init } = setupEndpointTests({
       imports: [DiscordUserModule, MongooseTestModule.forRoot()],
     });
@@ -35,8 +35,11 @@ describe('DiscordServersModule', () => {
     } as Session['accessToken']);
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     nock.cleanAll();
+  });
+
+  afterAll(async () => {
     await teardownEndpointTests();
   });
 
@@ -85,6 +88,11 @@ describe('DiscordServersModule', () => {
         id: mockUser.id,
         username: mockUser.username,
         iconUrl: expect.any(String),
+        supporter: {
+          guilds: expect.any(Array),
+          maxFeeds: expect.any(Number),
+          maxGuilds: expect.any(Number),
+        },
       });
     });
   });

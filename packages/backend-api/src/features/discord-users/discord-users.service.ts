@@ -82,8 +82,21 @@ export class DiscordUsersService {
       endpoint,
     );
 
+    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+      user.id,
+    );
+
     const toReturn: DiscordUserFormatted = {
-      ...user,
+      id: user.id,
+      discriminator: user.discriminator,
+      username: user.username,
+      avatar: user.avatar,
+      supporter: {
+        guilds: benefits.guilds,
+        maxFeeds: benefits.maxFeeds,
+        maxGuilds: benefits.maxGuilds,
+        expireAt: benefits.expireAt,
+      },
     };
 
     if (user.avatar) {

@@ -21,7 +21,7 @@ describe('FeedsService', () => {
   let feedModel: FeedModel;
   let failRecordModel: FailRecordModel;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { init } = await setupIntegrationTests({
       providers: [FeedsService],
       imports: [
@@ -40,6 +40,11 @@ describe('FeedsService', () => {
   });
 
   afterEach(async () => {
+    await feedModel.deleteMany({});
+    await failRecordModel.deleteMany({});
+  });
+
+  afterAll(async () => {
     await teardownIntegrationTests();
   });
 
@@ -130,12 +135,12 @@ describe('FeedsService', () => {
   });
 
   describe('updateOne', () => {
-    it('throws if no feed is found', async () => {
+    it('returns undefined if no feed is found', async () => {
       await expect(
         service.updateOne(new Types.ObjectId(), {
           text: 'hello',
         }),
-      ).rejects.toThrowError();
+      ).resolves.toEqual(undefined);
     });
 
     it('updates the text', async () => {

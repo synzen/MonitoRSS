@@ -25,7 +25,7 @@ describe('DiscordServersModule', () => {
     },
   };
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { init } = setupEndpointTests({
       imports: [DiscordServersModule, MongooseTestModule.forRoot()],
     });
@@ -41,6 +41,10 @@ describe('DiscordServersModule', () => {
 
   afterEach(async () => {
     nock.cleanAll();
+    await feedModel.deleteMany({});
+  });
+
+  afterAll(async () => {
     await teardownEndpointTests();
   });
 

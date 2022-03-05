@@ -11,6 +11,9 @@ describe('GetFeedOutputDto', () => {
         ...feed,
         refreshRateSeconds: 10,
         status: FeedStatus.OK,
+        webhook: {
+          id: '1234',
+        },
       };
 
       const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
@@ -57,9 +60,9 @@ describe('GetFeedOutputDto', () => {
             },
             timestamp: embed.timestamp,
           })),
-        },
-        webhook: {
-          id: feed.webhook?.id,
+          webhook: {
+            id: feedWithRefreshRate.webhook?.id,
+          },
         },
       });
     });

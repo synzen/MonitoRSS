@@ -28,7 +28,7 @@ describe('DiscordWebhooksModule', () => {
   let configService: ConfigService;
   const botClientId = 'bot-client-id';
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { init } = setupEndpointTests({
       imports: [DiscordWebhooksModule, MongooseTestModule.forRoot()],
     });
@@ -49,6 +49,9 @@ describe('DiscordWebhooksModule', () => {
 
   afterEach(async () => {
     nock.cleanAll();
+  });
+
+  afterAll(async () => {
     await teardownEndpointTests();
   });
 

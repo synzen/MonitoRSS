@@ -29,7 +29,7 @@ describe('SupportersService', () => {
   const defaultMaxFeeds = 5;
   const userDiscordId = 'user-discord-id';
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const { init } = await setupIntegrationTests({
       providers: [SupportersService],
       imports: [
@@ -53,7 +53,49 @@ describe('SupportersService', () => {
   });
 
   afterEach(async () => {
+    await supporterModel.deleteMany({});
+    await patronModel.deleteMany({});
+  });
+
+  afterAll(async () => {
     await teardownIntegrationTests();
+  });
+
+  describe('getBenefitsOfDiscordUser', () => {
+    it('returns defaults for all values if no supporter is found', async () => {
+      const benefits = await supportersService.getBenefitsOfDiscordUser(
+        userDiscordId,
+      );
+
+      expect(benefits).toEqual({
+        maxFeeds: defaultMaxFeeds,
+        guilds: [],
+        maxGuilds: 1,
+        expireAt: undefined,
+      });
+    });
+    it('returns the correct benefits', async () => {
+      const supporter = createTestSupporter({
+        _id: userDiscordId,
+        expireAt: dayjs().add(1, 'day').toDate(),
+        maxGuilds: 10,
+        maxFeeds: 11,
+        guilds: ['1', '2'],
+      });
+
+      await supporterModel.create(supporter);
+
+      const benefits = await supportersService.getBenefitsOfDiscordUser(
+        userDiscordId,
+      );
+
+      expect(benefits).toEqual({
+        maxFeeds: supporter.maxFeeds,
+        guilds: supporter.guilds,
+        maxGuilds: supporter.maxGuilds,
+        expireAt: supporter.expireAt,
+      });
+    });
   });
 
   describe('getBenefitsOfServers', () => {
