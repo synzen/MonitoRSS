@@ -13,12 +13,14 @@ export class SupportersService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getBenefitsOfServer(serverId: string) {
-    const aggregate: Array<{ maxFeeds: number }> =
+  async getBenefitsOfServer(serverIds: string[]) {
+    const aggregate: Array<{ maxFeeds: number; guilds: string[] }> =
       await this.supporterModel.aggregate([
         {
           $match: {
-            guilds: serverId,
+            guilds: {
+              $in: serverIds,
+            },
           },
         },
         {
@@ -68,25 +70,36 @@ export class SupportersService {
           $project: {
             _id: 0,
             maxFeeds: 1,
+            guilds: 1,
           },
         },
       ]);
+
+    const maxFeedsCounter = new Map<string, number>();
 
     const defaultMaxFeeds = this.configService.get<number>(
       'defaultMaxFeeds',
     ) as number;
 
-    const highestMaxFeeds = aggregate.reduce(
-      (acc, curr) => Math.max(acc, curr.maxFeeds),
-      // hardcoded for now
-      defaultMaxFeeds,
-    );
+    serverIds.forEach((serverId) => {
+      maxFeedsCounter.set(serverId, defaultMaxFeeds);
 
-    console.log(aggregate);
+      aggregate.forEach((aggregateResult) => {
+        const currentMaxFeeds = maxFeedsCounter.get(serverId) as number;
 
-    return {
-      maxFeeds: highestMaxFeeds,
+        if (aggregateResult.guilds.includes(serverId)) {
+          maxFeedsCounter.set(
+            serverId,
+            Math.max(aggregateResult.maxFeeds, currentMaxFeeds),
+          );
+        }
+      });
+    });
+
+    return serverIds.map((serverId) => ({
+      maxFeeds: maxFeedsCounter.get(serverId) as number,
+      serverId,
       webhook: true,
-    };
+    }));
   }
 }

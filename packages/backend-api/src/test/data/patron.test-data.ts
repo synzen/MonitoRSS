@@ -15,5 +15,6 @@ const boilerplate: Patron = {
 
 export const createTestPatron = (overrides: Partial<Patron> = {}): Patron => ({
   ...boilerplate,
+  _id: new Types.ObjectId(),
   ...overrides,
 });
