@@ -19,7 +19,7 @@ interface Props {
 const Webhooks: React.FC<Props> = () => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
-  const { data: serverData } = useDiscordServer({
+  const { data: serverData, status: serverStatus } = useDiscordServer({
     serverId,
   });
   const { data, status, error } = useDiscordWebhooks({
@@ -27,11 +27,9 @@ const Webhooks: React.FC<Props> = () => {
     isWebhooksEnabled: serverData?.benefits.webhooks,
   });
 
-  console.log(serverData);
-
   if (!serverData?.benefits.webhooks) {
     return (
-      <DashboardContent>
+      <DashboardContent loading={serverStatus === 'loading' || serverStatus === 'idle'}>
         <Alert
           status="warning"
           variant="subtle"
@@ -43,10 +41,10 @@ const Webhooks: React.FC<Props> = () => {
         >
           <AlertIcon boxSize="40px" mr={0} />
           <AlertTitle mt={4} mb={1} fontSize="lg">
-            This server does not have webhooks enabled
+            {t('pages.webhooks.notEnabledTitle')}
           </AlertTitle>
           <AlertDescription maxWidth="sm">
-            You will have to be a supporter to access this feature.
+            {t('pages.webhooks.notEnabledDescription')}
           </AlertDescription>
         </Alert>
 
@@ -61,7 +59,10 @@ const Webhooks: React.FC<Props> = () => {
     >
       <Stack spacing="8">
         <Flex justifyContent="space-between">
-          <Heading size="lg">{t('pages.webhooks.title')}</Heading>
+          <Stack>
+            <Heading size="lg">{t('pages.webhooks.title')}</Heading>
+            <Text>{t('pages.webhooks.description')}</Text>
+          </Stack>
           <Button colorScheme="blue">{t('pages.webhooks.addNew')}</Button>
         </Flex>
         <Stack spacing="4">
