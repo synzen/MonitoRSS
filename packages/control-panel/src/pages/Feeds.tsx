@@ -104,9 +104,6 @@ const Feeds: React.FC = () => {
                       key={feed.id}
                       tabIndex={0}
                       bg={focusedFeedId === feed.id ? 'gray.700' : undefined}
-                      // outline={focusedFeedId === feed.id
-                      //   ? `solid 2px ${getChakraColor('gray.500')}`
-                      //   : undefined}
                       _hover={{
                         bg: 'gray.700',
                         cursor: 'pointer',

@@ -28,8 +28,6 @@ const FeedEmbed = object({
     value: string(),
     inline: boolean().optional(),
   })).optional(),
-  ncomparisons: array(string()).optional(),
-  pcomparisons: array(string()).optional(),
 }).required();
 
 export const FeedSchema = object({
@@ -53,6 +51,11 @@ export const FeedSchema = object({
   formatTables: boolean().optional(),
   directSubscribers: boolean().optional(),
   disabled: string().optional(),
+  ncomparisons: array(string()).optional(),
+  pcomparisons: array(string()).optional(),
+  webhook: object({
+    id: string().required(),
+  }).optional(),
 });
 
 export type Feed = InferType<typeof FeedSchema>;

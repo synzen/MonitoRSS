@@ -5,7 +5,8 @@ import fetchRest from '@/utils/fetchRest';
 export interface UpdateFeedInput {
   feedId: string
   details: {
-    text?: Feed['text']
+    text?: Feed['text'],
+    webhookId?: string
   }
 }
 

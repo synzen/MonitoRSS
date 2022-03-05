@@ -1,4 +1,5 @@
 import { Feed } from '../../features/feed';
+import mockDiscordWebhooks from './discordWebhooks';
 
 const mockFeeds: Feed[] = [{
   id: '1',
@@ -18,6 +19,11 @@ const mockFeeds: Feed[] = [{
   imgLinksExistence: false,
   imgPreviews: false,
   failReason: undefined,
+  ncomparisons: [],
+  pcomparisons: [],
+  webhook: {
+    id: mockDiscordWebhooks[0].id,
+  },
 }];
 
 export default mockFeeds;
