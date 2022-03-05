@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { DiscordWebhooksService } from './discord-webhooks.service';
 import {
@@ -107,6 +108,46 @@ describe('DiscordWebhooksService', () => {
       const result = await service.getWebhooksOfServer(serverId);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getWebhook', () => {
+    it('returns the webhook', async () => {
+      const webhookId = 'webhookId';
+      const webhook: DiscordWebhook = {
+        id: '12345',
+        type: DiscordWebhookType.INCOMING,
+        channel_id: '12345',
+        application_id: botClientId,
+        name: 'test',
+      };
+
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockResolvedValue(webhook);
+
+      const result = await service.getWebhook(webhookId);
+
+      expect(result).toEqual(webhook);
+    });
+    it('returns null if the webhook does not exist', async () => {
+      const webhookId = 'webhookId';
+
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockRejectedValue(new DiscordAPIError('webhook not found', 404));
+
+      const result = await service.getWebhook(webhookId);
+
+      expect(result).toBeNull();
+    });
+    it('throws an unhandled error', async () => {
+      const webhookId = 'webhookId';
+      const err = new Error('unhandled error');
+
+      jest.spyOn(discordApiService, 'executeBotRequest').mockRejectedValue(err);
+
+      await expect(service.getWebhook(webhookId)).rejects.toThrow(err);
     });
   });
 });

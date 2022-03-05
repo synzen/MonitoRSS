@@ -10,6 +10,9 @@ import dayjs from 'dayjs';
 
 interface UpdateFeedInput {
   text?: string;
+  webhook?: {
+    id?: string;
+  };
 }
 
 interface PopulatedFeed extends Feed {
@@ -71,15 +74,34 @@ export class FeedsService {
     feedId: string | Types.ObjectId,
     input: UpdateFeedInput,
   ): Promise<FeedWithRefreshRate> {
-    const strippedUpdateObject = _.omitBy(input, _.isUndefined);
+    const strippedUpdateObject: UpdateFeedInput = _.omitBy(
+      input,
+      _.isUndefined,
+    );
 
-    const feed: Feed = await this.feedModel
-      .findByIdAndUpdate(feedId, strippedUpdateObject, { new: true })
-      .lean();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateObject: Record<string, any> = {
+      $set: {},
+    };
 
-    if (!feed) {
-      throw new Error(`Feed ${feedId} does not exist`);
+    if (strippedUpdateObject.text != null) {
+      updateObject.$set.text = strippedUpdateObject.text;
     }
+
+    if (strippedUpdateObject.webhook?.id != null) {
+      updateObject.$set.webhook = {
+        id: strippedUpdateObject.webhook.id,
+      };
+    }
+
+    const res = await this.feedModel.updateOne(
+      {
+        _id: feedId,
+      },
+      updateObject,
+    );
+
+    console.log(await this.feedModel.find());
 
     const foundFeeds = await this.findFeeds(
       {

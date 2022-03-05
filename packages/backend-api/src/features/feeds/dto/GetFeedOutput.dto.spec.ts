@@ -58,7 +58,24 @@ describe('GetFeedOutputDto', () => {
             timestamp: embed.timestamp,
           })),
         },
+        webhook: {
+          id: feed.webhook?.id,
+        },
       });
+    });
+
+    it('does not add the webhook object if there is no webhook', () => {
+      const feed = createTestFeed({});
+      const feedWithRefreshRate: FeedWithRefreshRate = {
+        ...feed,
+        refreshRateSeconds: 10,
+        status: FeedStatus.OK,
+      };
+
+      delete feedWithRefreshRate.webhook;
+
+      const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
+      expect(result.result.webhook).toBeUndefined();
     });
   });
 });

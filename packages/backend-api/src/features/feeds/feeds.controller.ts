@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
@@ -10,6 +18,8 @@ import { FeedsService } from './feeds.service';
 import { UserManagesFeedServerGuard } from './guards/UserManagesFeedServer.guard';
 import { GetFeedPipe } from './pipes/GetFeed.pipe';
 import { FeedWithRefreshRate } from './types/FeedWithRefreshRate';
+import { SupportersService } from '../supporters/supporters.service';
+import { DiscordWebhooksService } from '../discord-webhooks/discord-webhooks.service';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -17,6 +27,8 @@ export class FeedsController {
   constructor(
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
+    private readonly supportersService: SupportersService,
+    private readonly webhooksService: DiscordWebhooksService,
   ) {}
 
   @Get(':feedId')
@@ -43,8 +55,27 @@ export class FeedsController {
     @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
     @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto,
   ): Promise<UpdateFeedOutputDto> {
+    if (updateFeedInput.webhookId) {
+      if (!(await this.supportersService.serverCanUseWebhooks(feed.guild))) {
+        throw new BadRequestException(
+          'This server does not have webhooks enabled',
+        );
+      }
+
+      const foundWebhook = await this.webhooksService.getWebhook(
+        updateFeedInput.webhookId,
+      );
+
+      if (!foundWebhook) {
+        throw new BadRequestException('Webhook not found');
+      }
+    }
+
     const updatedFeed = await this.feedsService.updateOne(feed._id, {
       text: updateFeedInput.text,
+      webhook: {
+        id: updateFeedInput.webhookId,
+      },
     });
 
     return GetFeedOutputDto.fromEntity(updatedFeed);

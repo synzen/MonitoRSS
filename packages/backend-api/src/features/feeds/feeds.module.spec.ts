@@ -15,10 +15,15 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Feed, FeedModel } from './entities/Feed.entity';
 import { createTestFeed } from '../../test/data/feeds.test-data';
 import path from 'path';
+import {
+  Supporter,
+  SupporterModel,
+} from '../supporters/entities/supporter.entity';
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
+  let supporterModel: SupporterModel;
   let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
   const standardRequestOptions = {
     headers: {
@@ -42,6 +47,7 @@ describe('FeedsModule', () => {
     } as Session['accessToken']);
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
+    supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
   });
 
   afterEach(async () => {
@@ -275,6 +281,105 @@ describe('FeedsModule', () => {
         }),
       );
     });
+
+    it('updates webhooks correctly', async () => {
+      mockGetMeServers();
+      const webhookId = 'webhook-id';
+
+      const feed = createTestFeed({
+        guild: guildId,
+        webhook: undefined,
+      });
+
+      await supporterModel.create({
+        guilds: [guildId],
+        _id: 'discord-user-id',
+        webhook: true,
+      });
+
+      await feedModel.create(feed);
+
+      const payload = {
+        webhookId,
+      };
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/webhooks/${webhookId}`)
+        .reply(200, { id: webhookId });
+
+      const { statusCode, body } = await app.inject({
+        method: 'PATCH',
+        url: `/feeds/${feed._id}`,
+        payload,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(statusCode).toEqual(HttpStatus.OK);
+      expect(parsedBody.result.webhook).toEqual({
+        id: webhookId,
+      });
+    });
+  });
+
+  it('throws 400 if server has no access to webhooks (server has no supporter)', async () => {
+    mockGetMeServers();
+    const webhookId = 'webhook-id';
+
+    const feed = createTestFeed({
+      guild: guildId,
+      webhook: undefined,
+    });
+
+    await feedModel.create(feed);
+
+    const payload = {
+      webhookId,
+    };
+
+    const { statusCode } = await app.inject({
+      method: 'PATCH',
+      url: `/feeds/${feed._id}`,
+      payload,
+      ...standardRequestOptions,
+    });
+
+    expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
+  });
+
+  it('returns 400 if webhook was not found by Discord', async () => {
+    mockGetMeServers();
+    const webhookId = 'webhook-id';
+
+    const feed = createTestFeed({
+      guild: guildId,
+      webhook: undefined,
+    });
+
+    await supporterModel.create({
+      guilds: [guildId],
+      _id: 'discord-user-id',
+      webhook: true,
+    });
+
+    await feedModel.create(feed);
+
+    const payload = {
+      webhookId,
+    };
+
+    nock(DISCORD_API_BASE_URL)
+      .get(`/webhooks/${webhookId}`)
+      .reply(404, { message: 'Webhook not found' });
+
+    const { statusCode } = await app.inject({
+      method: 'PATCH',
+      url: `/feeds/${feed._id}`,
+      payload,
+      ...standardRequestOptions,
+    });
+
+    expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
   });
 
   describe('GET /feeds/:feedId/articles', () => {

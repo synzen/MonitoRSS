@@ -52,13 +52,16 @@ interface FeedOutputDto {
   disabled?: string;
   ncomparisons?: Array<string>;
   pcomparisons?: Array<string>;
+  webhook?: {
+    id: string;
+  };
 }
 
 export class GetFeedOutputDto {
   result: FeedOutputDto;
 
   static fromEntity(feed: FeedWithRefreshRate): GetFeedOutputDto {
-    return {
+    const resultSoFar: GetFeedOutputDto = {
       result: {
         id: feed._id.toHexString(),
         channel: feed.channel,
@@ -102,5 +105,13 @@ export class GetFeedOutputDto {
         })),
       },
     };
+
+    if (feed.webhook) {
+      resultSoFar.result.webhook = {
+        id: feed.webhook.id,
+      };
+    }
+
+    return resultSoFar;
   }
 }

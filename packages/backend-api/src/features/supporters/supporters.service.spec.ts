@@ -334,4 +334,42 @@ describe('SupportersService', () => {
       );
     });
   });
+
+  describe('serverCanUseWebhooks', () => {
+    it('returns true correctly', async () => {
+      const serverId = 'server-id';
+      jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
+        {
+          serverId,
+          maxFeeds: 10,
+          webhooks: true,
+        },
+      ]);
+
+      const result = await supportersService.serverCanUseWebhooks(serverId);
+      expect(result).toBe(true);
+    });
+    it('returns false if the benefits have webhooks false', async () => {
+      const serverId = 'server-id';
+      jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
+        {
+          serverId,
+          maxFeeds: 10,
+          webhooks: false,
+        },
+      ]);
+
+      const result = await supportersService.serverCanUseWebhooks(serverId);
+      expect(result).toBe(false);
+    });
+    it('returns false if the server has no benefits', async () => {
+      const serverId = 'server-id';
+      jest
+        .spyOn(supportersService, 'getBenefitsOfServers')
+        .mockResolvedValue([]);
+
+      const result = await supportersService.serverCanUseWebhooks(serverId);
+      expect(result).toBe(false);
+    });
+  });
 });

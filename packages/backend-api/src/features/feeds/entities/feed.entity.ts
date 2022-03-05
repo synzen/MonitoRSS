@@ -1,6 +1,7 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types, Model } from 'mongoose';
 import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
+import { FeedWebhook, FeedWebhookSchema } from './feed-webhook.entity';
 
 @Schema({
   collection: 'feeds',
@@ -65,6 +66,11 @@ export class Feed {
     default: [],
   })
   pcomparisons?: string[];
+
+  @Prop({
+    type: FeedWebhookSchema,
+  })
+  webhook?: FeedWebhook;
 
   @Prop()
   addedAt: Date;

@@ -5,6 +5,7 @@ import {
   DiscordWebhook,
   DiscordWebhookType,
 } from './types/discord-webhook.type';
+import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 
 @Injectable()
 export class DiscordWebhooksService {
@@ -26,5 +27,22 @@ export class DiscordWebhooksService {
         webhook.application_id === botClientId &&
         webhook.type === DiscordWebhookType.INCOMING,
     );
+  }
+
+  async getWebhook(webhookId: string): Promise<DiscordWebhook | null> {
+    try {
+      const webhook: DiscordWebhook =
+        await this.discordApiService.executeBotRequest(
+          `/webhooks/${webhookId}`,
+        );
+
+      return webhook;
+    } catch (err: unknown | DiscordAPIError) {
+      if (err instanceof DiscordAPIError && err.statusCode === 404) {
+        return null;
+      }
+
+      throw err;
+    }
   }
 }

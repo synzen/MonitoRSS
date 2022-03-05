@@ -108,4 +108,10 @@ export class SupportersService {
       ),
     }));
   }
+
+  async serverCanUseWebhooks(serverId: string) {
+    const benefits = await this.getBenefitsOfServers([serverId]);
+
+    return benefits[0]?.webhooks || false;
+  }
 }
