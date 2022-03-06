@@ -33,7 +33,6 @@ import { Loading } from '@/components';
 import { FeedSummary, useFeeds } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
-import getChakraColor from '@/utils/getChakraColor';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
@@ -71,22 +70,29 @@ const Feeds: React.FC = () => {
         </Alert>
       )}
       {status === 'success' && data && (
-        <Stack spacing="6" flex="1" overflow="auto">
-          <Heading size="lg" paddingX="8" paddingTop="8">Feeds</Heading>
+        <Stack spacing="6" flex="1" overflow="auto" marginX="12">
+          <Heading size="lg" paddingTop="8">Feeds</Heading>
           <Stack spacing="4">
-            <Flex justifyContent="space-between" flexWrap="wrap" paddingX="8">
+            <Flex justifyContent="space-between" flexWrap="wrap">
               <InputGroup>
                 <InputLeftElement
                   pointerEvents="none"
                 >
                   <SearchIcon color="gray.400" />
                 </InputLeftElement>
-                <Input width="sm" placeholder={t('pages.feeds.search')} />
+                <Input width="sm" placeholder={t('pages.feeds.tableSearch')} />
               </InputGroup>
               {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
             </Flex>
-            <Box overflow="auto">
-              <Table whiteSpace="nowrap" marginBottom="5">
+            <Box>
+              <Table
+                whiteSpace="nowrap"
+                marginBottom="5"
+                background="gray.850"
+                borderColor="gray.700"
+                borderWidth="2px"
+                boxShadow="lg"
+              >
                 <Thead>
                   <Tr>
                     <Th>{t('pages.feeds.tableStatus')}</Th>
@@ -109,7 +115,8 @@ const Feeds: React.FC = () => {
                         cursor: 'pointer',
                       }}
                       _focus={{
-                        outline: `solid 1px ${getChakraColor('gray.500')}`,
+                        boxShadow: 'outline',
+                        outline: 'none',
                       }}
                       onClick={() => onClickFeedRow(feed)}
                       onKeyDown={(e) => {
