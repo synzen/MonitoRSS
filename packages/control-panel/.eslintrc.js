@@ -63,6 +63,7 @@ module.exports = {
         "ts": "never",
         "tsx": "never"
       }
-   ]
+   ],
+   "react/jsx-props-no-spreading": "off",
   }
 }

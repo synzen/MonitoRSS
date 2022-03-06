@@ -3,6 +3,7 @@ import { rest } from 'msw';
 import { GetDiscordMeOutput } from '@/features/discordUser';
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
+  FeedSummary,
   GetFeedArticlesOutput, GetFeedOutput, GetFeedsOutput, UpdateFeedOutput,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
@@ -33,12 +34,28 @@ const handlers = [
     }),
   )),
 
-  rest.get('/api/v1/discord-servers/:serverId/feeds', (req, res, ctx) => res(
-    ctx.json<GetFeedsOutput>({
-      total: mockFeedSummaries.length,
-      results: mockFeedSummaries,
-    }),
-  )),
+  rest.get('/api/v1/discord-servers/:serverId/feeds', (req, res, ctx) => {
+    const limit = Number(req.url.searchParams.get('limit') || '10');
+    const offset = Number(req.url.searchParams.get('offset') || '0');
+
+    const theseMockSummariesTotal = mockFeedSummaries.length * 5;
+    const theseMockSummaries: FeedSummary[] = new Array(
+      theseMockSummariesTotal,
+    ).fill(0).map((_, i) => ({
+      ...mockFeedSummaries[i % mockFeedSummaries.length],
+      id: i.toString(),
+    }));
+
+    const results = theseMockSummaries.slice(offset, offset + limit);
+
+    return res(
+      ctx.delay(2000),
+      ctx.json<GetFeedsOutput>({
+        total: theseMockSummariesTotal,
+        results,
+      }),
+    );
+  }),
 
   rest.get('/api/v1/discord-servers/:serverId/channels', (req, res, ctx) => res(
     ctx.json<GetServerChannelsOutput>({

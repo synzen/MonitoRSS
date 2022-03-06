@@ -68,6 +68,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
   return (
     <Flex flexGrow={1} height="100vh">
       <Flex
+        overflow="auto"
         as="nav"
         height="100%"
         direction="column"
