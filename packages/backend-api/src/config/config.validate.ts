@@ -40,6 +40,10 @@ class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
+  LOGIN_REDIRECT_URI: string;
+
+  @IsString()
+  @MinLength(1)
   MONGODB_URI: string;
 
   @IsNumber()
