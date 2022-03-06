@@ -15,6 +15,7 @@ export class DiscordServersService {
   async getServerFeeds(
     serverId: string,
     options: {
+      search?: string;
       limit: number;
       offset: number;
     },
@@ -22,8 +23,15 @@ export class DiscordServersService {
     return this.feedsService.getServerFeeds(serverId, options);
   }
 
-  async countServerFeeds(serverId: string): Promise<number> {
-    return this.feedsService.countServerFeeds(serverId);
+  async countServerFeeds(
+    serverId: string,
+    options?: {
+      search?: string;
+    },
+  ): Promise<number> {
+    return this.feedsService.countServerFeeds(serverId, {
+      search: options?.search,
+    });
   }
 
   async getServer(serverId: string) {

@@ -187,5 +187,30 @@ describe('DiscordServersModule', () => {
       expect(parsedBody.results).toHaveLength(2);
       expect(parsedBody.total).toEqual(2);
     });
+
+    it('works with search', async () => {
+      mockAllDiscordEndpoints();
+      await feedModel.insertMany([
+        createTestFeed({
+          guild: serverId,
+          title: 'goo',
+        }),
+        createTestFeed({
+          guild: serverId,
+          title: 'foo',
+        }),
+      ]);
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/feeds?limit=10&offset=0&search=foo`,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(statusCode).toEqual(200);
+      expect(parsedBody.results).toHaveLength(1);
+      expect(parsedBody.total).toEqual(1);
+    });
   });
 });

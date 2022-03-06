@@ -49,6 +49,7 @@ export class FeedsService {
   async getServerFeeds(
     serverId: string,
     options: {
+      search?: string;
       limit: number;
       offset: number;
     },
@@ -58,6 +59,7 @@ export class FeedsService {
         guild: serverId,
       },
       {
+        search: options.search,
         limit: options.limit,
         skip: options.offset,
       },
@@ -66,8 +68,28 @@ export class FeedsService {
     return feeds;
   }
 
-  async countServerFeeds(serverId: string): Promise<number> {
-    return this.feedModel.countDocuments({ serverId });
+  async countServerFeeds(
+    serverId: string,
+    options?: {
+      search?: string;
+    },
+  ): Promise<number> {
+    const query: FilterQuery<Feed> = {
+      guild: serverId,
+    };
+
+    if (options?.search) {
+      query.$or = [
+        {
+          title: new RegExp(_.escapeRegExp(options.search), 'i'),
+        },
+        {
+          url: new RegExp(_.escapeRegExp(options.search), 'i'),
+        },
+      ];
+    }
+
+    return this.feedModel.countDocuments(query);
   }
 
   async updateOne(
@@ -144,13 +166,29 @@ export class FeedsService {
   async findFeeds(
     filter: FilterQuery<FeedDocument>,
     options: {
+      search?: string;
       limit: number;
       skip: number;
     },
   ): Promise<FeedWithRefreshRate[]> {
+    const match = {
+      ...filter,
+    };
+
+    if (options.search) {
+      match.$or = [
+        {
+          title: new RegExp(_.escapeRegExp(options.search), 'i'),
+        },
+        {
+          url: new RegExp(_.escapeRegExp(options.search), 'i'),
+        },
+      ];
+    }
+
     const feeds: PopulatedFeed[] = await this.feedModel.aggregate([
       {
-        $match: filter,
+        $match: match,
       },
       {
         $sort: {

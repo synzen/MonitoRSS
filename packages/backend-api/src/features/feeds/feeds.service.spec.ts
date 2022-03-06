@@ -132,6 +132,36 @@ describe('FeedsService', () => {
 
       expect(count).toEqual(2);
     });
+
+    it('works with search', async () => {
+      const guild = 'server-1';
+      const feedsToInsert = await Promise.all([
+        createTestFeed({
+          title: 'google',
+          guild,
+        }),
+        createTestFeed({
+          title: 'yahoo',
+          guild,
+        }),
+        createTestFeed({
+          url: 'google.com',
+          guild,
+        }),
+        createTestFeed({
+          title: 'bing',
+          guild,
+        }),
+      ]);
+
+      await feedModel.insertMany(feedsToInsert);
+
+      const count = await service.countServerFeeds(guild, {
+        search: 'goo',
+      });
+
+      expect(count).toEqual(2);
+    });
   });
 
   describe('updateOne', () => {
@@ -327,6 +357,44 @@ describe('FeedsService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].url).toEqual(feeds[0].url);
+    });
+
+    it('works with search', async () => {
+      const guild = 'guild-id';
+      const feeds = await feedModel.create([
+        createTestFeed({
+          url: 'goog',
+          guild,
+        }),
+        createTestFeed({
+          title: 'google',
+          guild,
+        }),
+        createTestFeed({
+          title: 'GOO',
+          guild,
+        }),
+        createTestFeed({
+          url: 'GOo',
+          guild,
+        }),
+      ]);
+      const result = await service.findFeeds(
+        {
+          guild,
+        },
+        {
+          ...defaultOptions,
+          search: 'go',
+        },
+      );
+
+      expect(result).toHaveLength(4);
+      const ids = result.map((feed) => String(feed._id));
+      expect(ids).toContain(String(feeds[0]._id));
+      expect(ids).toContain(String(feeds[1]._id));
+      expect(ids).toContain(String(feeds[2]._id));
+      expect(ids).toContain(String(feeds[3]._id));
     });
 
     it('respects skip and limit', async () => {

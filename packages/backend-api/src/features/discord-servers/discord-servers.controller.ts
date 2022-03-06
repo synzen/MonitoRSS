@@ -23,10 +23,13 @@ export class DiscordServersController {
   ): Promise<GetServerFeedsOutputDto> {
     const [serverFeeds, totalFeeds] = await Promise.all([
       this.discordServersService.getServerFeeds(serverId, {
+        search: getServerFeedsInput.search,
         limit: getServerFeedsInput.limit,
         offset: getServerFeedsInput.offset,
       }),
-      this.discordServersService.countServerFeeds(serverId),
+      this.discordServersService.countServerFeeds(serverId, {
+        search: getServerFeedsInput.search,
+      }),
     ]);
 
     return {

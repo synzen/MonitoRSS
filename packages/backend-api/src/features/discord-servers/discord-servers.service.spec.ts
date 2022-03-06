@@ -67,7 +67,21 @@ describe('DiscordServersService', () => {
       const serverId = 'server-id';
       await service.countServerFeeds(serverId);
 
-      expect(feedsService.countServerFeeds).toHaveBeenCalledWith(serverId);
+      expect(feedsService.countServerFeeds).toHaveBeenCalledWith(serverId, {
+        search: undefined,
+      });
+    });
+
+    it('calls the feed service with search correctly', async () => {
+      const serverId = 'server-id';
+      const options = {
+        search: 'search',
+      };
+      await service.countServerFeeds(serverId, options);
+
+      expect(feedsService.countServerFeeds).toHaveBeenCalledWith(serverId, {
+        search: options.search,
+      });
     });
   });
 

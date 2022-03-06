@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsInt, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class GetServerFeedsInputDto {
   @IsInt()
@@ -11,4 +11,8 @@ export class GetServerFeedsInputDto {
   @Min(0)
   @Transform(({ value }) => Number(value))
   offset: number;
+
+  @IsString()
+  @IsOptional()
+  search?: string;
 }
