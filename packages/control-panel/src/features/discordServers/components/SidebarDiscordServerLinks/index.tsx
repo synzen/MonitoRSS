@@ -30,7 +30,6 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
   return (
     <Stack spacing="2">
       <Text
-        px="3"
         fontSize="xs"
         fontWeight="semibold"
         textTransform="uppercase"

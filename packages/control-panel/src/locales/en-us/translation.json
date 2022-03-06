@@ -29,6 +29,12 @@
   },
   "components": {
     "sidebar": {
+      "supporterUserTag": "Supporter",
+      "regularUserTag": "Regular User",
+      "userDropdown": {
+        "settings": "Settings",
+        "logout": "Logout"
+      },
       "server": {
         "manage": "Manage Server",
         "feeds": "Feeds",
