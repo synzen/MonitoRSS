@@ -15,7 +15,7 @@ export const DiscordUserDropdown: React.FC = () => {
     <Menu>
       <MenuButton
         as={Button}
-        width="100%"
+        width="min-content"
         rightIcon={<ChevronDownIcon />}
         variant="ghost"
         marginTop="4"

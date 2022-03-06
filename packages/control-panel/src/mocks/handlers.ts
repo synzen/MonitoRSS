@@ -20,6 +20,12 @@ const handlers = [
     ctx.status(200),
     ctx.json<GetDiscordMeOutput>(mockDiscordUser),
   )),
+
+  rest.patch('/api/v1/discord-users/@me/supporter', (req, res, ctx) => res(
+    ctx.delay(1000),
+    ctx.status(204),
+  )),
+
   rest.get('/api/v1/discord-users/@me/servers', (req, res, ctx) => res(
     ctx.json<GetServersOutput>({
       total: mockDiscordServers.length,

@@ -77,7 +77,8 @@
         "settingsDialog": {
           "title": "Supporter Settings",
           "description": "The servers below will receive your benefits.",
-          "serverInputPlaceholder": "Discord Server ID"
+          "serverInputPlaceholder": "Discord Server ID",
+          "serversUpdatedSuccess": "Successfully updated servers"
         }
       }
     }

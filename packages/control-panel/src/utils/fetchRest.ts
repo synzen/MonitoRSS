@@ -4,10 +4,11 @@ import getStatusCodeErrorMessage from './getStatusCodeErrorMessage';
 
 interface FetchOptions<T> {
   requestOptions?: RequestInit
-  validateSchema: AnySchema<T>
+  validateSchema?: AnySchema<T>
+  skipJsonParse?: boolean
 }
 
-const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise<T> => {
+const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promise<T> => {
   const res = await fetch(url, {
     ...fetchOptions?.requestOptions,
     headers: {
@@ -17,10 +18,13 @@ const fetchRest = async<T> (url: string, fetchOptions: FetchOptions<T>): Promise
   });
 
   await handleStatusCode(res);
+  let json: any;
 
-  const json = await res.json();
+  if (!fetchOptions?.skipJsonParse) {
+    json = await res.json();
+  }
 
-  if (fetchOptions?.validateSchema) {
+  if (json && fetchOptions?.validateSchema) {
     try {
       const validationResult = await fetchOptions.validateSchema.validate(json, {
         strict: true,

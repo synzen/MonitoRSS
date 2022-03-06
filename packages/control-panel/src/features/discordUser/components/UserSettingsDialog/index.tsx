@@ -18,8 +18,10 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useDiscordUserMe } from '../../hooks';
+import { updateDiscordMeSupporter } from '../../api';
+import { notifySuccess } from '@/utils/notifySuccess';
 
 interface FormValues {
   serverIds: string[]
@@ -42,31 +44,52 @@ export const UserSettingsDialog: React.FC<Props> = ({
     control,
     handleSubmit,
     setValue,
-  } = useForm<FormValues>({
-    defaultValues: {
-      serverIds: [],
-    },
-  });
-  const { fields, append } = useFieldArray({
+    reset,
+    formState,
+  } = useForm<FormValues>();
+  const { fields } = useFieldArray({
     control,
     name: 'serverIds' as never,
   });
   const { t } = useTranslation();
 
-  useEffect(() => {
-    if (userMe?.supporter) {
-      const initArray = new Array(userMe.supporter.maxGuilds).fill('');
-
-      for (let i = 0; i < userMe.supporter.guilds.length; i += 1) {
-        initArray[i] = userMe.supporter.guilds[i];
-      }
-
-      setValue('serverIds', initArray);
+  const getDefaultFormValue: () => string[] = useCallback(() => {
+    if (!userMe) {
+      return [];
     }
+
+    const initArray = new Array(userMe.supporter.maxGuilds).fill('');
+
+    for (let i = 0; i < userMe.supporter.guilds.length; i += 1) {
+      initArray[i] = userMe.supporter.guilds[i];
+    }
+
+    return initArray;
   }, [userMe]);
 
-  const onSubmit = (data: FormValues) => {
-    console.log(data);
+  useEffect(() => {
+    setValue('serverIds', getDefaultFormValue());
+  }, [userMe, getDefaultFormValue]);
+
+  const onSubmit = async (data: FormValues) => {
+    const serverIds = data.serverIds.filter((id) => !!id);
+
+    await updateDiscordMeSupporter({
+      details: {
+        guildIds: serverIds,
+      },
+    });
+
+    reset(data);
+    notifySuccess(t('features.discordUsers.components.settingsDialog.serversUpdatedSuccess'));
+    onClose();
+  };
+
+  const onReset = () => {
+    reset({
+      serverIds: getDefaultFormValue(),
+    });
+    onClose();
   };
 
   return (
@@ -104,8 +127,9 @@ export const UserSettingsDialog: React.FC<Props> = ({
         <ModalFooter>
           <HStack>
             <Button
-              onClick={onClose}
+              onClick={onReset}
               variant="ghost"
+              disabled={formState.isSubmitting || !formState.isDirty}
             >
               Cancel
             </Button>
@@ -113,7 +137,8 @@ export const UserSettingsDialog: React.FC<Props> = ({
               colorScheme="blue"
               form="supporter-servers"
               type="submit"
-              onClick={onClose}
+              disabled={!formState.isDirty || formState.isSubmitting}
+              isLoading={formState.isSubmitting}
             >
               Save
             </Button>

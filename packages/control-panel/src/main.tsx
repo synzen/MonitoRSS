@@ -23,6 +23,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: 0,
       refetchOnWindowFocus: false,
+      // Invalidate cache after 30 minutes
+      cacheTime: 1000 * 60 * 30,
     },
   },
 });
