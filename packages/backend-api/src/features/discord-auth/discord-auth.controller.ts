@@ -1,11 +1,25 @@
-import { Controller, Get, Query, Res, Session } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Query,
+  Res,
+  Session,
+} from '@nestjs/common';
 import { DiscordAuthService } from './discord-auth.service';
 import { FastifyReply } from 'fastify';
 import { Session as FastifySession } from 'fastify-secure-session';
+import { DiscordAccessToken } from './decorators/DiscordAccessToken';
+import { SessionAccessToken } from './types/SessionAccessToken.type';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('discord')
 export class DiscordAuthController {
-  constructor(private readonly discordAuthService: DiscordAuthService) {}
+  constructor(
+    private readonly discordAuthService: DiscordAuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get('login')
   login(@Res() res: FastifyReply) {
@@ -32,6 +46,20 @@ export class DiscordAuthController {
     const accessToken = await this.discordAuthService.createAccessToken(code);
     session.set('accessToken', accessToken);
 
-    return accessToken;
+    const loginRedirectUri = this.configService.get<string>(
+      'loginRedirectUri',
+    ) as string;
+
+    return res.redirect(301, loginRedirectUri);
+  }
+
+  @Get('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async logout(
+    @DiscordAccessToken() accessToken: SessionAccessToken,
+    @Session() session: FastifySession,
+  ) {
+    await this.discordAuthService.revokeToken(accessToken);
+    session.delete();
   }
 }
