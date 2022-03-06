@@ -7,12 +7,14 @@ import { useForm, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { InferType, object, string } from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useEffect } from 'react';
 import { ThemedSelect } from '@/components';
 import { useFeed } from '../../hooks';
 import { useDiscordServer } from '@/features/discordServers';
 import { useDiscordWebhooks } from '@/features/discordWebhooks';
-import { getFeed, updateFeed } from '../../api';
+
 import { notifySuccess } from '@/utils/notifySuccess';
+import { useUpdateFeed } from '../../hooks/useUpdateFeed';
 
 const formSchema = object({
   webhookId: string().optional(),
@@ -43,11 +45,13 @@ export const SettingsForm: React.FC<Props> = ({
     serverId,
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
+  const { mutateAsync } = useUpdateFeed({ feedId });
 
   const {
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: {
       isDirty,
       isSubmitting,
@@ -60,20 +64,21 @@ export const SettingsForm: React.FC<Props> = ({
   });
 
   const onSubmit = async (formData: FormData) => {
-    await updateFeed({
+    const updatedFeed = await mutateAsync({
       feedId,
       details: {
         webhookId: formData.webhookId,
       },
-    });
-    const updatedFeed = await getFeed({
-      feedId,
     });
     await notifySuccess(t('features.feed.components.sidebar.updateSuccess'));
     reset({
       webhookId: updatedFeed.result.webhook?.id || '',
     });
   };
+
+  useEffect(() => {
+    setValue('webhookId', feed?.webhook.id || '');
+  }, [feed]);
 
   if (!feed || !discordServerData) {
     return null;
