@@ -113,16 +113,9 @@ export class DiscordUsersService {
     return toReturn;
   }
 
-  async updateSupporter(accessToken: string, data: UpdateSupporterInput) {
-    const endpoint = this.BASE_ENDPOINT + `/@me`;
-
-    const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
-      accessToken,
-      endpoint,
-    );
-
+  async updateSupporter(userId: string, data: UpdateSupporterInput) {
     if (data.guildIds) {
-      await this.supportersService.setGuilds(user.id, data.guildIds);
+      await this.supportersService.setGuilds(userId, data.guildIds);
     }
   }
 }

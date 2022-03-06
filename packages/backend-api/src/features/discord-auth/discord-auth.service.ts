@@ -8,6 +8,7 @@ import {
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from '../../constants/discord';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { DiscordUser } from '../discord-users/types/DiscordUser.type';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { MANAGE_CHANNEL_PERMISSION } from './constants/permissions';
 import { SessionAccessToken } from './types/SessionAccessToken.type';
@@ -92,7 +93,7 @@ export class DiscordAuthService {
 
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
-    return this.formatTokenWithExpiresAt(tokenObject);
+    return this.attachExtraDetailsToToken(tokenObject);
   }
 
   async refreshToken(token: DiscordAuthToken): Promise<SessionAccessToken> {
@@ -131,7 +132,7 @@ export class DiscordAuthService {
 
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
-    return this.formatTokenWithExpiresAt(tokenObject);
+    return this.attachExtraDetailsToToken(tokenObject);
   }
 
   /**
@@ -210,17 +211,30 @@ export class DiscordAuthService {
    * @param tokenObject The token object returned by Discord
    * @returns The formatted token object containing expiresAt
    */
-  private formatTokenWithExpiresAt(
+  private async attachExtraDetailsToToken(
     tokenObject: DiscordAuthToken,
-  ): SessionAccessToken {
+  ): Promise<SessionAccessToken> {
+    const user = await this.getUser(tokenObject.access_token);
     const now = new Date();
     // expiresAt must be in seconds to match expire_in
     const expiresAt = Math.round(now.getTime() / 1000) + tokenObject.expires_in;
-    const formatted = {
+
+    return {
       ...tokenObject,
       expiresAt,
+      discord: {
+        id: user.id,
+      },
     };
+  }
 
-    return formatted;
+  private async getUser(accessToken: string) {
+    const endpoint = `/users/@me`;
+    const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
+      accessToken,
+      endpoint,
+    );
+
+    return user;
   }
 }

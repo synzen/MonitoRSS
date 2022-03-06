@@ -18,7 +18,7 @@ export const discordAccessTokenFactory = (
     throw new UnauthorizedException();
   }
 
-  return accessToken.access_token;
+  return accessToken;
 };
 
 export const DiscordAccessToken = createParamDecorator(

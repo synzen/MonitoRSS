@@ -4,6 +4,7 @@ import {
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from '../../constants/discord';
+import { DiscordUser } from '../discord-users/types/DiscordUser.type';
 import { DiscordAuthService, DiscordAuthToken } from './discord-auth.service';
 
 describe('DiscordAuthService', () => {
@@ -14,8 +15,14 @@ describe('DiscordAuthService', () => {
   const configService = {
     get: jest.fn(),
   };
+  const mockDiscordUser: DiscordUser = {
+    id: 'mock-discord-user-id',
+    discriminator: 'mock-discord-user-discriminator',
+    username: 'mock-discord-user-username',
+  };
 
   beforeEach(() => {
+    nock.cleanAll();
     service = new DiscordAuthService(
       configService as never,
       discordApiService as never,
@@ -54,6 +61,10 @@ describe('DiscordAuthService', () => {
     });
 
     it('should return the formatted auth token', async () => {
+      jest
+        .spyOn(discordApiService, 'executeBearerRequest')
+        .mockResolvedValue(mockDiscordUser);
+
       const discordToken = await service.createAccessToken(
         mockAuthorizationCode,
       );
@@ -62,6 +73,9 @@ describe('DiscordAuthService', () => {
         expect.objectContaining({
           ...mockDiscordToken,
           expiresAt: expect.any(Number),
+          discord: {
+            id: mockDiscordUser.id,
+          },
         }),
       );
     });
@@ -110,12 +124,18 @@ describe('DiscordAuthService', () => {
     });
 
     it('should return the formatted auth token', async () => {
+      jest
+        .spyOn(discordApiService, 'executeBearerRequest')
+        .mockResolvedValue(mockDiscordUser);
       const discordToken = await service.refreshToken(mockDiscordToken);
 
       expect(discordToken).toEqual(
         expect.objectContaining({
           ...mockDiscordToken,
           expiresAt: expect.any(Number),
+          discord: {
+            id: mockDiscordUser.id,
+          },
         }),
       );
     });

@@ -45,6 +45,9 @@ describe('DiscordServersModule', () => {
 
     standardRequestOptions.headers.cookie = await setAccessToken({
       access_token: 'accessToken',
+      discord: {
+        id: mockUser.id,
+      },
     } as Session['accessToken']);
 
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));

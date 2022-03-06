@@ -254,14 +254,9 @@ describe('DiscordUsersService', () => {
 
   describe('updateSupporter', () => {
     it('calls supportersService to set the guilds if guild ids is inputted', async () => {
-      const accessToken = 'abc';
       const guildIds = ['1', '2'];
       const userId = 'user-id';
-      jest.spyOn(discordApiService, 'executeBearerRequest').mockResolvedValue({
-        id: userId,
-      });
-
-      await service.updateSupporter(accessToken, {
+      await service.updateSupporter(userId, {
         guildIds,
       });
 
