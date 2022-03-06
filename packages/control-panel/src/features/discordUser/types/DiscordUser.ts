@@ -7,7 +7,7 @@ export const DiscordUserSchema = object({
   username: string().required(),
   iconUrl: string().optional(),
   supporter: object({
-    guilds: array(string()).required(),
+    guilds: array(string().required()).required(),
     maxFeeds: number().required(),
     maxGuilds: number().required(),
     expireAt: string().optional(),

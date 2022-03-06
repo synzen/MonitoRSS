@@ -71,6 +71,15 @@
           "saveButton": "Save"
         }
       }
+    },
+    "discordUsers": {
+      "components": {
+        "settingsDialog": {
+          "title": "Supporter Settings",
+          "description": "The servers below will receive your benefits.",
+          "serverInputPlaceholder": "Discord Server ID"
+        }
+      }
     }
   }
 }

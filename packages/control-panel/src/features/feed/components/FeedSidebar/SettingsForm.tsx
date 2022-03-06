@@ -124,6 +124,7 @@ export const SettingsForm: React.FC<Props> = ({
           <HStack>
             <Button
               onClick={() => reset()}
+              variant="ghost"
               disabled={!isDirty || isSubmitting}
             >
               {t('features.feed.components.sidebar.resetButton')}

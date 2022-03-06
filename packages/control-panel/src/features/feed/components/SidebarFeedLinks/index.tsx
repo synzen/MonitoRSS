@@ -3,7 +3,7 @@ import {
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import {
-  FiHome, FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiShare2, FiArrowLeft,
+  FiHome, FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiArrowLeft,
 } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { SidebarLink } from '../../../../components/SidebarLink';
