@@ -1,8 +1,9 @@
 import {
-  Box, Heading, Stack, useToast,
+  Box, Center, Heading, Stack, Text, useToast,
 } from '@chakra-ui/react';
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import { WarningTwoIcon } from '@chakra-ui/icons';
 import { Loading } from '@/components';
 import { useAuth } from '../hooks';
 
@@ -39,11 +40,24 @@ export const RequireAuth: React.FC = ({ children }) => {
 
   if (status === 'error') {
     return (
-      <div>
-        Failed to login
-        {' '}
-        {error?.message}
-      </div>
+      <Center height="100vh">
+        <Stack
+          display="flex"
+          flexDir="column"
+          alignItems="center"
+          justifyContent="center"
+          height="100%"
+          paddingBottom="25rem"
+        >
+          <WarningTwoIcon fontSize="12rem" color="red.500" />
+          <Heading>Sorry, something went wrong.</Heading>
+          <br />
+          {' '}
+          <Text>
+            {error?.message}
+          </Text>
+        </Stack>
+      </Center>
     );
   }
 
