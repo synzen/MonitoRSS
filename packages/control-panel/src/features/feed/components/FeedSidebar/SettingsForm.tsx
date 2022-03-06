@@ -106,7 +106,6 @@ export const SettingsForm: React.FC<Props> = ({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 value={field.value}
-                ref={field.ref}
               />
             )}
           />

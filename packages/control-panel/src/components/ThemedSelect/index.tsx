@@ -25,7 +25,6 @@ interface Props {
   onBlur?: () => void
   onChange: (value: string) => void
   name?: string
-  ref?: React.Ref<any>
   isClearable?: boolean
 }
 
@@ -38,7 +37,6 @@ export const ThemedSelect: React.FC<Props> = ({
   id,
   isDisabled,
   name,
-  ref,
   isClearable,
 }) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
@@ -86,7 +84,6 @@ export const ThemedSelect: React.FC<Props> = ({
       options={options}
       onBlur={onBlur}
       name={name}
-      ref={ref}
       isClearable={isClearable}
       // @ts-ignore
       styles={styles}
