@@ -11,9 +11,17 @@ import { Session } from '../../common/types/Session';
 import { DiscordUserModule } from './discord-users.module';
 import { DiscordUser } from './types/DiscordUser.type';
 import { PartialUserGuild } from './types/PartialUserGuild.type';
+import { createTestSupporter } from '../../test/data/supporters.test-data';
+import dayjs from 'dayjs';
+import {
+  Supporter,
+  SupporterModel,
+} from '../supporters/entities/supporter.entity';
+import { getModelToken } from '@nestjs/mongoose';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
+  let supporterModel: SupporterModel;
   let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
   const standardRequestOptions = {
     headers: {
@@ -33,6 +41,8 @@ describe('DiscordServersModule', () => {
     standardRequestOptions.headers.cookie = await setAccessToken({
       access_token: 'accessToken',
     } as Session['accessToken']);
+
+    supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
   });
 
   afterEach(() => {
@@ -66,7 +76,7 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns the user', async () => {
+    it('returns user with no supporter details', async () => {
       const mockUser: DiscordUser = {
         id: '1',
         username: 'username',
@@ -88,10 +98,46 @@ describe('DiscordServersModule', () => {
         id: mockUser.id,
         username: mockUser.username,
         iconUrl: expect.any(String),
+      });
+    });
+
+    it('returns user with supporter details', async () => {
+      const mockUser: DiscordUser = {
+        id: '1',
+        username: 'username',
+        discriminator: '1234',
+        avatar: '123345',
+      };
+
+      mockGetMe(mockUser);
+
+      const supporter = createTestSupporter({
+        _id: mockUser.id,
+        expireAt: dayjs().add(2, 'day').toDate(),
+        maxGuilds: 10,
+        maxFeeds: 11,
+        guilds: ['1', '2'],
+      });
+
+      await supporterModel.create(supporter);
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-users/@me`,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(statusCode).toEqual(200);
+      expect(parsedBody).toEqual({
+        id: mockUser.id,
+        username: mockUser.username,
+        iconUrl: expect.any(String),
         supporter: {
-          guilds: expect.any(Array),
-          maxFeeds: expect.any(Number),
-          maxGuilds: expect.any(Number),
+          guilds: supporter.guilds,
+          maxFeeds: supporter.maxFeeds,
+          maxGuilds: supporter.maxGuilds,
+          expireAt: supporter.expireAt?.toISOString(),
         },
       });
     });

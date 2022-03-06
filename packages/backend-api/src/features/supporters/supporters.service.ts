@@ -89,6 +89,7 @@ export class SupportersService {
     ) as number;
 
     return {
+      isSupporter: aggregate.length > 0,
       maxFeeds: aggregate[0]?.maxFeeds ?? defaultMaxFeeds,
       guilds: aggregate[0]?.guilds ?? [],
       maxGuilds: aggregate[0]?.maxGuilds ?? 1,

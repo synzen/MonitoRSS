@@ -7,7 +7,7 @@ export interface DiscordUser {
 
 export type DiscordUserFormatted = DiscordUser & {
   avatarUrl?: string;
-  supporter: {
+  supporter?: {
     maxFeeds: number;
     guilds: string[];
     maxGuilds: number;

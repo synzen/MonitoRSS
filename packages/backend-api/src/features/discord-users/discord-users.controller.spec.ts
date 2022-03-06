@@ -46,6 +46,25 @@ describe('DiscordUsersController', () => {
         expectedResponse,
       );
     });
+    it('returns correctly without supporter', async () => {
+      const discordAccessToken = 'token';
+      const discordUser = {
+        id: 'id',
+        username: 'username',
+        avatarUrl: 'avatarUrl',
+      };
+      discordUsersService.getUser.mockResolvedValue(discordUser);
+
+      const expectedResponse: GetMeOutputDto = {
+        id: discordUser.id,
+        username: discordUser.username,
+        iconUrl: discordUser.avatarUrl,
+      };
+
+      await expect(controller.getMe(discordAccessToken)).resolves.toEqual(
+        expectedResponse,
+      );
+    });
   });
 
   describe('getMyServers', () => {

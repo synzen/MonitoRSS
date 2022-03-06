@@ -20,12 +20,7 @@ export class DiscordUsersController {
       id: user.id,
       username: user.username,
       iconUrl: user.avatarUrl,
-      supporter: {
-        guilds: user.supporter.guilds,
-        maxFeeds: user.supporter.maxFeeds,
-        maxGuilds: user.supporter.maxGuilds,
-        expireAt: user.supporter.expireAt,
-      },
+      supporter: user.supporter,
     };
   }
 

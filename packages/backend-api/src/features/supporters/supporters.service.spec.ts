@@ -68,6 +68,7 @@ describe('SupportersService', () => {
       );
 
       expect(benefits).toEqual({
+        isSupporter: false,
         maxFeeds: defaultMaxFeeds,
         guilds: [],
         maxGuilds: 1,
@@ -90,6 +91,7 @@ describe('SupportersService', () => {
       );
 
       expect(benefits).toEqual({
+        isSupporter: true,
         maxFeeds: supporter.maxFeeds,
         guilds: supporter.guilds,
         maxGuilds: supporter.maxGuilds,

@@ -188,7 +188,7 @@ describe('DiscordUsersService', () => {
       );
     });
 
-    it('returns the user', async () => {
+    it('returns the user with supporter details if they are a supporter', async () => {
       const accessToken = 'abc';
       const user = {
         id: 'user_id',
@@ -196,6 +196,7 @@ describe('DiscordUsersService', () => {
         avatar: 'icon_hash',
       };
       const supporterBenefits = {
+        isSupporter: true,
         guilds: ['1'],
         maxFeeds: 10,
         maxGuilds: 10,
@@ -219,6 +220,33 @@ describe('DiscordUsersService', () => {
           maxGuilds: supporterBenefits.maxGuilds,
           expireAt: supporterBenefits.expireAt,
         },
+      });
+    });
+    it('returns the user with no supporter details if they are not a supporter', async () => {
+      const accessToken = 'abc';
+      const user = {
+        id: 'user_id',
+        username: 'test',
+        avatar: 'icon_hash',
+      };
+      const supporterBenefits = {
+        isSupporter: false,
+        guilds: [],
+        maxFeeds: 10,
+        maxGuilds: 10,
+      };
+      discordApiService.executeBearerRequest.mockResolvedValue(user);
+      supportersService.getBenefitsOfDiscordUser.mockResolvedValue(
+        supporterBenefits,
+      );
+
+      const result = await service.getUser(accessToken);
+
+      expect(result).toEqual({
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        avatarUrl: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
       });
     });
   });

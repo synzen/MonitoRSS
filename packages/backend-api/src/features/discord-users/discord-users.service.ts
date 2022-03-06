@@ -91,13 +91,16 @@ export class DiscordUsersService {
       discriminator: user.discriminator,
       username: user.username,
       avatar: user.avatar,
-      supporter: {
+    };
+
+    if (benefits.isSupporter) {
+      toReturn.supporter = {
         guilds: benefits.guilds,
         maxFeeds: benefits.maxFeeds,
         maxGuilds: benefits.maxGuilds,
         expireAt: benefits.expireAt,
-      },
-    };
+      };
+    }
 
     if (user.avatar) {
       toReturn.avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
