@@ -24,6 +24,7 @@ import {
   DrawerContent,
   DrawerCloseButton,
   useBreakpointValue,
+  Center,
 } from '@chakra-ui/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -59,9 +60,9 @@ const Feeds: React.FC = () => {
   return (
     <HStack height="100%" alignItems="flex-start">
       {(status === 'loading') && (
-        <Box textAlign="center" paddingY="5rem">
+        <Center width="100%" height="100%">
           <Loading size="lg" />
-        </Box>
+        </Center>
       )}
       {status === 'error' && (
         <Alert status="error">
