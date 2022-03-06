@@ -7,6 +7,10 @@ import {
   PartialUserGuildFormatted,
 } from './types/PartialUserGuild.type';
 
+interface UpdateSupporterInput {
+  guildIds?: string[];
+}
+
 @Injectable()
 export class DiscordUsersService {
   BASE_ENDPOINT = '/users';
@@ -107,5 +111,18 @@ export class DiscordUsersService {
     }
 
     return toReturn;
+  }
+
+  async updateSupporter(accessToken: string, data: UpdateSupporterInput) {
+    const endpoint = this.BASE_ENDPOINT + `/@me`;
+
+    const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
+      accessToken,
+      endpoint,
+    );
+
+    if (data.guildIds) {
+      await this.supportersService.setGuilds(user.id, data.guildIds);
+    }
   }
 }

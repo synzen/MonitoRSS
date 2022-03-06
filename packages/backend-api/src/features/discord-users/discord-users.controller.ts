@@ -1,9 +1,19 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
+import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { DiscordAccessToken } from '../discord-auth/decorators/DiscordAccessToken';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { DiscordUsersService } from './discord-users.service';
-import { GetMeOutputDto } from './dto';
+import { GetMeOutputDto, UpdateSupporterInputDto } from './dto';
 import { GetMyServersOutputDto } from './dto/GetMyServersOutput.dto';
+import { DiscordUserIsSupporterGuard } from './guards/DiscordUserIsSupporter';
 
 @Controller('discord-users')
 @UseGuards(DiscordOAuth2Guard)
@@ -22,6 +32,18 @@ export class DiscordUsersController {
       iconUrl: user.avatarUrl,
       supporter: user.supporter,
     };
+  }
+
+  @Patch('@me/supporter')
+  @UseGuards(DiscordUserIsSupporterGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateSupporter(
+    @DiscordAccessToken() accessToken: string,
+    @Body(TransformValidationPipe) input: UpdateSupporterInputDto,
+  ) {
+    await this.discordUsersService.updateSupporter(accessToken, {
+      guildIds: input.guildIds,
+    });
   }
 
   @Get('@me/servers')

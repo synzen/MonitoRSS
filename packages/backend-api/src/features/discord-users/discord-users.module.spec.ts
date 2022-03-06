@@ -28,6 +28,11 @@ describe('DiscordServersModule', () => {
       cookie: '',
     },
   };
+  const mockUser: DiscordUser = {
+    id: '12345',
+    username: 'Test User',
+    discriminator: '1234',
+  };
 
   beforeAll(async () => {
     const { init } = setupEndpointTests({
@@ -45,26 +50,26 @@ describe('DiscordServersModule', () => {
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     nock.cleanAll();
+    await supporterModel.deleteMany();
   });
 
   afterAll(async () => {
     await teardownEndpointTests();
   });
 
-  describe('GET /discord-users/@me', () => {
-    const mockGetMe = (user?: Partial<DiscordUser>) => {
-      const mockUserResponse: DiscordUser = {
-        id: '12345',
-        username: 'Test User',
-        discriminator: '1234',
+  const mockGetMe = (user?: Partial<DiscordUser>) => {
+    nock(DISCORD_API_BASE_URL)
+      .get(`/users/@me`)
+      .reply(200, {
+        ...mockUser,
         ...user,
-      };
+      })
+      .persist();
+  };
 
-      nock(DISCORD_API_BASE_URL).get(`/users/@me`).reply(200, mockUserResponse);
-    };
-
+  describe('GET /discord-users/@me', () => {
     it('returns 401 if not logged in with discord', async () => {
       mockGetMe();
 
@@ -140,6 +145,101 @@ describe('DiscordServersModule', () => {
           expireAt: supporter.expireAt?.toISOString(),
         },
       });
+    });
+  });
+
+  describe('PATCH /discord-users/@me/supporter', () => {
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMe();
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-users/@me/supporter`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if user is not a supporter', async () => {
+      mockGetMe();
+      // User has no "supporter" document
+      const payload = {
+        guildIds: ['1', '2', '3'],
+      };
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-users/@me/supporter`,
+        payload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 204 if valid supporter', async () => {
+      mockGetMe(mockUser);
+
+      const supporter = createTestSupporter({
+        _id: mockUser.id,
+        expireAt: dayjs().add(2, 'day').toDate(),
+        maxGuilds: 10,
+        maxFeeds: 11,
+        guilds: ['1', '2'],
+      });
+
+      await supporterModel.create(supporter);
+
+      const payload = {
+        guildIds: ['1', '2', '3'],
+      };
+
+      const result = await app.inject({
+        method: 'PATCH',
+        url: `/discord-users/@me/supporter`,
+        payload,
+        ...standardRequestOptions,
+      });
+
+      expect(result.statusCode).toEqual(HttpStatus.NO_CONTENT);
+    });
+
+    it('ignores empty strings in guild ids', async () => {
+      mockGetMe(mockUser);
+
+      const supporter = createTestSupporter({
+        _id: mockUser.id,
+        expireAt: dayjs().add(2, 'day').toDate(),
+        maxGuilds: 10,
+        maxFeeds: 11,
+        guilds: ['1', '2'],
+      });
+
+      await supporterModel.create(supporter);
+
+      const payload = {
+        guildIds: ['1', '', '3', ''],
+      };
+
+      const result = await app.inject({
+        method: 'PATCH',
+        url: `/discord-users/@me/supporter`,
+        payload,
+        ...standardRequestOptions,
+      });
+
+      expect(result.statusCode).toEqual(HttpStatus.NO_CONTENT);
+
+      const foundSupporter = await supporterModel
+        .findOne({
+          _id: mockUser.id,
+        })
+        .lean();
+
+      expect(foundSupporter?.guilds).toEqual([
+        payload.guildIds[0],
+        payload.guildIds[2],
+      ]);
     });
   });
 

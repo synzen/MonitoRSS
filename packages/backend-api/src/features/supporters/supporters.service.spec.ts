@@ -416,4 +416,39 @@ describe('SupportersService', () => {
       expect(result).toBe(false);
     });
   });
+
+  describe('setGuilds', () => {
+    it('sets the guilds of the supporter', async () => {
+      const guildIds = ['1', '2'];
+      const supporterToInsert = createTestSupporter({
+        _id: userDiscordId,
+        guilds: ['old', 'guild'],
+        maxGuilds: 10,
+        maxFeeds: 10,
+      });
+
+      await supporterModel.create(supporterToInsert);
+
+      await supportersService.setGuilds(userDiscordId, guildIds);
+
+      const found = await supporterModel.findById(userDiscordId);
+      expect(found?.guilds).toEqual(guildIds);
+    });
+
+    it('returns the supporter with new guilds', async () => {
+      const guildIds = ['1', '2'];
+      const supporterToInsert = createTestSupporter({
+        _id: userDiscordId,
+        guilds: ['old', 'guild'],
+        maxGuilds: 10,
+        maxFeeds: 10,
+      });
+
+      await supporterModel.create(supporterToInsert);
+
+      const result = await supportersService.setGuilds(userDiscordId, guildIds);
+
+      expect(result?.guilds).toEqual(guildIds);
+    });
+  });
 });

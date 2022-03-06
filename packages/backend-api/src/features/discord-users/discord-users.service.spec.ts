@@ -8,6 +8,7 @@ describe('DiscordUsersService', () => {
   const supportersService = {
     getBenefitsOfServers: jest.fn(),
     getBenefitsOfDiscordUser: jest.fn(),
+    setGuilds: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -248,6 +249,26 @@ describe('DiscordUsersService', () => {
         avatar: user.avatar,
         avatarUrl: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
       });
+    });
+  });
+
+  describe('updateSupporter', () => {
+    it('calls supportersService to set the guilds if guild ids is inputted', async () => {
+      const accessToken = 'abc';
+      const guildIds = ['1', '2'];
+      const userId = 'user-id';
+      jest.spyOn(discordApiService, 'executeBearerRequest').mockResolvedValue({
+        id: userId,
+      });
+
+      await service.updateSupporter(accessToken, {
+        guildIds,
+      });
+
+      expect(supportersService.setGuilds).toHaveBeenCalledWith(
+        userId,
+        guildIds,
+      );
     });
   });
 });

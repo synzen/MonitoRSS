@@ -156,4 +156,30 @@ export class SupportersService {
 
     return benefits[0]?.webhooks || false;
   }
+
+  async setGuilds(userId: string, guildIds: string[]) {
+    const updatedSupporter = await this.supporterModel
+      .findOneAndUpdate(
+        {
+          _id: userId,
+        },
+        {
+          $set: {
+            guilds: guildIds,
+          },
+        },
+        {
+          new: true,
+        },
+      )
+      .lean();
+
+    if (!updatedSupporter) {
+      throw new Error(
+        `User ${userId} was not found while updating supporter guild ids`,
+      );
+    }
+
+    return updatedSupporter;
+  }
 }
