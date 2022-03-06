@@ -26,24 +26,11 @@ const Feeds: React.FC = () => {
     <Flex height="100%">
       <Stack spacing="6" flex="1" paddingX="12" paddingBottom="12" overflow="auto">
         <Heading size="lg" paddingTop="8">Feeds</Heading>
-        <Stack spacing="4">
-          <Flex justifyContent="space-between" flexWrap="wrap">
-            {/* <InputGroup>
-              <InputLeftElement
-                pointerEvents="none"
-              >
-                <SearchIcon color="gray.400" />
-              </InputLeftElement>
-              <Input width="sm" placeholder={t('pages.feeds.tableSearch')} />
-            </InputGroup> */}
-            {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
-          </Flex>
-          <FeedsTable
-            onSelectedFeedId={setFocusedFeedId}
-            selectedFeedId={focusedFeedId}
-            serverId={serverId}
-          />
-        </Stack>
+        <FeedsTable
+          onSelectedFeedId={setFocusedFeedId}
+          selectedFeedId={focusedFeedId}
+          serverId={serverId}
+        />
       </Stack>
       {focusedFeedId && (
       <Box

@@ -8,13 +8,19 @@ import {
   Center,
   Flex,
   IconButton,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Stack,
   Table, Td, Text, Th, Thead, Tr,
 } from '@chakra-ui/react';
 import { useEffect, useMemo } from 'react';
-import { useTable, usePagination, Column } from 'react-table';
+import {
+  useTable, usePagination, Column, useGlobalFilter,
+} from 'react-table';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons';
+import { debounce } from 'lodash';
 import { useFeeds } from '../../hooks';
 import { Feed } from '../../types';
 import { Loading } from '@/components';
@@ -49,6 +55,7 @@ export const FeedsTable: React.FC<Props> = ({
     error,
     setOffset,
     isFetchingNewContent,
+    setSearch,
   } = useFeeds({
     serverId,
     initialLimit: maxPerPage,
@@ -94,15 +101,20 @@ export const FeedsTable: React.FC<Props> = ({
     [],
   );
 
-  const tableInstance = useTable({
-    columns,
-    data: tableData,
-    manualPagination: true,
-    pageCount: Math.ceil(total / maxPerPage),
-    initialState: {
-      pageSize: maxPerPage,
+  const tableInstance = useTable(
+    {
+      columns,
+      data: tableData,
+      manualPagination: true,
+      manualGlobalFilter: true,
+      pageCount: Math.ceil(total / maxPerPage),
+      initialState: {
+        pageSize: maxPerPage,
+      },
     },
-  }, usePagination);
+    useGlobalFilter,
+    usePagination,
+  );
 
   const {
     getTableProps,
@@ -114,6 +126,7 @@ export const FeedsTable: React.FC<Props> = ({
     previousPage,
     canPreviousPage,
     page,
+    setGlobalFilter,
     state: {
       pageIndex,
     },
@@ -126,6 +139,11 @@ export const FeedsTable: React.FC<Props> = ({
   const onClickFeedRow = (feedId: string) => {
     onSelectedFeedId?.(feedId);
   };
+
+  const onSearchChange = debounce((value: string) => {
+    setGlobalFilter(value);
+    setSearch(value);
+  }, 500);
 
   if (status === 'loading') {
     return (
@@ -146,6 +164,25 @@ export const FeedsTable: React.FC<Props> = ({
 
   return (
     <Stack>
+      <InputGroup>
+        <InputLeftElement
+          pointerEvents="none"
+        >
+          <SearchIcon color="gray.400" />
+        </InputLeftElement>
+        <Input
+          onChange={({
+            target: {
+              value,
+            },
+          }) => {
+            onSearchChange(value);
+          }}
+          width="sm"
+          placeholder={t('pages.feeds.tableSearch')}
+        />
+      </InputGroup>
+      {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
       <Table
         {...getTableProps()}
         whiteSpace="nowrap"
@@ -169,15 +206,15 @@ export const FeedsTable: React.FC<Props> = ({
         <tbody {...getTableBodyProps()}>
           {page.map((row) => {
             prepareRow(row);
+            const feed = row.original;
 
             return (
               <Tr
                 {...row.getRowProps()}
-                key={row.id}
                 tabIndex={0}
                 zIndex={100}
                 position="relative"
-                bg={selectedFeedId === row.id ? 'gray.700' : undefined}
+                bg={selectedFeedId === feed.id ? 'gray.700' : undefined}
                 _hover={{
                   bg: 'gray.700',
                   cursor: 'pointer',
@@ -187,10 +224,10 @@ export const FeedsTable: React.FC<Props> = ({
                   boxShadow: 'outline',
                   outline: 'none',
                 }}
-                onClick={() => onClickFeedRow(row.id)}
+                onClick={() => onClickFeedRow(feed.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    onClickFeedRow(row.id);
+                    onClickFeedRow(feed.id);
                   }
                 }}
               >

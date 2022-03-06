@@ -11,8 +11,14 @@ interface Props {
 export const useFeeds = ({ serverId, initialLimit }: Props) => {
   const [limit, setLimit] = useState(initialLimit || 10);
   const [offset, setOffset] = useState(0);
+  const [search, setSearch] = useState('');
 
-  const queryKey = ['feeds', { serverId, limit, offset }];
+  const queryKey = ['feeds', {
+    serverId,
+    limit,
+    offset,
+    search: search || '',
+  }];
 
   const {
     data,
@@ -32,6 +38,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
         serverId,
         limit,
         offset,
+        search,
       });
     },
     {
@@ -48,6 +55,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
     error,
     setLimit,
     setOffset,
+    setSearch,
     isFetchingNewContent,
   };
 };

@@ -37,6 +37,7 @@ const handlers = [
   rest.get('/api/v1/discord-servers/:serverId/feeds', (req, res, ctx) => {
     const limit = Number(req.url.searchParams.get('limit') || '10');
     const offset = Number(req.url.searchParams.get('offset') || '0');
+    const search = req.url.searchParams.get('search');
 
     const theseMockSummariesTotal = mockFeedSummaries.length * 5;
     const theseMockSummaries: FeedSummary[] = new Array(
@@ -44,12 +45,12 @@ const handlers = [
     ).fill(0).map((_, i) => ({
       ...mockFeedSummaries[i % mockFeedSummaries.length],
       id: i.toString(),
-    }));
+    })).filter((feed) => (!search ? true : feed.title.toLowerCase()
+      .includes(search) || feed.url.toLowerCase().includes(search)));
 
     const results = theseMockSummaries.slice(offset, offset + limit);
 
     return res(
-      ctx.delay(2000),
       ctx.json<GetFeedsOutput>({
         total: theseMockSummariesTotal,
         results,

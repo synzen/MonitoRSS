@@ -8,6 +8,7 @@ export interface GetFeedsInput {
   serverId: string;
   limit?: number;
   offset?: number;
+  search?: string
 }
 
 const GetFeedsOutputSchema = object({
@@ -21,6 +22,7 @@ export const getFeeds = async (options: GetFeedsInput): Promise<GetFeedsOutput> 
   const searchParams = new URLSearchParams({
     limit: options.limit?.toString() || '10',
     offset: options.offset?.toString() || '0',
+    search: options.search || '',
   });
 
   return fetchRest(

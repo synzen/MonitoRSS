@@ -1,5 +1,9 @@
 import {
   UsePaginationOptions,
+  UseGlobalFiltersColumnOptions,
+  UseGlobalFiltersInstanceProps,
+  UseGlobalFiltersOptions,
+  UseGlobalFiltersState,
 } from 'react-table';
 
 declare module 'react-table' {
@@ -7,12 +11,18 @@ declare module 'react-table' {
 
   export interface TableOptions<D extends object = {}>
     extends UsePaginationOptions<D>,
+    UseGlobalFiltersOptions<D>,
     // feature set, this is a safe default.
     Record<string, any> {}
 
   export interface TableInstance<D extends object = {}>
-    extends UsePaginationInstanceProps<D> {}
+    extends UsePaginationInstanceProps<D>,
+    UseGlobalFiltersInstanceProps<D>, {}
 
   export interface TableState<D extends object = {}>
-    extends UsePaginationState<D> {}
+    extends UsePaginationState<D>,
+    UseGlobalFiltersState<D> {}
+
+  export interface ColumnInterface<D extends object = {}>
+    extends UseGlobalFiltersColumnOptions<D> {}
 }

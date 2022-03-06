@@ -8,8 +8,8 @@
       "tableUrl": "URL",
       "tableStatus": "Status",
       "tableChannel": "Channel",
-      "tableSearch": "Search by id, title, name or url",
-      "tableResults": "Showing {{start}} to {{end}} of {{total}} results"
+      "tableSearch": "Search by title or url",
+      "tableResults": "Showing {{start}}-{{end}} of {{total}} results"
     },
     "feed": {
       "connectionFailureTitle": "Disabled due to too many connection failures",
