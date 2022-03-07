@@ -18,8 +18,8 @@ import { useFeed } from '../../hooks';
 import { FeedStatusIcon } from '../FeedStatusIcon';
 import { RefreshButton } from '../RefreshButton';
 import RouteParams from '@/types/RouteParams';
-import { useDiscordServer } from '@/features/discordServers';
 import { SettingsForm } from './SettingsForm';
+import { ErrorAlert } from '@/components/ErrorAlert';
 
 interface Props {
   feedId?: string;
@@ -28,7 +28,6 @@ interface Props {
 export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
-  const { data: discordServerData, status: discordServerStatus } = useDiscordServer({ serverId });
   const {
     feed, status, error, refetch,
   } = useFeed({
@@ -43,8 +42,13 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
     return <Flex justifyContent="center" padding="20"><Loading /></Flex>;
   }
 
-  const webhooksDisabled = discordServerStatus !== 'success'
-  || !discordServerData?.benefits.webhooks;
+  if (status === 'error') {
+    return (
+      <Box height="100%">
+        <ErrorAlert description={error?.message} />
+      </Box>
+    );
+  }
 
   return (
     <Stack
