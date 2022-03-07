@@ -1,4 +1,11 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  CacheTTL,
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { NestedQuery } from '../../common/decorators/NestedQuery';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
@@ -8,6 +15,7 @@ import { GetServerFeedsOutputDto } from './dto/GetServerFeedsOutput.dto';
 import { BotHasServerGuard } from './guards/BotHasServer.guard';
 import { UserManagesServerGuard } from './guards/UserManagesServer.guard';
 import { GetServerChannelsOutputDto } from './dto/GetServerChannelsOutput.dto';
+import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
 
 @Controller('discord-servers')
 @UseGuards(DiscordOAuth2Guard)
@@ -49,6 +57,8 @@ export class DiscordServersController {
   @Get(':serverId/channels')
   @UseGuards(BotHasServerGuard)
   @UseGuards(UserManagesServerGuard)
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
   async getServerChannels(
     @Param('serverId') serverId: string,
   ): Promise<GetServerChannelsOutputDto> {

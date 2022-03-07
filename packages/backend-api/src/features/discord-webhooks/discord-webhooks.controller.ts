@@ -1,4 +1,10 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  CacheTTL,
+  Controller,
+  Get,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { NestedQuery } from '../../common/decorators/NestedQuery';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
@@ -6,6 +12,7 @@ import { DiscordWebhooksService } from './discord-webhooks.service';
 import { GetDiscordWebhooksInputDto } from './dto/get-discord-webhooks.input.dto';
 import { GetDiscordWebhooksOutputDto } from './dto/get-discord-webhooks.output.dto';
 import { UserManagesWebhookServerGuard } from './guards/UserManagesWebhookServer.guard';
+import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
 
 @Controller('discord-webhooks')
 @UseGuards(DiscordOAuth2Guard)
@@ -16,6 +23,8 @@ export class DiscordWebhooksController {
 
   @Get()
   @UseGuards(UserManagesWebhookServerGuard)
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 2)
   async getWebhooks(
     @NestedQuery(TransformValidationPipe)
     getWebhooksInputDto: GetDiscordWebhooksInputDto,

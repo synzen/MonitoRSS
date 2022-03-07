@@ -5,7 +5,7 @@ import {
 } from '../../utils/endpoint-tests';
 import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import nock from 'nock';
-import { HttpStatus } from '@nestjs/common';
+import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
 import { Session } from '../../common/types/Session';
 import { FeedsModule } from './feeds.module';
 import { Types } from 'mongoose';
@@ -19,6 +19,7 @@ import {
   Supporter,
   SupporterModel,
 } from '../supporters/entities/supporter.entity';
+import { Cache } from 'cache-manager';
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
@@ -52,6 +53,9 @@ describe('FeedsModule', () => {
     nock.cleanAll();
     await feedModel.deleteMany({});
     await supporterModel.deleteMany({});
+
+    const cacheManager = app.get<Cache>(CACHE_MANAGER);
+    cacheManager.reset();
   });
 
   afterAll(async () => {

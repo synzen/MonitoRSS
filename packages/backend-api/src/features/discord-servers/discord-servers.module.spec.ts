@@ -9,12 +9,13 @@ import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import { Feed, FeedModel } from '../feeds/entities/Feed.entity';
 import { DiscordServersModule } from './discord-servers.module';
 import nock from 'nock';
-import { HttpStatus } from '@nestjs/common';
+import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { Session } from '../../common/types/Session';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { DiscordServerChannel } from './types/DiscordServerChannel.type';
+import { Cache } from 'cache-manager';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -44,6 +45,9 @@ describe('DiscordServersModule', () => {
   afterEach(async () => {
     nock.cleanAll();
     await feedModel.deleteMany({});
+
+    const cacheManager = app.get<Cache>(CACHE_MANAGER);
+    cacheManager.reset();
   });
 
   afterAll(async () => {

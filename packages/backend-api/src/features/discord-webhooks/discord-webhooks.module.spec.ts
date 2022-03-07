@@ -5,7 +5,7 @@ import {
 } from '../../utils/endpoint-tests';
 import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import nock from 'nock';
-import { HttpStatus } from '@nestjs/common';
+import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { Session } from '../../common/types/Session';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
@@ -16,6 +16,7 @@ import {
   DiscordWebhookType,
 } from './types/discord-webhook.type';
 import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
 
 describe('DiscordWebhooksModule', () => {
   let app: NestFastifyApplication;
@@ -49,6 +50,8 @@ describe('DiscordWebhooksModule', () => {
 
   afterEach(async () => {
     nock.cleanAll();
+    const cacheManager = app.get<Cache>(CACHE_MANAGER);
+    cacheManager.reset();
   });
 
   afterAll(async () => {

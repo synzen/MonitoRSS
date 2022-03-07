@@ -1,11 +1,13 @@
 import {
   BadRequestException,
   Body,
+  CacheTTL,
   Controller,
   Get,
   Param,
   Patch,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
@@ -20,6 +22,7 @@ import { GetFeedPipe } from './pipes/GetFeed.pipe';
 import { FeedWithRefreshRate } from './types/FeedWithRefreshRate';
 import { SupportersService } from '../supporters/supporters.service';
 import { DiscordWebhooksService } from '../discord-webhooks/discord-webhooks.service';
+import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -83,6 +86,8 @@ export class FeedsController {
 
   @Get('/:feedId/articles')
   @UseGuards(UserManagesFeedServerGuard)
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
   async getFeedArticles(
     @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
   ): Promise<GetFeedArticlesOutputDto> {

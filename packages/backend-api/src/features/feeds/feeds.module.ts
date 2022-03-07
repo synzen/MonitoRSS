@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 import { FeedsService } from './feeds.service';
 import { FeedsController } from './feeds.controller';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -13,6 +13,7 @@ import { DiscordWebhooksModule } from '../discord-webhooks/discord-webhooks.modu
   controllers: [FeedsController],
   providers: [FeedsService],
   imports: [
+    CacheModule.register(),
     DiscordAuthModule,
     MongooseModule.forFeature([FeedFeature, FailRecordFeature]),
     FeedFetcherModule,
