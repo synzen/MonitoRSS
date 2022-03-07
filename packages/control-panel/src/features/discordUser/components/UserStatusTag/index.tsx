@@ -32,7 +32,7 @@ export const UserStatusTag: React.FC<Props> = () => {
       <Tag
         marginTop="4"
         colorScheme="purple"
-        size="lg"
+        size="sm"
         marginRight="0"
         paddingRight={0}
       >
@@ -41,9 +41,9 @@ export const UserStatusTag: React.FC<Props> = () => {
             {t('components.sidebar.supporterUserTag')}
           </Text>
           <IconButton
-            size="sm"
+            size="xs"
             borderLeftRadius={0}
-            icon={<SettingsIcon />}
+            icon={<SettingsIcon fontSize="xs" />}
             aria-label="Supporter settings"
             onClick={onOpen}
           />

@@ -1,6 +1,6 @@
 import {
   Avatar,
-  Box, Divider, Flex, Stack,
+  Box, Divider, Flex, Heading, Stack, Text,
 } from '@chakra-ui/react';
 import {
   Navigate, useLocation, useNavigate, useParams,
@@ -72,23 +72,32 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
         as="nav"
         height="100%"
         direction="column"
-        maxW="18rem"
+        maxW="325px"
         width="full"
         paddingBottom="4"
         borderRightWidth="1px"
       >
+        <Flex
+          justifyContent="center"
+          flexDir="column"
+          height="75px"
+          width="full"
+          background="gray.700"
+          padding="4"
+        >
+          <Heading fontSize="3xl">Monito.RSS</Heading>
+          <Text display="block">Control Panel</Text>
+        </Flex>
         <Stack
-          paddingX="8"
+          paddingX="6"
           marginTop="8"
           display="flex"
-          justifyContent="center"
-          alignItems="center"
+          alignItems="flex-start"
           spacing="4"
         >
           <Stack
             width="100%"
-            justifyContent="center"
-            alignItems="center"
+            alignItems="flex-start"
             spacing="4"
           >
             <Avatar
@@ -102,7 +111,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
         </Stack>
         <Divider marginY="8" />
         <Stack spacing="12">
-          <Stack px="3" spacing="6">
+          <Stack px="6" spacing="6">
             <Stack spacing="3">
               {!feedId && (
                 <SidebarDiscordServerLinks

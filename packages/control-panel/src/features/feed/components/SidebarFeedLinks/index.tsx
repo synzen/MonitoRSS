@@ -47,13 +47,11 @@ export const SidebarFeedLinks: React.FC<Props> = ({
       </Button>
       <Stack spacing="1">
         <Text
-          px="3"
           fontSize="xs"
           fontWeight="semibold"
           textTransform="uppercase"
           letterSpacing="widest"
           color="gray.500"
-          mb="3"
         >
           {t('components.sidebar.feed.manage')}
         </Text>

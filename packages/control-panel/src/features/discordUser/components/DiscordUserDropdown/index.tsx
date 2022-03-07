@@ -1,7 +1,4 @@
-import { ChevronDownIcon } from '@chakra-ui/icons';
-import {
-  Button, Menu, MenuButton, MenuItem, MenuList, Text,
-} from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useDiscordUserMe } from '../../hooks';
 
@@ -12,25 +9,17 @@ export const DiscordUserDropdown: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <Menu>
-      <MenuButton
-        as={Button}
+    <Box overflow="hidden" width="100%" textAlign="left">
+      <Text color="gray.500">Welcome</Text>
+      <Text
         width="100%"
-        rightIcon={<ChevronDownIcon />}
-        variant="ghost"
-        marginTop="4"
-        marginBottom="4"
-        aria-label="User menu"
+        textOverflow="ellipsis"
+        overflow="hidden"
+        fontSize="lg"
+        whiteSpace="nowrap"
       >
-        <Text textOverflow="ellipsis" overflow="hidden">
-          {userMe?.username}
-        </Text>
-      </MenuButton>
-      <MenuList py="2" px="2" shadow="lg">
-        <MenuItem rounded="md">
-          {t('components.sidebar.userDropdown.logout')}
-        </MenuItem>
-      </MenuList>
-    </Menu>
+        {userMe?.username}
+      </Text>
+    </Box>
   );
 };

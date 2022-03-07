@@ -35,7 +35,6 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
         textTransform="uppercase"
         letterSpacing="widest"
         color="gray.500"
-        mb="3"
       >
         {t('components.sidebar.server.manage')}
       </Text>
