@@ -3,6 +3,7 @@ import {
   AlertDescription,
   AlertTitle,
   Box,
+  Button,
   Divider,
   Flex,
   Heading,
@@ -12,7 +13,8 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { CategoryText, Loading } from '@/components';
 import { useFeed } from '../../hooks';
 import { FeedStatusIcon } from '../FeedStatusIcon';
@@ -96,36 +98,39 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
           </Box>
         </Alert>
       </Stack>
-      <Flex wrap="wrap">
-        <CategoryText
-          paddingRight="6"
-          paddingBottom="6"
-          title={t('pages.feed.channelLabel')}
-        >
-          {feed?.channel}
+      <Stack>
+        <Flex wrap="wrap">
+          <CategoryText
+            paddingRight="6"
+            paddingBottom="6"
+            title={t('pages.feed.channelLabel')}
+          >
+            {feed?.channel}
 
-        </CategoryText>
-        <CategoryText
-          paddingRight="6"
-          paddingBottom="6"
-          title={t('pages.feed.refreshRateLabel')}
-        >
-          {t('pages.feed.refreshRateValue', {
-            seconds: feed?.refreshRateSeconds,
-          })}
-        </CategoryText>
-        <CategoryText
-          paddingRight="6"
-          paddingBottom="0"
-          title={t('pages.feed.createdAtLabel')}
-        >
-          {feed?.createdAt}
+          </CategoryText>
+          <CategoryText
+            paddingRight="6"
+            paddingBottom="6"
+            title={t('pages.feed.refreshRateLabel')}
+          >
+            {t('pages.feed.refreshRateValue', {
+              seconds: feed?.refreshRateSeconds,
+            })}
+          </CategoryText>
+          <CategoryText
+            paddingRight="6"
+            paddingBottom="0"
+            title={t('pages.feed.createdAtLabel')}
+          >
+            {feed?.createdAt}
 
-        </CategoryText>
-      </Flex>
+          </CategoryText>
+        </Flex>
+        <Button as={Link} to={feedId} rightIcon={<ExternalLinkIcon />}>Customize</Button>
+      </Stack>
       {/* <Divider /> */}
       <Stack>
-        <Stack spacing={6}>
+        <Stack spacing={5}>
           <Heading as="h3" size="md" fontWeight="medium">
             {t('features.feed.components.sidebar.settings')}
           </Heading>
