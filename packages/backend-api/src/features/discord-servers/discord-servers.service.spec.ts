@@ -9,6 +9,7 @@ import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import { FeedsModule } from '../feeds/feeds.module';
 import { FeedsService } from '../feeds/feeds.service';
 import { DiscordServersService } from './discord-servers.service';
+import { DiscordServerChannel } from './types/DiscordServerChannel.type';
 
 describe('DiscordServersService', () => {
   let service: DiscordServersService;
@@ -128,6 +129,29 @@ describe('DiscordServersService', () => {
         .mockRejectedValue(new Error('Unhandled error'));
 
       await expect(service.getServer('server-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getChannelsOfServer', () => {
+    it('returns the channels from Discord', async () => {
+      const serverId = 'server-id';
+      const mockChannels: DiscordServerChannel[] = [
+        {
+          id: 'id-1',
+          name: 'channel-1',
+        },
+        {
+          id: 'id-2',
+          name: 'channel-2',
+        },
+      ];
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockResolvedValue(mockChannels);
+
+      const channels = await service.getChannelsOfServer(serverId);
+
+      expect(channels).toEqual(mockChannels);
     });
   });
 });

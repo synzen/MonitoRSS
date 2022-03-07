@@ -4,6 +4,7 @@ import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { FeedsService } from '../feeds/feeds.service';
 import { DetailedFeed } from './types/DetailedFeed.type';
+import { DiscordServerChannel } from './types/DiscordServerChannel.type';
 
 @Injectable()
 export class DiscordServersService {
@@ -52,5 +53,14 @@ export class DiscordServersService {
 
       throw err;
     }
+  }
+
+  async getChannelsOfServer(serverId: string) {
+    const channels: DiscordServerChannel[] =
+      await this.discordApiService.executeBotRequest(
+        `/guilds/${serverId}/channels`,
+      );
+
+    return channels;
   }
 }

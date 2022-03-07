@@ -7,6 +7,7 @@ import { GetServerFeedsInputDto } from './dto/GetServerFeedsInput.dto';
 import { GetServerFeedsOutputDto } from './dto/GetServerFeedsOutput.dto';
 import { BotHasServerGuard } from './guards/BotHasServer.guard';
 import { UserManagesServerGuard } from './guards/UserManagesServer.guard';
+import { GetServerChannelsOutputDto } from './dto/GetServerChannelsOutput.dto';
 
 @Controller('discord-servers')
 @UseGuards(DiscordOAuth2Guard)
@@ -43,5 +44,18 @@ export class DiscordServersController {
       })),
       total: totalFeeds,
     };
+  }
+
+  @Get(':serverId/channels')
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getServerChannels(
+    @Param('serverId') serverId: string,
+  ): Promise<GetServerChannelsOutputDto> {
+    const channels = await this.discordServersService.getChannelsOfServer(
+      serverId,
+    );
+
+    return GetServerChannelsOutputDto.fromEntities(channels);
   }
 }

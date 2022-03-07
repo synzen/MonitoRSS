@@ -1,3 +1,4 @@
+import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
 import { DiscordUsersController } from './discord-users.controller';
 import { GetMeOutputDto } from './dto';
 import { PartialUserGuildFormatted } from './types/PartialUserGuild.type';
@@ -8,6 +9,17 @@ describe('DiscordUsersController', () => {
     getUser: jest.fn(),
     getGuilds: jest.fn(),
   };
+  const discordAccessToken: SessionAccessToken = {
+    access_token: 'abc',
+    discord: {
+      id: '123',
+    },
+    expiresAt: 1,
+    expires_in: 3600,
+    refresh_token: 'def',
+    scope: 'guilds',
+    token_type: 'Bearer',
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -16,7 +28,6 @@ describe('DiscordUsersController', () => {
 
   describe('getMe', () => {
     it('returns correctly', async () => {
-      const discordAccessToken = 'token';
       const discordUser = {
         id: 'id',
         username: 'username',
@@ -47,7 +58,6 @@ describe('DiscordUsersController', () => {
       );
     });
     it('returns correctly without supporter', async () => {
-      const discordAccessToken = 'token';
       const discordUser = {
         id: 'id',
         username: 'username',
@@ -69,7 +79,6 @@ describe('DiscordUsersController', () => {
 
   describe('getMyServers', () => {
     it('returns the response correctly', async () => {
-      const discordAccessToken = 'token';
       const discordGuilds: PartialUserGuildFormatted[] = [
         {
           id: 'guild_id',

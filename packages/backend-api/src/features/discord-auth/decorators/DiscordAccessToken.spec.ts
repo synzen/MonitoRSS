@@ -32,6 +32,6 @@ describe('DiscordAccessToken decorator', () => {
     mockedGetAccessTokenFromRequest.mockReturnValue(storedAccessToken as never);
     const accessToken = discordAccessTokenFactory(context, context);
 
-    expect(accessToken).toBe(storedAccessToken.access_token);
+    expect(accessToken).toBe(storedAccessToken);
   });
 });
