@@ -10,17 +10,18 @@ import {
   useBreakpointValue,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import RouteParams from '../types/RouteParams';
 import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
 import { FeedsTable } from '@/features/feed/components/FeedsTable';
+import { useDiscordServerChannels } from '@/features/discordServers';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
-  const { t } = useTranslation();
   const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
   const [focusedFeedId, setFocusedFeedId] = useState('');
+  // Pre-fetch channels
+  useDiscordServerChannels({ serverId });
 
   return (
     <Flex height="100%">

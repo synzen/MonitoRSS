@@ -59,6 +59,7 @@ const handlers = [
   }),
 
   rest.get('/api/v1/discord-servers/:serverId/channels', (req, res, ctx) => res(
+    ctx.delay(1000),
     ctx.json<GetServerChannelsOutput>({
       total: mockDiscordChannels.length,
       results: mockDiscordChannels,

@@ -22,6 +22,7 @@ import { RefreshButton } from '../RefreshButton';
 import RouteParams from '@/types/RouteParams';
 import { SettingsForm } from './SettingsForm';
 import { ErrorAlert } from '@/components/ErrorAlert';
+import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 
 interface Props {
   feedId?: string;
@@ -105,7 +106,12 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
             paddingBottom="6"
             title={t('pages.feed.channelLabel')}
           >
-            {feed?.channel}
+            {feed?.channel && (
+            <DiscordChannelName
+              channelId={feed.channel}
+              serverId={serverId}
+            />
+            )}
 
           </CategoryText>
           <CategoryText

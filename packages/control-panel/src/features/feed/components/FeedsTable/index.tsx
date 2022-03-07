@@ -24,6 +24,7 @@ import { debounce } from 'lodash';
 import { useFeeds } from '../../hooks';
 import { Feed } from '../../types';
 import { Loading } from '@/components';
+import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 
 interface Props {
   serverId?: string
@@ -96,6 +97,11 @@ export const FeedsTable: React.FC<Props> = ({
       {
         Header: t('pages.feeds.tableChannel') as string,
         accessor: 'channel',
+        Cell: ({
+          cell: {
+            value,
+          },
+        }) => <DiscordChannelName serverId={serverId} channelId={value} />,
       },
     ],
     [],
