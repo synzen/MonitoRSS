@@ -55,7 +55,8 @@ export const FeedsTable: React.FC<Props> = ({
     status,
     error,
     setOffset,
-    isFetchingNewContent,
+    isFetchingNewPage,
+    isFetchingDifferentServer,
     setSearch,
   } = useFeeds({
     serverId,
@@ -151,7 +152,7 @@ export const FeedsTable: React.FC<Props> = ({
     setSearch(value);
   }, 500);
 
-  if (status === 'loading') {
+  if (status === 'loading' || isFetchingDifferentServer) {
     return (
       <Center width="100%" height="100%">
         <Loading size="lg" />
@@ -264,7 +265,7 @@ export const FeedsTable: React.FC<Props> = ({
             icon={<ChevronLeftIcon />}
             aria-label="Previous page"
             onClick={previousPage}
-            isDisabled={isFetchingNewContent || !canPreviousPage}
+            isDisabled={isFetchingNewPage || !canPreviousPage}
           />
           <Flex alignItems="center">
             <Text>{pageIndex + 1}</Text>
@@ -275,7 +276,7 @@ export const FeedsTable: React.FC<Props> = ({
             icon={<ChevronRightIcon />}
             aria-label="Next page"
             onClick={nextPage}
-            disabled={isFetchingNewContent || !canNextPage}
+            disabled={isFetchingNewPage || !canNextPage}
           />
         </ButtonGroup>
       </Flex>
