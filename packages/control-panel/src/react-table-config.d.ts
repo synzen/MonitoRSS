@@ -17,7 +17,7 @@ declare module 'react-table' {
 
   export interface TableInstance<D extends object = {}>
     extends UsePaginationInstanceProps<D>,
-    UseGlobalFiltersInstanceProps<D>, {}
+    UseGlobalFiltersInstanceProps<D> {}
 
   export interface TableState<D extends object = {}>
     extends UsePaginationState<D>,
