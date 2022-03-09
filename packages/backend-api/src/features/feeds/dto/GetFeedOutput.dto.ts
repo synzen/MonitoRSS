@@ -1,4 +1,4 @@
-import { FeedWithRefreshRate } from '../types/FeedWithRefreshRate';
+import { DetailedFeed } from '../types/detailed-feed.type';
 
 export enum FeedEmbedTimestamp {
   ARTICLE = 'article',
@@ -60,7 +60,7 @@ interface FeedOutputDto {
 export class GetFeedOutputDto {
   result: FeedOutputDto;
 
-  static fromEntity(feed: FeedWithRefreshRate): GetFeedOutputDto {
+  static fromEntity(feed: DetailedFeed): GetFeedOutputDto {
     const resultSoFar: GetFeedOutputDto = {
       result: {
         id: feed._id.toHexString(),

@@ -1,13 +1,13 @@
 import { createTestFeed } from '../../../test/data/feeds.test-data';
 import { FeedStatus } from '../types/FeedStatus.type';
-import { FeedWithRefreshRate } from '../types/FeedWithRefreshRate';
+import { DetailedFeed } from '../types/detailed-feed.type';
 import { GetFeedOutputDto } from './GetFeedOutput.dto';
 
 describe('GetFeedOutputDto', () => {
   describe('fromEntity', () => {
     it('returns the formatted dto object', () => {
       const feed = createTestFeed();
-      const feedWithRefreshRate: FeedWithRefreshRate = {
+      const feedWithRefreshRate: DetailedFeed = {
         ...feed,
         refreshRateSeconds: 10,
         status: FeedStatus.OK,
@@ -69,7 +69,7 @@ describe('GetFeedOutputDto', () => {
 
     it('does not add the webhook object if there is no webhook object', () => {
       const feed = createTestFeed({});
-      const feedWithRefreshRate: FeedWithRefreshRate = {
+      const feedWithRefreshRate: DetailedFeed = {
         ...feed,
         refreshRateSeconds: 10,
         status: FeedStatus.OK,
@@ -82,7 +82,7 @@ describe('GetFeedOutputDto', () => {
     });
     it('does not add the webhook object if there is no webhook id', () => {
       const feed = createTestFeed({});
-      const feedWithRefreshRate: FeedWithRefreshRate = {
+      const feedWithRefreshRate: DetailedFeed = {
         ...feed,
         refreshRateSeconds: 10,
         status: FeedStatus.OK,

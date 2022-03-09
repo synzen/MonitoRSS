@@ -2,8 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { Feed } from '../feeds/entities/Feed.entity';
 import { FeedsService } from '../feeds/feeds.service';
-import { DetailedFeed } from './types/DetailedFeed.type';
+import { FeedStatus } from '../feeds/types/FeedStatus.type';
 import { DiscordServerChannel } from './types/DiscordServerChannel.type';
 
 @Injectable()
@@ -20,7 +21,7 @@ export class DiscordServersService {
       limit: number;
       offset: number;
     },
-  ): Promise<DetailedFeed[]> {
+  ): Promise<(Feed & { status: FeedStatus })[]> {
     return this.feedsService.getServerFeeds(serverId, options);
   }
 

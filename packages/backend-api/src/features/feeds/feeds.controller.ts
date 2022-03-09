@@ -19,7 +19,7 @@ import { UpdateFeedOutputDto } from './dto/UpdateFeedOutput.dto';
 import { FeedsService } from './feeds.service';
 import { UserManagesFeedServerGuard } from './guards/UserManagesFeedServer.guard';
 import { GetFeedPipe } from './pipes/GetFeed.pipe';
-import { FeedWithRefreshRate } from './types/FeedWithRefreshRate';
+import { DetailedFeed } from './types/detailed-feed.type';
 import { SupportersService } from '../supporters/supporters.service';
 import { DiscordWebhooksService } from '../discord-webhooks/discord-webhooks.service';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
@@ -37,7 +37,7 @@ export class FeedsController {
   @Get(':feedId')
   @UseGuards(UserManagesFeedServerGuard)
   async getFeed(
-    @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
   ): Promise<GetFeedOutputDto> {
     return GetFeedOutputDto.fromEntity(feed);
   }
@@ -45,7 +45,7 @@ export class FeedsController {
   @Get(':feedId/refresh')
   @UseGuards(UserManagesFeedServerGuard)
   async refreshFeed(
-    @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
   ): Promise<GetFeedOutputDto> {
     const updatedFeed = await this.feedsService.refresh(feed._id);
 
@@ -55,7 +55,7 @@ export class FeedsController {
   @Patch(':feedId')
   @UseGuards(UserManagesFeedServerGuard)
   async updateFeed(
-    @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
     @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto,
   ): Promise<UpdateFeedOutputDto> {
     if (updateFeedInput.webhookId) {
@@ -89,7 +89,7 @@ export class FeedsController {
   @UseInterceptors(HttpCacheInterceptor)
   @CacheTTL(60 * 5)
   async getFeedArticles(
-    @Param('feedId', GetFeedPipe) feed: FeedWithRefreshRate,
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
   ): Promise<GetFeedArticlesOutputDto> {
     const { articles } = await this.feedFetcherService.fetchFeed(feed.url, {
       formatTables: feed.formatTables,

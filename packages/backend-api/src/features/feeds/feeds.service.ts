@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Feed, FeedDocument, FeedModel } from './entities/Feed.entity';
-import { FeedWithRefreshRate } from './types/FeedWithRefreshRate';
+import { DetailedFeed } from './types/detailed-feed.type';
 import { Types, FilterQuery } from 'mongoose';
 import _ from 'lodash';
 import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
@@ -26,7 +26,7 @@ export class FeedsService {
     @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
   ) {}
 
-  async getFeed(feedId: string): Promise<FeedWithRefreshRate | null> {
+  async getFeed(feedId: string): Promise<DetailedFeed | null> {
     const feeds = await this.findFeeds(
       {
         _id: new Types.ObjectId(feedId),
@@ -53,7 +53,7 @@ export class FeedsService {
       limit: number;
       offset: number;
     },
-  ): Promise<FeedWithRefreshRate[]> {
+  ): Promise<DetailedFeed[]> {
     const feeds = await this.findFeeds(
       {
         guild: serverId,
@@ -95,7 +95,7 @@ export class FeedsService {
   async updateOne(
     feedId: string | Types.ObjectId,
     input: UpdateFeedInput,
-  ): Promise<FeedWithRefreshRate> {
+  ): Promise<DetailedFeed> {
     const strippedUpdateObject: UpdateFeedInput = _.omitBy(
       input,
       _.isUndefined,
@@ -141,7 +141,7 @@ export class FeedsService {
     return foundFeeds[0];
   }
 
-  async refresh(feedId: string | Types.ObjectId): Promise<FeedWithRefreshRate> {
+  async refresh(feedId: string | Types.ObjectId): Promise<DetailedFeed> {
     const feed = await this.feedModel.findById(feedId).lean();
 
     if (!feed) {
@@ -170,7 +170,7 @@ export class FeedsService {
       limit: number;
       skip: number;
     },
-  ): Promise<FeedWithRefreshRate[]> {
+  ): Promise<DetailedFeed[]> {
     const match = {
       ...filter,
     };
