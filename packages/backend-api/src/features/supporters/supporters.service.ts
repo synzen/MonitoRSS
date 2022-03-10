@@ -2,17 +2,40 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Supporter, SupporterModel } from './entities/supporter.entity';
 import dayjs from 'dayjs';
-import { PatronStatus } from './entities/patron.entity';
+import { Patron } from './entities/patron.entity';
 import { ConfigService } from '@nestjs/config';
 import { PipelineStage } from 'mongoose';
+import { PatronsService } from './patrons.service';
+
+interface SupporterBenefits {
+  isSupporter: boolean;
+  maxFeeds: number;
+  guilds: string[];
+  maxGuilds: number;
+  expireAt?: Date;
+}
+
+interface ServerBenefits {
+  hasSupporter: boolean;
+  maxFeeds: number;
+  serverId: string;
+  webhooks: boolean;
+}
 
 @Injectable()
 export class SupportersService {
+  defaultMaxFeeds: number;
+
   constructor(
     @InjectModel(Supporter.name)
     private readonly supporterModel: SupporterModel,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly patronsService: PatronsService,
+  ) {
+    this.defaultMaxFeeds = this.configService.get<number>(
+      'defaultMaxFeeds',
+    ) as number;
+  }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
@@ -20,140 +43,116 @@ export class SupportersService {
         from: 'patrons',
         localField: '_id',
         foreignField: 'discord',
-        as: 'patron',
-      },
-    },
-    {
-      $match: {
-        $or: [
-          // No patron
-          {
-            expireAt: {
-              $exists: false,
-            },
-            'patron.0': {
-              $exists: false,
-            },
-          },
-          {
-            expireAt: {
-              $exists: true,
-              $gte: dayjs().toDate(),
-            },
-          },
-          // Has patron
-          {
-            'patron.0.status': PatronStatus.ACTIVE,
-            'patron.0.pledge': {
-              $gt: 0,
-            },
-          },
-          {
-            'patron.0.status': PatronStatus.DECLINED,
-            'patron.0.lastCharge': {
-              $exists: true,
-              $gt: dayjs().subtract(4, 'days').toDate(),
-            },
-          },
-        ],
+        as: 'patrons',
       },
     },
   ];
 
-  async getBenefitsOfDiscordUser(discordId: string) {
-    const aggregate: Array<{
-      maxFeeds?: number;
-      guilds?: string[];
-      maxGuilds?: number;
-      expireAt?: Date;
-    }> = await this.supporterModel.aggregate([
+  async getBenefitsOfDiscordUser(
+    discordId: string,
+  ): Promise<SupporterBenefits> {
+    const aggregate: Array<
+      Supporter & {
+        patrons: Patron[];
+      }
+    > = await this.supporterModel.aggregate([
       {
         $match: {
           _id: discordId,
         },
       },
       ...SupportersService.SUPPORTER_PATRON_PIPELINE,
+    ]);
+
+    if (!aggregate.length) {
+      return {
+        isSupporter: false,
+        maxFeeds: this.defaultMaxFeeds,
+        guilds: [],
+        maxGuilds: 0,
+      };
+    }
+
+    const benefits = await this.getBenefitsFromSupporter(aggregate[0]);
+
+    return {
+      isSupporter: benefits.isSupporter,
+      maxFeeds: benefits.maxFeeds,
+      guilds: aggregate[0].guilds,
+      maxGuilds: benefits.maxGuilds,
+      expireAt: aggregate[0].expireAt,
+    };
+  }
+
+  async getBenefitsOfServers(serverIds: string[]): Promise<ServerBenefits[]> {
+    const allSupportersWithGuild: Array<
+      Omit<Supporter, 'guilds'> & {
+        patrons: Patron[];
+        guilds: string; // Unwinded to actually be guild IDs
+        guildId: string; // An alias to unwinded "guilds" for readability
+      }
+    > = await this.supporterModel.aggregate([
       {
-        $project: {
-          _id: 0,
-          maxFeeds: 1,
-          guilds: 1,
-          maxGuilds: 1,
-          expireAt: 1,
+        $match: {
+          guilds: {
+            $in: serverIds,
+          },
+        },
+      },
+      ...SupportersService.SUPPORTER_PATRON_PIPELINE,
+      {
+        $unwind: '$guilds',
+      },
+      {
+        $match: {
+          guilds: {
+            $in: serverIds,
+          },
+        },
+      },
+      {
+        $addFields: {
+          guildId: '$guilds',
         },
       },
     ]);
 
-    const defaultMaxFeeds = this.configService.get<number>(
-      'defaultMaxFeeds',
-    ) as number;
+    const benefitsMappedBySeverIds = new Map<
+      string,
+      ReturnType<typeof this.getBenefitsFromSupporter>[]
+    >();
 
-    return {
-      isSupporter: aggregate.length > 0,
-      maxFeeds: aggregate[0]?.maxFeeds ?? defaultMaxFeeds,
-      guilds: aggregate[0]?.guilds ?? [],
-      maxGuilds: aggregate[0]?.maxGuilds ?? 1,
-      expireAt: aggregate[0]?.expireAt,
-    };
-  }
+    for (const supporter of allSupportersWithGuild) {
+      const { guildId } = supporter;
+      const benefits = this.getBenefitsFromSupporter(supporter);
+      const benefitsSoFar = benefitsMappedBySeverIds.get(guildId);
 
-  async getBenefitsOfServers(serverIds: string[]) {
-    const aggregate: Array<{ maxFeeds: number; guilds: string[] }> =
-      await this.supporterModel.aggregate([
-        {
-          $match: {
-            guilds: {
-              $in: serverIds,
-            },
-          },
-        },
-        ...SupportersService.SUPPORTER_PATRON_PIPELINE,
-        {
-          $project: {
-            _id: 0,
-            maxFeeds: 1,
-            guilds: 1,
-          },
-        },
-      ]);
-
-    const maxFeedsCounter = new Map<string, number>();
-    const serversWithSupporters = new Set<string>();
-
-    const defaultMaxFeeds = this.configService.get<number>(
-      'defaultMaxFeeds',
-    ) as number;
-
-    if (defaultMaxFeeds == null) {
-      throw new Error('defaultMaxFeeds is not set');
+      if (!benefitsSoFar) {
+        benefitsMappedBySeverIds.set(guildId, [benefits]);
+      } else {
+        benefitsSoFar.push(benefits);
+      }
     }
 
-    // Mark the guilds that are supported by a supporter
-    aggregate.forEach(({ guilds }) => {
-      guilds.forEach((guildId) => {
-        serversWithSupporters.add(guildId);
-      });
+    return serverIds.map((serverId) => {
+      const serverBenefits = benefitsMappedBySeverIds.get(serverId);
+
+      if (!serverBenefits?.length) {
+        return {
+          hasSupporter: false,
+          maxFeeds: this.defaultMaxFeeds,
+          serverId,
+          webhooks: false,
+        };
+      }
+
+      return {
+        hasSupporter: serverBenefits.some((b) => b.isSupporter),
+        maxFeeds: Math.max(...serverBenefits.map((b) => b.maxFeeds)),
+        serverId,
+        webhooks: serverBenefits.some((b) => b.webhooks),
+      };
     });
-
-    // Calculate the max feeds for each guild
-    serverIds.forEach((serverId) => {
-      maxFeedsCounter.set(serverId, defaultMaxFeeds);
-
-      aggregate.forEach(({ guilds, maxFeeds }) => {
-        const currentMaxFeeds = maxFeedsCounter.get(serverId) as number;
-
-        if (guilds.includes(serverId)) {
-          maxFeedsCounter.set(serverId, Math.max(maxFeeds, currentMaxFeeds));
-        }
-      });
-    });
-
-    return serverIds.map((serverId) => ({
-      hasSupporter: serversWithSupporters.has(serverId),
-      maxFeeds: maxFeedsCounter.get(serverId) as number,
-      serverId,
-      webhooks: serversWithSupporters.has(serverId),
-    }));
   }
 
   async serverCanUseWebhooks(serverId: string) {
@@ -186,5 +185,66 @@ export class SupportersService {
     }
 
     return updatedSupporter;
+  }
+
+  getBenefitsFromSupporter(supporter: {
+    maxFeeds?: number;
+    maxGuilds?: number;
+    patrons: Array<{
+      status: Patron['status'];
+      pledge: number;
+      pledgeLifetime: number;
+    }>;
+  }) {
+    if (!this.isValidSupporter(supporter)) {
+      return {
+        isSupporter: false,
+        maxFeeds: this.defaultMaxFeeds,
+        maxGuilds: 0,
+        webhooks: false,
+      };
+    }
+
+    const { maxFeeds: patronMaxFeeds, maxGuilds: patronMaxGuilds } =
+      this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
+
+    return {
+      isSupporter: true,
+      maxFeeds: Math.max(
+        supporter.maxFeeds ?? this.defaultMaxFeeds,
+        patronMaxFeeds,
+      ),
+      maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
+      webhooks: true,
+    };
+  }
+
+  isValidSupporter(
+    supporter?: {
+      expireAt?: Date;
+    } & {
+      patrons: {
+        status: Patron['status'];
+        pledge: number;
+      }[];
+    },
+  ) {
+    if (!supporter) {
+      return false;
+    }
+
+    const { expireAt, patrons } = supporter;
+
+    if (!expireAt) {
+      if (!patrons.length) {
+        return true;
+      }
+
+      return patrons.some((patron) =>
+        this.patronsService.isValidPatron(patron),
+      );
+    }
+
+    return dayjs(expireAt).isAfter(dayjs());
   }
 }
