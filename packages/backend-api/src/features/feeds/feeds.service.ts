@@ -7,6 +7,7 @@ import _ from 'lodash';
 import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
 import { FeedStatus } from './types/FeedStatus.type';
 import dayjs from 'dayjs';
+import { FeedSchedulingService } from './feed-scheduling.service';
 
 interface UpdateFeedInput {
   text?: string;
@@ -24,6 +25,7 @@ export class FeedsService {
   constructor(
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
+    private readonly feedSchedulingService: FeedSchedulingService,
   ) {}
 
   async getFeed(feedId: string): Promise<DetailedFeed | null> {
@@ -218,13 +220,22 @@ export class FeedsService {
       },
     ]);
 
-    const withStatuses = feeds.map((feed) => ({
+    const refreshRates =
+      await this.feedSchedulingService.getRefreshRatesOfFeeds(
+        feeds.map((feed) => ({
+          _id: feed._id.toHexString(),
+          guild: feed.guild,
+          url: feed.url,
+        })),
+      );
+
+    const withStatuses = feeds.map((feed, index) => ({
       ...feed,
       status: this.isValidFailRecord(feed.failRecord || null)
         ? FeedStatus.FAILED
         : FeedStatus.OK,
       failReason: feed.failRecord?.reason,
-      refreshRateSeconds: 10,
+      refreshRateSeconds: refreshRates[index],
     }));
 
     withStatuses.forEach((feed) => {

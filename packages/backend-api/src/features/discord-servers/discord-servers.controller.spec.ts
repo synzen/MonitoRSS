@@ -1,8 +1,8 @@
 import { createTestFeed } from '../../test/data/feeds.test-data';
+import { Feed } from '../feeds/entities/Feed.entity';
 import { FeedStatus } from '../feeds/types/FeedStatus.type';
 import { DiscordServersController } from './discord-servers.controller';
 import { DiscordServersService } from './discord-servers.service';
-import { DetailedFeed } from './types/DetailedFeed.type';
 
 describe('DiscordServersController', () => {
   let controller: DiscordServersController;
@@ -19,7 +19,7 @@ describe('DiscordServersController', () => {
 
   describe('getServerFeeds', () => {
     it('returns the response correctly formatted', async () => {
-      const mockFeeds: DetailedFeed[] = [
+      const mockFeeds: (Feed & { status: FeedStatus })[] = [
         {
           ...createTestFeed(),
           status: FeedStatus.OK,

@@ -109,16 +109,19 @@ describe('SupportersService', () => {
       const result = await supportersService.getBenefitsOfServers(serverIds);
       expect(result).toEqual([
         {
+          hasSupporter: false,
           maxFeeds: defaultMaxFeeds,
           serverId: serverIds[0],
           webhooks: false,
         },
         {
+          hasSupporter: false,
           maxFeeds: defaultMaxFeeds,
           serverId: serverIds[1],
           webhooks: false,
         },
         {
+          hasSupporter: false,
           maxFeeds: defaultMaxFeeds,
           serverId: serverIds[2],
           webhooks: false,
@@ -177,7 +180,7 @@ describe('SupportersService', () => {
         expect(result[0].maxFeeds).toEqual(supporter.maxFeeds);
       });
 
-      it('returns webhook false for a supporter that expired', async () => {
+      it('returns webhook and hasSupporter false for a supporter that expired', async () => {
         const supporter = await createTestSupporter({
           _id: userDiscordId,
           guilds: [serverId],
@@ -189,24 +192,52 @@ describe('SupportersService', () => {
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
 
-        expect(result[0].webhooks).toBeFalsy();
+        expect(result[0]).toEqual(
+          expect.objectContaining({
+            hasSupporter: false,
+            webhooks: false,
+          }),
+        );
       });
     });
     describe('when there is a patron', () => {
-      it('returns the max feeds of an active patron', async () => {
-        const supporterToInsert = createTestSupporter({
+      let supporterToInsert: Supporter;
+
+      beforeEach(async () => {
+        supporterToInsert = createTestSupporter({
           _id: userDiscordId,
           guilds: [serverId],
           maxGuilds: 10,
           maxFeeds: 10,
         });
+
+        await supporterModel.create(supporterToInsert);
+      });
+
+      it('returns hasSupporter: true and webhooks: true', async () => {
         const patronToInsert = createTestPatron({
           discord: userDiscordId,
           status: PatronStatus.ACTIVE,
           pledge: 100,
         });
 
-        await supporterModel.create(supporterToInsert);
+        await patronModel.create(patronToInsert);
+
+        const result = await supportersService.getBenefitsOfServers([serverId]);
+        expect(result[0]).toEqual(
+          expect.objectContaining({
+            hasSupporter: true,
+            webhooks: true,
+          }),
+        );
+      });
+      it('returns the max feeds of an active patron', async () => {
+        const patronToInsert = createTestPatron({
+          discord: userDiscordId,
+          status: PatronStatus.ACTIVE,
+          pledge: 100,
+        });
+
         await patronModel.create(patronToInsert);
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
@@ -214,12 +245,6 @@ describe('SupportersService', () => {
       });
 
       it('returns the max feeds of a declined patron within the grace period', async () => {
-        const supporterToInsert = createTestSupporter({
-          _id: userDiscordId,
-          guilds: [serverId],
-          maxGuilds: 10,
-          maxFeeds: 10,
-        });
         const patronToInsert = createTestPatron({
           discord: userDiscordId,
           status: PatronStatus.DECLINED,
@@ -227,7 +252,6 @@ describe('SupportersService', () => {
           lastCharge: dayjs().subtract(2, 'days').toDate(),
         });
 
-        await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
@@ -235,12 +259,6 @@ describe('SupportersService', () => {
       });
 
       it('does not return the supporter max feeds of a long-expired declined patron', async () => {
-        const supporterToInsert = createTestSupporter({
-          _id: userDiscordId,
-          guilds: [serverId],
-          maxGuilds: 10,
-          maxFeeds: 10,
-        });
         const patronToInsert = createTestPatron({
           discord: userDiscordId,
           status: PatronStatus.DECLINED,
@@ -248,7 +266,6 @@ describe('SupportersService', () => {
           lastCharge: dayjs().subtract(6, 'days').toDate(),
         });
 
-        await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
@@ -256,19 +273,12 @@ describe('SupportersService', () => {
       });
 
       it('does not return supporter max feeds of a former patron', async () => {
-        const supporterToInsert = createTestSupporter({
-          _id: userDiscordId,
-          guilds: [serverId],
-          maxGuilds: 10,
-          maxFeeds: 10,
-        });
         const patronToInsert = createTestPatron({
           discord: userDiscordId,
           status: PatronStatus.FORMER,
           pledge: 100,
         });
 
-        await supporterModel.create(supporterToInsert);
         await patronModel.create(patronToInsert);
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
@@ -384,6 +394,7 @@ describe('SupportersService', () => {
       const serverId = 'server-id';
       jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
         {
+          hasSupporter: true,
           serverId,
           maxFeeds: 10,
           webhooks: true,
@@ -397,6 +408,7 @@ describe('SupportersService', () => {
       const serverId = 'server-id';
       jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
         {
+          hasSupporter: false,
           serverId,
           maxFeeds: 10,
           webhooks: false,

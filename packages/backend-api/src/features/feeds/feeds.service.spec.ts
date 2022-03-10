@@ -15,20 +15,33 @@ import {
 } from './entities/fail-record.entity';
 import { createTestFailRecord } from '../../test/data/failrecords.test-data';
 import { FeedStatus } from './types/FeedStatus.type';
+import { FeedSchedulingService } from './feed-scheduling.service';
+import { FeedScheduleFeature } from './entities/feed-schedule.entity';
 
 describe('FeedsService', () => {
   let service: FeedsService;
   let feedModel: FeedModel;
   let failRecordModel: FailRecordModel;
+  const feedSchedulingService: FeedSchedulingService = {
+    getRefreshRatesOfFeeds: jest.fn(),
+  } as never;
 
   beforeAll(async () => {
-    const { init } = await setupIntegrationTests({
-      providers: [FeedsService],
+    const { uncompiledModule, init } = await setupIntegrationTests({
+      providers: [FeedsService, FeedSchedulingService],
       imports: [
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([FeedFeature, FailRecordFeature]),
+        MongooseModule.forFeature([
+          FeedFeature,
+          FailRecordFeature,
+          FeedScheduleFeature,
+        ]),
       ],
     });
+
+    uncompiledModule
+      .overrideProvider(FeedSchedulingService)
+      .useValue(feedSchedulingService);
 
     const { module } = await init();
 
@@ -37,6 +50,13 @@ describe('FeedsService', () => {
     failRecordModel = module.get<FailRecordModel>(
       getModelToken(FailRecord.name),
     );
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jest
+      .spyOn(feedSchedulingService, 'getRefreshRatesOfFeeds')
+      .mockResolvedValue(new Array(500).fill(15));
   });
 
   afterEach(async () => {

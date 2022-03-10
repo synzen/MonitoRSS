@@ -118,6 +118,7 @@ export class SupportersService {
       ]);
 
     const maxFeedsCounter = new Map<string, number>();
+    const serversWithSupporters = new Set<string>();
 
     const defaultMaxFeeds = this.configService.get<number>(
       'defaultMaxFeeds',
@@ -127,27 +128,31 @@ export class SupportersService {
       throw new Error('defaultMaxFeeds is not set');
     }
 
+    // Mark the guilds that are supported by a supporter
+    aggregate.forEach(({ guilds }) => {
+      guilds.forEach((guildId) => {
+        serversWithSupporters.add(guildId);
+      });
+    });
+
+    // Calculate the max feeds for each guild
     serverIds.forEach((serverId) => {
       maxFeedsCounter.set(serverId, defaultMaxFeeds);
 
-      aggregate.forEach((aggregateResult) => {
+      aggregate.forEach(({ guilds, maxFeeds }) => {
         const currentMaxFeeds = maxFeedsCounter.get(serverId) as number;
 
-        if (aggregateResult.guilds.includes(serverId)) {
-          maxFeedsCounter.set(
-            serverId,
-            Math.max(aggregateResult.maxFeeds, currentMaxFeeds),
-          );
+        if (guilds.includes(serverId)) {
+          maxFeedsCounter.set(serverId, Math.max(maxFeeds, currentMaxFeeds));
         }
       });
     });
 
     return serverIds.map((serverId) => ({
+      hasSupporter: serversWithSupporters.has(serverId),
       maxFeeds: maxFeedsCounter.get(serverId) as number,
       serverId,
-      webhooks: aggregate.some((aggregateResult) =>
-        aggregateResult.guilds.includes(serverId),
-      ),
+      webhooks: serversWithSupporters.has(serverId),
     }));
   }
 
