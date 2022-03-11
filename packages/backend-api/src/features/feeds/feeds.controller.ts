@@ -23,6 +23,7 @@ import { DetailedFeed } from './types/detailed-feed.type';
 import { SupportersService } from '../supporters/supporters.service';
 import { DiscordWebhooksService } from '../discord-webhooks/discord-webhooks.service';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
+import _ from 'lodash';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -77,9 +78,17 @@ export class FeedsController {
     let filtersUpdate: Record<string, string[]> | undefined = undefined;
 
     if (updateFeedInput.filters) {
+      const inputFilters = _.uniqBy(
+        updateFeedInput.filters,
+        (data) => data.category + data.value,
+      ).map((data) => ({
+        category: data.category,
+        value: data.value.trim(),
+      }));
+
       filtersUpdate = {};
 
-      for (const { category, value } of updateFeedInput.filters) {
+      for (const { category, value } of inputFilters) {
         if (!filtersUpdate[category]) {
           filtersUpdate[category] = [];
         }

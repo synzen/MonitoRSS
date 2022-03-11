@@ -6,7 +6,8 @@ export interface UpdateFeedInput {
   feedId: string
   details: {
     text?: Feed['text'],
-    webhookId?: string
+    webhookId?: string,
+    filters?: Array<{ category: string, value: string }>
   }
 }
 

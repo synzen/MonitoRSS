@@ -41,6 +41,10 @@ export const FeedSchema = object({
 
   // Extra details
   failReason: string().optional(),
+  filters: array(object({
+    category: string().required(),
+    value: string().required(),
+  })).required(),
   refreshRateSeconds: number().required(),
   text: string().defined(),
   embeds: array(FeedEmbed).required(),

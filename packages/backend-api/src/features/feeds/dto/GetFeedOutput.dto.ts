@@ -128,6 +128,10 @@ export class GetFeedOutputDto {
       });
     });
 
+    filters.sort((a, b) => {
+      return a.category.localeCompare(b.category);
+    });
+
     return filters;
   }
 }

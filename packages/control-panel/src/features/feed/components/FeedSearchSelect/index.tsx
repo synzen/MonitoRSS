@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ThemedSelect } from '@/components';
 import { useFeeds } from '../../hooks/useFeeds';
 
@@ -9,13 +9,18 @@ interface Props {
 export const FeedSearchSelect: React.FC<Props> = () => {
   const navigate = useNavigate();
   const { serverId, feedId } = useParams();
+  const { pathname } = useLocation();
 
   const { status, data, isFetchingDifferentServer } = useFeeds({ serverId });
 
   const loading = status === 'idle' || status === 'loading' || isFetchingDifferentServer;
 
   const onChangedValue = (newFeedId: string) => {
-    navigate(`/servers/${serverId}/feeds/${newFeedId}`);
+    if (feedId) {
+      navigate(pathname.replace(feedId, newFeedId));
+    } else {
+      navigate(`/servers/${serverId}/feeds/${newFeedId}`);
+    }
   };
 
   return (

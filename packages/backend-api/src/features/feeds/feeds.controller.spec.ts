@@ -81,5 +81,53 @@ describe('FeedsController', () => {
         }),
       );
     });
+
+    it('does not include duplicates', async () => {
+      const updateDto: UpdateFeedInputDto = {
+        filters: [
+          {
+            category: 'title',
+            value: 'title',
+          },
+          {
+            category: 'title',
+            value: 'title',
+          },
+          {
+            category: 'title',
+            value: 'newtitle',
+          },
+        ],
+      };
+
+      await controller.updateFeed(feed, updateDto);
+
+      expect(feedsService.updateOne).toHaveBeenCalledWith(
+        feed._id,
+        expect.objectContaining({
+          filters: { title: ['title', 'newtitle'] },
+        }),
+      );
+    });
+
+    it('trims the values', async () => {
+      const updateDto: UpdateFeedInputDto = {
+        filters: [
+          {
+            category: 'title',
+            value: 'title                          ',
+          },
+        ],
+      };
+
+      await controller.updateFeed(feed, updateDto);
+
+      expect(feedsService.updateOne).toHaveBeenCalledWith(
+        feed._id,
+        expect.objectContaining({
+          filters: { title: ['title'] },
+        }),
+      );
+    });
   });
 });

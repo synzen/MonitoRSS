@@ -106,7 +106,6 @@ describe('GetFeedOutputDto', () => {
     it('returns all values in their own object', () => {
       const feedFilters = {
         title: ['a', 'b'],
-        description: ['c'],
       };
 
       const result = GetFeedOutputDto.getFeedFiltersDto(feedFilters);
@@ -120,9 +119,25 @@ describe('GetFeedOutputDto', () => {
           category: 'title',
           value: 'b',
         },
+      ]);
+    });
+
+    it('returns all values sorted by category', () => {
+      const feedFilters = {
+        title: ['a'],
+        description: ['b'],
+      };
+
+      const result = GetFeedOutputDto.getFeedFiltersDto(feedFilters);
+
+      expect(result).toEqual([
         {
           category: 'description',
-          value: 'c',
+          value: 'b',
+        },
+        {
+          category: 'title',
+          value: 'a',
         },
       ]);
     });

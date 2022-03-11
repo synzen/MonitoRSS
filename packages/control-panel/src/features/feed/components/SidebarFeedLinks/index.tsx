@@ -61,7 +61,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             {t('components.sidebar.feed.message')}
           </SidebarLink>
           <SidebarLink
-            disabled
+            disabled={!feedId}
             icon={FiFilter}
             active={!!feedId && currentPath === paths.FEED_FILTERS}
             onClick={() => onClickNavLink(paths.FEED_FILTERS)}

@@ -28,6 +28,12 @@
       "refreshRateValue": "{{seconds}} seconds",
       "createdAtLabel": "Since"
     },
+    "filters": {
+      "title": "Filters",
+      "tableCategory": "Category",
+      "tableValue": "Value",
+      "removeSelectedFilters": "Remove selected filters"
+    },
     "webhooks": {
       "title": "Webhooks",
       "addNew": "Add New",
@@ -37,6 +43,13 @@
     }
   },
   "components": {
+    "addFilterDialog": {
+      "addButton": "Add Filters",
+      "title": "Add New Filters",
+      "cancel": "Cancel",
+      "save": "Save",
+      "failedToSaveError": "Failed to save filter(s)"
+    },
     "sidebar": {
       "supporterUserTag": "Supporter",
       "regularUserTag": "Regular User",

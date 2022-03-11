@@ -1,13 +1,10 @@
-import { DeleteIcon } from '@chakra-ui/icons';
+/* eslint-disable react/no-unstable-nested-components */
 import {
+  Box,
   Button,
-  FormControl,
-  FormLabel,
+  Checkbox,
+  Flex,
   Heading,
-  HStack,
-  IconButton,
-  Input,
-  Select,
   Stack,
   Table,
   Tbody,
@@ -17,95 +14,220 @@ import {
   Tr,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { DashboardContent, Navbar } from '@/components';
-import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
+import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
+import {
+  Column, useRowSelect, useSortBy, useTable,
+} from 'react-table';
+import { ArrowDownIcon, ArrowUpIcon } from '@chakra-ui/icons';
+import { DashboardContent } from '@/components';
 import RouteParams from '../types/RouteParams';
-
-const sampleFilters = [{
-  key: '1',
-  category: 'title',
-  value: 'My Feed',
-}, {
-  key: '2',
-  category: 'description',
-  value: 'This is a description',
-}, {
-  key: '3',
-  category: 'url',
-  value: 'https://www.example.com',
-}, {
-  key: '4',
-  category: 'title',
-  value: 'My Feed 2',
-}];
+import { useFeed } from '@/features/feed';
+import { AddFilterDialog } from '@/features/feed/components/AddFilterDialog';
+import { useUpdateFeed } from '@/features/feed/hooks/useUpdateFeed';
 
 const FeedFilters: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const {
+    feed, status, error,
+  } = useFeed({
+    feedId,
+  });
+  const { t } = useTranslation();
+  const {
+    mutateAsync,
+    status: updatingStatus,
+  } = useUpdateFeed({ feedId } as { feedId: string });
 
-  const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
-    id: 'feeds',
-    content: 'Feeds',
-    enabled: true,
+  const tableData = useMemo(() => {
+    if (!feed?.filters) {
+      return [];
+    }
+
+    return feed.filters.map((filter) => ({
+      category: filter.category,
+      value: filter.value,
+    }));
+  }, [feed]);
+
+  const columns = useMemo<Column<{ category: string, value: string }>[]>(() => [{
+    Header: t('pages.filters.tableCategory') as string,
+    accessor: 'category',
   }, {
-    id: 'feed',
-    content: feedId,
-    enabled: true,
-  }, {
-    id: 'filters',
-    content: 'Filters',
-    enabled: true,
-  }];
+    Header: t('pages.filters.tableValue') as string,
+    accessor: 'value',
+  }], []);
+
+  const tableInstance = useTable(
+    {
+      columns,
+      data: tableData,
+    },
+    useSortBy,
+    useRowSelect,
+    (hooks) => {
+      hooks.visibleColumns.push((cols) => [
+        // Let's make a column for selection
+        {
+          id: 'selection',
+          // The header can use the table's getToggleAllRowsSelectedProps method
+          // to render a checkbox
+          Header: ({ getToggleAllRowsSelectedProps }) => {
+            const {
+              indeterminate, title, checked, onChange,
+            } = getToggleAllRowsSelectedProps();
+
+            return (
+              <Checkbox
+                isIndeterminate={indeterminate}
+                title={title}
+                isChecked={checked}
+                onChange={onChange}
+              />
+            );
+          },
+          // The cell can use the individual row's getToggleRowSelectedProps method
+          // to the render a checkbox
+          // @ts-ignore
+          Cell: ({ row }) => {
+            const {
+              indeterminate, title, checked, onChange,
+            } = row.getToggleRowSelectedProps();
+
+            return (
+              <Checkbox
+                isIndeterminate={indeterminate}
+                title={title}
+                isChecked={checked}
+                onChange={onChange}
+              />
+            );
+          },
+        },
+        ...cols,
+      ]);
+    },
+  );
+
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    prepareRow,
+    rows,
+    selectedFlatRows,
+  } = tableInstance;
+
+  const onAddFilters = async (data: Array<{ category: string, value: string }>) => {
+    if (!feedId || !feed) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      details: {
+        filters: [
+          ...feed.filters,
+          ...data,
+        ],
+      },
+    });
+  };
+
+  const onRemoveFilters = async () => {
+    if (!feedId || !feed) {
+      return;
+    }
+
+    const newFiltersState = [...feed.filters];
+    const selectedIndexes = selectedFlatRows.map((row) => row.index).sort();
+
+    for (let i = selectedIndexes.length - 1; i >= 0; i -= 1) {
+      newFiltersState.splice(selectedIndexes[i], 1);
+    }
+
+    await mutateAsync({
+      feedId,
+      details: {
+        filters: newFiltersState,
+      },
+    });
+  };
 
   return (
     <Stack>
-      <Navbar breadcrumbItems={breadcrumbItems} />
-      <DashboardContent>
-        <Stack spacing="12">
-          <Stack spacing="4">
-            <Heading size="lg">Add Filter</Heading>
-            <HStack>
-              <FormControl width={250}>
-                <FormLabel htmlFor="filter-category">Category</FormLabel>
-                <Select id="filter-category">
-                  <option>Title</option>
-                  <option>Description</option>
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel htmlFor="filter-value">Value</FormLabel>
-                <Input />
-              </FormControl>
-              <Button alignSelf="flex-end" minWidth="100" colorScheme="blue">
-                Add
+      <DashboardContent
+        error={error}
+        loading={status === 'loading' || status === 'idle'}
+      >
+        <Stack spacing={6}>
+          <Flex justifyContent="space-between">
+            <Heading
+              size="lg"
+              marginRight={4}
+            >
+              {t('pages.filters.title')}
+            </Heading>
+            <AddFilterDialog onSubmit={onAddFilters} />
+          </Flex>
+          <Stack>
+            <Box>
+              <Button
+                disabled={selectedFlatRows.length === 0 || updatingStatus === 'loading'}
+                isLoading={updatingStatus === 'loading'}
+                colorScheme="red"
+                variant="outline"
+                onClick={onRemoveFilters}
+              >
+                {t('pages.filters.removeSelectedFilters')}
               </Button>
-            </HStack>
-          </Stack>
-          <Stack spacing="4">
-            <Heading size="md">Existing Filters</Heading>
-            <Table variant="simple" size="sm">
+            </Box>
+            <Table
+              {...getTableProps()}
+              whiteSpace="nowrap"
+              marginBottom="5"
+              background="gray.850"
+              borderColor="gray.700"
+              borderWidth="2px"
+              boxShadow="lg"
+            >
               <Thead>
-                <Tr>
-                  <Th>Category</Th>
-                  <Th>Value</Th>
-                  <Th>Action</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {sampleFilters.map((filter) => (
-                  <Tr key={filter.key}>
-                    <Td>{filter.category}</Td>
-                    <Td>{filter.value}</Td>
-                    <Td>
-                      <IconButton
-                        icon={(
-                          <DeleteIcon />
-                      )}
-                        aria-label={`Delete filter ${filter.value}`}
-                        background="none"
-                      />
-                    </Td>
+                {headerGroups.map((headerGroup) => (
+                  <Tr {...headerGroup.getHeaderGroupProps()}>
+                    {headerGroup.headers.map((column) => (
+                      <Th {...column.getHeaderProps(column.getSortByToggleProps())}>
+                        <Flex alignItems="center" userSelect="none">
+                          {column.render('Header')}
+                          {column.isSorted && column.isSortedDesc && (
+                          <ArrowDownIcon
+                            marginLeft="1"
+                          />
+                          )}
+                          {column.isSorted && !column.isSortedDesc && (
+                          <ArrowUpIcon
+                            marginLeft="1"
+                          />
+                          )}
+                        </Flex>
+                      </Th>
+                    ))}
                   </Tr>
                 ))}
+              </Thead>
+              <Tbody {...getTableBodyProps()}>
+                {rows.map((row) => {
+                  prepareRow(row);
+
+                  return (
+                    <Tr {...row.getRowProps()}>
+                      {row.cells.map((cell) => (
+                        <Td {...cell.getCellProps()}>
+                          {cell.render('Cell')}
+                        </Td>
+                      ))}
+                    </Tr>
+                  );
+                })}
               </Tbody>
             </Table>
           </Stack>

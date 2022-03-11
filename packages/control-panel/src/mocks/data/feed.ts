@@ -24,6 +24,16 @@ const mockFeeds: Feed[] = [{
   webhook: {
     id: mockDiscordWebhooks[0].id,
   },
+  filters: [{
+    category: 'title',
+    value: 'New York Times',
+  }, {
+    category: 'url',
+    value: 'https://www.feed1.com',
+  }, {
+    category: 'title',
+    value: 'Yahoo News',
+  }],
 }];
 
 export default mockFeeds;
