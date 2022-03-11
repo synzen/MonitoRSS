@@ -269,6 +269,20 @@ describe('FeedsModule', () => {
 
       const payload = {
         text: 'Hello world',
+        filters: [
+          {
+            category: 'title',
+            value: 'title1',
+          },
+          {
+            category: 'title',
+            value: 'title2',
+          },
+          {
+            category: 'description',
+            value: 'desc',
+          },
+        ],
       };
 
       const { statusCode, body } = await app.inject({
@@ -280,13 +294,8 @@ describe('FeedsModule', () => {
 
       const parsedBody = JSON.parse(body);
       expect(statusCode).toEqual(HttpStatus.OK);
-      expect(parsedBody).toEqual(
-        expect.objectContaining({
-          result: expect.objectContaining({
-            text: payload.text,
-          }),
-        }),
-      );
+      expect(parsedBody.result.text).toEqual(payload.text);
+      expect(parsedBody.result.filters).toEqual(payload.filters);
     });
 
     it('updates webhooks correctly', async () => {

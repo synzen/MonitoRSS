@@ -32,6 +32,7 @@ describe('GetFeedOutputDto', () => {
           checkTitles: feed.checkTitles,
           directSubscribers: feed.directSubscribers,
           disabled: feed.disabled,
+          filters: [],
           formatTables: feed.formatTables,
           imgLinksExistence: feed.imgLinksExistence,
           imgPreviews: feed.imgPreviews,
@@ -93,6 +94,37 @@ describe('GetFeedOutputDto', () => {
 
       const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
       expect(result.result.webhook).toBeUndefined();
+    });
+  });
+
+  describe('getFeedFiltersDto', () => {
+    it('returns an empty array if there are no filters', () => {
+      const result = GetFeedOutputDto.getFeedFiltersDto();
+      expect(result).toEqual([]);
+    });
+
+    it('returns all values in their own object', () => {
+      const feedFilters = {
+        title: ['a', 'b'],
+        description: ['c'],
+      };
+
+      const result = GetFeedOutputDto.getFeedFiltersDto(feedFilters);
+
+      expect(result).toEqual([
+        {
+          category: 'title',
+          value: 'a',
+        },
+        {
+          category: 'title',
+          value: 'b',
+        },
+        {
+          category: 'description',
+          value: 'c',
+        },
+      ]);
     });
   });
 });

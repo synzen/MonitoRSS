@@ -37,6 +37,7 @@ interface FeedOutputDto {
   id: string;
   title: string;
   status: 'ok' | 'failed';
+  filters: Array<{ category: string; value: string }>;
   url: string;
   channel: string;
   createdAt: string;
@@ -80,6 +81,7 @@ export class GetFeedOutputDto {
         imgPreviews: feed.imgPreviews,
         ncomparisons: feed.ncomparisons || [],
         pcomparisons: feed.pcomparisons || [],
+        filters: this.getFeedFiltersDto(feed.filters),
         embeds: feed.embeds.map((embed) => ({
           title: embed.title,
           description: embed.description,
@@ -113,5 +115,19 @@ export class GetFeedOutputDto {
     }
 
     return resultSoFar;
+  }
+
+  static getFeedFiltersDto(
+    feedFilters?: DetailedFeed['filters'],
+  ): GetFeedOutputDto['result']['filters'] {
+    const filters: FeedOutputDto['filters'] = [];
+
+    Object.entries(feedFilters || {}).forEach(([category, values]) => {
+      values.forEach((value) => {
+        filters.push({ category, value });
+      });
+    });
+
+    return filters;
   }
 }

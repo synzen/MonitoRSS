@@ -1,4 +1,13 @@
-import { IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
+
+class UpdateFeedInputFiltersDto {
+  @IsString()
+  category: string;
+
+  @IsString()
+  value: string;
+}
 
 export class UpdateFeedInputDto {
   @IsString()
@@ -8,4 +17,10 @@ export class UpdateFeedInputDto {
   @IsString()
   @IsOptional()
   webhookId?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateFeedInputDto)
+  @IsOptional()
+  filters?: UpdateFeedInputFiltersDto[];
 }

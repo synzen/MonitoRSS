@@ -74,8 +74,23 @@ export class FeedsController {
       }
     }
 
+    let filtersUpdate: Record<string, string[]> | undefined = undefined;
+
+    if (updateFeedInput.filters) {
+      filtersUpdate = {};
+
+      for (const { category, value } of updateFeedInput.filters) {
+        if (!filtersUpdate[category]) {
+          filtersUpdate[category] = [];
+        }
+
+        filtersUpdate[category].push(value);
+      }
+    }
+
     const updatedFeed = await this.feedsService.updateOne(feed._id, {
       text: updateFeedInput.text,
+      filters: filtersUpdate,
       webhook: {
         id: updateFeedInput.webhookId,
       },

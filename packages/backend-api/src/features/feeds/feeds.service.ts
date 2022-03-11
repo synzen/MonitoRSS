@@ -11,6 +11,7 @@ import { FeedSchedulingService } from './feed-scheduling.service';
 
 interface UpdateFeedInput {
   text?: string;
+  filters?: Record<string, string[]>;
   webhook?: {
     id?: string;
   };
@@ -121,6 +122,10 @@ export class FeedsService {
           id: strippedUpdateObject.webhook.id,
         };
       }
+    }
+
+    if (strippedUpdateObject.filters) {
+      updateObject.$set.filters = strippedUpdateObject.filters;
     }
 
     await this.feedModel.updateOne(

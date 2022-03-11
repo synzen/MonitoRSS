@@ -185,6 +185,104 @@ describe('FeedsService', () => {
   });
 
   describe('updateOne', () => {
+    describe('webhooks', () => {
+      it('updates webhook id when no webhook previously existed', async () => {
+        const newWebhookId = 'my-new-webhook-id';
+        const createdFeed = await feedModel.create(createTestFeed());
+
+        await service.updateOne(createdFeed._id.toString(), {
+          webhook: {
+            id: newWebhookId,
+          },
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.webhook?.id).toEqual(newWebhookId);
+      });
+
+      it('returns the new webhook id after a webhook update', async () => {
+        const newWebhookId = 'my-new-webhook-id';
+        const createdFeed = await feedModel.create(createTestFeed());
+
+        const result = await service.updateOne(createdFeed._id.toString(), {
+          webhook: {
+            id: newWebhookId,
+          },
+        });
+
+        expect(result.webhook?.id).toEqual(newWebhookId);
+      });
+
+      it('does not persist any old webhook data if webhook is overwritten', async () => {
+        const oldWebhookId = 'old-webhook-id';
+        const newWebhookId = 'my-new-webhook-id';
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            webhook: {
+              id: oldWebhookId,
+            },
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {
+          webhook: {
+            id: newWebhookId,
+          },
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.webhook?.id).toEqual(newWebhookId);
+      });
+
+      it('removes the webhook object if webhook id is empty', async () => {
+        const oldWebhookId = 'old-webhook-id';
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            webhook: {
+              id: oldWebhookId,
+            },
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {
+          webhook: {
+            id: '',
+          },
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.webhook).toBeUndefined();
+      });
+    });
+
+    describe('filters', () => {
+      it('overwrites the filters', async () => {
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            filters: {
+              title: ['a'],
+            },
+          }),
+        );
+
+        const newFilters = {
+          title: ['title-1', 'title2'],
+          description: ['a', 'b'],
+        };
+
+        await service.updateOne(createdFeed._id.toString(), {
+          filters: newFilters,
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.filters).toEqual(newFilters);
+      });
+    });
+
     it('returns undefined if no feed is found', async () => {
       await expect(
         service.updateOne(new Types.ObjectId(), {
@@ -208,77 +306,6 @@ describe('FeedsService', () => {
       const updatedFeed = await feedModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed).toEqual(expect.objectContaining({ text: newText }));
-    });
-
-    it('updates webhook id when no webhook previously existed', async () => {
-      const newWebhookId = 'my-new-webhook-id';
-      const createdFeed = await feedModel.create(createTestFeed());
-
-      await service.updateOne(createdFeed._id.toString(), {
-        webhook: {
-          id: newWebhookId,
-        },
-      });
-
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
-
-      expect(updatedFeed?.webhook?.id).toEqual(newWebhookId);
-    });
-
-    it('returns the new webhook id after a webhook update', async () => {
-      const newWebhookId = 'my-new-webhook-id';
-      const createdFeed = await feedModel.create(createTestFeed());
-
-      const result = await service.updateOne(createdFeed._id.toString(), {
-        webhook: {
-          id: newWebhookId,
-        },
-      });
-
-      expect(result.webhook?.id).toEqual(newWebhookId);
-    });
-
-    it('does not persist any old webhook data if webhook is overwritten', async () => {
-      const oldWebhookId = 'old-webhook-id';
-      const newWebhookId = 'my-new-webhook-id';
-      const createdFeed = await feedModel.create(
-        createTestFeed({
-          webhook: {
-            id: oldWebhookId,
-          },
-        }),
-      );
-
-      await service.updateOne(createdFeed._id.toString(), {
-        webhook: {
-          id: newWebhookId,
-        },
-      });
-
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
-
-      expect(updatedFeed?.webhook?.id).toEqual(newWebhookId);
-    });
-
-    it('removes the webhook object if webhook id is empty', async () => {
-      const oldWebhookId = 'old-webhook-id';
-      const createdFeed = await feedModel.create(
-        createTestFeed({
-          webhook: {
-            id: oldWebhookId,
-          },
-        }),
-      );
-
-      await service.updateOne(createdFeed._id.toString(), {
-        webhook: {
-          id: '',
-        },
-      });
-
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
-
-      expect(updatedFeed?.webhook).toBeUndefined();
     });
 
     it('does not update the text if undefined is passed', async () => {

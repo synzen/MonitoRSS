@@ -22,11 +22,27 @@ export class Feed {
   @Prop()
   url: string;
 
-  @Prop()
+  @Prop({
+    required: true,
+  })
   guild: string;
 
-  @Prop()
+  @Prop({
+    required: true,
+  })
   channel: string;
+
+  @Prop({
+    type: Map,
+    of: [String],
+  })
+  filters?: Record<string, string[]>;
+
+  @Prop({
+    type: Map,
+    of: String,
+  })
+  rfilters?: Record<string, string>;
 
   @Prop({
     type: [FeedEmbedSchema],
