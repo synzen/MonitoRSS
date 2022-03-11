@@ -1,9 +1,12 @@
-import { Form, Formik } from 'formik';
 import { InferType, object, string } from 'yup';
-import { Button, Stack } from '@chakra-ui/react';
-import { FormikTextarea } from '@/components/FormikTextarea';
-import { updateFeed } from '@/features/feed';
+import {
+  Button, HStack, Stack, Textarea,
+} from '@chakra-ui/react';
+import { Controller, useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { useEffect } from 'react';
 import { notifyError } from '@/utils/notifyError';
+import { useUpdateFeed } from '../../hooks/useUpdateFeed';
 
 interface Props {
   feedId: string
@@ -18,52 +21,71 @@ const FormSchema = object({
 type FormValues = InferType<typeof FormSchema>;
 
 export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
-  const initialValues: FormValues = {
-    text,
+  const { mutateAsync } = useUpdateFeed({ feedId });
+  const defaultValues = { text };
+
+  const {
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    formState: {
+      isDirty,
+      isSubmitting,
+    },
+  } = useForm<FormValues>({
+    resolver: yupResolver(FormSchema),
+    defaultValues,
+  });
+
+  useEffect(() => {
+    setValue('text', text);
+  }, [text]);
+
+  const onUpdatedFeed = async (values: FormValues) => {
+    try {
+      const updatedFeed = await mutateAsync({
+        feedId,
+        details: {
+          text: values.text,
+        },
+      });
+      onUpdated();
+      reset({
+        text: updatedFeed.result.text,
+      });
+    } catch (error) {
+      notifyError('Failed to update feed', error as Error);
+    }
   };
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={FormSchema}
-      onSubmit={async (values) => {
-        try {
-          await updateFeed({
-            feedId,
-            details: {
-              text: values.text,
-            },
-          });
-          await onUpdated();
-        } catch (err) {
-          notifyError('Failed to update text', err as Error);
-        }
-      }}
-    >
-      {({
-        isSubmitting,
-        isValid,
-        values,
-      }) => (
-        <Form>
-          <Stack>
-            <FormikTextarea
-              name="text"
-              textareaProps={{
-                'aria-label': 'Feed text',
-              }}
-            />
-            <Button
-              type="submit"
-              colorScheme="blue"
-              isLoading={isSubmitting}
-              disabled={!isValid || isSubmitting || text === values.text}
-            >
-              Save
-            </Button>
-          </Stack>
-        </Form>
-      )}
-    </Formik>
+    <form onSubmit={handleSubmit(onUpdatedFeed)}>
+      <Stack>
+        <Controller
+          name="text"
+          control={control}
+          render={({ field }) => (
+            <Textarea {...field} />
+          )}
+        />
+        <HStack justifyContent="flex-end">
+          <Button
+            disabled={!isDirty || isSubmitting}
+            onClick={() => reset(defaultValues)}
+          >
+            Reset
+          </Button>
+          <Button
+            type="submit"
+            colorScheme="blue"
+            isLoading={isSubmitting}
+            disabled={isSubmitting || !isDirty}
+          >
+            Save
+          </Button>
+        </HStack>
+      </Stack>
+    </form>
   );
 };

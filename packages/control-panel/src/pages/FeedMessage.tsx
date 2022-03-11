@@ -1,13 +1,9 @@
-import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import {
-  ButtonGroup,
-  Code, Heading, IconButton, Stack, Text,
+  Code, Heading, Stack, Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { DashboardContent } from '@/components';
-import {
-  EmbedForm, FeedArticlesPlaceholders, useFeed,
-} from '../features/feed';
+import { FeedArticlesPlaceholders, useFeed } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { TextForm } from '@/features/feed/components/TextForm';
 
@@ -49,7 +45,7 @@ const FeedMessage: React.FC = () => {
               onUpdated={refetch}
             />
           </Stack>
-          <Stack spacing="4">
+          {/* <Stack spacing="4">
             <Stack direction="row" justifyContent="space-between">
               <Heading size="md">Embeds</Heading>
               <ButtonGroup>
@@ -69,7 +65,7 @@ const FeedMessage: React.FC = () => {
               </ButtonGroup>
             </Stack>
             <EmbedForm />
-          </Stack>
+          </Stack> */}
         </Stack>
       </DashboardContent>
     </Stack>
