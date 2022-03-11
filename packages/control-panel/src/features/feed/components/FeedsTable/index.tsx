@@ -105,7 +105,9 @@ export const FeedsTable: React.FC<Props> = ({
         }) => <DiscordChannelName serverId={serverId} channelId={value} />,
       },
     ],
-    [],
+    [
+      serverId,
+    ],
   );
 
   const tableInstance = useTable(

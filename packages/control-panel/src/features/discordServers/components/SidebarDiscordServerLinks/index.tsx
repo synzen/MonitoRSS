@@ -41,7 +41,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
       <DiscordServerSearchSelect />
       <SidebarLink
         icon={FiRss}
-        active={currentPath.startsWith(paths.SERVER_FEEDS)}
+        active={currentPath === paths.SERVER_FEEDS}
         onClick={() => onClickNavLink(paths.SERVER_FEEDS)}
       >
         {t('components.sidebar.server.feeds')}

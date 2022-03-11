@@ -110,26 +110,18 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
           <UserStatusTag />
         </Stack>
         <Divider marginY="8" />
-        <Stack spacing="12">
-          <Stack px="6" spacing="6">
-            <Stack spacing="3">
-              {!feedId && (
-                <SidebarDiscordServerLinks
-                  currentPath={location.pathname}
-                  onChangePath={onPathChanged}
-                  serverId={serverId}
-                />
-              )}
-              {feedId && (
-                <SidebarFeedLinks
-                  currentPath={location.pathname}
-                  feedId={feedId}
-                  serverId={serverId}
-                  onChangePath={onPathChanged}
-                />
-              )}
-            </Stack>
-          </Stack>
+        <Stack px="6" spacing="9">
+          <SidebarDiscordServerLinks
+            currentPath={location.pathname}
+            onChangePath={onPathChanged}
+            serverId={serverId}
+          />
+          <SidebarFeedLinks
+            currentPath={location.pathname}
+            feedId={feedId}
+            serverId={serverId}
+            onChangePath={onPathChanged}
+          />
         </Stack>
       </Flex>
       <Flex
