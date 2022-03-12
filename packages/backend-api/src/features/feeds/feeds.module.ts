@@ -12,10 +12,11 @@ import { FeedScheduleFeature } from './entities/feed-schedule.entity';
 import { FeedSchedulingService } from './feed-scheduling.service';
 import { FeedSubscriberFeature } from './entities/feed-subscriber.entity';
 import { FeedSubscribersController } from './feed-subscribers.controller';
+import { FeedSubscribersService } from './feed-subscribers.service';
 
 @Module({
   controllers: [FeedsController, FeedSubscribersController],
-  providers: [FeedsService, FeedSchedulingService],
+  providers: [FeedsService, FeedSubscribersService, FeedSchedulingService],
   imports: [
     CacheModule.register(),
     DiscordAuthModule,
