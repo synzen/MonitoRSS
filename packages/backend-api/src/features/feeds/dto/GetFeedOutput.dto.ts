@@ -44,13 +44,13 @@ interface FeedOutputDto {
   refreshRateSeconds: number;
   text: string;
   embeds: FeedEmbedOutputDto[];
-  checkTitles?: boolean;
-  checkDates?: boolean;
-  imgPreviews?: boolean;
-  imgLinksExistence?: boolean;
-  formatTables?: boolean;
-  directSubscribers?: boolean;
-  splitMessage?: boolean;
+  checkTitles: boolean;
+  checkDates: boolean;
+  imgPreviews: boolean;
+  imgLinksExistence: boolean;
+  formatTables: boolean;
+  directSubscribers: boolean;
+  splitMessage: boolean;
   disabled?: string;
   ncomparisons?: Array<string>;
   pcomparisons?: Array<string>;
@@ -73,14 +73,19 @@ export class GetFeedOutputDto {
         url: feed.url,
         refreshRateSeconds: feed.refreshRateSeconds,
         text: feed.text || '',
-        checkDates: feed.checkDates,
-        checkTitles: feed.checkTitles,
-        directSubscribers: feed.directSubscribers,
-        disabled: feed.disabled,
-        formatTables: feed.formatTables,
-        imgLinksExistence: feed.imgLinksExistence,
-        imgPreviews: feed.imgPreviews,
+        /**
+         * The defaults for these booleans match the defaults on the public hosting of the bot.
+         * While not ideal to hardcode, it's the easiest way to get this out quick without
+         * duplicating config variables.
+         */
+        checkDates: feed.checkDates ?? true,
+        checkTitles: feed.checkTitles || false,
+        directSubscribers: feed.directSubscribers || false,
+        formatTables: feed.formatTables || false,
+        imgLinksExistence: feed.imgLinksExistence ?? true,
+        imgPreviews: feed.imgPreviews ?? true,
         splitMessage: feed.split?.enabled || false,
+        disabled: feed.disabled,
         ncomparisons: feed.ncomparisons || [],
         pcomparisons: feed.pcomparisons || [],
         filters: this.getFeedFiltersDto(feed.filters),
