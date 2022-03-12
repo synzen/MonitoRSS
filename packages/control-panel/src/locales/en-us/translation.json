@@ -51,7 +51,10 @@
       "title": "Add New Filters",
       "cancel": "Cancel",
       "save": "Save",
-      "failedToSaveError": "Failed to save filter(s)"
+      "failedToSaveError": "Failed to save filter(s)",
+      "formCategoryLabel": "Category",
+      "formValueLabel": "Value",
+      "formValueDescription": "Each new line indicates a new and separate filter."
     },
     "sidebar": {
       "supporterUserTag": "Supporter",

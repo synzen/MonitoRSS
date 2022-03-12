@@ -261,7 +261,7 @@ describe('FeedSubscribersService', () => {
         };
         await service.updateOne(subscriber._id, updateObj);
 
-        const found = await feedSubscriberModel.findOne(subscriber).lean();
+        const found = await feedSubscriberModel.findOne(subscriber._id).lean();
 
         expect(found?.filters).toEqual({
           title: ['title-1'],
@@ -291,6 +291,31 @@ describe('FeedSubscribersService', () => {
 
         expect(found?.filters).toEqual({
           title: ['title-1'],
+        });
+      });
+
+      it('overwrites existing filters', async () => {
+        const subscriber = createTestFeedSubscriber({
+          filters: {
+            title: ['title-1'],
+          },
+        });
+        await feedSubscriberModel.create(subscriber);
+
+        const updateObj = {
+          filters: [
+            {
+              category: 'title',
+              value: 'title-2',
+            },
+          ],
+        };
+        await service.updateOne(subscriber._id, updateObj);
+
+        const found = await feedSubscriberModel.findOne(subscriber._id).lean();
+
+        expect(found?.filters).toEqual({
+          title: ['title-2'],
         });
       });
 

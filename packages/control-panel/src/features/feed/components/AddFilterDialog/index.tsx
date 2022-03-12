@@ -65,6 +65,8 @@ export const AddFilterDialog: React.FC<Props> = ({
     <>
       <Button
         colorScheme="blue"
+        disabled={saving}
+        isLoading={saving}
         onClick={onOpen}
       >
         {t('components.addFilterDialog.addButton')}
@@ -77,13 +79,15 @@ export const AddFilterDialog: React.FC<Props> = ({
           <ModalBody>
             <Stack spacing={6}>
               <FormControl>
-                <FormLabel>Category</FormLabel>
+                <FormLabel>{t('components.addFilterDialog.formCategoryLabel')}</FormLabel>
                 <Input onChange={({ target }) => setCategory(target.value)} />
               </FormControl>
               <FormControl>
-                <FormLabel>Values</FormLabel>
+                <FormLabel>{t('components.addFilterDialog.formValueLabel')}</FormLabel>
                 <AutoResizeTextarea minH="8rem" onChange={({ target }) => setValue(target.value)} />
-                <FormHelperText>Each new line indicates a new and separate filter.</FormHelperText>
+                <FormHelperText>
+                  {t('components.addFilterDialog.formValueDescription')}
+                </FormHelperText>
               </FormControl>
             </Stack>
           </ModalBody>

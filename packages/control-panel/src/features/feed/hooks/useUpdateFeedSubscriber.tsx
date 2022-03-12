@@ -27,15 +27,20 @@ export const useUpdateFeedSubscriber = () => {
         );
 
         if (currentSubscribersData) {
-          const updatedState = currentSubscribersData.results.map((sub) => {
+          const updatedResults = currentSubscribersData.results.map((sub) => {
             if (sub.id === data.result.id) {
               return data.result;
             }
+
+            return sub;
           });
 
-          queryClient.setQueryData(['feed-subscribers', {
+          queryClient.setQueryData<GetFeedSubscribersOutput>(['feed-subscribers', {
             feedId: data.result.feed,
-          }], updatedState);
+          }], {
+            results: updatedResults,
+            total: updatedResults.length,
+          });
         }
       },
     },

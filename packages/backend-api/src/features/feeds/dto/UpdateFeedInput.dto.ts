@@ -31,7 +31,7 @@ export class UpdateFeedInputDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateFeedInputDto)
+  @Type(() => UpdateFeedInputFiltersDto)
   @IsOptional()
   filters?: UpdateFeedInputFiltersDto[];
 }

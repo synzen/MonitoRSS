@@ -35,16 +35,7 @@ const FeedSubscribers: React.FC = () => {
   } = useFeedSubscribers({ feedId });
   const { t } = useTranslation();
   const [selectedSubscriberId, setSelectedSubscriberId] = useState('');
-  const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
-
-  if (rolesError || feedSubscribersError) {
-    return (
-      <ErrorAlert
-        description={rolesError?.message
-      || feedSubscribersError?.message}
-      />
-    );
-  }
+  const sidebarEnabled = useBreakpointValue<boolean>({ base: true, '2xl': false });
 
   const allFeedSubscribeDiscordIds = useMemo(
     () => new Set(feedSubscribersData?.results
@@ -61,6 +52,15 @@ const FeedSubscribers: React.FC = () => {
   useEffect(() => {
     setSelectedSubscriberId('');
   }, [serverId, feedId]);
+
+  if (rolesError || feedSubscribersError) {
+    return (
+      <ErrorAlert
+        description={rolesError?.message
+      || feedSubscribersError?.message}
+      />
+    );
+  }
 
   return (
     <Flex height="100%">
@@ -91,13 +91,13 @@ const FeedSubscribers: React.FC = () => {
       </DashboardContent>
       {selectedSubscriberId && !sidebarEnabled && (
       <Box
-        display={{ base: 'none', xl: 'block' }}
+        display={{ base: 'none', '2xl': 'block' }}
         borderLeftWidth="1px"
         marginLeft="0"
         marginInlineStart="0 !important"
         height="100%"
-        minWidth={{ base: 'none', xl: 'md', '2xl': 'lg' }}
-        width={{ base: 'none', xl: 'md', '2xl': 'lg' }}
+        minWidth={{ base: 'none', '2xl': 'xl' }}
+        width={{ base: 'none', '2xl': 'xl' }}
       >
         <SubscriberSidebar
           subscriberId={selectedSubscriberId}
@@ -109,7 +109,7 @@ const FeedSubscribers: React.FC = () => {
       {sidebarEnabled && (
       <Drawer
         autoFocus={false}
-        size="md"
+        size="lg"
         isOpen={!!selectedSubscriberId}
         onClose={() => {
           setSelectedSubscriberId('');

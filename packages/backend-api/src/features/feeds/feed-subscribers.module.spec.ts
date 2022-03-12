@@ -26,6 +26,7 @@ import {
 } from './entities/feed-subscriber.entity';
 import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
 import { CreateFeedSubscriberInputDto } from './dto/CreateFeedSubscriberInput.dto';
+import { UpdateFeedSubscriberInputDto } from './dto/UpdateFeedSubscriberInput.dto';
 
 describe('FeedSubscribersModule', () => {
   let app: NestFastifyApplication;
@@ -249,10 +250,138 @@ describe('FeedSubscribersModule', () => {
       expect(statusCode).toEqual(HttpStatus.CREATED);
       expect(parsedBody).toEqual({
         result: expect.objectContaining({
-          id: validPayload.discordId,
+          discordId: validPayload.discordId,
           type: validPayload.type,
         }),
       });
+    });
+  });
+
+  describe('PATCH /feeds/:feedId/subscribers/:subscriberId', () => {
+    const validPayload: UpdateFeedSubscriberInputDto = {
+      filters: [
+        {
+          category: 'title',
+          value: 'new-value',
+        },
+      ],
+    };
+
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const createdSubscriber = await feedSubscriberModel.create(
+        createTestFeedSubscriber({
+          feed: new Types.ObjectId(feedId),
+        }),
+      );
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        payload: validPayload,
+        url: `/feeds/${feedId}/subscribers/${createdSubscriber._id}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if use does not have permission of guild of feed', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      const createdSubscriber = await feedSubscriberModel.create(
+        createTestFeedSubscriber({
+          feed: createdFeed._id,
+        }),
+      );
+
+      mockGetMeServers([
+        {
+          id: createdFeed.guild + '1',
+          name: 'Test Guild 3',
+          owner: true,
+          permissions: 0,
+        },
+      ]);
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/feeds/${createdFeed._id}/subscribers/${createdSubscriber._id}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 404 if the feed does not exist', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/feeds/${new Types.ObjectId()}/subscribers/${new Types.ObjectId()}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns 404 if the subscriber does not exist', async () => {
+      mockGetMeServers();
+
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/feeds/${createdFeed._id}/subscribers/${new Types.ObjectId()}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns 200 on success', async () => {
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        _id: new Types.ObjectId(feedId),
+        guild: guildId,
+      });
+      const subscriber = createTestFeedSubscriber({
+        _id: new Types.ObjectId(),
+        feed: feed._id,
+      });
+
+      await Promise.all([
+        feedModel.create(feed),
+        feedSubscriberModel.create(subscriber),
+      ]);
+
+      const { statusCode, body } = await app.inject({
+        method: 'PATCH',
+        url: `/feeds/${feed._id}/subscribers/${subscriber._id}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual(
+        expect.objectContaining({
+          result: expect.objectContaining({
+            filters: validPayload.filters,
+          }),
+        }),
+      );
     });
   });
 
@@ -352,13 +481,12 @@ describe('FeedSubscribersModule', () => {
         feedSubscriberModel.create(subscriber),
       ]);
 
-      const { statusCode, body } = await app.inject({
+      const { statusCode } = await app.inject({
         method: 'DELETE',
         url: `/feeds/${feed._id}/subscribers/${subscriber._id}`,
         ...standardRequestOptions,
       });
 
-      console.log(body);
       expect(statusCode).toEqual(HttpStatus.NO_CONTENT);
     });
   });

@@ -81,20 +81,23 @@ export class FeedSubscribersService {
   async updateOne(
     subscriberId: Types.ObjectId | string,
     { filters }: UpdateFeedSubscriberDetails,
-  ) {
+  ): Promise<FeedSubscriber> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mongoUpdate: Record<string, any> = {};
+    const mongoUpdate: Record<string, any> = {
+      $set: {},
+    };
 
     if (filters) {
-      mongoUpdate.$addToSet = {};
+      mongoUpdate.$set.filters = {};
+
       filters.forEach(({ category, value }) => {
-        const addToSetKey = `filters.${category}`;
-        const currentArr = mongoUpdate.$addToSet[addToSetKey]?.$each;
+        const currentArr: string[] | undefined =
+          mongoUpdate.$set.filters[category];
 
         if (!currentArr) {
-          mongoUpdate.$addToSet[addToSetKey] = { $each: [value] };
-        } else {
-          mongoUpdate.$addToSet[addToSetKey].$each.push(value);
+          mongoUpdate.$set.filters[category] = [value];
+        } else if (!currentArr.includes(value)) {
+          mongoUpdate.$set.filters[category].push(value);
         }
       });
     }

@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -20,6 +21,8 @@ import { TransformValidationPipe } from '../../common/pipes/TransformValidationP
 import { CreateFeedSubscriberInputDto } from './dto/CreateFeedSubscriberInput.dto';
 import { GetFeedSubscriberPipe } from './pipes/GetFeedSubscriber.pipe';
 import { FeedSubscriber } from './entities/feed-subscriber.entity';
+import { UpdateFeedSubscriberOutputDto } from './dto/UpdateFeedSubscriberOutput.dto';
+import { UpdateFeedSubscriberInputDto } from './dto/UpdateFeedSubscriberInput.dto';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -53,6 +56,24 @@ export class FeedSubscribersController {
     });
 
     return CreateFeedSubscriberOutputDto.fromEntity(updated);
+  }
+
+  @Patch(':feedId/subscribers/:subscriberId')
+  @UseGuards(UserManagesFeedServerGuard)
+  async updateOne(
+    @Param(GetFeedSubscriberPipe)
+    subscriber: FeedSubscriber,
+    @Body(TransformValidationPipe)
+    details: UpdateFeedSubscriberInputDto,
+  ): Promise<UpdateFeedSubscriberOutputDto> {
+    const updated = await this.feedSubscribersService.updateOne(
+      subscriber._id,
+      {
+        filters: details.filters,
+      },
+    );
+
+    return UpdateFeedSubscriberOutputDto.fromEntity(updated);
   }
 
   @Delete(':feedId/subscribers/:subscriberId')
