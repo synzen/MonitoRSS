@@ -4,7 +4,7 @@ import { GetDiscordMeOutput } from '@/features/discordUser';
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
   FeedSummary,
-  GetFeedArticlesOutput, GetFeedOutput, GetFeedsOutput, UpdateFeedOutput,
+  GetFeedArticlesOutput, GetFeedOutput, GetFeedsOutput, GetFeedSubscribersOutput, UpdateFeedOutput,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
 import mockFeeds from './data/feed';
@@ -16,6 +16,7 @@ import mockDiscordWebhooks from './data/discordWebhooks';
 import { GetServerChannelsOutput, GetServerRolesOutput } from '@/features/discordServers';
 import mockDiscordChannels from './data/discordChannels';
 import mockDiscordRoles from './data/discordRoles';
+import mockFeedSubscribers from './data/feedSubscribers';
 
 const handlers = [
   rest.get('/api/v1/discord-users/@me', (req, res, ctx) => res(
@@ -68,7 +69,7 @@ const handlers = [
   )),
 
   rest.get('/api/v1/discord-servers/:serverId/roles', (req, res, ctx) => res(
-    ctx.delay(1000),
+    // ctx.delay(1000),
     ctx.json<GetServerRolesOutput>({
       total: mockDiscordRoles.length,
       results: mockDiscordRoles,
@@ -82,10 +83,16 @@ const handlers = [
   )),
 
   rest.get('/api/v1/feeds/:feedId', (req, res, ctx) => res(
-    // ctx.status(400),
     ctx.delay(500),
     ctx.json<GetFeedOutput>({
       result: mockFeeds[0],
+    }),
+  )),
+
+  rest.get('/api/v1/feeds/:feedId/subscribers', (req, res, ctx) => res(
+    ctx.json<GetFeedSubscribersOutput>({
+      results: mockFeedSubscribers,
+      total: mockFeedSubscribers.length,
     }),
   )),
 

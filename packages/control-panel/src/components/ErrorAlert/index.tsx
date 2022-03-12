@@ -26,7 +26,6 @@ export const ErrorAlert: React.FC<Props> = ({ description, withGoBack }) => {
       textAlign="center"
       paddingX="12"
       spacing="6"
-      // paddingY="8"
     >
       <Stack
         display="flex"
@@ -45,7 +44,7 @@ export const ErrorAlert: React.FC<Props> = ({ description, withGoBack }) => {
         </>
         )}
       </Stack>
-      <Divider />
+      <Divider maxWidth="50%" />
       <Stack>
         <Text color="gray.500">{t('common.errors.detailsTitle')}</Text>
         <Code marginTop="4" color="gray.400">

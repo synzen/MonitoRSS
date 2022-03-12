@@ -27,9 +27,18 @@ export const useDiscordServerRoles = (
     },
   );
 
+  const getRolebyId = (roleId: string) => {
+    if (!data?.results) {
+      return null;
+    }
+
+    return data.results.find((role) => role.id === roleId) || null;
+  };
+
   return {
     data,
     status,
     error,
+    getRolebyId,
   };
 };

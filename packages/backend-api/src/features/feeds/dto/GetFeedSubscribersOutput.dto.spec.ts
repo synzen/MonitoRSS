@@ -20,6 +20,7 @@ describe('GetFeedSubscribersOutputDto', () => {
           {
             id: subscribers[0]._id.toHexString(),
             filters: [],
+            discordId: subscribers[0].id,
             type: subscribers[0].type,
             feed: subscribers[0].feed.toHexString(),
           },
