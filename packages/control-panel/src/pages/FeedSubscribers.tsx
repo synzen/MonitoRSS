@@ -1,70 +1,54 @@
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import {
+  Box,
   Button,
   FormControl,
   FormLabel,
   Heading,
   HStack,
   IconButton,
-  Select,
   Stack,
   Table,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { DashboardContent, Navbar } from '@/components';
-import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
+import { useTranslation } from 'react-i18next';
+import { DashboardContent, ThemedSelect } from '@/components';
 import RouteParams from '../types/RouteParams';
-
-const sampleSubscribers = [{
-  key: '1',
-  name: '@green',
-}, {
-  key: '2',
-  name: '@red',
-}, {
-  key: '3',
-  name: '@admin',
-}, {
-  key: '4',
-  name: '@news',
-}];
+import { useDiscordServerRoles } from '@/features/discordServers';
 
 const FeedSubscribers: React.FC = () => {
-  const { feedId } = useParams<RouteParams>();
-
-  const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
-    id: 'feeds',
-    content: 'Feeds',
-    enabled: true,
-  }, {
-    id: 'feed',
-    content: feedId,
-    enabled: true,
-  }, {
-    id: 'miscoptions',
-    content: 'Misc Options',
-    enabled: true,
-  }];
+  const { serverId } = useParams<RouteParams>();
+  const { data, error, status } = useDiscordServerRoles({ serverId });
+  const { t } = useTranslation();
 
   return (
     <Stack>
-      <Navbar breadcrumbItems={breadcrumbItems} />
-      <DashboardContent>
-        <Stack spacing="12">
+      <DashboardContent
+        loading={status === 'loading' || status === 'idle'}
+        error={error}
+      >
+        <Stack spacing="9">
           <Stack spacing="4">
-            <Heading size="lg">Add Subscriber</Heading>
+            <Heading size="lg">{t('pages.subscribers.title')}</Heading>
             <HStack>
               <FormControl width={250}>
                 <FormLabel htmlFor="subscriber-name">Subscribers</FormLabel>
-                <Select id="subscriber-name">
-                  <option>Title</option>
-                  <option>Description</option>
-                </Select>
+                <ThemedSelect
+                  id="subscriber-name"
+                  onChange={console.log}
+                  loading={status === 'loading' || status === 'idle'}
+                  options={(data?.results || []).map((role) => ({
+                    label: role.name,
+                    value: role.id,
+                    icon: <Box width={6} borderRadius="50%" height={6} bg={role.color} />,
+                  }))}
+                />
               </FormControl>
               <Button alignSelf="flex-end" minWidth="100" colorScheme="blue">
                 Add
@@ -72,8 +56,15 @@ const FeedSubscribers: React.FC = () => {
             </HStack>
           </Stack>
           <Stack spacing="4">
-            <Heading size="md">Existing Subscribers</Heading>
-            <Table variant="simple" size="sm">
+            <Table
+              whiteSpace="nowrap"
+              marginBottom="5"
+              background="gray.850"
+              borderColor="gray.700"
+              borderWidth="2px"
+              boxShadow="lg"
+              size="sm"
+            >
               <Thead>
                 <Tr>
                   <Th>Subscriber</Th>
@@ -81,9 +72,21 @@ const FeedSubscribers: React.FC = () => {
                 </Tr>
               </Thead>
               <Tbody>
-                {sampleSubscribers.map((subscriber) => (
-                  <Tr key={subscriber.key}>
-                    <Td>{subscriber.name}</Td>
+                {(data?.results || []).map((subscriber) => (
+                  <Tr key={subscriber.id}>
+                    <Td>
+                      <HStack alignItems="center">
+                        <Box
+                          borderRadius="50%"
+                          height={6}
+                          width={6}
+                          background={subscriber.color}
+                        />
+                        <Text>
+                          {`@${subscriber.name}`}
+                        </Text>
+                      </HStack>
+                    </Td>
                     <Td>
                       <HStack>
                         <IconButton

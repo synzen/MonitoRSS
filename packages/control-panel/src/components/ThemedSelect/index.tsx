@@ -12,7 +12,7 @@ const { Option } = components;
 interface SelectOption {
   value: string;
   label: string;
-  icon?: string;
+  icon?: string | React.ReactNode;
 }
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
 
@@ -109,7 +109,14 @@ const IconOption: React.FC<IconOptionProps> = (props) => {
   // eslint-disable-next-line react/jsx-props-no-spreading
     <Option {...props}>
       <HStack alignItems="center">
-        <Avatar src={castedData.icon} name={castedData.value} size="xs" />
+        {typeof castedData.icon === 'string' && (
+        <Avatar
+          src={castedData.icon}
+          name={castedData.value}
+          size="xs"
+        />
+        )}
+        {typeof castedData.icon === 'object' && castedData.icon}
         <Text>
           {castedData.label}
         </Text>

@@ -34,6 +34,9 @@
       "tableValue": "Value",
       "removeSelectedFilters": "Remove selected filters"
     },
+    "subscribers": {
+      "title": "Subscribers"
+    },
     "webhooks": {
       "title": "Webhooks",
       "addNew": "Add New",
