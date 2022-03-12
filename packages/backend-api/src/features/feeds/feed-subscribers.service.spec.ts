@@ -140,10 +140,16 @@ describe('FeedSubscribersService', () => {
 
   describe('findById', () => {
     it('returns the subscriber', async () => {
-      const subscriber = createTestFeedSubscriber();
+      const subscriber = createTestFeedSubscriber({
+        feed: new Types.ObjectId(),
+        _id: new Types.ObjectId(),
+      });
       await feedSubscriberModel.create(subscriber);
 
-      const found = await service.findById(subscriber._id);
+      const found = await service.findByIdAndFeed({
+        subscriberId: subscriber._id,
+        feedId: subscriber.feed,
+      });
 
       expect(found).toEqual(
         expect.objectContaining({
@@ -152,6 +158,15 @@ describe('FeedSubscribersService', () => {
         }),
       );
       expect(String(found?.feed)).toEqual(subscriber.feed.toHexString());
+    });
+
+    it('returns null if not found', async () => {
+      const found = await service.findByIdAndFeed({
+        subscriberId: new Types.ObjectId(),
+        feedId: new Types.ObjectId(),
+      });
+
+      expect(found).toBeNull();
     });
   });
 

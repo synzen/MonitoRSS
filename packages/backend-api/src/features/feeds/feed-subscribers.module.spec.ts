@@ -255,4 +255,111 @@ describe('FeedSubscribersModule', () => {
       });
     });
   });
+
+  describe('DELETE /feeds/:feedId/subscribers/:subscriberId', () => {
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const createdSubscriber = await feedSubscriberModel.create(
+        createTestFeedSubscriber({
+          feed: new Types.ObjectId(feedId),
+        }),
+      );
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${feedId}/subscribers/${createdSubscriber._id}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if use does not have permission of guild of feed', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      const createdSubscriber = await feedSubscriberModel.create(
+        createTestFeedSubscriber({
+          feed: createdFeed._id,
+        }),
+      );
+
+      mockGetMeServers([
+        {
+          id: createdFeed.guild + '1',
+          name: 'Test Guild 3',
+          owner: true,
+          permissions: 0,
+        },
+      ]);
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${createdFeed._id}/subscribers/${createdSubscriber._id}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 404 if the feed does not exist', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${new Types.ObjectId()}/subscribers/${new Types.ObjectId()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns 404 if the subscriber does not exist', async () => {
+      mockGetMeServers();
+
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${createdFeed._id}/subscribers/${new Types.ObjectId()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns 204 on success', async () => {
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        _id: new Types.ObjectId(feedId),
+        guild: guildId,
+      });
+      const subscriber = createTestFeedSubscriber({
+        _id: new Types.ObjectId(),
+        feed: feed._id,
+      });
+
+      await Promise.all([
+        feedModel.create(feed),
+        feedSubscriberModel.create(subscriber),
+      ]);
+
+      const { statusCode, body } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${feed._id}/subscribers/${subscriber._id}`,
+        ...standardRequestOptions,
+      });
+
+      console.log(body);
+      expect(statusCode).toEqual(HttpStatus.NO_CONTENT);
+    });
+  });
 });

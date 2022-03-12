@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { UserManagesFeedServerGuard } from './guards/UserManagesFeedServer.guard';
 import { GetFeedPipe } from './pipes/GetFeed.pipe';
@@ -8,6 +18,8 @@ import { FeedSubscribersService } from './feed-subscribers.service';
 import { CreateFeedSubscriberOutputDto } from './dto/CreateFeedSubscriberOutput.dto';
 import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
 import { CreateFeedSubscriberInputDto } from './dto/CreateFeedSubscriberInput.dto';
+import { GetFeedSubscriberPipe } from './pipes/GetFeedSubscriber.pipe';
+import { FeedSubscriber } from './entities/feed-subscriber.entity';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -41,5 +53,15 @@ export class FeedSubscribersController {
     });
 
     return CreateFeedSubscriberOutputDto.fromEntity(updated);
+  }
+
+  @Delete(':feedId/subscribers/:subscriberId')
+  @UseGuards(UserManagesFeedServerGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeFeedSubscriber(
+    @Param(GetFeedSubscriberPipe)
+    subscriber: FeedSubscriber,
+  ) {
+    await this.feedSubscribersService.remove(subscriber._id);
   }
 }

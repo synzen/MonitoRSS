@@ -60,8 +60,19 @@ export class FeedSubscribersService {
     });
   }
 
-  async findById(id: Types.ObjectId | string) {
-    return this.feedSubscriber.findById(id).lean();
+  async findByIdAndFeed({
+    subscriberId,
+    feedId,
+  }: {
+    subscriberId: Types.ObjectId | string;
+    feedId: Types.ObjectId | string;
+  }) {
+    return this.feedSubscriber
+      .findOne({
+        _id: new Types.ObjectId(subscriberId),
+        feed: new Types.ObjectId(feedId),
+      })
+      .lean();
   }
 
   async updateOne(
