@@ -51,11 +51,11 @@ const FeedFilters: React.FC = () => {
   };
 
   return (
-    <Stack>
-      <DashboardContent
-        error={error}
-        loading={status === 'loading' || status === 'idle'}
-      >
+    <DashboardContent
+      error={error}
+      loading={status === 'loading' || status === 'idle'}
+    >
+      <Stack spacing={6}>
         <Heading
           size="lg"
           marginRight={4}
@@ -68,8 +68,8 @@ const FeedFilters: React.FC = () => {
           isUpdating={updatingStatus === 'loading'}
           isLoading={status === 'loading' || status === 'idle'}
         />
-      </DashboardContent>
-    </Stack>
+      </Stack>
+    </DashboardContent>
   );
 };
 
