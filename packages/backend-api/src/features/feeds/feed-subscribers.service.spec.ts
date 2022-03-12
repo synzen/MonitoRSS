@@ -76,6 +76,18 @@ describe('FeedSubscribersService', () => {
   });
 
   describe('createFeedSubscriber', () => {
+    it('throws if the feedId is not a valid object id', async () => {
+      const feedId = 'invalid-id';
+
+      await expect(
+        service.createFeedSubscriber({
+          feedId,
+          discordId: 'user-id',
+          type: FeedSubscriberType.USER,
+        }),
+      ).rejects.toThrow();
+    });
+
     it('creates a new feed subscriber', async () => {
       const details = {
         discordId: 'discord-id',

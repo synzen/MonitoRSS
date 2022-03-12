@@ -1,4 +1,4 @@
-import { CACHE_MANAGER, ModuleMetadata } from '@nestjs/common';
+import { ModuleMetadata } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import {
   FastifyAdapter,
@@ -13,7 +13,6 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { equal } from 'assert';
 import { Session, SessionKey } from '../common/types/Session';
 import testConfig from '../config/test-config';
-import { Cache } from 'cache-manager';
 
 let testingModule: TestingModule;
 let app: NestFastifyApplication;

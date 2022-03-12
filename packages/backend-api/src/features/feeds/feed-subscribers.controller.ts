@@ -1,10 +1,13 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { UserManagesFeedServerGuard } from './guards/UserManagesFeedServer.guard';
 import { GetFeedPipe } from './pipes/GetFeed.pipe';
 import { DetailedFeed } from './types/detailed-feed.type';
 import { GetFeedSubscribersOutputDto } from './dto/GetFeedSubscribersOutput.dto';
 import { FeedSubscribersService } from './feed-subscribers.service';
+import { CreateFeedSubscriberOutputDto } from './dto/CreateFeedSubscriberOutput.dto';
+import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
+import { CreateFeedSubscriberInputDto } from './dto/CreateFeedSubscriberInput.dto';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -23,5 +26,20 @@ export class FeedSubscribersController {
     );
 
     return GetFeedSubscribersOutputDto.fromEntity(subscribers);
+  }
+
+  @Post(':feedId/subscribers')
+  @UseGuards(UserManagesFeedServerGuard)
+  async createFeedSubscriber(
+    @Param('feedId') feedId: string,
+    @Body(TransformValidationPipe) details: CreateFeedSubscriberInputDto,
+  ): Promise<CreateFeedSubscriberOutputDto> {
+    const updated = await this.feedSubscribersService.createFeedSubscriber({
+      type: details.type,
+      discordId: details.discordId,
+      feedId,
+    });
+
+    return CreateFeedSubscriberOutputDto.fromEntity(updated);
   }
 }

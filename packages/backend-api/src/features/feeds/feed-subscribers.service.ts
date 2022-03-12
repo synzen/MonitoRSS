@@ -39,10 +39,16 @@ export class FeedSubscribersService {
   async createFeedSubscriber(
     details: CreateFeedSubscriberDetails,
   ): Promise<FeedSubscriber> {
+    if (!Types.ObjectId.isValid(details.feedId)) {
+      throw new Error(
+        'Feed ID is not a valid ObjectId when trying to create a feed subscriber',
+      );
+    }
+
     const subscriber = await this.feedSubscriber.create({
       type: details.type,
       id: details.discordId,
-      feed: details.feedId,
+      feed: new Types.ObjectId(details.feedId),
     });
 
     return subscriber;
