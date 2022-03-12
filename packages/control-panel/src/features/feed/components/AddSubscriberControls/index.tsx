@@ -4,8 +4,10 @@ import {
   FormControl,
   FormLabel,
   HStack,
+  VisuallyHidden,
 } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ThemedSelect } from '@/components';
 import { DiscordRole } from '@/features/discordServers';
 import { useCreateFeedSubscriber } from '../../hooks';
@@ -29,6 +31,7 @@ export const AddSubscriberControls: React.FC<Props> = ({
   } = useCreateFeedSubscriber({
     feedId,
   });
+  const { t } = useTranslation();
 
   const onClickAdd = async () => {
     if (!currentRoleId) {
@@ -52,7 +55,11 @@ export const AddSubscriberControls: React.FC<Props> = ({
   return (
     <HStack>
       <FormControl width={250}>
-        <FormLabel htmlFor="subscriber-name">Subscribers</FormLabel>
+        <VisuallyHidden>
+          <FormLabel htmlFor="subscriber-name">
+            {t('pages.filters.formAddFilterInputLabel')}
+          </FormLabel>
+        </VisuallyHidden>
         <ThemedSelect
           id="subscriber-name"
           onChange={(value) => setCurrentRoleId(value)}

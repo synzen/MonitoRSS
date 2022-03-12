@@ -32,7 +32,8 @@
       "title": "Filters",
       "tableCategory": "Category",
       "tableValue": "Value",
-      "removeSelectedFilters": "Remove selected filters"
+      "removeSelectedFilters": "Remove selected filters",
+      "formAddFilterInputLabel": "Subscriber"
     },
     "subscribers": {
       "title": "Subscribers"
