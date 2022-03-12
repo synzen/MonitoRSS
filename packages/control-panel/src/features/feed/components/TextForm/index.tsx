@@ -21,7 +21,7 @@ const FormSchema = object({
 type FormValues = InferType<typeof FormSchema>;
 
 export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
-  const { mutateAsync } = useUpdateFeed({ feedId });
+  const { mutateAsync } = useUpdateFeed();
   const defaultValues = { text };
 
   const {

@@ -1,86 +1,197 @@
 import {
-  Checkbox,
+  Button,
+  Divider,
+  Flex,
+  FormControl,
   Heading,
   HStack,
   Stack,
+  Switch,
   Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { DashboardContent, Navbar } from '@/components';
-import NavbarBreadcrumbItem from '../types/NavbarBreadcrumbItem';
+import { boolean, InferType, object } from 'yup';
+import { Controller, useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { DashboardContent } from '@/components';
 import RouteParams from '../types/RouteParams';
+import { useFeed } from '@/features/feed';
+import { ErrorAlert } from '@/components/ErrorAlert';
+import { useUpdateFeed } from '@/features/feed/hooks/useUpdateFeed';
+import { notifyError } from '@/utils/notifyError';
 
-const miscOptions = [{
-  key: 'title-checks',
-  title: 'Title Checks',
-  description: 'ONLY ENABLE THIS IF NECESSARY! Title checks will ensure no article with the '
-  + 'same title as a previous one will be sent for a specific feed.',
-}, {
-  key: 'date-checks',
-  title: 'Date Checks',
-  description: 'Date checking ensures that articles that are either older than 1 day or has'
-  + ' invalid/no published dates are never sent. This MUST be disabled for feeds with no'
-  + ' {date} placeholder for any articles to be delivered..',
-}, {
-  key: 'image-links-preview',
-  title: 'Image Links Preview',
-  description: 'Toggle automatic Discord image link embedded previews for image links'
-  + ' found inside placeholders such as {description}.',
-}, {
-  key: 'image-links-existence',
-  title: 'Image Links Existence',
-  description: 'Remove image links found inside placeholders such as {description}. If disabled,'
-   + 'all image src links in such placeholders will be removed.',
-}, {
-  key: 'tables-support',
-  title: 'Tables Support',
-  description: 'If table formatting is enabled, they should be enclosed in code blocks to'
-  + ' ensure uniform spacing.',
-}];
+const formSchema = object({
+  checkTitles: boolean().optional(),
+  checkDates: boolean().optional(),
+  imgPreviews: boolean().optional(),
+  imgLinksExistence: boolean().optional(),
+  formatTables: boolean().optional(),
+  directSubscribers: boolean().optional(),
+  splitMessage: boolean().optional(),
+});
+
+type FormData = InferType<typeof formSchema>;
 
 const FeedMiscOptions: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: {
+      isDirty,
+      isSubmitting,
+    },
+  } = useForm<FormData>({
+    resolver: yupResolver(formSchema),
+  });
+  const { t } = useTranslation();
+  const {
+    status,
+    feed,
+    error,
+  } = useFeed({
+    feedId,
+  });
+  const { mutateAsync } = useUpdateFeed();
 
-  const breadcrumbItems: Array<NavbarBreadcrumbItem> = [{
-    id: 'feeds',
-    content: 'Feeds',
-    enabled: true,
+  const resetForm = () => {
+    if (!feed) {
+      return;
+    }
+
+    reset({
+      checkTitles: feed.checkTitles,
+      checkDates: feed.checkDates,
+      imgPreviews: feed.imgPreviews,
+      imgLinksExistence: feed.imgLinksExistence,
+      formatTables: feed.formatTables,
+      directSubscribers: feed.directSubscribers,
+      splitMessage: feed.splitMessage,
+    });
+  };
+
+  useEffect(() => {
+    resetForm();
+  }, [feed]);
+
+  if (error) {
+    return <ErrorAlert description={error.message} />;
+  }
+
+  const onSubmit = async (data: FormData) => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        details: {
+          checkDates: data.checkDates,
+          checkTitles: data.checkTitles,
+          imgPreviews: data.imgPreviews,
+          imgLinksExistence: data.imgLinksExistence,
+          formatTables: data.formatTables,
+          directSubscribers: data.directSubscribers,
+          splitMessage: data.splitMessage,
+        },
+      });
+    } catch (err) {
+      notifyError(t('common.errors.failedToSave'), err as Error);
+    }
+  };
+
+  const options: Array<{ formKey: keyof FormData, label: string, description: string }> = [{
+    label: t('pages.miscOptions.titleChecks'),
+    description: t('pages.miscOptions.titleChecksDescription'),
+    formKey: 'checkTitles',
   }, {
-    id: 'feed',
-    content: feedId,
-    enabled: true,
+    label: t('pages.miscOptions.dateChecks'),
+    description: t('pages.miscOptions.dateChecksDescription'),
+    formKey: 'checkDates',
   }, {
-    id: 'miscoptions',
-    content: 'Misc Options',
-    enabled: true,
+    label: t('pages.miscOptions.imageLinksPreviews'),
+    description: t('pages.miscOptions.imageLinksPreviewsDescription'),
+    formKey: 'imgPreviews',
+  }, {
+    label: t('pages.miscOptions.imageLinksExistence'),
+    description: t('pages.miscOptions.imageLinksExistenceDescription'),
+    formKey: 'imgLinksExistence',
+  }, {
+    label: t('pages.miscOptions.formatTables'),
+    description: t('pages.miscOptions.formatTablesDescription'),
+    formKey: 'formatTables',
+  }, {
+    label: t('pages.miscOptions.splitMessage'),
+    description: t('pages.miscOptions.splitMessageDescription'),
+    formKey: 'splitMessage',
   }];
 
   return (
-    <Stack>
-      <Navbar breadcrumbItems={breadcrumbItems} />
-      <DashboardContent>
-        <Stack spacing="12">
-          <Stack spacing="8">
-            {miscOptions.map((option) => (
-              <HStack key={option.key}>
-
-                <Stack>
-                  <HStack>
-                    <Checkbox size="lg" />
-                    <Heading as="h2" size="md">
-                      {option.title}
-                    </Heading>
-                  </HStack>
-                  <Text>
-                    {option.description}
-                  </Text>
-                </Stack>
-              </HStack>
-            ))}
+    <DashboardContent
+      loading={status === 'loading' || status === 'idle'}
+    >
+      <Stack spacing={6}>
+        <Heading>{t('pages.miscOptions.title')}</Heading>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack>
+            <Stack spacing="8">
+              {options.map((option) => (
+                <>
+                  <Controller
+                    name={option.formKey}
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl>
+                        <Flex justifyContent="space-between">
+                          <Heading
+                            as="label"
+                            htmlFor="checkTitles"
+                            size="md"
+                          >
+                            {option.label}
+                          </Heading>
+                          <Switch
+                            size="lg"
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            isChecked={field.value}
+                          />
+                        </Flex>
+                        <Text>
+                          {option.description}
+                        </Text>
+                      </FormControl>
+                    )}
+                  />
+                  <Divider />
+                </>
+              ))}
+            </Stack>
+            <HStack justifyContent="flex-end">
+              <Button
+                variant="outline"
+                onClick={resetForm}
+                disabled={!isDirty || isSubmitting}
+              >
+                {t('pages.miscOptions.resetButton')}
+              </Button>
+              <Button
+                colorScheme="blue"
+                type="submit"
+                isLoading={isSubmitting}
+                isDisabled={!isDirty || isSubmitting}
+              >
+                {t('pages.miscOptions.saveButton')}
+              </Button>
+            </HStack>
           </Stack>
-        </Stack>
-      </DashboardContent>
-    </Stack>
+        </form>
+      </Stack>
+    </DashboardContent>
   );
 };
 

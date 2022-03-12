@@ -8,6 +8,13 @@ export interface UpdateFeedInput {
     text?: Feed['text'],
     webhookId?: string,
     filters?: Array<{ category: string, value: string }>
+    checkTitles?: boolean;
+    checkDates?: boolean;
+    imgPreviews?: boolean;
+    imgLinksExistence?: boolean;
+    formatTables?: boolean;
+    directSubscribers?: boolean;
+    splitMessage?: boolean;
   }
 }
 

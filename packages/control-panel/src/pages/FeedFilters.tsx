@@ -24,7 +24,7 @@ const FeedFilters: React.FC = () => {
   const {
     mutateAsync,
     status: updatingStatus,
-  } = useUpdateFeed({ feedId } as { feedId: string });
+  } = useUpdateFeed();
 
   const tableData = useMemo(() => {
     if (!feed?.filters) {

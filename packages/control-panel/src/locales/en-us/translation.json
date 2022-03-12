@@ -4,7 +4,8 @@
       "somethingWentWrong": "Sorry, something went wrong.",
       "tryAgainLater": "Please try again later.",
       "detailsTitle": "Details",
-      "goBack": "Go back"
+      "goBack": "Go back",
+      "failedToSave": "Failed to save changes"
     }
   },
   "pages": {
@@ -44,6 +45,23 @@
       "notEnabledTitle": "This server does not have webhooks enabled",
       "notEnabledDescription": "This server must be backed by a supporter to access this.",
       "description": "Only webhooks that are created and managed by the bot will be listed here."
+    },
+    "miscOptions": {
+      "title": "Misc Options",
+      "titleChecks": "Title checks",
+      "titleChecksDescription": "ONLY ENABLE THIS IF NECESSARY! Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.",
+      "dateChecks": "Date checks",
+      "dateChecksDescription": "Date checking ensures that articles that are either older than 1 day or has invalid/no published dates are never sent. This MUST be disabled for feeds with no {date} placeholder for any articles to be delivered.",
+      "imageLinksPreviews": "Image links previews",
+      "imageLinksPreviewsDescription": "Toggle automatic Discord image link embedded previews for image links",
+      "imageLinksExistence": "Image links existence",
+      "imageLinksExistenceDescription": "Remove image links found inside placeholders such as {description}. If disabled, all image src links in such placeholders will be removed.",
+      "formatTables": "Format tables",
+      "formatTablesDescription": "If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing (wrap text with triple backticks, ```text here``` for exmple).",
+      "splitMessage": "Split message",
+      "splitMessageDescription": "If enabled, messages will be split into multiple messages if they are too long. Otherwise, it will attempt to be sent as one message with truncated text.",
+      "resetButton": "Reset",
+      "saveButton": "Save"
     }
   },
   "components": {

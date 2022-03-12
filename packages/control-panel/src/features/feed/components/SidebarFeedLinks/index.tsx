@@ -77,7 +77,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             {t('components.sidebar.feed.subscribers')}
           </SidebarLink>
           <SidebarLink
-            disabled
+            disabled={!feedId}
             icon={FiSliders}
             active={!!feedId && currentPath === paths.FEED_MISC_OPTIONS}
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}

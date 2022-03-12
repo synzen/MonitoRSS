@@ -2,11 +2,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import ApiAdapterError from '@/utils/ApiAdapterError';
 import { updateFeed, UpdateFeedInput, UpdateFeedOutput } from '../api';
 
-interface Props {
-  feedId: string
-}
-
-export const useUpdateFeed = ({ feedId }: Props) => {
+export const useUpdateFeed = () => {
   const queryClient = useQueryClient();
   const {
     mutateAsync,
@@ -15,9 +11,9 @@ export const useUpdateFeed = ({ feedId }: Props) => {
   } = useMutation<UpdateFeedOutput, ApiAdapterError, UpdateFeedInput>(
     (details) => updateFeed(details),
     {
-      onSuccess: (data) => {
+      onSuccess: (data, inputData) => {
         queryClient.setQueryData(['feed', {
-          feedId,
+          feedId: inputData.feedId,
         }], data);
       },
     },

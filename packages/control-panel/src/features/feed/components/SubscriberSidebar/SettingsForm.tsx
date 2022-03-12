@@ -45,7 +45,7 @@ export const SettingsForm: React.FC<Props> = ({
     serverId,
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
-  const { mutateAsync } = useUpdateFeed({ feedId });
+  const { mutateAsync } = useUpdateFeed();
 
   const {
     handleSubmit,
