@@ -76,7 +76,7 @@ export const FeedsTable: React.FC<Props> = ({
 
   const total = data?.total || 0;
 
-  const columns = useMemo<Column<Pick<Feed, 'status' | 'title' | 'url' | 'channel'>>[]>(
+  const columns = useMemo<Column<Pick<Feed, 'status' | 'title' | 'url' | 'channel' | 'id'>>[]>(
     () => [
       {
         Header: t('pages.feeds.tableStatus') as string,
