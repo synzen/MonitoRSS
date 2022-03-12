@@ -154,4 +154,27 @@ describe('DiscordServersService', () => {
       expect(channels).toEqual(mockChannels);
     });
   });
+
+  describe('getRolesOfServer', () => {
+    it('returns the roles from Discord', async () => {
+      const serverId = 'server-id';
+      const mockRoles = [
+        {
+          id: 'id-1',
+          name: 'role-1',
+        },
+        {
+          id: 'id-2',
+          name: 'role-2',
+        },
+      ];
+      jest
+        .spyOn(discordApiService, 'executeBotRequest')
+        .mockResolvedValue(mockRoles);
+
+      const roles = await service.getRolesOfServer(serverId);
+
+      expect(roles).toEqual(mockRoles);
+    });
+  });
 });

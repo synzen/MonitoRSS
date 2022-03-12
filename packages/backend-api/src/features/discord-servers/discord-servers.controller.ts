@@ -16,6 +16,7 @@ import { BotHasServerGuard } from './guards/BotHasServer.guard';
 import { UserManagesServerGuard } from './guards/UserManagesServer.guard';
 import { GetServerChannelsOutputDto } from './dto/GetServerChannelsOutput.dto';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
+import { GetServerRolesOutputDto } from './dto/GetServerRolesOutput.dto';
 
 @Controller('discord-servers')
 @UseGuards(DiscordOAuth2Guard)
@@ -67,5 +68,18 @@ export class DiscordServersController {
     );
 
     return GetServerChannelsOutputDto.fromEntities(channels);
+  }
+
+  @Get(':serverId/roles')
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
+  async getServerRoles(
+    @Param('serverId') serverId: string,
+  ): Promise<GetServerRolesOutputDto> {
+    const roles = await this.discordServersService.getRolesOfServer(serverId);
+
+    return GetServerRolesOutputDto.fromEntities(roles);
   }
 }

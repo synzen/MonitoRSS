@@ -16,6 +16,7 @@ import { Session } from '../../common/types/Session';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { DiscordServerChannel } from './types/DiscordServerChannel.type';
 import { Cache } from 'cache-manager';
+import { DiscordServerRole } from './types/discord-server-role.type';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -84,12 +85,20 @@ describe('DiscordServersModule', () => {
       .reply(200, channels);
   };
 
+  const mockGetServerRoles = (roles: DiscordServerRole[]) => {
+    nock(DISCORD_API_BASE_URL)
+      .get(`/guilds/${serverId}/roles`)
+      .reply(200, roles);
+  };
+
   const mockAllDiscordEndpoints = (data?: {
-    channels: DiscordServerChannel[];
+    channels?: DiscordServerChannel[];
+    roles?: DiscordServerRole[];
   }) => {
     mockGetServer();
     mockGetUserGuilds();
     mockGetServerChannels(data?.channels || []);
+    mockGetServerRoles(data?.roles || []);
   };
 
   describe('GET /discord-servers/:serverId/channels', () => {
@@ -174,6 +183,100 @@ describe('DiscordServersModule', () => {
         })),
         total: serverChannels.length,
       });
+    });
+  });
+
+  describe('GET /discord-servers/:serverId/roles', () => {
+    it('returns 401 if user is not authorized', async () => {
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/roles`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+    it('returns 400 if bot has no access to discord server', async () => {
+      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockGetUserGuilds();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/roles`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it('returns forbidden if user does own server', async () => {
+      mockGetServer();
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/roles`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns forbidden if user does not manage server', async () => {
+      mockGetServer();
+      mockGetUserGuilds({
+        permissions: 0,
+        owner: false,
+      });
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/roles`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns the discord server roles', async () => {
+      const serverRoles: DiscordServerRole[] = [
+        {
+          id: 'id1',
+          name: 'name1',
+          color: 123,
+        },
+        {
+          id: 'id2',
+          name: 'name2',
+          color: 456,
+        },
+      ];
+      mockAllDiscordEndpoints({
+        roles: serverRoles,
+      });
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/roles`,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(statusCode).toBe(HttpStatus.OK);
+      expect(parsedBody).toEqual(
+        expect.objectContaining({
+          results: expect.arrayContaining(
+            serverRoles.map((channel) =>
+              expect.objectContaining({
+                id: channel.id,
+                name: channel.name,
+                color: expect.any(String),
+              }),
+            ),
+          ),
+          total: serverRoles.length,
+        }),
+      );
     });
   });
 

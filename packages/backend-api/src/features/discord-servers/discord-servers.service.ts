@@ -5,6 +5,7 @@ import { DiscordAPIService } from '../../services/apis/discord/discord-api.servi
 import { Feed } from '../feeds/entities/Feed.entity';
 import { FeedsService } from '../feeds/feeds.service';
 import { FeedStatus } from '../feeds/types/FeedStatus.type';
+import { DiscordServerRole } from './types/discord-server-role.type';
 import { DiscordServerChannel } from './types/DiscordServerChannel.type';
 
 @Injectable()
@@ -63,5 +64,14 @@ export class DiscordServersService {
       );
 
     return channels;
+  }
+
+  async getRolesOfServer(serverId: string) {
+    const roles: DiscordServerRole[] =
+      await this.discordApiService.executeBotRequest(
+        `/guilds/${serverId}/roles`,
+      );
+
+    return roles;
   }
 }
