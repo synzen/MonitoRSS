@@ -4,3 +4,4 @@ export * from './getFeedArticles';
 export * from './updateFeed';
 export * from './refreshFeed';
 export * from './getFeedSubscribers';
+export * from './createFeedSubscriber';

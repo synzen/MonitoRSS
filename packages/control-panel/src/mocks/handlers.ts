@@ -3,6 +3,7 @@ import { rest } from 'msw';
 import { GetDiscordMeOutput } from '@/features/discordUser';
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
+  CreateFeedSubscriberOutput,
   FeedSummary,
   GetFeedArticlesOutput, GetFeedOutput, GetFeedsOutput, GetFeedSubscribersOutput, UpdateFeedOutput,
 } from '../features/feed';
@@ -93,6 +94,19 @@ const handlers = [
     ctx.json<GetFeedSubscribersOutput>({
       results: mockFeedSubscribers,
       total: mockFeedSubscribers.length,
+    }),
+  )),
+
+  rest.post('/api/v1/feeds/:feedId/subscribers', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<CreateFeedSubscriberOutput>({
+      result: {
+        id: '3',
+        discordId: mockDiscordRoles[2].id,
+        feed: mockFeeds[0].id,
+        filters: [],
+        type: 'role',
+      },
     }),
   )),
 
