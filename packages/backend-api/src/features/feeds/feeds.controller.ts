@@ -98,6 +98,7 @@ export class FeedsController {
     }
 
     const updatedFeed = await this.feedsService.updateOne(feed._id, {
+      title: updateFeedInput.title,
       text: updateFeedInput.text,
       filters: filtersUpdate,
       webhook: {

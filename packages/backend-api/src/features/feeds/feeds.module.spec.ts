@@ -268,8 +268,13 @@ describe('FeedsModule', () => {
       await feedModel.create(feed);
 
       const payload = {
+        title: 'newtitle',
         text: 'Hello world',
         filters: [
+          {
+            category: 'description',
+            value: 'desc',
+          },
           {
             category: 'title',
             value: 'title1',
@@ -277,10 +282,6 @@ describe('FeedsModule', () => {
           {
             category: 'title',
             value: 'title2',
-          },
-          {
-            category: 'description',
-            value: 'desc',
           },
         ],
       };
@@ -295,7 +296,9 @@ describe('FeedsModule', () => {
       const parsedBody = JSON.parse(body);
       expect(statusCode).toEqual(HttpStatus.OK);
       expect(parsedBody.result.text).toEqual(payload.text);
-      expect(parsedBody.result.filters).toEqual(payload.filters);
+      expect(parsedBody.result.filters).toEqual(
+        expect.arrayContaining(payload.filters),
+      );
     });
 
     it('updates webhooks correctly', async () => {

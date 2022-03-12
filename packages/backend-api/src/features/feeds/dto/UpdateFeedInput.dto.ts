@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 class UpdateFeedInputFiltersDto {
   @IsString()
@@ -10,6 +16,11 @@ class UpdateFeedInputFiltersDto {
 }
 
 export class UpdateFeedInputDto {
+  @IsString()
+  @IsOptional()
+  @IsNotEmpty()
+  title?: string;
+
   @IsString()
   @IsOptional()
   text?: string;

@@ -283,6 +283,33 @@ describe('FeedsService', () => {
       });
     });
 
+    describe('title', () => {
+      it('updates the title if it exists', async () => {
+        const newTitle = 'new-title';
+        const createdFeed = await feedModel.create(createTestFeed());
+
+        await service.updateOne(createdFeed._id.toString(), {
+          title: newTitle,
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.title).toEqual(newTitle);
+      });
+
+      it('does not update if the title is an empty string', async () => {
+        const createdFeed = await feedModel.create(createTestFeed());
+
+        await service.updateOne(createdFeed._id.toString(), {
+          title: '',
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.title).toEqual(createdFeed.title);
+      });
+    });
+
     it('returns undefined if no feed is found', async () => {
       await expect(
         service.updateOne(new Types.ObjectId(), {

@@ -41,93 +41,111 @@ describe('FeedsController', () => {
       feedsService.updateOne.mockResolvedValue(feed);
     });
 
-    it('calls update with undefined filters if there are no filters', async () => {
-      const updateDto: UpdateFeedInputDto = {};
+    describe('title', () => {
+      it('calls update with the title', async () => {
+        const title = 'new-title';
+        await controller.updateFeed(feed, {
+          title,
+        });
 
-      await controller.updateFeed(feed, updateDto);
-
-      expect(feedsService.updateOne).toHaveBeenCalledWith(
-        feed._id,
-        expect.objectContaining({
-          filters: undefined,
-        }),
-      );
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            title,
+          }),
+        );
+      });
     });
 
-    it('calls update with the filters array converted to an object', async () => {
-      const updateDto: UpdateFeedInputDto = {
-        filters: [
-          {
-            category: 'title',
-            value: 'title',
-          },
-          {
-            category: 'title',
-            value: 'title2',
-          },
-          {
-            category: 'description',
-            value: 'desc',
-          },
-        ],
-      };
+    describe('filters', () => {
+      it('calls update with undefined filters if there are no filters', async () => {
+        const updateDto: UpdateFeedInputDto = {};
 
-      await controller.updateFeed(feed, updateDto);
+        await controller.updateFeed(feed, updateDto);
 
-      expect(feedsService.updateOne).toHaveBeenCalledWith(
-        feed._id,
-        expect.objectContaining({
-          filters: { title: ['title', 'title2'], description: ['desc'] },
-        }),
-      );
-    });
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            filters: undefined,
+          }),
+        );
+      });
 
-    it('does not include duplicates', async () => {
-      const updateDto: UpdateFeedInputDto = {
-        filters: [
-          {
-            category: 'title',
-            value: 'title',
-          },
-          {
-            category: 'title',
-            value: 'title',
-          },
-          {
-            category: 'title',
-            value: 'newtitle',
-          },
-        ],
-      };
+      it('calls update with the filters array converted to an object', async () => {
+        const updateDto: UpdateFeedInputDto = {
+          filters: [
+            {
+              category: 'title',
+              value: 'title',
+            },
+            {
+              category: 'title',
+              value: 'title2',
+            },
+            {
+              category: 'description',
+              value: 'desc',
+            },
+          ],
+        };
 
-      await controller.updateFeed(feed, updateDto);
+        await controller.updateFeed(feed, updateDto);
 
-      expect(feedsService.updateOne).toHaveBeenCalledWith(
-        feed._id,
-        expect.objectContaining({
-          filters: { title: ['title', 'newtitle'] },
-        }),
-      );
-    });
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            filters: { title: ['title', 'title2'], description: ['desc'] },
+          }),
+        );
+      });
 
-    it('trims the values', async () => {
-      const updateDto: UpdateFeedInputDto = {
-        filters: [
-          {
-            category: 'title',
-            value: 'title                          ',
-          },
-        ],
-      };
+      it('does not include duplicates', async () => {
+        const updateDto: UpdateFeedInputDto = {
+          filters: [
+            {
+              category: 'title',
+              value: 'title',
+            },
+            {
+              category: 'title',
+              value: 'title',
+            },
+            {
+              category: 'title',
+              value: 'newtitle',
+            },
+          ],
+        };
 
-      await controller.updateFeed(feed, updateDto);
+        await controller.updateFeed(feed, updateDto);
 
-      expect(feedsService.updateOne).toHaveBeenCalledWith(
-        feed._id,
-        expect.objectContaining({
-          filters: { title: ['title'] },
-        }),
-      );
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            filters: { title: ['title', 'newtitle'] },
+          }),
+        );
+      });
+
+      it('trims the values', async () => {
+        const updateDto: UpdateFeedInputDto = {
+          filters: [
+            {
+              category: 'title',
+              value: 'title                          ',
+            },
+          ],
+        };
+
+        await controller.updateFeed(feed, updateDto);
+
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            filters: { title: ['title'] },
+          }),
+        );
+      });
     });
   });
 });

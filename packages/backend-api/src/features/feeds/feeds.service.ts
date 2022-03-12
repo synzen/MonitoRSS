@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import { FeedSchedulingService } from './feed-scheduling.service';
 
 interface UpdateFeedInput {
+  title?: string;
   text?: string;
   filters?: Record<string, string[]>;
   webhook?: {
@@ -126,6 +127,10 @@ export class FeedsService {
 
     if (strippedUpdateObject.filters) {
       updateObject.$set.filters = strippedUpdateObject.filters;
+    }
+
+    if (strippedUpdateObject.title) {
+      updateObject.$set.title = strippedUpdateObject.title;
     }
 
     await this.feedModel.updateOne(
