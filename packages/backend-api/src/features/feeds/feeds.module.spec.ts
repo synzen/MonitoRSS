@@ -20,11 +20,17 @@ import {
   SupporterModel,
 } from '../supporters/entities/supporter.entity';
 import { Cache } from 'cache-manager';
+import {
+  FeedSubscriber,
+  FeedSubscriberModel,
+} from './entities/feed-subscriber.entity';
+import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
   let supporterModel: SupporterModel;
+  let feedSubscriberModel: FeedSubscriberModel;
   let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
   const standardRequestOptions = {
     headers: {
@@ -47,6 +53,9 @@ describe('FeedsModule', () => {
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
+    feedSubscriberModel = app.get<FeedSubscriberModel>(
+      getModelToken(FeedSubscriber.name),
+    );
   });
 
   afterEach(async () => {
@@ -217,6 +226,85 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.OK);
       expect(parsedBody).toEqual({
         result: expect.any(Object),
+      });
+    });
+  });
+
+  describe('GET /feeds/:feedId/subscribers', () => {
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${feedId}/subscribers`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if use does not have permission of guild of feed', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      mockGetMeServers([
+        {
+          id: createdFeed.guild + '1',
+          name: 'Test Guild 3',
+          owner: true,
+          permissions: 0,
+        },
+      ]);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${createdFeed._id}/subscribers`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 404 if the feed does not exist', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${new Types.ObjectId()}/subscribers`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns the feed', async () => {
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        guild: guildId,
+      });
+
+      await feedModel.create(feed);
+
+      const subscriber = createTestFeedSubscriber({
+        feed: feed._id,
+      });
+
+      await feedSubscriberModel.create(subscriber);
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${feed._id}/subscribers`,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(statusCode).toEqual(HttpStatus.OK);
+      expect(parsedBody).toEqual({
+        results: expect.any(Array),
+        total: expect.any(Number),
       });
     });
   });

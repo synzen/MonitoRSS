@@ -8,6 +8,10 @@ import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
 import { FeedStatus } from './types/FeedStatus.type';
 import dayjs from 'dayjs';
 import { FeedSchedulingService } from './feed-scheduling.service';
+import {
+  FeedSubscriber,
+  FeedSubscriberModel,
+} from './entities/feed-subscriber.entity';
 
 interface UpdateFeedInput {
   title?: string;
@@ -27,6 +31,8 @@ export class FeedsService {
   constructor(
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
+    @InjectModel(FeedSubscriber.name)
+    private readonly feedSubscriber: FeedSubscriberModel,
     private readonly feedSchedulingService: FeedSchedulingService,
   ) {}
 
@@ -253,6 +259,18 @@ export class FeedsService {
     });
 
     return withStatuses;
+  }
+
+  async getSubscribers(
+    feedId: string | Types.ObjectId,
+  ): Promise<FeedSubscriber[]> {
+    const subscribers = await this.feedSubscriber
+      .find({
+        feed: feedId,
+      })
+      .lean();
+
+    return subscribers;
   }
 
   /**
