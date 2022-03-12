@@ -13,6 +13,8 @@ describe('CreateFeedSubscriberOutputDto', () => {
 
     expect(formatted).toEqual({
       result: {
+        id: entity._id.toHexString(),
+        discordId: entity.id,
         feed: entity.feed.toHexString(),
         type: entity.type,
         filters: [
@@ -29,7 +31,6 @@ describe('CreateFeedSubscriberOutputDto', () => {
             value: 'hello2',
           },
         ],
-        id: entity.id,
       },
     });
   });
