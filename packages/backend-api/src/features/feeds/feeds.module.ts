@@ -11,9 +11,10 @@ import { DiscordWebhooksModule } from '../discord-webhooks/discord-webhooks.modu
 import { FeedScheduleFeature } from './entities/feed-schedule.entity';
 import { FeedSchedulingService } from './feed-scheduling.service';
 import { FeedSubscriberFeature } from './entities/feed-subscriber.entity';
+import { FeedSubscribersController } from './feed-subscribers.controller';
 
 @Module({
-  controllers: [FeedsController],
+  controllers: [FeedsController, FeedSubscribersController],
   providers: [FeedsService, FeedSchedulingService],
   imports: [
     CacheModule.register(),
