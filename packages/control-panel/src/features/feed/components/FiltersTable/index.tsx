@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { ArrowDownIcon, ArrowUpIcon } from '@chakra-ui/icons';
 import {
-  Box, Button, Checkbox, Flex, Heading, Stack, Table, Tbody, Td, Th, Thead, Tr,
+  Button, Checkbox, Flex, Stack, Table, Tbody, Td, Th, Thead, Tr,
 } from '@chakra-ui/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -106,17 +106,8 @@ export const FiltersTable: React.FC<Props> = ({
 
   return (
     <Stack spacing={6}>
-      <Flex justifyContent="space-between">
-        <Heading
-          size="lg"
-          marginRight={4}
-        >
-          {t('pages.filters.title')}
-        </Heading>
-        <AddFilterDialog onSubmit={onAddFilters} />
-      </Flex>
       <Stack>
-        <Box>
+        <Flex justifyContent="space-between">
           <Button
             disabled={selectedFlatRows.length === 0 || isUpdating || isLoading}
             isLoading={isUpdating}
@@ -126,7 +117,8 @@ export const FiltersTable: React.FC<Props> = ({
           >
             {t('pages.filters.removeSelectedFilters')}
           </Button>
-        </Box>
+          <AddFilterDialog onSubmit={onAddFilters} />
+        </Flex>
         <Table
           {...getTableProps()}
           whiteSpace="nowrap"

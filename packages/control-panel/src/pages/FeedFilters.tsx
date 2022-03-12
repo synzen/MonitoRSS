@@ -1,10 +1,12 @@
 /* eslint-disable react/no-unstable-nested-components */
 import {
+  Heading,
   Stack,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { DashboardContent } from '@/components';
 import RouteParams from '../types/RouteParams';
 import { useFeed } from '@/features/feed';
@@ -13,6 +15,7 @@ import { FiltersTable } from '@/features/feed/components/FiltersTable';
 
 const FeedFilters: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const { t } = useTranslation();
   const {
     feed, status, error,
   } = useFeed({
@@ -53,6 +56,12 @@ const FeedFilters: React.FC = () => {
         error={error}
         loading={status === 'loading' || status === 'idle'}
       >
+        <Heading
+          size="lg"
+          marginRight={4}
+        >
+          {t('pages.filters.title')}
+        </Heading>
         <FiltersTable
           data={tableData}
           onFiltersChanged={onFiltersChanged}

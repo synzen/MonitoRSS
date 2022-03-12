@@ -1,5 +1,6 @@
 import {
   Box,
+  Divider,
   Flex,
   Heading,
   SlideFade,
@@ -7,10 +8,14 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 import { Loading } from '@/components';
 import { useFeedSubscriber } from '../../hooks';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { useDiscordServerRoles } from '@/features/discordServers';
+import { FiltersTable } from '../FiltersTable';
+import { useUpdateFeedSubscriber } from '../../hooks/useUpdateFeedSubscriber';
+import { notifyError } from '@/utils/notifyError';
 
 interface Props {
   serverId?: string
@@ -31,6 +36,10 @@ export const SubscriberSidebar: React.FC<Props> = ({
     subscriberId,
   });
   const { getRolebyId } = useDiscordServerRoles({ serverId });
+  const {
+    mutateAsync,
+    status: updatingStatus,
+  } = useUpdateFeedSubscriber();
 
   if (status === 'error') {
     return (
@@ -43,6 +52,33 @@ export const SubscriberSidebar: React.FC<Props> = ({
   if (status === 'loading' || !data) {
     return <Flex justifyContent="center" padding="20"><Loading /></Flex>;
   }
+
+  const filtersData = useMemo(() => {
+    const filters = data?.filters || [];
+
+    return filters.map((filter) => ({
+      category: filter.category,
+      value: filter.value,
+    }));
+  }, [data]);
+
+  const onFiltersChanged = async (filters: Array<{ category: string, value: string }>) => {
+    if (!feedId || !subscriberId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        subscriberId,
+        details: {
+          filters,
+        },
+      });
+    } catch (err) {
+      notifyError('Failed to update', err as Error);
+    }
+  };
 
   return (
     <Stack
@@ -62,6 +98,17 @@ export const SubscriberSidebar: React.FC<Props> = ({
           {data.type === 'role' && (getRolebyId(data.discordId)?.name || data.discordId)}
           {data.type === 'user' && data.discordId}
         </Heading>
+      </Stack>
+      <Divider />
+      <Stack spacing={6}>
+        <Heading size="md" as="h2">
+          Filters
+        </Heading>
+        <FiltersTable
+          data={filtersData}
+          onFiltersChanged={onFiltersChanged}
+          isUpdating={updatingStatus === 'loading'}
+        />
       </Stack>
     </Stack>
   );

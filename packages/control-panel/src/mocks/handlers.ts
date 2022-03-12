@@ -5,7 +5,12 @@ import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
   CreateFeedSubscriberOutput,
   FeedSummary,
-  GetFeedArticlesOutput, GetFeedOutput, GetFeedsOutput, GetFeedSubscribersOutput, UpdateFeedOutput,
+  GetFeedArticlesOutput,
+  GetFeedOutput,
+  GetFeedsOutput,
+  GetFeedSubscribersOutput,
+  UpdateFeedOutput,
+  UpdateFeedSubscriberOutput,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
 import mockFeeds from './data/feed';
@@ -108,6 +113,18 @@ const handlers = [
         type: 'role',
       },
     }),
+  )),
+
+  rest.patch('/api/v1/feeds/:feedId/subscribers/:subscriberId', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<UpdateFeedSubscriberOutput>({
+      result: mockFeedSubscribers[0],
+    }),
+  )),
+
+  rest.delete('/api/v1/feeds/:feedId/subscribers/:subscriberId', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.status(204),
   )),
 
   rest.patch('/api/v1/feeds/:feedId', (req, res, ctx) => res(
