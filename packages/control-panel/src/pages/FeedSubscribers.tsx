@@ -1,27 +1,25 @@
-import { DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import {
   Box,
+  Drawer,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerOverlay,
+  Flex,
   Heading,
-  HStack,
-  IconButton,
   Stack,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DashboardContent } from '@/components';
 import RouteParams from '../types/RouteParams';
 import { useDiscordServerRoles } from '@/features/discordServers';
 import { useFeedSubscribers } from '@/features/feed';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { AddSubscriberControls } from '@/features/feed/components/AddSubscriberControls';
+import { FeedSubscribersTable } from '@/features/feed/components/FeedSubscribersTable';
+import { SubscriberSidebar } from '@/features/feed/components/SubscriberSidebar';
 
 const FeedSubscribers: React.FC = () => {
   const { serverId, feedId } = useParams<RouteParams>();
@@ -29,7 +27,6 @@ const FeedSubscribers: React.FC = () => {
     data: rolesData,
     error: rolesError,
     status: rolesStatus,
-    getRolebyId,
   } = useDiscordServerRoles({ serverId });
   const {
     data: feedSubscribersData,
@@ -37,6 +34,8 @@ const FeedSubscribers: React.FC = () => {
     error: feedSubscribersError,
   } = useFeedSubscribers({ feedId });
   const { t } = useTranslation();
+  const [selectedSubscriberId, setSelectedSubscriberId] = useState('');
+  const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
 
   if (rolesError || feedSubscribersError) {
     return (
@@ -59,12 +58,14 @@ const FeedSubscribers: React.FC = () => {
     [rolesData, allFeedSubscribeDiscordIds],
   );
 
+  useEffect(() => {
+    setSelectedSubscriberId('');
+  }, [serverId, feedId]);
+
   return (
-    <Stack>
+    <Flex height="100%">
       <DashboardContent
-        loading={rolesStatus === 'loading'
-          || rolesStatus === 'idle'
-          || feedSubscribersStatus === 'loading'
+        loading={feedSubscribersStatus === 'loading'
           || feedSubscribersStatus === 'idle'}
         error={rolesError}
       >
@@ -78,80 +79,54 @@ const FeedSubscribers: React.FC = () => {
             />
           </Stack>
           <Stack spacing="4">
-            <Table
-              whiteSpace="nowrap"
-              marginBottom="5"
-              background="gray.850"
-              borderColor="gray.700"
-              borderWidth="2px"
-              boxShadow="lg"
-              size="sm"
-            >
-              <Thead>
-                <Tr>
-                  <Th>Type</Th>
-                  <Th>Subscriber</Th>
-                  <Th>Action</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {(feedSubscribersData?.results || []).map((subscriber) => {
-                  const details = {
-                    name: subscriber.discordId,
-                    color: '#000000',
-                  };
-
-                  if (subscriber.type === 'role') {
-                    const role = getRolebyId(subscriber.discordId);
-                    details.name = `@${role?.name || details.name}`;
-                    details.color = role?.color || details.color;
-                  }
-
-                  return (
-                    <Tr key={subscriber.id}>
-                      <Td>
-                        <Text>{subscriber.type}</Text>
-                      </Td>
-                      <Td>
-                        <HStack alignItems="center">
-                          <Box
-                            borderRadius="50%"
-                            height={6}
-                            width={6}
-                            background={details.color}
-                          />
-                          <Text>
-                            {details.name}
-                          </Text>
-                        </HStack>
-                      </Td>
-                      <Td>
-                        <HStack>
-                          <IconButton
-                            icon={(
-                              <EditIcon />
-                            )}
-                            aria-label={`Edit subscriber ${details.name} filters`}
-                            background="none"
-                          />
-                          <IconButton
-                            icon={(
-                              <DeleteIcon />
-                            )}
-                            aria-label={`Delete subscriber ${details.name}`}
-                            background="none"
-                          />
-                        </HStack>
-                      </Td>
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
+            <FeedSubscribersTable
+              serverId={serverId}
+              feedId={feedId}
+              onSelectedSubscriber={setSelectedSubscriberId}
+              selectedSubscriberId={selectedSubscriberId}
+            />
           </Stack>
         </Stack>
       </DashboardContent>
-    </Stack>
+      {selectedSubscriberId && !sidebarEnabled && (
+      <Box
+        display={{ base: 'none', xl: 'block' }}
+        borderLeftWidth="1px"
+        marginLeft="0"
+        marginInlineStart="0 !important"
+        height="100%"
+        minWidth={{ base: 'none', xl: 'md', '2xl': 'lg' }}
+        width={{ base: 'none', xl: 'md', '2xl': 'lg' }}
+      >
+        <SubscriberSidebar
+          subscriberId={selectedSubscriberId}
+          feedId={feedId}
+          serverId={serverId}
+        />
+      </Box>
+      )}
+      {sidebarEnabled && (
+      <Drawer
+        autoFocus={false}
+        size="md"
+        isOpen={!!selectedSubscriberId}
+        onClose={() => {
+          setSelectedSubscriberId('');
+        }}
+        placement="right"
+      >
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <SubscriberSidebar
+            subscriberId={selectedSubscriberId}
+            feedId={feedId}
+            serverId={serverId}
+          />
+        </DrawerContent>
+      </Drawer>
+      )}
+    </Flex>
   );
 };
 
