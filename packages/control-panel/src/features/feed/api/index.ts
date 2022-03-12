@@ -6,3 +6,4 @@ export * from './refreshFeed';
 export * from './getFeedSubscribers';
 export * from './createFeedSubscriber';
 export * from './updateFeedSubscriber';
+export * from './deleteFeedSubscriber';

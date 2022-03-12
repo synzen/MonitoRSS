@@ -41,18 +41,6 @@ export const SubscriberSidebar: React.FC<Props> = ({
     status: updatingStatus,
   } = useUpdateFeedSubscriber();
 
-  if (status === 'error') {
-    return (
-      <Box height="100%">
-        <ErrorAlert description={error?.message} />
-      </Box>
-    );
-  }
-
-  if (status === 'loading' || !data) {
-    return <Flex justifyContent="center" padding="20"><Loading /></Flex>;
-  }
-
   const filtersData = useMemo(() => {
     const filters = data?.filters || [];
 
@@ -79,6 +67,18 @@ export const SubscriberSidebar: React.FC<Props> = ({
       notifyError('Failed to update', err as Error);
     }
   };
+
+  if (status === 'error') {
+    return (
+      <Box height="100%">
+        <ErrorAlert description={error?.message} />
+      </Box>
+    );
+  }
+
+  if (status === 'loading' || !data) {
+    return <Flex justifyContent="center" padding="20"><Loading /></Flex>;
+  }
 
   return (
     <Stack

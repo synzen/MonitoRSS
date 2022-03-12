@@ -83,6 +83,7 @@ const FeedSubscribers: React.FC = () => {
               serverId={serverId}
               feedId={feedId}
               onSelectedSubscriber={setSelectedSubscriberId}
+              onDeletedSubscriber={() => setSelectedSubscriberId('')}
               selectedSubscriberId={selectedSubscriberId}
             />
           </Stack>

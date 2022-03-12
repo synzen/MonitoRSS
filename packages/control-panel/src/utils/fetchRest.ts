@@ -9,18 +9,16 @@ interface FetchOptions<T> {
 }
 
 const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promise<T> => {
+  const headers = determineHeaders(fetchOptions?.requestOptions);
   const res = await fetch(url, {
     ...fetchOptions?.requestOptions,
-    headers: {
-      'Content-Type': 'application/json',
-      ...fetchOptions?.requestOptions?.headers,
-    },
+    headers,
   });
 
   await handleStatusCode(res);
   let json: any;
 
-  if (!fetchOptions?.skipJsonParse) {
+  if (!fetchOptions?.skipJsonParse && res.status !== 204) {
     json = await res.json();
   }
 
@@ -40,6 +38,19 @@ const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promis
   }
 
   return json;
+};
+
+const determineHeaders = (requestOptions?: RequestInit) => {
+  const headers: RequestInit['headers'] = {};
+
+  if (['POST', 'PUT', 'PATCH', 'GET'].includes(requestOptions?.method?.toUpperCase() || '')) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  return {
+    ...headers,
+    ...requestOptions?.headers,
+  };
 };
 
 const handleStatusCode = async (res: Response) => {

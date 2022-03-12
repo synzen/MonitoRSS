@@ -1,6 +1,7 @@
 import {
   Box,
   HStack,
+  IconButton,
   Table,
   Tbody,
   Td,
@@ -9,13 +10,17 @@ import {
   Thead,
   Tr,
 } from '@chakra-ui/react';
+import { FiTrash } from 'react-icons/fi';
+import { useState } from 'react';
 import { Loading } from '@/components';
 import { useDiscordServerRoles } from '@/features/discordServers';
-import { useFeedSubscribers } from '../../hooks';
+import { useDeleteFeedSubscriber, useFeedSubscribers } from '../../hooks';
+import { notifyError } from '@/utils/notifyError';
 
 interface Props {
   selectedSubscriberId: string
   onSelectedSubscriber: (subscriberId: string) => void
+  onDeletedSubscriber: (subscriberId: string) => void
   serverId?: string;
   feedId?: string
 }
@@ -23,6 +28,7 @@ interface Props {
 export const FeedSubscribersTable: React.FC<Props> = ({
   selectedSubscriberId,
   onSelectedSubscriber,
+  onDeletedSubscriber,
   serverId,
   feedId,
 }) => {
@@ -33,6 +39,30 @@ export const FeedSubscribersTable: React.FC<Props> = ({
   const {
     data: feedSubscribersData,
   } = useFeedSubscribers({ feedId });
+  const {
+    mutateAsync: deletSubscriber,
+    status: deletingStatus,
+  } = useDeleteFeedSubscriber();
+  const [deletingId, setDeletingId] = useState<string>();
+
+  const onDeleteSubscriber = async (subscriberId: string) => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      setDeletingId(subscriberId);
+      await deletSubscriber({
+        feedId,
+        subscriberId,
+      });
+      onDeletedSubscriber(subscriberId);
+    } catch (err) {
+      notifyError('Failed to delete subscriber', err as Error);
+    } finally {
+      setDeletingId(undefined);
+    }
+  };
 
   return (
     <Table
@@ -47,6 +77,7 @@ export const FeedSubscribersTable: React.FC<Props> = ({
         <Tr>
           <Th>Type</Th>
           <Th>Subscriber</Th>
+          <Th />
         </Tr>
       </Thead>
       <Tbody>
@@ -98,6 +129,21 @@ export const FeedSubscribersTable: React.FC<Props> = ({
                       </Text>
                     )}
                 </HStack>
+              </Td>
+              <Td isNumeric>
+                <IconButton
+                  colorScheme="red"
+                  aria-label="Delete filter"
+                  size="sm"
+                  icon={<FiTrash />}
+                  isLoading={deletingId === subscriber.id && deletingStatus === 'loading'}
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDeleteSubscriber(subscriber.id);
+                  }}
+                />
               </Td>
             </Tr>
           );
