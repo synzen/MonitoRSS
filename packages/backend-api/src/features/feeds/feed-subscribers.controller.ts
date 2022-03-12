@@ -49,6 +49,7 @@ export class FeedSubscribersController {
     @Param('feedId') feedId: string,
     @Body(TransformValidationPipe) details: CreateFeedSubscriberInputDto,
   ): Promise<CreateFeedSubscriberOutputDto> {
+    // TODO: Check if the discord role/user is valid
     const updated = await this.feedSubscribersService.createFeedSubscriber({
       type: details.type,
       discordId: details.discordId,

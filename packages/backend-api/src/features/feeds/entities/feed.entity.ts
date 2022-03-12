@@ -4,6 +4,26 @@ import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
 import { FeedWebhook, FeedWebhookSchema } from './feed-webhook.entity';
 
 @Schema({
+  _id: false,
+})
+class FeedSplitOptions {
+  @Prop()
+  enabled?: boolean;
+
+  @Prop()
+  char?: boolean;
+
+  @Prop()
+  prepend?: boolean;
+
+  @Prop()
+  append?: boolean;
+
+  @Prop()
+  maxLength?: boolean;
+}
+
+@Schema({
   collection: 'feeds',
 })
 export class Feed {
@@ -90,6 +110,11 @@ export class Feed {
 
   @Prop()
   addedAt: Date;
+
+  @Prop({
+    type: FeedSplitOptions,
+  })
+  split?: FeedSplitOptions;
 }
 
 export type FeedDocument = Feed & Document;

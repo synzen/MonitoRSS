@@ -50,6 +50,7 @@ interface FeedOutputDto {
   imgLinksExistence?: boolean;
   formatTables?: boolean;
   directSubscribers?: boolean;
+  splitMessage?: boolean;
   disabled?: string;
   ncomparisons?: Array<string>;
   pcomparisons?: Array<string>;
@@ -79,6 +80,7 @@ export class GetFeedOutputDto {
         formatTables: feed.formatTables,
         imgLinksExistence: feed.imgLinksExistence,
         imgPreviews: feed.imgPreviews,
+        splitMessage: feed.split?.enabled || false,
         ncomparisons: feed.ncomparisons || [],
         pcomparisons: feed.pcomparisons || [],
         filters: this.getFeedFiltersDto(feed.filters),

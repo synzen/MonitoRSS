@@ -13,6 +13,12 @@ interface UpdateFeedInput {
   title?: string;
   text?: string;
   filters?: Record<string, string[]>;
+  checkTitles?: boolean;
+  checkDates?: boolean;
+  imgPreviews?: boolean;
+  imgLinksExistence?: boolean;
+  formatTables?: boolean;
+  splitMessage?: boolean;
   webhook?: {
     id?: string;
   };
@@ -131,6 +137,33 @@ export class FeedsService {
 
     if (strippedUpdateObject.title) {
       updateObject.$set.title = strippedUpdateObject.title;
+    }
+
+    if (strippedUpdateObject.checkTitles != null) {
+      updateObject.$set.checkTitles = strippedUpdateObject.checkTitles;
+    }
+
+    if (strippedUpdateObject.checkDates != null) {
+      updateObject.$set.checkDates = strippedUpdateObject.checkDates;
+    }
+
+    if (strippedUpdateObject.imgPreviews != null) {
+      updateObject.$set.imgPreviews = strippedUpdateObject.imgPreviews;
+    }
+
+    if (strippedUpdateObject.imgLinksExistence != null) {
+      updateObject.$set.imgLinksExistence =
+        strippedUpdateObject.imgLinksExistence;
+    }
+
+    if (strippedUpdateObject.formatTables != null) {
+      updateObject.$set.formatTables = strippedUpdateObject.formatTables;
+    }
+
+    if (strippedUpdateObject.splitMessage != null) {
+      updateObject.$set.split = {
+        enabled: strippedUpdateObject.splitMessage,
+      };
     }
 
     await this.feedModel.updateOne(

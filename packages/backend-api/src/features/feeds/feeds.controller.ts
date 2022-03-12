@@ -104,6 +104,12 @@ export class FeedsController {
       webhook: {
         id: updateFeedInput.webhookId,
       },
+      checkDates: updateFeedInput.checkDates,
+      imgLinksExistence: updateFeedInput.imgLinksExistence,
+      imgPreviews: updateFeedInput.imgPreviews,
+      formatTables: updateFeedInput.formatTables,
+      checkTitles: updateFeedInput.checkTitles,
+      splitMessage: updateFeedInput.splitMessage,
     });
 
     return GetFeedOutputDto.fromEntity(updatedFeed);

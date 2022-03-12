@@ -278,6 +278,12 @@ describe('FeedsModule', () => {
       const payload = {
         title: 'newtitle',
         text: 'Hello world',
+        checkTitles: true,
+        checkDates: true,
+        imgPreviews: true,
+        imgLinksExistence: true,
+        formatTables: true,
+        splitMessage: true,
         filters: [
           {
             category: 'description',

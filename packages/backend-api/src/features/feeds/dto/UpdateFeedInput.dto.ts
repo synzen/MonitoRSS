@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -34,4 +35,28 @@ export class UpdateFeedInputDto {
   @Type(() => UpdateFeedInputFiltersDto)
   @IsOptional()
   filters?: UpdateFeedInputFiltersDto[];
+
+  @IsOptional()
+  @IsBoolean()
+  checkTitles?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  checkDates?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  imgPreviews?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  imgLinksExistence?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  formatTables?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  splitMessage?: boolean;
 }

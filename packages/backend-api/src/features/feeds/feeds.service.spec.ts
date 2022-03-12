@@ -310,6 +310,97 @@ describe('FeedsService', () => {
       });
     });
 
+    describe.each([
+      'checkTitles',
+      'checkDates',
+      'imgPreviews',
+      'imgLinksExistence',
+      'formatTables',
+    ])('%s', (fieldKey) => {
+      it('updates the value', async () => {
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            [fieldKey]: false,
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {
+          [fieldKey]: true,
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        // @ts-ignore
+        expect(updatedFeed?.[fieldKey]).toEqual(true);
+      });
+
+      it('does not update if no boolean was passed', async () => {
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            [fieldKey]: true,
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {});
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        // @ts-ignore
+        expect(updatedFeed?.[fieldKey]).toEqual(true);
+      });
+    });
+
+    describe('splitMessage', () => {
+      it('updates the value if the value already existed', async () => {
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            split: {
+              enabled: false,
+            },
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {
+          splitMessage: true,
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        // @ts-ignore
+        expect(updatedFeed?.split?.enabled).toEqual(true);
+      });
+
+      it('updates the value if the value did not already exist', async () => {
+        const createdFeed = await feedModel.create(createTestFeed());
+
+        await service.updateOne(createdFeed._id.toString(), {
+          splitMessage: true,
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        // @ts-ignore
+        expect(updatedFeed?.split?.enabled).toEqual(true);
+      });
+
+      it('does not update if no boolean was passed', async () => {
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            split: {
+              enabled: true,
+            },
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {});
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        // @ts-ignore
+        expect(updatedFeed?.split?.enabled).toEqual(true);
+      });
+    });
+
     it('returns undefined if no feed is found', async () => {
       await expect(
         service.updateOne(new Types.ObjectId(), {
