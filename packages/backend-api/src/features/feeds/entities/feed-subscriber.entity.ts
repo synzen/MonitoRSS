@@ -8,6 +8,7 @@ export enum FeedSubscriberType {
 
 @Schema({
   collection: 'subscribers',
+  timestamps: true,
 })
 export class FeedSubscriber {
   _id: Types.ObjectId;
@@ -41,6 +42,10 @@ export class FeedSubscriber {
     of: String,
   })
   rfilters?: Record<string, string>;
+
+  // Added by timestamps: true option
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type FeedSubscriberDocument = FeedSubscriber & Document;

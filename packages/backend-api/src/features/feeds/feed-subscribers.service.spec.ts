@@ -73,6 +73,46 @@ describe('FeedSubscribersService', () => {
         ),
       );
     });
+    it('sorts by createdAt descending', async () => {
+      const subscribers = [
+        createTestFeedSubscriber({
+          _id: new Types.ObjectId(),
+          id: '2020',
+          createdAt: new Date(2020, 1, 1),
+        }),
+        createTestFeedSubscriber({
+          _id: new Types.ObjectId(),
+          id: '2017',
+          createdAt: new Date(2017, 1, 2),
+        }),
+        createTestFeedSubscriber({
+          _id: new Types.ObjectId(),
+          id: '2025',
+          createdAt: new Date(2025, 1, 2),
+        }),
+      ];
+
+      await feedSubscriberModel.create(subscribers);
+      // override mongoose's timestamp management
+      await Promise.all(
+        subscribers.map((s) =>
+          feedSubscriberModel.collection.updateOne(
+            {
+              _id: s._id,
+            },
+            {
+              $set: {
+                createdAt: s.createdAt,
+              },
+            },
+          ),
+        ),
+      );
+
+      const found = await service.getSubscribersOfFeed(subscribers[0].feed);
+      const foundIds = found.map((s) => s.id);
+      expect(foundIds).toEqual(['2025', '2020', '2017']);
+    });
   });
 
   describe('createFeedSubscriber', () => {

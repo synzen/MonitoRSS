@@ -38,8 +38,8 @@ export const useCreateFeedSubscriber = ({ feedId }: Props) => {
           {
             ...currentData,
             results: [
-              ...currentData.results,
               data.result,
+              ...currentData.results,
             ],
           },
         );

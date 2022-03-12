@@ -31,6 +31,9 @@ export class FeedSubscribersService {
       .find({
         feed: feedId,
       })
+      .sort({
+        createdAt: -1,
+      })
       .lean();
 
     return subscribers;
