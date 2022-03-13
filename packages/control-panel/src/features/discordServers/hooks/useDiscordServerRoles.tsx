@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from 'react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getServerRoles, GetServerRolesOutput } from '../api';
@@ -9,6 +10,8 @@ interface Props {
 export const useDiscordServerRoles = (
   { serverId }: Props,
 ) => {
+  const [hasErrored, setHasErrored] = useState(false);
+
   const { data, status, error } = useQuery<GetServerRolesOutput, ApiAdapterError>(
     ['server-roles', {
       serverId,
@@ -23,7 +26,8 @@ export const useDiscordServerRoles = (
       });
     },
     {
-      enabled: !!serverId,
+      enabled: !!serverId && !hasErrored,
+      onError: () => setHasErrored(true),
     },
   );
 

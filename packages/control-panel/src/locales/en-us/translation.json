@@ -6,6 +6,10 @@
       "detailsTitle": "Details",
       "goBack": "Go back",
       "failedToSave": "Failed to save changes"
+    },
+    "api": {
+      "missingBotAccessTitle": "Missing Bot Access",
+      "missingBotAccessMessage": "The bot is either not in this server or does not have permission to read this server."
     }
   },
   "pages": {

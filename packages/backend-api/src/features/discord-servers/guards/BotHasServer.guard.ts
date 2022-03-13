@@ -1,8 +1,8 @@
 import {
-  BadRequestException,
   CanActivate,
   ExecutionContext,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { DiscordServersService } from '../discord-servers.service';
@@ -25,7 +25,7 @@ export class BotHasServerGuard implements CanActivate {
     const server = await this.discordServersService.getServer(serverId);
 
     if (!server) {
-      throw new BadRequestException('Server not found');
+      throw new NotFoundException('Server not found');
     }
 
     return true;

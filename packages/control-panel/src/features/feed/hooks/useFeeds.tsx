@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getFeeds, GetFeedsOutput } from '../api';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 
@@ -12,11 +12,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
   const [limit, setLimit] = useState(initialLimit || 10);
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState('');
-  const [loadingNewServer, setLoadingNewServer] = useState(false);
-
-  useEffect(() => {
-    setLoadingNewServer(true);
-  }, [serverId]);
+  const [hasErrored, setHasErrored] = useState(false);
 
   const queryKey = ['feeds', {
     serverId,
@@ -39,6 +35,8 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
         throw new Error('Missing server ID when getting feeds');
       }
 
+      console.log('refetching feeeds', queryKey);
+
       const result = await getFeeds({
         serverId,
         limit,
@@ -46,18 +44,18 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
         search,
       });
 
-      setLoadingNewServer(false);
-
       return result;
     },
     {
-      enabled: !!serverId,
+      enabled: !!serverId && !hasErrored,
       keepPreviousData: true,
+      onError: () => {
+        setHasErrored(true);
+      },
     },
   );
 
   const isFetchingNewPage = isLoading || (isFetching && isPreviousData);
-  const isFetchingDifferentServer = isFetching && loadingNewServer;
 
   return {
     data,
@@ -67,6 +65,5 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
     setOffset,
     setSearch,
     isFetchingNewPage,
-    isFetchingDifferentServer,
   };
 };

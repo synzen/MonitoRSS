@@ -32,7 +32,7 @@ interface Props {
   onSelectedFeedId?: (feedId: string) => void
 }
 
-const DEFAULT_MAX_PER_PAGE = 10;
+const DEFAULT_MAX_PER_PAGE = 1;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
@@ -56,7 +56,6 @@ export const FeedsTable: React.FC<Props> = ({
     error,
     setOffset,
     isFetchingNewPage,
-    isFetchingDifferentServer,
     setSearch,
   } = useFeeds({
     serverId,
@@ -154,7 +153,7 @@ export const FeedsTable: React.FC<Props> = ({
     setSearch(value);
   }, 500);
 
-  if (status === 'loading' || isFetchingDifferentServer) {
+  if (status === 'loading') {
     return (
       <Center width="100%" height="100%">
         <Loading size="lg" />
@@ -279,6 +278,7 @@ export const FeedsTable: React.FC<Props> = ({
             aria-label="Next page"
             onClick={nextPage}
             disabled={isFetchingNewPage || !canNextPage}
+            isLoading={isFetchingNewPage}
           />
         </ButtonGroup>
       </Flex>

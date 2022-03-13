@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from 'react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getServerChannels, GetServerChannelsOutput } from '../api';
@@ -9,10 +10,15 @@ interface Props {
 export const useDiscordServerChannels = (
   { serverId }: Props,
 ) => {
-  const { data, status, error } = useQuery<GetServerChannelsOutput, ApiAdapterError>(
-    ['server-channels', {
-      serverId,
-    }],
+  const [hadError, setHadError] = useState(false);
+  const queryKey = ['server-channels', {
+    serverId,
+  }];
+
+  const {
+    data, status, error, isLoading,
+  } = useQuery<GetServerChannelsOutput, ApiAdapterError>(
+    queryKey,
     async () => {
       if (!serverId) {
         throw new Error('Missing server ID when getting server channels');
@@ -23,9 +29,12 @@ export const useDiscordServerChannels = (
       });
     },
     {
-      enabled: !!serverId,
+      enabled: !!serverId && !hadError,
+      onError: () => setHadError(true),
     },
   );
+
+  console.log('channel is loading', isLoading);
 
   return {
     data,

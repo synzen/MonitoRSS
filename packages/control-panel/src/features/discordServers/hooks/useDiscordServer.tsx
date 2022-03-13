@@ -1,4 +1,5 @@
 import { useQuery } from 'react-query';
+import { useState } from 'react';
 import { DiscordServer } from '../types/DiscordServer';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getServers } from '../api';
@@ -8,6 +9,8 @@ interface Props {
 }
 
 export const useDiscordServer = ({ serverId }: Props) => {
+  const [hasErrored, setHasErrored] = useState(false);
+
   const { data, error, status } = useQuery<DiscordServer | null, ApiAdapterError>(
     ['server', serverId],
     async () => {
@@ -20,7 +23,8 @@ export const useDiscordServer = ({ serverId }: Props) => {
       return servers.results.find((server) => server.id === serverId) || null;
     },
     {
-      enabled: !!serverId,
+      enabled: !!serverId && !hasErrored,
+      onError: () => setHasErrored(true),
     },
   );
 

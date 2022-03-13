@@ -19,7 +19,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
     if (feedId) {
       navigate(pathname.replace(feedId, newFeedId));
     } else {
-      navigate(`/servers/${serverId}/feeds/${newFeedId}`);
+      navigate(`/servers/${serverId}/feeds/${newFeedId}/message`);
     }
   };
 

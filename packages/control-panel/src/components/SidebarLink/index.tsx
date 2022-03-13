@@ -25,8 +25,6 @@ export const SidebarLink: React.FC<NavLinkProps> = ({
 }) => (
   <Tooltip
     isDisabled={!disabled}
-    label="Coming soon!"
-    aria-label="Coming soon!"
     placement="bottom-start"
   >
     <ChakraLink
