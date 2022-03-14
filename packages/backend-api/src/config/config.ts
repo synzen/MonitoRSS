@@ -32,6 +32,10 @@ export default () =>
       10,
     ),
     defaultMaxFeeds: parseInt(process.env.DEFAULT_MAX_FEEDS as string, 10),
+    defaultDateFormat:
+      process.env.DEFAULT_DATE_FORMAT || 'ddd, D MMMM YYYY, h:mm A z',
+    defaultTimezone: process.env.DEFAULT_TIMEZONE || 'UTC',
+    defaultDateLanguage: process.env.DEFAULT_DATE_LANGUAGE || 'en',
     vipRefreshRateMinutes: parseInt(
       (process.env.VIP_REFRESH_RATE_MINUTES as string) || '2',
       10,

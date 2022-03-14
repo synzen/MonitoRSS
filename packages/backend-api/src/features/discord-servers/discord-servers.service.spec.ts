@@ -1,4 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import {
@@ -9,10 +11,25 @@ import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import { FeedsModule } from '../feeds/feeds.module';
 import { FeedsService } from '../feeds/feeds.service';
 import { DiscordServersService } from './discord-servers.service';
+import {
+  DiscordServerProfile,
+  DiscordServerProfileFeature,
+  DiscordServerProfileModel,
+} from './entities/discord-server-profile.entity';
 import { DiscordServerChannel } from './types/DiscordServerChannel.type';
+
+const configValues: Record<string, unknown> = {
+  defaultDateFormat: 'YYYY-MM-DD',
+  defaultTimezone: 'UTC',
+  defaultDateLanguage: 'en',
+};
 
 describe('DiscordServersService', () => {
   let service: DiscordServersService;
+  let profileModel: DiscordServerProfileModel;
+  const configService: ConfigService = {
+    get: jest.fn(),
+  } as never;
   const discordApiService = {
     executeBotRequest: jest.fn(),
   };
@@ -22,21 +39,36 @@ describe('DiscordServersService', () => {
   };
 
   beforeAll(async () => {
-    jest.resetAllMocks();
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      return configValues[key];
+    });
     const { uncompiledModule, init } = await setupIntegrationTests({
       providers: [DiscordServersService, DiscordAPIService],
-      imports: [FeedsModule, MongooseTestModule.forRoot()],
+      imports: [
+        FeedsModule,
+        MongooseTestModule.forRoot(),
+        MongooseModule.forFeature([DiscordServerProfileFeature]),
+      ],
     });
 
     uncompiledModule
       .overrideProvider(DiscordAPIService)
       .useValue(discordApiService)
       .overrideProvider(FeedsService)
-      .useValue(feedsService);
+      .useValue(feedsService)
+      .overrideProvider(ConfigService)
+      .useValue(configService);
 
     const { module } = await init();
 
     service = module.get<DiscordServersService>(DiscordServersService);
+    profileModel = module.get<DiscordServerProfileModel>(
+      getModelToken(DiscordServerProfile.name),
+    );
+  });
+
+  afterEach(async () => {
+    await profileModel.deleteMany();
   });
 
   afterAll(async () => {
@@ -45,6 +77,51 @@ describe('DiscordServersService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('getServerProfile', () => {
+    const serverId = 'server-id';
+
+    it('returns the profile if it exists', async () => {
+      const created = await profileModel.create({
+        _id: serverId,
+        dateFormat: 'date-format',
+        dateLanguage: 'date-language',
+        timezone: 'timezone',
+      });
+      const profile = await service.getServerProfile(serverId);
+
+      expect(profile).toEqual({
+        dateFormat: created.dateFormat,
+        timezone: created.timezone,
+        dateLanguage: created.dateLanguage,
+      });
+    });
+
+    it('returns defaults if no profile is found', async () => {
+      const profile = await service.getServerProfile(serverId);
+
+      expect(profile).toEqual({
+        dateFormat: configValues.defaultDateFormat,
+        timezone: configValues.defaultTimezone,
+        dateLanguage: configValues.defaultDateLanguage,
+      });
+    });
+
+    it('returns defaults if only some fields are not found', async () => {
+      const profile = await profileModel.create({
+        _id: serverId,
+        dateFormat: 'date-format',
+        dateLanguage: 'date-language',
+      });
+      const returned = await service.getServerProfile(serverId);
+
+      expect(returned).toEqual({
+        dateFormat: profile.dateFormat,
+        timezone: configValues.defaultTimezone,
+        dateLanguage: profile.dateLanguage,
+      });
+    });
   });
 
   describe('getServerFeeds', () => {
