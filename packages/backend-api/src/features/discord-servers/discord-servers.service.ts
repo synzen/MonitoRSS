@@ -47,11 +47,43 @@ export class DiscordServersService {
   async getServerProfile(serverId: string): Promise<ProfileSettings> {
     const profile = await this.profileModel.findById(serverId);
 
-    return {
-      dateFormat: profile?.dateFormat || this.defaultDateFormat,
-      timezone: profile?.timezone || this.defaultTimezone,
-      dateLanguage: profile?.dateLanguage || this.defaultDateLanguage,
+    return this.getProfileSettingsWithDefaults(profile);
+  }
+
+  async updateServerProfile(
+    serverId: string,
+    updates: {
+      dateFormat?: string;
+      dateLanguage?: string;
+      timezone?: string;
+    },
+  ) {
+    const toUpdate: { $set: Partial<DiscordServerProfile> } = {
+      $set: {},
     };
+
+    if (updates.dateFormat) {
+      toUpdate.$set.dateFormat = updates.dateFormat;
+    }
+
+    if (updates.dateLanguage) {
+      toUpdate.$set.dateLanguage = updates.dateLanguage;
+    }
+
+    if (updates.timezone) {
+      toUpdate.$set.timezone = updates.timezone;
+    }
+
+    const updated = await this.profileModel.findOneAndUpdate(
+      { _id: serverId },
+      toUpdate,
+      {
+        upsert: true,
+        new: true,
+      },
+    );
+
+    return this.getProfileSettingsWithDefaults(updated);
   }
 
   async getServerFeeds(
@@ -112,5 +144,15 @@ export class DiscordServersService {
       );
 
     return roles;
+  }
+
+  private getProfileSettingsWithDefaults(
+    profile?: DiscordServerProfile | null,
+  ) {
+    return {
+      dateFormat: profile?.dateFormat || this.defaultDateFormat,
+      timezone: profile?.timezone || this.defaultTimezone,
+      dateLanguage: profile?.dateLanguage || this.defaultDateLanguage,
+    };
   }
 }

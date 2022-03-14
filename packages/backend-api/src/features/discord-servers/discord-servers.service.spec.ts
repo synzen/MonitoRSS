@@ -124,6 +124,68 @@ describe('DiscordServersService', () => {
     });
   });
 
+  describe('updateServerProfile', () => {
+    it.each(['dateFormat', 'timezone', 'dateLanguage'])(
+      'updates %s',
+      async (field) => {
+        const serverId = 'server-id';
+        const profile = await profileModel.create({
+          _id: serverId,
+          dateFormat: 'date-format',
+          dateLanguage: 'date-language',
+          timezone: 'timezone',
+        });
+        const newValue = 'new-value';
+        const updated = await service.updateServerProfile(serverId, {
+          [field]: newValue,
+        });
+
+        expect(updated).toEqual({
+          dateFormat: profile.dateFormat,
+          timezone: profile.timezone,
+          dateLanguage: profile.dateLanguage,
+          [field]: newValue,
+        });
+      },
+    );
+
+    it('updates all the fields', async () => {
+      const serverId = 'server-id';
+      await profileModel.create({
+        _id: serverId,
+        dateFormat: 'date-format',
+        dateLanguage: 'date-language',
+        timezone: 'timezone',
+      });
+      const updated = await service.updateServerProfile(serverId, {
+        dateFormat: 'new-date-format',
+        timezone: 'new-timezone',
+        dateLanguage: 'new-date-language',
+      });
+
+      expect(updated).toEqual({
+        dateFormat: 'new-date-format',
+        timezone: 'new-timezone',
+        dateLanguage: 'new-date-language',
+      });
+    });
+
+    it('upserts the fields if necessary', async () => {
+      const serverId = 'server-id';
+      const updated = await service.updateServerProfile(serverId, {
+        dateFormat: 'new-date-format',
+        timezone: 'new-timezone',
+        dateLanguage: 'new-date-language',
+      });
+
+      expect(updated).toEqual({
+        dateFormat: 'new-date-format',
+        timezone: 'new-timezone',
+        dateLanguage: 'new-date-language',
+      });
+    });
+  });
+
   describe('getServerFeeds', () => {
     it('calls the feeds service correctly', async () => {
       const serverId = 'server-id';

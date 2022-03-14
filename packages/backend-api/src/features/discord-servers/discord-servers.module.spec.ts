@@ -176,6 +176,107 @@ describe('DiscordServersModule', () => {
     });
   });
 
+  describe('PATCH /discord-servers/:serverId', () => {
+    const validPayload = {
+      dateFormat: 'date-format',
+      dateLanguage: 'date-language',
+      timezone: 'timezone',
+    };
+
+    it('returns 401 if user is not authorized', async () => {
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: validPayload,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+    it('returns 400 if bot has no access to discord server', async () => {
+      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockGetUserGuilds();
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns forbidden if user does not own server', async () => {
+      mockGetServer();
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns forbidden if user does not manage server', async () => {
+      mockGetServer();
+      mockGetUserGuilds({
+        permissions: 0,
+        owner: false,
+      });
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 400 on a bad payload', async () => {
+      mockAllDiscordEndpoints();
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: {
+          dateFormat: '',
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it('returns the correct payload', async () => {
+      mockAllDiscordEndpoints();
+
+      const { statusCode, body } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: validPayload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual({
+        result: {
+          profile: {
+            dateFormat: validPayload.dateFormat,
+            dateLanguage: validPayload.dateLanguage,
+            timezone: validPayload.timezone,
+          },
+        },
+      });
+    });
+  });
+
   describe('GET /discord-servers/:serverId/status', () => {
     it('returns 401 if user is not authorized', async () => {
       const { statusCode } = await app.inject({
