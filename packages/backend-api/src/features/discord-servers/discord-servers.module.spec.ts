@@ -101,6 +101,78 @@ describe('DiscordServersModule', () => {
     mockGetServerRoles(data?.roles || []);
   };
 
+  describe('GET /discord-servers/:serverId/status', () => {
+    it('returns 401 if user is not authorized', async () => {
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/status`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns the correct response bot is forbidden from accessing discord server', async () => {
+      mockGetUserGuilds();
+      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(403, {
+        message: 'Forbidden',
+      });
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/status`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual({
+        result: {
+          authorized: false,
+        },
+      });
+    });
+
+    it('returns the correct response if discord server does not exist', async () => {
+      mockGetUserGuilds();
+      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {
+        message: 'Not found',
+      });
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/status`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual({
+        result: {
+          authorized: false,
+        },
+      });
+    });
+
+    it('returns the correct response if bot has access to server', async () => {
+      mockGetUserGuilds();
+      mockGetServer();
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}/status`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual({
+        result: {
+          authorized: true,
+        },
+      });
+    });
+  });
+
   describe('GET /discord-servers/:serverId/channels', () => {
     it('returns 401 if user is not authorized', async () => {
       const { statusCode } = await app.inject({
@@ -120,10 +192,10 @@ describe('DiscordServersModule', () => {
         ...standardRequestOptions,
       });
 
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does own server', async () => {
+    it('returns forbidden if user does not own server', async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
@@ -205,7 +277,7 @@ describe('DiscordServersModule', () => {
         ...standardRequestOptions,
       });
 
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('returns forbidden if user does own server', async () => {
@@ -303,7 +375,7 @@ describe('DiscordServersModule', () => {
         ...standardRequestOptions,
       });
 
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('returns forbidden if user does own server', async () => {
