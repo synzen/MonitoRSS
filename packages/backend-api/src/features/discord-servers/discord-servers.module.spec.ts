@@ -101,6 +101,81 @@ describe('DiscordServersModule', () => {
     mockGetServerRoles(data?.roles || []);
   };
 
+  describe('GET /discord-servers/:serverId', () => {
+    it('returns 401 if user is not authorized', async () => {
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+    it('returns 400 if bot has no access to discord server', async () => {
+      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockGetUserGuilds();
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns forbidden if user does not own server', async () => {
+      mockGetServer();
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns forbidden if user does not manage server', async () => {
+      mockGetServer();
+      mockGetUserGuilds({
+        permissions: 0,
+        owner: false,
+      });
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns the correct payload', async () => {
+      mockAllDiscordEndpoints();
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-servers/${serverId}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual({
+        result: {
+          profile: {
+            dateFormat: expect.any(String),
+            dateLanguage: expect.any(String),
+            timezone: expect.any(String),
+          },
+        },
+      });
+    });
+  });
+
   describe('GET /discord-servers/:serverId/status', () => {
     it('returns 401 if user is not authorized', async () => {
       const { statusCode } = await app.inject({
@@ -280,7 +355,7 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does own server', async () => {
+    it('returns forbidden if user does not own server', async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 

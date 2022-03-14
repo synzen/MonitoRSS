@@ -18,11 +18,27 @@ import { GetServerChannelsOutputDto } from './dto/GetServerChannelsOutput.dto';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
 import { GetServerRolesOutputDto } from './dto/GetServerRolesOutput.dto';
 import { GetServerStatusOutputDto } from './dto/GetServerStatusOutput.dto';
+import { GetServerOutputDto } from './dto/GetServerOutput.dto';
 
 @Controller('discord-servers')
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordServersController {
   constructor(private readonly discordServersService: DiscordServersService) {}
+
+  @Get(':serverId')
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getServer(
+    @Param('serverId') serverId: string,
+  ): Promise<GetServerOutputDto> {
+    const profile = await this.discordServersService.getServerProfile(serverId);
+
+    return {
+      result: {
+        profile,
+      },
+    };
+  }
 
   @Get(':serverId/status')
   @UseGuards(UserManagesServerGuard)
