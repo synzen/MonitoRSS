@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { DiscordServer } from '../types/DiscordServer';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getServers } from '../api';
+import { useDiscordServerAccessStatus } from './useDiscordServerAccessStatus';
 
 interface Props {
   serverId?: string
@@ -10,6 +11,7 @@ interface Props {
 
 export const useDiscordServer = ({ serverId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
+  const { data: accessStatus } = useDiscordServerAccessStatus({ serverId });
 
   const { data, error, status } = useQuery<DiscordServer | null, ApiAdapterError>(
     ['server', serverId],
@@ -23,7 +25,7 @@ export const useDiscordServer = ({ serverId }: Props) => {
       return servers.results.find((server) => server.id === serverId) || null;
     },
     {
-      enabled: !!serverId && !hasErrored,
+      enabled: accessStatus?.result.authorized && !hasErrored,
       onError: () => setHasErrored(true),
     },
   );

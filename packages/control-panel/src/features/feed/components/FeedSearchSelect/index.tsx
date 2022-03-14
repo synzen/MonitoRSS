@@ -11,9 +11,9 @@ export const FeedSearchSelect: React.FC<Props> = () => {
   const { serverId, feedId } = useParams();
   const { pathname } = useLocation();
 
-  const { status, data, isFetchingDifferentServer } = useFeeds({ serverId });
+  const { status, data } = useFeeds({ serverId });
 
-  const loading = status === 'idle' || status === 'loading' || isFetchingDifferentServer;
+  const loading = status === 'idle' || status === 'loading';
 
   const onChangedValue = (newFeedId: string) => {
     if (feedId) {

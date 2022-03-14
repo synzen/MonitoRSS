@@ -1,20 +1,33 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import {
-  Alert, AlertDescription, AlertIcon, AlertTitle,
+  Alert, AlertDescription, AlertIcon, AlertTitle, Center,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import ApiAdapterError from '@/utils/ApiAdapterError';
-import { DashboardContent } from '@/components';
+import { DashboardContent, Loading } from '@/components';
+import { useDiscordServerAccessStatus } from '../../hooks';
+import { ErrorAlert } from '@/components/ErrorAlert';
 
 interface Props {
-  error?: ApiAdapterError | null
-  loading?: boolean
+  serverId?: string
 }
 
-export const RequireServerBotAccess: React.FC<Props> = ({ error, children }) => {
+export const RequireServerBotAccess: React.FC<Props> = ({ serverId, children }) => {
   const { t } = useTranslation();
+  const { data, error, status } = useDiscordServerAccessStatus({ serverId });
 
-  if (error?.statusCode === 404 || error?.statusCode === 403) {
+  if (status === 'loading' || status === 'idle') {
+    return (
+      <Center width="100%" paddingY="32" paddingX="8">
+        <Loading size="lg" />
+      </Center>
+    );
+  }
+
+  if (status === 'error') {
+    return <ErrorAlert description={error?.message} />;
+  }
+
+  if (data && !data.result.authorized) {
     return (
       <DashboardContent>
         <Alert

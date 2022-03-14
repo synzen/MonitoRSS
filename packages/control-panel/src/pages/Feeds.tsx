@@ -12,8 +12,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import RouteParams from '../types/RouteParams';
-import { RequireServerBotAccess, useDiscordServerChannels } from '@/features/discordServers';
-import { useFeeds } from '@/features/feed';
+import { RequireServerBotAccess } from '@/features/discordServers';
 import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
 import { FeedsTable } from '@/features/feed/components/FeedsTable';
 
@@ -22,8 +21,6 @@ const Feeds: React.FC = () => {
   const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
   const [focusedFeedId, setFocusedFeedId] = useState('');
   // Pre-fetch channels
-  const { error: channelsError, status: channelsStatus } = useDiscordServerChannels({ serverId });
-  const { error: feedError, status: feedStatus } = useFeeds({ serverId });
 
   useEffect(() => {
     setFocusedFeedId('');
@@ -31,13 +28,7 @@ const Feeds: React.FC = () => {
 
   return (
     <RequireServerBotAccess
-      loading={
-      channelsStatus === 'loading'
-      || channelsStatus === 'idle'
-      || feedStatus === 'loading'
-      || feedStatus === 'idle'
-    }
-      error={channelsError || feedError}
+      serverId={serverId}
     >
       <Flex height="100%">
         <Stack spacing="6" flex="1" paddingX="12" paddingBottom="12" overflow="auto">

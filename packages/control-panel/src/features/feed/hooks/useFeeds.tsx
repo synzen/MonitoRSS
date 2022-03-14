@@ -2,6 +2,7 @@ import { useQuery } from 'react-query';
 import { useState } from 'react';
 import { getFeeds, GetFeedsOutput } from '../api';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
+import { useDiscordServerAccessStatus } from '@/features/discordServers';
 
 interface Props {
   serverId?: string
@@ -13,6 +14,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState('');
   const [hasErrored, setHasErrored] = useState(false);
+  const { data: accessData } = useDiscordServerAccessStatus({ serverId });
 
   const queryKey = ['feeds', {
     serverId,
@@ -35,8 +37,6 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
         throw new Error('Missing server ID when getting feeds');
       }
 
-      console.log('refetching feeeds', queryKey);
-
       const result = await getFeeds({
         serverId,
         limit,
@@ -47,7 +47,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
       return result;
     },
     {
-      enabled: !!serverId && !hasErrored,
+      enabled: !!accessData?.result.authorized && !hasErrored,
       keepPreviousData: true,
       onError: () => {
         setHasErrored(true);
