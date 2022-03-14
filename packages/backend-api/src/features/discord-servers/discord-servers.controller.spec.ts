@@ -10,11 +10,42 @@ describe('DiscordServersController', () => {
 
   beforeEach(() => {
     discordServersService = {
+      getServer: jest.fn(),
       getServerFeeds: jest.fn(),
       countServerFeeds: jest.fn(),
     } as never;
 
     controller = new DiscordServersController(discordServersService);
+  });
+
+  describe('getServerStatus', () => {
+    it('should return the server status if server exists', async () => {
+      jest
+        .spyOn(discordServersService, 'getServer')
+        .mockResolvedValue({} as never);
+      const serverId = 'serverId';
+
+      const result = await controller.getServerStatus(serverId);
+
+      expect(result).toEqual({
+        result: {
+          authorized: true,
+        },
+      });
+    });
+
+    it('should return the server status if server does not exist', async () => {
+      jest.spyOn(discordServersService, 'getServer').mockResolvedValue(null);
+      const serverId = 'serverId';
+
+      const result = await controller.getServerStatus(serverId);
+
+      expect(result).toEqual({
+        result: {
+          authorized: false,
+        },
+      });
+    });
   });
 
   describe('getServerFeeds', () => {
