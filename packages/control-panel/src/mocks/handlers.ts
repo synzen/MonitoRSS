@@ -24,6 +24,7 @@ import {
   GetServerRolesOutput,
   GetServerSettingsOutput,
   GetServerStatusOutput,
+  UpdateServerSettingsOutput,
 } from '@/features/discordServers';
 import mockDiscordChannels from './data/discordChannels';
 import mockDiscordRoles from './data/discordRoles';
@@ -57,6 +58,19 @@ const handlers = [
 
   rest.get('/api/v1/discord-servers/:serverId', (req, res, ctx) => res(
     ctx.json<GetServerSettingsOutput>({
+      result: {
+        profile: {
+          dateFormat: 'YYYY-MM-DD',
+          dateLanguage: 'en',
+          timezone: 'UTC',
+        },
+      },
+    }),
+  )),
+
+  rest.patch('/api/v1/discord-servers/:serverId', (req, res, ctx) => res(
+    ctx.delay(1000),
+    ctx.json<UpdateServerSettingsOutput>({
       result: {
         profile: {
           dateFormat: 'YYYY-MM-DD',

@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom';
 import {
   Box,
   Button,
-  Divider,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -23,10 +22,12 @@ import {
   LiveClock,
   RequireServerBotAccess,
   useDiscordServerSettings,
+  useUpdateDiscordServerSettings,
 } from '@/features/discordServers';
 import RouteParams from '@/types/RouteParams';
 import { DashboardContent } from '@/components';
 import getChakraColor from '@/utils/getChakraColor';
+import { notifyError } from '@/utils/notifyError';
 // Must use moment for backwards compatibility with server logic
 
 interface Props {
@@ -36,6 +37,7 @@ interface Props {
 export const ServerSettings: React.FC<Props> = () => {
   const { serverId } = useParams<RouteParams>();
   const { data, error, status } = useDiscordServerSettings({ serverId });
+  const { mutateAsync } = useUpdateDiscordServerSettings();
   const { t } = useTranslation();
 
   const formSchema = useMemo(() => object({
@@ -85,8 +87,20 @@ export const ServerSettings: React.FC<Props> = () => {
     reset(defaultFormValues);
   };
 
-  const onSubmit = (newData: FormData) => {
-    console.log('submtited', newData);
+  const onSubmit = async (newData: FormData) => {
+    if (!serverId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        serverId,
+        details: newData,
+      });
+      reset(newData);
+    } catch (err) {
+      notifyError(t('common.errors.failedToSave'), err as Error);
+    }
   };
 
   useEffect(() => {
