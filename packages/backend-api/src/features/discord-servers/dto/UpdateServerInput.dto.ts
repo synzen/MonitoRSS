@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, Validate } from 'class-validator';
+import { IsValidTimezone } from '../../../common/validations/is-valid-timezone';
 
 export class UpdateServerInputDto {
   @IsOptional()
@@ -11,5 +12,6 @@ export class UpdateServerInputDto {
 
   @IsOptional()
   @IsNotEmpty()
+  @Validate(IsValidTimezone)
   timezone?: string;
 }

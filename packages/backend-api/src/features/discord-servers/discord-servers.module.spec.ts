@@ -179,8 +179,8 @@ describe('DiscordServersModule', () => {
   describe('PATCH /discord-servers/:serverId', () => {
     const validPayload = {
       dateFormat: 'date-format',
-      dateLanguage: 'date-language',
-      timezone: 'timezone',
+      dateLanguage: 'en',
+      timezone: 'UTC',
     };
 
     it('returns 401 if user is not authorized', async () => {
@@ -246,6 +246,22 @@ describe('DiscordServersModule', () => {
         url: `/discord-servers/${serverId}`,
         payload: {
           dateFormat: '',
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it('returns 400 on bad timezone', async () => {
+      mockAllDiscordEndpoints();
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/discord-servers/${serverId}`,
+        payload: {
+          ...validPayload,
+          timezone: 'fake timezone',
         },
         ...standardRequestOptions,
       });
