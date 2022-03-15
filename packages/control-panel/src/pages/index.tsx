@@ -13,6 +13,7 @@ import Servers from './Servers';
 import { RequireAuth } from '@/features/auth';
 import { PageContent } from '@/components/PageContent';
 import Webhooks from './Webhooks';
+import { ServerSettings } from './ServerSettings';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -39,11 +40,11 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/servers/:serverId/server-settings"
+      path="/servers/:serverId/settings"
       element={(
         <RequireAuth>
           <PageContent>
-            <ServerDasboard />
+            <ServerSettings />
           </PageContent>
         </RequireAuth>
     )}

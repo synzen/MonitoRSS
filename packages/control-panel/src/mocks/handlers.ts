@@ -19,7 +19,12 @@ import mockFeedSummaries from './data/feeds';
 import mockDiscordUser from './data/discordUser';
 import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
 import mockDiscordWebhooks from './data/discordWebhooks';
-import { GetServerChannelsOutput, GetServerRolesOutput } from '@/features/discordServers';
+import {
+  GetServerChannelsOutput,
+  GetServerRolesOutput,
+  GetServerSettingsOutput,
+  GetServerStatusOutput,
+} from '@/features/discordServers';
 import mockDiscordChannels from './data/discordChannels';
 import mockDiscordRoles from './data/discordRoles';
 import mockFeedSubscribers from './data/feedSubscribers';
@@ -39,6 +44,26 @@ const handlers = [
     ctx.json<GetServersOutput>({
       total: mockDiscordServers.length,
       results: mockDiscordServers,
+    }),
+  )),
+
+  rest.get('/api/v1/discord-servers/:serverId/status', (req, res, ctx) => res(
+    ctx.json<GetServerStatusOutput>({
+      result: {
+        authorized: true,
+      },
+    }),
+  )),
+
+  rest.get('/api/v1/discord-servers/:serverId', (req, res, ctx) => res(
+    ctx.json<GetServerSettingsOutput>({
+      result: {
+        profile: {
+          dateFormat: 'YYYY-MM-DD',
+          dateLanguage: 'en',
+          timezone: 'UTC',
+        },
+      },
     }),
   )),
 

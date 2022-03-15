@@ -23,7 +23,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
 
   const paths = {
     SERVER_FEEDS: `/servers/${serverId}/feeds`,
-    SERVER_SETTINGS: `/servers/${serverId}/server-settings`,
+    SERVER_SETTINGS: `/servers/${serverId}/settings`,
     SERVER_WEBHOOKS: `/servers/${serverId}/webhooks`,
   };
 
@@ -40,6 +40,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
       </Text>
       <DiscordServerSearchSelect />
       <SidebarLink
+        disabled={!serverId}
         icon={FiRss}
         active={currentPath === paths.SERVER_FEEDS}
         onClick={() => onClickNavLink(paths.SERVER_FEEDS)}
@@ -47,7 +48,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
         {t('components.sidebar.server.feeds')}
       </SidebarLink>
       <SidebarLink
-        disabled
+        disabled={!serverId}
         icon={FiSettings}
         active={currentPath === paths.SERVER_SETTINGS}
         onClick={() => {

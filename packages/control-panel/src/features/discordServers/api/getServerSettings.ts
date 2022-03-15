@@ -1,0 +1,24 @@
+import { InferType, object } from 'yup';
+import fetchRest from '../../../utils/fetchRest';
+import { DiscordServerSettingsSchema } from '../types';
+
+export interface GetServerSettingsInput {
+  serverId: string;
+}
+
+const GetServerSettingsOutputSchema = object({
+  result: object({
+    profile: DiscordServerSettingsSchema.required(),
+  }),
+});
+
+export type GetServerSettingsOutput = InferType<typeof GetServerSettingsOutputSchema>;
+
+export const getServerSettings = async (
+  options: GetServerSettingsInput,
+): Promise<GetServerSettingsOutput> => fetchRest(
+  `/api/v1/discord-servers/${options.serverId}`,
+  {
+    validateSchema: GetServerSettingsOutputSchema,
+  },
+);

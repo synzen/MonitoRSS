@@ -40,6 +40,21 @@
       "removeSelectedFilters": "Remove selected filters",
       "formAddFilterInputLabel": "Subscriber"
     },
+    "serverSettings": {
+      "title": "Server Settings",
+      "datesTitle": "Dates",
+      "previewLabel": "Preview",
+      "dateFormatInputLabel": "Date Format",
+      "dateFormatInputErrorEmpty": "Date format cannot be empty",
+      "dateFormatInputDescription": "This will dictate how the {date} placeholder will be formatted.",
+      "dateFormatInputDescriptionPromot": "See here on how to customize your date formats.",
+      "timezoneInputLabel": "Timezone",
+      "timezoneInputDescription": "This will change the timezone of the {date} placeholder to the one you specify.",
+      "timezoneInputDescriptionPrompt": "See here for a list of valid timezones under the \"TZ database name\" column.",
+      "timezoneInputErrorInvalid": "Must be a valid timezone",
+      "resetButton": "Reset",
+      "saveButton": "Save"
+    },
     "subscribers": {
       "title": "Subscribers"
     },
@@ -120,6 +135,13 @@
           "updateSuccess": "Successfully updated feed",
           "resetButton": "Reset",
           "saveButton": "Save"
+        }
+      }
+    },
+    "discordServers": {
+      "components": {
+        "liveClock": {
+          "invalidSettings": "Invalid timezone or date format"
         }
       }
     },
