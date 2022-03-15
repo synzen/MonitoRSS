@@ -5,6 +5,7 @@ import {
   UpdateServerSettingsInput,
   UpdateServerSettingsOutput,
 } from '../api';
+import { UseDiscordServerSettingsData } from './useDiscordServerSettings';
 
 export const useUpdateDiscordServerSettings = () => {
   const queryClient = useQueryClient();
@@ -16,9 +17,11 @@ export const useUpdateDiscordServerSettings = () => {
     (details) => updateServerSettings(details),
     {
       onSuccess: (data, inputData) => {
-        queryClient.setQueryData(['server-settings', {
-          serverId: inputData.serverId,
-        }], data);
+        queryClient.setQueryData<UseDiscordServerSettingsData>(['server-settings',
+          inputData.serverId,
+        ], {
+          profile: data.result.profile,
+        });
       },
     },
   );

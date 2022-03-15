@@ -72,7 +72,6 @@ export const ServerSettings: React.FC<Props> = () => {
     formState: {
       isDirty,
       isSubmitting,
-      isValid,
       errors,
     },
   } = useForm<FormData>({

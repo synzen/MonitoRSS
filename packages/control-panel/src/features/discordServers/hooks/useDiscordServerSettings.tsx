@@ -8,7 +8,7 @@ interface Props {
   serverId?: string
 }
 
-interface Data {
+export interface UseDiscordServerSettingsData {
   profile: {
     dateFormat: string
     timezone: string
@@ -19,7 +19,7 @@ export const useDiscordServerSettings = ({ serverId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
   const { data: accessStatus } = useDiscordServerAccessStatus({ serverId });
 
-  const { data, error, status } = useQuery<Data, ApiAdapterError>(
+  const { data, error, status } = useQuery<UseDiscordServerSettingsData, ApiAdapterError>(
     ['server-settings', serverId],
     async () => {
       if (!serverId) {
