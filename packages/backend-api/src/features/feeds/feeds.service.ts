@@ -297,31 +297,31 @@ export class FeedsService {
     return withStatuses;
   }
 
-  async boHasSendMessageChannelPerms({
-    guildId,
-    channelId,
-  }: {
-    guildId: string;
-    channelId: string;
-  }) {
-    // TODO: Better error handling here for permissions
-    const botUserId = this.configService.get('discordClientId') as string;
+  // async boHasSendMessageChannelPerms({
+  //   guildId,
+  //   channelId,
+  // }: {
+  //   guildId: string;
+  //   channelId: string;
+  // }) {
+  //   // TODO: Better error handling here for permissions
+  //   const botUserId = this.configService.get('discordClientId') as string;
 
-    try {
-      await Promise.all([
-        this.discordApiService.executeBotRequest(
-          `/guilds/${guildId}/members/${botUserId}`,
-        ),
-        this.discordApiService.executeBotRequest(`/channels/${channelId}`),
-      ]);
+  //   try {
+  //     await Promise.all([
+  //       this.discordApiService.executeBotRequest(
+  //         `/guilds/${guildId}/members/${botUserId}`,
+  //       ),
+  //       this.discordApiService.executeBotRequest(`/channels/${channelId}`),
+  //     ]);
 
-      return true;
-    } catch (err) {
-      console.error(err);
+  //     return true;
+  //   } catch (err) {
+  //     console.error(err);
 
-      return false;
-    }
-  }
+  //     return false;
+  //   }
+  // }
 
   /**
    * See if a fail record should be valid and eligible for a refresh. If a fail record is invalid,

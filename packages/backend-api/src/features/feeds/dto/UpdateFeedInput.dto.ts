@@ -22,9 +22,9 @@ export class UpdateFeedInputDto {
   @IsNotEmpty()
   title?: string;
 
-  @IsString()
-  @IsOptional()
-  channelId?: string;
+  // @IsString()
+  // @IsOptional()
+  // channelId?: string;
 
   @IsString()
   @IsOptional()
