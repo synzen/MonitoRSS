@@ -8,6 +8,8 @@ import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
 import { FeedStatus } from './types/FeedStatus.type';
 import dayjs from 'dayjs';
 import { FeedSchedulingService } from './feed-scheduling.service';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { ConfigService } from '@nestjs/config';
 
 interface UpdateFeedInput {
   title?: string;
@@ -19,6 +21,7 @@ interface UpdateFeedInput {
   imgLinksExistence?: boolean;
   formatTables?: boolean;
   splitMessage?: boolean;
+  channelId?: string;
   webhook?: {
     id?: string;
   };
@@ -34,6 +37,8 @@ export class FeedsService {
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
     private readonly feedSchedulingService: FeedSchedulingService,
+    private readonly discordApiService: DiscordAPIService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getFeed(feedId: string): Promise<DetailedFeed | null> {
@@ -166,6 +171,10 @@ export class FeedsService {
       };
     }
 
+    if (strippedUpdateObject.channelId) {
+      updateObject.$set.channel = strippedUpdateObject.channelId;
+    }
+
     await this.feedModel.updateOne(
       {
         _id: feedId,
@@ -286,6 +295,32 @@ export class FeedsService {
     });
 
     return withStatuses;
+  }
+
+  async boHasSendMessageChannelPerms({
+    guildId,
+    channelId,
+  }: {
+    guildId: string;
+    channelId: string;
+  }) {
+    // TODO: Better error handling here for permissions
+    const botUserId = this.configService.get('discordClientId') as string;
+
+    try {
+      await Promise.all([
+        this.discordApiService.executeBotRequest(
+          `/guilds/${guildId}/members/${botUserId}`,
+        ),
+        this.discordApiService.executeBotRequest(`/channels/${channelId}`),
+      ]);
+
+      return true;
+    } catch (err) {
+      console.error(err);
+
+      return false;
+    }
   }
 
   /**

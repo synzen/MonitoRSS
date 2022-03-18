@@ -20,16 +20,14 @@ import {
   SupporterModel,
 } from '../supporters/entities/supporter.entity';
 import { Cache } from 'cache-manager';
-import {
-  FeedSubscriber,
-  FeedSubscriberModel,
-} from './entities/feed-subscriber.entity';
+
+import { ConfigService } from '@nestjs/config';
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
   let supporterModel: SupporterModel;
-  let feedSubscriberModel: FeedSubscriberModel;
+  let configService: ConfigService;
   let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
   const standardRequestOptions = {
     headers: {
@@ -52,9 +50,7 @@ describe('FeedsModule', () => {
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
-    feedSubscriberModel = app.get<FeedSubscriberModel>(
-      getModelToken(FeedSubscriber.name),
-    );
+    configService = app.get<ConfigService>(ConfigService);
   });
 
   afterEach(async () => {
@@ -313,6 +309,41 @@ describe('FeedsModule', () => {
       expect(parsedBody.result.filters).toEqual(
         expect.arrayContaining(payload.filters),
       );
+    });
+
+    it('returns 400 if channel that is being updated is not found', async () => {
+      const channelId = 'channel-id';
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        guild: guildId,
+      });
+
+      await feedModel.create(feed);
+
+      jest.spyOn(console, 'error').mockImplementation();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/channels/${channelId}`)
+        .reply(404, { message: 'mock GET channel failure' });
+      nock(DISCORD_API_BASE_URL)
+        .get(
+          `/guilds/${guildId}/members/${configService.get('discordClientId')}`,
+        )
+        .reply(200, { id: 'member-id' });
+
+      const payload = {
+        channelId,
+      };
+
+      const { statusCode } = await app.inject({
+        method: 'PATCH',
+        url: `/feeds/${feed._id}`,
+        payload,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
     });
 
     it('updates webhooks correctly', async () => {

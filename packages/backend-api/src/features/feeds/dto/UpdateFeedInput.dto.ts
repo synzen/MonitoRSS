@@ -24,6 +24,10 @@ export class UpdateFeedInputDto {
 
   @IsString()
   @IsOptional()
+  channelId?: string;
+
+  @IsString()
+  @IsOptional()
   text?: string;
 
   @IsString()

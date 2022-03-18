@@ -1,4 +1,4 @@
-import { BadRequestException, ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, NotFoundException } from '@nestjs/common';
 import { DiscordServersService } from '../discord-servers.service';
 import { BotHasServerGuard } from './BotHasServer.guard';
 
@@ -40,9 +40,7 @@ describe('BotHasGuildServer', () => {
   it('throws bad request if guild was not found', async () => {
     jest.spyOn(discordServersService, 'getServer').mockResolvedValue(null);
 
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(guard.canActivate(context)).rejects.toThrow(NotFoundException);
   });
 
   it('throws if server id is missing from request params', async () => {

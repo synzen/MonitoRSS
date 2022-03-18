@@ -17,6 +17,8 @@ import { createTestFailRecord } from '../../test/data/failrecords.test-data';
 import { FeedStatus } from './types/FeedStatus.type';
 import { FeedSchedulingService } from './feed-scheduling.service';
 import { FeedScheduleFeature } from './entities/feed-schedule.entity';
+import { ConfigService } from '@nestjs/config';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 
 describe('FeedsService', () => {
   let service: FeedsService;
@@ -28,7 +30,12 @@ describe('FeedsService', () => {
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
-      providers: [FeedsService, FeedSchedulingService],
+      providers: [
+        FeedsService,
+        FeedSchedulingService,
+        ConfigService,
+        DiscordAPIService,
+      ],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([
@@ -41,7 +48,13 @@ describe('FeedsService', () => {
 
     uncompiledModule
       .overrideProvider(FeedSchedulingService)
-      .useValue(feedSchedulingService);
+      .useValue(feedSchedulingService)
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: jest.fn(),
+      })
+      .overrideProvider(DiscordAPIService)
+      .useValue({ executeBotRequest: jest.fn() });
 
     const { module } = await init();
 

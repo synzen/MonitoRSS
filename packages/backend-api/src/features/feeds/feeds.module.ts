@@ -13,6 +13,7 @@ import { FeedSchedulingService } from './feed-scheduling.service';
 import { FeedSubscriberFeature } from './entities/feed-subscriber.entity';
 import { FeedSubscribersController } from './feed-subscribers.controller';
 import { FeedSubscribersService } from './feed-subscribers.service';
+import { DiscordApiModule } from '../../services/apis/discord/discord-api.module';
 
 @Module({
   controllers: [FeedsController, FeedSubscribersController],
@@ -29,6 +30,7 @@ import { FeedSubscribersService } from './feed-subscribers.service';
     FeedFetcherModule,
     SupportersModule,
     DiscordWebhooksModule,
+    DiscordApiModule,
   ],
   exports: [FeedsService, MongooseModule.forFeature([FeedFeature])],
 })

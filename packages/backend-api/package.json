@@ -78,7 +78,7 @@
     "typescript": "^4.5.5"
   },
   "jest": {
-    "testTimeout": 10000,
+    "testTimeout": 20000,
     "moduleFileExtensions": [
       "js",
       "json",

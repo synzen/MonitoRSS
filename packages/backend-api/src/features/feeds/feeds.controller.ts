@@ -97,6 +97,16 @@ export class FeedsController {
       }
     }
 
+    if (
+      updateFeedInput.channelId &&
+      !(await this.feedsService.boHasSendMessageChannelPerms({
+        guildId: feed.guild,
+        channelId: updateFeedInput.channelId,
+      }))
+    ) {
+      throw new BadRequestException('Invalid channel');
+    }
+
     const updatedFeed = await this.feedsService.updateOne(feed._id, {
       title: updateFeedInput.title,
       text: updateFeedInput.text,
@@ -110,6 +120,9 @@ export class FeedsController {
       formatTables: updateFeedInput.formatTables,
       checkTitles: updateFeedInput.checkTitles,
       splitMessage: updateFeedInput.splitMessage,
+      ...(updateFeedInput.channelId && {
+        channeLId: updateFeedInput.channelId,
+      }),
     });
 
     return GetFeedOutputDto.fromEntity(updatedFeed);
