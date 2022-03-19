@@ -49,6 +49,8 @@ async function bootstrap() {
     },
   });
 
+  console.log(`NestJS is listening on port ${config.get('port')}`);
+
   await app.listen(config.get('port') || 8000, '0.0.0.0');
 }
 

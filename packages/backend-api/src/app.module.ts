@@ -1,6 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config/config';
@@ -12,6 +13,7 @@ import { DiscordUserModule } from './features/discord-users/discord-users.module
 import { DiscordWebhooksModule } from './features/discord-webhooks/discord-webhooks.module';
 import { FeedsModule } from './features/feeds/feeds.module';
 import { SupportersModule } from './features/supporters/supporters.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -21,6 +23,9 @@ import { SupportersModule } from './features/supporters/supporters.module';
     FeedsModule,
     DiscordWebhooksModule,
     SupportersModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'client', 'dist'),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
