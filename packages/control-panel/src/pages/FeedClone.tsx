@@ -98,7 +98,7 @@ const FeedClone: React.FC = () => {
           <Heading size="lg">{t('pages.cloneFeed.title')}</Heading>
           <Text>{t('pages.cloneFeed.description')}</Text>
         </Stack>
-        <Stack spacing={9}>
+        <Stack spacing={16}>
           <Stack spacing={3}>
             <Heading size="md">{t('pages.cloneFeed.propertiesSectionTitle')}</Heading>
             {checkboxOptions.map((option) => (
