@@ -11,6 +11,10 @@ import { FeedSchedulingService } from './feed-scheduling.service';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { ConfigService } from '@nestjs/config';
 import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
+import {
+  FeedSubscriber,
+  FeedSubscriberModel,
+} from './entities/feed-subscriber.entity';
 
 interface UpdateFeedInput {
   title?: string;
@@ -36,6 +40,8 @@ export class FeedsService {
   constructor(
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
+    @InjectModel(FeedSubscriber.name)
+    private readonly feedSubscriberModel: FeedSubscriberModel,
     private readonly feedSchedulingService: FeedSchedulingService,
     private readonly discordApiService: DiscordAPIService,
     private readonly configService: ConfigService,
@@ -313,7 +319,9 @@ export class FeedsService {
     targetFeedIds: string[],
     properties: CloneFeedInputProperties[],
   ) {
-    const propertyMap: Record<CloneFeedInputProperties, (keyof Feed)[]> = {
+    const propertyMap: Partial<
+      Record<CloneFeedInputProperties, (keyof Feed)[]>
+    > = {
       COMPARISONS: ['ncomparisons', 'pcomparisons'],
       FILTERS: ['filters', 'rfilters'],
       MESSAGE: ['text', 'embeds'],
@@ -343,6 +351,10 @@ export class FeedsService {
       }
     }
 
+    if (properties.includes(CloneFeedInputProperties.SUBSCRIBERS)) {
+      await this.cloneSubscribers(sourceFeed._id.toHexString(), targetFeedIds);
+    }
+
     await this.feedModel.updateMany(
       {
         _id: {
@@ -365,6 +377,37 @@ export class FeedsService {
     );
 
     return foundFeeds;
+  }
+
+  private async cloneSubscribers(
+    sourceFeedId: string,
+    targetFeedIds: string[],
+  ) {
+    const subscribers: FeedSubscriber[] = await this.feedSubscriberModel
+      .find({
+        feed: new Types.ObjectId(sourceFeedId),
+      })
+      .lean();
+
+    const toInsert = targetFeedIds
+      .map((targetFeedId) => {
+        return subscribers.map((subscriber) => ({
+          ...subscriber,
+          _id: new Types.ObjectId(),
+          feed: new Types.ObjectId(targetFeedId),
+        }));
+      })
+      .flat();
+
+    // Ideally this should use transactions, but tests are not set up for it yet
+
+    await this.feedSubscriberModel.deleteMany({
+      feed: {
+        $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
+      },
+    });
+
+    await this.feedSubscriberModel.insertMany(toInsert);
   }
 
   // async boHasSendMessageChannelPerms({

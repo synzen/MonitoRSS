@@ -19,11 +19,19 @@ import { FeedSchedulingService } from './feed-scheduling.service';
 import { FeedScheduleFeature } from './entities/feed-schedule.entity';
 import { ConfigService } from '@nestjs/config';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import {
+  FeedSubscriber,
+  FeedSubscriberFeature,
+  FeedSubscriberModel,
+} from './entities/feed-subscriber.entity';
+import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
+import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
 
 describe('FeedsService', () => {
   let service: FeedsService;
   let feedModel: FeedModel;
   let failRecordModel: FailRecordModel;
+  let feedSubscriberModel: FeedSubscriberModel;
   const feedSchedulingService: FeedSchedulingService = {
     getRefreshRatesOfFeeds: jest.fn(),
   } as never;
@@ -42,6 +50,7 @@ describe('FeedsService', () => {
           FeedFeature,
           FailRecordFeature,
           FeedScheduleFeature,
+          FeedSubscriberFeature,
         ]),
       ],
     });
@@ -62,6 +71,9 @@ describe('FeedsService', () => {
     feedModel = module.get<FeedModel>(getModelToken(Feed.name));
     failRecordModel = module.get<FailRecordModel>(
       getModelToken(FailRecord.name),
+    );
+    feedSubscriberModel = module.get<FeedSubscriberModel>(
+      getModelToken(FeedSubscriber.name),
     );
   });
 
@@ -672,6 +684,140 @@ describe('FeedsService', () => {
       );
 
       expect(result[0].status).toEqual(FeedStatus.OK);
+    });
+  });
+
+  describe('cloneFeed', () => {
+    describe('subscribers', () => {
+      it('clones correctly', async () => {
+        const feedsToInsert = [
+          createTestFeed({
+            title: 'source-feed',
+          }),
+          createTestFeed({
+            title: 'target-feed-1',
+          }),
+          createTestFeed({
+            title: 'target-feed-2',
+          }),
+        ];
+        const subscribersToInsert = [
+          createTestFeedSubscriber({
+            feed: feedsToInsert[0]._id,
+            id: 'id-1',
+          }),
+          createTestFeedSubscriber({
+            feed: feedsToInsert[0]._id,
+            id: 'id-2',
+          }),
+        ];
+        const [createdFeeds, createdSubscribers] = await Promise.all([
+          feedModel.insertMany(feedsToInsert),
+          feedSubscriberModel.insertMany(subscribersToInsert),
+        ]);
+
+        await service.cloneFeed(
+          createdFeeds[0],
+          [
+            createdFeeds[1]._id.toHexString(),
+            createdFeeds[2]._id.toHexString(),
+          ],
+          [CloneFeedInputProperties.SUBSCRIBERS],
+        );
+
+        const targetFeed1Subscribers = await feedSubscriberModel.find({
+          feed: createdFeeds[1]._id,
+        });
+
+        const targetFeed1SubscriberIds = targetFeed1Subscribers.map(
+          (subscriber) => subscriber.id,
+        );
+        expect(targetFeed1SubscriberIds).toEqual([
+          createdSubscribers[0].id,
+          createdSubscribers[1].id,
+        ]);
+
+        const targetFeed2Subscribers = await feedSubscriberModel.find({
+          feed: createdFeeds[2]._id,
+        });
+
+        const targetFeed2SubscriberIds = targetFeed2Subscribers.map(
+          (subscriber) => subscriber.id,
+        );
+        expect(targetFeed2SubscriberIds).toEqual([
+          createdSubscribers[0].id,
+          createdSubscribers[1].id,
+        ]);
+      });
+
+      it('does not clone to unspecified feeds', async () => {
+        const feedsToInsert = [
+          createTestFeed({
+            title: 'source-feed',
+          }),
+          createTestFeed({
+            title: 'target-feed-1',
+          }),
+          createTestFeed({
+            title: 'target-feed-2',
+          }),
+        ];
+        const subscribersToInsert = [
+          createTestFeedSubscriber({
+            feed: feedsToInsert[0]._id,
+            id: 'id-1',
+          }),
+        ];
+        const [createdFeeds] = await Promise.all([
+          feedModel.insertMany(feedsToInsert),
+          feedSubscriberModel.insertMany(subscribersToInsert),
+        ]);
+
+        await service.cloneFeed(
+          createdFeeds[0],
+          [createdFeeds[1]._id.toHexString()],
+          [CloneFeedInputProperties.SUBSCRIBERS],
+        );
+
+        const targetFeed2Subscribers = await feedSubscriberModel.find({
+          feed: createdFeeds[2]._id,
+        });
+
+        expect(targetFeed2Subscribers).toHaveLength(0);
+      });
+
+      it('deletes existing subscribers of target feeds', async () => {
+        const feedsToInsert = [
+          createTestFeed({
+            title: 'source-feed',
+          }),
+          createTestFeed({
+            title: 'target-feed',
+          }),
+        ];
+        const subscribersToInsert = [
+          createTestFeedSubscriber({
+            feed: feedsToInsert[1]._id,
+            id: 'id-2',
+          }),
+        ];
+        const [createdFeeds] = await Promise.all([
+          feedModel.insertMany(feedsToInsert),
+          feedSubscriberModel.insertMany(subscribersToInsert),
+        ]);
+
+        await service.cloneFeed(
+          createdFeeds[0],
+          [createdFeeds[1]._id.toHexString()],
+          [CloneFeedInputProperties.SUBSCRIBERS],
+        );
+
+        const targetFeedSubscribers = await feedSubscriberModel.find({
+          feed: createdFeeds[1]._id,
+        });
+
+        expect(targetFeedSubscribers).toHaveLength(0);
+      });
     });
   });
 });
