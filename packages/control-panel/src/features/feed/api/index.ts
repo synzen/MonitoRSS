@@ -7,3 +7,4 @@ export * from './getFeedSubscribers';
 export * from './createFeedSubscriber';
 export * from './updateFeedSubscriber';
 export * from './deleteFeedSubscriber';
+export * from './cloneFeed';

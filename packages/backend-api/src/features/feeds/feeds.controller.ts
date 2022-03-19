@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ import { SupportersService } from '../supporters/supporters.service';
 import { DiscordWebhooksService } from '../discord-webhooks/discord-webhooks.service';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
 import _ from 'lodash';
+import { CloneFeedInputDto } from './dto/CloneFeedInput.dto';
+import { CloneFeedOutputDto } from './dto/CloneFeedOutput.dto';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -51,6 +54,34 @@ export class FeedsController {
     const updatedFeed = await this.feedsService.refresh(feed._id);
 
     return GetFeedOutputDto.fromEntity(updatedFeed);
+  }
+
+  @Post(':feedId/clone')
+  @UseGuards(UserManagesFeedServerGuard)
+  async cloneFeed(
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+    @Body(TransformValidationPipe) cloneFeedInput: CloneFeedInputDto,
+  ): Promise<CloneFeedOutputDto> {
+    const { targetFeedIds, properties } = cloneFeedInput;
+
+    if (
+      !(await this.feedsService.allFeedsBelongToGuild(
+        targetFeedIds,
+        feed.guild,
+      ))
+    ) {
+      throw new BadRequestException(
+        'Some feeds do not belong to the source guild',
+      );
+    }
+
+    const clonedFeeds = await this.feedsService.cloneFeed(
+      feed,
+      targetFeedIds,
+      properties,
+    );
+
+    return CloneFeedOutputDto.fromEntity(clonedFeeds);
   }
 
   @Patch(':feedId')

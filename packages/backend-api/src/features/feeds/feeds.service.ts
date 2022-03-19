@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import { FeedSchedulingService } from './feed-scheduling.service';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { ConfigService } from '@nestjs/config';
+import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
 
 interface UpdateFeedInput {
   title?: string;
@@ -26,7 +27,6 @@ interface UpdateFeedInput {
     id?: string;
   };
 }
-
 interface PopulatedFeed extends Feed {
   failRecord?: FailRecord;
 }
@@ -295,6 +295,76 @@ export class FeedsService {
     });
 
     return withStatuses;
+  }
+
+  async allFeedsBelongToGuild(feedIds: string[], guildId: string) {
+    const foundCount = await this.feedModel.countDocuments({
+      _id: {
+        $in: feedIds.map((id) => new Types.ObjectId(id)),
+      },
+      guild: guildId,
+    });
+
+    return foundCount === feedIds.length;
+  }
+
+  async cloneFeed(
+    sourceFeed: Feed,
+    targetFeedIds: string[],
+    properties: CloneFeedInputProperties[],
+  ) {
+    const propertyMap: Record<CloneFeedInputProperties, (keyof Feed)[]> = {
+      COMPARISONS: ['ncomparisons', 'pcomparisons'],
+      FILTERS: ['filters', 'rfilters'],
+      MESSAGE: ['text', 'embeds'],
+      MISC_OPTIONS: [
+        'checkDates',
+        'checkTitles',
+        'imgPreviews',
+        'imgLinksExistence',
+        'formatTables',
+        'split',
+      ],
+      WEBHOOK: ['webhook'],
+      REGEXOPS: ['regexOps'],
+    };
+
+    const toUpdate = {
+      $set: {} as Record<keyof Feed, unknown>,
+    };
+
+    for (const property of properties) {
+      const propertyKeys = propertyMap[property];
+
+      if (propertyKeys) {
+        for (const key of propertyKeys) {
+          toUpdate.$set[key] = sourceFeed[key];
+        }
+      }
+    }
+
+    await this.feedModel.updateMany(
+      {
+        _id: {
+          $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
+        },
+      },
+      toUpdate,
+    );
+
+    const foundFeeds = await this.findFeeds(
+      {
+        _id: {
+          $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
+        },
+      },
+      {
+        limit: targetFeedIds.length,
+        skip: 0,
+      },
+    );
+
+    return foundFeeds;
   }
 
   // async boHasSendMessageChannelPerms({

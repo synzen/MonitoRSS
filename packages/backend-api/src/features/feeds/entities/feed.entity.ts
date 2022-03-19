@@ -1,6 +1,7 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types, Model } from 'mongoose';
 import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
+import { FeedRegexOp, FeedRegexOpSchema } from './feed-regexop.entity';
 import { FeedWebhook, FeedWebhookSchema } from './feed-webhook.entity';
 
 @Schema({
@@ -115,6 +116,12 @@ export class Feed {
     type: FeedSplitOptions,
   })
   split?: FeedSplitOptions;
+
+  @Prop({
+    type: Map,
+    of: [FeedRegexOpSchema],
+  })
+  regexOps?: FeedRegexOp[];
 }
 
 export type FeedDocument = Feed & Document;

@@ -3,6 +3,7 @@ import { rest } from 'msw';
 import { GetDiscordMeOutput } from '@/features/discordUser';
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
+  CloneFeedOutput,
   CreateFeedSubscriberOutput,
   FeedSummary,
   GetFeedArticlesOutput,
@@ -131,6 +132,13 @@ const handlers = [
     ctx.delay(500),
     ctx.json<GetFeedOutput>({
       result: mockFeeds[0],
+    }),
+  )),
+
+  rest.post('/api/v1/feeds/:feedId/clone', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<CloneFeedOutput>({
+      results: mockFeeds,
     }),
   )),
 
