@@ -57,13 +57,13 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
       >
         {t('components.sidebar.server.settings')}
       </SidebarLink>
-      <SidebarLink
+      {/* <SidebarLink
         icon={FiShare2}
         active={currentPath === paths.SERVER_WEBHOOKS}
         onClick={() => onClickNavLink(paths.SERVER_WEBHOOKS)}
       >
         {t('components.sidebar.server.webhooks')}
-      </SidebarLink>
+      </SidebarLink> */}
     </Stack>
 
   );
