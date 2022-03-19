@@ -13,6 +13,23 @@
     }
   },
   "pages": {
+    "cloneFeed": {
+      "title": "Clone",
+      "description": "Clone properties of the current feed to other feed(s)",
+      "propertiesSectionTitle": "Properties",
+      "sourceFeedSectionTitle": "Source feed",
+      "sourceFeedSectionDescription": "Your currently selected feed is the source feed.",
+      "sourceFeedTitleLabel": "Title",
+      "sourceFeedUrlLabel": "URL",
+      "targetFeedSectionTitle": "Target feed",
+      "checkboxMessageLabel": "Message",
+      "checkboxFiltersLabel": "Filters",
+      "checkboxMiscOptionsLabel": "Misc Options",
+      "checkboxComparisonsLabel": "Comparisons",
+      "checkboxWebhookLabel": "Webhook",
+      "cloneButtonLabel": "Clone",
+      "success": "Successfully cloned"
+    },
     "feeds": {
       "title": "Feeds",
       "status": "Status",
@@ -115,7 +132,8 @@
         "filters": "Filters",
         "subscribers": "Subscribers",
         "webhooks": "Webhooks",
-        "miscoptions": "Misc Options"
+        "miscoptions": "Misc Options",
+        "clone": "Clone"
       }
     }
   },
@@ -149,7 +167,7 @@
       "components": {
         "settingsDialog": {
           "title": "Supporter Settings",
-          "description": "The servers below will receive your benefits.",
+          "description": "The server IDs below will receive your benefits.",
           "serverInputPlaceholder": "Discord Server ID",
           "serversUpdatedSuccess": "Successfully updated servers"
         }

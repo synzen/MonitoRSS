@@ -18,7 +18,7 @@ export const useCloneFeed = () => {
         const { results } = data;
 
         results.forEach((result) => {
-          queryClient.setQueryData<GetFeedOutput>(['feedId', {
+          queryClient.setQueryData<GetFeedOutput>(['feed', {
             feedId: result.id,
           }], {
             result,

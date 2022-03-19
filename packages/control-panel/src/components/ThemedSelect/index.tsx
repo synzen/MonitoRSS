@@ -26,6 +26,7 @@ interface Props {
   onChange: (value: string) => void
   name?: string
   isClearable?: boolean
+  onInputChange?: (value: string) => void
 }
 
 export const ThemedSelect: React.FC<Props> = ({
@@ -38,6 +39,7 @@ export const ThemedSelect: React.FC<Props> = ({
   isDisabled,
   name,
   isClearable,
+  onInputChange,
 }) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
     menu: (provided) => ({
@@ -94,6 +96,7 @@ export const ThemedSelect: React.FC<Props> = ({
       components={{
         Option: IconOption,
       }}
+      onInputChange={(input) => onInputChange?.(input)}
     />
   );
 };

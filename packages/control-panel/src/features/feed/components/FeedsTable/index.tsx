@@ -32,7 +32,7 @@ interface Props {
   onSelectedFeedId?: (feedId: string) => void
 }
 
-const DEFAULT_MAX_PER_PAGE = 1;
+const DEFAULT_MAX_PER_PAGE = 10;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 

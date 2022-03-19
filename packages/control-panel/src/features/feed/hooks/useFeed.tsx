@@ -7,12 +7,14 @@ interface Props {
 }
 
 export const useFeed = ({ feedId }: Props) => {
+  const queryKey = ['feed', {
+    feedId,
+  }];
+
   const {
     data, status, error, refetch,
   } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
-    ['feed', {
-      feedId,
-    }],
+    queryKey,
     async () => {
       if (!feedId) {
         throw new Error('Missing feed selection');

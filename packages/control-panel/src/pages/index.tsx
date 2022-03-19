@@ -12,8 +12,9 @@ import ServerDasboard from './ServerDashboard';
 import Servers from './Servers';
 import { RequireAuth } from '@/features/auth';
 import { PageContent } from '@/components/PageContent';
-import Webhooks from './Webhooks';
+// import Webhooks from './Webhooks';
 import { ServerSettings } from './ServerSettings';
+import FeedClone from './FeedClone';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -59,7 +60,7 @@ const Pages: React.FC = () => (
         </RequireAuth>
     )}
     />
-    <Route
+    {/* <Route
       path="/servers/:serverId/webhooks"
       element={(
         <RequireAuth>
@@ -68,7 +69,7 @@ const Pages: React.FC = () => (
           </PageContent>
         </RequireAuth>
     )}
-    />
+    /> */}
     <Route
       path="/servers/:serverId/feeds/:feedId"
       element={(
@@ -115,6 +116,16 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <PageContent requireFeed>
             <FeedMiscOptions />
+          </PageContent>
+        </RequireAuth>
+    )}
+    />
+    <Route
+      path="/servers/:serverId/feeds/:feedId/clone"
+      element={(
+        <RequireAuth>
+          <PageContent requireFeed>
+            <FeedClone />
           </PageContent>
         </RequireAuth>
     )}

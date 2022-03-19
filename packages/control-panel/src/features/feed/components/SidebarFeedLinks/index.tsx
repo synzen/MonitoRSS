@@ -28,6 +28,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
     FEED_FILTERS: `/servers/${serverId}/feeds/${feedId}/filters`,
     FEED_SUBSCRIBERS: `/servers/${serverId}/feeds/${feedId}/subscribers`,
     FEED_MISC_OPTIONS: `/servers/${serverId}/feeds/${feedId}/misc-options`,
+    FEED_CLONE: `/servers/${serverId}/feeds/${feedId}/clone`,
   };
 
   return (
@@ -83,6 +84,14 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}
           >
             {t('components.sidebar.feed.miscoptions')}
+          </SidebarLink>
+          <SidebarLink
+            disabled={!feedId}
+            icon={FiSliders}
+            active={!!feedId && currentPath === paths.FEED_CLONE}
+            onClick={() => onClickNavLink(paths.FEED_CLONE)}
+          >
+            {t('components.sidebar.feed.clone')}
           </SidebarLink>
         </Stack>
       </Stack>

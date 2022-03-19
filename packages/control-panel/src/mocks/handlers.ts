@@ -99,6 +99,7 @@ const handlers = [
     const results = theseMockSummaries.slice(offset, offset + limit);
 
     return res(
+      ctx.delay(700),
       ctx.json<GetFeedsOutput>({
         total: theseMockSummariesTotal,
         results,

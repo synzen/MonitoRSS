@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from 'react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getFeedArticles, GetFeedArticlesOutput } from '../api';
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export const useFeedArticles = ({ feedId }: Props) => {
+  const [hasErrored, setHasErrored] = useState(false);
+
   const { data, status, error } = useQuery<
   GetFeedArticlesOutput, ApiAdapterError | Error
   >(
@@ -23,7 +26,10 @@ export const useFeedArticles = ({ feedId }: Props) => {
       });
     },
     {
-      enabled: !!feedId,
+      enabled: !!feedId && !hasErrored,
+      onError: () => {
+        setHasErrored(true);
+      },
     },
   );
 
