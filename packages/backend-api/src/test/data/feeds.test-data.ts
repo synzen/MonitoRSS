@@ -1,4 +1,4 @@
-import { Feed } from '../../features/feeds/entities/Feed.entity';
+import { Feed } from '../../features/feeds/entities/feed.entity';
 import { Types } from 'mongoose';
 
 const boilerplate: Feed = {

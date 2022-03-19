@@ -2,7 +2,7 @@ import { CacheModule, Module } from '@nestjs/common';
 import { FeedsService } from './feeds.service';
 import { FeedsController } from './feeds.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { FeedFeature } from './entities/Feed.entity';
+import { FeedFeature } from './entities/feed.entity';
 import { DiscordAuthModule } from '../discord-auth/discord-auth.module';
 import { FeedFetcherModule } from '../../services/feed-fetcher/feed-fetcher.module';
 import { FailRecordFeature } from './entities/fail-record.entity';

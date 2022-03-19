@@ -1,5 +1,5 @@
 import { createTestFeed } from '../../test/data/feeds.test-data';
-import { Feed } from '../feeds/entities/Feed.entity';
+import { Feed } from '../feeds/entities/feed.entity';
 import { FeedStatus } from '../feeds/types/FeedStatus.type';
 import { DiscordServersController } from './discord-servers.controller';
 import { DiscordServersService } from './discord-servers.service';

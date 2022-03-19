@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Feed, FeedDocument, FeedModel } from './entities/Feed.entity';
+import { Feed, FeedDocument, FeedModel } from './entities/feed.entity';
 import { DetailedFeed } from './types/detailed-feed.type';
 import { Types, FilterQuery } from 'mongoose';
 import _ from 'lodash';

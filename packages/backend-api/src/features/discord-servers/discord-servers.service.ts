@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { Feed } from '../feeds/entities/Feed.entity';
+import { Feed } from '../feeds/entities/feed.entity';
 import { FeedsService } from '../feeds/feeds.service';
 import { FeedStatus } from '../feeds/types/FeedStatus.type';
 import {

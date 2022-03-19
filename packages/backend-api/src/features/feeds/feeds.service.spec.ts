@@ -5,7 +5,7 @@ import {
   teardownIntegrationTests,
 } from '../../utils/integration-tests';
 import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import { Feed, FeedFeature, FeedModel } from './entities/Feed.entity';
+import { Feed, FeedFeature, FeedModel } from './entities/feed.entity';
 import { FeedsService } from './feeds.service';
 import { Types } from 'mongoose';
 import {

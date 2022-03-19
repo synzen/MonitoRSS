@@ -6,7 +6,7 @@ import {
   teardownEndpointTests,
 } from '../../utils/endpoint-tests';
 import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import { Feed, FeedModel } from '../feeds/entities/Feed.entity';
+import { Feed, FeedModel } from '../feeds/entities/feed.entity';
 import { DiscordServersModule } from './discord-servers.module';
 import nock from 'nock';
 import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';

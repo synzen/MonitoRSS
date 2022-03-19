@@ -12,7 +12,7 @@ import { Types } from 'mongoose';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { getModelToken } from '@nestjs/mongoose';
-import { Feed, FeedModel } from './entities/Feed.entity';
+import { Feed, FeedModel } from './entities/feed.entity';
 import { createTestFeed } from '../../test/data/feeds.test-data';
 import {
   Supporter,
