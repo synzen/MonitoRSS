@@ -48,4 +48,5 @@ export default () =>
     sessionSecret: process.env.SESSION_SECRET,
     sessionSalt: process.env.SESSION_SALT,
     feedUserAgent: process.env.FEED_USER_AGENT,
+    datadogApikey: process.env.DATADOG_API_KEY,
   } as const);

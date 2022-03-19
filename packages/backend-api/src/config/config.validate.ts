@@ -77,6 +77,10 @@ class EnvironmentVariables {
 
   @IsString()
   FEED_USER_AGENT: string;
+
+  @IsString()
+  @IsOptional()
+  DATADOG_API_KEY: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

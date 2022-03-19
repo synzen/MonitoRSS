@@ -1,6 +1,6 @@
 import { Module, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import {
   NestFastifyApplication,
   FastifyAdapter,
@@ -8,6 +8,7 @@ import {
 import { useContainer } from 'class-validator';
 import secureSession from 'fastify-secure-session';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 /**
  * Required  because Nest's app.select() does not work for dynamic modules
@@ -24,6 +25,9 @@ async function bootstrap() {
       logger: true,
     }),
   );
+
+  const httpAdapterHost = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
 
   useContainer(app.select(StaticAppModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
