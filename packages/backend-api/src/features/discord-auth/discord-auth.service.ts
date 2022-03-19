@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import fetch from 'node-fetch';
+import { URLSearchParams } from 'url';
 import {
   DISCORD_API_BASE_URL,
   DISCORD_AUTH_ENDPOINT,

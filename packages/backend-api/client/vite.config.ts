@@ -2,7 +2,7 @@ import { defineConfig, ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
-const VITE_ENV = process.env.ENV
+const VITE_ENV = process.env.ENV || 'development'
 
 const proxyOptionsByEnv: Record<string, Record<string, ProxyOptions>> = {
   'development': {

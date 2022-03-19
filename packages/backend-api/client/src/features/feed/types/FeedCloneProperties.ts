@@ -5,4 +5,5 @@ export enum FeedCloneProperties {
   COMPARISONS = 'COMPARISONS',
   REGEXOPS = 'REGEXOPS',
   WEBHOOK = 'WEBHOOK',
+  SUBSCRIBERS = 'SUBSCRIBERS',
 }

@@ -15,7 +15,7 @@
   "pages": {
     "cloneFeed": {
       "title": "Clone",
-      "description": "Clone properties of the current feed to other feed(s)",
+      "description": "Clone and overwrite properties of the current feed to other feed(s).",
       "propertiesSectionTitle": "Properties",
       "sourceFeedSectionTitle": "Source feed",
       "sourceFeedSectionDescription": "Your currently selected feed is the source feed.",
@@ -26,6 +26,7 @@
       "checkboxFiltersLabel": "Filters",
       "checkboxMiscOptionsLabel": "Misc Options",
       "checkboxComparisonsLabel": "Comparisons",
+      "checkboxSubscribersLabel": "Subscribers",
       "checkboxWebhookLabel": "Webhook",
       "cloneButtonLabel": "Clone",
       "success": "Successfully cloned"

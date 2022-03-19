@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { DashboardContent, ThemedSelect } from '@/components';
 import RouteParams from '../types/RouteParams';
 import {
-  FeedCloneProperties, useCloneFeed, useFeed, useFeeds,
+  FeedCloneProperties, useCloneFeed, useFeed, useFeeds, useFeedSubscribers,
 } from '@/features/feed';
 import { notifyError } from '@/utils/notifyError';
 import { notifySuccess } from '@/utils/notifySuccess';
@@ -32,6 +32,9 @@ const FeedClone: React.FC = () => {
     serverId,
   });
   const { feed, status: feedStatus, error: feedError } = useFeed({
+    feedId,
+  });
+  const { refetch: refetchFeedSubscribers } = useFeedSubscribers({
     feedId,
   });
   const loadingFeeds = status === 'idle' || status === 'loading';
@@ -65,6 +68,11 @@ const FeedClone: React.FC = () => {
           targetFeedIds: [selectedFeedId],
         },
       });
+
+      if (properties.includes(FeedCloneProperties.SUBSCRIBERS)) {
+        await refetchFeedSubscribers();
+      }
+
       notifySuccess(t('pages.cloneFeed.success'));
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
@@ -77,6 +85,9 @@ const FeedClone: React.FC = () => {
   }, {
     label: t('pages.cloneFeed.checkboxFiltersLabel'),
     key: FeedCloneProperties.FITLERS,
+  }, {
+    label: t('pages.cloneFeed.checkboxSubscribersLabel'),
+    key: FeedCloneProperties.SUBSCRIBERS,
   }, {
     label: t('pages.cloneFeed.checkboxMiscOptionsLabel'),
     key: FeedCloneProperties.MISC_OPTIONS,
