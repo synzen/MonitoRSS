@@ -46,6 +46,10 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
     navigate(path, {
       replace: true,
     });
+
+    if (!staticSidebarShown) {
+      setSidebarToggledOpen(false);
+    }
   };
 
   if (status === 'loading') {
