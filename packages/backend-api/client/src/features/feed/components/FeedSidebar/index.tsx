@@ -132,7 +132,13 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
 
           </CategoryText>
         </Flex>
-        <Button as={Link} to={feedId} rightIcon={<ExternalLinkIcon />}>Customize</Button>
+        <Button
+          as={Link}
+          to={`${feedId}/message`}
+          rightIcon={<ExternalLinkIcon />}
+        >
+          {t('features.feed.components.sidebar.customizeButton')}
+        </Button>
       </Stack>
       {/* <Divider /> */}
       <Stack>

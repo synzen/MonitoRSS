@@ -153,7 +153,8 @@
           "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
           "updateSuccess": "Successfully updated feed",
           "resetButton": "Reset",
-          "saveButton": "Save"
+          "saveButton": "Save",
+          "customizeButton": "Customize"
         }
       }
     },

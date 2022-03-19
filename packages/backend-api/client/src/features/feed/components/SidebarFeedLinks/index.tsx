@@ -1,6 +1,6 @@
 import { Stack, Text } from '@chakra-ui/react';
 import {
-  FiHome, FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiCopy,
+  FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiCopy,
 } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { SidebarLink } from '../../../../components/SidebarLink';
@@ -23,7 +23,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
   };
 
   const paths = {
-    FEED_OVERVIEW: `/servers/${serverId}/feeds/${feedId}`,
+    // FEED_OVERVIEW: `/servers/${serverId}/feeds/${feedId}`,
     FEED_MESSAGES: `/servers/${serverId}/feeds/${feedId}/message`,
     FEED_FILTERS: `/servers/${serverId}/feeds/${feedId}/filters`,
     FEED_SUBSCRIBERS: `/servers/${serverId}/feeds/${feedId}/subscribers`,
@@ -45,14 +45,14 @@ export const SidebarFeedLinks: React.FC<Props> = ({
         </Text>
         <Stack spacing="2">
           <FeedSearchSelect />
-          <SidebarLink
+          {/* <SidebarLink
             icon={FiHome}
             disabled={!feedId}
             active={!!feedId && currentPath === paths.FEED_OVERVIEW}
             onClick={() => onClickNavLink(paths.FEED_OVERVIEW)}
           >
             {t('components.sidebar.feed.overview')}
-          </SidebarLink>
+          </SidebarLink> */}
           <SidebarLink
             icon={FiMessageCircle}
             disabled={!feedId}
