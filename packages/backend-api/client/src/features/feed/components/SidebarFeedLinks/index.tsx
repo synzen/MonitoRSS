@@ -1,6 +1,6 @@
 import { Stack, Text } from '@chakra-ui/react';
 import {
-  FiHome, FiMessageCircle, FiFilter, FiAtSign, FiSliders,
+  FiHome, FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiCopy,
 } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { SidebarLink } from '../../../../components/SidebarLink';
@@ -87,7 +87,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}
-            icon={FiSliders}
+            icon={FiCopy}
             active={!!feedId && currentPath === paths.FEED_CLONE}
             onClick={() => onClickNavLink(paths.FEED_CLONE)}
           >
