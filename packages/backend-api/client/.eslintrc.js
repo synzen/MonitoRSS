@@ -15,6 +15,7 @@ module.exports = {
     project: "./tsconfig.eslint.json",
   },
   "rules": {
+    "linebreak-style": 0,
     /** Generic rules */
     "padding-line-between-statements": [
       "error",
