@@ -27,4 +27,4 @@ COPY --from=build /usr/src/app/dist dist
 ENV PORT=3000
 HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD wget http://localhost:3000/cep/v0/health -q -O - > /dev/null 2>&1
 
-CMD [ "node", "./dist/src/main" ]
+CMD [ "node", "./dist/main" ]
