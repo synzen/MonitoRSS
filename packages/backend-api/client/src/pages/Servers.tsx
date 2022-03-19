@@ -39,10 +39,10 @@ const Servers: React.FC = () => {
         paddingTop={8}
         paddingBottom={8}
       >
-        <ChakraLink as={Link} to="/" display="inline">
+        {/* <ChakraLink as={Link} to="/" display="inline">
           <ChevronLeftIcon />
           Back
-        </ChakraLink>
+        </ChakraLink> */}
         <Stack spacing={8}>
           <Heading>Select your server</Heading>
           <Stack
