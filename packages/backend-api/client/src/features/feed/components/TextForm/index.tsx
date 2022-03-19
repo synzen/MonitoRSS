@@ -5,6 +5,7 @@ import {
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { notifyError } from '@/utils/notifyError';
 import { useUpdateFeed } from '../../hooks/useUpdateFeed';
 
@@ -21,6 +22,7 @@ const FormSchema = object({
 type FormValues = InferType<typeof FormSchema>;
 
 export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
+  const { t } = useTranslation();
   const { mutateAsync } = useUpdateFeed();
   const defaultValues = { text };
 
@@ -73,8 +75,9 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
           <Button
             disabled={!isDirty || isSubmitting}
             onClick={() => reset(defaultValues)}
+            variant="ghost"
           >
-            Reset
+            {t('pages.message.textSectionResetButton')}
           </Button>
           <Button
             type="submit"
@@ -82,7 +85,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
             isLoading={isSubmitting}
             disabled={isSubmitting || !isDirty}
           >
-            Save
+            {t('pages.message.textSectionSaveButton')}
           </Button>
         </HStack>
       </Stack>

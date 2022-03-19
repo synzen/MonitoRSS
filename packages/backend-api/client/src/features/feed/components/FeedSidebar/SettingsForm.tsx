@@ -137,6 +137,7 @@ export const SettingsForm: React.FC<Props> = ({
               type="submit"
               colorScheme="blue"
               disabled={isSubmitting || !isDirty}
+              isLoading={isSubmitting}
             >
               {t('features.feed.components.sidebar.saveButton')}
             </Button>

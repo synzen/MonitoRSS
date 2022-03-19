@@ -1,7 +1,6 @@
-import {
-  Code, Heading, Stack, Text,
-} from '@chakra-ui/react';
+import { Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DashboardContent } from '@/components';
 import { FeedArticlesPlaceholders, useFeed } from '../features/feed';
 import RouteParams from '../types/RouteParams';
@@ -14,6 +13,7 @@ const FeedMessage: React.FC = () => {
   } = useFeed({
     feedId,
   });
+  const { t } = useTranslation();
 
   return (
     <Stack>
@@ -22,22 +22,18 @@ const FeedMessage: React.FC = () => {
         loading={feedStatus === 'loading' || feedStatus === 'idle'}
       >
         <Stack spacing="8">
-          <Heading size="lg">Message</Heading>
+          <Heading size="lg">{t('pages.message.title')}</Heading>
           <Stack spacing="4">
-            <Heading size="md">Placeholders</Heading>
-            <Text>Below are the available placeholders for the selected article.</Text>
+            <Heading size="md">{t('pages.message.placeholdersSectionTitle')}</Heading>
+            <Text>{t('pages.message.placeholdersSectionDescription')}</Text>
             <FeedArticlesPlaceholders
               feedId={feedId}
             />
           </Stack>
           <Stack spacing="4">
-            <Heading size="md">Text</Heading>
+            <Heading size="md">{t('pages.message.textSectionTitle')}</Heading>
             <Text>
-              {'You can use the placeholders listed above. A special placeholder, '}
-              <Code>{'{empty}'}</Code>
-              {' can be'
-              + ' used to create an empty message, but only if an embed is used. Regular formatting'
-              + ' such as bold and etc. is also available.'}
+              {t('pages.message.textSectionDescription')}
             </Text>
             <TextForm
               feedId={feedId as string}

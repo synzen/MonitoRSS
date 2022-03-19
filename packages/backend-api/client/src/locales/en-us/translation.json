@@ -51,6 +51,15 @@
       "refreshRateValue": "{{seconds}} seconds",
       "createdAtLabel": "Since"
     },
+    "message": {
+      "title": "Message",
+      "placeholdersSectionTitle": "Placeholders",
+      "placeholdersSectionDescription": "Below are the available placeholders for the selected article.",
+      "textSectionTitle": "Text",
+      "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
+      "textSectionResetButton": "Reset",
+      "textSectionSaveButton": "Save"
+    },
     "filters": {
       "title": "Filters",
       "tableCategory": "Category",

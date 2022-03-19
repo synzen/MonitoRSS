@@ -173,7 +173,7 @@ const FeedMiscOptions: React.FC = () => {
             </Stack>
             <HStack justifyContent="flex-end">
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={resetForm}
                 disabled={!isDirty || isSubmitting}
               >
