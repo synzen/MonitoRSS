@@ -26,7 +26,6 @@ export class DiscordUsersController {
 
   @Get('@me')
   @UseInterceptors(HttpCacheInterceptor)
-  @CacheTTL(60 * 60)
   async getMe(
     @DiscordAccessToken() accessToken: SessionAccessToken,
   ): Promise<GetMeOutputDto> {
