@@ -53,6 +53,7 @@ export const ThemedSelect: React.FC<Props> = ({
       color: 'white',
       height: '40px',
       paddingLeft: '8px',
+      borderWidth: '1px',
       borderColor: state.isFocused
         ? getChakraColor('gray.600')
         : getChakraColor('gray.700'),
@@ -73,6 +74,14 @@ export const ThemedSelect: React.FC<Props> = ({
         ? getChakraColor('gray.600')
         : state.isSelected
           ? getChakraColor('blue.500') : getChakraColor('gray.700'),
+    }),
+    container: (provided) => ({
+      ...provided,
+      borderWidth: '1px',
+    }),
+    menuList: (provided) => ({
+      ...provided,
+      borderWidth: '1px',
     }),
   });
 
