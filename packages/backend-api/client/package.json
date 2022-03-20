@@ -15,6 +15,8 @@
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@hookform/resolvers": "^2.8.8",
+    "@sentry/react": "^6.18.2",
+    "@sentry/tracing": "^6.18.2",
     "@testing-library/jest-dom": "^5.16.1",
     "cross-env": "^7.0.3",
     "eslint-config-airbnb-typescript": "^16.1.0",

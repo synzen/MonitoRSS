@@ -30,5 +30,8 @@ export default defineConfig({
   },
   server: {
     proxy: proxyOptionsByEnv[VITE_ENV] || {}
+  },
+  build: {
+    sourcemap: true,
   }
 })
