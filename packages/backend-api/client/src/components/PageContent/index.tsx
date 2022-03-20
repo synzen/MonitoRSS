@@ -164,7 +164,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
         >
           <IconButton
             onClick={() => setSidebarToggledOpen(true)}
-            variant="ghost"
+            variant="outline"
             icon={<HamburgerIcon fontSize="xl" />}
             aria-label="Open menu"
           />
