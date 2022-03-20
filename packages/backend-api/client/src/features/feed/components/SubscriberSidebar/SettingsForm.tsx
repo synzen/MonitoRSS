@@ -77,7 +77,7 @@ export const SettingsForm: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    setValue('webhookId', feed?.webhook.id || '');
+    setValue('webhookId', feed?.webhook?.id || '');
   }, [feed]);
 
   if (!feed || !discordServerData) {
