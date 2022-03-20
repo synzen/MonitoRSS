@@ -30,8 +30,18 @@ const Feeds: React.FC = () => {
     <RequireServerBotAccess
       serverId={serverId}
     >
-      <Flex height="100%">
-        <Stack spacing="6" flex="1" paddingX="12" paddingBottom="12" overflow="auto">
+      <Flex
+        width="100%"
+        height="100%"
+        overflow="auto"
+      >
+        <Stack
+          spacing="6"
+          flex="1"
+          paddingX="12"
+          paddingBottom="12"
+          width="100%"
+        >
           <Heading size="lg" paddingTop="8">Feeds</Heading>
           <FeedsTable
             onSelectedFeedId={setFocusedFeedId}

@@ -13,6 +13,7 @@ import {
   InputLeftElement,
   Stack,
   Table, Td, Text, Th, Thead, Tr,
+  Box,
 } from '@chakra-ui/react';
 import { useEffect, useMemo } from 'react';
 import {
@@ -171,7 +172,7 @@ export const FeedsTable: React.FC<Props> = ({
   }
 
   return (
-    <Stack>
+    <Stack width="100%">
       <InputGroup>
         <InputLeftElement
           pointerEvents="none"
@@ -191,66 +192,68 @@ export const FeedsTable: React.FC<Props> = ({
         />
       </InputGroup>
       {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
-      <Table
-        {...getTableProps()}
-        whiteSpace="nowrap"
-        marginBottom="5"
-        background="gray.850"
-        borderColor="gray.700"
-        borderWidth="2px"
-        boxShadow="lg"
-      >
-        <Thead>
-          {headerGroups.map((headerGroup) => (
-            <Tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => (
-                <Th {...column.getHeaderProps()}>
-                  {column.render('Header')}
-                </Th>
-              ))}
-            </Tr>
-          ))}
-        </Thead>
-        <tbody {...getTableBodyProps()}>
-          {page.map((row) => {
-            prepareRow(row);
-            const feed = row.original;
-
-            return (
-              <Tr
-                {...row.getRowProps()}
-                tabIndex={0}
-                zIndex={100}
-                position="relative"
-                bg={selectedFeedId === feed.id ? 'gray.700' : undefined}
-                _hover={{
-                  bg: 'gray.700',
-                  cursor: 'pointer',
-                  boxShadow: 'outline',
-                }}
-                _focus={{
-                  boxShadow: 'outline',
-                  outline: 'none',
-                }}
-                onClick={() => onClickFeedRow(feed.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    onClickFeedRow(feed.id);
-                  }
-                }}
-              >
-                {row.cells.map((cell) => (
-                  <Td {...cell.getCellProps()}>
-                    {cell.render('Cell')}
-                  </Td>
+      <Box overflow="auto">
+        <Table
+          {...getTableProps()}
+          whiteSpace="nowrap"
+          marginBottom="5"
+          background="gray.850"
+          borderColor="gray.700"
+          borderWidth="2px"
+          boxShadow="lg"
+        >
+          <Thead>
+            {headerGroups.map((headerGroup) => (
+              <Tr {...headerGroup.getHeaderGroupProps()}>
+                {headerGroup.headers.map((column) => (
+                  <Th {...column.getHeaderProps()}>
+                    {column.render('Header')}
+                  </Th>
                 ))}
               </Tr>
-            );
-          })}
-        </tbody>
-      </Table>
-      <Flex justifyContent="space-between">
-        <Text>
+            ))}
+          </Thead>
+          <tbody {...getTableBodyProps()}>
+            {page.map((row) => {
+              prepareRow(row);
+              const feed = row.original;
+
+              return (
+                <Tr
+                  {...row.getRowProps()}
+                  tabIndex={0}
+                  zIndex={100}
+                  position="relative"
+                  bg={selectedFeedId === feed.id ? 'gray.700' : undefined}
+                  _hover={{
+                    bg: 'gray.700',
+                    cursor: 'pointer',
+                    boxShadow: 'outline',
+                  }}
+                  _focus={{
+                    boxShadow: 'outline',
+                    outline: 'none',
+                  }}
+                  onClick={() => onClickFeedRow(feed.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onClickFeedRow(feed.id);
+                    }
+                  }}
+                >
+                  {row.cells.map((cell) => (
+                    <Td {...cell.getCellProps()}>
+                      {cell.render('Cell')}
+                    </Td>
+                  ))}
+                </Tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      </Box>
+      <Flex justifyContent="space-between" flexWrap="wrap">
+        <Text marginBottom="4">
           {t('pages.feeds.tableResults', {
             start: pageIndex * maxPerPage + 1,
             end: Math.min(

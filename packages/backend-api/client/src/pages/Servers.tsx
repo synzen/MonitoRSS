@@ -1,4 +1,4 @@
-import { ChevronLeftIcon, SearchIcon } from '@chakra-ui/icons';
+import { SearchIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertIcon,
@@ -8,11 +8,10 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
-  Link as ChakraLink,
   Stack,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Loading, Menu } from '@/components';
 import { useDiscordServers } from '../features/discordServers';
@@ -31,7 +30,8 @@ const Servers: React.FC = () => {
       justifyContent="center"
       alignItems="center"
       width="100%"
-      marginTop="8rem"
+      px="8"
+      // marginTop="8rem"
     >
       <Stack
         maxWidth="lg"
@@ -39,10 +39,6 @@ const Servers: React.FC = () => {
         paddingTop={8}
         paddingBottom={8}
       >
-        {/* <ChakraLink as={Link} to="/" display="inline">
-          <ChevronLeftIcon />
-          Back
-        </ChakraLink> */}
         <Stack spacing={8}>
           <Heading>Select your server</Heading>
           <Stack
@@ -67,22 +63,24 @@ const Servers: React.FC = () => {
               </Box>
             )}
             {status === 'success' && data && (
-              <Menu
-                items={data.results
-                  .filter((server) => (search
-                    ? server.name.toLowerCase().includes(search.toLowerCase())
-                    : true
-                  ))
-                  .map((server) => ({
-                    id: server.id,
-                    title: server.name,
-                    value: server.id,
-                    description: '',
-                    icon: server.iconUrl,
-                  }))}
-                onSelectedValue={(value) => navigate(`/servers/${value}/feeds`)}
-                shown
-              />
+              <Box overflow="auto" height="100%">
+                <Menu
+                  items={data.results
+                    .filter((server) => (search
+                      ? server.name.toLowerCase().includes(search.toLowerCase())
+                      : true
+                    ))
+                    .map((server) => ({
+                      id: server.id,
+                      title: server.name,
+                      value: server.id,
+                      description: '',
+                      icon: server.iconUrl,
+                    }))}
+                  onSelectedValue={(value) => navigate(`/servers/${value}/feeds`)}
+                  shown
+                />
+              </Box>
             )}
             {error && (
               <Alert status="error" title="Failed to get list of servers">

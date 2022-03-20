@@ -17,7 +17,8 @@ export const DashboardContent: React.FC<Props> = ({ loading, error, children }) 
       maxWidth="7xl"
       width="100%"
       px="8"
-      paddingY="16"
+      paddingTop="8"
+      paddingBottom="16"
     >
       {loading && (
         <Box textAlign="center" paddingY="5rem">

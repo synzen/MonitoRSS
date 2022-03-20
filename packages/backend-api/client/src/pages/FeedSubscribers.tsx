@@ -78,7 +78,7 @@ const FeedSubscribers: React.FC = () => {
               loading={rolesStatus === 'loading' || rolesStatus === 'idle'}
             />
           </Stack>
-          <Stack spacing="4">
+          <Stack spacing="4" overflow="auto">
             <FeedSubscribersTable
               serverId={serverId}
               feedId={feedId}

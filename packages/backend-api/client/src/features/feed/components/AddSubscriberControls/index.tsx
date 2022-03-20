@@ -3,7 +3,7 @@ import {
   Button,
   FormControl,
   FormLabel,
-  HStack,
+  Flex,
   VisuallyHidden,
 } from '@chakra-ui/react';
 import { useState } from 'react';
@@ -53,26 +53,29 @@ export const AddSubscriberControls: React.FC<Props> = ({
   };
 
   return (
-    <HStack>
+    <Flex flexWrap="wrap">
       <FormControl width={250}>
         <VisuallyHidden>
           <FormLabel htmlFor="subscriber-name">
             {t('pages.filters.formAddFilterInputLabel')}
           </FormLabel>
         </VisuallyHidden>
-        <ThemedSelect
-          id="subscriber-name"
-          onChange={(value) => setCurrentRoleId(value)}
-          loading={loading}
-          value={currentRoleId}
-          options={roles.map((role) => ({
-            label: role.name,
-            value: role.id,
-            icon: <Box width={6} borderRadius="50%" height={6} bg={role.color} />,
-          }))}
-        />
+        <Box marginRight="4" marginTop="2">
+          <ThemedSelect
+            id="subscriber-name"
+            onChange={(value) => setCurrentRoleId(value)}
+            loading={loading}
+            value={currentRoleId}
+            options={roles.map((role) => ({
+              label: role.name,
+              value: role.id,
+              icon: <Box width={6} borderRadius="50%" height={6} bg={role.color} />,
+            }))}
+          />
+        </Box>
       </FormControl>
       <Button
+        marginTop="2"
         alignSelf="flex-end"
         minWidth="100"
         colorScheme="blue"
@@ -80,8 +83,8 @@ export const AddSubscriberControls: React.FC<Props> = ({
         onClick={onClickAdd}
         isLoading={status === 'loading'}
       >
-        Add
+        {t('pages.subscribers.addSubscriberButton')}
       </Button>
-    </HStack>
+    </Flex>
   );
 };

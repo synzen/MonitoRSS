@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { ArrowDownIcon, ArrowUpIcon } from '@chakra-ui/icons';
 import {
-  Button, Checkbox, Flex, Stack, Table, Tbody, Td, Th, Thead, Tr,
+  Button, Checkbox, Flex, Stack, Table, Tbody, Td, Th, Thead, Tr, Box,
 } from '@chakra-ui/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -107,66 +107,70 @@ export const FiltersTable: React.FC<Props> = ({
   return (
     <Stack spacing={6}>
       <Stack>
-        <Flex justifyContent="space-between">
+        <Flex justifyContent="space-between" flexWrap="wrap">
           <Button
             disabled={selectedFlatRows.length === 0 || isUpdating || isLoading}
             isLoading={isUpdating}
             colorScheme="red"
             variant="outline"
             onClick={onRemoveFilters}
+            marginRight="4"
+            marginBottom="2"
           >
             {t('pages.filters.removeSelectedFilters')}
           </Button>
           <AddFilterDialog onSubmit={onAddFilters} />
         </Flex>
-        <Table
-          {...getTableProps()}
-          whiteSpace="nowrap"
-          marginBottom="5"
-          background="gray.850"
-          borderColor="gray.700"
-          borderWidth="2px"
-          boxShadow="lg"
-        >
-          <Thead>
-            {headerGroups.map((headerGroup) => (
-              <Tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column) => (
-                  <Th {...column.getHeaderProps(column.getSortByToggleProps())}>
-                    <Flex alignItems="center" userSelect="none">
-                      {column.render('Header')}
-                      {column.isSorted && column.isSortedDesc && (
-                      <ArrowDownIcon
-                        marginLeft="1"
-                      />
-                      )}
-                      {column.isSorted && !column.isSortedDesc && (
-                      <ArrowUpIcon
-                        marginLeft="1"
-                      />
-                      )}
-                    </Flex>
-                  </Th>
-                ))}
-              </Tr>
-            ))}
-          </Thead>
-          <Tbody {...getTableBodyProps()}>
-            {rows.map((row) => {
-              prepareRow(row);
-
-              return (
-                <Tr {...row.getRowProps()}>
-                  {row.cells.map((cell) => (
-                    <Td {...cell.getCellProps()}>
-                      {cell.render('Cell')}
-                    </Td>
+        <Box overflow="auto">
+          <Table
+            {...getTableProps()}
+            whiteSpace="nowrap"
+            marginBottom="5"
+            background="gray.850"
+            borderColor="gray.700"
+            borderWidth="2px"
+            boxShadow="lg"
+          >
+            <Thead>
+              {headerGroups.map((headerGroup) => (
+                <Tr {...headerGroup.getHeaderGroupProps()}>
+                  {headerGroup.headers.map((column) => (
+                    <Th {...column.getHeaderProps(column.getSortByToggleProps())}>
+                      <Flex alignItems="center" userSelect="none">
+                        {column.render('Header')}
+                        {column.isSorted && column.isSortedDesc && (
+                        <ArrowDownIcon
+                          marginLeft="1"
+                        />
+                        )}
+                        {column.isSorted && !column.isSortedDesc && (
+                        <ArrowUpIcon
+                          marginLeft="1"
+                        />
+                        )}
+                      </Flex>
+                    </Th>
                   ))}
                 </Tr>
-              );
-            })}
-          </Tbody>
-        </Table>
+              ))}
+            </Thead>
+            <Tbody {...getTableBodyProps()}>
+              {rows.map((row) => {
+                prepareRow(row);
+
+                return (
+                  <Tr {...row.getRowProps()}>
+                    {row.cells.map((cell) => (
+                      <Td {...cell.getCellProps()}>
+                        {cell.render('Cell')}
+                      </Td>
+                    ))}
+                  </Tr>
+                );
+              })}
+            </Tbody>
+          </Table>
+        </Box>
       </Stack>
     </Stack>
   );

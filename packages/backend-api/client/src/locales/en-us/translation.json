@@ -83,7 +83,8 @@
       "saveButton": "Save"
     },
     "subscribers": {
-      "title": "Subscribers"
+      "title": "Subscribers",
+      "addSubscriberButton": "Add"
     },
     "webhooks": {
       "title": "Webhooks",

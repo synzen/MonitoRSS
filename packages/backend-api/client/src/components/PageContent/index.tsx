@@ -12,6 +12,7 @@ import {
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
+  HStack,
 } from '@chakra-ui/react';
 import { HamburgerIcon } from '@chakra-ui/icons';
 import {
@@ -147,12 +148,13 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
           placement="left"
         >
           <DrawerOverlay />
-          <DrawerContent>
+          <DrawerContent overflow="auto">
             <DrawerCloseButton />
             {sidebarContent}
           </DrawerContent>
         </Drawer>
-        <Box
+        <HStack
+          spacing={4}
           height="60px"
           background="gray.700"
           width="100%"
@@ -166,7 +168,8 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
             icon={<HamburgerIcon fontSize="xl" />}
             aria-label="Open menu"
           />
-        </Box>
+          <Heading>Monito.RSS</Heading>
+        </HStack>
         {children}
 
       </Box>
@@ -177,12 +180,14 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
     <Flex
       flexGrow={1}
       height="100%"
+      // overflow="auto"
     >
       <Flex
         overflow="auto"
         as="nav"
         direction="column"
         maxW="325px"
+        height="100%"
         width="full"
         paddingBottom="4"
         borderRightWidth="1px"
