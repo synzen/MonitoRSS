@@ -126,7 +126,7 @@ export const FiltersTable: React.FC<Props> = ({
             {...getTableProps()}
             whiteSpace="nowrap"
             marginBottom="5"
-            background="gray.850"
+            background="gray.800"
             borderColor="gray.700"
             borderWidth="2px"
             boxShadow="lg"
