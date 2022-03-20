@@ -1,7 +1,6 @@
 import {
-  Center, Heading, Stack, useToast,
+  Center, Heading, Stack,
 } from '@chakra-ui/react';
-import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loading } from '@/components';
 import { useAuth } from '../hooks';
@@ -9,27 +8,13 @@ import { ErrorAlert } from '@/components/ErrorAlert';
 
 export const RequireAuth: React.FC = ({ children }) => {
   const { status, error, authenticated } = useAuth();
-  const toast = useToast();
-
-  useEffect(() => {
-    if (status === 'success' && !authenticated) {
-      toast({
-        title: 'You are not authenticated',
-        description: 'Please login to continue',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
-  }, [status, authenticated]);
 
   if (status === 'loading' || status === 'idle') {
     return (
       <Stack
         alignItems="center"
         justifyContent="center"
-        height="100vh"
+        height="100%"
         spacing="2rem"
       >
         <Loading size="xl" />
@@ -40,13 +25,19 @@ export const RequireAuth: React.FC = ({ children }) => {
 
   if (status === 'error') {
     return (
-      <Center height="100vh">
+      <Center height="100%">
         <ErrorAlert
           description={error?.message}
           withGoBack
         />
       </Center>
     );
+  }
+
+  if (status === 'success' && !authenticated) {
+    window.location.href = '/api/v1/discord/login';
+
+    return null;
   }
 
   if (status === 'success' && authenticated) {

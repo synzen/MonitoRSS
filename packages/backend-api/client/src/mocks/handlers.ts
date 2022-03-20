@@ -33,7 +33,6 @@ import mockFeedSubscribers from './data/feedSubscribers';
 
 const handlers = [
   rest.get('/api/v1/discord-users/@me', (req, res, ctx) => res(
-    ctx.status(200),
     ctx.json<GetDiscordMeOutput>(mockDiscordUser),
   )),
 
