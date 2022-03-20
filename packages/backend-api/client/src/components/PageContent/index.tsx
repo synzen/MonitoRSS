@@ -158,7 +158,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
           height="60px"
           background="gray.700"
           width="100%"
-          px="8"
+          paddingX="4"
           display="flex"
           alignItems="center"
         >

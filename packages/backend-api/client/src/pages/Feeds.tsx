@@ -38,7 +38,7 @@ const Feeds: React.FC = () => {
         <Stack
           spacing="6"
           flex="1"
-          paddingX="12"
+          paddingX={{ base: 4, lg: 12 }}
           paddingBottom="12"
           width="100%"
         >

@@ -16,7 +16,7 @@ export const DashboardContent: React.FC<Props> = ({ loading, error, children }) 
     <Box
       maxWidth="7xl"
       width="100%"
-      px="8"
+      paddingX={{ base: 4, lg: 12 }}
       paddingTop="8"
       paddingBottom="16"
     >
