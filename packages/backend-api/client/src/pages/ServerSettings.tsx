@@ -191,7 +191,7 @@ export const ServerSettings: React.FC<Props> = () => {
                 </FormControl>
                 <HStack justifyContent="flex-end">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     disabled={!isDirty || isSubmitting}
                     onClick={resetForm}
                   >
