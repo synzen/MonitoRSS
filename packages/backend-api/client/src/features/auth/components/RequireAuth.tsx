@@ -1,5 +1,5 @@
 import {
-  Box, Center, Heading, Stack, useToast,
+  Center, Heading, Stack, useToast,
 } from '@chakra-ui/react';
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
@@ -50,11 +50,8 @@ export const RequireAuth: React.FC = ({ children }) => {
   }
 
   if (status === 'success' && authenticated) {
-    return (
-      <Box>
-        {children}
-      </Box>
-    );
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <>{children}</>;
   }
 
   return <Navigate to="/" />;
