@@ -65,5 +65,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
     setOffset,
     setSearch,
     isFetchingNewPage,
+    isFetching,
+    search: search || '',
   };
 };

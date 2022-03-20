@@ -14,6 +14,8 @@ import {
   Stack,
   Table, Td, Text, Th, Thead, Tr,
   Box,
+  InputRightElement,
+  Spinner,
 } from '@chakra-ui/react';
 import { useEffect, useMemo } from 'react';
 import {
@@ -57,7 +59,9 @@ export const FeedsTable: React.FC<Props> = ({
     error,
     setOffset,
     isFetchingNewPage,
+    search,
     setSearch,
+    isFetching,
   } = useFeeds({
     serverId,
     initialLimit: maxPerPage,
@@ -172,8 +176,8 @@ export const FeedsTable: React.FC<Props> = ({
   }
 
   return (
-    <Stack width="100%">
-      <InputGroup>
+    <Stack>
+      <InputGroup width="min-content">
         <InputLeftElement
           pointerEvents="none"
         >
@@ -190,6 +194,9 @@ export const FeedsTable: React.FC<Props> = ({
           width="sm"
           placeholder={t('pages.feeds.tableSearch')}
         />
+        <InputRightElement>
+          {search && isFetching && <Spinner size="sm" />}
+        </InputRightElement>
       </InputGroup>
       {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
       <Box overflow="auto">

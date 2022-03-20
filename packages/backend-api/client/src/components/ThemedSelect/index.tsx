@@ -90,7 +90,7 @@ export const ThemedSelect: React.FC<Props> = ({
   return (
     <Select
       id={id}
-      isDisabled={loading || isDisabled}
+      isDisabled={isDisabled}
       isLoading={loading}
       options={options}
       onBlur={onBlur}

@@ -1,7 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { debounce } from 'lodash';
 import { ThemedSelect } from '@/components';
 import { useFeeds } from '../../hooks/useFeeds';
-import { debounce } from 'lodash';
 
 interface Props {
 
@@ -12,9 +12,12 @@ export const FeedSearchSelect: React.FC<Props> = () => {
   const { serverId, feedId } = useParams();
   const { pathname } = useLocation();
 
-  const { status, data, setSearch } = useFeeds({ serverId });
+  const {
+    status, data, setSearch, search, isFetching,
+  } = useFeeds({ serverId });
 
-  const loading = status === 'idle' || status === 'loading';
+  const isInitiallyLoading = status === 'idle' || status === 'loading';
+  const isSearching = !!search && isFetching;
 
   const onChangedValue = (newFeedId: string) => {
     if (feedId) {
@@ -31,7 +34,8 @@ export const FeedSearchSelect: React.FC<Props> = () => {
   return (
     <ThemedSelect
       onChange={onChangedValue}
-      loading={loading}
+      loading={isInitiallyLoading || isSearching}
+      isDisabled={isInitiallyLoading}
       value={feedId}
       onInputChange={onSearchChange}
       options={data?.results.map((feed) => ({
