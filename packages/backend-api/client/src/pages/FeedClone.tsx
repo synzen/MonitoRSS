@@ -105,6 +105,11 @@ const FeedClone: React.FC = () => {
     key: FeedCloneProperties.WEBHOOK,
   }];
 
+  const feedsForDropdown = data?.results.filter((f) => f.id !== feedId).map((f) => ({
+    label: f.title,
+    value: f.id,
+  })) || [];
+
   return (
     <DashboardContent
       loading={feedStatus === 'loading' || feedStatus === 'idle'}
@@ -145,10 +150,7 @@ const FeedClone: React.FC = () => {
               loading={loadingFeeds}
               onInputChange={onInputChange}
               value={selectedFeedId}
-              options={data?.results.map((f) => ({
-                value: f.id,
-                label: f.title,
-              })) || []}
+              options={feedsForDropdown}
             />
           </Stack>
         </Stack>
