@@ -8,6 +8,7 @@ import {
   Stack,
   Switch,
   Text,
+  Box,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { boolean, InferType, object } from 'yup';
@@ -140,8 +141,9 @@ const FeedMiscOptions: React.FC = () => {
           <Stack>
             <Stack spacing="8">
               {options.map((option) => (
-                <>
+                <Box>
                   <Controller
+                    key={option.formKey}
                     name={option.formKey}
                     control={control}
                     render={({ field }) => (
@@ -161,14 +163,14 @@ const FeedMiscOptions: React.FC = () => {
                             isChecked={field.value}
                           />
                         </Flex>
-                        <Text>
+                        <Text paddingBottom="8">
                           {option.description}
                         </Text>
                       </FormControl>
                     )}
                   />
                   <Divider />
-                </>
+                </Box>
               ))}
             </Stack>
             <HStack justifyContent="flex-end">
