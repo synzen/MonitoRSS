@@ -14,7 +14,7 @@ const exceptionsRecord: Record<
   { status: HttpStatus; code: ApiErrorCode }
 > = {
   [MockException.name]: {
-    code: ApiErrorCode.INVALID_FEED,
+    code: ApiErrorCode.FEED_INVALID,
     status: HttpStatus.BAD_REQUEST,
   },
 };
@@ -33,8 +33,8 @@ describe('StandardExceptionFilter', () => {
 
   describe('catch', () => {
     const exceptionDetails = {
-      code: ApiErrorCode.INVALID_FEED,
-      message: API_ERROR_MESSAGES.INVALID_FEED,
+      code: ApiErrorCode.FEED_INVALID,
+      message: API_ERROR_MESSAGES.FEED_INVALID,
       status: HttpStatus.BAD_REQUEST,
     };
     const code = jest.fn();
@@ -89,12 +89,12 @@ describe('StandardExceptionFilter', () => {
         timestamp: expect.any(Number),
         errors: [
           {
-            code: ApiErrorCode.INVALID_FEED,
-            message: API_ERROR_MESSAGES.INVALID_FEED,
+            code: ApiErrorCode.FEED_INVALID,
+            message: API_ERROR_MESSAGES.FEED_INVALID,
           },
           {
-            code: ApiErrorCode.INVALID_FEED,
-            message: API_ERROR_MESSAGES.INVALID_FEED,
+            code: ApiErrorCode.FEED_INVALID,
+            message: API_ERROR_MESSAGES.FEED_INVALID,
           },
         ],
         isStandardized: true,
@@ -141,9 +141,9 @@ describe('StandardExceptionFilter', () => {
       const details = filter.getExceptionDetails(exception);
 
       expect(details.status).toBe(HttpStatus.BAD_REQUEST);
-      expect(details.code).toBe(ApiErrorCode.INVALID_FEED);
+      expect(details.code).toBe(ApiErrorCode.FEED_INVALID);
       expect(details.message).toEqual(
-        API_ERROR_MESSAGES[ApiErrorCode.INVALID_FEED],
+        API_ERROR_MESSAGES[ApiErrorCode.FEED_INVALID],
       );
     });
   });

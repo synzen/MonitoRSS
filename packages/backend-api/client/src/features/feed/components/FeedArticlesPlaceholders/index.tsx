@@ -1,8 +1,10 @@
 import {
   Alert,
-  AlertIcon, Code, Select, Stack, StackDivider, Text,
+  AlertDescription,
+  AlertIcon, AlertTitle, Box, Code, Select, Stack, StackDivider, Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loading } from '@/components';
 import { useFeedArticles } from '../../hooks/useFeedArticles';
 
@@ -12,7 +14,7 @@ interface Props {
 
 export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
   const [articleIndex, setArticleIndex] = useState(0);
-
+  const { t } = useTranslation();
   const { articles, status, error } = useFeedArticles({ feedId });
 
   if (status === 'loading' || status === 'idle') {
@@ -23,7 +25,14 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
     return (
       <Alert status="error">
         <AlertIcon />
-        {error.message}
+        <Box>
+          <AlertTitle display="block">
+            {t('pages.message.failedToRetrieveArticlesError')}
+          </AlertTitle>
+          <AlertDescription display="block">
+            {error.message}
+          </AlertDescription>
+        </Box>
       </Alert>
     );
   }

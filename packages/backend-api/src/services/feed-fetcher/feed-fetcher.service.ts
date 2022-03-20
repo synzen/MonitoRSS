@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import FeedParser from 'feedparser';
 import fetch from 'node-fetch';
@@ -12,6 +12,10 @@ import {
   FeedParseException,
   FeedParseTimeoutException,
   FeedRequestException,
+  FeedTooManyRequestsException,
+  FeedUnauthorizedException,
+  FeedForbiddenException,
+  FeedInternalErrorException,
 } from './exceptions';
 
 interface FetchFeedOptions {
@@ -49,7 +53,17 @@ export class FeedFetcherService {
     });
 
     if (!res.ok) {
-      throw new FeedRequestException(`Non-200 status code (${res.status})`);
+      if (res.status === HttpStatus.TOO_MANY_REQUESTS) {
+        throw new FeedTooManyRequestsException();
+      } else if (res.status === HttpStatus.UNAUTHORIZED) {
+        throw new FeedUnauthorizedException();
+      } else if (res.status === HttpStatus.FORBIDDEN) {
+        throw new FeedForbiddenException();
+      } else if (res.status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+        throw new FeedInternalErrorException();
+      } else {
+        throw new FeedRequestException(`Non-200 status code (${res.status})`);
+      }
     }
 
     return res.body;

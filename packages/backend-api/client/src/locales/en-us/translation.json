@@ -12,11 +12,15 @@
       "missingBotAccessMessage": "The bot is either not in this server or does not have permission to read this server."
     },
     "apiErrors": {
-      "invalidFeed": "Invalid feed",
-      "parseFailed": "Failed to parse feed",
-      "parseTimeout": "Parsing the feed took too long",
-      "requestTimeout": "Request to the feed timed out",
-      "requestFailed": "Request to the feed failed"
+      "feedInvalid": "Invalid feed",
+      "feedParseFailed": "Failed to parse feed",
+      "feedParseTimeout": "Parsing the feed took too long",
+      "feedRequestTimeout": "Request to the feed timed out.",
+      "feedRequestFailed": "Request to the feed failed. Please try again later.",
+      "feedRequestForbidden": "The feed host has explicitly blocked the request for the feed.",
+      "feedRequestInternalError": "Feed host is currently experiencing issues",
+      "feedRequestTooManyRequests": "Requests to the feed has been rate limited. Please try again later.",
+      "feedRequestUnauthorized": "Feed hosts requesting authorization that does not exist"
     }
   },
   "pages": {
@@ -62,6 +66,7 @@
       "title": "Message",
       "placeholdersSectionTitle": "Placeholders",
       "placeholdersSectionDescription": "Below are the available placeholders for the selected article.",
+      "failedToRetrieveArticlesError": "Failed to retrieve feed articles",
       "textSectionTitle": "Text",
       "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "textSectionResetButton": "Reset",
