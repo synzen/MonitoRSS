@@ -1,6 +1,41 @@
 import { AnySchema, ValidationError } from 'yup';
 import ApiAdapterError from './ApiAdapterError';
+import { getStandardErrorCodeMessage } from './getStandardErrorCodeMessage copy';
 import getStatusCodeErrorMessage from './getStatusCodeErrorMessage';
+
+interface StandardApiError {
+  /**
+   * High-level human-readable error message targeted at developers.
+   */
+  message: string;
+  /**
+   * Unique error code, language specific
+   */
+  code: string;
+}
+
+interface StandardApiErrorResponse {
+  /**
+   * High-level human-readable error message targeted at developers.
+   */
+  message: string;
+  /**
+   * Unique error code, language-agnostic.
+   */
+  code: string;
+  /**
+   * Unix timestamp of when the error occurred.
+   */
+  timestamp: number;
+  /**
+   * List of detailed errors.
+   */
+  errors: StandardApiError[];
+  /**
+   * Used to distinguish between legacy/unformatted errors and this new format.
+   */
+  isStandardized: true;
+}
 
 interface FetchOptions<T> {
   requestOptions?: RequestInit
@@ -58,19 +93,32 @@ const handleStatusCode = async (res: Response) => {
     return res;
   }
 
-  if (res.status === 400) {
-    const json = await res.json();
+  let json: Record<string, any> | StandardApiErrorResponse;
 
-    throw new ApiAdapterError(json.message || 'Unknown error', {
+  try {
+    json = await res.json();
+  } catch (err) {
+    const errorMessage = getStatusCodeErrorMessage(res.status);
+
+    throw new ApiAdapterError(errorMessage, {
       statusCode: res.status,
     });
   }
 
-  const errorMessage = getStatusCodeErrorMessage(res.status);
-
-  throw new ApiAdapterError(errorMessage, {
-    statusCode: res.status,
-  });
+  if (json.isStandardized) {
+    throw new ApiAdapterError(getStandardErrorCodeMessage(json.code), {
+      statusCode: res.status,
+    });
+  } else if (res.status === 400) {
+    // Legacy error formatting
+    throw new ApiAdapterError(json.message || 'Unknown error', {
+      statusCode: res.status,
+    });
+  } else {
+    throw new ApiAdapterError(getStatusCodeErrorMessage(res.status), {
+      statusCode: res.status,
+    });
+  }
 };
 
 export default fetchRest;

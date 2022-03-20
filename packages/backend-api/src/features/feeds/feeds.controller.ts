@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -27,6 +28,7 @@ import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-inter
 import _ from 'lodash';
 import { CloneFeedInputDto } from './dto/CloneFeedInput.dto';
 import { CloneFeedOutputDto } from './dto/CloneFeedOutput.dto';
+import { FeedExceptionFilter } from './filters';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -162,6 +164,7 @@ export class FeedsController {
   @Get('/:feedId/articles')
   @UseGuards(UserManagesFeedServerGuard)
   @UseInterceptors(HttpCacheInterceptor)
+  @UseFilters(new FeedExceptionFilter())
   @CacheTTL(60 * 5)
   async getFeedArticles(
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,

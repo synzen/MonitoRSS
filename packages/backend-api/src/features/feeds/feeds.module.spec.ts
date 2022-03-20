@@ -22,6 +22,7 @@ import {
 import { Cache } from 'cache-manager';
 
 import { ConfigService } from '@nestjs/config';
+import { URL } from 'url';
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;

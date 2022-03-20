@@ -10,6 +10,13 @@
     "api": {
       "missingBotAccessTitle": "Missing Bot Access",
       "missingBotAccessMessage": "The bot is either not in this server or does not have permission to read this server."
+    },
+    "apiErrors": {
+      "invalidFeed": "Invalid feed",
+      "parseFailed": "Failed to parse feed",
+      "parseTimeout": "Parsing the feed took too long",
+      "requestTimeout": "Request to the feed timed out",
+      "requestFailed": "Request to the feed failed"
     }
   },
   "pages": {

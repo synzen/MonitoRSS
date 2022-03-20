@@ -1,10 +1,7 @@
 /* eslint-disable import/extensions */
-import defaulti18n, { Resource } from 'i18next';
+import i18n, { Resource } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from '../locales/en-us/translation.json';
-
-// @ts-ignore
-const i18n = defaulti18n.default ? defaulti18n.default : defaulti18n;
 
 const resources: Resource = {
   en: {

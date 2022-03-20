@@ -7,6 +7,12 @@ import { FeedData } from './types/FeedData.type';
 import ArticleIDResolver from './utils/ArticleIDResolver';
 // @ts-ignore
 import Article from './utils/Article';
+import {
+  InvalidFeedException,
+  FeedParseException,
+  FeedParseTimeoutException,
+  FeedRequestException,
+} from './exceptions';
 
 interface FetchFeedOptions {
   formatTables?: boolean;
@@ -43,7 +49,7 @@ export class FeedFetcherService {
     });
 
     if (!res.ok) {
-      throw new Error(`Non-200 status code (${res.status})`);
+      throw new FeedRequestException(`Non-200 status code (${res.status})`);
     }
 
     return res.body;
@@ -58,24 +64,24 @@ export class FeedFetcherService {
 
     return new Promise<FeedData>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Feed parsing took too long'));
+        reject(new FeedParseTimeoutException());
       }, 10000);
 
       inputStream.on('error', (err: Error) => {
         // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
-        reject(new Error(err.message));
+        reject(new FeedParseException(err.message));
       });
 
       feedparser.on('error', (err: Error) => {
         if (err.message === 'Not a feed') {
           reject(
-            new Error(
+            new InvalidFeedException(
               'That is a not a valid feed. Note that you cannot add just any link. ' +
                 'You may check if it is a valid feed by using online RSS feed validators',
             ),
           );
         } else {
-          reject(new Error(err.message));
+          reject(new FeedParseException(err.message));
         }
       });
 
