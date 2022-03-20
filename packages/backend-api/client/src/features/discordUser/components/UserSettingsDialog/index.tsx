@@ -54,7 +54,7 @@ export const UserSettingsDialog: React.FC<Props> = ({
   const { t } = useTranslation();
 
   const getDefaultFormValue: () => string[] = useCallback(() => {
-    if (!userMe) {
+    if (!userMe || !userMe.supporter) {
       return [];
     }
 
