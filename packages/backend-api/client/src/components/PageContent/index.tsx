@@ -24,6 +24,7 @@ import { Loading } from '..';
 import { SidebarFeedLinks } from '@/features/feed';
 import { useDiscordUserMe, UserStatusTag } from '@/features/discordUser';
 import { DiscordUserDropdown } from '@/features/discordUser/components/DiscordUserDropdown';
+import { LogoutButton } from '@/features/auth';
 
 interface Props {
   requireFeed?: boolean;
@@ -133,6 +134,8 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
           onChangePath={onPathChanged}
         />
       </Stack>
+      <Divider />
+      <LogoutButton />
     </>
   );
 

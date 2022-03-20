@@ -43,7 +43,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
         >
           {t('components.sidebar.feed.manage')}
         </Text>
-        <Stack spacing="2" paddingBottom="8">
+        <Stack spacing="2" paddingBottom="4">
           <FeedSearchSelect />
           {/* <SidebarLink
             icon={FiHome}
