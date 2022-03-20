@@ -141,7 +141,7 @@ const FeedMiscOptions: React.FC = () => {
           <Stack>
             <Stack spacing="8">
               {options.map((option) => (
-                <Box>
+                <Box key={option.formKey}>
                   <Controller
                     key={option.formKey}
                     name={option.formKey}
