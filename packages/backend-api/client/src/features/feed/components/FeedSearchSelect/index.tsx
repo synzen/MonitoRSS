@@ -11,7 +11,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
   const { serverId, feedId } = useParams();
   const { pathname } = useLocation();
 
-  const { status, data } = useFeeds({ serverId });
+  const { status, data, setSearch } = useFeeds({ serverId });
 
   const loading = status === 'idle' || status === 'loading';
 
@@ -28,6 +28,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
       onChange={onChangedValue}
       loading={loading}
       value={feedId}
+      onInputChange={setSearch}
       options={data?.results.map((feed) => ({
         value: feed.id,
         label: feed.title,
