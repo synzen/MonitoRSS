@@ -22,8 +22,9 @@ const FeedClone: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
   const [properties, setProperties] = useState<FeedCloneProperties[]>([]);
   const [selectedFeedId, setSelectedFeedId] = useState<string>('');
+  const [saving, setSaving] = useState(false);
   const { t } = useTranslation();
-  const { mutateAsync, status: cloningStatus } = useCloneFeed();
+  const { mutateAsync } = useCloneFeed();
   const {
     setSearch,
     data,
@@ -61,6 +62,7 @@ const FeedClone: React.FC = () => {
     }
 
     try {
+      setSaving(true);
       await mutateAsync({
         feedId,
         details: {
@@ -74,8 +76,12 @@ const FeedClone: React.FC = () => {
       }
 
       notifySuccess(t('pages.cloneFeed.success'));
+      setSelectedFeedId('');
+      setProperties([]);
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -149,11 +155,11 @@ const FeedClone: React.FC = () => {
         <HStack justifyContent="flex-end">
           <Button
             onClick={onSubmit}
-            isLoading={cloningStatus === 'loading'}
+            isLoading={saving}
             disabled={!selectedFeedId
               || !properties.length
-              || cloningStatus === 'loading'
-              || loadingFeeds}
+              || loadingFeeds
+              || saving}
             colorScheme="blue"
           >
             {t('pages.cloneFeed.cloneButtonLabel')}
