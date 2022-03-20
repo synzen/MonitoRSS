@@ -18,7 +18,7 @@ export const useDiscordServerChannels = (
   }];
 
   const {
-    data, status, error, isLoading,
+    data, status, error,
   } = useQuery<GetServerChannelsOutput, ApiAdapterError>(
     queryKey,
     async () => {
@@ -35,8 +35,6 @@ export const useDiscordServerChannels = (
       onError: () => setHadError(true),
     },
   );
-
-  console.log('channel is loading', isLoading);
 
   return {
     data,
