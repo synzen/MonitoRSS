@@ -7,7 +7,13 @@ const mockFeedSubscribers: FeedSubscriber[] = [{
   type: 'role',
   discordId: mockDiscordRoles[0].id,
   feed: mockFeeds[0].id,
-  filters: [],
+  filters: [{
+    category: 'category',
+    value: 'value',
+  }, {
+    category: 'category',
+    value: 'value',
+  }],
 }, {
   id: '2',
   type: 'role',
