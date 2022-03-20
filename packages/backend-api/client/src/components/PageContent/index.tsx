@@ -91,7 +91,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
         flexDir="column"
         height="75px"
         width="full"
-        background="gray.700"
+        background={staticSidebarShown ? 'gray.700' : 'gray.800'}
         padding="4"
       >
         <Heading fontSize="3xl">Monito.RSS</Heading>
@@ -156,7 +156,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
           height="60px"
           background="gray.700"
           width="100%"
-          px="12"
+          px="8"
           display="flex"
           alignItems="center"
         >
