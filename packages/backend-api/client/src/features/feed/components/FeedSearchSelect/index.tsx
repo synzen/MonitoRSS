@@ -1,6 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ThemedSelect } from '@/components';
 import { useFeeds } from '../../hooks/useFeeds';
+import { debounce } from 'lodash';
 
 interface Props {
 
@@ -23,12 +24,16 @@ export const FeedSearchSelect: React.FC<Props> = () => {
     }
   };
 
+  const onSearchChange = debounce((value: string) => {
+    setSearch(value);
+  }, 500);
+
   return (
     <ThemedSelect
       onChange={onChangedValue}
       loading={loading}
       value={feedId}
-      onInputChange={setSearch}
+      onInputChange={onSearchChange}
       options={data?.results.map((feed) => ({
         value: feed.id,
         label: feed.title,
