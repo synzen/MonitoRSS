@@ -191,7 +191,7 @@ export const FeedsTable: React.FC<Props> = ({
           }) => {
             onSearchChange(value);
           }}
-          width="sm"
+          minWidth="325px"
           placeholder={t('pages.feeds.tableSearch')}
         />
         <InputRightElement>
