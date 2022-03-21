@@ -124,7 +124,11 @@ const FeedClone: React.FC = () => {
           <Stack spacing={3}>
             <Heading size="md">{t('pages.cloneFeed.propertiesSectionTitle')}</Heading>
             {checkboxOptions.map((option) => (
-              <Checkbox onChange={(e) => onCheckboxChange(option.key, e.target.checked)}>
+              <Checkbox
+                onChange={(e) => onCheckboxChange(option.key, e.target.checked)}
+                checked={properties.includes(option.key)}
+                isChecked={properties.includes(option.key)}
+              >
                 {option.label}
               </Checkbox>
             ))}
