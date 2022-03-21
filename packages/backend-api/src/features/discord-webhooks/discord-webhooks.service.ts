@@ -6,6 +6,7 @@ import {
   DiscordWebhookType,
 } from './types/discord-webhook.type';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
+import { WebhookMissingPermissionsException } from './exceptions';
 
 @Injectable()
 export class DiscordWebhooksService {
@@ -15,14 +16,22 @@ export class DiscordWebhooksService {
   ) {}
 
   async getWebhooksOfServer(serverId: string): Promise<DiscordWebhook[]> {
-    const webhooks: DiscordWebhook[] =
-      await this.discordApiService.executeBotRequest(
-        `/guilds/${serverId}/webhooks`,
-      );
+    try {
+      const webhooks: DiscordWebhook[] =
+        await this.discordApiService.executeBotRequest(
+          `/guilds/${serverId}/webhooks`,
+        );
 
-    return webhooks.filter(
-      (webhook) => webhook.type === DiscordWebhookType.INCOMING,
-    );
+      return webhooks.filter(
+        (webhook) => webhook.type === DiscordWebhookType.INCOMING,
+      );
+    } catch (err) {
+      if (err instanceof DiscordAPIError && err.statusCode === 403) {
+        throw new WebhookMissingPermissionsException();
+      }
+
+      throw err;
+    }
   }
 
   async getWebhook(webhookId: string): Promise<DiscordWebhook | null> {

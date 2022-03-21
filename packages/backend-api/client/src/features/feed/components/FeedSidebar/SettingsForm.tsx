@@ -1,4 +1,8 @@
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Box,
   Button,
   Flex,
   FormControl, FormHelperText, FormLabel, HStack, Stack, Text,
@@ -34,6 +38,7 @@ export const SettingsForm: React.FC<Props> = ({
   const { t } = useTranslation();
   const {
     feed,
+    status: feedStatus,
   } = useFeed({
     feedId,
   });
@@ -41,7 +46,11 @@ export const SettingsForm: React.FC<Props> = ({
     data: discordServerData,
     status: discordServerStatus,
   } = useDiscordServer({ serverId });
-  const { data: discordWebhooks, status: discordWebhooksStatus } = useDiscordWebhooks({
+  const {
+    data: discordWebhooks,
+    status: discordWebhooksStatus,
+    error: discordWebhooksError,
+  } = useDiscordWebhooks({
     serverId,
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
@@ -80,12 +89,11 @@ export const SettingsForm: React.FC<Props> = ({
     setValue('webhookId', feed?.webhook?.id || '');
   }, [feed]);
 
-  if (!feed || !discordServerData) {
-    return null;
-  }
-
   const webhooksDisabled = discordServerStatus !== 'success'
   || !discordServerData?.benefits.webhooks;
+
+  const isLoading = feedStatus === 'loading'
+    || discordWebhooksStatus === 'loading';
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -100,8 +108,8 @@ export const SettingsForm: React.FC<Props> = ({
             control={control}
             render={({ field }) => (
               <ThemedSelect
-                loading={discordWebhooksStatus === 'loading'}
-                isDisabled={webhooksDisabled || isSubmitting}
+                loading={isLoading}
+                isDisabled={webhooksDisabled || isSubmitting || isLoading}
                 isClearable
                 options={discordWebhooks?.map((webhook) => ({
                   label: webhook.name,
@@ -114,15 +122,29 @@ export const SettingsForm: React.FC<Props> = ({
               />
             )}
           />
-          <FormHelperText>
-            {!webhooksDisabled
+          <Stack>
+            <FormHelperText>
+              {!webhooksDisabled
                   && t('features.feed.components.sidebar.webhooksInputHelperText')}
-            {webhooksDisabled && (
-            <Text color="orange.500">
-              {t('features.feed.components.sidebar.webhooksPremiumDisabled')}
-            </Text>
+              {webhooksDisabled && (
+              <Text color="orange.500">
+                {t('features.feed.components.sidebar.webhooksPremiumDisabled')}
+              </Text>
+              )}
+            </FormHelperText>
+            {!webhooksDisabled && discordWebhooksError && (
+            <Alert status="error">
+              <Box>
+                <AlertTitle>
+                  {t('features.feed.components.sidebar.failedToGetWebhooks')}
+                </AlertTitle>
+                <AlertDescription>
+                  {discordWebhooksError.message}
+                </AlertDescription>
+              </Box>
+            </Alert>
             )}
-          </FormHelperText>
+          </Stack>
         </FormControl>
         <Flex justifyContent="flex-end">
           <HStack>

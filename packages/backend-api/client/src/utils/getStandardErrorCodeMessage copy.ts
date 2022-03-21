@@ -13,6 +13,7 @@ enum ApiErrorCode {
   FEED_REQUEST_INTERNAL_ERROR = 'FEED_REQUEST_INTERNAL_ERROR',
   FEED_REQUEST_TOO_MANY_REQUESTS = 'FEED_REQUEST_TOO_MANY_REQUESTS',
   FEED_REQUEST_UNAUTHORIZED = 'FEED_REQUEST_UNAUTHORIZED',
+  WEBHOOKS_MANAGE_MISSING_PERMISSIONS = 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -25,6 +26,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_REQUEST_INTERNAL_ERROR: t('common.apiErrors.feedRequestInternalError'),
   FEED_REQUEST_TOO_MANY_REQUESTS: t('common.apiErrors.feedRequestTooManyRequests'),
   FEED_REQUEST_UNAUTHORIZED: t('common.apiErrors.feedRequestUnauthorized'),
+  WEBHOOKS_MANAGE_MISSING_PERMISSIONS: t('common.apiErrors.webhooksManageMissingPermissions'),
   INTERNAL_ERROR: t('common.errors.somethingWentWrong'),
 };
 

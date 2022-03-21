@@ -18,8 +18,6 @@ import mockFeeds from './data/feed';
 import mockFeedArticles from './data/feedArticles';
 import mockFeedSummaries from './data/feeds';
 import mockDiscordUser from './data/discordUser';
-import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
-import mockDiscordWebhooks from './data/discordWebhooks';
 import {
   GetServerChannelsOutput,
   GetServerRolesOutput,
@@ -30,6 +28,8 @@ import {
 import mockDiscordChannels from './data/discordChannels';
 import mockDiscordRoles from './data/discordRoles';
 import mockFeedSubscribers from './data/feedSubscribers';
+import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
+import mockDiscordWebhooks from './data/discordWebhooks';
 
 const handlers = [
   rest.get('/api/v1/discord-users/@me', (req, res, ctx) => res(
@@ -123,6 +123,10 @@ const handlers = [
   )),
 
   rest.get('/api/v1/discord-webhooks', (req, res, ctx) => res(
+    // ctx.status(403),
+    // ctx.json(generateMockApiErrorResponse({
+    //   code: 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
+    // })),
     ctx.json<GetDiscordWebhooksOutput>({
       results: mockDiscordWebhooks,
     }),

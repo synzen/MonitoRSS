@@ -17,6 +17,7 @@ import {
 } from './types/discord-webhook.type';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
+import { ApiErrorCode } from '../../common/constants/api-errors';
 
 describe('DiscordWebhooksModule', () => {
   let app: NestFastifyApplication;
@@ -141,6 +142,27 @@ describe('DiscordWebhooksModule', () => {
           name: 'test',
         },
       ]);
+    });
+
+    it('returns 403 with the correct error code if discord returns 403', async () => {
+      mockGetUserGuilds();
+      nock(DISCORD_API_BASE_URL)
+        .get(`/guilds/${serverId}/webhooks`)
+        .reply(403, {
+          message: 'no access!',
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/discord-webhooks?${standardQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(403);
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody.code).toBe(
+        ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
+      );
     });
   });
 });

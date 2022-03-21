@@ -20,7 +20,8 @@
       "feedRequestForbidden": "The feed host has explicitly blocked the request for the feed.",
       "feedRequestInternalError": "Feed host is currently experiencing issues",
       "feedRequestTooManyRequests": "Requests to the feed has been rate limited. Please try again later.",
-      "feedRequestUnauthorized": "Feed hosts requesting authorization that does not exist"
+      "feedRequestUnauthorized": "Feed hosts requesting authorization that does not exist",
+      "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server."
     }
   },
   "pages": {
@@ -188,6 +189,7 @@
           "webhookFormLabel": "Webhook",
           "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
           "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
+          "failedToGetWebhooks": "Failed to get server webhooks",
           "updateSuccess": "Successfully updated feed",
           "resetButton": "Reset",
           "saveButton": "Save",
