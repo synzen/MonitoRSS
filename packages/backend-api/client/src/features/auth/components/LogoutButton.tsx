@@ -22,10 +22,12 @@ export const LogoutButton: React.FC = () => {
 
   return (
     <Button
+      marginBottom="8"
       justifySelf="flex-end"
       marginTop="4"
       variant="ghost"
       mx="6"
+      minHeight="40px"
       isLoading={loggingOut}
       disabled={loggingOut}
       onClick={onClickLogout}
