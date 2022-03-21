@@ -197,7 +197,7 @@
           "customizeButton": "Customize"
         },
         "rawDumpButton": {
-          "text": "Download raw dump"
+          "text": "Download and view raw dump"
         }
       }
     },
