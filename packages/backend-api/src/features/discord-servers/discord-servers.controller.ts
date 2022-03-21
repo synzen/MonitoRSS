@@ -113,7 +113,7 @@ export class DiscordServersController {
   @UseGuards(BotHasServerGuard)
   @UseGuards(UserManagesServerGuard)
   @UseInterceptors(HttpCacheInterceptor)
-  @CacheTTL(60 * 5)
+  @CacheTTL(60)
   async getServerChannels(
     @Param('serverId') serverId: string,
   ): Promise<GetServerChannelsOutputDto> {

@@ -26,7 +26,7 @@ export class DiscordWebhooksController {
   @Get()
   @UseGuards(UserManagesWebhookServerGuard)
   @UseInterceptors(HttpCacheInterceptor)
-  @CacheTTL(60 * 2)
+  @CacheTTL(60)
   @UseFilters(WebhookExceptionFilter)
   async getWebhooks(
     @NestedQuery(TransformValidationPipe)

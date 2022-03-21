@@ -1,6 +1,5 @@
 import {
   Body,
-  CacheTTL,
   Controller,
   Get,
   HttpCode,
