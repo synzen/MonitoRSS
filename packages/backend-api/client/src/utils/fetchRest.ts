@@ -43,7 +43,7 @@ interface FetchOptions<T> {
   skipJsonParse?: boolean
 }
 
-const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promise<T> => {
+const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promise<T | Response> => {
   const headers = determineHeaders(fetchOptions?.requestOptions);
   const res = await fetch(url, {
     ...fetchOptions?.requestOptions,
@@ -72,7 +72,11 @@ const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promis
     }
   }
 
-  return json;
+  if (json) {
+    return json;
+  }
+
+  return res;
 };
 
 const determineHeaders = (requestOptions?: RequestInit) => {

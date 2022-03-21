@@ -41,7 +41,7 @@ export class FeedFetcherService {
     };
   }
 
-  private async fetchFeedStream(url: string): Promise<NodeJS.ReadableStream> {
+  async fetchFeedStream(url: string): Promise<NodeJS.ReadableStream> {
     const userAgent = this.configService.get<string>('feedUserAgent');
 
     const res = await fetch(url, {
@@ -69,9 +69,7 @@ export class FeedFetcherService {
     return res.body;
   }
 
-  private async parseFeed(
-    inputStream: NodeJS.ReadableStream,
-  ): Promise<FeedData> {
+  async parseFeed(inputStream: NodeJS.ReadableStream): Promise<FeedData> {
     const feedparser = new FeedParser({});
     const idResolver = new ArticleIDResolver();
     const articleList: FeedParser.Item[] = [];

@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  StreamableFile,
   UseFilters,
   UseGuards,
   UseInterceptors,
@@ -29,6 +30,7 @@ import _ from 'lodash';
 import { CloneFeedInputDto } from './dto/CloneFeedInput.dto';
 import { CloneFeedOutputDto } from './dto/CloneFeedOutput.dto';
 import { FeedExceptionFilter } from './filters';
+import FlattenedJSON from '../../services/feed-fetcher/utils/FlattenedJSON';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -163,8 +165,8 @@ export class FeedsController {
 
   @Get('/:feedId/articles')
   @UseGuards(UserManagesFeedServerGuard)
-  @UseInterceptors(HttpCacheInterceptor)
   @UseFilters(new FeedExceptionFilter())
+  @UseInterceptors(HttpCacheInterceptor)
   @CacheTTL(60 * 5)
   async getFeedArticles(
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
@@ -178,5 +180,43 @@ export class FeedsController {
     return {
       result: articles.map((a) => a.toJSON()),
     };
+  }
+
+  @Get('/:feedId/articles/dump')
+  @UseGuards(UserManagesFeedServerGuard)
+  @UseFilters(new FeedExceptionFilter())
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
+  async getFeedArticlesRawDump(
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+  ): Promise<StreamableFile> {
+    const inputStream = await this.feedFetcherService.fetchFeedStream(feed.url);
+
+    const { articleList } = await this.feedFetcherService.parseFeed(
+      inputStream,
+    );
+
+    let textOutput = '';
+
+    for (let i = 0; i < articleList.length; ++i) {
+      const article = articleList[i];
+      textOutput +=
+        new FlattenedJSON(article, feed, {
+          dateFallback: false,
+          timeFallback: false,
+          dateFormat: 'ddd, D MMMM YYYY, h:mm A z',
+          formatTables: false,
+          imgLinksExistence: true,
+          imgPreviews: true,
+          timezone: 'UTC',
+        }).text + '\r\n\r\n';
+    }
+
+    textOutput = textOutput.trim();
+    const buffer = Buffer.from(textOutput);
+
+    return new StreamableFile(buffer, {
+      disposition: 'attachment; filename=dump.txt',
+    });
   }
 }
