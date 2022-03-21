@@ -84,6 +84,7 @@
     },
     "comparisons": {
       "title": "Comparisons",
+      "description": "Comparisons are additional checks after the default algorithm determines whether an article is new or old. Properties on the original article object are used. For nested keys, separate them with \"_\".",
       "passingComparisonsTitle": "Passing comparisons",
       "passingComparisonsDescription": "Each new line represents a different comparison.",
       "blockingComparisonsTitle": "Blocking comparison",
@@ -194,6 +195,9 @@
           "resetButton": "Reset",
           "saveButton": "Save",
           "customizeButton": "Customize"
+        },
+        "rawDumpButton": {
+          "text": "Download raw dump"
         }
       }
     },

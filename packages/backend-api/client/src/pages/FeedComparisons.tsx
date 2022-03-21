@@ -6,6 +6,7 @@ import {
   FormHelperText,
   Button,
   HStack,
+  Text,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { isEqual } from 'lodash';
@@ -13,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DashboardContent } from '@/components';
 import RouteParams from '../types/RouteParams';
-import { useFeed } from '@/features/feed';
+import { FeedRawDumpButton, useFeed } from '@/features/feed';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { useUpdateFeed } from '@/features/feed/hooks/useUpdateFeed';
 import { notifyError } from '@/utils/notifyError';
@@ -116,7 +117,13 @@ const FeedComparisons: React.FC = () => {
       loading={status === 'loading' || status === 'idle'}
     >
       <Stack spacing={8}>
-        <Heading>{t('pages.comparisons.title')}</Heading>
+        <Stack>
+          <Heading>{t('pages.comparisons.title')}</Heading>
+          <Text>
+            {t('pages.comparisons.description')}
+          </Text>
+        </Stack>
+        <FeedRawDumpButton feedId={feedId} />
         <form onSubmit={onSubmit}>
           <Stack spacing={4}>
             <FormControl>
@@ -125,6 +132,10 @@ const FeedComparisons: React.FC = () => {
               </FormLabel>
               <AutoResizeTextarea
                 minRows={5}
+                spellCheck={false}
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
                 value={formState.pcomparisons}
                 onChange={(e) => {
                   onChangePcomparisons(e.target.value);
@@ -140,6 +151,10 @@ const FeedComparisons: React.FC = () => {
               </FormLabel>
               <AutoResizeTextarea
                 minRows={5}
+                spellCheck={false}
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
                 value={formState.ncomparisons}
                 onChange={(e) => {
                   onChangeNcomparisons(e.target.value);

@@ -189,7 +189,7 @@ export class FeedsController {
   @UseFilters(new FeedExceptionFilter())
   @UseInterceptors(HttpCacheInterceptor)
   @CacheTTL(60 * 5)
-  async getFeedArticlesRawDump(
+  async getFeedArticlesDump(
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
   ): Promise<StreamableFile> {
     const inputStream = await this.feedFetcherService.fetchFeedStream(feed.url);
@@ -216,6 +216,27 @@ export class FeedsController {
 
     textOutput = textOutput.trim();
     const buffer = Buffer.from(textOutput);
+
+    return new StreamableFile(buffer, {
+      disposition: 'attachment; filename=dump.txt',
+    });
+  }
+
+  @Get('/:feedId/articles/raw-dump')
+  @UseGuards(UserManagesFeedServerGuard)
+  @UseFilters(new FeedExceptionFilter())
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
+  async getFeedArticlesRawDump(
+    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+  ): Promise<StreamableFile> {
+    const inputStream = await this.feedFetcherService.fetchFeedStream(feed.url);
+
+    const { articleList } = await this.feedFetcherService.parseFeed(
+      inputStream,
+    );
+
+    const buffer = Buffer.from(JSON.stringify(articleList, null, 2));
 
     return new StreamableFile(buffer, {
       disposition: 'attachment; filename=dump.txt',
