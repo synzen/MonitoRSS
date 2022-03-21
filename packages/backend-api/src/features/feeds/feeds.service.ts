@@ -30,6 +30,8 @@ interface UpdateFeedInput {
   webhook?: {
     id?: string;
   };
+  ncomparisons?: string[];
+  pcomparisons?: string[];
 }
 interface PopulatedFeed extends Feed {
   failRecord?: FailRecord;
@@ -175,6 +177,14 @@ export class FeedsService {
       updateObject.$set.split = {
         enabled: strippedUpdateObject.splitMessage,
       };
+    }
+
+    if (strippedUpdateObject.ncomparisons) {
+      updateObject.$set.ncomparisons = strippedUpdateObject.ncomparisons;
+    }
+
+    if (strippedUpdateObject.pcomparisons) {
+      updateObject.$set.pcomparisons = strippedUpdateObject.pcomparisons;
     }
 
     if (strippedUpdateObject.channelId) {

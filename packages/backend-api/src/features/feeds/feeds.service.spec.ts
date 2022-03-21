@@ -210,6 +210,70 @@ describe('FeedsService', () => {
   });
 
   describe('updateOne', () => {
+    describe('ncomparisons', () => {
+      it('updates', async () => {
+        const feed = await feedModel.create(
+          createTestFeed({
+            ncomparisons: ['description'],
+          }),
+        );
+        const toUpdate = {
+          ncomparisons: ['title'],
+        };
+        await service.updateOne(feed._id.toString(), toUpdate);
+
+        const foundFeed = await feedModel.findById(feed._id);
+
+        expect(foundFeed?.ncomparisons).toEqual(['title']);
+      });
+
+      it('does not update if it is undefined', async () => {
+        const feed = await await feedModel.create(
+          createTestFeed({
+            ncomparisons: ['title'],
+          }),
+        );
+        const toUpdate = {};
+        await service.updateOne(feed._id.toString(), toUpdate);
+
+        const foundFeed = await feedModel.findById(feed._id);
+
+        expect(foundFeed?.ncomparisons).toEqual(['title']);
+      });
+    });
+
+    describe('pcomparisons', () => {
+      it('updates', async () => {
+        const feed = await await feedModel.create(
+          createTestFeed({
+            pcomparisons: ['description'],
+          }),
+        );
+        const toUpdate = {
+          pcomparisons: ['title'],
+        };
+        await service.updateOne(feed._id.toString(), toUpdate);
+
+        const foundFeed = await feedModel.findById(feed._id);
+
+        expect(foundFeed?.pcomparisons).toEqual(['title']);
+      });
+
+      it('does not update if it is undefined', async () => {
+        const feed = await await feedModel.create(
+          createTestFeed({
+            pcomparisons: ['title'],
+          }),
+        );
+        const toUpdate = {};
+        await service.updateOne(feed._id.toString(), toUpdate);
+
+        const foundFeed = await feedModel.findById(feed._id);
+
+        expect(foundFeed?.pcomparisons).toEqual(['title']);
+      });
+    });
+
     describe('webhooks', () => {
       it('updates webhook id when no webhook previously existed', async () => {
         const newWebhookId = 'my-new-webhook-id';

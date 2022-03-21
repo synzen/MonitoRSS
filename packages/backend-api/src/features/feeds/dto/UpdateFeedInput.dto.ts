@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsNotEmpty,
@@ -63,4 +64,14 @@ export class UpdateFeedInputDto {
   @IsOptional()
   @IsBoolean()
   splitMessage?: boolean;
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ArrayMaxSize(1000)
+  pcomparisons?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ArrayMaxSize(1000)
+  ncomparisons?: string[];
 }
