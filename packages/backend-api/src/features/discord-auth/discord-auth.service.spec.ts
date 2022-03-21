@@ -1,4 +1,5 @@
 import nock from 'nock';
+import { URLSearchParams } from 'url';
 import {
   DISCORD_API_BASE_URL,
   DISCORD_TOKEN_ENDPOINT,

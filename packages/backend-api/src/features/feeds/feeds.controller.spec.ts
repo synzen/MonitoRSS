@@ -57,6 +57,38 @@ describe('FeedsController', () => {
       });
     });
 
+    describe('ncomparisons', () => {
+      it('calls update with the ncomparisons', async () => {
+        const ncomparisons = ['title'];
+        await controller.updateFeed(feed, {
+          ncomparisons,
+        });
+
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            ncomparisons,
+          }),
+        );
+      });
+    });
+
+    describe('pcomparisons', () => {
+      it('calls update with the pcomparisons', async () => {
+        const pcomparisons = ['title'];
+        await controller.updateFeed(feed, {
+          pcomparisons,
+        });
+
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            pcomparisons,
+          }),
+        );
+      });
+    });
+
     describe('filters', () => {
       it('calls update with undefined filters if there are no filters', async () => {
         const updateDto: UpdateFeedInputDto = {};

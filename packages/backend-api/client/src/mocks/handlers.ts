@@ -175,7 +175,6 @@ const handlers = [
   )),
 
   rest.patch('/api/v1/feeds/:feedId', (req, res, ctx) => res(
-    ctx.status(403),
     ctx.json<UpdateFeedOutput>({
       result: mockFeeds[0],
     }),

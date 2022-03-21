@@ -15,6 +15,7 @@ import { PageContent } from '@/components/PageContent';
 // import Webhooks from './Webhooks';
 import { ServerSettings } from './ServerSettings';
 import FeedClone from './FeedClone';
+import FeedComparisons from './FeedComparisons';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -96,6 +97,16 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <PageContent requireFeed>
             <FeedFilters />
+          </PageContent>
+        </RequireAuth>
+    )}
+    />
+    <Route
+      path="/servers/:serverId/feeds/:feedId/comparisons"
+      element={(
+        <RequireAuth>
+          <PageContent requireFeed>
+            <FeedComparisons />
           </PageContent>
         </RequireAuth>
     )}

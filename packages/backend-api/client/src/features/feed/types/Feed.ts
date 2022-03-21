@@ -56,8 +56,8 @@ export const FeedSchema = object({
   directSubscribers: boolean().required(),
   splitMessage: boolean().required(),
   disabled: string().optional(),
-  ncomparisons: array(string()).optional(),
-  pcomparisons: array(string()).optional(),
+  ncomparisons: array(string().required()).required(),
+  pcomparisons: array(string().required()).required(),
   webhook: object({
     id: string().required(),
   }).optional(),

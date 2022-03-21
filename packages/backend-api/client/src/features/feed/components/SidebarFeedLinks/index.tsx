@@ -1,6 +1,6 @@
 import { Stack, Text } from '@chakra-ui/react';
 import {
-  FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiCopy,
+  FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiCopy, FiGitPullRequest,
 } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { SidebarLink } from '../../../../components/SidebarLink';
@@ -26,6 +26,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
     // FEED_OVERVIEW: `/servers/${serverId}/feeds/${feedId}`,
     FEED_MESSAGES: `/servers/${serverId}/feeds/${feedId}/message`,
     FEED_FILTERS: `/servers/${serverId}/feeds/${feedId}/filters`,
+    FEED_COMPARISONS: `/servers/${serverId}/feeds/${feedId}/comparisons`,
     FEED_SUBSCRIBERS: `/servers/${serverId}/feeds/${feedId}/subscribers`,
     FEED_MISC_OPTIONS: `/servers/${serverId}/feeds/${feedId}/misc-options`,
     FEED_CLONE: `/servers/${serverId}/feeds/${feedId}/clone`,
@@ -68,6 +69,14 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             onClick={() => onClickNavLink(paths.FEED_FILTERS)}
           >
             {t('components.sidebar.feed.filters')}
+          </SidebarLink>
+          <SidebarLink
+            disabled={!feedId}
+            icon={FiGitPullRequest}
+            active={!!feedId && currentPath === paths.FEED_COMPARISONS}
+            onClick={() => onClickNavLink(paths.FEED_COMPARISONS)}
+          >
+            {t('components.sidebar.feed.comparisons')}
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}

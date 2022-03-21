@@ -52,8 +52,8 @@ interface FeedOutputDto {
   directSubscribers: boolean;
   splitMessage: boolean;
   disabled?: string;
-  ncomparisons?: Array<string>;
-  pcomparisons?: Array<string>;
+  ncomparisons: Array<string>;
+  pcomparisons: Array<string>;
   webhook?: {
     id: string;
   };

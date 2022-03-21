@@ -155,6 +155,8 @@ export class FeedsController {
       formatTables: updateFeedInput.formatTables,
       checkTitles: updateFeedInput.checkTitles,
       splitMessage: updateFeedInput.splitMessage,
+      ncomparisons: updateFeedInput.ncomparisons,
+      pcomparisons: updateFeedInput.pcomparisons,
       // ...(updateFeedInput.channelId && {
       //   channeLId: updateFeedInput.channelId,
       // }),

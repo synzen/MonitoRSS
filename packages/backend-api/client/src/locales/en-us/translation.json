@@ -81,6 +81,15 @@
       "removeSelectedFilters": "Remove selected filters",
       "formAddFilterInputLabel": "Subscriber"
     },
+    "comparisons": {
+      "title": "Comparisons",
+      "passingComparisonsTitle": "Passing comparisons",
+      "passingComparisonsDescription": "Each new line represents a different comparison.",
+      "blockingComparisonsTitle": "Blocking comparison",
+      "blockingComparisonsDescription": "Each new line represents a different comparison.",
+      "resetButtonLabel": "Reset",
+      "saveButtonLabel": "Save"
+    },
     "serverSettings": {
       "title": "Server Settings",
       "datesTitle": "Dates",
@@ -159,6 +168,7 @@
         "message": "Message",
         "filters": "Filters",
         "subscribers": "Subscribers",
+        "comparisons": "Comparisons",
         "webhooks": "Webhooks",
         "miscoptions": "Misc Options",
         "clone": "Clone"

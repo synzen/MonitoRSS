@@ -15,6 +15,8 @@ export interface UpdateFeedInput {
     formatTables?: boolean;
     directSubscribers?: boolean;
     splitMessage?: boolean;
+    ncomparisons?: string[]
+    pcomparisons?: string[]
   }
 }
 
