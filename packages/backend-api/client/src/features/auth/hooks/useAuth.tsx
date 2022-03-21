@@ -1,5 +1,4 @@
-import { useQuery } from 'react-query';
-import { DiscordUser, getDiscordMe } from '@/features/discordUser';
+import { DiscordUser, useDiscordUserMe } from '@/features/discordUser';
 import ApiAdapterError from '@/utils/ApiAdapterError';
 
 interface UseAuthOutput {
@@ -9,35 +8,25 @@ interface UseAuthOutput {
   authenticated?: boolean;
 }
 
-interface UseQueryOutput {
-  authenticated: boolean
-  discordUser?: DiscordUser
-}
-
 export const useAuth = (): UseAuthOutput => {
-  const { status, data, error } = useQuery<UseQueryOutput, ApiAdapterError>('auth', async () => {
-    try {
-      const response = await getDiscordMe();
+  const { status, data, error } = useDiscordUserMe();
 
-      return {
-        authenticated: true,
-        discordUser: response,
-      };
-    } catch (err) {
-      if (err instanceof ApiAdapterError && err.statusCode === 401) {
-        return {
-          authenticated: false,
-        };
-      }
+  if (error instanceof ApiAdapterError && error?.statusCode === 401) {
+    return {
+      status,
+      authenticated: false,
+    };
+  }
 
-      throw err;
-    }
-  });
+  if (data) {
+    return {
+      status,
+      authenticated: true,
+      discordUser: data,
+    };
+  }
 
   return {
     status,
-    authenticated: data?.authenticated,
-    discordUser: data?.discordUser,
-    error,
   };
 };

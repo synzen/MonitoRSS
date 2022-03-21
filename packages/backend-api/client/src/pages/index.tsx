@@ -5,7 +5,6 @@ import Feed from './Feed';
 import FeedFilters from './FeedFilters';
 import FeedMessage from './FeedMessage';
 import FeedMiscOptions from './FeedMiscOptions';
-import Feeds from './Feeds';
 import FeedSubscribers from './FeedSubscribers';
 import Home from './Home';
 import ServerDasboard from './ServerDashboard';
@@ -16,6 +15,7 @@ import { PageContent } from '@/components/PageContent';
 import { ServerSettings } from './ServerSettings';
 import FeedClone from './FeedClone';
 import FeedComparisons from './FeedComparisons';
+import Feeds from './Feeds';
 
 const Pages: React.FC = () => (
   <Routes>
