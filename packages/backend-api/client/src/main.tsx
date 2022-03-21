@@ -6,6 +6,7 @@ import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
+import { ReactQueryDevtools } from 'react-query/devtools';
 import App from './App';
 import theme from './utils/theme';
 import setupMockBrowserWorker from './mocks/browser';
@@ -25,7 +26,7 @@ const queryClient = new QueryClient({
       retry: 0,
       refetchOnWindowFocus: false,
       // Invalidate cache after 30 minutes
-      cacheTime: 1000 * 60 * 30,
+      staleTime: 1000 * 60 * 30,
     },
   },
 });
@@ -37,6 +38,7 @@ prepare().then(() => {
         <ChakraProvider>
           <ColorModeScript initialColorMode={theme.config.initialColorMode} />
           <QueryClientProvider client={queryClient}>
+            <ReactQueryDevtools />
             <ForceDarkMode>
               <App />
             </ForceDarkMode>
