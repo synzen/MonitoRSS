@@ -8,13 +8,15 @@ export interface UpdateDiscordMeSupporterInput {
 
 export const updateDiscordMeSupporter = async (
   { details }: UpdateDiscordMeSupporterInput,
-): Promise<never> => fetchRest(
-  '/api/v1/discord-users/@me/supporter',
-  {
-    requestOptions: {
-      method: 'PATCH',
-      body: JSON.stringify(details),
+): Promise<void> => {
+  await fetchRest(
+    '/api/v1/discord-users/@me/supporter',
+    {
+      requestOptions: {
+        method: 'PATCH',
+        body: JSON.stringify(details),
+      },
+      skipJsonParse: true,
     },
-    skipJsonParse: true,
-  },
-);
+  );
+};
