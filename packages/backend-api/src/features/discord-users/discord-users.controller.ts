@@ -55,7 +55,6 @@ export class DiscordUsersController {
 
   @Get('@me/servers')
   @UseInterceptors(HttpCacheInterceptor)
-  @CacheTTL(60 * 5)
   async getMyServers(
     @DiscordAccessToken() accessToken: SessionAccessToken,
   ): Promise<GetMyServersOutputDto> {

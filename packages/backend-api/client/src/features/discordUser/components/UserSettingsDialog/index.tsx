@@ -22,6 +22,7 @@ import { useCallback, useEffect } from 'react';
 import { useDiscordUserMe } from '../../hooks';
 import { updateDiscordMeSupporter } from '../../api';
 import { notifySuccess } from '@/utils/notifySuccess';
+import { useDiscordServers } from '@/features/discordServers';
 
 interface FormValues {
   serverIds: string[]
@@ -39,6 +40,7 @@ export const UserSettingsDialog: React.FC<Props> = ({
   const {
     data: userMe,
   } = useDiscordUserMe();
+  const { refetch: refetchServers } = useDiscordServers();
   const {
     register,
     control,
@@ -79,6 +81,9 @@ export const UserSettingsDialog: React.FC<Props> = ({
         guildIds: serverIds,
       },
     });
+
+    // Get updated benefits of all servers
+    await refetchServers();
 
     reset(data);
     notifySuccess(t('features.discordUsers.components.settingsDialog.serversUpdatedSuccess'));
@@ -129,7 +134,7 @@ export const UserSettingsDialog: React.FC<Props> = ({
             <Button
               onClick={onReset}
               variant="ghost"
-              disabled={formState.isSubmitting || !formState.isDirty}
+              disabled={formState.isSubmitting}
             >
               Cancel
             </Button>

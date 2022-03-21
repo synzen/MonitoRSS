@@ -62,9 +62,9 @@ export const ThemedSelect: React.FC<Props> = ({
       ...provided,
       color: getChakraColor('gray.50'),
     }),
-    singleValue: (provided) => ({
+    singleValue: (provided, state) => ({
       ...provided,
-      color: getChakraColor('gray.50'),
+      color: state.isDisabled ? getChakraColor('gray.500') : getChakraColor('gray.50'),
     }),
     option: (provided, state) => ({
       ...provided,
