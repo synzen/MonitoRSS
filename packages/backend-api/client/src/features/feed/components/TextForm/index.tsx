@@ -68,7 +68,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
           name="text"
           control={control}
           render={({ field }) => (
-            <Textarea {...field} />
+            <Textarea spellCheck={false} {...field} />
           )}
         />
         <HStack justifyContent="flex-end">
