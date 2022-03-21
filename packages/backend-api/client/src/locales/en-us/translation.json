@@ -96,7 +96,10 @@
     },
     "subscribers": {
       "title": "Subscribers",
-      "addSubscriberButton": "Add"
+      "addSubscriberButton": "Add",
+      "roleSubscriberTitle": "Role Subscriber",
+      "userSubscriberTitle": "User Subscriber",
+      "subscriberFiltersTitle": "Filters"
     },
     "webhooks": {
       "title": "Webhooks",

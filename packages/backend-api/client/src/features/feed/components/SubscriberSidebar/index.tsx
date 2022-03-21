@@ -92,7 +92,9 @@ export const SubscriberSidebar: React.FC<Props> = ({
     >
       <Stack>
         <Text color="gray.500">
-          {data.type === 'role' ? 'Role Subscriber' : 'User Subscriber'}
+          {data.type === 'role'
+            ? t('pages.subscribers.roleSubscriberTitle')
+            : t('pages.subscribers.userSubscriberTitle')}
         </Text>
         <Heading>
           {data.type === 'role' && (getRolebyId(data.discordId)?.name || data.discordId)}
@@ -102,7 +104,7 @@ export const SubscriberSidebar: React.FC<Props> = ({
       <Divider />
       <Stack spacing={6}>
         <Heading size="md" as="h2">
-          Filters
+          {t('pages.subscribers.subscriberFiltersTitle')}
         </Heading>
         <FiltersTable
           data={filtersData}

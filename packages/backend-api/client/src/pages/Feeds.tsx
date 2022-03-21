@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import RouteParams from '../types/RouteParams';
 import { RequireServerBotAccess } from '@/features/discordServers';
 import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
@@ -20,6 +21,7 @@ const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
   const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
   const [focusedFeedId, setFocusedFeedId] = useState('');
+  const { t } = useTranslation();
   // Pre-fetch channels
 
   useEffect(() => {
@@ -42,7 +44,7 @@ const Feeds: React.FC = () => {
           paddingBottom="12"
           width="100%"
         >
-          <Heading size="lg" paddingTop="8">Feeds</Heading>
+          <Heading size="lg" paddingTop="8">{t('pages.feeds.title')}</Heading>
           <FeedsTable
             onSelectedFeedId={setFocusedFeedId}
             selectedFeedId={focusedFeedId}
