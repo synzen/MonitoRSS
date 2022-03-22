@@ -20,9 +20,15 @@ import {
   SupporterModel,
 } from '../supporters/entities/supporter.entity';
 import { Cache } from 'cache-manager';
-
 import { ConfigService } from '@nestjs/config';
 import { URL } from 'url';
+import { readFileSync } from 'fs';
+import { ApiErrorCode } from '../../common/constants/api-errors';
+
+const feedXml = readFileSync(
+  path.join(__dirname, '../../test/data/feed.xml'),
+  'utf-8',
+);
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
@@ -212,6 +218,8 @@ describe('FeedsModule', () => {
 
       await feedModel.create(feed);
 
+      nock(feed.url).get('').reply(200, feedXml);
+
       const { statusCode, body } = await app.inject({
         method: 'GET',
         url: `/feeds/${feed._id}/refresh`,
@@ -223,6 +231,29 @@ describe('FeedsModule', () => {
       expect(parsedBody).toEqual({
         result: expect.any(Object),
       });
+    });
+
+    it('throws feed-specific errors if fetching the feed failed', async () => {
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        guild: guildId,
+      });
+
+      await feedModel.create(feed);
+
+      nock(feed.url).get('').reply(429, 'Fake Too Many Requests Error');
+
+      const { statusCode, body } = await app.inject({
+        method: 'GET',
+        url: `/feeds/${feed._id}/refresh`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
+      expect(JSON.parse(body).code).toEqual(
+        ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+      );
     });
   });
 

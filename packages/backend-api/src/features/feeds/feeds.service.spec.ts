@@ -26,6 +26,7 @@ import {
 } from './entities/feed-subscriber.entity';
 import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
 import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
+import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
 
 describe('FeedsService', () => {
   let service: FeedsService;
@@ -35,6 +36,7 @@ describe('FeedsService', () => {
   const feedSchedulingService: FeedSchedulingService = {
     getRefreshRatesOfFeeds: jest.fn(),
   } as never;
+  let feedFetcherService: FeedFetcherService;
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -43,6 +45,7 @@ describe('FeedsService', () => {
         FeedSchedulingService,
         ConfigService,
         DiscordAPIService,
+        FeedFetcherService,
       ],
       imports: [
         MongooseTestModule.forRoot(),
@@ -63,7 +66,11 @@ describe('FeedsService', () => {
         get: jest.fn(),
       })
       .overrideProvider(DiscordAPIService)
-      .useValue({ executeBotRequest: jest.fn() });
+      .useValue({ executeBotRequest: jest.fn() })
+      .overrideProvider(FeedFetcherService)
+      .useValue({
+        fetchFeed: jest.fn(),
+      });
 
     const { module } = await init();
 
@@ -75,6 +82,7 @@ describe('FeedsService', () => {
     feedSubscriberModel = module.get<FeedSubscriberModel>(
       getModelToken(FeedSubscriber.name),
     );
+    feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
   });
 
   beforeEach(() => {
@@ -576,6 +584,31 @@ describe('FeedsService', () => {
         .lean();
 
       expect(updatedFeed).toBeNull();
+    });
+
+    it('throws and does not delete the record if fetching the feed fails', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
+      await failRecordModel.create({
+        _id: createdFeed.url,
+        reason: 'reason',
+        alerted: true,
+        failedAt: new Date(2020, 1, 1),
+      });
+
+      const feedFetchError = new Error('hgello world');
+      jest
+        .spyOn(feedFetcherService, 'fetchFeed')
+        .mockRejectedValue(feedFetchError);
+
+      await expect(
+        service.refresh(createdFeed._id.toString()),
+      ).rejects.toThrowError(feedFetchError);
+
+      await expect(
+        failRecordModel.countDocuments({
+          _id: createdFeed.url,
+        }),
+      ).resolves.toEqual(1);
     });
 
     it('returns status ok', async () => {

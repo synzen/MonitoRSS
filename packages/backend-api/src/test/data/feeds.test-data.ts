@@ -6,7 +6,7 @@ const boilerplate: Feed = {
   channel: 'channel-1',
   guild: 'guild-1',
   title: 'title-1',
-  url: 'url-1',
+  url: 'https://www.somefakefeed.com/rss',
   text: 'text-1',
   addedAt: new Date(),
   embeds: [

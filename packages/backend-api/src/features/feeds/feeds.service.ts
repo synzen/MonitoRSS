@@ -15,6 +15,7 @@ import {
   FeedSubscriber,
   FeedSubscriberModel,
 } from './entities/feed-subscriber.entity';
+import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
 
 interface UpdateFeedInput {
   title?: string;
@@ -45,6 +46,7 @@ export class FeedsService {
     @InjectModel(FeedSubscriber.name)
     private readonly feedSubscriberModel: FeedSubscriberModel,
     private readonly feedSchedulingService: FeedSchedulingService,
+    private readonly feedFetcherSevice: FeedFetcherService,
     private readonly discordApiService: DiscordAPIService,
     private readonly configService: ConfigService,
   ) {}
@@ -217,6 +219,8 @@ export class FeedsService {
     if (!feed) {
       throw new Error(`Feed ${feedId} does not exist`);
     }
+
+    await this.feedFetcherSevice.fetchFeed(feed.url);
 
     await this.failRecord.deleteOne({ _id: feed.url });
 

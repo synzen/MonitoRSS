@@ -52,6 +52,7 @@ export class FeedsController {
 
   @Get(':feedId/refresh')
   @UseGuards(UserManagesFeedServerGuard)
+  @UseFilters(FeedExceptionFilter)
   async refreshFeed(
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
   ): Promise<GetFeedOutputDto> {
