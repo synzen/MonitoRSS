@@ -119,8 +119,8 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
             paddingBottom="6"
             title={t('pages.feed.refreshRateLabel')}
           >
-            {t('pages.feed.refreshRateValue', {
-              seconds: feed?.refreshRateSeconds,
+            {feed && t('pages.feed.refreshRateValue', {
+              minutes: (feed.refreshRateSeconds / 60).toFixed(2),
             })}
           </CategoryText>
           <CategoryText

@@ -60,7 +60,7 @@
       "unknownReason": "unknown reason",
       "channelLabel": "Channel",
       "refreshRateLabel": "Refresh Rate",
-      "refreshRateValue": "{{seconds}} seconds",
+      "refreshRateValue": "{{minutes}} minutes",
       "createdAtLabel": "Since"
     },
     "message": {
