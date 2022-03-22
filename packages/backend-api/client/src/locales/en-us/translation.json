@@ -95,7 +95,7 @@
       "specialCharacterNotDescription": "NOT modifier to negate what it normally does, and is essentially a blacklist. This will take priority over everything. Like the broad search, you may escape it by \\! to interpret it as a normal exclamation mark.",
       "specialCharacterNotTildeDescription": "Negation of the broad modifier.",
       "currentFiltersSectionTitle": "Current Filters",
-      "currentFiltersSectionDescription": "Below are the current filters that are being used. The properties available can be seen in the placeholder dump below. Note that you must prepend \"raw:\" to each placeholder."
+      "currentFiltersSectionDescription": "Below are the current filters that are being used. In addition to the cateogries that are already available, you may also use raw placeholders as seen in the feed dump below. Note that you must prepend \"raw:\" to each placeholder."
     },
     "comparisons": {
       "title": "Comparisons",
