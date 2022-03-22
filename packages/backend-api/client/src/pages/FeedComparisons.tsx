@@ -2,11 +2,10 @@ import {
   FormControl,
   Heading,
   Stack,
-  FormLabel,
-  FormHelperText,
   Button,
   HStack,
   Text,
+  FormHelperText,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { isEqual } from 'lodash';
@@ -126,10 +125,16 @@ const FeedComparisons: React.FC = () => {
         <FeedRawDumpButton feedId={feedId} />
         <form onSubmit={onSubmit}>
           <Stack spacing={4}>
+            <Stack>
+              <Heading size="md">{t('pages.comparisons.passingComparisonsTitle')}</Heading>
+              <Text>
+                {t('pages.comparisons.passingComparisonsDescription')}
+              </Text>
+            </Stack>
             <FormControl>
-              <FormLabel>
+              {/* <FormLabel>
                 {t('pages.comparisons.passingComparisonsTitle')}
-              </FormLabel>
+              </FormLabel> */}
               <AutoResizeTextarea
                 minRows={5}
                 spellCheck={false}
@@ -142,13 +147,21 @@ const FeedComparisons: React.FC = () => {
                 }}
               />
               <FormHelperText>
-                {t('pages.comparisons.passingComparisonsDescription')}
+                {t('pages.comparisons.comparisonsInputHelperText')}
               </FormHelperText>
             </FormControl>
-            <FormControl>
-              <FormLabel>
+            <Stack>
+              <Heading size="md">
                 {t('pages.comparisons.blockingComparisonsTitle')}
-              </FormLabel>
+              </Heading>
+              <Text>
+                {t('pages.comparisons.blockingComparisonsDescription')}
+              </Text>
+            </Stack>
+            <FormControl>
+              {/* <FormLabel>
+                {t('pages.comparisons.blockingComparisonsTitle')}
+              </FormLabel> */}
               <AutoResizeTextarea
                 minRows={5}
                 spellCheck={false}
@@ -161,7 +174,7 @@ const FeedComparisons: React.FC = () => {
                 }}
               />
               <FormHelperText>
-                {t('pages.comparisons.blockingComparisonsDescription')}
+                {t('pages.comparisons.comparisonsInputHelperText')}
               </FormHelperText>
             </FormControl>
 
