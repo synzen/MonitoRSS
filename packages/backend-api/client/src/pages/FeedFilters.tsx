@@ -1,7 +1,15 @@
 /* eslint-disable react/no-unstable-nested-components */
 import {
+  Code,
   Heading,
   Stack,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useMemo } from 'react';
@@ -55,19 +63,80 @@ const FeedFilters: React.FC = () => {
       error={error}
       loading={status === 'loading' || status === 'idle'}
     >
-      <Stack spacing={6}>
-        <Heading
-          size="lg"
-          marginRight={4}
-        >
-          {t('pages.filters.title')}
-        </Heading>
-        <FiltersTable
-          data={tableData}
-          onFiltersChanged={onFiltersChanged}
-          isUpdating={updatingStatus === 'loading'}
-          isLoading={status === 'loading' || status === 'idle'}
-        />
+      <Stack spacing={9}>
+        <Stack>
+          <Heading
+            size="lg"
+            marginRight={4}
+          >
+            {t('pages.filters.title')}
+          </Heading>
+          <Text>
+            {t('pages.filters.description')}
+          </Text>
+        </Stack>
+        <Stack spacing={4}>
+          <Heading size="md">
+            {t('pages.filters.specialCharactersSectionTitle')}
+          </Heading>
+          <Table
+            marginBottom="5"
+            background="gray.850"
+            borderColor="gray.700"
+            borderWidth="2px"
+            boxShadow="lg"
+          >
+            <Thead>
+              <Tr>
+                <Th>{t('pages.filters.specialCharactersTableCharacterHeader')}</Th>
+                <Th>{t('pages.filters.specialCharactersTableDescriptionHeader')}</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              <Tr>
+                <Td>
+                  <Code>
+                    ~
+                  </Code>
+                </Td>
+                <Td>
+                  {t('pages.filters.specialCharacterTildeDescription')}
+                </Td>
+              </Tr>
+              <Tr>
+                <Td>
+                  <Code>
+                    !
+                  </Code>
+                </Td>
+                <Td>
+                  {t('pages.filters.specialCharacterNotDescription')}
+                </Td>
+              </Tr>
+              <Tr>
+                <Td>
+                  <Code>
+                    !~
+                  </Code>
+                </Td>
+                <Td>
+                  {t('pages.filters.specialCharacterNotTildeDescription')}
+                </Td>
+              </Tr>
+            </Tbody>
+          </Table>
+        </Stack>
+        <Stack spacing={4}>
+          <Heading size="md">
+            {t('pages.filters.currentFiltersSectionTitle')}
+          </Heading>
+          <FiltersTable
+            data={tableData}
+            onFiltersChanged={onFiltersChanged}
+            isUpdating={updatingStatus === 'loading'}
+            isLoading={status === 'loading' || status === 'idle'}
+          />
+        </Stack>
       </Stack>
     </DashboardContent>
   );

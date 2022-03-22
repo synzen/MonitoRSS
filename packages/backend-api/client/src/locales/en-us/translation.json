@@ -77,10 +77,19 @@
     },
     "filters": {
       "title": "Filters",
+      "description": "Filters are \"OR\" filters, and are case insensitive. If any of the words defined below are found in the feed in their respective categories, then it will pass the filter and be sent.",
       "tableCategory": "Category",
       "tableValue": "Value",
       "removeSelectedFilters": "Remove selected filters",
-      "formAddFilterInputLabel": "Subscriber"
+      "formAddFilterInputLabel": "Subscriber",
+      "specialCharactersSectionTitle": "Special Characters",
+      "specialCharactersTableCharacterHeader": "Character",
+      "specialCharactersTableDescriptionHeader": "Description",
+      "specialCharactersSectionDescription": "Below are the special characters that can be used to modify the behavior of filters. Prepend them to any particular filter for it to work.",
+      "specialCharacterTildeDescription": "Broad modifier where if the word is found anywhere in the property it will pass (including inside words). You may use \\~ to escape the tilde and not have it function as a modifier.",
+      "specialCharacterNotDescription": "NOT modifier to negate what it normally does, and is essentially a blacklist. This will take priority over everything. Like the broad search, you may escape it by \\! to interpret it as a normal exclamation mark.",
+      "specialCharacterNotTildeDescription": "Negation of the broad modifier.",
+      "currentFiltersSectionTitle": "Current Filters"
     },
     "comparisons": {
       "title": "Comparisons",
@@ -146,7 +155,7 @@
       "cancel": "Cancel",
       "save": "Save",
       "failedToSaveError": "Failed to save filter(s)",
-      "formCategoryLabel": "Category",
+      "formCategoryLabel": "Article property",
       "formValueLabel": "Value",
       "formValueDescription": "Each new line indicates a new and separate filter."
     },
