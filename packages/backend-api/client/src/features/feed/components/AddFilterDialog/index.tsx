@@ -3,7 +3,7 @@ import {
   FormControl,
   FormHelperText,
   FormLabel,
-  Input,
+  HStack,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { AutoResizeTextarea } from '@/components/AutoResizeTextarea';
 import { notifyError } from '@/utils/notifyError';
+import { FilterCategorySelect } from '../FilterCategorySelect';
 
 interface Props {
   onSubmit(data: Array<{
@@ -77,10 +78,13 @@ export const AddFilterDialog: React.FC<Props> = ({
           <ModalHeader>{t('components.addFilterDialog.title')}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Stack spacing={6}>
+            <Stack spacing={3}>
               <FormControl>
                 <FormLabel>{t('components.addFilterDialog.formCategoryLabel')}</FormLabel>
-                <Input onChange={({ target }) => setCategory(target.value)} />
+                <FilterCategorySelect onChangeValue={setCategory} />
+                <FormHelperText>
+                  {t('components.addFilterDialog.formCategoryDescription')}
+                </FormHelperText>
               </FormControl>
               <FormControl>
                 <FormLabel>{t('components.addFilterDialog.formValueLabel')}</FormLabel>
@@ -92,21 +96,23 @@ export const AddFilterDialog: React.FC<Props> = ({
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button
-              mr={3}
-              onClick={onClose}
-              disabled={saving}
-            >
-              {t('components.addFilterDialog.cancel')}
-            </Button>
-            <Button
-              colorScheme="blue"
-              disabled={saving}
-              onClick={onClickSave}
-              isLoading={saving}
-            >
-              {t('components.addFilterDialog.save')}
-            </Button>
+            <HStack>
+              <Button
+                onClick={onClose}
+                disabled={saving}
+                variant="ghost"
+              >
+                {t('components.addFilterDialog.cancel')}
+              </Button>
+              <Button
+                colorScheme="blue"
+                disabled={saving}
+                onClick={onClickSave}
+                isLoading={saving}
+              >
+                {t('components.addFilterDialog.save')}
+              </Button>
+            </HStack>
           </ModalFooter>
         </ModalContent>
       </Modal>

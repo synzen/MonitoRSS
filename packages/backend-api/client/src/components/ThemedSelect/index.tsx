@@ -4,8 +4,8 @@ import {
 import Select, {
   GroupBase, StylesConfig, components,
 } from 'react-select';
+import { REACT_SELECT_STYLES } from '@/constants/reactSelectStyles';
 // import Option from 'react-select/dist/declarations/src/components/Option';
-import getChakraColor from '../../utils/getChakraColor';
 
 const { Option } = components;
 
@@ -41,49 +41,7 @@ export const ThemedSelect: React.FC<Props> = ({
   isClearable,
   onInputChange,
 }) => {
-  const styles = useColorModeValue<SelectStyles, SelectStyles>({}, {
-    menu: (provided) => ({
-      ...provided,
-      backgroundColor: getChakraColor('gray.700'),
-      height: '40px',
-    }),
-    control: (provided, state) => ({
-      ...provided,
-      background: getChakraColor('gray.800'),
-      color: 'white',
-      height: '40px',
-      paddingLeft: '8px',
-      borderWidth: '1px',
-      borderColor: state.isFocused
-        ? getChakraColor('gray.600')
-        : getChakraColor('gray.700'),
-    }),
-    input: (provided) => ({
-      ...provided,
-      color: getChakraColor('gray.50'),
-    }),
-    singleValue: (provided, state) => ({
-      ...provided,
-      color: state.isDisabled ? getChakraColor('gray.500') : getChakraColor('gray.50'),
-    }),
-    option: (provided, state) => ({
-      ...provided,
-      color: 'rgba(255,255,255,0.92)',
-      // eslint-disable-next-line no-nested-ternary
-      background: state.isFocused && !state.isSelected
-        ? getChakraColor('gray.600')
-        : state.isSelected
-          ? getChakraColor('blue.500') : getChakraColor('gray.700'),
-    }),
-    container: (provided) => ({
-      ...provided,
-      borderWidth: '1px',
-    }),
-    menuList: (provided) => ({
-      ...provided,
-      borderWidth: '1px',
-    }),
-  });
+  const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
 
   const selectedOption = options.find((option) => option.value === value);
 

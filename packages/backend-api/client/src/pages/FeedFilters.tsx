@@ -17,7 +17,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DashboardContent } from '@/components';
 import RouteParams from '../types/RouteParams';
-import { useFeed } from '@/features/feed';
+import { FeedDumpButton, useFeed } from '@/features/feed';
 import { useUpdateFeed } from '@/features/feed/hooks/useUpdateFeed';
 import { FiltersTable } from '@/features/feed/components/FiltersTable';
 
@@ -76,9 +76,14 @@ const FeedFilters: React.FC = () => {
           </Text>
         </Stack>
         <Stack spacing={4}>
-          <Heading size="md">
-            {t('pages.filters.specialCharactersSectionTitle')}
-          </Heading>
+          <Stack>
+            <Heading size="md">
+              {t('pages.filters.specialCharactersSectionTitle')}
+            </Heading>
+            <Text>
+              {t('pages.filters.specialCharactersSectionDescription')}
+            </Text>
+          </Stack>
           <Table
             marginBottom="5"
             background="gray.850"
@@ -127,9 +132,15 @@ const FeedFilters: React.FC = () => {
           </Table>
         </Stack>
         <Stack spacing={4}>
-          <Heading size="md">
-            {t('pages.filters.currentFiltersSectionTitle')}
-          </Heading>
+          <Stack>
+            <Heading size="md">
+              {t('pages.filters.currentFiltersSectionTitle')}
+            </Heading>
+            <Text>
+              {t('pages.filters.currentFiltersSectionDescription')}
+            </Text>
+            <FeedDumpButton feedId={feedId} />
+          </Stack>
           <FiltersTable
             data={tableData}
             onFiltersChanged={onFiltersChanged}
