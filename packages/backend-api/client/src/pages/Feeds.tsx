@@ -19,7 +19,7 @@ import { FeedsTable } from '@/features/feed/components/FeedsTable';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
-  const sidebarEnabled = useBreakpointValue<boolean>({ base: true, xl: false });
+  const sidebarEnabled = useBreakpointValue<boolean>({ base: true, '2xl': false });
   const [focusedFeedId, setFocusedFeedId] = useState('');
   const { t } = useTranslation();
   // Pre-fetch channels
@@ -53,13 +53,12 @@ const Feeds: React.FC = () => {
         </Stack>
         {focusedFeedId && (
         <Box
-          display={{ base: 'none', xl: 'block' }}
+          display={{ base: 'none', '2xl': 'block' }}
           borderLeftWidth="1px"
           marginLeft="0"
           marginInlineStart="0 !important"
           height="100%"
-          minWidth={{ base: 'none', xl: 'md', '2xl': 'lg' }}
-          width={{ base: 'none', xl: 'md', '2xl': 'lg' }}
+          width={{ base: 'none', '2xl': 'lg' }}
         >
           <FeedSidebar feedId={focusedFeedId} />
         </Box>
