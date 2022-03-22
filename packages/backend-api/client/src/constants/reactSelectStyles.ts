@@ -22,7 +22,7 @@ export const REACT_SELECT_STYLES: SelectStyles = {
   }),
   control: (provided, state) => ({
     ...provided,
-    background: getChakraColor('gray.700'),
+    background: getChakraColor('gray.800'),
     // backgrounf: 'green',
     color: 'white',
     height: '40px',
@@ -52,7 +52,7 @@ export const REACT_SELECT_STYLES: SelectStyles = {
     background: state.isFocused && !state.isSelected
       ? getChakraColor('gray.600')
       : state.isSelected
-        ? getChakraColor('blue.500') : getChakraColor('gray.700'),
+        ? getChakraColor('blue.500') : getChakraColor('gray.800'),
     // background: 'green',
 
   }),
@@ -65,6 +65,6 @@ export const REACT_SELECT_STYLES: SelectStyles = {
   menuList: (provided) => ({
     ...provided,
     borderWidth: '1px',
-    background: getChakraColor('gray.700'),
+    background: getChakraColor('gray.800'),
   }),
 };
