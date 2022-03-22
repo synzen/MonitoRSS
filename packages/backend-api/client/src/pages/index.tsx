@@ -16,6 +16,7 @@ import { ServerSettings } from './ServerSettings';
 import FeedClone from './FeedClone';
 import FeedComparisons from './FeedComparisons';
 import Feeds from './Feeds';
+import { RequireDiscordServers } from '@/features/discordServers';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -27,7 +28,9 @@ const Pages: React.FC = () => (
       path="/servers"
       element={(
         <RequireAuth>
-          <Servers />
+          <RequireDiscordServers>
+            <Servers />
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -35,9 +38,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId"
       element={(
         <RequireAuth>
-          <PageContent>
-            <ServerDasboard />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent>
+              <ServerDasboard />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -45,9 +50,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/settings"
       element={(
         <RequireAuth>
-          <PageContent>
-            <ServerSettings />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent>
+              <ServerSettings />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -55,9 +62,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds"
       element={(
         <RequireAuth>
-          <PageContent>
-            <Feeds />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent>
+              <Feeds />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -75,9 +84,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <Feed />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <Feed />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -85,9 +96,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId/message"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <FeedMessage />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <FeedMessage />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -95,9 +108,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId/filters"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <FeedFilters />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <FeedFilters />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -105,9 +120,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId/comparisons"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <FeedComparisons />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <FeedComparisons />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -115,9 +132,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId/subscribers"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <FeedSubscribers />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <FeedSubscribers />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -125,9 +144,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId/misc-options"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <FeedMiscOptions />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <FeedMiscOptions />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />
@@ -135,9 +156,11 @@ const Pages: React.FC = () => (
       path="/servers/:serverId/feeds/:feedId/clone"
       element={(
         <RequireAuth>
-          <PageContent requireFeed>
-            <FeedClone />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContent requireFeed>
+              <FeedClone />
+            </PageContent>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
     />

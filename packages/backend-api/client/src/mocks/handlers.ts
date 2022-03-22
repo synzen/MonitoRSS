@@ -37,7 +37,6 @@ const handlers = [
   )),
 
   rest.patch('/api/v1/discord-users/@me/supporter', (req, res, ctx) => res(
-    ctx.delay(1000),
     ctx.status(204),
   )),
 

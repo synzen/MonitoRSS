@@ -25,6 +25,12 @@
     }
   },
   "pages": {
+    "loadingServers": {
+      "title": "Loading servers..."
+    },
+    "checkingLogin": {
+      "title": "Checking login..."
+    },
     "cloneFeed": {
       "title": "Clone",
       "description": "Clone and overwrite properties of the current feed to other feed(s).",

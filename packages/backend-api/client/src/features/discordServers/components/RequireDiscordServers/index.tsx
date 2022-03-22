@@ -1,14 +1,13 @@
 import {
   Center, Heading, Stack,
 } from '@chakra-ui/react';
-import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loading } from '@/components';
-import { useAuth } from '../hooks';
 import { ErrorAlert } from '@/components/ErrorAlert';
+import { useDiscordServers } from '../../hooks';
 
-export const RequireAuth: React.FC = ({ children }) => {
-  const { status, error, authenticated } = useAuth();
+export const RequireDiscordServers: React.FC = ({ children }) => {
+  const { status, error } = useDiscordServers();
   const { t } = useTranslation();
 
   if (status === 'loading' || status === 'idle') {
@@ -20,7 +19,7 @@ export const RequireAuth: React.FC = ({ children }) => {
         spacing="2rem"
       >
         <Loading size="xl" />
-        <Heading>{t('pages.checkingLogin.title')}</Heading>
+        <Heading>{t('pages.loadingServers.title')}</Heading>
       </Stack>
     );
   }
@@ -36,16 +35,6 @@ export const RequireAuth: React.FC = ({ children }) => {
     );
   }
 
-  if (status === 'success' && !authenticated) {
-    window.location.href = '/api/v1/discord/login';
-
-    return null;
-  }
-
-  if (status === 'success' && authenticated) {
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    return <>{children}</>;
-  }
-
-  return <Navigate to="/" />;
+  // eslint-disable-next-line react/jsx-no-useless-fragment
+  return <>{children}</>;
 };

@@ -40,7 +40,9 @@ export const ErrorAlert: React.FC<Props> = ({ description, withGoBack }) => {
           <br />
           <br />
           <br />
-          <Button onClick={() => navigate(-1)} leftIcon={<ChevronLeftIcon />}>Go back</Button>
+          <Button onClick={() => navigate(-1)} leftIcon={<ChevronLeftIcon />}>
+            {t('common.errors.goBack')}
+          </Button>
         </>
         )}
       </Stack>

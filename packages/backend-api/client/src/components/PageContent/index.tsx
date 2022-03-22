@@ -19,8 +19,7 @@ import {
   Navigate, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
 import { useState } from 'react';
-import { SidebarDiscordServerLinks, useDiscordServers } from '@/features/discordServers';
-import { Loading } from '..';
+import { SidebarDiscordServerLinks } from '@/features/discordServers';
 import { SidebarFeedLinks } from '@/features/feed';
 import { useDiscordUserMe, UserStatusTag } from '@/features/discordUser';
 import { DiscordUserDropdown } from '@/features/discordUser/components/DiscordUserDropdown';
@@ -37,10 +36,6 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
   const { feedId, serverId } = useParams();
   const [sidebarToggledOpen, setSidebarToggledOpen] = useState(false);
   const {
-    status,
-    error,
-  } = useDiscordServers();
-  const {
     data: userMe,
   } = useDiscordUserMe();
 
@@ -53,30 +48,6 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
       setSidebarToggledOpen(false);
     }
   };
-
-  if (status === 'loading') {
-    return (
-      <Box
-        width="100vw"
-        height="100vh"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Loading />
-      </Box>
-    );
-  }
-
-  if (status === 'error') {
-    return (
-      <div>
-        Error while getting servers
-        {' '}
-        {error?.message}
-      </div>
-    );
-  }
 
   if (!serverId) {
     return <Navigate to="/servers" />;
