@@ -17,7 +17,6 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
   const [articleIndex, setArticleIndex] = useState(0);
   const { t } = useTranslation();
   const { articles, status, error } = useFeedArticles({ feedId });
-  const [downloading, setDownloading] = useState(false);
 
   if (status === 'loading' || status === 'idle') {
     return <Loading />;

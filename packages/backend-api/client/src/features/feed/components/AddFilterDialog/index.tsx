@@ -55,7 +55,6 @@ export const AddFilterDialog: React.FC<Props> = ({
       await onSubmit(mappedValues);
       onClose();
     } catch (err) {
-      console.error(err);
       notifyError(t('components.addFilterDialog.failedToSaveError'), err as Error);
     } finally {
       setSaving(false);
