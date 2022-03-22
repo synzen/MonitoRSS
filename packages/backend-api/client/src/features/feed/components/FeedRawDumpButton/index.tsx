@@ -32,7 +32,7 @@ export const FeedDumpButton: React.FC<Props> = ({
       link.href = url;
       link.setAttribute(
         'download',
-        'raw-placeholders.txt',
+        'raw-articles.txt',
       );
       document.body.appendChild(link);
       link.click();
