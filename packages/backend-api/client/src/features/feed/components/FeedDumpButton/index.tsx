@@ -2,13 +2,13 @@ import { Button } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { notifyError } from '@/utils/notifyError';
-import { getFeedArticlesDump } from '../../api';
+import { getFeedArticlesRawDump } from '../../api';
 
 interface Props {
   feedId?: string
 }
 
-export const FeedDumpButton: React.FC<Props> = ({
+export const FeedRawDumpButton: React.FC<Props> = ({
   feedId,
 }) => {
   const { t } = useTranslation();
@@ -22,7 +22,7 @@ export const FeedDumpButton: React.FC<Props> = ({
     try {
       setDownloading(true);
 
-      const blob = await getFeedArticlesDump({
+      const blob = await getFeedArticlesRawDump({
         feedId,
       });
       const url = window.URL.createObjectURL(
@@ -50,7 +50,7 @@ export const FeedDumpButton: React.FC<Props> = ({
       isLoading={downloading}
       disabled={downloading || !feedId}
     >
-      {t('features.feed.components.dumpButton.text')}
+      {t('features.feed.components.rawDumpButton.text')}
     </Button>
   );
 };

@@ -1,14 +1,13 @@
 import {
   Alert,
   AlertDescription,
-  AlertIcon, AlertTitle, Box, Button, Code, Select, Stack, StackDivider, Text,
+  AlertIcon, AlertTitle, Box, Code, Select, Stack, StackDivider, Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loading } from '@/components';
 import { useFeedArticles } from '../../hooks/useFeedArticles';
-import { getFeedArticlesDump } from '../../api';
-import { notifyError } from '@/utils/notifyError';
+import { FeedDumpButton } from '../FeedRawDumpButton';
 
 interface Props {
   feedId?: string
@@ -19,35 +18,6 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
   const { t } = useTranslation();
   const { articles, status, error } = useFeedArticles({ feedId });
   const [downloading, setDownloading] = useState(false);
-
-  const onClickDownload = async () => {
-    if (!feedId) {
-      return;
-    }
-
-    try {
-      setDownloading(true);
-      const blob = await getFeedArticlesDump({
-        feedId,
-      });
-      const url = window.URL.createObjectURL(
-        new Blob([blob]),
-      );
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download',
-        'raw-placeholders.txt',
-      );
-      document.body.appendChild(link);
-      link.click();
-      link?.parentNode?.removeChild(link);
-    } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   if (status === 'loading' || status === 'idle') {
     return <Loading />;
@@ -106,12 +76,7 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
         <Text>
           {t('pages.message.placeholdersRawSectionDescription')}
         </Text>
-        <Button
-          onClick={onClickDownload}
-          isLoading={downloading}
-        >
-          {t('pages.message.placeholdersRawDownloadButton')}
-        </Button>
+        <FeedDumpButton feedId={feedId} />
       </Stack>
     </Stack>
   );

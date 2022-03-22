@@ -68,7 +68,6 @@
       "placeholdersSectionTitle": "Placeholders",
       "placeholdersSectionDescription": "Below are the available placeholders for the selected article.",
       "placeholdersRawSectionDescription": "To see a more comprehensive list of available placeholders, download the file below. Note that all placeholders in the file must be prepended with \"raw:\".",
-      "placeholdersRawDownloadButton": "Download and view raw placeholders",
       "failedToRetrieveArticlesError": "Failed to retrieve feed articles",
       "textSectionTitle": "Text",
       "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
@@ -205,8 +204,11 @@
           "saveButton": "Save",
           "customizeButton": "Customize"
         },
+        "dumpButton": {
+          "text": "Download feed placeholders dump"
+        },
         "rawDumpButton": {
-          "text": "Download and view raw dump"
+          "text": "Download and view raw feed dump"
         }
       }
     },
