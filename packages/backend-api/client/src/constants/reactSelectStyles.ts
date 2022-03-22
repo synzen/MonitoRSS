@@ -65,6 +65,6 @@ export const REACT_SELECT_STYLES: SelectStyles = {
   menuList: (provided) => ({
     ...provided,
     borderWidth: '1px',
-    // background: 'green',
+    background: getChakraColor('gray.700'),
   }),
 };
