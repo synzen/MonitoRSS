@@ -19,6 +19,7 @@ import {
 } from '../../common';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { Cache } from 'cache-manager';
+import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -142,7 +143,7 @@ describe('DiscordServersModule', () => {
     it('returns forbidden if user does not manage server', async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: 0,
+        permissions: '0',
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
@@ -226,7 +227,7 @@ describe('DiscordServersModule', () => {
     it('returns forbidden if user does not manage server', async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: 0,
+        permissions: '0',
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
@@ -406,7 +407,7 @@ describe('DiscordServersModule', () => {
     it('returns forbidden if user does not manage server', async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: 0,
+        permissions: '0',
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
@@ -495,7 +496,7 @@ describe('DiscordServersModule', () => {
     it('returns forbidden if user does not manage server', async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: 0,
+        permissions: '0',
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
@@ -511,16 +512,16 @@ describe('DiscordServersModule', () => {
 
     it('returns the discord server roles', async () => {
       const serverRoles: DiscordGuildRole[] = [
-        {
+        createTestDiscordGuildRole({
           id: 'id1',
           name: 'name1',
           color: 123,
-        },
-        {
+        }),
+        createTestDiscordGuildRole({
           id: 'id2',
           name: 'name2',
           color: 456,
-        },
+        }),
       ];
       mockAllDiscordEndpoints({
         roles: serverRoles,
@@ -593,7 +594,7 @@ describe('DiscordServersModule', () => {
     it('returns forbidden if user does not manage server', async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: 0,
+        permissions: '0',
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);

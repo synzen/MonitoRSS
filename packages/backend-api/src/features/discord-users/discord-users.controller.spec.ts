@@ -85,7 +85,7 @@ describe('DiscordUsersController', () => {
           name: 'test',
           iconUrl: 'iconUrl',
           owner: true,
-          permissions: 123,
+          permissions: '123',
           benefits: {
             maxFeeds: 10,
             webhooks: true,

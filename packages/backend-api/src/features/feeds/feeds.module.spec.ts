@@ -82,7 +82,7 @@ describe('FeedsModule', () => {
       id: guildId,
       name: 'Test Guild',
       owner: true,
-      permissions: 0,
+      permissions: '0',
     },
   ];
 
@@ -253,7 +253,7 @@ describe('FeedsModule', () => {
           id: createdFeed.guild + '1',
           name: 'Test Guild 3',
           owner: true,
-          permissions: 0,
+          permissions: '0',
         },
       ]);
 
@@ -325,7 +325,7 @@ describe('FeedsModule', () => {
           id: createdFeed.guild + '1',
           name: 'Test Guild 3',
           owner: true,
-          permissions: 0,
+          permissions: '0',
         },
       ]);
 
@@ -422,7 +422,7 @@ describe('FeedsModule', () => {
           id: createdFeed.guild + '1',
           name: 'Test Guild 3',
           owner: true,
-          permissions: 0,
+          permissions: '0',
         },
       ]);
 
@@ -661,7 +661,7 @@ describe('FeedsModule', () => {
           id: createdFeed.guild + '1',
           name: 'Test Guild 3',
           owner: true,
-          permissions: 0,
+          permissions: '0',
         },
       ]);
 

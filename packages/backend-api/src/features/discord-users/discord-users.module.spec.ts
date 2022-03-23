@@ -256,13 +256,13 @@ describe('DiscordServersModule', () => {
         id: '123',
         name: 'Test Guild',
         owner: true,
-        permissions: 0,
+        permissions: '0',
       },
       {
         id: '456',
         name: 'Test Guild 2',
         owner: true,
-        permissions: 0,
+        permissions: '0',
       },
     ];
 
@@ -314,7 +314,7 @@ describe('DiscordServersModule', () => {
           id: '789',
           name: 'Test Guild 3',
           owner: false,
-          permissions: 0,
+          permissions: '0',
         },
       ]);
 

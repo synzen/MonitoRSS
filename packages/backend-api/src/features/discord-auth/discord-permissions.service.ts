@@ -1,0 +1,139 @@
+import { Injectable } from '@nestjs/common';
+import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { ADMINISTRATOR, NONE } from './constants/permissions';
+
+interface MemberPermissionDetails {
+  roles: string[];
+  user: {
+    id: string;
+  };
+}
+
+interface ChannelPermissionDetails {
+  guild_id: string;
+  permission_overwrites: Array<{
+    id: string;
+    allow: string;
+    deny: string;
+  }>;
+}
+
+interface GuildPermissionDetails {
+  id: string;
+  owner_id: string;
+  roles: Array<{
+    id: string;
+    permissions: string;
+  }>;
+}
+
+@Injectable()
+export class DiscordPermissionsService {
+  constructor(private readonly discordApiService: DiscordAPIService) {}
+
+  computedPermissionsHasPermission(permissions: bigint, permission: bigint) {
+    if ((permissions & ADMINISTRATOR) === ADMINISTRATOR) {
+      return true;
+    }
+
+    return (permissions & permission) === permission;
+  }
+
+  async computePermissions(userId: string, channelId: string) {
+    const channel = await this.discordApiService.getChannel(channelId);
+    const [guild, guildMember] = await Promise.all([
+      this.discordApiService.getGuild(channel.guild_id),
+      this.discordApiService.getGuildMember(channel.guild_id, userId),
+    ]);
+
+    const basePermissions = this.computeBasePermissions(guildMember, guild);
+
+    return this.computeOverwritePermissions(
+      basePermissions,
+      guildMember,
+      channel,
+    );
+  }
+
+  computeBasePermissions(
+    guildMember: MemberPermissionDetails,
+    guild: GuildPermissionDetails,
+  ) {
+    if (guild.owner_id === guildMember.user.id) {
+      return ADMINISTRATOR;
+    }
+
+    // Get the @everyone role and compute their permissions
+    const everyoneRole = guild.roles.find(
+      (role) => role.id === guild.id,
+    ) as GuildPermissionDetails['roles'][number];
+
+    let everyoneRolePermissions = BigInt(everyoneRole.permissions);
+
+    if (everyoneRolePermissions & ADMINISTRATOR) {
+      return ADMINISTRATOR;
+    }
+
+    for (const roleId of guildMember.roles) {
+      const role = guild.roles.find(
+        (role) => role.id === roleId,
+      ) as GuildPermissionDetails['roles'][number];
+
+      everyoneRolePermissions |= BigInt(role.permissions);
+    }
+
+    return everyoneRolePermissions;
+  }
+
+  computeOverwritePermissions(
+    basePermissions: bigint,
+    member: MemberPermissionDetails,
+    channel: ChannelPermissionDetails,
+  ) {
+    if (basePermissions & ADMINISTRATOR) {
+      return ADMINISTRATOR;
+    }
+
+    let permissions = basePermissions;
+    const channelOverwrites = channel.permission_overwrites;
+    // Apply @everyone role overwrites
+    const overwriteEveryone = channelOverwrites.find(
+      (overwrite) => overwrite.id === channel.guild_id,
+    );
+
+    if (overwriteEveryone) {
+      permissions &= ~BigInt(overwriteEveryone.deny);
+      permissions |= BigInt(overwriteEveryone.allow);
+    }
+
+    // Apply role-specific overwrites
+    let allow = NONE;
+    let deny = NONE;
+
+    for (const roleId of member.roles) {
+      const overwriteRole = channelOverwrites.find(
+        (overwrite) => overwrite.id === roleId,
+      );
+
+      if (overwriteRole) {
+        allow |= BigInt(overwriteRole.allow);
+        deny |= BigInt(overwriteRole.deny);
+      }
+    }
+
+    permissions &= ~deny;
+    permissions |= allow;
+
+    // Apply member specific overwrites
+    const overwriteMember = channelOverwrites.find(
+      (overwrite) => overwrite.id === member.user.id,
+    );
+
+    if (overwriteMember) {
+      permissions &= ~BigInt(overwriteMember.deny);
+      permissions |= BigInt(overwriteMember.allow);
+    }
+
+    return permissions;
+  }
+}

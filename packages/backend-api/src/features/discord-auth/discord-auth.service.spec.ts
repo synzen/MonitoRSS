@@ -6,6 +6,7 @@ import {
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from '../../constants/discord';
 import { DiscordUser } from '../discord-users/types/DiscordUser.type';
+import { MANAGE_CHANNEL } from './constants/permissions';
 import { DiscordAuthService, DiscordAuthToken } from './discord-auth.service';
 
 describe('DiscordAuthService', () => {
@@ -280,7 +281,7 @@ describe('DiscordAuthService', () => {
           name: 'test',
           icon: 'icon_hash',
           owner: false,
-          permissions: 16,
+          permissions: MANAGE_CHANNEL.toString(),
         },
       ];
       jest

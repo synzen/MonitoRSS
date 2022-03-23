@@ -3,7 +3,7 @@ export interface PartialUserGuild {
   name: string;
   icon?: string;
   owner: boolean;
-  permissions: number;
+  permissions: string;
 }
 
 export type PartialUserGuildFormatted = PartialUserGuild & {

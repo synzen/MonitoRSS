@@ -11,7 +11,7 @@ import {
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { DiscordUser } from '../discord-users/types/DiscordUser.type';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
-import { MANAGE_CHANNEL_PERMISSION } from './constants/permissions';
+import { MANAGE_CHANNEL } from './constants/permissions';
 import { SessionAccessToken } from './types/SessionAccessToken.type';
 
 export interface DiscordAuthToken {
@@ -198,8 +198,7 @@ export class DiscordAuthService {
     const guildsWithPermission = guilds.filter(
       (guild) =>
         guild.owner ||
-        (guild.permissions & MANAGE_CHANNEL_PERMISSION) ===
-          MANAGE_CHANNEL_PERMISSION,
+        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL,
     );
 
     return guildsWithPermission.some((guild) => guild.id === guildId);
