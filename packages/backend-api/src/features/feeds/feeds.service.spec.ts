@@ -29,7 +29,11 @@ import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
 import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
 import { DiscordAuthService } from '../discord-auth/discord-auth.service';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
-import { ForbiddenFeedChannelException } from './exceptions';
+import {
+  FeedLimitReachedException,
+  ForbiddenFeedChannelException,
+} from './exceptions';
+import { SupportersService } from '../supporters/supporters.service';
 
 jest.mock('../../utils/logger');
 
@@ -44,6 +48,7 @@ describe('FeedsService', () => {
   let feedFetcherService: FeedFetcherService;
   let discordAuthService: DiscordAuthService;
   let discordApiService: DiscordAPIService;
+  let supportersService: SupportersService;
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -54,6 +59,7 @@ describe('FeedsService', () => {
         DiscordAPIService,
         FeedFetcherService,
         DiscordAuthService,
+        SupportersService,
       ],
       imports: [
         MongooseTestModule.forRoot(),
@@ -82,6 +88,10 @@ describe('FeedsService', () => {
       .overrideProvider(DiscordAuthService)
       .useValue({
         userManagesGuild: jest.fn(),
+      })
+      .overrideProvider(SupportersService)
+      .useValue({
+        getBenefitsOfServers: jest.fn(),
       });
 
     const { module } = await init();
@@ -97,6 +107,7 @@ describe('FeedsService', () => {
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     discordApiService = module.get<DiscordAPIService>(DiscordAPIService);
     discordAuthService = module.get<DiscordAuthService>(DiscordAuthService);
+    supportersService = module.get<SupportersService>(SupportersService);
   });
 
   beforeEach(() => {
@@ -126,10 +137,11 @@ describe('FeedsService', () => {
       url: 'https://test.com',
       channelId: 'channel-id',
     };
+    const guildId = 'guild-id';
 
     beforeEach(() => {
       jest.spyOn(discordApiService, 'getChannel').mockResolvedValue({
-        guild_id: 'guild-id',
+        guild_id: guildId,
       } as never);
 
       jest
@@ -137,6 +149,12 @@ describe('FeedsService', () => {
         .mockResolvedValue(true);
 
       jest.spyOn(feedFetcherService, 'fetchFeed').mockImplementation();
+
+      jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
+        {
+          maxFeeds: Number.MAX_SAFE_INTEGER,
+        },
+      ] as never);
     });
 
     it('throws a forbidden feed channel exception if getting channel failed', async () => {
@@ -167,6 +185,25 @@ describe('FeedsService', () => {
       await expect(
         service.addFeed(userAccessToken, mockDetails),
       ).rejects.toThrowError(ForbiddenFeedChannelException);
+    });
+
+    it('rejects with feed limit reached exception if user has reached feed limit', async () => {
+      await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+          channel: mockDetails.channelId,
+        }),
+      );
+
+      jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
+        {
+          maxFeeds: 1,
+        },
+      ] as never);
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(FeedLimitReachedException);
     });
 
     it('rejects if fetchFeed failed', async () => {

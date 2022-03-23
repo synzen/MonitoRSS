@@ -19,8 +19,12 @@ import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.ser
 import logger from '../../utils/logger';
 import { DiscordAuthService } from '../discord-auth/discord-auth.service';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
-import { ForbiddenFeedChannelException } from './exceptions';
+import {
+  FeedLimitReachedException,
+  ForbiddenFeedChannelException,
+} from './exceptions';
 import { DiscordServerChannel } from '../discord-servers';
+import { SupportersService } from '../supporters/supporters.service';
 
 interface UpdateFeedInput {
   title?: string;
@@ -55,6 +59,7 @@ export class FeedsService {
     private readonly discordApiService: DiscordAPIService,
     private readonly configService: ConfigService,
     private readonly discordAuthService: DiscordAuthService,
+    private readonly supportersService: SupportersService,
   ) {}
 
   async addFeed(
@@ -96,6 +101,14 @@ export class FeedsService {
           `due to missing manage permissions`,
       );
       throw new ForbiddenFeedChannelException();
+    }
+
+    const remainingAvailableFeeds = await this.getRemainingFeedLimitCount(
+      channel.guild_id,
+    );
+
+    if (remainingAvailableFeeds <= 0) {
+      throw new FeedLimitReachedException();
     }
 
     await this.feedFetcherSevice.fetchFeed(url);
@@ -460,6 +473,18 @@ export class FeedsService {
     );
 
     return foundFeeds;
+  }
+
+  private async getRemainingFeedLimitCount(guildId: string) {
+    const [benefits] = await this.supportersService.getBenefitsOfServers([
+      guildId,
+    ]);
+
+    const currentTotalFeeds = await this.feedModel.countDocuments({
+      guild: guildId,
+    });
+
+    return benefits.maxFeeds - currentTotalFeeds;
   }
 
   private async cloneSubscribers(
