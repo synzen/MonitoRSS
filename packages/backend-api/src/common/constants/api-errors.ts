@@ -12,6 +12,7 @@ export enum ApiErrorCode {
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
   FEED_INVALID_CHANNEL = 'FEED_INVALID_CHANNEL',
   FEED_LIMIT_REACHED = 'FEED_LIMIT_REACHED',
+  BANNED_FEED = 'BANNED_FEED',
 }
 
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
@@ -30,4 +31,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_INVALID_CHANNEL:
     'Missing manage permissions in server of channel, or channel does not exist',
   FEED_LIMIT_REACHED: 'Feed limit reached',
+  BANNED_FEED: 'Feed is banned',
 };

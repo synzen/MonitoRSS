@@ -20,11 +20,13 @@ import logger from '../../utils/logger';
 import { DiscordAuthService } from '../discord-auth/discord-auth.service';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import {
+  BannedFeedException,
   FeedLimitReachedException,
   ForbiddenFeedChannelException,
 } from './exceptions';
 import { DiscordServerChannel } from '../discord-servers';
 import { SupportersService } from '../supporters/supporters.service';
+import { BannedFeed, BannedFeedModel } from './entities/banned-feed.entity';
 
 interface UpdateFeedInput {
   title?: string;
@@ -52,6 +54,8 @@ export class FeedsService {
   constructor(
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
+    @InjectModel(BannedFeed.name)
+    private readonly bannedFeedModel: BannedFeedModel,
     @InjectModel(FeedSubscriber.name)
     private readonly feedSubscriberModel: FeedSubscriberModel,
     private readonly feedSchedulingService: FeedSchedulingService,
@@ -112,6 +116,12 @@ export class FeedsService {
     }
 
     await this.feedFetcherSevice.fetchFeed(url);
+
+    const bannedRecord = await this.getBannedFeedDetails(url, channel.guild_id);
+
+    if (bannedRecord) {
+      throw new BannedFeedException();
+    }
 
     const created = await this.feedModel.create({
       title,
@@ -473,6 +483,22 @@ export class FeedsService {
     );
 
     return foundFeeds;
+  }
+
+  async getBannedFeedDetails(url: string, guildId: string) {
+    return this.bannedFeedModel.findOne({
+      url: url,
+      $or: [
+        {
+          guildIds: guildId,
+        },
+        {
+          guildIds: {
+            $size: 0,
+          },
+        },
+      ],
+    });
   }
 
   private async getRemainingFeedLimitCount(guildId: string) {

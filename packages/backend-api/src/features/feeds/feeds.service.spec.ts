@@ -30,10 +30,16 @@ import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.ser
 import { DiscordAuthService } from '../discord-auth/discord-auth.service';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import {
+  BannedFeedException,
   FeedLimitReachedException,
   ForbiddenFeedChannelException,
 } from './exceptions';
 import { SupportersService } from '../supporters/supporters.service';
+import {
+  BannedFeed,
+  BannedFeedFeature,
+  BannedFeedModel,
+} from './entities/banned-feed.entity';
 
 jest.mock('../../utils/logger');
 
@@ -42,6 +48,7 @@ describe('FeedsService', () => {
   let feedModel: FeedModel;
   let failRecordModel: FailRecordModel;
   let feedSubscriberModel: FeedSubscriberModel;
+  let bannedFeedModel: BannedFeedModel;
   const feedSchedulingService: FeedSchedulingService = {
     getRefreshRatesOfFeeds: jest.fn(),
   } as never;
@@ -68,6 +75,7 @@ describe('FeedsService', () => {
           FailRecordFeature,
           FeedScheduleFeature,
           FeedSubscriberFeature,
+          BannedFeedFeature,
         ]),
       ],
     });
@@ -104,6 +112,9 @@ describe('FeedsService', () => {
     feedSubscriberModel = module.get<FeedSubscriberModel>(
       getModelToken(FeedSubscriber.name),
     );
+    bannedFeedModel = module.get<BannedFeedModel>(
+      getModelToken(BannedFeed.name),
+    );
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     discordApiService = module.get<DiscordAPIService>(DiscordAPIService);
     discordAuthService = module.get<DiscordAuthService>(DiscordAuthService);
@@ -120,6 +131,8 @@ describe('FeedsService', () => {
   afterEach(async () => {
     await feedModel.deleteMany({});
     await failRecordModel.deleteMany({});
+    await feedSubscriberModel.deleteMany({});
+    await bannedFeedModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -214,6 +227,16 @@ describe('FeedsService', () => {
       await expect(
         service.addFeed(userAccessToken, mockDetails),
       ).rejects.toThrowError(Error);
+    });
+
+    it('rejects if feed is banned', async () => {
+      await bannedFeedModel.create({
+        url: mockDetails.url,
+      });
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(BannedFeedException);
     });
 
     it('creates the feed with the given details if all checks pass', async () => {
@@ -1050,6 +1073,40 @@ describe('FeedsService', () => {
 
         expect(targetFeedSubscribers).toHaveLength(0);
       });
+    });
+  });
+
+  describe('isBannedFeed', () => {
+    it('does not return a record for a guild that does not apply', async () => {
+      const url = 'https://www.reddit.com/r/';
+      await bannedFeedModel.create({
+        url: url,
+        guildIds: ['123'],
+      });
+      const record = await service.getBannedFeedDetails(url, '456');
+      expect(record).toBeNull();
+    });
+
+    it('does not return a record if the url does not match', async () => {
+      const url = 'a';
+      const guildId = 'guild-id';
+      await bannedFeedModel.create({
+        url: 'b',
+        guildIds: [],
+      });
+      const record = await service.getBannedFeedDetails(url, guildId);
+      expect(record).toBeNull();
+    });
+
+    it('returns the record for exact matches', async () => {
+      const url = 'https://www.reddit.com/r/';
+      const guildId = 'guild-id';
+      await bannedFeedModel.create({
+        url: url,
+        guildIds: [guildId],
+      });
+      const record = await service.getBannedFeedDetails(url, guildId);
+      expect(record).not.toBeNull();
     });
   });
 });
