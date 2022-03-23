@@ -16,7 +16,7 @@ import {
   DiscordServerProfileFeature,
   DiscordServerProfileModel,
 } from './entities/discord-server-profile.entity';
-import { DiscordServerChannel } from './types/DiscordServerChannel.type';
+import { DiscordServerChannel } from './types/discord-server-channel.type';
 
 const configValues: Record<string, unknown> = {
   defaultDateFormat: 'YYYY-MM-DD',
@@ -278,10 +278,12 @@ describe('DiscordServersService', () => {
         {
           id: 'id-1',
           name: 'channel-1',
+          guild_id: serverId,
         },
         {
           id: 'id-2',
           name: 'channel-2',
+          guild_id: serverId,
         },
       ];
       jest

@@ -1,4 +1,4 @@
-import { DiscordServerChannel } from '../types/DiscordServerChannel.type';
+import { DiscordServerChannel } from '../types/discord-server-channel.type';
 
 interface ServerChannelOutputDto {
   id: string;

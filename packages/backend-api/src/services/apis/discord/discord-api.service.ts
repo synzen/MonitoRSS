@@ -4,6 +4,7 @@ import { Response } from 'node-fetch';
 import { DISCORD_API_BASE_URL } from '../../../constants/discord';
 import { RESTHandler } from '@synzen/discord-rest';
 import { DiscordAPIError } from '../../../common/errors/DiscordAPIError';
+import { DiscordServerChannel } from '../../../features/discord-servers';
 
 interface RequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -75,6 +76,10 @@ export class DiscordAPIService {
     await this.handleJSONResponseError(res);
 
     return res.json();
+  }
+
+  async getChannel(channelId: string): Promise<DiscordServerChannel> {
+    return this.executeBotRequest(`/channels/${channelId}`);
   }
 
   private async handleJSONResponseError(res: Response): Promise<void> {

@@ -14,7 +14,7 @@ import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { Session } from '../../common/types/Session';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
-import { DiscordServerChannel } from './types/DiscordServerChannel.type';
+import { DiscordServerChannel } from './types/discord-server-channel.type';
 import { Cache } from 'cache-manager';
 import { DiscordServerRole } from './types/discord-server-role.type';
 
@@ -422,10 +422,12 @@ describe('DiscordServersModule', () => {
         {
           id: 'id1',
           name: 'name1',
+          guild_id: 'guildId1',
         },
         {
           id: 'id2',
           name: 'name2',
+          guild_id: 'guildId1',
         },
       ];
       mockAllDiscordEndpoints({

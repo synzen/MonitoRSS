@@ -27,6 +27,11 @@ import {
 import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
 import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
 import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
+import { DiscordAuthService } from '../discord-auth/discord-auth.service';
+import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
+import { ForbiddenFeedChannelException } from './exceptions';
+
+jest.mock('../../utils/logger');
 
 describe('FeedsService', () => {
   let service: FeedsService;
@@ -37,6 +42,8 @@ describe('FeedsService', () => {
     getRefreshRatesOfFeeds: jest.fn(),
   } as never;
   let feedFetcherService: FeedFetcherService;
+  let discordAuthService: DiscordAuthService;
+  let discordApiService: DiscordAPIService;
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -46,6 +53,7 @@ describe('FeedsService', () => {
         ConfigService,
         DiscordAPIService,
         FeedFetcherService,
+        DiscordAuthService,
       ],
       imports: [
         MongooseTestModule.forRoot(),
@@ -66,10 +74,14 @@ describe('FeedsService', () => {
         get: jest.fn(),
       })
       .overrideProvider(DiscordAPIService)
-      .useValue({ executeBotRequest: jest.fn() })
+      .useValue({ executeBotRequest: jest.fn(), getChannel: jest.fn() })
       .overrideProvider(FeedFetcherService)
       .useValue({
         fetchFeed: jest.fn(),
+      })
+      .overrideProvider(DiscordAuthService)
+      .useValue({
+        userManagesGuild: jest.fn(),
       });
 
     const { module } = await init();
@@ -83,6 +95,8 @@ describe('FeedsService', () => {
       getModelToken(FeedSubscriber.name),
     );
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
+    discordApiService = module.get<DiscordAPIService>(DiscordAPIService);
+    discordAuthService = module.get<DiscordAuthService>(DiscordAuthService);
   });
 
   beforeEach(() => {
@@ -103,6 +117,90 @@ describe('FeedsService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('addFeed', () => {
+    const userAccessToken = 'fake-user-access-token';
+    const mockDetails = {
+      title: 'test-feed',
+      url: 'https://test.com',
+      channelId: 'channel-id',
+    };
+
+    beforeEach(() => {
+      jest.spyOn(discordApiService, 'getChannel').mockResolvedValue({
+        guild_id: 'guild-id',
+      } as never);
+
+      jest
+        .spyOn(discordAuthService, 'userManagesGuild')
+        .mockResolvedValue(true);
+
+      jest.spyOn(feedFetcherService, 'fetchFeed').mockImplementation();
+    });
+
+    it('throws a forbidden feed channel exception if getting channel failed', async () => {
+      jest
+        .spyOn(discordApiService, 'getChannel')
+        .mockRejectedValue(new DiscordAPIError('discord-api-error', 403));
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(ForbiddenFeedChannelException);
+    });
+
+    it('throws internal error if getting channel threw an unrecognized error', async () => {
+      jest
+        .spyOn(discordApiService, 'getChannel')
+        .mockRejectedValue(new Error('unrecognized-error'));
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(Error);
+    });
+
+    it('rejects with forbidden feed channel exception if user does not manage guild', async () => {
+      jest
+        .spyOn(discordAuthService, 'userManagesGuild')
+        .mockResolvedValue(false);
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(ForbiddenFeedChannelException);
+    });
+
+    it('rejects if fetchFeed failed', async () => {
+      jest
+        .spyOn(feedFetcherService, 'fetchFeed')
+        .mockRejectedValue(new Error());
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(Error);
+    });
+
+    it('creates the feed with the given details if all checks pass', async () => {
+      await service.addFeed(userAccessToken, mockDetails);
+
+      const feed = await feedModel.findOne({
+        title: mockDetails.title,
+      });
+
+      expect(feed?.title).toEqual(mockDetails.title);
+      expect(feed?.url).toEqual(mockDetails.url);
+      expect(feed?.channel).toEqual(mockDetails.channelId);
+    });
+
+    it('returns the feed with all the required details', async () => {
+      const feed = await service.addFeed(userAccessToken, mockDetails);
+
+      expect(feed).toEqual(
+        expect.objectContaining({
+          status: expect.any(String),
+          refreshRateSeconds: expect.any(Number),
+        }),
+      );
+    });
   });
 
   describe('getFeed', () => {

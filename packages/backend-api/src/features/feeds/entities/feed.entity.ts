@@ -26,6 +26,7 @@ class FeedSplitOptions {
 
 @Schema({
   collection: 'feeds',
+  timestamps: true,
 })
 export class Feed {
   _id: Types.ObjectId;
@@ -109,7 +110,9 @@ export class Feed {
   })
   webhook?: FeedWebhook;
 
-  @Prop()
+  @Prop({
+    default: Date.now,
+  })
   addedAt: Date;
 
   @Prop({
@@ -122,6 +125,10 @@ export class Feed {
     of: [FeedRegexOpSchema],
   })
   regexOps?: FeedRegexOp[];
+
+  createdAt?: Date;
+
+  updatedAt?: Date;
 }
 
 export type FeedDocument = Feed & Document;

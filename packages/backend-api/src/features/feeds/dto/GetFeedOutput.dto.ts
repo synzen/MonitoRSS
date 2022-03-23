@@ -67,7 +67,7 @@ export class GetFeedOutputDto {
       result: {
         id: feed._id.toHexString(),
         channel: feed.channel,
-        createdAt: feed.addedAt.toISOString(),
+        createdAt: (feed.createdAt || feed.addedAt).toISOString(),
         status: feed.status,
         title: feed.title,
         url: feed.url,

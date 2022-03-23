@@ -16,6 +16,11 @@ import {
   FeedSubscriberModel,
 } from './entities/feed-subscriber.entity';
 import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
+import logger from '../../utils/logger';
+import { DiscordAuthService } from '../discord-auth/discord-auth.service';
+import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
+import { ForbiddenFeedChannelException } from './exceptions';
+import { DiscordServerChannel } from '../discord-servers';
 
 interface UpdateFeedInput {
   title?: string;
@@ -49,7 +54,71 @@ export class FeedsService {
     private readonly feedFetcherSevice: FeedFetcherService,
     private readonly discordApiService: DiscordAPIService,
     private readonly configService: ConfigService,
+    private readonly discordAuthService: DiscordAuthService,
   ) {}
+
+  async addFeed(
+    userAccessToken: string,
+    {
+      title,
+      url,
+      channelId,
+    }: {
+      title: string;
+      url: string;
+      channelId: string;
+    },
+  ) {
+    let channel: DiscordServerChannel;
+
+    try {
+      channel = await this.discordApiService.getChannel(channelId);
+    } catch (err) {
+      logger.info(`Error while getting channel ${channelId} of feed addition`, {
+        stack: err.stack,
+      });
+
+      if (err instanceof DiscordAPIError) {
+        throw new ForbiddenFeedChannelException();
+      }
+
+      throw err;
+    }
+
+    const userManagesGuild = await this.discordAuthService.userManagesGuild(
+      userAccessToken,
+      channel.guild_id,
+    );
+
+    if (!userManagesGuild) {
+      logger.info(
+        `Blocked user from adding feed to guild ${channel.guild_id} ` +
+          `due to missing manage permissions`,
+      );
+      throw new ForbiddenFeedChannelException();
+    }
+
+    await this.feedFetcherSevice.fetchFeed(url);
+
+    const created = await this.feedModel.create({
+      title,
+      url,
+      channel: channelId,
+      guild: channel.guild_id,
+    });
+
+    const withDetails = await this.findFeeds(
+      {
+        _id: created._id,
+      },
+      {
+        limit: 1,
+        skip: 0,
+      },
+    );
+
+    return withDetails[0];
+  }
 
   async getFeed(feedId: string): Promise<DetailedFeed | null> {
     const feeds = await this.findFeeds(

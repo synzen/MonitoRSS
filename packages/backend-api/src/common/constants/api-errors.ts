@@ -10,6 +10,7 @@ export enum ApiErrorCode {
   FEED_REQUEST_TOO_MANY_REQUESTS = 'FEED_REQUEST_TOO_MANY_REQUESTS',
   FEED_REQUEST_UNAUTHORIZED = 'FEED_REQUEST_UNAUTHORIZED',
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
+  FEED_INVALID_CHANNEL = 'FEED_INVALID_CHANNEL',
 }
 
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
@@ -25,4 +26,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_REQUEST_UNAUTHORIZED: 'Request to feed failed (401 code)',
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS:
     'Bot is missing Manage Webhooks permission',
+  FEED_INVALID_CHANNEL:
+    'Missing manage permissions in server of channel, or channel does not exist',
 };

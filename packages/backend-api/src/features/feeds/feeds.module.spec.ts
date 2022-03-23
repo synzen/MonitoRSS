@@ -24,11 +24,15 @@ import { ConfigService } from '@nestjs/config';
 import { URL } from 'url';
 import { readFileSync } from 'fs';
 import { ApiErrorCode } from '../../common/constants/api-errors';
+import { CreateFeedInputDto } from './dto/create-feed-input.dto';
+import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
 
 const feedXml = readFileSync(
   path.join(__dirname, '../../test/data/feed.xml'),
   'utf-8',
 );
+
+jest.mock('../../utils/logger');
 
 describe('FeedsModule', () => {
   let app: NestFastifyApplication;
@@ -87,6 +91,143 @@ describe('FeedsModule', () => {
       .get(`/users/@me/guilds`)
       .reply(200, overrideServers || mockServers);
   };
+
+  describe('POST /feeds', () => {
+    const validBody: CreateFeedInputDto = {
+      channelId: 'channel-id',
+      feeds: [
+        {
+          title: 'Test Feed',
+          url: 'https://example.com/feed.xml',
+        },
+      ],
+    };
+
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'POST',
+        url: `/feeds`,
+        payload: validBody,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 400 with the right error code if channel returns 403', async () => {
+      mockGetMeServers();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/channels/${validBody.channelId}`)
+        .reply(403, {
+          message: 'fake forbidden errro',
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: 'POST',
+        url: `/feeds`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(JSON.parse(body).code).toEqual(ApiErrorCode.FEED_INVALID_CHANNEL);
+    });
+
+    it('returns 400 with the right error code if user does not manage channel guild', async () => {
+      mockGetMeServers();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/channels/${validBody.channelId}`)
+        .reply(200, {
+          guild_id: 'other-guild-id',
+        });
+
+      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+
+      const { statusCode, body } = await app.inject({
+        method: 'POST',
+        url: `/feeds`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(JSON.parse(body).code).toEqual(ApiErrorCode.FEED_INVALID_CHANNEL);
+    });
+
+    it('returns the correct error codes for feed request-related errors', async () => {
+      mockGetMeServers();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/channels/${validBody.channelId}`)
+        .reply(200, {
+          guild_id: guildId,
+        });
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/users/@me/guilds`)
+        .reply(200, [
+          {
+            id: guildId,
+            owner: true,
+          },
+        ]);
+
+      nock(validBody.feeds[0].url).get('').reply(429);
+
+      const { statusCode, body } = await app.inject({
+        method: 'POST',
+        url: `/feeds`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(JSON.parse(body).code).toEqual(
+        ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+      );
+    });
+
+    it('returns created feed details on success', async () => {
+      mockGetMeServers();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/channels/${validBody.channelId}`)
+        .reply(200, {
+          guild_id: guildId,
+        });
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/users/@me/guilds`)
+        .reply(200, [
+          {
+            id: guildId,
+            owner: true,
+          },
+        ]);
+
+      nock(validBody.feeds[0].url).get('').reply(200, feedXml);
+
+      const { statusCode, body } = await app.inject({
+        method: 'POST',
+        url: `/feeds`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.CREATED);
+      const parsedBody: CreateFeedOutputDto = JSON.parse(body);
+      expect(parsedBody.results).toEqual([
+        expect.objectContaining({
+          url: validBody.feeds[0].url,
+          title: validBody.feeds[0].title,
+          channel: validBody.channelId,
+        }),
+      ]);
+    });
+  });
 
   describe('GET /feeds/:feedId', () => {
     it('returns 401 if not logged in with discord', async () => {

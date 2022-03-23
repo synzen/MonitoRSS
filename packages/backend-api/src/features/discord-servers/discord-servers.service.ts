@@ -12,7 +12,7 @@ import {
   DiscordServerProfileModel,
 } from './entities/discord-server-profile.entity';
 import { DiscordServerRole } from './types/discord-server-role.type';
-import { DiscordServerChannel } from './types/DiscordServerChannel.type';
+import { DiscordServerChannel } from './types/discord-server-channel.type';
 
 interface ProfileSettings {
   dateFormat: string;
