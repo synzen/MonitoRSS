@@ -7,7 +7,7 @@ import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import nock from 'nock';
 import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
-import { Session } from '../../common/types/Session';
+import { Session } from '../../common';
 import { DiscordUserModule } from './discord-users.module';
 import { DiscordUser } from './types/DiscordUser.type';
 import { PartialUserGuild } from './types/PartialUserGuild.type';

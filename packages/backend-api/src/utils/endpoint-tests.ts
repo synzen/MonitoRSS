@@ -11,7 +11,7 @@ import { stopMemoryServer } from './mongoose-test.module';
 import crypto from 'crypto';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { equal } from 'assert';
-import { Session, SessionKey } from '../common/types/Session';
+import { Session, SessionKey } from '../common';
 import testConfig from '../config/test-config';
 
 let testingModule: TestingModule;

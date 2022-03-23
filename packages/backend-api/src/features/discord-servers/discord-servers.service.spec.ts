@@ -16,7 +16,7 @@ import {
   DiscordServerProfileFeature,
   DiscordServerProfileModel,
 } from './entities/discord-server-profile.entity';
-import { DiscordServerChannel } from './types/discord-server-channel.type';
+import { DiscordGuildChannel } from '../../common';
 
 const configValues: Record<string, unknown> = {
   defaultDateFormat: 'YYYY-MM-DD',
@@ -274,16 +274,18 @@ describe('DiscordServersService', () => {
   describe('getChannelsOfServer', () => {
     it('returns the channels from Discord', async () => {
       const serverId = 'server-id';
-      const mockChannels: DiscordServerChannel[] = [
+      const mockChannels: DiscordGuildChannel[] = [
         {
-          id: 'id-1',
-          name: 'channel-1',
+          id: 'channel-1',
           guild_id: serverId,
+          permission_overwrites: [],
+          name: 'channel-1',
         },
         {
           id: 'id-2',
           name: 'channel-2',
           guild_id: serverId,
+          permission_overwrites: [],
         },
       ];
       jest

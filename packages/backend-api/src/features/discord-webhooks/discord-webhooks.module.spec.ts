@@ -7,7 +7,7 @@ import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import nock from 'nock';
 import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
-import { Session } from '../../common/types/Session';
+import { Session } from '../../common';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { DiscordWebhooksModule } from './discord-webhooks.module';
 import * as qs from 'qs';

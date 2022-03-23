@@ -11,12 +11,14 @@ import { DiscordServersModule } from './discord-servers.module';
 import nock from 'nock';
 import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
-import { DiscordGuild } from '../../common/types/DiscordGuild';
-import { Session } from '../../common/types/Session';
+import {
+  DiscordGuild,
+  DiscordGuildRole,
+  DiscordGuildChannel,
+  Session,
+} from '../../common';
 import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
-import { DiscordServerChannel } from './types/discord-server-channel.type';
 import { Cache } from 'cache-manager';
-import { DiscordServerRole } from './types/discord-server-role.type';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -63,6 +65,7 @@ describe('DiscordServersModule', () => {
         name: 'Test Guild',
         icon: '',
         roles: [],
+        owner_id: '123456789',
       } as DiscordGuild);
   };
 
@@ -79,21 +82,21 @@ describe('DiscordServersModule', () => {
       ]);
   };
 
-  const mockGetServerChannels = (channels: DiscordServerChannel[]) => {
+  const mockGetServerChannels = (channels: DiscordGuildChannel[]) => {
     nock(DISCORD_API_BASE_URL)
       .get(`/guilds/${serverId}/channels`)
       .reply(200, channels);
   };
 
-  const mockGetServerRoles = (roles: DiscordServerRole[]) => {
+  const mockGetServerRoles = (roles: DiscordGuildRole[]) => {
     nock(DISCORD_API_BASE_URL)
       .get(`/guilds/${serverId}/roles`)
       .reply(200, roles);
   };
 
   const mockAllDiscordEndpoints = (data?: {
-    channels?: DiscordServerChannel[];
-    roles?: DiscordServerRole[];
+    channels?: DiscordGuildChannel[];
+    roles?: DiscordGuildRole[];
   }) => {
     mockGetServer();
     mockGetUserGuilds();
@@ -418,16 +421,18 @@ describe('DiscordServersModule', () => {
     });
 
     it('returns the discord server channels', async () => {
-      const serverChannels: DiscordServerChannel[] = [
+      const serverChannels: DiscordGuildChannel[] = [
         {
           id: 'id1',
           name: 'name1',
           guild_id: 'guildId1',
+          permission_overwrites: [],
         },
         {
           id: 'id2',
           name: 'name2',
           guild_id: 'guildId1',
+          permission_overwrites: [],
         },
       ];
       mockAllDiscordEndpoints({
@@ -505,7 +510,7 @@ describe('DiscordServersModule', () => {
     });
 
     it('returns the discord server roles', async () => {
-      const serverRoles: DiscordServerRole[] = [
+      const serverRoles: DiscordGuildRole[] = [
         {
           id: 'id1',
           name: 'name1',

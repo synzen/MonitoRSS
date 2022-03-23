@@ -2,7 +2,6 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
-import { DiscordGuild } from '../../common/types/DiscordGuild';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { Feed } from '../feeds/entities/feed.entity';
 import { FeedsService } from '../feeds/feeds.service';
@@ -11,8 +10,11 @@ import {
   DiscordServerProfile,
   DiscordServerProfileModel,
 } from './entities/discord-server-profile.entity';
-import { DiscordServerRole } from './types/discord-server-role.type';
-import { DiscordServerChannel } from './types/discord-server-channel.type';
+import {
+  DiscordGuild,
+  DiscordGuildRole,
+  DiscordGuildChannel,
+} from '../../common';
 
 interface ProfileSettings {
   dateFormat: string;
@@ -129,7 +131,7 @@ export class DiscordServersService {
   }
 
   async getChannelsOfServer(serverId: string) {
-    const channels: DiscordServerChannel[] =
+    const channels: DiscordGuildChannel[] =
       await this.discordApiService.executeBotRequest(
         `/guilds/${serverId}/channels`,
       );
@@ -138,7 +140,7 @@ export class DiscordServersService {
   }
 
   async getRolesOfServer(serverId: string) {
-    const roles: DiscordServerRole[] =
+    const roles: DiscordGuildRole[] =
       await this.discordApiService.executeBotRequest(
         `/guilds/${serverId}/roles`,
       );

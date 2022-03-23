@@ -4,7 +4,11 @@ import { Response } from 'node-fetch';
 import { DISCORD_API_BASE_URL } from '../../../constants/discord';
 import { RESTHandler } from '@synzen/discord-rest';
 import { DiscordAPIError } from '../../../common/errors/DiscordAPIError';
-import { DiscordServerChannel } from '../../../features/discord-servers';
+import {
+  DiscordGuildMember,
+  DiscordGuildChannel,
+  DiscordGuild,
+} from '../../../common';
 
 interface RequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -78,8 +82,19 @@ export class DiscordAPIService {
     return res.json();
   }
 
-  async getChannel(channelId: string): Promise<DiscordServerChannel> {
+  async getChannel(channelId: string): Promise<DiscordGuildChannel> {
     return this.executeBotRequest(`/channels/${channelId}`);
+  }
+
+  async getGuild(guildId: string): Promise<DiscordGuild> {
+    return this.executeBotRequest(`/guilds/${guildId}`);
+  }
+
+  async getGuildMember(
+    guildId: string,
+    userId: string,
+  ): Promise<DiscordGuildMember> {
+    return this.executeBotRequest(`/guilds/${guildId}/members/${userId}`);
   }
 
   private async handleJSONResponseError(res: Response): Promise<void> {

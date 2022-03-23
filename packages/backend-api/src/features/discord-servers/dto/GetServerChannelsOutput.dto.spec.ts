@@ -6,6 +6,8 @@ describe('GetServerChannelsOutputDto', () => {
       {
         id: 'channel_id',
         name: 'test',
+        guild_id: 'guild_id',
+        permission_overwrites: [],
       },
     ];
     const output = GetServerChannelsOutputDto.fromEntities(channels);

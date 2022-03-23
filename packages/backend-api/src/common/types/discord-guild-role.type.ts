@@ -1,7 +1,7 @@
-export interface DiscordRole {
+export interface DiscordGuildRole {
   id: string;
   name: string;
-  permissions: number;
+  permissions: string;
   position: number;
   color: number;
   hoist: boolean;

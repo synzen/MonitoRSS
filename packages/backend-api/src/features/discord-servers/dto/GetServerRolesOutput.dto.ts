@@ -1,4 +1,4 @@
-import { DiscordServerRole } from '../types/discord-server-role.type';
+import { DiscordGuildRole } from '../../../common';
 
 interface ServerRoleOutputDto {
   id: string;
@@ -13,7 +13,7 @@ export class GetServerRolesOutputDto {
   results: ServerRoleOutputDto[];
   total: number;
 
-  static fromEntities(roles: DiscordServerRole[]): GetServerRolesOutputDto {
+  static fromEntities(roles: DiscordGuildRole[]): GetServerRolesOutputDto {
     return {
       results: roles.map((role) => ({
         id: role.id,

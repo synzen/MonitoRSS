@@ -24,9 +24,9 @@ import {
   FeedLimitReachedException,
   ForbiddenFeedChannelException,
 } from './exceptions';
-import { DiscordServerChannel } from '../discord-servers';
 import { SupportersService } from '../supporters/supporters.service';
 import { BannedFeed, BannedFeedModel } from './entities/banned-feed.entity';
+import { DiscordGuildChannel } from '../../common';
 
 interface UpdateFeedInput {
   title?: string;
@@ -78,7 +78,7 @@ export class FeedsService {
       channelId: string;
     },
   ) {
-    let channel: DiscordServerChannel;
+    let channel: DiscordGuildChannel;
 
     try {
       channel = await this.discordApiService.getChannel(channelId);
