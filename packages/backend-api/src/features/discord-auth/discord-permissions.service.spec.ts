@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
 import { createTestDiscordGuildMember } from '../../test/data/discord-guild-member.test-data';
@@ -12,10 +13,16 @@ describe('DiscordPermissionsService', () => {
     getChannel: jest.fn(),
     getGuildMember: jest.fn(),
   } as never;
+  const configService: ConfigService = {
+    get: jest.fn(),
+  } as never;
   let permissionsService: DiscordPermissionsService;
 
   beforeEach(() => {
-    permissionsService = new DiscordPermissionsService(discordApiService);
+    permissionsService = new DiscordPermissionsService(
+      discordApiService,
+      configService,
+    );
   });
 
   describe('computeBasePermissions', () => {

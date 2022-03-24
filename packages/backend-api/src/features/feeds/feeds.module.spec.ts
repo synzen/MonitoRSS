@@ -26,6 +26,11 @@ import { readFileSync } from 'fs';
 import { ApiErrorCode } from '../../common/constants/api-errors';
 import { CreateFeedInputDto } from './dto/create-feed-input.dto';
 import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
+import { ADMINISTRATOR } from '../discord-auth/constants/permissions';
+import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
+import { createTestDiscordGuild } from '../../test/data/discord-guild.test-data';
+import { createTestDiscordGuildMember } from '../../test/data/discord-guild-member.test-data';
+import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
 
 const feedXml = readFileSync(
   path.join(__dirname, '../../test/data/feed.xml'),
@@ -192,12 +197,46 @@ describe('FeedsModule', () => {
 
     it('returns created feed details on success', async () => {
       mockGetMeServers();
+      const botClientId = configService.get('discordClientId');
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${validBody.channelId}`)
-        .reply(200, {
-          guild_id: guildId,
-        });
+        .reply(
+          200,
+          createTestDiscordGuildChannel({
+            guild_id: guildId,
+            id: validBody.channelId,
+          }),
+        )
+        .persist();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/guilds/${guildId}`)
+        .reply(
+          200,
+          createTestDiscordGuild({
+            id: guildId,
+            roles: [
+              createTestDiscordGuildRole({
+                id: guildId,
+                permissions: ADMINISTRATOR.toString(),
+              }),
+            ],
+          }),
+        )
+        .persist();
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/guilds/${guildId}/members/${botClientId}`)
+        .reply(
+          200,
+          createTestDiscordGuildMember({
+            user: {
+              id: botClientId,
+            },
+          }),
+        )
+        .persist();
 
       nock(DISCORD_API_BASE_URL)
         .get(`/users/@me/guilds`)
@@ -206,7 +245,8 @@ describe('FeedsModule', () => {
             id: guildId,
             owner: true,
           },
-        ]);
+        ])
+        .persist();
 
       nock(validBody.feeds[0].url).get('').reply(200, feedXml);
 

@@ -33,6 +33,7 @@ import {
   BannedFeedException,
   FeedLimitReachedException,
   ForbiddenFeedChannelException,
+  MissingChannelPermissionsException,
 } from './exceptions';
 import { SupportersService } from '../supporters/supporters.service';
 import {
@@ -40,6 +41,7 @@ import {
   BannedFeedFeature,
   BannedFeedModel,
 } from './entities/banned-feed.entity';
+import { DiscordPermissionsService } from '../discord-auth/discord-permissions.service';
 
 jest.mock('../../utils/logger');
 
@@ -56,6 +58,7 @@ describe('FeedsService', () => {
   let discordAuthService: DiscordAuthService;
   let discordApiService: DiscordAPIService;
   let supportersService: SupportersService;
+  let discordPermissionsService: DiscordPermissionsService;
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -67,6 +70,7 @@ describe('FeedsService', () => {
         FeedFetcherService,
         DiscordAuthService,
         SupportersService,
+        DiscordPermissionsService,
       ],
       imports: [
         MongooseTestModule.forRoot(),
@@ -100,6 +104,10 @@ describe('FeedsService', () => {
       .overrideProvider(SupportersService)
       .useValue({
         getBenefitsOfServers: jest.fn(),
+      })
+      .overrideProvider(DiscordPermissionsService)
+      .useValue({
+        botHasPermissionInChannel: jest.fn(),
       });
 
     const { module } = await init();
@@ -119,6 +127,9 @@ describe('FeedsService', () => {
     discordApiService = module.get<DiscordAPIService>(DiscordAPIService);
     discordAuthService = module.get<DiscordAuthService>(DiscordAuthService);
     supportersService = module.get<SupportersService>(SupportersService);
+    discordPermissionsService = module.get<DiscordPermissionsService>(
+      DiscordPermissionsService,
+    );
   });
 
   beforeEach(() => {
@@ -168,6 +179,10 @@ describe('FeedsService', () => {
           maxFeeds: Number.MAX_SAFE_INTEGER,
         },
       ] as never);
+
+      jest
+        .spyOn(discordPermissionsService, 'botHasPermissionInChannel')
+        .mockResolvedValue(true);
     });
 
     it('throws a forbidden feed channel exception if getting channel failed', async () => {
@@ -237,6 +252,16 @@ describe('FeedsService', () => {
       await expect(
         service.addFeed(userAccessToken, mockDetails),
       ).rejects.toThrowError(BannedFeedException);
+    });
+
+    it('rejects if bot does not have permission in channel', async () => {
+      jest
+        .spyOn(discordPermissionsService, 'botHasPermissionInChannel')
+        .mockResolvedValue(false);
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(MissingChannelPermissionsException);
     });
 
     it('creates the feed with the given details if all checks pass', async () => {

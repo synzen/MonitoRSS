@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { ADMINISTRATOR, NONE } from './constants/permissions';
 
@@ -29,18 +30,46 @@ interface GuildPermissionDetails {
 
 @Injectable()
 export class DiscordPermissionsService {
-  constructor(private readonly discordApiService: DiscordAPIService) {}
+  constructor(
+    private readonly discordApiService: DiscordAPIService,
+    private readonly configService: ConfigService,
+  ) {}
 
-  computedPermissionsHasPermission(permissions: bigint, permission: bigint) {
+  async botHasPermissionInChannel(
+    channel: ChannelPermissionDetails,
+    permissions: bigint[],
+  ) {
+    const botUserId = this.configService.get<string>(
+      'discordClientId',
+    ) as string;
+
+    return this.userHasPermissionInChannel(botUserId, channel, permissions);
+  }
+
+  async userHasPermissionInChannel(
+    userId: string,
+    channel: ChannelPermissionDetails,
+    permsToCheck: bigint[],
+  ) {
+    const permissions = await this.computePermissions(userId, channel);
+
+    return this.computedPermissionsHasPermissions(permissions, permsToCheck);
+  }
+
+  computedPermissionsHasPermissions(
+    permissions: bigint,
+    permissionsToCheck: bigint[],
+  ) {
     if ((permissions & ADMINISTRATOR) === ADMINISTRATOR) {
       return true;
     }
 
-    return (permissions & permission) === permission;
+    return permissionsToCheck.every(
+      (permission) => (permissions & permission) === permission,
+    );
   }
 
-  async computePermissions(userId: string, channelId: string) {
-    const channel = await this.discordApiService.getChannel(channelId);
+  async computePermissions(userId: string, channel: ChannelPermissionDetails) {
     const [guild, guildMember] = await Promise.all([
       this.discordApiService.getGuild(channel.guild_id),
       this.discordApiService.getGuildMember(channel.guild_id, userId),

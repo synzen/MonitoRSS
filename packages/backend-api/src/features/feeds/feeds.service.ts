@@ -23,10 +23,16 @@ import {
   BannedFeedException,
   FeedLimitReachedException,
   ForbiddenFeedChannelException,
+  MissingChannelPermissionsException,
 } from './exceptions';
 import { SupportersService } from '../supporters/supporters.service';
 import { BannedFeed, BannedFeedModel } from './entities/banned-feed.entity';
 import { DiscordGuildChannel } from '../../common';
+import { DiscordPermissionsService } from '../discord-auth/discord-permissions.service';
+import {
+  SEND_CHANNEL_MESSAGE,
+  VIEW_CHANNEL,
+} from '../discord-auth/constants/permissions';
 
 interface UpdateFeedInput {
   title?: string;
@@ -64,6 +70,7 @@ export class FeedsService {
     private readonly configService: ConfigService,
     private readonly discordAuthService: DiscordAuthService,
     private readonly supportersService: SupportersService,
+    private readonly discordPermissionsService: DiscordPermissionsService,
   ) {}
 
   async addFeed(
@@ -121,6 +128,15 @@ export class FeedsService {
 
     if (bannedRecord) {
       throw new BannedFeedException();
+    }
+
+    if (
+      !(await this.discordPermissionsService.botHasPermissionInChannel(
+        channel,
+        [SEND_CHANNEL_MESSAGE, VIEW_CHANNEL],
+      ))
+    ) {
+      throw new MissingChannelPermissionsException();
     }
 
     const created = await this.feedModel.create({

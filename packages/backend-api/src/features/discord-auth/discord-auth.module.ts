@@ -8,6 +8,6 @@ import { DiscordPermissionsService } from './discord-permissions.service';
   imports: [DiscordApiModule],
   controllers: [DiscordAuthController],
   providers: [DiscordAuthService, DiscordPermissionsService],
-  exports: [DiscordAuthService],
+  exports: [DiscordAuthService, DiscordPermissionsService],
 })
 export class DiscordAuthModule {}
