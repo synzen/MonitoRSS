@@ -229,6 +229,12 @@ export class FeedsService {
     feedId: string | Types.ObjectId,
     input: UpdateFeedInput,
   ): Promise<DetailedFeed> {
+    const existingFeed = await this.feedModel.findById(feedId).lean();
+
+    if (!existingFeed) {
+      throw new Error(`Feed ${feedId} not found while attempting to update`);
+    }
+
     const strippedUpdateObject: UpdateFeedInput = _.omitBy(
       input,
       _.isUndefined,
@@ -298,7 +304,10 @@ export class FeedsService {
     }
 
     if (strippedUpdateObject.channelId) {
-      await this.checkFeedChannelIsValid(strippedUpdateObject.channelId);
+      await this.checkFeedGuildChannelIsValid(
+        existingFeed.guild,
+        strippedUpdateObject.channelId,
+      );
       updateObject.$set.channel = strippedUpdateObject.channelId;
     }
 
@@ -518,7 +527,10 @@ export class FeedsService {
     });
   }
 
-  private async checkFeedChannelIsValid(channelId: string) {
+  private async checkFeedGuildChannelIsValid(
+    guildId: string,
+    channelId: string,
+  ) {
     let channel: DiscordGuildChannel;
 
     try {
@@ -536,6 +548,10 @@ export class FeedsService {
       }
 
       throw err;
+    }
+
+    if (channel.guild_id !== guildId) {
+      throw new MissingChannelPermissionsException();
     }
 
     const hasPermissionInChannel =
@@ -591,32 +607,6 @@ export class FeedsService {
 
     await this.feedSubscriberModel.insertMany(toInsert);
   }
-
-  // async boHasSendMessageChannelPerms({
-  //   guildId,
-  //   channelId,
-  // }: {
-  //   guildId: string;
-  //   channelId: string;
-  // }) {
-  //   // TODO: Better error handling here for permissions
-  //   const botUserId = this.configService.get('discordClientId') as string;
-
-  //   try {
-  //     await Promise.all([
-  //       this.discordApiService.executeBotRequest(
-  //         `/guilds/${guildId}/members/${botUserId}`,
-  //       ),
-  //       this.discordApiService.executeBotRequest(`/channels/${channelId}`),
-  //     ]);
-
-  //     return true;
-  //   } catch (err) {
-  //     console.error(err);
-
-  //     return false;
-  //   }
-  // }
 
   /**
    * See if a fail record should be valid and eligible for a refresh. If a fail record is invalid,

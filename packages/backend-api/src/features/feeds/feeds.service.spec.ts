@@ -43,6 +43,7 @@ import {
 } from './entities/banned-feed.entity';
 import { DiscordPermissionsService } from '../discord-auth/discord-permissions.service';
 import { HttpStatus } from '@nestjs/common';
+import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
 
 jest.mock('../../utils/logger');
 
@@ -435,7 +436,18 @@ describe('FeedsService', () => {
       });
 
       it('throws missing channel permission exception if bot has no perm in channel', async () => {
-        const feed = await feedModel.create(createTestFeed());
+        const guildId = 'guild-id';
+        const feed = await feedModel.create(
+          createTestFeed({
+            guild: guildId,
+          }),
+        );
+
+        jest.spyOn(discordApiService, 'getChannel').mockResolvedValue(
+          createTestDiscordGuildChannel({
+            guild_id: guildId,
+          }),
+        );
 
         jest
           .spyOn(discordPermissionsService, 'botHasPermissionInChannel')
@@ -448,8 +460,44 @@ describe('FeedsService', () => {
         ).rejects.toThrowError(MissingChannelPermissionsException);
       });
 
+      it('throws if channel does not belong to feed guild', async () => {
+        const guildId = 'guild-id';
+        const feed = await feedModel.create(
+          createTestFeed({
+            guild: guildId,
+          }),
+        );
+
+        jest.spyOn(discordApiService, 'getChannel').mockResolvedValue(
+          createTestDiscordGuildChannel({
+            guild_id: 'other-guild',
+          }),
+        );
+
+        jest
+          .spyOn(discordPermissionsService, 'botHasPermissionInChannel')
+          .mockResolvedValue(true);
+
+        await expect(
+          service.updateOne(feed._id.toString(), {
+            channelId: 'channel-1',
+          }),
+        ).rejects.toThrowError(MissingChannelPermissionsException);
+      });
+
       it('updates successfully', async () => {
-        const feed = await feedModel.create(createTestFeed());
+        const guildId = 'guild-id';
+        const feed = await feedModel.create(
+          createTestFeed({
+            guild: guildId,
+          }),
+        );
+
+        jest.spyOn(discordApiService, 'getChannel').mockResolvedValue(
+          createTestDiscordGuildChannel({
+            guild_id: guildId,
+          }),
+        );
 
         jest
           .spyOn(discordPermissionsService, 'botHasPermissionInChannel')
@@ -745,12 +793,12 @@ describe('FeedsService', () => {
       });
     });
 
-    it('returns undefined if no feed is found', async () => {
+    it('throws error if no feed is found', async () => {
       await expect(
         service.updateOne(new Types.ObjectId(), {
           text: 'hello',
         }),
-      ).resolves.toEqual(undefined);
+      ).rejects.toThrowError(Error);
     });
 
     it('updates the text', async () => {
