@@ -200,7 +200,19 @@
         "refreshButton": {
           "text": "Attempt to re-enable",
           "failure": "Failed to re-enable feed",
-          "success": "Feed has been enabled will be re-attempted"
+          "success": "Feed has been enabled and will be re-attempted"
+        },
+        "addFeedDialog": {
+          "addButton": "Add Feed",
+          "title": "Add a new feed",
+          "cancelButton": "Cancel",
+          "saveButton": "Add",
+          "formTitleLabel": "Title",
+          "formTitleDescription": "This is only for your reference.",
+          "formChannelLabel": "Channel",
+          "formLinkLabel": "Link",
+          "formLinkDescription": "Must be a link to a valid RSS XML feed.",
+          "failedToAdd": "Failed to add feed"
         },
         "sidebar": {
           "settings": "Settings",

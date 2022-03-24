@@ -16,6 +16,7 @@ import {
   Box,
   InputRightElement,
   Spinner,
+  HStack,
 } from '@chakra-ui/react';
 import { useEffect, useMemo } from 'react';
 import {
@@ -28,6 +29,7 @@ import { useFeeds } from '../../hooks';
 import { Feed } from '../../types';
 import { Loading } from '@/components';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
+import { AddFeedDialog } from '../AddFeedDialog';
 
 interface Props {
   serverId?: string
@@ -177,27 +179,30 @@ export const FeedsTable: React.FC<Props> = ({
 
   return (
     <Stack>
-      <InputGroup width="min-content">
-        <InputLeftElement
-          pointerEvents="none"
-        >
-          <SearchIcon color="gray.400" />
-        </InputLeftElement>
-        <Input
-          onChange={({
-            target: {
-              value,
-            },
-          }) => {
-            onSearchChange(value);
-          }}
-          minWidth="325px"
-          placeholder={t('pages.feeds.tableSearch')}
-        />
-        <InputRightElement>
-          {search && isFetching && <Spinner size="sm" />}
-        </InputRightElement>
-      </InputGroup>
+      <HStack justifyContent="space-between" flexWrap="wrap">
+        <InputGroup width="min-content">
+          <InputLeftElement
+            pointerEvents="none"
+          >
+            <SearchIcon color="gray.400" />
+          </InputLeftElement>
+          <Input
+            onChange={({
+              target: {
+                value,
+              },
+            }) => {
+              onSearchChange(value);
+            }}
+            minWidth="325px"
+            placeholder={t('pages.feeds.tableSearch')}
+          />
+          <InputRightElement>
+            {search && isFetching && <Spinner size="sm" />}
+          </InputRightElement>
+        </InputGroup>
+        <AddFeedDialog />
+      </HStack>
       {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
       <Box overflow="auto">
         <Table

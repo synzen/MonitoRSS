@@ -30,6 +30,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
     isFetching,
     isPreviousData,
     isLoading,
+    refetch,
   } = useQuery<GetFeedsOutput, ApiAdapterError>(
     queryKey,
     async () => {
@@ -66,6 +67,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
     setSearch,
     isFetchingNewPage,
     isFetching,
+    refetch,
     search: search || '',
   };
 };

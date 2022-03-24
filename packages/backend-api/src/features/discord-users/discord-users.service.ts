@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { MANAGE_CHANNEL } from '../discord-auth/constants/permissions';
 import { SupportersService } from '../supporters/supporters.service';
 import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
 import {
@@ -42,13 +43,10 @@ export class DiscordUsersService {
       PartialUserGuild[]
     >(accessToken, endpoint);
 
-    const MANAGE_CHANNEL_PERMISSION = 16;
-
     const guildsWithPermission = guilds.filter(
       (guild) =>
         guild.owner ||
-        (guild.permissions & MANAGE_CHANNEL_PERMISSION) ===
-          MANAGE_CHANNEL_PERMISSION,
+        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL,
     );
 
     const guildIds = guildsWithPermission.map((guild) => guild.id);

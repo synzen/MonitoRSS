@@ -30,6 +30,7 @@ import mockDiscordRoles from './data/discordRoles';
 import mockFeedSubscribers from './data/feedSubscribers';
 import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
 import mockDiscordWebhooks from './data/discordWebhooks';
+import { generateMockApiErrorResponse } from './generateMockApiErrorResponse';
 
 const handlers = [
   rest.get('/api/v1/discord-users/@me', (req, res, ctx) => res(
@@ -129,6 +130,14 @@ const handlers = [
     ctx.json<GetDiscordWebhooksOutput>({
       results: mockDiscordWebhooks,
     }),
+  )),
+
+  rest.post('/api/v1/feeds', (req, res, ctx) => res(
+    ctx.delay(1000),
+    ctx.status(403),
+    ctx.json(generateMockApiErrorResponse({
+      code: 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
+    })),
   )),
 
   rest.get('/api/v1/feeds/:feedId', (req, res, ctx) => res(

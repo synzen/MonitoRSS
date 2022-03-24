@@ -10,3 +10,4 @@ export * from './deleteFeedSubscriber';
 export * from './cloneFeed';
 export * from './getFeedArticlesDump';
 export * from './getFeedArticlesRawDump';
+export * from './createFeed';

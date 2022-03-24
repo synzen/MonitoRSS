@@ -34,6 +34,7 @@ import FlattenedJSON from '../../services/feed-fetcher/utils/FlattenedJSON';
 import { CreateFeedInputDto } from './dto/create-feed-input.dto';
 import { DiscordAccessToken } from '../discord-auth/decorators/DiscordAccessToken';
 import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
+import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -49,12 +50,12 @@ export class FeedsController {
   @UseFilters(FeedExceptionFilter, AddFeedExceptionFilter)
   async createFeed(
     @Body(TransformValidationPipe) createFeedInputDto: CreateFeedInputDto,
-    @DiscordAccessToken() accessToken: string,
+    @DiscordAccessToken() { access_token }: SessionAccessToken,
   ): Promise<CreateFeedOutputDto> {
     const { channelId, feeds } = createFeedInputDto;
     const feedToAdd = feeds[0];
 
-    const addedFeed = await this.feedsService.addFeed(accessToken, {
+    const addedFeed = await this.feedsService.addFeed(access_token, {
       title: feedToAdd.title,
       url: feedToAdd.url,
       channelId: channelId,
