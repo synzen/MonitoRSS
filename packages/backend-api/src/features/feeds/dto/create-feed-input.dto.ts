@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsString,
+  IsUrl,
   ValidateNested,
 } from 'class-validator';
 
@@ -12,6 +13,7 @@ class CreateFeedInputFeedsDto {
   title: string;
 
   @IsString()
+  @IsUrl()
   url: string;
 }
 
