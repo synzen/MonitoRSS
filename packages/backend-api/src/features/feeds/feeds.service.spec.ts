@@ -32,8 +32,9 @@ import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import {
   BannedFeedException,
   FeedLimitReachedException,
-  ForbiddenFeedChannelException,
+  MissingChannelException,
   MissingChannelPermissionsException,
+  UserMissingManageGuildException,
 } from './exceptions';
 import { SupportersService } from '../supporters/supporters.service';
 import {
@@ -197,14 +198,24 @@ describe('FeedsService', () => {
         .mockResolvedValue(true);
     });
 
-    it('throws a forbidden feed channel exception if getting channel failed', async () => {
+    it('throws a missing channel exception if getting channel failed with 404', async () => {
+      jest
+        .spyOn(discordApiService, 'getChannel')
+        .mockRejectedValue(new DiscordAPIError('discord-api-error', 404));
+
+      await expect(
+        service.addFeed(userAccessToken, mockDetails),
+      ).rejects.toThrowError(MissingChannelException);
+    });
+
+    it('throws a missing channek perms if getting channel failed with 403', async () => {
       jest
         .spyOn(discordApiService, 'getChannel')
         .mockRejectedValue(new DiscordAPIError('discord-api-error', 403));
 
       await expect(
         service.addFeed(userAccessToken, mockDetails),
-      ).rejects.toThrowError(ForbiddenFeedChannelException);
+      ).rejects.toThrowError(MissingChannelPermissionsException);
     });
 
     it('throws internal error if getting channel threw an unrecognized error', async () => {
@@ -217,14 +228,14 @@ describe('FeedsService', () => {
       ).rejects.toThrowError(Error);
     });
 
-    it('rejects with forbidden feed channel exception if user does not manage guild', async () => {
+    it('rejects with right exception if user does not manage guild', async () => {
       jest
         .spyOn(discordAuthService, 'userManagesGuild')
         .mockResolvedValue(false);
 
       await expect(
         service.addFeed(userAccessToken, mockDetails),
-      ).rejects.toThrowError(ForbiddenFeedChannelException);
+      ).rejects.toThrowError(UserMissingManageGuildException);
     });
 
     it('rejects with feed limit reached exception if user has reached feed limit', async () => {
