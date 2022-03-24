@@ -33,6 +33,10 @@ import {
   SEND_CHANNEL_MESSAGE,
   VIEW_CHANNEL,
 } from '../discord-auth/constants/permissions';
+import {
+  FeedFilteredFormat,
+  FeedFilteredFormatModel,
+} from './entities/feed-filtered-format.entity';
 
 interface UpdateFeedInput {
   title?: string;
@@ -64,6 +68,8 @@ export class FeedsService {
     private readonly bannedFeedModel: BannedFeedModel,
     @InjectModel(FeedSubscriber.name)
     private readonly feedSubscriberModel: FeedSubscriberModel,
+    @InjectModel(FeedFilteredFormat.name)
+    private readonly feedFilteredFormatModel: FeedFilteredFormatModel,
     private readonly feedSchedulingService: FeedSchedulingService,
     private readonly feedFetcherSevice: FeedFetcherService,
     private readonly discordApiService: DiscordAPIService,
@@ -157,6 +163,21 @@ export class FeedsService {
     );
 
     return withDetails[0];
+  }
+
+  async removeFeed(feedId: string) {
+    const feedIdObjectId = new Types.ObjectId(feedId);
+    await Promise.all([
+      this.feedModel.deleteOne({
+        _id: feedIdObjectId,
+      }),
+      this.feedSubscriberModel.deleteMany({
+        feed: feedIdObjectId,
+      }),
+      this.feedFilteredFormatModel.deleteMany({
+        feed: feedIdObjectId,
+      }),
+    ]);
   }
 
   async getFeed(feedId: string): Promise<DetailedFeed | null> {

@@ -223,7 +223,8 @@
           "updateSuccess": "Successfully updated feed",
           "resetButton": "Reset",
           "saveButton": "Save",
-          "customizeButton": "Customize"
+          "customizeButton": "Customize",
+          "deleteButton": "Delete"
         },
         "dumpButton": {
           "text": "Download feed placeholders dump"

@@ -44,6 +44,11 @@ import {
 import { DiscordPermissionsService } from '../discord-auth/discord-permissions.service';
 import { HttpStatus } from '@nestjs/common';
 import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
+import {
+  FeedFilteredFormat,
+  FeedFilteredFormatFeature,
+  FeedFilteredFormatModel,
+} from './entities/feed-filtered-format.entity';
 
 jest.mock('../../utils/logger');
 
@@ -53,6 +58,7 @@ describe('FeedsService', () => {
   let failRecordModel: FailRecordModel;
   let feedSubscriberModel: FeedSubscriberModel;
   let bannedFeedModel: BannedFeedModel;
+  let feedFilteredFormatModel: FeedFilteredFormatModel;
   const feedSchedulingService: FeedSchedulingService = {
     getRefreshRatesOfFeeds: jest.fn(),
   } as never;
@@ -82,6 +88,7 @@ describe('FeedsService', () => {
           FeedScheduleFeature,
           FeedSubscriberFeature,
           BannedFeedFeature,
+          FeedFilteredFormatFeature,
         ]),
       ],
     });
@@ -131,6 +138,9 @@ describe('FeedsService', () => {
     supportersService = module.get<SupportersService>(SupportersService);
     discordPermissionsService = module.get<DiscordPermissionsService>(
       DiscordPermissionsService,
+    );
+    feedFilteredFormatModel = module.get<FeedFilteredFormatModel>(
+      getModelToken(FeedFilteredFormat.name),
     );
   });
 
@@ -287,6 +297,39 @@ describe('FeedsService', () => {
           refreshRateSeconds: expect.any(Number),
         }),
       );
+    });
+  });
+
+  describe('removeFeed', () => {
+    it('removes all the associated entities', async () => {
+      const feed = await feedModel.create(createTestFeed({}));
+      const [subscriber, filteredFormat] = await Promise.all([
+        feedSubscriberModel.create(
+          createTestFeedSubscriber({
+            feed: feed._id,
+          }),
+        ),
+        feedFilteredFormatModel.create({
+          feed: feed._id,
+          priority: 1,
+        }),
+      ]);
+
+      await service.removeFeed(feed._id.toHexString());
+
+      const foundFeed = await feedModel.findById(feed._id);
+
+      const foundSubscriber = await feedSubscriberModel.findById(
+        subscriber._id,
+      );
+
+      const foundFilteredFormat = await feedFilteredFormatModel.findById(
+        filteredFormat._id,
+      );
+
+      expect(foundFeed).toBeNull();
+      expect(foundSubscriber).toBeNull();
+      expect(foundFilteredFormat).toBeNull();
     });
   });
 

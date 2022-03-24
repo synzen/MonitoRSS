@@ -341,6 +341,74 @@ describe('FeedsModule', () => {
     });
   });
 
+  describe('DELETE /feeds/:feedId', () => {
+    it('returns 401 if not logged in with discord', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${feedId}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('returns 403 if use does not have permission of guild of feed', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          guild: guildId,
+        }),
+      );
+
+      mockGetMeServers([
+        {
+          id: createdFeed.guild + '1',
+          name: 'Test Guild 3',
+          owner: true,
+          permissions: '0',
+        },
+      ]);
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${createdFeed._id}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
+    });
+
+    it('returns 404 if the feed does not exist', async () => {
+      mockGetMeServers();
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${new Types.ObjectId()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
+    });
+
+    it('returns 204', async () => {
+      mockGetMeServers();
+
+      const feed = createTestFeed({
+        guild: guildId,
+      });
+
+      await feedModel.create(feed);
+
+      const { statusCode } = await app.inject({
+        method: 'DELETE',
+        url: `/feeds/${feed._id}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toEqual(HttpStatus.NO_CONTENT);
+    });
+  });
+
   describe('GET /feeds/:feedId/refresh', () => {
     it('returns 401 if not logged in with discord', async () => {
       mockGetMeServers();

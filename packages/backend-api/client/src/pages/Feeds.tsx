@@ -22,11 +22,14 @@ const Feeds: React.FC = () => {
   const sidebarEnabled = useBreakpointValue<boolean>({ base: true, '2xl': false });
   const [focusedFeedId, setFocusedFeedId] = useState('');
   const { t } = useTranslation();
-  // Pre-fetch channels
 
   useEffect(() => {
     setFocusedFeedId('');
   }, [serverId]);
+
+  const onFeedDeleted = () => {
+    setFocusedFeedId('');
+  };
 
   return (
     <RequireServerBotAccess
@@ -60,7 +63,7 @@ const Feeds: React.FC = () => {
           height="100%"
           width={{ base: 'none', '2xl': 'lg' }}
         >
-          <FeedSidebar feedId={focusedFeedId} />
+          <FeedSidebar feedId={focusedFeedId} onDeleted={onFeedDeleted} />
         </Box>
         )}
         {sidebarEnabled && (
@@ -76,7 +79,7 @@ const Feeds: React.FC = () => {
           <DrawerOverlay />
           <DrawerContent>
             <DrawerCloseButton />
-            <FeedSidebar feedId={focusedFeedId} />
+            <FeedSidebar feedId={focusedFeedId} onDeleted={onFeedDeleted} />
           </DrawerContent>
         </Drawer>
         )}

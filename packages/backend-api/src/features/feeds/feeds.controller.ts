@@ -3,7 +3,10 @@ import {
   Body,
   CacheTTL,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -70,6 +73,13 @@ export class FeedsController {
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
   ): Promise<GetFeedOutputDto> {
     return GetFeedOutputDto.fromEntity(feed);
+  }
+
+  @Delete(':feedId')
+  @UseGuards(UserManagesFeedServerGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteFeed(@Param('feedId', GetFeedPipe) feed: DetailedFeed) {
+    await this.feedsService.removeFeed(feed._id.toHexString());
   }
 
   @Get(':feedId/refresh')

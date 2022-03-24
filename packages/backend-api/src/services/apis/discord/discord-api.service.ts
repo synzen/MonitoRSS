@@ -77,8 +77,6 @@ export class DiscordAPIService {
       },
     });
 
-    console.log(accessToken, url);
-
     await this.handleJSONResponseError(res);
 
     return res.json();

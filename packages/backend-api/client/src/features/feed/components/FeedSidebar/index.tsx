@@ -15,27 +15,34 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { FiTrash } from 'react-icons/fi';
+import { useState } from 'react';
 import { CategoryText, Loading } from '@/components';
-import { useFeed } from '../../hooks';
+import { useDeleteFeed, useFeed, useFeeds } from '../../hooks';
 import { FeedStatusIcon } from '../FeedStatusIcon';
 import { RefreshButton } from '../RefreshButton';
 import RouteParams from '@/types/RouteParams';
 import { SettingsForm } from './SettingsForm';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
+import { notifyError } from '@/utils/notifyError';
 
 interface Props {
   feedId?: string;
+  onDeleted: () => void
 }
 
-export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
+export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
+  const { refetch: refetchFeeds } = useFeeds({ serverId });
   const {
     feed, status, error, refetch,
   } = useFeed({
     feedId,
   });
+  const { mutateAsync } = useDeleteFeed();
+  const [deleting, setDeleting] = useState(false);
 
   if (!feedId || !serverId) {
     return null;
@@ -52,6 +59,25 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
       </Box>
     );
   }
+
+  const onDeleteFeed = async () => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await mutateAsync({
+        feedId,
+      });
+      await refetchFeeds();
+      onDeleted();
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <Stack
@@ -135,9 +161,18 @@ export const FeedSidebar: React.FC<Props> = ({ feedId }) => {
         <Button
           as={Link}
           to={`${feedId}/message`}
-          rightIcon={<ExternalLinkIcon />}
+          leftIcon={<ExternalLinkIcon />}
         >
           {t('features.feed.components.sidebar.customizeButton')}
+        </Button>
+        <Button
+          variant="outline"
+          leftIcon={<FiTrash />}
+          isLoading={deleting}
+          isDisabled={deleting}
+          onClick={onDeleteFeed}
+        >
+          {t('features.feed.components.sidebar.deleteButton')}
         </Button>
       </Stack>
       {/* <Divider /> */}

@@ -147,6 +147,11 @@ const handlers = [
     }),
   )),
 
+  rest.delete('/api/v1/feeds/:feedId', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.status(204)
+  )),
+
   rest.post('/api/v1/feeds/:feedId/clone', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CloneFeedOutput>({

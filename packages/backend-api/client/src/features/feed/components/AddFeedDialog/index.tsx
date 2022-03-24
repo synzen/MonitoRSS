@@ -53,9 +53,9 @@ export const AddFeedDialog: React.FC = () => {
     resolver: yupResolver(formSchema),
     mode: 'all',
   });
-  const { data, error, status } = useDiscordServerChannels({ serverId });
+  const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
   const { refetch: refetchFeeds } = useFeeds({ serverId });
-  const { mutateAsync, status: mutateStatus, error: mutateError } = useCreateFeed();
+  const { mutateAsync } = useCreateFeed();
 
   const loadingChannels = status === 'loading' || status === 'idle';
 
@@ -133,7 +133,7 @@ export const AddFeedDialog: React.FC = () => {
                     render={({ field }) => (
                       <ThemedSelect
                         loading={loadingChannels}
-                        isDisabled={isSubmitting || loadingChannels}
+                        isDisabled={isSubmitting || loadingChannels || !!channelsError}
                         options={data?.results.map((channel) => ({
                           label: channel.name,
                           value: channel.id,
