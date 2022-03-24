@@ -298,6 +298,7 @@ export class FeedsService {
     }
 
     if (strippedUpdateObject.channelId) {
+      await this.checkFeedChannelIsValid(strippedUpdateObject.channelId);
       updateObject.$set.channel = strippedUpdateObject.channelId;
     }
 
@@ -515,6 +516,37 @@ export class FeedsService {
         },
       ],
     });
+  }
+
+  private async checkFeedChannelIsValid(channelId: string) {
+    let channel: DiscordGuildChannel;
+
+    try {
+      channel = await this.discordApiService.getChannel(channelId);
+    } catch (err) {
+      logger.info(
+        `Skipped updating feed channel because failed to get channel`,
+        {
+          stack: err.stack,
+        },
+      );
+
+      if (err instanceof DiscordAPIError) {
+        throw new MissingChannelPermissionsException();
+      }
+
+      throw err;
+    }
+
+    const hasPermissionInChannel =
+      await this.discordPermissionsService.botHasPermissionInChannel(channel, [
+        VIEW_CHANNEL,
+        SEND_CHANNEL_MESSAGE,
+      ]);
+
+    if (!hasPermissionInChannel) {
+      throw new MissingChannelPermissionsException();
+    }
   }
 
   private async getRemainingFeedLimitCount(guildId: string) {

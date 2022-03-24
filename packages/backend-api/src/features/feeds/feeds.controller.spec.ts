@@ -1,5 +1,5 @@
 import { createTestFeed } from '../../test/data/feeds.test-data';
-import { UpdateFeedInputDto } from './dto/UpdateFeedInput.dto';
+import { UpdateFeedInputDto } from './dto/update-feed-input.dto';
 import { FeedsController } from './feeds.controller';
 import { DetailedFeed } from './types/detailed-feed.type';
 import { FeedStatus } from './types/FeedStatus.type';
@@ -39,6 +39,23 @@ describe('FeedsController', () => {
 
     beforeEach(() => {
       feedsService.updateOne.mockResolvedValue(feed);
+    });
+
+    describe('channelId', () => {
+      it('should update the feed with the channelId', async () => {
+        const input: UpdateFeedInputDto = {
+          channelId: '123',
+        };
+
+        await controller.updateFeed(feed, input);
+
+        expect(feedsService.updateOne).toHaveBeenCalledWith(
+          feed._id,
+          expect.objectContaining({
+            channelId: input.channelId,
+          }),
+        );
+      });
     });
 
     describe('title', () => {

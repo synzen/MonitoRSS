@@ -17,7 +17,7 @@ import { TransformValidationPipe } from '../../common/pipes/TransformValidationP
 import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
 import { GetFeedArticlesOutputDto } from './dto/GetFeedArticlesOutput.dto';
 import { GetFeedOutputDto } from './dto/GetFeedOutput.dto';
-import { UpdateFeedInputDto } from './dto/UpdateFeedInput.dto';
+import { UpdateFeedInputDto } from './dto/update-feed-input.dto';
 import { UpdateFeedOutputDto } from './dto/UpdateFeedOutput.dto';
 import { FeedsService } from './feeds.service';
 import { UserManagesFeedServerGuard } from './guards/UserManagesFeedServer.guard';
@@ -154,16 +154,6 @@ export class FeedsController {
       }
     }
 
-    // if (
-    //   updateFeedInput.channelId &&
-    //   !(await this.feedsService.boHasSendMessageChannelPerms({
-    //     guildId: feed.guild,
-    //     channelId: updateFeedInput.channelId,
-    //   }))
-    // ) {
-    //   throw new BadRequestException('Invalid channel');
-    // }
-
     const updatedFeed = await this.feedsService.updateOne(feed._id, {
       title: updateFeedInput.title,
       text: updateFeedInput.text,
@@ -179,9 +169,9 @@ export class FeedsController {
       splitMessage: updateFeedInput.splitMessage,
       ncomparisons: updateFeedInput.ncomparisons,
       pcomparisons: updateFeedInput.pcomparisons,
-      // ...(updateFeedInput.channelId && {
-      //   channeLId: updateFeedInput.channelId,
-      // }),
+      ...(updateFeedInput.channelId && {
+        channelId: updateFeedInput.channelId,
+      }),
     });
 
     return GetFeedOutputDto.fromEntity(updatedFeed);
