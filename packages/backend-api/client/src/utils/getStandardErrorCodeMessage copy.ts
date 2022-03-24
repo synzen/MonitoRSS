@@ -14,6 +14,11 @@ enum ApiErrorCode {
   FEED_REQUEST_TOO_MANY_REQUESTS = 'FEED_REQUEST_TOO_MANY_REQUESTS',
   FEED_REQUEST_UNAUTHORIZED = 'FEED_REQUEST_UNAUTHORIZED',
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
+  FEED_MISSING_CHANNEL_PERMISSION = 'FEED_MISSING_CHANNEL_PERMISSION',
+  FEED_MISSING_CHANNEL = 'FEED_MISSING_CHANNEL',
+  FEED_USER_MISSING_MANAGE_GUILD = 'FEED_USER_MISSING_MANAGE_GUILD',
+  FEED_LIMIT_REACHED = 'FEED_LIMIT_REACHED',
+  BANNED_FEED = 'BANNED_FEED',
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -27,6 +32,11 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_REQUEST_TOO_MANY_REQUESTS: t('common.apiErrors.feedRequestTooManyRequests'),
   FEED_REQUEST_UNAUTHORIZED: t('common.apiErrors.feedRequestUnauthorized'),
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS: t('common.apiErrors.webhooksManageMissingPermissions'),
+  BANNED_FEED: t('common.apiErrors.bannedFeed'),
+  FEED_MISSING_CHANNEL_PERMISSION: t('common.apiErrors.feedMissingChannelPermission'),
+  FEED_LIMIT_REACHED: t('common.apiErrors.feedLimitReached'),
+  FEED_MISSING_CHANNEL: t('common.apiErrors.feedMissingChannel'),
+  FEED_USER_MISSING_MANAGE_GUILD: t('common.apiErrors.feedUserMissingManageGuild'),
   INTERNAL_ERROR: t('common.errors.somethingWentWrong'),
 };
 

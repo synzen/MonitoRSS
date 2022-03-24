@@ -21,6 +21,11 @@
       "feedRequestInternalError": "Feed host is currently experiencing issues",
       "feedRequestTooManyRequests": "Requests to the feed has been rate limited. Please try again later.",
       "feedRequestUnauthorized": "Feed hosts requesting authorization that does not exist",
+      "bannedFeed": "This feed is banned",
+      "feedMissingChannelPermission": "The bot does not have permission to send messages in the channel",
+      "feedLimitReached": "Server has reached the feed limit",
+      "feedMissingChannel": "The channel does not exist",
+      "feedUserMissingManageGuild": "You are missing the Manage Server permission",
       "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server."
     }
   },

@@ -10,10 +10,14 @@ export enum ApiErrorCode {
   FEED_REQUEST_TOO_MANY_REQUESTS = 'FEED_REQUEST_TOO_MANY_REQUESTS',
   FEED_REQUEST_UNAUTHORIZED = 'FEED_REQUEST_UNAUTHORIZED',
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
-  FEED_INVALID_CHANNEL = 'FEED_INVALID_CHANNEL',
+  FEED_MISSING_CHANNEL_PERMISSION = 'FEED_MISSING_CHANNEL_PERMISSION',
+  FEED_MISSING_CHANNEL = 'FEED_MISSING_CHANNEL',
+  FEED_USER_MISSING_MANAGE_GUILD = 'FEED_USER_MISSING_MANAGE_GUILD',
   FEED_LIMIT_REACHED = 'FEED_LIMIT_REACHED',
   BANNED_FEED = 'BANNED_FEED',
 }
+
+// Create a package for the frontend?
 
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_INVALID: 'Invalid feed',
@@ -28,8 +32,9 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_REQUEST_UNAUTHORIZED: 'Request to feed failed (401 code)',
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS:
     'Bot is missing Manage Webhooks permission',
-  FEED_INVALID_CHANNEL:
-    'Missing manage permissions in server of channel, or channel does not exist',
+  FEED_MISSING_CHANNEL: 'Channel does not exist',
+  FEED_MISSING_CHANNEL_PERMISSION: 'Insufficient bot permissions in channel',
+  FEED_USER_MISSING_MANAGE_GUILD: 'User is missing Manage Server permission',
   FEED_LIMIT_REACHED: 'Feed limit reached',
   BANNED_FEED: 'Feed is banned',
 };

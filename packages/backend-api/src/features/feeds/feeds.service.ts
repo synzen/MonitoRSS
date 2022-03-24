@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Feed, FeedDocument, FeedModel } from './entities/feed.entity';
 import { DetailedFeed } from './types/detailed-feed.type';
@@ -22,8 +22,9 @@ import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import {
   BannedFeedException,
   FeedLimitReachedException,
-  ForbiddenFeedChannelException,
+  MissingChannelException,
   MissingChannelPermissionsException,
+  UserMissingManageGuildException,
 } from './exceptions';
 import { SupportersService } from '../supporters/supporters.service';
 import { BannedFeed, BannedFeedModel } from './entities/banned-feed.entity';
@@ -101,7 +102,13 @@ export class FeedsService {
       });
 
       if (err instanceof DiscordAPIError) {
-        throw new ForbiddenFeedChannelException();
+        if (err.statusCode === HttpStatus.NOT_FOUND) {
+          throw new MissingChannelException();
+        }
+
+        if (err.statusCode === HttpStatus.FORBIDDEN) {
+          throw new MissingChannelPermissionsException();
+        }
       }
 
       throw err;
@@ -117,7 +124,7 @@ export class FeedsService {
         `Blocked user from adding feed to guild ${channel.guild_id} ` +
           `due to missing manage permissions`,
       );
-      throw new ForbiddenFeedChannelException();
+      throw new UserMissingManageGuildException();
     }
 
     const remainingAvailableFeeds = await this.getRemainingFeedLimitCount(
