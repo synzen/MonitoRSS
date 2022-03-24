@@ -13,6 +13,7 @@ interface SupporterBenefits {
   guilds: string[];
   maxGuilds: number;
   expireAt?: Date;
+  refreshRateSeconds?: number;
 }
 
 interface ServerBenefits {
@@ -20,6 +21,7 @@ interface ServerBenefits {
   maxFeeds: number;
   serverId: string;
   webhooks: boolean;
+  refreshRateSeconds?: number;
 }
 
 @Injectable()
@@ -81,6 +83,7 @@ export class SupportersService {
       guilds: aggregate[0].guilds,
       maxGuilds: benefits.maxGuilds,
       expireAt: aggregate[0].expireAt,
+      refreshRateSeconds: benefits.refreshRateSeconds,
     };
   }
 
@@ -151,6 +154,10 @@ export class SupportersService {
         maxFeeds: Math.max(...serverBenefits.map((b) => b.maxFeeds)),
         serverId,
         webhooks: serverBenefits.some((b) => b.webhooks),
+        // Arbitrarily select one since there is no business rule on this at the moment
+        refreshRateSeconds: serverBenefits.find(
+          (b) => b.refreshRateSeconds !== undefined,
+        )?.refreshRateSeconds,
       };
     });
   }
@@ -190,6 +197,7 @@ export class SupportersService {
   getBenefitsFromSupporter(supporter: {
     maxFeeds?: number;
     maxGuilds?: number;
+    slowRate?: boolean;
     patrons: Array<{
       status: Patron['status'];
       pledge: number;
@@ -205,8 +213,23 @@ export class SupportersService {
       };
     }
 
-    const { maxFeeds: patronMaxFeeds, maxGuilds: patronMaxGuilds } =
-      this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
+    const isFromPatrons = supporter.patrons.length > 0;
+
+    const {
+      maxFeeds: patronMaxFeeds,
+      maxGuilds: patronMaxGuilds,
+      refreshRateSeconds: patronRefreshRateSeconds,
+    } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
+
+    let refreshRateSeconds: number | undefined;
+
+    if (supporter.slowRate) {
+      refreshRateSeconds = undefined;
+    } else if (isFromPatrons) {
+      refreshRateSeconds = patronRefreshRateSeconds;
+    } else {
+      refreshRateSeconds = 120;
+    }
 
     return {
       isSupporter: true,
@@ -215,6 +238,7 @@ export class SupportersService {
         patronMaxFeeds,
       ),
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
+      refreshRateSeconds,
       webhooks: true,
     };
   }

@@ -48,6 +48,7 @@ describe('SupportersService', () => {
           serverId,
           maxFeeds: 10,
           webhooks: true,
+          refreshRateSeconds: undefined,
         },
       ]);
 
@@ -62,6 +63,7 @@ describe('SupportersService', () => {
           serverId,
           maxFeeds: 10,
           webhooks: false,
+          refreshRateSeconds: undefined,
         },
       ]);
 
@@ -90,6 +92,7 @@ describe('SupportersService', () => {
       maxFeeds: 10,
       allowWebhooks: true,
       maxGuilds: 15,
+      refreshRateSeconds: 2,
     };
 
     beforeEach(() => {
@@ -108,6 +111,7 @@ describe('SupportersService', () => {
         maxGuilds: 0,
         isSupporter: false,
         webhooks: false,
+        refreshRateSeconds: undefined,
       });
     });
 
@@ -150,6 +154,7 @@ describe('SupportersService', () => {
             maxFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
+            refreshRateSeconds: 2,
           };
           jest
             .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
@@ -171,6 +176,7 @@ describe('SupportersService', () => {
             maxFeeds: defaultMaxFeeds - 10,
             allowWebhooks: true,
             maxGuilds: 15,
+            refreshRateSeconds: 2,
           };
           jest
             .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
@@ -194,6 +200,7 @@ describe('SupportersService', () => {
             maxFeeds: 5,
             allowWebhooks: true,
             maxGuilds: 10,
+            refreshRateSeconds: 2,
           };
           jest
             .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
@@ -215,6 +222,7 @@ describe('SupportersService', () => {
             maxFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
+            refreshRateSeconds: 2,
           };
           jest
             .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
@@ -236,6 +244,7 @@ describe('SupportersService', () => {
             maxFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 0,
+            refreshRateSeconds: 2,
           };
           jest
             .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
@@ -247,6 +256,90 @@ describe('SupportersService', () => {
           });
 
           expect(result.maxGuilds).toEqual(1);
+        });
+      });
+
+      describe('refreshRateSeconds', () => {
+        it('returns patron refresh rate if supporter comes from patron rate exists', async () => {
+          jest
+            .spyOn(supportersService, 'isValidSupporter')
+            .mockReturnValue(true);
+          const patronBenefits = {
+            maxFeeds: 5,
+            allowWebhooks: true,
+            maxGuilds: 10,
+            refreshRateSeconds: 1,
+          };
+          jest
+            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .mockReturnValue(patronBenefits);
+
+          const result = await supportersService.getBenefitsFromSupporter({
+            ...supporter,
+            patrons: [
+              {
+                pledge: 500,
+                pledgeLifetime: 100,
+                status: PatronStatus.ACTIVE,
+              },
+            ],
+          });
+
+          expect(result.refreshRateSeconds).toEqual(
+            patronBenefits.refreshRateSeconds,
+          );
+        });
+
+        it('returns unndefined refresh rate if supporter is on slow rate', async () => {
+          jest
+            .spyOn(supportersService, 'isValidSupporter')
+            .mockReturnValue(true);
+          const patronBenefits = {
+            maxFeeds: 10,
+            allowWebhooks: true,
+            maxGuilds: 15,
+            refreshRateSeconds: 8,
+          };
+          jest
+            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .mockReturnValue(patronBenefits);
+
+          const result = await supportersService.getBenefitsFromSupporter({
+            ...supporter,
+            patrons: [
+              {
+                pledge: 500,
+                pledgeLifetime: 100,
+                status: PatronStatus.ACTIVE,
+              },
+            ],
+            slowRate: true,
+          });
+
+          expect(result.refreshRateSeconds).toEqual(undefined);
+        });
+
+        it('returns 120 if supporter does not have patrons and is not slow rate', async () => {
+          jest
+            .spyOn(supportersService, 'isValidSupporter')
+            .mockReturnValue(true);
+          const patronBenefits = {
+            maxFeeds: 10,
+            allowWebhooks: true,
+            maxGuilds: 15,
+            refreshRateSeconds: undefined,
+          };
+          jest
+            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .mockReturnValue(patronBenefits);
+
+          const result = await supportersService.getBenefitsFromSupporter({
+            ...supporter,
+            slowRate: false,
+            patrons: [],
+          });
+
+          expect(result.refreshRateSeconds).toEqual(120);
         });
       });
     });

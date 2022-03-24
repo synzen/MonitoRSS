@@ -28,6 +28,7 @@ describe('PatronsService', () => {
         maxFeeds: defaultMaxFeeds,
         maxGuilds: 0,
         allowWebhooks: false,
+        refreshRateSeconds: undefined,
       });
     });
 
@@ -39,11 +40,13 @@ describe('PatronsService', () => {
           maxFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
+          refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 10,
           maxGuilds: 1,
           allowWebhooks: true,
+          refreshRateSeconds: 1,
         });
 
       expect(
@@ -63,11 +66,13 @@ describe('PatronsService', () => {
           maxFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
+          refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
           maxGuilds: 10,
           allowWebhooks: true,
+          refreshRateSeconds: 1,
         });
 
       expect(
@@ -86,11 +91,13 @@ describe('PatronsService', () => {
           maxFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
+          refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: false,
+          refreshRateSeconds: 1,
         });
 
       expect(
@@ -98,6 +105,32 @@ describe('PatronsService', () => {
       ).toEqual(
         expect.objectContaining({
           allowWebhooks: true,
+        }),
+      );
+    });
+
+    it('returns the first refresh rate of all patron refresh rates', () => {
+      jest.spyOn(patronsService, 'isValidPatron').mockReturnValue(true);
+      jest
+        .spyOn(patronsService, 'getBenefitsFromPatron')
+        .mockReturnValueOnce({
+          maxFeeds: 5,
+          maxGuilds: 1,
+          allowWebhooks: true,
+          refreshRateSeconds: 1,
+        })
+        .mockReturnValueOnce({
+          maxFeeds: 5,
+          maxGuilds: 1,
+          allowWebhooks: true,
+          refreshRateSeconds: 10,
+        });
+
+      expect(
+        patronsService.getMaxBenefitsFromPatrons([samplePatron, samplePatron]),
+      ).toEqual(
+        expect.objectContaining({
+          refreshRateSeconds: 1,
         }),
       );
     });
@@ -246,6 +279,18 @@ describe('PatronsService', () => {
 
     it('returns 1 when lifetime pledge is < 500', () => {
       expect(patronsService.getMaxServersFromPledgeLifetime(100)).toBe(1);
+    });
+  });
+
+  describe('getRefreshRateSecondsFromPledge', () => {
+    it('returns 2 if >= 500', () => {
+      expect(patronsService.getRefreshRateSecondsFromPledge(500)).toBe(120);
+    });
+
+    it('returns undefined if <500', () => {
+      expect(patronsService.getRefreshRateSecondsFromPledge(499)).toBe(
+        undefined,
+      );
     });
   });
 });

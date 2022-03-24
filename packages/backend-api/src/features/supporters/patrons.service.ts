@@ -7,6 +7,7 @@ interface PatronBenefits {
   maxFeeds: number;
   maxGuilds: number;
   allowWebhooks: boolean;
+  refreshRateSeconds?: number;
 }
 
 interface PatronDetails {
@@ -18,6 +19,7 @@ interface PatronDetails {
 @Injectable()
 export class PatronsService {
   defaultMaxFeeds: number;
+
   constructor(private readonly configsService: ConfigService) {
     this.defaultMaxFeeds = this.configsService.get<number>(
       'defaultMaxFeeds',
@@ -41,6 +43,10 @@ export class PatronsService {
       maxFeeds: Math.max(...allBenefits.map((benefits) => benefits.maxFeeds)),
       maxGuilds: Math.max(...allBenefits.map((benefits) => benefits.maxGuilds)),
       allowWebhooks: allBenefits.some((benefits) => benefits.allowWebhooks),
+      // Arbitrarily select one since there is no business rule on this at the moment
+      refreshRateSeconds: allBenefits.find(
+        (benefits) => benefits.refreshRateSeconds !== undefined,
+      )?.refreshRateSeconds,
     };
   }
 
@@ -82,6 +88,7 @@ export class PatronsService {
     return {
       maxFeeds: this.getMaxFeedsFromPledge(pledge),
       maxGuilds: this.getMaxServersFromPledgeLifetime(pledgeLifetime),
+      refreshRateSeconds: this.getRefreshRateSecondsFromPledge(pledge),
       allowWebhooks: true,
     };
   }
@@ -124,5 +131,11 @@ export class PatronsService {
     }
 
     return 1;
+  }
+
+  getRefreshRateSecondsFromPledge(pledge: number) {
+    if (pledge >= 500) {
+      return 60 * 2;
+    }
   }
 }

@@ -62,8 +62,12 @@ export class FeedSchedulingService {
       }
 
       // Maintaining some legacy logic for now
-      if (feedServerBenefits.hasSupporter && !feed.url.includes('feed43')) {
-        return this.vipRefreshRateSeconds;
+      if (
+        feedServerBenefits.hasSupporter &&
+        feedServerBenefits.refreshRateSeconds !== undefined &&
+        !feed.url.includes('feed43')
+      ) {
+        return feedServerBenefits.refreshRateSeconds;
       }
 
       return this.getRefreshRateOfFeedFromSchedules(feed, schedules);
