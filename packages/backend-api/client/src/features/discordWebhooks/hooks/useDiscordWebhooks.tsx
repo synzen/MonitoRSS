@@ -1,4 +1,5 @@
 import { useQuery } from 'react-query';
+import { useState } from 'react';
 import ApiAdapterError from '@/utils/ApiAdapterError';
 import { GetDiscordWebhooksOutput, getDiscordWebhooks } from '../api';
 
@@ -11,6 +12,8 @@ export const useDiscordWebhooks = ({
   serverId,
   isWebhooksEnabled,
 }: Props) => {
+  const [hasErrored, setHasErrored] = useState(false);
+
   const { data, status, error } = useQuery<
   GetDiscordWebhooksOutput, ApiAdapterError
   >(
@@ -27,7 +30,10 @@ export const useDiscordWebhooks = ({
       });
     },
     {
-      enabled: !!serverId && isWebhooksEnabled,
+      enabled: !!serverId && isWebhooksEnabled && !hasErrored,
+      onError: () => {
+        setHasErrored(true);
+      },
     },
   );
 
