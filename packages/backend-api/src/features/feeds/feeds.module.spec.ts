@@ -137,7 +137,9 @@ describe('FeedsModule', () => {
       });
 
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-      expect(JSON.parse(body).code).toEqual(ApiErrorCode.FEED_INVALID_CHANNEL);
+      expect(JSON.parse(body).code).toEqual(
+        ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+      );
     });
 
     it('returns 400 with the right error code if user does not manage channel guild', async () => {
@@ -159,7 +161,9 @@ describe('FeedsModule', () => {
       });
 
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-      expect(JSON.parse(body).code).toEqual(ApiErrorCode.FEED_INVALID_CHANNEL);
+      expect(JSON.parse(body).code).toEqual(
+        ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+      );
     });
 
     it('returns the correct error codes for feed request-related errors', async () => {
@@ -592,7 +596,7 @@ describe('FeedsModule', () => {
       );
     });
 
-    it.skip('returns 400 if channel that is being updated is not found', async () => {
+    it('returns 400 if channel that is being updated is not found', async () => {
       const channelId = 'channel-id';
       mockGetMeServers();
 

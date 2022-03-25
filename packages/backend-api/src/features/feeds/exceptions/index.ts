@@ -4,3 +4,5 @@ export * from './banned-feed.exception';
 export * from './missing-channel-permissions.exception';
 export * from './missing-channel.exception';
 export * from './user-missing-manage-guild.exception';
+export * from './webhooks-disabled.exception';
+export * from './webhook-missing.exception';

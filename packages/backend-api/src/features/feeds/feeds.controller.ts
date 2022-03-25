@@ -32,12 +32,20 @@ import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-inter
 import _ from 'lodash';
 import { CloneFeedInputDto } from './dto/CloneFeedInput.dto';
 import { CloneFeedOutputDto } from './dto/CloneFeedOutput.dto';
-import { AddFeedExceptionFilter, FeedExceptionFilter } from './filters';
+import {
+  AddFeedExceptionFilter,
+  FeedExceptionFilter,
+  UpdateFeedExceptionFilter,
+} from './filters';
 import FlattenedJSON from '../../services/feed-fetcher/utils/FlattenedJSON';
 import { CreateFeedInputDto } from './dto/create-feed-input.dto';
 import { DiscordAccessToken } from '../discord-auth/decorators/DiscordAccessToken';
 import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
 import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
+import {
+  WebhookMissingException,
+  WebhooksDisabledException,
+} from './exceptions';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -123,13 +131,14 @@ export class FeedsController {
 
   @Patch(':feedId')
   @UseGuards(UserManagesFeedServerGuard)
+  @UseFilters(UpdateFeedExceptionFilter)
   async updateFeed(
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
     @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto,
   ): Promise<UpdateFeedOutputDto> {
     if (updateFeedInput.webhookId) {
       if (!(await this.supportersService.serverCanUseWebhooks(feed.guild))) {
-        throw new BadRequestException(
+        throw new WebhooksDisabledException(
           'This server does not have webhooks enabled',
         );
       }
@@ -139,7 +148,7 @@ export class FeedsController {
       );
 
       if (!foundWebhook) {
-        throw new BadRequestException('Webhook not found');
+        throw new WebhookMissingException('Webhook not found');
       }
     }
 
