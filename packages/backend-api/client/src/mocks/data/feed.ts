@@ -1,11 +1,12 @@
 import { Feed } from '../../features/feed';
+import mockDiscordChannels from './discordChannels';
 import mockDiscordWebhooks from './discordWebhooks';
 
 const mockFeeds: Feed[] = [{
   id: '1',
   title: 'New York Times',
   url: 'https://www.feed1.com',
-  channel: '#general',
+  channel: mockDiscordChannels[0].id,
   status: 'ok',
   embeds: [],
   text: 'Feed Text Here',

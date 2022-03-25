@@ -5,7 +5,7 @@ import {
   Box,
   Button,
   Flex,
-  FormControl, FormHelperText, FormLabel, HStack, Stack, Text,
+  FormControl, FormHelperText, FormLabel, HStack, Input, Stack, Text,
 } from '@chakra-ui/react';
 import { useForm, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -14,14 +14,19 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useEffect } from 'react';
 import { ThemedSelect } from '@/components';
 import { useFeed } from '../../hooks';
-import { useDiscordServer } from '@/features/discordServers';
+import { DiscordChannelDropdown, useDiscordServer } from '@/features/discordServers';
 import { useDiscordWebhooks } from '@/features/discordWebhooks';
 
 import { notifySuccess } from '@/utils/notifySuccess';
 import { useUpdateFeed } from '../../hooks/useUpdateFeed';
+import { Feed } from '../../types';
+import { notifyError } from '@/utils/notifyError';
+import { UpdateFeedInput } from '../../api';
 
 const formSchema = object({
   webhookId: string().optional(),
+  channelId: string(),
+  title: string(),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -29,11 +34,13 @@ type FormData = InferType<typeof formSchema>;
 interface Props {
   feedId: string
   serverId: string
+  onUpdated: (feed: Feed) => void;
 }
 
 export const SettingsForm: React.FC<Props> = ({
   feedId,
   serverId,
+  onUpdated,
 }) => {
   const { t } = useTranslation();
   const {
@@ -55,38 +62,62 @@ export const SettingsForm: React.FC<Props> = ({
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
   const { mutateAsync } = useUpdateFeed();
-
+  const defaultFormValues: FormData = {
+    channelId: feed?.channel,
+    title: feed?.title,
+    webhookId: feed?.webhook?.id,
+  };
   const {
     handleSubmit,
     control,
     reset,
-    setValue,
     formState: {
       isDirty,
       isSubmitting,
     },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    defaultValues: {
-      webhookId: feed?.webhook?.id || '',
-    },
+    defaultValues: defaultFormValues,
   });
 
+  const resetForm = () => {
+    reset(defaultFormValues);
+  };
+
   const onSubmit = async (formData: FormData) => {
-    const updatedFeed = await mutateAsync({
-      feedId,
-      details: {
-        webhookId: formData.webhookId,
-      },
-    });
-    await notifySuccess(t('features.feed.components.sidebar.updateSuccess'));
-    reset({
-      webhookId: updatedFeed.result.webhook?.id || '',
-    });
+    try {
+      const input: UpdateFeedInput = {
+        feedId,
+        details: {},
+      };
+
+      if (formData.webhookId !== undefined && formData.webhookId !== feed?.webhook?.id) {
+        input.details.webhookId = formData.webhookId;
+      }
+
+      if (formData.channelId !== feed?.channel) {
+        input.details.channelId = formData.channelId;
+      }
+
+      if (formData.title !== feed?.title) {
+        input.details.title = formData.title;
+      }
+
+      const updatedFeed = await mutateAsync(input);
+      onUpdated(updatedFeed.result);
+      await notifySuccess(t('features.feed.components.sidebar.updateSuccess'));
+      reset({
+        channelId: updatedFeed.result.channel,
+        title: updatedFeed.result.title,
+        webhookId: updatedFeed.result.webhook?.id || '',
+      });
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
   };
 
   useEffect(() => {
-    setValue('webhookId', feed?.webhook?.id || '');
+    resetForm();
   }, [feed]);
 
   const webhooksDisabled = discordServerStatus !== 'success'
@@ -97,7 +128,37 @@ export const SettingsForm: React.FC<Props> = ({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={6}>
+      <Stack spacing={4}>
+        <FormControl>
+          <FormLabel htmlFor="title">
+            {t('features.feed.components.sidebar.titleFormLabel')}
+          </FormLabel>
+          <Controller
+            name="title"
+            control={control}
+            render={({ field }) => <Input {...field} />}
+          />
+          <FormHelperText>
+            {t('features.feed.components.sidebar.titleFormHint')}
+          </FormHelperText>
+        </FormControl>
+        <FormControl>
+          <FormLabel htmlFor="channelId">
+            {t('features.feed.components.sidebar.channelFormLabel')}
+          </FormLabel>
+          <Controller
+            name="channelId"
+            control={control}
+            render={({ field }) => (
+              <DiscordChannelDropdown
+                onBlur={field.onBlur}
+                onChange={field.onChange}
+                serverId={serverId}
+                value={field.value}
+              />
+            )}
+          />
+        </FormControl>
         <FormControl>
           <FormLabel htmlFor="webhook">
             {t('features.feed.components.sidebar.webhookFormLabel')}

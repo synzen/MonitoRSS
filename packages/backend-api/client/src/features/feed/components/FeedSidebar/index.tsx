@@ -33,7 +33,10 @@ interface Props {
   onDeleted: () => void
 }
 
-export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
+export const FeedSidebar: React.FC<Props> = ({
+  feedId,
+  onDeleted,
+}) => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
   const { refetch: refetchFeeds, updateCachedFeed } = useFeeds({ serverId });
@@ -80,7 +83,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
     }
   };
 
-  const onRefreshedFeed = async (updatedFeed: Feed) => {
+  const onFeedChanged = async (updatedFeed: Feed) => {
     updateCachedFeed(updatedFeed.id, updatedFeed);
     updateCache(updatedFeed);
   };
@@ -132,7 +135,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                 {feed && (
                   <RefreshButton
                     feedId={feed.id}
-                    onSuccess={onRefreshedFeed}
+                    onSuccess={onFeedChanged}
                   />
                 )}
               </Box>
@@ -197,7 +200,11 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
             {t('features.feed.components.sidebar.settings')}
           </Heading>
           <Divider />
-          <SettingsForm feedId={feedId} serverId={serverId} />
+          <SettingsForm
+            feedId={feedId}
+            serverId={serverId}
+            onUpdated={onFeedChanged}
+          />
         </Stack>
       </Stack>
     </Stack>

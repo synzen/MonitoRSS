@@ -6,6 +6,8 @@ export interface UpdateFeedInput {
   feedId: string
   details: {
     text?: Feed['text'],
+    title?: string;
+    channelId?: string;
     webhookId?: string,
     filters?: Array<{ category: string, value: string }>
     checkTitles?: boolean;
