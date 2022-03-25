@@ -26,6 +26,7 @@ import { SettingsForm } from './SettingsForm';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 import { notifyError } from '@/utils/notifyError';
+import { Feed } from '../../types';
 
 interface Props {
   feedId?: string;
@@ -35,9 +36,9 @@ interface Props {
 export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
-  const { refetch: refetchFeeds } = useFeeds({ serverId });
+  const { refetch: refetchFeeds, updateCachedFeed } = useFeeds({ serverId });
   const {
-    feed, status, error, refetch,
+    feed, status, error, updateCache,
   } = useFeed({
     feedId,
   });
@@ -79,6 +80,11 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
     }
   };
 
+  const onRefreshedFeed = async (updatedFeed: Feed) => {
+    updateCachedFeed(updatedFeed.id, updatedFeed);
+    updateCache(updatedFeed);
+  };
+
   return (
     <Stack
       spacing={6}
@@ -117,7 +123,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                 {feed && (
                   <RefreshButton
                     feedId={feed.id}
-                    onSuccess={() => refetch()}
+                    onSuccess={onRefreshedFeed}
                   />
                 )}
               </Box>

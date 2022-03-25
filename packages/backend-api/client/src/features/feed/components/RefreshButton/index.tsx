@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { notifyError } from '@/utils/notifyError';
 import { refreshFeed } from '../..';
 import { notifySuccess } from '@/utils/notifySuccess';
+import { Feed } from '../../types';
 
 interface Props {
   feedId: string
-  onSuccess: () => Promise<any>
+  onSuccess: (updatedFeed: Feed) => Promise<any>
 }
 
 export const RefreshButton: React.FC<Props> = ({ feedId, onSuccess }) => {
@@ -17,13 +18,13 @@ export const RefreshButton: React.FC<Props> = ({ feedId, onSuccess }) => {
   const onRefreshFeed = async () => {
     try {
       setLoading(true);
-      await refreshFeed({
+      const response = await refreshFeed({
         feedId,
       });
-      await onSuccess();
+      await onSuccess(response.result);
       notifySuccess(t('features.feed.components.refreshButton.success'));
     } catch (err) {
-      notifyError(t('features.feed.components.refreshButton.faiure'), err as Error);
+      notifyError(t('features.feed.components.refreshButton.failure'), err as Error);
     } finally {
       setLoading(false);
     }
