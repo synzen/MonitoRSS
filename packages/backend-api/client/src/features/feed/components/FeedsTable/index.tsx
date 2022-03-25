@@ -254,7 +254,12 @@ export const FeedsTable: React.FC<Props> = ({
                   }}
                 >
                   {row.cells.map((cell) => (
-                    <Td {...cell.getCellProps()}>
+                    <Td
+                      {...cell.getCellProps()}
+                      maxWidth="250px"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                    >
                       {cell.render('Cell')}
                     </Td>
                   ))}

@@ -106,7 +106,16 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
               {feed?.title}
             </Heading>
           </HStack>
-          <Text>
+          <Text
+            as="a"
+            overflow="hidden"
+            whiteSpace="nowrap"
+            textOverflow="ellipsis"
+            href={feed?.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={feed?.url}
+          >
             {feed?.url}
           </Text>
         </Stack>

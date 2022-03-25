@@ -56,6 +56,7 @@ const Feeds: React.FC = () => {
           paddingX={{ base: 4, lg: 12 }}
           paddingBottom="12"
           width="100%"
+          overflow="auto"
         >
           <Flex
             paddingTop="8"
