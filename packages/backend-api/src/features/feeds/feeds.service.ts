@@ -572,7 +572,13 @@ export class FeedsService {
       );
 
       if (err instanceof DiscordAPIError) {
-        throw new MissingChannelPermissionsException();
+        if (err.statusCode === HttpStatus.NOT_FOUND) {
+          throw new MissingChannelException();
+        }
+
+        if (err.statusCode === HttpStatus.FORBIDDEN) {
+          throw new MissingChannelPermissionsException();
+        }
       }
 
       throw err;
