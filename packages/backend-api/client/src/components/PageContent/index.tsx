@@ -85,7 +85,7 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
           <Avatar
             name={userMe?.username}
             src={userMe?.iconUrl}
-            size="xl"
+            size="lg"
           />
           <DiscordUserDropdown />
         </Stack>
