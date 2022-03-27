@@ -87,4 +87,29 @@ describe('DiscordAPIService', () => {
       });
     });
   });
+
+  describe('getBot', () => {
+    it('returns the bot', async () => {
+      const botClientId = '123456789';
+
+      jest.spyOn(configService, 'get').mockImplementation((key) => {
+        if (key === 'discordClientId') {
+          return botClientId;
+        }
+
+        return undefined;
+      });
+
+      const discordUser = {
+        id: 'user-id',
+      };
+
+      nock(DISCORD_API_BASE_URL)
+        .get(`/users/${botClientId}`)
+        .reply(200, discordUser);
+
+      const response = await discordApi.getBot();
+      expect(response).toEqual(discordUser);
+    });
+  });
 });

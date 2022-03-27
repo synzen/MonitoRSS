@@ -9,6 +9,7 @@ import {
   DiscordGuildChannel,
   DiscordGuild,
 } from '../../../common';
+import { DiscordUser } from '../../../features/discord-users/types/DiscordUser.type';
 
 interface RequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -80,6 +81,14 @@ export class DiscordAPIService {
     await this.handleJSONResponseError(res);
 
     return res.json();
+  }
+
+  async getBot(): Promise<DiscordUser> {
+    const botClientId = this.configService.get<string>(
+      'discordClientId',
+    ) as string;
+
+    return this.executeBotRequest(`/users/${botClientId}`);
   }
 
   async getChannel(channelId: string): Promise<DiscordGuildChannel> {

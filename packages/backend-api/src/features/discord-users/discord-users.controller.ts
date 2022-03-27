@@ -13,6 +13,7 @@ import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
 import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
 import { DiscordUsersService } from './discord-users.service';
 import { GetMeOutputDto, UpdateSupporterInputDto } from './dto';
+import { GetBotOutputDto } from './dto/GetBotOutput.dto';
 import { GetMyServersOutputDto } from './dto/GetMyServersOutput.dto';
 import { DiscordUserIsSupporterGuard } from './guards/DiscordUserIsSupporter';
 
@@ -20,6 +21,13 @@ import { DiscordUserIsSupporterGuard } from './guards/DiscordUserIsSupporter';
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordUsersController {
   constructor(private readonly discordUsersService: DiscordUsersService) {}
+
+  @Get('bot')
+  async getBot(): Promise<GetBotOutputDto> {
+    const bot = await this.discordUsersService.getBot();
+
+    return GetBotOutputDto.fromEntity(bot);
+  }
 
   @Get('@me')
   async getMe(

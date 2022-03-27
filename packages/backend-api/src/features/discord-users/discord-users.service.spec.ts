@@ -1,9 +1,11 @@
+import { MANAGE_CHANNEL } from '../discord-auth/constants/permissions';
 import { DiscordUsersService } from './discord-users.service';
 
 describe('DiscordUsersService', () => {
   let service: DiscordUsersService;
   const discordApiService = {
     executeBearerRequest: jest.fn(),
+    getBot: jest.fn(),
   };
   const supportersService = {
     getBenefitsOfServers: jest.fn(),
@@ -26,6 +28,42 @@ describe('DiscordUsersService', () => {
         maxGuilds: 0,
         guilds: [],
       });
+  });
+
+  describe('getBot', () => {
+    it('returns the bot', async () => {
+      const getBotResponse = {
+        username: 'bot',
+        id: 'bot-id',
+        avatar: 'bot-avatar',
+      };
+      jest.spyOn(discordApiService, 'getBot').mockResolvedValue(getBotResponse);
+
+      const bot = await service.getBot();
+      expect(bot).toEqual({
+        username: getBotResponse.username,
+        id: getBotResponse.id,
+        avatar:
+          `https://cdn.discordapp.com/avatars` +
+          `/${getBotResponse.id}/${getBotResponse.avatar}.png`,
+      });
+    });
+
+    it('returns null for avatar if bot has no avatar', async () => {
+      const getBotResponse = {
+        username: 'bot',
+        id: 'bot-id',
+        avatar: null,
+      };
+      jest.spyOn(discordApiService, 'getBot').mockResolvedValue(getBotResponse);
+
+      const bot = await service.getBot();
+      expect(bot).toEqual({
+        username: getBotResponse.username,
+        id: getBotResponse.id,
+        avatar: null,
+      });
+    });
   });
 
   describe('getGuilds', () => {
@@ -162,7 +200,7 @@ describe('DiscordUsersService', () => {
           name: 'test',
           icon: 'icon_hash',
           owner: false,
-          permissions: 16,
+          permissions: MANAGE_CHANNEL.toString(),
         },
       ];
       discordApiService.executeBearerRequest.mockResolvedValue(guilds);

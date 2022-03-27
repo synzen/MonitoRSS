@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
 import { MANAGE_CHANNEL } from '../discord-auth/constants/permissions';
 import { SupportersService } from '../supporters/supporters.service';
+import { DiscordBotUser } from './types/discord-bot-user.type';
 import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
 import {
   PartialUserGuild,
@@ -20,6 +21,21 @@ export class DiscordUsersService {
     private readonly discordApiService: DiscordAPIService,
     private readonly supportersService: SupportersService,
   ) {}
+
+  async getBot(): Promise<DiscordBotUser> {
+    const bot = await this.discordApiService.getBot();
+    let avatarUrl: string | null = null;
+
+    if (bot.avatar) {
+      avatarUrl = `https://cdn.discordapp.com/avatars/${bot.id}/${bot.avatar}.png`;
+    }
+
+    return {
+      username: bot.username,
+      id: bot.id,
+      avatar: avatarUrl,
+    };
+  }
 
   /**
    * Get a user's guilds.
