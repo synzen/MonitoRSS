@@ -13,6 +13,7 @@ import {
   DrawerContent,
   DrawerCloseButton,
   HStack,
+  Alert,
 } from '@chakra-ui/react';
 import { HamburgerIcon } from '@chakra-ui/icons';
 import {
@@ -21,9 +22,10 @@ import {
 import { useState } from 'react';
 import { SidebarDiscordServerLinks } from '@/features/discordServers';
 import { SidebarFeedLinks } from '@/features/feed';
-import { useDiscordUserMe, UserStatusTag } from '@/features/discordUser';
+import { useDiscordBot, useDiscordUserMe, UserStatusTag } from '@/features/discordUser';
 import { DiscordUserDropdown } from '@/features/discordUser/components/DiscordUserDropdown';
 import { LogoutButton } from '@/features/auth';
+import { Loading } from '../Loading';
 
 interface Props {
   requireFeed?: boolean;
@@ -38,6 +40,11 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
   const {
     data: userMe,
   } = useDiscordUserMe();
+  const {
+    data: discordBotData,
+    error: discordBotError,
+    status: discordBotStatus,
+  } = useDiscordBot();
 
   const onPathChanged = (path: string) => {
     navigate(path, {
@@ -62,20 +69,35 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
       <Flex
         justifyContent="center"
         flexDir="column"
-        height="75px"
+        // height="75px"
         width="full"
         background={staticSidebarShown ? 'gray.700' : 'gray.800'}
-        padding="4"
+        paddingX="4"
+        paddingY="2"
       >
-        <Heading fontSize="3xl">Monito.RSS</Heading>
-        <Text display="block">Control Panel</Text>
+        {discordBotData && !discordBotError && (
+          <>
+            <Flex alignItems="center" paddingBottom="1">
+              <Avatar
+                src={discordBotData.result.avatar || undefined}
+                size="sm"
+                name={discordBotData.result.username}
+                marginRight="2"
+              />
+              <Heading fontSize="3xl">{discordBotData.result.username}</Heading>
+            </Flex>
+            <Text display="block">Control Panel</Text>
+          </>
+        )}
+        {discordBotError && <Alert status="error">{discordBotError.message}</Alert>}
+        {discordBotStatus === 'loading' && <Box><Loading /></Box>}
       </Flex>
       <Stack
         paddingX="6"
-        marginTop="8"
+        marginTop="6"
         display="flex"
         alignItems="flex-start"
-        spacing="4"
+        spacing="2"
       >
         <Stack
           width="100%"

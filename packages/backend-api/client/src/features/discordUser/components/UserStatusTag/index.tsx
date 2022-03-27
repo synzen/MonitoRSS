@@ -53,7 +53,7 @@ export const UserStatusTag: React.FC<Props> = () => {
       {userMe && !userMe.supporter && (
       <Tag
         marginTop="4"
-        size="lg"
+        size="sm"
       >
         {t('components.sidebar.regularUserTag')}
       </Tag>

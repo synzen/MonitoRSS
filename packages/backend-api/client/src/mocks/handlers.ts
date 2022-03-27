@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { rest } from 'msw';
-import { GetDiscordMeOutput } from '@/features/discordUser';
+import { GetDiscordBotOutput, GetDiscordMeOutput } from '@/features/discordUser';
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
   CloneFeedOutput,
@@ -31,8 +31,15 @@ import mockFeedSubscribers from './data/feedSubscribers';
 import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
 import mockDiscordWebhooks from './data/discordWebhooks';
 import { generateMockApiErrorResponse } from './generateMockApiErrorResponse';
+import mockDiscordBot from './data/discordBot';
 
 const handlers = [
+  rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
+    ctx.delay(100000),
+    ctx.json<GetDiscordBotOutput>({
+      result: mockDiscordBot,
+    }),
+  )),
   rest.get('/api/v1/discord-users/@me', (req, res, ctx) => res(
     ctx.json<GetDiscordMeOutput>(mockDiscordUser),
   )),
@@ -149,7 +156,7 @@ const handlers = [
 
   rest.delete('/api/v1/feeds/:feedId', (req, res, ctx) => res(
     ctx.delay(500),
-    ctx.status(204)
+    ctx.status(204),
   )),
 
   rest.post('/api/v1/feeds/:feedId/clone', (req, res, ctx) => res(
