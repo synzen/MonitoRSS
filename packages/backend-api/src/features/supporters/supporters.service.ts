@@ -6,6 +6,7 @@ import { Patron } from './entities/patron.entity';
 import { ConfigService } from '@nestjs/config';
 import { PipelineStage } from 'mongoose';
 import { PatronsService } from './patrons.service';
+import { GuildSubscriptionsService } from './guild-subscriptions.service';
 
 interface SupporterBenefits {
   isSupporter: boolean;
@@ -33,6 +34,7 @@ export class SupportersService {
     private readonly supporterModel: SupporterModel,
     private readonly configService: ConfigService,
     private readonly patronsService: PatronsService,
+    private readonly guildSubscriptionsService: GuildSubscriptionsService,
   ) {
     this.defaultMaxFeeds = this.configService.get<number>(
       'defaultMaxFeeds',
@@ -88,6 +90,13 @@ export class SupportersService {
   }
 
   async getBenefitsOfServers(serverIds: string[]): Promise<ServerBenefits[]> {
+    const subscriptions =
+      await this.guildSubscriptionsService.getAllSubscriptions({
+        filters: {
+          serverIds,
+        },
+      });
+
     const allSupportersWithGuild: Array<
       Omit<Supporter, 'guilds'> & {
         patrons: Patron[];
@@ -138,7 +147,20 @@ export class SupportersService {
     }
 
     return serverIds.map((serverId) => {
+      const subscription = subscriptions.find(
+        (sub) => sub.guildId === serverId,
+      );
       const serverBenefits = benefitsMappedBySeverIds.get(serverId);
+
+      if (subscription) {
+        return {
+          hasSupporter: true,
+          maxFeeds: subscription.maxFeeds,
+          refreshRateSeconds: subscription.refreshRate,
+          serverId,
+          webhooks: true,
+        };
+      }
 
       if (!serverBenefits?.length) {
         return {

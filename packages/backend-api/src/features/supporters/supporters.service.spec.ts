@@ -5,6 +5,7 @@ import { SupportersService } from './supporters.service';
 import dayjs from 'dayjs';
 import { PatronsService } from './patrons.service';
 import { ConfigService } from '@nestjs/config';
+import { GuildSubscriptionsService } from './guild-subscriptions.service';
 
 describe('SupportersService', () => {
   let supportersService: SupportersService;
@@ -18,6 +19,9 @@ describe('SupportersService', () => {
   const configService: ConfigService = {
     get: jest.fn(),
   } as never;
+  const guildSubscriptionsService: GuildSubscriptionsService = {
+    getAllSubscriptions: jest.fn(),
+  } as never;
   const defaultMaxFeeds = 5;
 
   beforeAll(async () => {
@@ -25,6 +29,7 @@ describe('SupportersService', () => {
       supporterModel,
       configService,
       patronsService,
+      guildSubscriptionsService,
     );
 
     supportersService.defaultMaxFeeds = defaultMaxFeeds;
@@ -37,6 +42,9 @@ describe('SupportersService', () => {
         return defaultMaxFeeds;
       }
     });
+    jest
+      .spyOn(guildSubscriptionsService, 'getAllSubscriptions')
+      .mockResolvedValue([]);
   });
 
   describe('serverCanUseWebhooks', () => {
