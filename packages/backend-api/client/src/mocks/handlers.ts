@@ -35,7 +35,6 @@ import mockDiscordBot from './data/discordBot';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
-    ctx.delay(100000),
     ctx.json<GetDiscordBotOutput>({
       result: mockDiscordBot,
     }),

@@ -80,11 +80,21 @@ export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
             <Flex alignItems="center" paddingBottom="1">
               <Avatar
                 src={discordBotData.result.avatar || undefined}
-                size="sm"
+                size="xs"
                 name={discordBotData.result.username}
                 marginRight="2"
+                backgroundColor="transparent"
               />
-              <Heading fontSize="3xl">{discordBotData.result.username}</Heading>
+              <Heading
+                fontSize="xl"
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
+                title={discordBotData.result.username}
+              >
+                {discordBotData.result.username}
+
+              </Heading>
             </Flex>
             <Text display="block">Control Panel</Text>
           </>
