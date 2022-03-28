@@ -8,6 +8,8 @@ const mockFeedSummaries: FeedSummary[] = [{
   channel: mockDiscordChannels[0].id,
   status: 'ok',
   createdAt: new Date().toISOString(),
+  failReason: undefined,
+  disabledReason: undefined,
 }, {
   id: '2',
   title: 'Yahoo News',
@@ -15,12 +17,16 @@ const mockFeedSummaries: FeedSummary[] = [{
   channel: mockDiscordChannels[1].id,
   status: 'ok',
   createdAt: new Date().toISOString(),
+  failReason: undefined,
+  disabledReason: undefined,
 }, {
   id: '3',
   title: 'CNN',
   url: 'https://www.feed3.com',
   channel: mockDiscordChannels[2].id,
-  status: 'ok',
+  status: 'disabled',
+  failReason: undefined,
+  disabledReason: 'Disabled reason',
   createdAt: new Date().toISOString(),
 }];
 

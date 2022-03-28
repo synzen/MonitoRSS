@@ -1,7 +1,7 @@
 interface FeedSummary {
   id: string;
   title: string;
-  status: 'ok' | 'failed';
+  status: 'ok' | 'failed' | 'disabled';
   url: string;
   channel: string;
   createdAt?: string;

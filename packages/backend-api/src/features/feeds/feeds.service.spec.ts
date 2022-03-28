@@ -1078,6 +1078,28 @@ describe('FeedsService', () => {
       expect(result[0].status).toEqual(FeedStatus.FAILED);
       expect(result[0].failReason).toEqual(failRecord.reason);
     });
+
+    it('returns disabled status correctly', async () => {
+      const createdFeed = await feedModel.create(
+        createTestFeed({
+          disabled: 'test-reason',
+        }),
+      );
+      const result = await service.findFeeds(
+        {
+          _id: createdFeed._id,
+        },
+        defaultOptions,
+      );
+
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          status: FeedStatus.DISABLED,
+          disabledReason: createdFeed.disabled,
+        }),
+      );
+    });
+
     it('returns feed status OK correctly', async () => {
       const createdFeed = await feedModel.create(createTestFeed());
       const result = await service.findFeeds(

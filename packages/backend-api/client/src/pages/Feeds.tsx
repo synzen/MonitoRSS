@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import RouteParams from '../types/RouteParams';
 import { RequireServerBotAccess, useDiscordServer } from '@/features/discordServers';
-import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
+import { FeedSidebar } from '@/features/feed/components/FeedsTable/FeedSidebar';
 import { FeedsTable } from '@/features/feed/components/FeedsTable';
 import { useFeeds } from '@/features/feed';
 

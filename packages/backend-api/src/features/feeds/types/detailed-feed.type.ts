@@ -5,4 +5,5 @@ export interface DetailedFeed extends Feed {
   refreshRateSeconds: number;
   status: FeedStatus;
   failReason?: string;
+  disabledReason?: string;
 }

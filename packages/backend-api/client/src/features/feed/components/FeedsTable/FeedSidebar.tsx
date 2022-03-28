@@ -7,7 +7,6 @@ import {
   Divider,
   Flex,
   Heading,
-  HStack,
   SlideFade,
   Stack,
   Text,
@@ -19,7 +18,6 @@ import { FiTrash } from 'react-icons/fi';
 import { useState } from 'react';
 import { CategoryText, Loading } from '@/components';
 import { useDeleteFeed, useFeed, useFeeds } from '../../hooks';
-import { FeedStatusIcon } from '../FeedStatusIcon';
 import { RefreshButton } from '../RefreshButton';
 import RouteParams from '@/types/RouteParams';
 import { SettingsForm } from './SettingsForm';
@@ -27,6 +25,7 @@ import { ErrorAlert } from '@/components/ErrorAlert';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 import { notifyError } from '@/utils/notifyError';
 import { Feed } from '../../types';
+import { FeedStatusTag } from './FeedStatusTag';
 
 interface Props {
   feedId?: string;
@@ -100,15 +99,17 @@ export const FeedSidebar: React.FC<Props> = ({
     >
       <Stack spacing={6}>
         <Stack>
-          <HStack alignItems="center">
-            <FeedStatusIcon status={feed?.status || 'ok'} />
+          <Stack>
+            <Box>
+              <FeedStatusTag status={feed?.status || 'ok'} />
+            </Box>
             <Heading
               size="lg"
               marginRight={4}
             >
               {feed?.title}
             </Heading>
-          </HStack>
+          </Stack>
           <Text
             as="a"
             overflow="hidden"
@@ -139,6 +140,18 @@ export const FeedSidebar: React.FC<Props> = ({
                   />
                 )}
               </Box>
+            </AlertDescription>
+          </Box>
+        </Alert>
+        <Alert status="warning" hidden={feed && feed.status !== 'disabled'}>
+          <Box>
+            <AlertTitle>
+              {t('pages.feed.disabledTitle')}
+            </AlertTitle>
+            <AlertDescription display="block">
+              {t('pages.feed.disabledDescription', {
+                reason: feed?.disabledReason || t('pages.feed.unknownReason'),
+              })}
             </AlertDescription>
           </Box>
         </Alert>

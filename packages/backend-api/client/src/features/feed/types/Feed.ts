@@ -34,10 +34,11 @@ export const FeedSchema = object({
   // From FeedSumarySchema, copied over since TypeScript doesn't work well with yup's .concat()
   id: string().required(),
   title: string().required(),
-  status: string().oneOf(['ok', 'failed']).required(),
+  status: string().oneOf(['ok', 'failed', 'disabled']).required(),
   url: string().required(),
   channel: string().required(),
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
+  disabledReason: string().optional(),
 
   // Extra details
   failReason: string().optional(),
@@ -55,7 +56,6 @@ export const FeedSchema = object({
   formatTables: boolean().required(),
   directSubscribers: boolean().required(),
   splitMessage: boolean().required(),
-  disabled: string().optional(),
   ncomparisons: array(string().required()).required(),
   pcomparisons: array(string().required()).required(),
   webhook: object({

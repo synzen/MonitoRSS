@@ -447,14 +447,25 @@ export class FeedsService {
         })),
       );
 
-    const withStatuses = feeds.map((feed, index) => ({
-      ...feed,
-      status: this.isValidFailRecord(feed.failRecord || null)
-        ? FeedStatus.FAILED
-        : FeedStatus.OK,
-      failReason: feed.failRecord?.reason,
-      refreshRateSeconds: refreshRates[index],
-    }));
+    const withStatuses = feeds.map((feed, index) => {
+      let feedStatus: FeedStatus;
+
+      if (this.isValidFailRecord(feed.failRecord || null)) {
+        feedStatus = FeedStatus.FAILED;
+      } else if (feed.disabled) {
+        feedStatus = FeedStatus.DISABLED;
+      } else {
+        feedStatus = FeedStatus.OK;
+      }
+
+      return {
+        ...feed,
+        status: feedStatus,
+        failReason: feed.failRecord?.reason,
+        disabledReason: feed.disabled,
+        refreshRateSeconds: refreshRates[index],
+      };
+    });
 
     withStatuses.forEach((feed) => {
       delete feed.failRecord;

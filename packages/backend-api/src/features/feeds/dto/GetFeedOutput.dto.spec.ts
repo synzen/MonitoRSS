@@ -72,6 +72,42 @@ describe('GetFeedOutputDto', () => {
       });
     });
 
+    describe('failReason', () => {
+      it('returns fail reason if it exists', () => {
+        const feed = createDetailedFeed({
+          failReason: 'test',
+        });
+
+        const result = GetFeedOutputDto.fromEntity(feed);
+
+        expect(result.result.failReason).toEqual('test');
+      });
+    });
+
+    describe('disabledReason', () => {
+      it('returns disabledReason if it exists', () => {
+        const feed = createDetailedFeed({
+          disabledReason: 'test',
+        });
+
+        const result = GetFeedOutputDto.fromEntity(feed);
+
+        expect(result.result.disabledReason).toEqual('test');
+      });
+    });
+
+    describe('status', () => {
+      it('returns the status', () => {
+        const feed = createDetailedFeed({
+          status: FeedStatus.DISABLED,
+        });
+
+        const result = GetFeedOutputDto.fromEntity(feed);
+
+        expect(result.result.status).toEqual(FeedStatus.DISABLED);
+      });
+    });
+
     describe('splitMessage', () => {
       it('sets true correctly', () => {
         const testFeed = createDetailedFeed({

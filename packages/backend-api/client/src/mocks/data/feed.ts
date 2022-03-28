@@ -7,7 +7,7 @@ const mockFeeds: Feed[] = [{
   title: 'New York Times',
   url: 'https://www.feed1.com',
   channel: mockDiscordChannels[0].id,
-  status: 'ok',
+  status: 'disabled',
   embeds: [],
   text: 'Feed Text Here',
   createdAt: new Date().toISOString(),

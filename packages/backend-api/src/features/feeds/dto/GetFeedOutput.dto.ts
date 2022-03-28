@@ -36,7 +36,9 @@ export interface FeedEmbedOutputDto {
 interface FeedOutputDto {
   id: string;
   title: string;
-  status: 'ok' | 'failed';
+  status: 'ok' | 'failed' | 'disabled';
+  failReason?: string;
+  disabledReason?: string;
   filters: Array<{ category: string; value: string }>;
   url: string;
   channel: string;
@@ -51,7 +53,6 @@ interface FeedOutputDto {
   formatTables: boolean;
   directSubscribers: boolean;
   splitMessage: boolean;
-  disabled?: string;
   ncomparisons: Array<string>;
   pcomparisons: Array<string>;
   webhook?: {
@@ -69,6 +70,8 @@ export class GetFeedOutputDto {
         channel: feed.channel,
         createdAt: (feed.createdAt || feed.addedAt).toISOString(),
         status: feed.status,
+        failReason: feed.failReason,
+        disabledReason: feed.disabledReason,
         title: feed.title,
         url: feed.url,
         refreshRateSeconds: feed.refreshRateSeconds,
@@ -85,7 +88,6 @@ export class GetFeedOutputDto {
         imgLinksExistence: feed.imgLinksExistence ?? true,
         imgPreviews: feed.imgPreviews ?? true,
         splitMessage: feed.split?.enabled || false,
-        disabled: feed.disabled,
         ncomparisons: feed.ncomparisons || [],
         pcomparisons: feed.pcomparisons || [],
         filters: this.getFeedFiltersDto(feed.filters),

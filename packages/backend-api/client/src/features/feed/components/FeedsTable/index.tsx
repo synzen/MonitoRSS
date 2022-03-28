@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   ButtonGroup,
   Center,
   Flex,
@@ -30,6 +29,7 @@ import { Feed } from '../../types';
 import { Loading } from '@/components';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 import { AddFeedDialog } from '../AddFeedDialog';
+import { FeedStatusTag } from './FeedStatusTag';
 
 interface Props {
   serverId?: string
@@ -40,14 +40,6 @@ interface Props {
 const DEFAULT_MAX_PER_PAGE = 10;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
-
-const FeedStatusTag: React.FC<{ status: Feed['status'] }> = ({ status }) => (
-  <Badge
-    colorScheme={status === 'ok' ? 'green' : 'red'}
-  >
-    {status}
-  </Badge>
-);
 
 export const FeedsTable: React.FC<Props> = ({
   serverId,

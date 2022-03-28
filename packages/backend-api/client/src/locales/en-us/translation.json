@@ -66,6 +66,8 @@
       "tableResults": "Showing {{start}}-{{end}} of {{total}} results"
     },
     "feed": {
+      "disabledTitle": "This feed is currently disabled",
+      "disabledDescription": "Articles will not be fetched until it is re-enabled. Reason: {{reason}}",
       "connectionFailureTitle": "Disabled due to too many connection failures",
       "connectionFailureText": "There has been too many connection failures within a short period of time ({{reason}}). You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
       "unknownReason": "unknown reason",
