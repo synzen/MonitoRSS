@@ -13,6 +13,7 @@ interface PatronBenefits {
 interface PatronDetails {
   status: Patron['status'];
   pledge: number;
+  pledgeOverride?: number;
   pledgeLifetime: number;
 }
 
@@ -81,14 +82,18 @@ export class PatronsService {
   getBenefitsFromPatron({
     pledge,
     pledgeLifetime,
+    pledgeOverride,
   }: {
     pledge: number;
     pledgeLifetime: number;
+    pledgeOverride?: number;
   }): PatronBenefits {
+    const usePledge = pledgeOverride ?? pledge;
+
     return {
-      maxFeeds: this.getMaxFeedsFromPledge(pledge),
+      maxFeeds: this.getMaxFeedsFromPledge(usePledge),
       maxGuilds: this.getMaxServersFromPledgeLifetime(pledgeLifetime),
-      refreshRateSeconds: this.getRefreshRateSecondsFromPledge(pledge),
+      refreshRateSeconds: this.getRefreshRateSecondsFromPledge(usePledge),
       allowWebhooks: true,
     };
   }

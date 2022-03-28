@@ -224,6 +224,7 @@ export class SupportersService {
       status: Patron['status'];
       pledge: number;
       pledgeLifetime: number;
+      pledgeOverride?: number;
     }>;
   }) {
     if (!this.isValidSupporter(supporter)) {

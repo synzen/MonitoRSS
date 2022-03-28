@@ -32,6 +32,9 @@ export class Patron {
   })
   pledgeLifetime: number;
 
+  @Prop()
+  pledgeOverride?: number;
+
   @Prop({
     required: true,
   })

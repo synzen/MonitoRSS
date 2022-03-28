@@ -11,6 +11,7 @@ const boilerplate: Patron = {
   pledge: 100,
   pledgeLifetime: 100,
   status: PatronStatus.ACTIVE,
+  pledgeOverride: undefined,
 };
 
 export const createTestPatron = (overrides: Partial<Patron> = {}): Patron => ({
