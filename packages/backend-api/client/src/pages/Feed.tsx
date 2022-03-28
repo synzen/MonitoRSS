@@ -7,7 +7,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CategoryText, DashboardContent } from '@/components';
-import { FeedStatusIcon, useFeed } from '../features/feed';
+import { useFeed } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
 
@@ -31,7 +31,6 @@ const Feed: React.FC = () => {
           <Stack spacing={6}>
             <Stack>
               <HStack alignItems="center">
-                <FeedStatusIcon status={feed?.status || 'ok'} />
                 <Heading
                   size="lg"
                   marginRight={4}

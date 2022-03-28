@@ -15,7 +15,6 @@ const mockFeeds: Feed[] = [{
   checkTitles: false,
   checkDates: false,
   directSubscribers: true,
-  disabled: '',
   formatTables: true,
   imgLinksExistence: true,
   imgPreviews: false,
@@ -36,6 +35,7 @@ const mockFeeds: Feed[] = [{
     category: 'title',
     value: 'Yahoo News',
   }],
+  disabledReason: undefined,
 }];
 
 export default mockFeeds;
