@@ -1,0 +1,265 @@
+{
+  "common": {
+    "errors": {
+      "somethingWentWrong": "Sorry, something went wrong.",
+      "tryAgainLater": "Please try again later.",
+      "detailsTitle": "Details",
+      "goBack": "Go back",
+      "failedToSave": "Failed to save changes"
+    },
+    "api": {
+      "missingBotAccessTitle": "Missing Bot Access",
+      "missingBotAccessMessage": "The bot is either not in this server or does not have permission to read this server."
+    },
+    "apiErrors": {
+      "feedInvalid": "Invalid feed",
+      "feedParseFailed": "Failed to parse feed",
+      "feedParseTimeout": "Parsing the feed took too long",
+      "feedRequestTimeout": "Request to the feed timed out.",
+      "feedRequestFailed": "Request to the feed failed. Please try again later.",
+      "feedRequestForbidden": "The feed host has explicitly blocked the request for the feed.",
+      "feedRequestInternalError": "Feed host is currently experiencing issues",
+      "feedRequestTooManyRequests": "Requests to the feed has been rate limited. Please try again later.",
+      "feedRequestUnauthorized": "Feed hosts requesting authorization that does not exist",
+      "bannedFeed": "This feed is banned",
+      "feedMissingChannelPermission": "The bot does not have permission to send messages in the channel",
+      "feedLimitReached": "Server has reached the feed limit",
+      "feedMissingChannel": "The channel does not exist",
+      "feedUserMissingManageGuild": "You are missing the Manage Server permission",
+      "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server."
+    }
+  },
+  "pages": {
+    "loadingServers": {
+      "title": "Loading servers..."
+    },
+    "checkingLogin": {
+      "title": "Checking login..."
+    },
+    "cloneFeed": {
+      "title": "Clone",
+      "description": "Clone and overwrite properties of the current feed to other feed(s).",
+      "propertiesSectionTitle": "Properties",
+      "sourceFeedSectionTitle": "Source feed",
+      "sourceFeedSectionDescription": "Your currently selected feed is the source feed.",
+      "sourceFeedTitleLabel": "Title",
+      "sourceFeedUrlLabel": "URL",
+      "targetFeedSectionTitle": "Target feed",
+      "checkboxMessageLabel": "Message",
+      "checkboxFiltersLabel": "Filters",
+      "checkboxMiscOptionsLabel": "Misc Options",
+      "checkboxComparisonsLabel": "Comparisons",
+      "checkboxSubscribersLabel": "Subscribers",
+      "checkboxWebhookLabel": "Webhook",
+      "cloneButtonLabel": "Clone",
+      "success": "Successfully cloned"
+    },
+    "feeds": {
+      "title": "Feeds",
+      "status": "Status",
+      "add": "Add New",
+      "tableTitle": "Title",
+      "tableUrl": "URL",
+      "tableStatus": "Status",
+      "tableChannel": "Channel",
+      "tableSearch": "Search by title or url",
+      "tableResults": "Showing {{start}}-{{end}} of {{total}} results"
+    },
+    "feed": {
+      "disabledTitle": "This feed is currently disabled",
+      "disabledDescription": "Articles will not be fetched until it is re-enabled. Reason: {{reason}}",
+      "connectionFailureTitle": "Disabled due to too many connection failures",
+      "connectionFailureText": "There has been too many connection failures within a short period of time ({{reason}}). You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
+      "unknownReason": "unknown reason",
+      "channelLabel": "Channel",
+      "refreshRateLabel": "Refresh Rate",
+      "refreshRateValue": "{{minutes}} minutes",
+      "createdAtLabel": "Since"
+    },
+    "message": {
+      "title": "Message",
+      "placeholdersSectionTitle": "Placeholders",
+      "placeholdersSectionDescription": "Below are the available placeholders for the selected article.",
+      "placeholdersRawSectionDescription": "To see a more comprehensive list of available placeholders, download the file below. Note that all placeholders in the file must be prepended with \"raw:\".",
+      "failedToRetrieveArticlesError": "Failed to retrieve feed articles",
+      "textSectionTitle": "Text",
+      "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
+      "textSectionResetButton": "Reset",
+      "textSectionSaveButton": "Save"
+    },
+    "filters": {
+      "title": "Filters",
+      "description": "Filters are \"OR\" filters, and are case insensitive. If any of the words defined below are found in the feed in their respective categories, then it will pass the filter and be sent.",
+      "tableCategory": "Article property",
+      "tableValue": "Value",
+      "removeSelectedFilters": "Remove selected filters",
+      "formAddFilterInputLabel": "Subscriber",
+      "specialCharactersSectionTitle": "Special Characters",
+      "specialCharactersTableCharacterHeader": "Character",
+      "specialCharactersTableDescriptionHeader": "Description",
+      "specialCharactersSectionDescription": "Below are the special characters that can be used to modify the behavior of filters. Prepend them to any particular filter for it to work.",
+      "specialCharacterTildeDescription": "Broad modifier where if the word is found anywhere in the property it will pass (including inside words). You may use \\~ to escape the tilde and not have it function as a modifier.",
+      "specialCharacterNotDescription": "NOT modifier to negate what it normally does, and is essentially a blacklist. This will take priority over everything. Like the broad search, you may escape it by \\! to interpret it as a normal exclamation mark.",
+      "specialCharacterNotTildeDescription": "Negation of the broad modifier.",
+      "currentFiltersSectionTitle": "Current Filters",
+      "currentFiltersSectionDescription": "Below are the current filters that are being used. In addition to the cateogries that are already available, you may also use raw placeholders as seen in the feed dump below. Note that you must prepend \"raw:\" to each placeholder."
+    },
+    "comparisons": {
+      "title": "Comparisons",
+      "description": "Comparisons are additional checks after the default algorithm determines whether an article is new or old. Properties on the original article object are used, which can be downloaded and viewed below. For nested keys, separate them with \"_\".",
+      "passingComparisonsTitle": "Passing comparisons",
+      "passingComparisonsDescription": "Article properties that will be checked to attempt to pass an article for it to send after default algorithms mark an article as old. Articles that pass these comparisons will still be blocked if they do not pass date checks.",
+      "comparisonsInputHelperText": "Each new line represents a different comparison.",
+      "blockingComparisonsTitle": "Blocking comparison",
+      "blockingComparisonsDescription": "Article properties that will be checked to attempt to block an article from sending after default algorithms mark an article as new.",
+      "resetButtonLabel": "Reset",
+      "saveButtonLabel": "Save"
+    },
+    "serverSettings": {
+      "title": "Server Settings",
+      "datesTitle": "Dates",
+      "previewLabel": "Preview",
+      "dateFormatInputLabel": "Date Format",
+      "dateFormatInputErrorEmpty": "Date format cannot be empty",
+      "dateFormatInputDescription": "This will dictate how the {date} placeholder will be formatted.",
+      "dateFormatInputDescriptionPromot": "See here on how to customize your date formats.",
+      "timezoneInputLabel": "Timezone",
+      "timezoneInputDescription": "This will change the timezone of the {date} placeholder to the one you specify.",
+      "timezoneInputDescriptionPrompt": "See here for a list of valid timezones under the \"TZ database name\" column.",
+      "timezoneInputErrorInvalid": "Must be a valid timezone",
+      "resetButton": "Reset",
+      "saveButton": "Save"
+    },
+    "subscribers": {
+      "title": "Subscribers",
+      "addSubscriberButton": "Add",
+      "roleSubscriberTitle": "Role Subscriber",
+      "userSubscriberTitle": "User Subscriber",
+      "subscriberFiltersTitle": "Filters"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "addNew": "Add New",
+      "notEnabledTitle": "This server does not have webhooks enabled",
+      "notEnabledDescription": "This server must be backed by a supporter to access this.",
+      "description": "Only webhooks that are created and managed by the bot will be listed here."
+    },
+    "miscOptions": {
+      "title": "Misc Options",
+      "titleChecks": "Title checks",
+      "titleChecksDescription": "ONLY ENABLE THIS IF NECESSARY! Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.",
+      "dateChecks": "Date checks",
+      "dateChecksDescription": "Date checking ensures that articles that are either older than 1 day or has invalid/no published dates are never sent. This MUST be disabled for feeds with no {date} placeholder for any articles to be delivered.",
+      "imageLinksPreviews": "Image links previews",
+      "imageLinksPreviewsDescription": "Toggle automatic Discord image link embedded previews for image links",
+      "imageLinksExistence": "Image links existence",
+      "imageLinksExistenceDescription": "Remove image links found inside placeholders such as {description}. If disabled, all image src links in such placeholders will be removed.",
+      "formatTables": "Format tables",
+      "formatTablesDescription": "If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing (wrap text with triple backticks, ```text here``` for exmple).",
+      "splitMessage": "Split message",
+      "splitMessageDescription": "If enabled, messages will be split into multiple messages if they are too long. Otherwise, it will attempt to be sent as one message with truncated text.",
+      "resetButton": "Reset",
+      "saveButton": "Save"
+    }
+  },
+  "components": {
+    "addFilterDialog": {
+      "addButton": "Add Filters",
+      "title": "Add New Filters",
+      "cancel": "Cancel",
+      "save": "Save",
+      "failedToSaveError": "Failed to save filter(s)",
+      "formCategoryLabel": "Article property",
+      "formCategoryDescription": "You may also use unlisted properties by typing. If it comes from the placeholder dump, prepend them with \"raw:\".",
+      "formValueLabel": "Value",
+      "formValueDescription": "Each new line indicates a new and separate filter. Modifiers would apply to the beginning to each line."
+    },
+    "sidebar": {
+      "supporterUserTag": "Supporter",
+      "regularUserTag": "Regular User",
+      "userDropdown": {
+        "settings": "Settings",
+        "logout": "Logout"
+      },
+      "server": {
+        "manage": "Manage Server",
+        "feeds": "Feeds",
+        "settings": "Settings",
+        "webhooks": "Webhooks"
+      },
+      "feed": {
+        "manage": "Manage Feed",
+        "backToManageServer": "Manage Server",
+        "overview": "Overview",
+        "message": "Message",
+        "filters": "Filters",
+        "subscribers": "Subscribers",
+        "comparisons": "Comparisons",
+        "webhooks": "Webhooks",
+        "miscoptions": "Misc Options",
+        "clone": "Clone"
+      }
+    }
+  },
+  "features": {
+    "feed": {
+      "components": {
+        "refreshButton": {
+          "text": "Attempt to re-enable",
+          "failure": "Failed to re-enable feed",
+          "success": "Feed has been enabled and will be re-attempted"
+        },
+        "addFeedDialog": {
+          "addButton": "Add Feed",
+          "title": "Add a new feed",
+          "cancelButton": "Cancel",
+          "saveButton": "Add",
+          "formTitleLabel": "Title",
+          "formTitleDescription": "This is only for your reference.",
+          "formChannelLabel": "Channel",
+          "formLinkLabel": "Link",
+          "formLinkDescription": "Must be a link to a valid RSS XML feed.",
+          "failedToAdd": "Failed to add feed"
+        },
+        "sidebar": {
+          "settings": "Settings",
+          "titleFormLabel": "Title",
+          "titleFormHint": "This is only for your reference.",
+          "channelFormLabel": "Channel",
+          "webhookFormLabel": "Webhook",
+          "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
+          "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
+          "failedToGetWebhooks": "Failed to get server webhooks",
+          "updateSuccess": "Successfully updated feed",
+          "resetButton": "Reset",
+          "saveButton": "Save",
+          "customizeButton": "Customize",
+          "deleteButton": "Delete"
+        },
+        "dumpButton": {
+          "text": "Download feed placeholders dump"
+        },
+        "rawDumpButton": {
+          "text": "Download and view raw feed dump"
+        }
+      }
+    },
+    "discordServers": {
+      "components": {
+        "liveClock": {
+          "invalidSettings": "Invalid timezone or date format"
+        }
+      }
+    },
+    "discordUsers": {
+      "components": {
+        "settingsDialog": {
+          "title": "Supporter Settings",
+          "description": "The server IDs below will receive your benefits.",
+          "serverInputPlaceholder": "Discord Server ID",
+          "serversUpdatedSuccess": "Successfully updated servers"
+        }
+      }
+    }
+  }
+}
