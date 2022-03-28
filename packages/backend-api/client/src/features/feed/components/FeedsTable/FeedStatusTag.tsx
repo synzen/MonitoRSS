@@ -5,7 +5,7 @@ interface Props {
   status: Feed['status']
 }
 
-export const FeedStatusTag: React.FC<Props> = ({ status, size }) => {
+export const FeedStatusTag: React.FC<Props> = ({ status }) => {
   let colorScheme: string;
 
   if (status === 'ok') {
