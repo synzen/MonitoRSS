@@ -30,6 +30,15 @@ interface ProfileSettings {
   timezone: string;
 }
 
+interface ServerBackup {
+  profile: ProfileSettings & {
+    _id: string;
+  };
+  feeds: Feed[];
+  subscribers: FeedSubscriber[];
+  filteredFormats: FeedFilteredFormat[];
+}
+
 @Injectable()
 export class DiscordServersService {
   defaultDateFormat: string;
@@ -60,7 +69,7 @@ export class DiscordServersService {
     ) as string;
   }
 
-  async createBackup(serverId: string) {
+  async createBackup(serverId: string): Promise<ServerBackup> {
     const [profile, feeds] = await Promise.all([
       this.getServerProfile(serverId),
       this.feedModel
@@ -86,11 +95,76 @@ export class DiscordServersService {
       .lean();
 
     return {
-      profile,
+      profile: {
+        ...profile,
+        _id: serverId,
+      },
       feeds,
       filteredFormats,
       subscribers,
     };
+  }
+
+  async restoreBackup(backup: ServerBackup) {
+    const session = await this.feedModel.startSession();
+
+    await session.withTransaction(async () => {
+      const sessionOptions = {
+        session,
+      };
+      await this.profileModel.deleteOne(
+        {
+          _id: backup.profile._id,
+        },
+        sessionOptions,
+      );
+
+      const allCurrentFeeds = await this.feedModel
+        .find(
+          {
+            guild: backup.profile._id,
+          },
+          sessionOptions,
+        )
+        .lean();
+
+      const feedIds = allCurrentFeeds.map((feed) => feed._id);
+
+      await this.feedFilteredFormatModel.deleteMany(
+        {
+          feed: {
+            $in: feedIds.map((id) => id),
+          },
+        },
+        sessionOptions,
+      );
+
+      await this.feedSubscriberModel.deleteMany(
+        {
+          feed: {
+            $in: feedIds.map((id) => id),
+          },
+        },
+        sessionOptions,
+      );
+
+      await this.feedModel.deleteMany(
+        {
+          guild: backup.profile._id,
+        },
+        sessionOptions,
+      );
+
+      await this.profileModel.create([backup.profile], sessionOptions);
+      await this.feedModel.create(backup.feeds, sessionOptions);
+      await this.feedSubscriberModel.create(backup.subscribers, sessionOptions);
+      await this.feedFilteredFormatModel.create(
+        backup.filteredFormats,
+        sessionOptions,
+      );
+    });
+
+    await session.endSession();
   }
 
   async getServerProfile(serverId: string): Promise<ProfileSettings> {
