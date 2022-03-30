@@ -176,12 +176,16 @@ describe('DiscordServersService', () => {
       const guildId = 'mock-guild-id';
       const mockProfile = {
         id: guildId,
+        data: 'foo',
       };
 
       const result = service.createBackup(guildId);
 
       expect(result).resolves.toEqual({
-        profile: mockProfile,
+        profile: {
+          ...mockProfile,
+          _id: guildId,
+        },
         feeds: mockFeeds,
         filteredFormats: mockFilteredFormats,
         subscribers: mockSubscribers,
