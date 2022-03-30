@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  StreamableFile,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -24,6 +25,7 @@ import { GetServerStatusOutputDto } from './dto/GetServerStatusOutput.dto';
 import { GetServerOutputDto } from './dto/GetServerOutput.dto';
 import { UpdateServerOutputDto } from './dto/UpdateServerOutput.dto';
 import { UpdateServerInputDto } from './dto/UpdateServerInput.dto';
+
 @Controller('discord-servers')
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordServersController {
@@ -42,6 +44,19 @@ export class DiscordServersController {
         profile,
       },
     };
+  }
+
+  @Get(':serverId/backup')
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getBackup(
+    @Param('serverId') serverId: string,
+  ): Promise<StreamableFile> {
+    const backupJson = await this.discordServersService.createBackup(serverId);
+
+    const buffer = Buffer.from(JSON.stringify(backupJson, null, 2));
+
+    return new StreamableFile(buffer);
   }
 
   @Patch(':serverId')

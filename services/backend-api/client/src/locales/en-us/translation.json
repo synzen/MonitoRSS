@@ -128,7 +128,9 @@
       "timezoneInputDescriptionPrompt": "See here for a list of valid timezones under the \"TZ database name\" column.",
       "timezoneInputErrorInvalid": "Must be a valid timezone",
       "resetButton": "Reset",
-      "saveButton": "Save"
+      "saveButton": "Save",
+      "backupTitle": "Backup",
+      "backupDescription": "Download a copy of all your server feeds and settings for safekeeping. This is highly recommended in case there is data loss, or if you wish to import/overwrite your settings at a later point. Restorations can be done by requesting through the support server."
     },
     "subscribers": {
       "title": "Subscribers",
@@ -248,6 +250,9 @@
       "components": {
         "liveClock": {
           "invalidSettings": "Invalid timezone or date format"
+        },
+        "backupButton": {
+          "text": "Download backup"
         }
       }
     },

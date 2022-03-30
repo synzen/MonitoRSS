@@ -1,3 +1,4 @@
+import { StreamableFile } from '@nestjs/common';
 import { createTestFeed } from '../../test/data/feeds.test-data';
 import { Feed } from '../feeds/entities/feed.entity';
 import { FeedStatus } from '../feeds/types/FeedStatus.type';

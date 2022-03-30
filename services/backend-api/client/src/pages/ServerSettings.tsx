@@ -19,6 +19,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useEffect, useMemo, useState } from 'react';
 import moment from 'moment-timezone';
 import {
+  DiscordServerBackupButton,
   LiveClock,
   RequireServerBotAccess,
   useDiscordServerSettings,
@@ -208,6 +209,17 @@ export const ServerSettings: React.FC<Props> = () => {
                 </HStack>
               </Stack>
             </form>
+          </Stack>
+          <Stack spacing={8}>
+            <Stack>
+              <Heading as="h2" size="lg">{t('pages.serverSettings.backupTitle')}</Heading>
+              <Text>
+                {t('pages.serverSettings.backupDescription')}
+              </Text>
+            </Stack>
+            <Box>
+              <DiscordServerBackupButton serverId={serverId} />
+            </Box>
           </Stack>
         </Stack>
       </DashboardContent>
