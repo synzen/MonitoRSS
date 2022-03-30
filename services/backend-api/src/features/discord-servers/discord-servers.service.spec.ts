@@ -17,6 +17,9 @@ import {
   DiscordServerProfileModel,
 } from './entities/discord-server-profile.entity';
 import { DiscordGuildChannel } from '../../common';
+import { FeedFeature } from '../feeds/entities/feed.entity';
+import { FeedSubscriberFeature } from '../feeds/entities/feed-subscriber.entity';
+import { FeedFilteredFormatFeature } from '../feeds/entities/feed-filtered-format.entity';
 
 const configValues: Record<string, unknown> = {
   defaultDateFormat: 'YYYY-MM-DD',
@@ -47,7 +50,12 @@ describe('DiscordServersService', () => {
       imports: [
         FeedsModule,
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([DiscordServerProfileFeature]),
+        MongooseModule.forFeature([
+          DiscordServerProfileFeature,
+          FeedFeature,
+          FeedSubscriberFeature,
+          FeedFilteredFormatFeature,
+        ]),
       ],
     });
 
@@ -68,6 +76,7 @@ describe('DiscordServersService', () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await profileModel.deleteMany();
   });
 
@@ -77,6 +86,107 @@ describe('DiscordServersService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('createBackup', () => {
+    const guildId = 'mock-guild-id';
+    const mockProfile = {
+      id: guildId,
+    };
+    const mockFeeds = [
+      {
+        _id: '1',
+      },
+      {
+        _id: '2',
+      },
+    ];
+    const mockFilteredFormats = [
+      {
+        _id: 'filtered-format-id',
+      },
+    ];
+    const mockSubscribers = [
+      {
+        _id: 'subscriber-id',
+      },
+    ];
+    let feedModelFind: jest.SpyInstance;
+    let filteredFormatModelFind: jest.SpyInstance;
+    let subscriberModelFind: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest
+        .spyOn(service, 'getServerProfile')
+        .mockResolvedValue(mockProfile as never);
+      feedModelFind = jest.spyOn(service['feedModel'], 'find').mockReturnValue({
+        lean: async () => [
+          {
+            _id: '1',
+          },
+          {
+            _id: '2',
+          },
+        ],
+      } as never);
+
+      subscriberModelFind = jest
+        .spyOn(service['feedSubscriberModel'], 'find')
+        .mockReturnValue({
+          lean: async () => [
+            {
+              _id: 'subscriber-id',
+            },
+          ],
+        } as never);
+
+      filteredFormatModelFind = jest
+        .spyOn(service['feedFilteredFormatModel'], 'find')
+        .mockReturnValue({
+          lean: async () => [
+            {
+              _id: 'filtered-format-id',
+            },
+          ],
+        } as never);
+    });
+
+    it('calls the correct queries', async () => {
+      const guildId = 'mock-guild-id';
+
+      await service.createBackup(guildId);
+
+      expect(feedModelFind).toHaveBeenCalledWith({
+        guild: guildId,
+      });
+
+      expect(filteredFormatModelFind).toHaveBeenCalledWith({
+        feed: {
+          $in: ['1', '2'],
+        },
+      });
+      expect(subscriberModelFind).toHaveBeenCalledWith({
+        feed: {
+          $in: ['1', '2'],
+        },
+      });
+    });
+
+    it('returns the correct data', () => {
+      const guildId = 'mock-guild-id';
+      const mockProfile = {
+        id: guildId,
+      };
+
+      const result = service.createBackup(guildId);
+
+      expect(result).resolves.toEqual({
+        profile: mockProfile,
+        feeds: mockFeeds,
+        filteredFormats: mockFilteredFormats,
+        subscribers: mockSubscribers,
+      });
+    });
   });
 
   describe('getServerProfile', () => {

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
 import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { Feed } from '../feeds/entities/feed.entity';
+import { Feed, FeedModel } from '../feeds/entities/feed.entity';
 import { FeedsService } from '../feeds/feeds.service';
 import { FeedStatus } from '../feeds/types/FeedStatus.type';
 import {
@@ -15,6 +15,14 @@ import {
   DiscordGuildRole,
   DiscordGuildChannel,
 } from '../../common';
+import {
+  FeedSubscriber,
+  FeedSubscriberModel,
+} from '../feeds/entities/feed-subscriber.entity';
+import {
+  FeedFilteredFormat,
+  FeedFilteredFormatModel,
+} from '../feeds/entities/feed-filtered-format.entity';
 
 interface ProfileSettings {
   dateFormat: string;
@@ -31,6 +39,12 @@ export class DiscordServersService {
   constructor(
     @InjectModel(DiscordServerProfile.name)
     private readonly profileModel: DiscordServerProfileModel,
+    @InjectModel(Feed.name)
+    private readonly feedModel: FeedModel,
+    @InjectModel(FeedSubscriber.name)
+    private readonly feedSubscriberModel: FeedSubscriberModel,
+    @InjectModel(FeedFilteredFormat.name)
+    private readonly feedFilteredFormatModel: FeedFilteredFormatModel,
     private readonly configService: ConfigService,
     private readonly discordApiService: DiscordAPIService,
     private readonly feedsService: FeedsService,
@@ -44,6 +58,39 @@ export class DiscordServersService {
     this.defaultDateLanguage = this.configService.get<string>(
       'defaultDateLanguage',
     ) as string;
+  }
+
+  async createBackup(serverId: string) {
+    const [profile, feeds] = await Promise.all([
+      this.getServerProfile(serverId),
+      this.feedModel
+        .find({
+          guild: serverId,
+        })
+        .lean(),
+    ]);
+
+    const filteredFormats = await this.feedFilteredFormatModel
+      .find({
+        feed: {
+          $in: feeds.map((feed) => feed._id),
+        },
+      })
+      .lean();
+    const subscribers = await this.feedSubscriberModel
+      .find({
+        feed: {
+          $in: feeds.map((feed) => feed._id),
+        },
+      })
+      .lean();
+
+    return {
+      profile,
+      feeds,
+      filteredFormats,
+      subscribers,
+    };
   }
 
   async getServerProfile(serverId: string): Promise<ProfileSettings> {
