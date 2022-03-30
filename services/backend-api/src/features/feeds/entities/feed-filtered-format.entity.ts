@@ -1,5 +1,5 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model, Types } from 'mongoose';
+import { Document, Model, Types, Schema as MongooseSchema } from 'mongoose';
 import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
 
 @Schema({
@@ -21,7 +21,7 @@ export class FeedFilteredFormat {
 
   @Prop({
     required: true,
-    type: Types.ObjectId,
+    type: MongooseSchema.Types.ObjectId,
   })
   feed: Types.ObjectId;
 

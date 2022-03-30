@@ -23,21 +23,7 @@ import {
   FeedFilteredFormat,
   FeedFilteredFormatModel,
 } from '../feeds/entities/feed-filtered-format.entity';
-
-interface ProfileSettings {
-  dateFormat: string;
-  dateLanguage: string;
-  timezone: string;
-}
-
-interface ServerBackup {
-  profile: ProfileSettings & {
-    _id: string;
-  };
-  feeds: Feed[];
-  subscribers: FeedSubscriber[];
-  filteredFormats: FeedFilteredFormat[];
-}
+import { ProfileSettings, ServerBackup } from './types';
 
 @Injectable()
 export class DiscordServersService {
@@ -106,65 +92,38 @@ export class DiscordServersService {
   }
 
   async restoreBackup(backup: ServerBackup) {
-    const session = await this.feedModel.startSession();
-
-    await session.withTransaction(async () => {
-      const sessionOptions = {
-        session,
-      };
-      await this.profileModel.deleteOne(
-        {
-          _id: backup.profile._id,
-        },
-        sessionOptions,
-      );
-
-      const allCurrentFeeds = await this.feedModel
-        .find(
-          {
-            guild: backup.profile._id,
-          },
-          sessionOptions,
-        )
-        .lean();
-
-      const feedIds = allCurrentFeeds.map((feed) => feed._id);
-
-      await this.feedFilteredFormatModel.deleteMany(
-        {
-          feed: {
-            $in: feedIds.map((id) => id),
-          },
-        },
-        sessionOptions,
-      );
-
-      await this.feedSubscriberModel.deleteMany(
-        {
-          feed: {
-            $in: feedIds.map((id) => id),
-          },
-        },
-        sessionOptions,
-      );
-
-      await this.feedModel.deleteMany(
-        {
-          guild: backup.profile._id,
-        },
-        sessionOptions,
-      );
-
-      await this.profileModel.create([backup.profile], sessionOptions);
-      await this.feedModel.create(backup.feeds, sessionOptions);
-      await this.feedSubscriberModel.create(backup.subscribers, sessionOptions);
-      await this.feedFilteredFormatModel.create(
-        backup.filteredFormats,
-        sessionOptions,
-      );
+    await this.profileModel.deleteOne({
+      _id: backup.profile._id,
     });
 
-    await session.endSession();
+    const allCurrentFeeds = await this.feedModel
+      .find({
+        guild: backup.profile._id,
+      })
+      .lean();
+
+    const feedIds = allCurrentFeeds.map((feed) => feed._id);
+
+    await this.feedFilteredFormatModel.deleteMany({
+      feed: {
+        $in: feedIds.map((id) => id),
+      },
+    });
+
+    await this.feedSubscriberModel.deleteMany({
+      feed: {
+        $in: feedIds.map((id) => id),
+      },
+    });
+
+    await this.feedModel.deleteMany({
+      guild: backup.profile._id,
+    });
+
+    await this.profileModel.create([backup.profile]);
+    await this.feedModel.create(backup.feeds);
+    await this.feedSubscriberModel.create(backup.subscribers);
+    await this.feedFilteredFormatModel.create(backup.filteredFormats);
   }
 
   async getServerProfile(serverId: string): Promise<ProfileSettings> {

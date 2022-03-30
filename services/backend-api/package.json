@@ -34,6 +34,7 @@
     "cache-manager": "3.6.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.13.2",
+    "commander": "^9.1.0",
     "dayjs": "1.10.8",
     "dd-trace": "^2.4.0",
     "dotenv": "10.0.0",

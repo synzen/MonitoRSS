@@ -1,5 +1,5 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model, Types } from 'mongoose';
+import { Document, Model, Types, Schema as MongooseSchema } from 'mongoose';
 
 export enum FeedSubscriberType {
   USER = 'user',
@@ -14,7 +14,7 @@ export class FeedSubscriber {
   _id: Types.ObjectId;
 
   @Prop({
-    type: Types.ObjectId,
+    type: MongooseSchema.Types.ObjectId,
     required: true,
     index: true,
   })
