@@ -10,4 +10,5 @@ export interface ServerBackup {
   feeds: Feed[];
   subscribers: FeedSubscriber[];
   filteredFormats: FeedFilteredFormat[];
+  backupVersion: '1';
 }

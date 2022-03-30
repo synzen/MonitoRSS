@@ -88,10 +88,15 @@ export class DiscordServersService {
       feeds,
       filteredFormats,
       subscribers,
+      backupVersion: '1',
     };
   }
 
   async restoreBackup(backup: ServerBackup) {
+    if (backup.backupVersion !== '1') {
+      throw new Error(`Backup version ${backup.backupVersion} not supported`);
+    }
+
     await this.profileModel.deleteOne({
       _id: backup.profile._id,
     });
