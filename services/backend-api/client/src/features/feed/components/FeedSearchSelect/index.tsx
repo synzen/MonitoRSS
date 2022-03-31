@@ -1,5 +1,6 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { debounce } from 'lodash';
+import { useTranslation } from 'react-i18next';
 import { ThemedSelect } from '@/components';
 import { useFeeds } from '../../hooks/useFeeds';
 
@@ -11,6 +12,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
   const navigate = useNavigate();
   const { serverId, feedId } = useParams();
   const { pathname } = useLocation();
+  const { t } = useTranslation();
 
   const {
     status, data, setSearch, search, isFetching,
@@ -37,8 +39,9 @@ export const FeedSearchSelect: React.FC<Props> = () => {
       loading={isInitiallyLoading || isSearching}
       isDisabled={isInitiallyLoading}
       value={feedId}
+      placeholder={t('features.feed.components.feedSearchSelect.placeholder')}
       onInputChange={onSearchChange}
-      options={data?.results.map((feed) => ({
+      options={!search ? [] : data?.results.map((feed) => ({
         value: feed.id,
         label: feed.title,
       })) || []}

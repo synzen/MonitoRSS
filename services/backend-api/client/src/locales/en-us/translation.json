@@ -243,6 +243,9 @@
         },
         "rawDumpButton": {
           "text": "Download and view raw feed dump"
+        },
+        "feedSearchSelect": {
+          "placeholder": "Search for a feed..."
         }
       }
     },

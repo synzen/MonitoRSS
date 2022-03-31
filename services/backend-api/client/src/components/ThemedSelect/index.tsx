@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 import {
   Avatar, HStack, Text, useColorModeValue,
 } from '@chakra-ui/react';
@@ -27,6 +28,7 @@ interface Props {
   name?: string
   isClearable?: boolean
   onInputChange?: (value: string) => void
+  placeholder?: string
 }
 
 export const ThemedSelect: React.FC<Props> = ({
@@ -39,6 +41,7 @@ export const ThemedSelect: React.FC<Props> = ({
   isDisabled,
   name,
   isClearable,
+  placeholder,
   onInputChange,
 }) => {
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
@@ -48,11 +51,13 @@ export const ThemedSelect: React.FC<Props> = ({
   return (
     <Select
       id={id}
+      inputV
       isDisabled={isDisabled}
       isLoading={loading}
       options={options}
       onBlur={onBlur}
       name={name}
+      placeholder={placeholder}
       isClearable={isClearable}
       // @ts-ignore
       styles={styles}
@@ -62,6 +67,11 @@ export const ThemedSelect: React.FC<Props> = ({
       }}
       components={{
         Option: IconOption,
+        NoOptionsMessage: (props) => (
+          <components.NoOptionsMessage {...props}>
+            <span>No results found</span>
+          </components.NoOptionsMessage>
+        ),
       }}
       onInputChange={(input) => onInputChange?.(input)}
     />
