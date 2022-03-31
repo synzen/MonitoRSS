@@ -4,6 +4,8 @@ import nock from 'nock';
 import path from 'path';
 import { URL } from 'url';
 import { readFileSync } from 'fs';
+import { Repository } from 'typeorm';
+import { FeedResponse } from './entities';
 
 describe('FeedFetcherService', () => {
   let service: FeedFetcherService;
@@ -12,16 +14,20 @@ describe('FeedFetcherService', () => {
   const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
   const feedXml = readFileSync(feedFilePath, 'utf8');
+  const feedResponseRepository: Repository<FeedResponse> = {
+    upsert: jest.fn(),
+  } as never;
 
   beforeEach(() => {
     configService = {
       get: jest.fn(),
     } as never;
-    service = new FeedFetcherService(configService);
+    service = new FeedFetcherService(feedResponseRepository, configService);
   });
 
   afterEach(() => {
     nock.cleanAll();
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
@@ -44,6 +50,29 @@ describe('FeedFetcherService', () => {
 
       const xml = await service.fetchFeedXml(feedUrl);
       expect(xml).toEqual(feedXml);
+    });
+  });
+
+  describe('fetchAndSaveResponse', () => {
+    it('saves the response', async () => {
+      nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
+        'Content-Type': 'application/xml',
+      });
+
+      const nowDate = new Date(2020, 1, 20);
+      jest.spyOn(global, 'Date').mockImplementation(() => nowDate as never);
+
+      await service.fetchAndSaveResponse(feedUrl);
+      expect(feedResponseRepository.upsert).toHaveBeenCalledWith(
+        {
+          url: feedUrl,
+          xmlContent: feedXml,
+          lastFetchAttempt: nowDate,
+        },
+        {
+          conflictPaths: ['url'],
+        },
+      );
     });
   });
 });

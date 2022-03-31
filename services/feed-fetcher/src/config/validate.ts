@@ -5,6 +5,7 @@ import {
   MinLength,
   validateSync,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 
 enum Environment {
@@ -21,7 +22,7 @@ class EnvironmentVariables {
   @MinLength(1)
   POSTGRES_URI!: string;
 
-  @IsString()
+  @IsBoolean()
   @IsOptional()
   SYNC_DB!: boolean;
 }

@@ -1,6 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import fetch, { Response } from 'node-fetch';
+import { Repository } from 'typeorm';
+import { FeedResponse } from './entities';
 import {
   FeedRequestException,
   FeedTooManyRequestsException,
@@ -11,7 +14,26 @@ import {
 
 @Injectable()
 export class FeedFetcherService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    @InjectRepository(FeedResponse)
+    private readonly feedResponseRepository: Repository<FeedResponse>,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async fetchAndSaveResponse(url: string) {
+    const xml = await this.fetchFeedXml(url);
+
+    await this.feedResponseRepository.upsert(
+      {
+        url,
+        xmlContent: xml,
+        lastFetchAttempt: new Date(),
+      },
+      {
+        conflictPaths: ['url'],
+      },
+    );
+  }
 
   async fetchFeedXml(url: string) {
     const res = await this.fetchFeedResponse(url);

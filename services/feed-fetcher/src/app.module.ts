@@ -31,6 +31,7 @@ export class AppModule {
           // database: 'feedfetcher',
           entities: [],
           synchronize: configVals.SYNC_DB,
+          autoLoadEntities: true,
         }),
       ],
     };
