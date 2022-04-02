@@ -26,6 +26,22 @@ module.exports = {
       {
         'endOfLine': 'auto',
       }
-    ]
+    ],
+    "padding-line-between-statements": [
+      "error",
+      {
+        "blankLine": 'always',
+        "prev": '*',
+        "next": 'block-like'
+      },
+      {
+        "blankLine": 'always',
+        "prev": 'block-like',
+        "next": '*'
+      }
+    ],
+    "max-len": ["error", { "code": 100 }],
+    "newline-before-return": "error",
+    'curly': 'error'
   },
 };

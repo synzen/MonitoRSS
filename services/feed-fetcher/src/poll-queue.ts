@@ -47,6 +47,7 @@ export async function processQueueMessages(
 
   if (!receiveResult.Messages) {
     logger.debug(`No messages found in queue ${queueUrl}`);
+
     return;
   }
 
