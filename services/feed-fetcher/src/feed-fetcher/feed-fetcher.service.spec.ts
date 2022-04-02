@@ -34,13 +34,13 @@ describe('FeedFetcherService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('fetchFeed', () => {
+  describe('fetchFeedResponse', () => {
     it('throws when status code is non-200', async () => {
       nock(url.origin).get(url.pathname).replyWithFile(401, feedFilePath, {
         'Content-Type': 'application/xml',
       });
 
-      await expect(service.fetchFeedXml(feedUrl)).rejects.toThrow();
+      await expect(service.fetchFeedResponse(feedUrl)).rejects.toThrow();
     });
 
     it('returns the feed xml', async () => {
@@ -48,12 +48,29 @@ describe('FeedFetcherService', () => {
         'Content-Type': 'application/xml',
       });
 
-      const xml = await service.fetchFeedXml(feedUrl);
-      expect(xml).toEqual(feedXml);
+      const res = await service.fetchFeedResponse(feedUrl);
+      expect(await res.text()).toEqual(feedXml);
     });
   });
 
   describe('fetchAndSaveResponse', () => {
+    it('passes the correct fetch options', async () => {
+      const userAgent = 'my-user-agent';
+      jest.spyOn(configService, 'get').mockImplementation((key) => {
+        if (key === 'feedUserAgent') {
+          return userAgent;
+        }
+      });
+
+      nock(url.origin)
+        .get(url.pathname)
+        .matchHeader('user-agent', userAgent)
+        .replyWithFile(200, feedFilePath, {
+          'Content-Type': 'application/xml',
+        });
+
+      await service.fetchAndSaveResponse(feedUrl);
+    });
     it('saves the response', async () => {
       nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
         'Content-Type': 'application/xml',

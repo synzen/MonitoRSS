@@ -7,3 +7,4 @@ export * from './FeedForbiddenException';
 export * from './FeedInternalErrorException';
 export * from './FeedTooManyRequestsException';
 export * from './FeedUnauthorizedException';
+export * from './FeedCloudflareException';
