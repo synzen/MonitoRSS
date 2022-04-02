@@ -1,5 +1,5 @@
 import setupLogger from '@monitorss/logger';
-import config from 'src/config';
+import config from '../config';
 
 const configValues = config();
 

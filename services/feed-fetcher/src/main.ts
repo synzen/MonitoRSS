@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { FeedFetcherService } from './feed-fetcher/feed-fetcher.service';
-import { pollQueue } from './poll-queue';
+import { SqsPollingService } from './shared/services/sqs-polling.service';
 import logger from './utils/logger';
 
 async function bootstrap() {
@@ -19,8 +19,9 @@ async function setupQueuePoll(app: INestApplication) {
   const awsEndpoint = configService.get('AWS_SQS_QUEUE_SERVICE_ENDPOINT');
 
   const feedFetcherService = app.get(FeedFetcherService);
+  const sqsPollingService = app.get(SqsPollingService);
 
-  await pollQueue({
+  await sqsPollingService.pollQueue({
     awsQueueUrl: queueUrl,
     awsRegion: region,
     awsEndpoint: awsEndpoint,

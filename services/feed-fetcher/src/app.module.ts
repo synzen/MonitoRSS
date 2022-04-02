@@ -6,11 +6,12 @@ import config from './config';
 import { validateConfig } from './config/validate';
 import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SqsPollingService } from './shared/services/sqs-polling.service';
 
 @Module({
   imports: [FeedFetcherModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SqsPollingService],
 })
 export class AppModule {
   static forRoot(): DynamicModule {
