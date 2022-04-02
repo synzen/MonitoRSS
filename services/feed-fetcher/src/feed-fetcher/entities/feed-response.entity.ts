@@ -3,13 +3,29 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
+import {
+  FeedFetchOptions,
+  FeedResponseDetails,
+  FeedResponseStatus,
+} from '../constants';
 
 @Entity()
 export class FeedResponse {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @Column({
+    type: 'enum',
+    enum: FeedResponseStatus,
+  })
+  status!: FeedResponseStatus;
+
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+  })
+  fetchOptions?: FeedFetchOptions | null;
 
   @Column({
     unique: true,
@@ -21,18 +37,8 @@ export class FeedResponse {
   })
   createdAt!: Date;
 
-  @UpdateDateColumn({
-    type: 'timestamp with time zone',
-  })
-  updatedAt!: Date;
-
   @Column({
-    type: 'timestamp with time zone',
+    type: 'jsonb',
   })
-  lastFetchAttempt!: Date;
-
-  @Column({
-    type: 'xml',
-  })
-  xmlContent!: string;
+  responseDetails!: FeedResponseDetails;
 }

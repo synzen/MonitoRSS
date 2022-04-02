@@ -1,17 +1,11 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import fetch, { Response } from 'node-fetch';
 import { Repository } from 'typeorm';
+import logger from '../utils/logger';
+import { FeedResponseStatus } from './constants';
 import { FeedResponse } from './entities';
-import {
-  FeedRequestException,
-  FeedTooManyRequestsException,
-  FeedUnauthorizedException,
-  FeedForbiddenException,
-  FeedInternalErrorException,
-  FeedCloudflareException,
-} from './exceptions';
 
 interface FetchOptions {
   userAgent?: string;
@@ -26,21 +20,60 @@ export class FeedFetcherService {
   ) {}
 
   async fetchAndSaveResponse(url: string) {
-    const userAgent = this.configService.get<string>('feedUserAgent');
-    const res = await this.fetchFeedResponse(url, {
-      userAgent,
-    });
+    const fetchOptions: FetchOptions = {
+      userAgent: this.configService.get<string>('feedUserAgent'),
+    };
 
-    await this.feedResponseRepository.upsert(
-      {
+    try {
+      const res = await this.fetchFeedResponse(url, fetchOptions);
+
+      const isCloudflareServer = !!res.headers
+        .get('server')
+        ?.includes('cloudflare');
+
+      let responseText: string | undefined = undefined;
+
+      try {
+        responseText = await res.text();
+      } catch (err) {
+        logger.debug(`Failed to parse response text of url ${url}`, {
+          stack: (err as Error).stack,
+        });
+      }
+
+      if (res.ok) {
+        await this.feedResponseRepository.insert({
+          url,
+          status: FeedResponseStatus.OK,
+          fetchOptions,
+          responseDetails: {
+            cloudflareServer: isCloudflareServer,
+            statusCode: res.status,
+            responseText,
+          },
+        });
+      } else {
+        await this.feedResponseRepository.insert({
+          url,
+          status: FeedResponseStatus.FAILED,
+          fetchOptions,
+          responseDetails: {
+            cloudflareServer: isCloudflareServer,
+            responseText,
+            statusCode: res.status,
+          },
+        });
+      }
+    } catch (err) {
+      await this.feedResponseRepository.insert({
         url,
-        xmlContent: await res.text(),
-        lastFetchAttempt: new Date(),
-      },
-      {
-        conflictPaths: ['url'],
-      },
-    );
+        status: FeedResponseStatus.FETCH_ERROR,
+        fetchOptions,
+        responseDetails: {
+          errorMessage: (err as Error).message,
+        },
+      });
+    }
   }
 
   async fetchFeedResponse(
@@ -54,32 +87,6 @@ export class FeedFetcherService {
         'user-agent': options?.userAgent || '',
       },
     });
-
-    if (!res.ok) {
-      const isCloudflare = res.headers.get('server')?.includes('cloudflare');
-
-      if (isCloudflare) {
-        throw new FeedCloudflareException();
-      }
-
-      if (res.status === HttpStatus.TOO_MANY_REQUESTS) {
-        throw new FeedTooManyRequestsException();
-      }
-
-      if (res.status === HttpStatus.UNAUTHORIZED) {
-        throw new FeedUnauthorizedException();
-      }
-
-      if (res.status === HttpStatus.FORBIDDEN) {
-        throw new FeedForbiddenException();
-      }
-
-      if (res.status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-        throw new FeedInternalErrorException();
-      }
-
-      throw new FeedRequestException(`Non-200 status code (${res.status})`);
-    }
 
     return res;
   }
