@@ -6,6 +6,14 @@ import { URL } from 'url';
 import { readFileSync } from 'fs';
 import { Repository } from 'typeorm';
 import { FeedResponse } from './entities';
+import { HttpStatus } from '@nestjs/common';
+import {
+  FeedForbiddenException,
+  FeedInternalErrorException,
+  FeedRequestException,
+  FeedTooManyRequestsException,
+  FeedUnauthorizedException,
+} from './exceptions';
 
 describe('FeedFetcherService', () => {
   let service: FeedFetcherService;
@@ -51,6 +59,28 @@ describe('FeedFetcherService', () => {
       const res = await service.fetchFeedResponse(feedUrl);
       expect(await res.text()).toEqual(feedXml);
     });
+
+    it.each([
+      [HttpStatus.TOO_MANY_REQUESTS, FeedTooManyRequestsException],
+      [HttpStatus.UNAUTHORIZED, FeedUnauthorizedException],
+      [HttpStatus.FORBIDDEN, FeedForbiddenException],
+      [HttpStatus.INTERNAL_SERVER_ERROR, FeedInternalErrorException],
+      [HttpStatus.BAD_GATEWAY, FeedInternalErrorException],
+      [HttpStatus.NOT_FOUND, FeedRequestException],
+    ])(
+      'throws the appropriate exception for status code %s',
+      (statusCode, exception) => {
+        nock(url.origin)
+          .get(url.pathname)
+          .replyWithFile(statusCode, feedFilePath, {
+            'Content-Type': 'application/xml',
+          });
+
+        return expect(service.fetchFeedResponse(feedUrl)).rejects.toThrow(
+          exception,
+        );
+      },
+    );
   });
 
   describe('fetchAndSaveResponse', () => {
