@@ -19,12 +19,36 @@ class EnvironmentVariables {
   NODE_ENV!: Environment;
 
   @IsString()
+  @IsOptional()
+  DATADOG_API_KEY!: string;
+
+  @IsString()
   @MinLength(1)
   POSTGRES_URI!: string;
 
   @IsBoolean()
   @IsOptional()
   SYNC_DB!: boolean;
+
+  @IsString()
+  @MinLength(1)
+  AWS_SQS_QUEUE_URL!: string;
+
+  @IsString()
+  @MinLength(1)
+  AWS_REGION!: string;
+
+  @IsString()
+  @MinLength(1)
+  AWS_ACCESS_KEY_ID!: string;
+
+  @IsString()
+  @MinLength(1)
+  AWS_SECRET_ACCESS_KEY!: string;
+
+  @IsString()
+  @IsOptional()
+  AWS_SQS_QUEUE_SERVICE_ENDPOINT!: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

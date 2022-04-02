@@ -1,5 +1,12 @@
 version: '3.8'
 services:
+  request-queue:
+    image: s12v/elasticmq
+    volumes:
+      - ./elasticmq.conf:/etc/elasticmq/elasticmq.conf
+    ports:
+      - '9324:9324'
+      - '9325:9325'
   mrss-postgres:
     container_name: mrss-postgres-container
     restart: always
@@ -37,10 +44,14 @@ services:
     command: npm run start:dev
     depends_on:
       - mrss-postgres
+      - request-queue
     env_file:
       - .env.local
     environment:
       - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
+      - AWS_SQS_QUEUE_URL=http://request-queue:9324/queue/request-queue
+      - AWS_SQS_QUEUE_SERVICE_ENDPOINT=http://request-queue:9324
+      - AWS_REGION=us-east-1
 
 volumes:
   db:

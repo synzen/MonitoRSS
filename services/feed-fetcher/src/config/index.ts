@@ -21,5 +21,12 @@ dotenv.config({
 export default () =>
   ({
     POSTGRES_URI: process.env.POSTGRES_URI as string,
+    DATADOG_API_KEY: process.env.DATADOG_API_KEY as string,
     SYNC_DB: process.env.SYNC_DB === 'true',
+    AWS_SQS_QUEUE_URL: process.env.AWS_SQS_QUEUE_URL as string,
+    AWS_REGION: process.env.AWS_REGION as string,
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
+    AWS_SQS_QUEUE_SERVICE_ENDPOINT: process.env
+      .AWS_SQS_QUEUE_SERVICE_ENDPOINT as string,
   } as const);
