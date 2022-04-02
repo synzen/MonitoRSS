@@ -284,7 +284,9 @@ class ArticleMessage {
     } else {
       options.embed = embeds[0]
     }
-    options.split = this.feed.split
+    if (this.feed.split && this.feed.split.enabled) {
+      options.split = this.feed.split
+    }
     return options
   }
 
