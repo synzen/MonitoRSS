@@ -33,6 +33,22 @@ export const FeedSearchSelect: React.FC<Props> = () => {
     setSearch(value);
   }, 500);
 
+  let options: Array<{ value: string, label: string }> = [];
+
+  if (search) {
+    options = data?.results.map((feed) => ({
+      value: feed.id,
+      label: feed.title,
+    })) || [];
+  }
+
+  if (!search && feedId) {
+    options = data?.results.filter((feed) => feed.id === feedId).map((feed) => ({
+      value: feed.id,
+      label: feed.title,
+    })) || [];
+  }
+
   return (
     <ThemedSelect
       onChange={onChangedValue}
@@ -41,10 +57,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
       value={feedId}
       placeholder={t('features.feed.components.feedSearchSelect.placeholder')}
       onInputChange={onSearchChange}
-      options={!search ? [] : data?.results.map((feed) => ({
-        value: feed.id,
-        label: feed.title,
-      })) || []}
+      options={options}
     />
   );
 };
