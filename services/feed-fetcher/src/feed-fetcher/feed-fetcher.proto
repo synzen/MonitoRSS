@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package feedfetcher;
+
+service FeedFetcherController {
+  rpc FetchFeed (FetchDetails) returns (FetchFeedResponseDto) {}
+}
+
+message FetchDetails {
+  string url = 1;
+}
+
+message FetchFeedResponseDto {
+  string id = 1;
+  // string name = 2;
+}

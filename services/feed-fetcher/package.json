@@ -22,10 +22,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.58.0",
+    "@grpc/grpc-js": "^1.6.1",
+    "@grpc/proto-loader": "^0.6.9",
     "@monitorss/logger": "^1.1.0",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^2.0.0",
     "@nestjs/core": "^8.0.0",
+    "@nestjs/microservices": "^8.4.3",
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/typeorm": "^8.0.3",
     "class-transformer": "^0.5.1",
