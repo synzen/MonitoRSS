@@ -42,7 +42,7 @@ export class FeedFetcherService {
       }
 
       if (res.ok) {
-        await this.feedResponseRepository.insert({
+        return await this.feedResponseRepository.insert({
           url,
           status: FeedResponseStatus.OK,
           fetchOptions,
@@ -53,7 +53,7 @@ export class FeedFetcherService {
           },
         });
       } else {
-        await this.feedResponseRepository.insert({
+        return await this.feedResponseRepository.insert({
           url,
           status: FeedResponseStatus.FAILED,
           fetchOptions,
@@ -65,7 +65,10 @@ export class FeedFetcherService {
         });
       }
     } catch (err) {
-      await this.feedResponseRepository.insert({
+      logger.debug(`Failed to fetch url ${url}`, {
+        stack: (err as Error).stack,
+      });
+      return this.feedResponseRepository.insert({
         url,
         status: FeedResponseStatus.FETCH_ERROR,
         fetchOptions,
