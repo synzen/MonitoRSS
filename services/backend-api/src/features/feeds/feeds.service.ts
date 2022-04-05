@@ -52,6 +52,8 @@ interface UpdateFeedInput {
   channelId?: string;
   webhook?: {
     id?: string;
+    name?: string;
+    iconUrl?: string;
   };
   ncomparisons?: string[];
   pcomparisons?: string[];
@@ -268,24 +270,25 @@ export class FeedsService {
       _.isUndefined,
     );
 
+    const webhookUpdates = this.getUpdateWebhookObject(
+      existingFeed.webhook,
+      input,
+    );
+
+    console.log(webhookUpdates);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateObject: Record<string, any> = {
-      $set: {},
-      $unset: {},
+      $set: {
+        ...webhookUpdates.$set,
+      },
+      $unset: {
+        ...webhookUpdates.$unset,
+      },
     };
 
     if (strippedUpdateObject.text != null) {
       updateObject.$set.text = strippedUpdateObject.text;
-    }
-
-    if (strippedUpdateObject.webhook?.id != null) {
-      if (!strippedUpdateObject.webhook?.id) {
-        updateObject.$unset.webhook = '';
-      } else {
-        updateObject.$set.webhook = {
-          id: strippedUpdateObject.webhook.id,
-        };
-      }
     }
 
     if (strippedUpdateObject.filters) {
@@ -608,6 +611,53 @@ export class FeedsService {
     if (!hasPermissionInChannel) {
       throw new MissingChannelPermissionsException();
     }
+  }
+
+  private getUpdateWebhookObject(
+    existingFeedWebhook: Feed['webhook'],
+    updateObject: UpdateFeedInput,
+  ) {
+    if (updateObject.webhook?.id === '') {
+      return {
+        $set: {},
+        $unset: {
+          webhook: '',
+        },
+      };
+    }
+
+    const toSet = {
+      $set: {
+        webhook: {} as Record<string, unknown>,
+      },
+      $unset: {},
+    };
+
+    if (typeof updateObject.webhook?.id === 'string') {
+      toSet.$set.webhook.id = updateObject.webhook.id;
+    }
+
+    if (typeof updateObject.webhook?.name === 'string') {
+      toSet.$set.webhook.name = updateObject.webhook.name;
+    }
+
+    if (typeof updateObject.webhook?.iconUrl === 'string') {
+      toSet.$set.webhook.avatar = updateObject.webhook.iconUrl;
+    }
+
+    if (Object.keys(toSet.$set.webhook).length === 0) {
+      return {
+        $set: {},
+        $unset: {},
+      };
+    }
+
+    toSet.$set.webhook = {
+      ...(existingFeedWebhook || {}),
+      ...toSet.$set.webhook,
+    };
+
+    return toSet;
   }
 
   private async getRemainingFeedLimitCount(guildId: string) {

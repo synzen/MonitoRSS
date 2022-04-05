@@ -26,6 +26,7 @@ import { DiscordChannelName } from '@/features/discordServers/components/Discord
 import { notifyError } from '@/utils/notifyError';
 import { Feed } from '../../types';
 import { FeedStatusTag } from './FeedStatusTag';
+import { WebhookForm } from './WebhookForm';
 
 interface Props {
   feedId?: string;
@@ -207,13 +208,22 @@ export const FeedSidebar: React.FC<Props> = ({
         </Button>
       </Stack>
       {/* <Divider /> */}
-      <Stack>
-        <Stack spacing={5}>
+      <Stack spacing={5}>
+        <Stack spacing={5} divider={<Divider />}>
           <Heading as="h3" size="md" fontWeight="medium">
             {t('features.feed.components.sidebar.settings')}
           </Heading>
-          <Divider />
           <SettingsForm
+            feedId={feedId}
+            serverId={serverId}
+            onUpdated={onFeedChanged}
+          />
+        </Stack>
+        <Stack spacing={5} divider={<Divider />}>
+          <Heading as="h3" size="md" fontWeight="medium">
+            {t('features.feed.components.sidebar.webhookTitle')}
+          </Heading>
+          <WebhookForm
             feedId={feedId}
             serverId={serverId}
             onUpdated={onFeedChanged}

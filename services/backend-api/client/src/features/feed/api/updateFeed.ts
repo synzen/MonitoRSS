@@ -8,7 +8,11 @@ export interface UpdateFeedInput {
     text?: Feed['text'],
     title?: string;
     channelId?: string;
-    webhookId?: string,
+    webhook?: {
+      id?: string;
+      name?: string;
+      iconUrl?: string;
+    }
     filters?: Array<{ category: string, value: string }>
     checkTitles?: boolean;
     checkDates?: boolean;

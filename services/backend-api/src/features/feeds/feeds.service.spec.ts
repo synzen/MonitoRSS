@@ -632,19 +632,23 @@ describe('FeedsService', () => {
     });
 
     describe('webhooks', () => {
-      it('updates webhook id when no webhook previously existed', async () => {
+      it('updates webhook properties when no webhook previously existed', async () => {
         const newWebhookId = 'my-new-webhook-id';
         const createdFeed = await feedModel.create(createTestFeed());
 
         await service.updateOne(createdFeed._id.toString(), {
           webhook: {
             id: newWebhookId,
+            name: 'my-new-webhook-name',
+            iconUrl: 'my-new-webhook-avatar',
           },
         });
 
         const updatedFeed = await feedModel.findById(createdFeed._id).lean();
 
         expect(updatedFeed?.webhook?.id).toEqual(newWebhookId);
+        expect(updatedFeed?.webhook?.name).toEqual('my-new-webhook-name');
+        expect(updatedFeed?.webhook?.avatar).toEqual('my-new-webhook-avatar');
       });
 
       it('returns the new webhook id after a webhook update', async () => {
@@ -701,6 +705,58 @@ describe('FeedsService', () => {
         const updatedFeed = await feedModel.findById(createdFeed._id).lean();
 
         expect(updatedFeed?.webhook).toBeUndefined();
+      });
+
+      it('updates name and avatar only if webhook id is unspecified', async () => {
+        const oldWebhookId = 'old-webhook-id';
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            webhook: {
+              id: oldWebhookId,
+              name: 'old-webhook-name',
+              avatar: 'old-webhook-avatar',
+            },
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {
+          webhook: {
+            name: 'my-new-webhook-name',
+            iconUrl: 'my-new-webhook-avatar',
+          },
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.webhook?.id).toEqual(oldWebhookId);
+        expect(updatedFeed?.webhook?.name).toEqual('my-new-webhook-name');
+        expect(updatedFeed?.webhook?.avatar).toEqual('my-new-webhook-avatar');
+      });
+
+      it('is able to set name and avatar to empty strings', async () => {
+        const oldWebhookId = 'old-webhook-id';
+        const createdFeed = await feedModel.create(
+          createTestFeed({
+            webhook: {
+              id: oldWebhookId,
+              name: 'old-webhook-name',
+              avatar: 'old-webhook-avatar',
+            },
+          }),
+        );
+
+        await service.updateOne(createdFeed._id.toString(), {
+          webhook: {
+            name: '',
+            iconUrl: '',
+          },
+        });
+
+        const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+        expect(updatedFeed?.webhook?.id).toEqual(oldWebhookId);
+        expect(updatedFeed?.webhook?.name).toEqual('');
+        expect(updatedFeed?.webhook?.avatar).toEqual('');
       });
     });
 

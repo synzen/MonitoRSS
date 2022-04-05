@@ -57,6 +57,8 @@ interface FeedOutputDto {
   pcomparisons: Array<string>;
   webhook?: {
     id: string;
+    name?: string;
+    iconUrl?: string;
   };
 }
 
@@ -120,6 +122,8 @@ export class GetFeedOutputDto {
     if (feed.webhook?.id) {
       resultSoFar.result.webhook = {
         id: feed.webhook.id,
+        name: feed.webhook.name,
+        iconUrl: feed.webhook.avatar,
       };
     }
 

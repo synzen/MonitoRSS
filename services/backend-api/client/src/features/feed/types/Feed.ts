@@ -60,6 +60,8 @@ export const FeedSchema = object({
   pcomparisons: array(string().required()).required(),
   webhook: object({
     id: string().required(),
+    name: string().optional(),
+    iconUrl: string().optional(),
   }).optional(),
 });
 

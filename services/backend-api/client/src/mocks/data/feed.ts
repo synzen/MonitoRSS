@@ -24,6 +24,8 @@ const mockFeeds: Feed[] = [{
   pcomparisons: [],
   webhook: {
     id: mockDiscordWebhooks[0].id,
+    iconUrl: mockDiscordWebhooks[0].avatarUrl,
+    name: mockDiscordWebhooks[0].name,
   },
   filters: [{
     category: 'title',

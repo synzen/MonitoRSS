@@ -136,7 +136,9 @@ export class FeedsController {
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
     @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto,
   ): Promise<UpdateFeedOutputDto> {
-    if (updateFeedInput.webhookId) {
+    console.log(123);
+
+    if (updateFeedInput.webhook?.id) {
       if (!(await this.supportersService.serverCanUseWebhooks(feed.guild))) {
         throw new WebhooksDisabledException(
           'This server does not have webhooks enabled',
@@ -144,7 +146,7 @@ export class FeedsController {
       }
 
       const foundWebhook = await this.webhooksService.getWebhook(
-        updateFeedInput.webhookId,
+        updateFeedInput.webhook.id,
       );
 
       if (!foundWebhook) {
@@ -179,7 +181,9 @@ export class FeedsController {
       text: updateFeedInput.text,
       filters: filtersUpdate,
       webhook: {
-        id: updateFeedInput.webhookId,
+        id: updateFeedInput.webhook?.id,
+        name: updateFeedInput.webhook?.name,
+        iconUrl: updateFeedInput.webhook?.iconUrl,
       },
       checkDates: updateFeedInput.checkDates,
       imgLinksExistence: updateFeedInput.imgLinksExistence,

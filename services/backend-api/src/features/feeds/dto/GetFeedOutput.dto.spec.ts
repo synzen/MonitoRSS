@@ -16,6 +16,8 @@ describe('GetFeedOutputDto', () => {
       const feed = createDetailedFeed({
         webhook: {
           id: '1234',
+          name: 'webhook-name',
+          avatar: 'webhook-avatar',
         },
       });
 
@@ -67,6 +69,8 @@ describe('GetFeedOutputDto', () => {
           })),
           webhook: {
             id: feed.webhook?.id,
+            name: feed.webhook?.name,
+            iconUrl: feed.webhook?.avatar,
           },
         },
       });

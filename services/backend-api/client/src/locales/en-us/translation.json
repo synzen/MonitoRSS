@@ -225,6 +225,11 @@
         },
         "sidebar": {
           "settings": "Settings",
+          "webhookTitle": "Webhook",
+          "webhookNameLabel": "Name",
+          "webhookNameDescription": "This will override the webhook's name.",
+          "webhookIconUrlLabel": "Icon URL",
+          "webhookIconUrlDescription": "This will override the webhook's icon.",
           "titleFormLabel": "Title",
           "titleFormHint": "This is only for your reference.",
           "channelFormLabel": "Channel",
