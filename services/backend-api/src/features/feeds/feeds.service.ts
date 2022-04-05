@@ -275,8 +275,6 @@ export class FeedsService {
       input,
     );
 
-    console.log(webhookUpdates);
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateObject: Record<string, any> = {
       $set: {
