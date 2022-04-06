@@ -9,7 +9,7 @@ import { FeedResponse } from './entities';
 
 import { FeedResponseStatus } from './constants';
 
-jest.mock('../utils/logger')
+jest.mock('../utils/logger');
 
 describe('FeedFetcherService', () => {
   let service: FeedFetcherService;

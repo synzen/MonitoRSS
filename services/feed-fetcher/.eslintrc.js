@@ -25,8 +25,10 @@ module.exports = {
       'error',
       {
         'endOfLine': 'auto',
+        'semi': true
       }
     ],
+    "semi": "error",
     "padding-line-between-statements": [
       "error",
       {
