@@ -50,6 +50,7 @@ import {
   FeedFilteredFormatFeature,
   FeedFilteredFormatModel,
 } from './entities/feed-filtered-format.entity';
+import dayjs from 'dayjs';
 
 jest.mock('../../utils/logger');
 
@@ -1135,6 +1136,25 @@ describe('FeedsService', () => {
       expect(result[0].failReason).toEqual(failRecord.reason);
     });
 
+    it('returns feed status failing correctly', async () => {
+      const createdFeed = await feedModel.create(createTestFeed());
+      const failRecord = createTestFailRecord({
+        _id: createdFeed.url,
+        failedAt: dayjs().subtract(5, 'minutes').toDate(),
+        reason: 'test-fail-reason',
+      });
+      await failRecordModel.create(failRecord);
+      const result = await service.findFeeds(
+        {
+          _id: createdFeed._id,
+        },
+        defaultOptions,
+      );
+
+      expect(result[0].status).toEqual(FeedStatus.FAILING);
+      expect(result[0].failReason).toEqual(failRecord.reason);
+    });
+
     it('returns disabled status correctly', async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
@@ -1207,7 +1227,7 @@ describe('FeedsService', () => {
         defaultOptions,
       );
 
-      expect(result[0].status).toEqual(FeedStatus.OK);
+      expect(result[0].status).not.toEqual(FeedStatus.FAILED);
     });
   });
 

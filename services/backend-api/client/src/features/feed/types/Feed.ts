@@ -34,7 +34,7 @@ export const FeedSchema = object({
   // From FeedSumarySchema, copied over since TypeScript doesn't work well with yup's .concat()
   id: string().required(),
   title: string().required(),
-  status: string().oneOf(['ok', 'failed', 'disabled']).required(),
+  status: string().oneOf(['ok', 'failed', 'disabled', 'failing']).required(),
   url: string().required(),
   channel: string().required(),
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),

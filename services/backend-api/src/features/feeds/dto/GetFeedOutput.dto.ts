@@ -36,7 +36,7 @@ export interface FeedEmbedOutputDto {
 interface FeedOutputDto {
   id: string;
   title: string;
-  status: 'ok' | 'failed' | 'disabled';
+  status: 'ok' | 'failed' | 'disabled' | 'failing';
   failReason?: string;
   disabledReason?: string;
   filters: Array<{ category: string; value: string }>;

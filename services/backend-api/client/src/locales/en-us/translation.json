@@ -68,6 +68,8 @@
     "feed": {
       "disabledTitle": "This feed is currently disabled",
       "disabledDescription": "Articles will not be fetched until it is re-enabled. Reason: {{reason}}",
+      "connectingFailingTitle": "Unable to establish connection",
+      "connectingFailingDescription": "A successful connection to the feed cannot be established ({{reason}}). If this persists for an extended duration after extensive retries, this feed will eventually be disabled.",
       "connectionFailureTitle": "Disabled due to too many connection failures",
       "connectionFailureText": "There has been too many connection failures within a short period of time ({{reason}}). You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
       "unknownReason": "unknown reason",

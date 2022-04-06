@@ -12,8 +12,10 @@ export const FeedStatusTag: React.FC<Props> = ({ status }) => {
     colorScheme = 'green';
   } else if (status === 'failed') {
     colorScheme = 'red';
-  } else if (status === 'disabled') {
+  } else if (status === 'failing') {
     colorScheme = 'orange';
+  } else if (status === 'disabled') {
+    colorScheme = 'yellow';
   } else {
     colorScheme = 'gray';
   }

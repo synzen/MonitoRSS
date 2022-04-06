@@ -453,6 +453,8 @@ export class FeedsService {
 
       if (this.isValidFailRecord(feed.failRecord || null)) {
         feedStatus = FeedStatus.FAILED;
+      } else if (feed.failRecord) {
+        feedStatus = FeedStatus.FAILING;
       } else if (feed.disabled) {
         feedStatus = FeedStatus.DISABLED;
       } else {

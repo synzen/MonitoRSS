@@ -124,6 +124,18 @@ export const FeedSidebar: React.FC<Props> = ({
             {feed?.url}
           </Text>
         </Stack>
+        <Alert status="warning" hidden={feed && feed.status !== 'failing'}>
+          <Box>
+            <AlertTitle>
+              {t('pages.feed.connectingFailingTitle')}
+            </AlertTitle>
+            <AlertDescription display="block">
+              {t('pages.feed.connectingFailingDescription', {
+                reason: feed?.failReason || t('pages.feed.unknownReason'),
+              })}
+            </AlertDescription>
+          </Box>
+        </Alert>
         <Alert status="error" hidden={feed && feed.status !== 'failed'}>
           <Box>
             <AlertTitle>
