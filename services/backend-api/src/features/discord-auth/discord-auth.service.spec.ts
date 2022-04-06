@@ -21,6 +21,7 @@ describe('DiscordAuthService', () => {
     id: 'mock-discord-user-id',
     discriminator: 'mock-discord-user-discriminator',
     username: 'mock-discord-user-username',
+    avatar: 'mock-discord-user-avatar',
   };
 
   beforeEach(() => {

@@ -47,11 +47,12 @@ describe('FeedSchedulingService', () => {
     });
 
     describe('when the feeds are backed by a supporter', () => {
-      it('returns the vip refresh rate', async () => {
+      it('returns the refreh rates of the benefits', async () => {
         const serverBenefits = [
           {
             serverId: sampleFeedDetails[0].guild,
             hasSupporter: true,
+            refreshRateSeconds: 100,
           },
         ];
 
@@ -62,24 +63,7 @@ describe('FeedSchedulingService', () => {
         const refreshRates = await service.getRefreshRatesOfFeeds(
           sampleFeedDetails,
         );
-        expect(refreshRates[0]).toBe(service.vipRefreshRateSeconds);
-      });
-      it('does not return vip refresh rate if the feed url contains feed43', async () => {
-        const serverBenefits = [
-          {
-            serverId: sampleFeedDetails[0].guild,
-            hasSupporter: true,
-          },
-        ];
-
-        supportersService.getBenefitsOfServers.mockResolvedValue(
-          serverBenefits,
-        );
-
-        const refreshRates = await service.getRefreshRatesOfFeeds(
-          sampleFeedDetails,
-        );
-        expect(refreshRates[0]).not.toBe(service.defaultRefreshRateSeconds);
+        expect(refreshRates[0]).toBe(serverBenefits[0].refreshRateSeconds);
       });
     });
 

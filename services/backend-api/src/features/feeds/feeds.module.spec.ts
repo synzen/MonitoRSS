@@ -160,7 +160,7 @@ describe('FeedsModule', () => {
         ...standardRequestOptions,
       });
 
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
       expect(JSON.parse(body).code).toEqual(
         ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
       );
@@ -649,7 +649,9 @@ describe('FeedsModule', () => {
       await feedModel.create(feed);
 
       const payload = {
-        webhookId,
+        webhook: {
+          id: webhookId,
+        },
       };
 
       nock(DISCORD_API_BASE_URL)
@@ -665,16 +667,16 @@ describe('FeedsModule', () => {
 
       const parsedBody = JSON.parse(body);
       expect(statusCode).toEqual(HttpStatus.OK);
-      expect(parsedBody.result.webhook).toEqual({
-        id: webhookId,
-      });
+      expect(parsedBody.result.webhook).toEqual(
+        expect.objectContaining({
+          id: webhookId,
+        }),
+      );
     });
   });
 
-  it('throws 400 if server has no access to webhooks (server has no supporter)', async () => {
+  it('throws 403 if server has no access to webhooks (server has no supporter)', async () => {
     mockGetMeServers();
-    const webhookId = 'webhook-id';
-
     const feed = createTestFeed({
       guild: guildId,
       webhook: undefined,
@@ -683,7 +685,9 @@ describe('FeedsModule', () => {
     await feedModel.create(feed);
 
     const payload = {
-      webhookId,
+      webhook: {
+        id: 'webhook-id',
+      },
     };
 
     const { statusCode } = await app.inject({
@@ -693,7 +697,7 @@ describe('FeedsModule', () => {
       ...standardRequestOptions,
     });
 
-    expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
+    expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
   });
 
   it('returns 400 if webhook was not found by Discord', async () => {
@@ -714,7 +718,9 @@ describe('FeedsModule', () => {
     await feedModel.create(feed);
 
     const payload = {
-      webhookId,
+      webhook: {
+        id: webhookId,
+      },
     };
 
     nock(DISCORD_API_BASE_URL)

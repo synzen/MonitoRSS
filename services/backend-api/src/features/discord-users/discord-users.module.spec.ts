@@ -5,7 +5,7 @@ import {
 } from '../../utils/endpoint-tests';
 import { MongooseTestModule } from '../../utils/mongoose-test.module';
 import nock from 'nock';
-import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { DISCORD_API_BASE_URL } from '../../constants/discord';
 import { Session } from '../../common';
 import { DiscordUserModule } from './discord-users.module';
@@ -18,7 +18,6 @@ import {
   SupporterModel,
 } from '../supporters/entities/supporter.entity';
 import { getModelToken } from '@nestjs/mongoose';
-import { Cache } from 'cache-manager';
 
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
@@ -33,6 +32,7 @@ describe('DiscordServersModule', () => {
     id: '12345',
     username: 'Test User',
     discriminator: '1234',
+    avatar: 'avatar-hash',
   };
 
   beforeAll(async () => {
@@ -57,9 +57,6 @@ describe('DiscordServersModule', () => {
   afterEach(async () => {
     nock.cleanAll();
     await supporterModel.deleteMany();
-
-    const cacheManager = app.get<Cache>(CACHE_MANAGER);
-    cacheManager.reset();
   });
 
   afterAll(async () => {

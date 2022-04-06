@@ -22,9 +22,11 @@ import { createTestPatron } from '../../test/data/patron.test-data';
 import dayjs from 'dayjs';
 import { PatronsService } from './patrons.service';
 import { ConfigService } from '@nestjs/config';
+import { GuildSubscriptionsService } from './guild-subscriptions.service';
 
 describe('SupportersService Integration', () => {
   let supportersService: SupportersService;
+  let guildSubscriptionsService: GuildSubscriptionsService;
   let supporterModel: SupporterModel;
   let patronModel: PatronModel;
   const defaultMaxFeeds = 5;
@@ -32,24 +34,36 @@ describe('SupportersService Integration', () => {
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
-      providers: [SupportersService, PatronsService],
+      providers: [SupportersService, PatronsService, GuildSubscriptionsService],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([SupporterFeature, PatronFeature]),
       ],
     });
 
-    uncompiledModule.overrideProvider(ConfigService).useValue({
-      get: (key: string) => {
-        if (key === 'defaultMaxFeeds') {
-          return defaultMaxFeeds;
-        }
-      },
-    });
+    uncompiledModule
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: (key: string) => {
+          if (key === 'defaultMaxFeeds') {
+            return defaultMaxFeeds;
+          }
+        },
+      })
+      .overrideProvider(GuildSubscriptionsService)
+      .useValue({
+        getAllSubscriptions: jest.fn(),
+      });
 
     const { module } = await init();
 
     supportersService = module.get<SupportersService>(SupportersService);
+    guildSubscriptionsService = module.get<GuildSubscriptionsService>(
+      GuildSubscriptionsService,
+    );
+    jest
+      .spyOn(guildSubscriptionsService, 'getAllSubscriptions')
+      .mockResolvedValue([]);
     supportersService.defaultMaxFeeds = defaultMaxFeeds;
     supporterModel = module.get<SupporterModel>(getModelToken(Supporter.name));
     patronModel = module.get<PatronModel>(getModelToken(Patron.name));
@@ -99,6 +113,7 @@ describe('SupportersService Integration', () => {
         guilds: supporter.guilds,
         maxGuilds: supporter.maxGuilds,
         expireAt: supporter.expireAt,
+        refreshRateSeconds: 120,
       });
     });
   });

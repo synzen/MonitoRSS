@@ -18,6 +18,7 @@ export class MongooseTestModule {
       imports: [
         MongooseModule.forRoot(await memoryServer.getUri(), {
           ...options?.mongooseOptions,
+          retryAttempts: 0,
         }),
       ],
     };

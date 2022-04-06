@@ -92,6 +92,7 @@ describe('DiscordServersService', () => {
     const guildId = 'mock-guild-id';
     const mockProfile = {
       id: guildId,
+      data: 'foo',
     };
     const mockFeeds = [
       {
@@ -174,14 +175,11 @@ describe('DiscordServersService', () => {
 
     it('returns the correct data', () => {
       const guildId = 'mock-guild-id';
-      const mockProfile = {
-        id: guildId,
-        data: 'foo',
-      };
 
       const result = service.createBackup(guildId);
 
       expect(result).resolves.toEqual({
+        backupVersion: '1',
         profile: {
           ...mockProfile,
           _id: guildId,
