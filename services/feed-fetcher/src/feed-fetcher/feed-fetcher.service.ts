@@ -68,6 +68,7 @@ export class FeedFetcherService {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
       });
+
       return this.feedResponseRepository.insert({
         url,
         status: FeedResponseStatus.FETCH_ERROR,
