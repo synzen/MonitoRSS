@@ -1,1 +1,2 @@
-export * from './request-response.entity';
+export * from './request.entity';
+export * from './response.entity';

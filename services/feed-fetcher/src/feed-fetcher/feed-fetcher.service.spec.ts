@@ -5,7 +5,7 @@ import path from 'path';
 import { URL } from 'url';
 import { readFileSync } from 'fs';
 import { Repository } from 'typeorm';
-import { RequestResponse } from './entities';
+import { Request, Response } from './entities';
 
 import { RequestResponseStatus } from './constants';
 
@@ -18,7 +18,10 @@ describe('FeedFetcherService', () => {
   const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
   const feedXml = readFileSync(feedFilePath, 'utf8');
-  const feedResponseRepository: Repository<RequestResponse> = {
+  const requestRepo: Repository<Request> = {
+    insert: jest.fn(),
+  } as never;
+  const responseRepo: Repository<Response> = {
     insert: jest.fn(),
   } as never;
 
@@ -26,7 +29,7 @@ describe('FeedFetcherService', () => {
     configService = {
       get: jest.fn(),
     } as never;
-    service = new FeedFetcherService(feedResponseRepository, configService);
+    service = new FeedFetcherService(requestRepo, responseRepo, configService);
   });
 
   afterEach(() => {
@@ -87,44 +90,42 @@ describe('FeedFetcherService', () => {
     });
 
     describe('if ok response', () => {
-      it('saves correctly', async () => {
+      it('saves request correctly', async () => {
         nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
           'Content-Type': 'application/xml',
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(feedResponseRepository.insert).toHaveBeenCalledWith({
+        expect(requestRepo.insert).toHaveBeenCalledWith({
           url: feedUrl,
           status: RequestResponseStatus.OK,
           fetchOptions: {
             userAgent,
           },
-          responseDetails: {
-            cloudflareServer: false,
+          response: {
             statusCode: 200,
-            responseText: feedXml,
+            isCloudflare: false,
+            text: feedXml,
           },
+          // responseDetails: {
+          //   cloudflareServer: false,
+          //   statusCode: 200,
+          //   responseText: feedXml,
+          // },
         });
       });
 
-      it('saves with cloudflare flag correctly', async () => {
+      it('saves response with cloudflare flag correctly', async () => {
         nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
           'Content-Type': 'application/xml',
           Server: 'cloudflare',
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(feedResponseRepository.insert).toHaveBeenCalledWith({
-          url: feedUrl,
-          status: RequestResponseStatus.OK,
-          fetchOptions: {
-            userAgent,
-          },
-          responseDetails: {
-            cloudflareServer: true,
-            statusCode: 200,
-            responseText: feedXml,
-          },
+        expect(responseRepo.insert).toHaveBeenCalledWith({
+          isCloudflare: true,
+          statusCode: 200,
+          text: feedXml,
         });
       });
     });
@@ -140,56 +141,47 @@ describe('FeedFetcherService', () => {
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(feedResponseRepository.insert).toHaveBeenCalledWith({
+        expect(requestRepo.insert).toHaveBeenCalledWith({
           url: feedUrl,
           status: RequestResponseStatus.FAILED,
           fetchOptions: {
             userAgent,
           },
-          responseDetails: {
-            cloudflareServer: false,
+          response: {
             statusCode: 404,
-            responseText: JSON.stringify(feedResponseBody),
+            isCloudflare: false,
+            text: JSON.stringify(feedResponseBody),
           },
         });
       });
 
-      it('saves with cloudflare flag correctly', async () => {
+      it('saves response with cloudflare flag correctly', async () => {
         nock(url.origin).get(url.pathname).reply(404, feedResponseBody, {
           'Content-Type': 'application/xml',
           Server: 'cloudflare',
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(feedResponseRepository.insert).toHaveBeenCalledWith({
-          url: feedUrl,
-          status: RequestResponseStatus.FAILED,
-          fetchOptions: {
-            userAgent,
-          },
-          responseDetails: {
-            cloudflareServer: true,
-            statusCode: 404,
-            responseText: JSON.stringify(feedResponseBody),
-          },
+        expect(responseRepo.insert).toHaveBeenCalledWith({
+          isCloudflare: true,
+          statusCode: 404,
+          text: JSON.stringify(feedResponseBody),
         });
       });
     });
 
     describe('if fetch failed', () => {
-      it('saves correctly', async () => {
+      it('saves request correctly', async () => {
         nock(url.origin).get(url.pathname).replyWithError('failed');
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(feedResponseRepository.insert).toHaveBeenCalledWith({
+        expect(requestRepo.insert).toHaveBeenCalledWith({
           url: feedUrl,
           status: RequestResponseStatus.FETCH_ERROR,
           fetchOptions: {
             userAgent,
           },
-          responseDetails: {
-            errorMessage: expect.any(String),
-          },
+          errorMessage: expect.any(String),
         });
       });
     });

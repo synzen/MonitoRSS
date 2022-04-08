@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import fetch, { Response } from 'node-fetch';
+import fetch from 'node-fetch';
 import { Repository } from 'typeorm';
 import logger from '../utils/logger';
 import { RequestResponseStatus } from './constants';
-import { RequestResponse } from './entities';
+import { Request, Response } from './entities';
 
 interface FetchOptions {
   userAgent?: string;
@@ -14,8 +14,10 @@ interface FetchOptions {
 @Injectable()
 export class FeedFetcherService {
   constructor(
-    @InjectRepository(RequestResponse)
-    private readonly feedResponseRepository: Repository<RequestResponse>,
+    @InjectRepository(Request)
+    private readonly requestRepo: Repository<Request>,
+    @InjectRepository(Response)
+    private readonly responseRepo: Repository<Response>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -23,6 +25,9 @@ export class FeedFetcherService {
     const fetchOptions: FetchOptions = {
       userAgent: this.configService.get<string>('feedUserAgent'),
     };
+    const request = new Request();
+    request.url = url;
+    request.fetchOptions = fetchOptions;
 
     try {
       const res = await this.fetchFeedResponse(url, fetchOptions);
@@ -41,49 +46,38 @@ export class FeedFetcherService {
         });
       }
 
+      const response = new Response();
+      response.statusCode = res.status;
+      response.text = responseText;
+      response.isCloudflare = isCloudflareServer;
+
+      request.response = response;
+
       if (res.ok) {
-        return await this.feedResponseRepository.insert({
-          url,
-          status: RequestResponseStatus.OK,
-          fetchOptions,
-          responseDetails: {
-            cloudflareServer: isCloudflareServer,
-            statusCode: res.status,
-            responseText,
-          },
-        });
+        request.status = RequestResponseStatus.OK;
       } else {
-        return await this.feedResponseRepository.insert({
-          url,
-          status: RequestResponseStatus.FAILED,
-          fetchOptions,
-          responseDetails: {
-            cloudflareServer: isCloudflareServer,
-            responseText,
-            statusCode: res.status,
-          },
-        });
+        request.status = RequestResponseStatus.FAILED;
       }
+
+      return Promise.all([
+        this.requestRepo.insert(request),
+        this.responseRepo.insert(response),
+      ]);
     } catch (err) {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
       });
+      request.status = RequestResponseStatus.FETCH_ERROR;
+      request.errorMessage = (err as Error).message;
 
-      return this.feedResponseRepository.insert({
-        url,
-        status: RequestResponseStatus.FETCH_ERROR,
-        fetchOptions,
-        responseDetails: {
-          errorMessage: (err as Error).message,
-        },
-      });
+      return this.requestRepo.insert(request);
     }
   }
 
   async fetchFeedResponse(
     url: string,
     options?: FetchOptions,
-  ): Promise<Response> {
+  ): Promise<ReturnType<typeof fetch>> {
     const res = await fetch(url, {
       timeout: 15000,
       follow: 5,
