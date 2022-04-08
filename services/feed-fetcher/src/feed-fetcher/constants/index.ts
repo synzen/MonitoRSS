@@ -1,3 +1,3 @@
-export * from './feed-response-status.constants';
-export * from './feed-fetch-options.constants';
-export * from './feed-response-details.constants';
+export * from './request-response-status.constants';
+export * from './request-fetch-options.constants';
+export * from './request-response-details.constants';

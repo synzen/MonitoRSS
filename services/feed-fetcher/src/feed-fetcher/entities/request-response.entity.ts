@@ -5,27 +5,27 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import {
-  FeedFetchOptions,
-  FeedResponseDetails,
-  FeedResponseStatus,
+  RequestFetchOptions,
+  RequestResponseDetails,
+  RequestResponseStatus,
 } from '../constants';
 
 @Entity()
-export class FeedResponse {
+export class RequestResponse {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column({
     type: 'enum',
-    enum: FeedResponseStatus,
+    enum: RequestResponseStatus,
   })
-  status!: FeedResponseStatus;
+  status!: RequestResponseStatus;
 
   @Column({
     type: 'jsonb',
     nullable: true,
   })
-  fetchOptions?: FeedFetchOptions | null;
+  fetchOptions?: RequestFetchOptions | null;
 
   @Column({
     unique: true,
@@ -40,5 +40,5 @@ export class FeedResponse {
   @Column({
     type: 'jsonb',
   })
-  responseDetails!: FeedResponseDetails;
+  responseDetails!: RequestResponseDetails;
 }

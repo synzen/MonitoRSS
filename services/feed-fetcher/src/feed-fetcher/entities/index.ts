@@ -1,1 +1,1 @@
-export * from './feed-response.entity';
+export * from './request-response.entity';

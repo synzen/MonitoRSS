@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { FeedResponse } from './entities';
+import { RequestResponse } from './entities';
 import { FeedFetcherController } from './feed-fetcher.controller';
 import { FeedFetcherService } from './feed-fetcher.service';
 
 @Module({
   controllers: [FeedFetcherController],
   providers: [FeedFetcherService],
-  exports: [FeedFetcherService],
-  imports: [TypeOrmModule.forFeature([FeedResponse])],
+  exports: [FeedFetcherService, TypeOrmModule],
+  imports: [TypeOrmModule.forFeature([RequestResponse])],
 })
 export class FeedFetcherModule {}

@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import fetch, { Response } from 'node-fetch';
 import { Repository } from 'typeorm';
 import logger from '../utils/logger';
-import { FeedResponseStatus } from './constants';
-import { FeedResponse } from './entities';
+import { RequestResponseStatus } from './constants';
+import { RequestResponse } from './entities';
 
 interface FetchOptions {
   userAgent?: string;
@@ -14,8 +14,8 @@ interface FetchOptions {
 @Injectable()
 export class FeedFetcherService {
   constructor(
-    @InjectRepository(FeedResponse)
-    private readonly feedResponseRepository: Repository<FeedResponse>,
+    @InjectRepository(RequestResponse)
+    private readonly feedResponseRepository: Repository<RequestResponse>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -44,7 +44,7 @@ export class FeedFetcherService {
       if (res.ok) {
         return await this.feedResponseRepository.insert({
           url,
-          status: FeedResponseStatus.OK,
+          status: RequestResponseStatus.OK,
           fetchOptions,
           responseDetails: {
             cloudflareServer: isCloudflareServer,
@@ -55,7 +55,7 @@ export class FeedFetcherService {
       } else {
         return await this.feedResponseRepository.insert({
           url,
-          status: FeedResponseStatus.FAILED,
+          status: RequestResponseStatus.FAILED,
           fetchOptions,
           responseDetails: {
             cloudflareServer: isCloudflareServer,
@@ -71,7 +71,7 @@ export class FeedFetcherService {
 
       return this.feedResponseRepository.insert({
         url,
-        status: FeedResponseStatus.FETCH_ERROR,
+        status: RequestResponseStatus.FETCH_ERROR,
         fetchOptions,
         responseDetails: {
           errorMessage: (err as Error).message,

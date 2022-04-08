@@ -5,9 +5,9 @@ import path from 'path';
 import { URL } from 'url';
 import { readFileSync } from 'fs';
 import { Repository } from 'typeorm';
-import { FeedResponse } from './entities';
+import { RequestResponse } from './entities';
 
-import { FeedResponseStatus } from './constants';
+import { RequestResponseStatus } from './constants';
 
 jest.mock('../utils/logger');
 
@@ -18,7 +18,7 @@ describe('FeedFetcherService', () => {
   const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
   const feedXml = readFileSync(feedFilePath, 'utf8');
-  const feedResponseRepository: Repository<FeedResponse> = {
+  const feedResponseRepository: Repository<RequestResponse> = {
     insert: jest.fn(),
   } as never;
 
@@ -95,7 +95,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(feedResponseRepository.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: FeedResponseStatus.OK,
+          status: RequestResponseStatus.OK,
           fetchOptions: {
             userAgent,
           },
@@ -116,7 +116,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(feedResponseRepository.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: FeedResponseStatus.OK,
+          status: RequestResponseStatus.OK,
           fetchOptions: {
             userAgent,
           },
@@ -142,7 +142,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(feedResponseRepository.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: FeedResponseStatus.FAILED,
+          status: RequestResponseStatus.FAILED,
           fetchOptions: {
             userAgent,
           },
@@ -163,7 +163,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(feedResponseRepository.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: FeedResponseStatus.FAILED,
+          status: RequestResponseStatus.FAILED,
           fetchOptions: {
             userAgent,
           },
@@ -183,7 +183,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(feedResponseRepository.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: FeedResponseStatus.FETCH_ERROR,
+          status: RequestResponseStatus.FETCH_ERROR,
           fetchOptions: {
             userAgent,
           },
