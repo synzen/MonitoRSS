@@ -21,6 +21,18 @@ export class FeedFetcherService {
     private readonly configService: ConfigService,
   ) {}
 
+  async getLatestRequest(url: string): Promise<Request | undefined> {
+    const response = await this.requestRepo.findOne({
+      where: { url },
+      order: {
+        createdAt: 'DESC',
+      },
+      relations: ['response'],
+    });
+
+    return response;
+  }
+
   async fetchAndSaveResponse(url: string) {
     const fetchOptions: FetchOptions = {
       userAgent: this.configService.get<string>('feedUserAgent'),

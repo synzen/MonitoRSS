@@ -4,7 +4,8 @@ import { validate } from 'class-validator';
 import { GrpcInvalidArgumentException } from '../shared/exceptions';
 import { GrpcInternalException } from '../shared/exceptions/grpc-internal.exception';
 import logger from '../utils/logger';
-import { FetchFeedDto, FetchFeedResponseDto } from './dto';
+import { RequestStatus } from './constants';
+import { FetchFeedDto, FetchFeedDetailsDto } from './dto';
 import { FeedFetcherService } from './feed-fetcher.service';
 
 @Controller()
@@ -12,15 +13,40 @@ export class FeedFetcherController {
   constructor(private readonly feedFetcherService: FeedFetcherService) {}
 
   @GrpcMethod()
-  async fetchFeed(data: FetchFeedDto): Promise<FetchFeedResponseDto> {
+  async fetchFeed(data: FetchFeedDto): Promise<FetchFeedDetailsDto> {
     await this.validateFetchFeedDto(data);
 
     try {
-      await this.feedFetcherService.fetchAndSaveResponse(data.url);
+      const latestRequest = await this.feedFetcherService.getLatestRequest(
+        data.url,
+      );
 
-      return {
-        id: '1',
-      };
+      if (!latestRequest) {
+        return {
+          requestStatus: 'pending',
+        };
+      }
+
+      if (
+        latestRequest.status === RequestStatus.FETCH_ERROR ||
+        !latestRequest.response
+      ) {
+        return {
+          requestStatus: 'error',
+        };
+      }
+
+      if (latestRequest.status === RequestStatus.OK) {
+        return {
+          requestStatus: 'success',
+          response: {
+            body: latestRequest.response.text || '',
+            statusCode: latestRequest.response.statusCode,
+          },
+        };
+      }
+
+      throw new Error(`Unhandled request status: ${latestRequest.status}`);
     } catch (err) {
       logger.error(`Failed to fetch and save response of feed ${data.url}`, {
         stack: (err as Error).stack,
