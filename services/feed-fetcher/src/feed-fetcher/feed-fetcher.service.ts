@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
 import { Repository } from 'typeorm';
 import logger from '../utils/logger';
-import { RequestResponseStatus } from './constants';
+import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 
 interface FetchOptions {
@@ -51,23 +51,21 @@ export class FeedFetcherService {
       response.text = responseText;
       response.isCloudflare = isCloudflareServer;
 
-      request.response = response;
-
       if (res.ok) {
-        request.status = RequestResponseStatus.OK;
+        request.status = RequestStatus.OK;
       } else {
-        request.status = RequestResponseStatus.FAILED;
+        request.status = RequestStatus.FAILED;
       }
 
-      return Promise.all([
-        this.requestRepo.insert(request),
-        this.responseRepo.insert(response),
-      ]);
+      await this.responseRepo.insert(response);
+      request.response = response;
+
+      return this.requestRepo.insert(request);
     } catch (err) {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
       });
-      request.status = RequestResponseStatus.FETCH_ERROR;
+      request.status = RequestStatus.FETCH_ERROR;
       request.errorMessage = (err as Error).message;
 
       return this.requestRepo.insert(request);

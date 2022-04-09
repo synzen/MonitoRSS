@@ -6,7 +6,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { RequestFetchOptions, RequestResponseStatus } from '../constants';
+import { RequestFetchOptions, RequestStatus } from '../constants';
 import { Response } from './response.entity';
 
 @Entity()
@@ -16,19 +16,18 @@ export class Request {
 
   @Column({
     type: 'enum',
-    enum: RequestResponseStatus,
+    enum: RequestStatus,
   })
-  status!: RequestResponseStatus;
+  status!: RequestStatus;
 
   @Column({
     type: 'jsonb',
     nullable: true,
+    default: null,
   })
   fetchOptions?: RequestFetchOptions | null;
 
-  @Column({
-    unique: true,
-  })
+  @Column()
   url!: string;
 
   @CreateDateColumn({

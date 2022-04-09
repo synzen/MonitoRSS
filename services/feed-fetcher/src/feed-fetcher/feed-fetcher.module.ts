@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RequestResponse } from './entities';
+import { Request, Response } from './entities';
 import { FeedFetcherController } from './feed-fetcher.controller';
 import { FeedFetcherService } from './feed-fetcher.service';
 
@@ -8,6 +8,6 @@ import { FeedFetcherService } from './feed-fetcher.service';
   controllers: [FeedFetcherController],
   providers: [FeedFetcherService],
   exports: [FeedFetcherService, TypeOrmModule],
-  imports: [TypeOrmModule.forFeature([RequestResponse])],
+  imports: [TypeOrmModule.forFeature([Request, Response])],
 })
 export class FeedFetcherModule {}

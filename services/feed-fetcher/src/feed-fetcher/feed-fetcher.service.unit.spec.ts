@@ -7,7 +7,7 @@ import { readFileSync } from 'fs';
 import { Repository } from 'typeorm';
 import { Request, Response } from './entities';
 
-import { RequestResponseStatus } from './constants';
+import { RequestStatus } from './constants';
 
 jest.mock('../utils/logger');
 
@@ -98,7 +98,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(requestRepo.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: RequestResponseStatus.OK,
+          status: RequestStatus.OK,
           fetchOptions: {
             userAgent,
           },
@@ -143,7 +143,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(requestRepo.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: RequestResponseStatus.FAILED,
+          status: RequestStatus.FAILED,
           fetchOptions: {
             userAgent,
           },
@@ -177,7 +177,7 @@ describe('FeedFetcherService', () => {
         await service.fetchAndSaveResponse(feedUrl);
         expect(requestRepo.insert).toHaveBeenCalledWith({
           url: feedUrl,
-          status: RequestResponseStatus.FETCH_ERROR,
+          status: RequestStatus.FETCH_ERROR,
           fetchOptions: {
             userAgent,
           },

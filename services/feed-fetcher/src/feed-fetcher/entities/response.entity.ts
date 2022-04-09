@@ -10,6 +10,7 @@ export class Response {
 
   @Column({
     nullable: true,
+    type: 'text',
   })
   text?: string | null;
 
