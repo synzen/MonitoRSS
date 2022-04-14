@@ -12,7 +12,7 @@ const { Option } = components;
 
 interface SelectOption {
   value: string;
-  label: string;
+  label: string | React.ReactNode;
   icon?: string | React.ReactNode;
 }
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
@@ -44,6 +44,7 @@ export const ThemedSelect: React.FC<Props> = ({
   placeholder,
   onInputChange,
 }) => {
+  // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
 
   const selectedOption = options.find((option) => option.value === value);

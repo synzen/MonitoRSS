@@ -21,6 +21,7 @@ import { useUpdateFeed } from '../../hooks/useUpdateFeed';
 import { Feed } from '../../types';
 import { notifyError } from '@/utils/notifyError';
 import { UpdateFeedInput } from '../../api';
+import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 
 const formSchema = object({
   webhookId: string().optional(),
@@ -142,7 +143,15 @@ export const WebhookForm: React.FC<Props> = ({
                 isDisabled={isSubmitting || isLoading}
                 isClearable
                 options={discordWebhooks?.map((webhook) => ({
-                  label: webhook.name,
+                  label: (
+                    <span>
+                      {webhook.name}
+                      {' '}
+                      (
+                      <DiscordChannelName serverId={serverId} channelId={webhook.channelId} />
+                      )
+                    </span>
+                  ),
                   value: webhook.id,
                   icon: webhook.avatarUrl,
                 })) || []}
