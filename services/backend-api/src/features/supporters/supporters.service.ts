@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { PipelineStage } from 'mongoose';
 import { PatronsService } from './patrons.service';
 import { GuildSubscriptionsService } from './guild-subscriptions.service';
+import { GuildSubscriptionFormatted } from './types';
 
 interface SupporterBenefits {
   isSupporter: boolean;
@@ -23,6 +24,18 @@ interface ServerBenefits {
   serverId: string;
   webhooks: boolean;
   refreshRateSeconds?: number;
+}
+
+interface SupportPatronAggregateResult {
+  maxFeeds?: number;
+  maxGuilds?: number;
+  slowRate?: boolean;
+  patrons: Array<{
+    status: Patron['status'];
+    pledge: number;
+    pledgeLifetime: number;
+    pledgeOverride?: number;
+  }>;
 }
 
 @Injectable()
@@ -89,6 +102,56 @@ export class SupportersService {
     };
   }
 
+  async getBenefitsOfAllServers() {
+    const subscriptions =
+      await this.guildSubscriptionsService.getAllSubscriptions();
+
+    const subscriptionsByGuildId = new Map<string, GuildSubscriptionFormatted>(
+      subscriptions.map((sub) => [sub.guildId, sub]),
+    );
+
+    const allSupportersWithGuild: Array<
+      Omit<Supporter, 'guilds'> & {
+        patrons: Patron[];
+        guilds: string; // Unwinded to actually be guild IDs
+        guildId: string; // An alias to unwinded "guilds" for readability
+      }
+    > = await this.supporterModel.aggregate([
+      ...SupportersService.SUPPORTER_PATRON_PIPELINE,
+    ]);
+
+    const benefitsMappedBySeverIds = new Map<
+      string,
+      ReturnType<typeof this.getBenefitsFromSupporter>[]
+    >();
+
+    for (const supporter of allSupportersWithGuild) {
+      const { guildId } = supporter;
+      const benefits = this.getBenefitsFromSupporter(supporter);
+      const benefitsSoFar = benefitsMappedBySeverIds.get(guildId);
+
+      if (!benefitsSoFar) {
+        benefitsMappedBySeverIds.set(guildId, [benefits]);
+      } else {
+        benefitsSoFar.push(benefits);
+      }
+    }
+
+    const serverIds = allSupportersWithGuild.map(
+      (supporter) => supporter.guildId,
+    );
+
+    return serverIds.map((serverId) => {
+      const subscription = subscriptionsByGuildId.get(serverId);
+      const serverBenefits = benefitsMappedBySeverIds.get(serverId);
+
+      return this.calculateBenefitsOfServer(serverId, {
+        subscription,
+        supporterBenefits: serverBenefits,
+      });
+    });
+  }
+
   async getBenefitsOfServers(serverIds: string[]): Promise<ServerBenefits[]> {
     const subscriptions =
       await this.guildSubscriptionsService.getAllSubscriptions({
@@ -152,36 +215,52 @@ export class SupportersService {
       );
       const serverBenefits = benefitsMappedBySeverIds.get(serverId);
 
-      if (subscription) {
-        return {
-          hasSupporter: true,
-          maxFeeds: subscription.maxFeeds,
-          refreshRateSeconds: subscription.refreshRate,
-          serverId,
-          webhooks: true,
-        };
-      }
-
-      if (!serverBenefits?.length) {
-        return {
-          hasSupporter: false,
-          maxFeeds: this.defaultMaxFeeds,
-          serverId,
-          webhooks: false,
-        };
-      }
-
-      return {
-        hasSupporter: serverBenefits.some((b) => b.isSupporter),
-        maxFeeds: Math.max(...serverBenefits.map((b) => b.maxFeeds)),
-        serverId,
-        webhooks: serverBenefits.some((b) => b.webhooks),
-        // Arbitrarily select one since there is no business rule on this at the moment
-        refreshRateSeconds: serverBenefits.find(
-          (b) => b.refreshRateSeconds !== undefined,
-        )?.refreshRateSeconds,
-      };
+      return this.calculateBenefitsOfServer(serverId, {
+        subscription,
+        supporterBenefits: serverBenefits,
+      });
     });
+  }
+
+  private calculateBenefitsOfServer(
+    serverId: string,
+    {
+      subscription,
+      supporterBenefits: serverBenefits,
+    }: {
+      subscription?: GuildSubscriptionFormatted;
+      supporterBenefits?: ReturnType<typeof this.getBenefitsFromSupporter>[];
+    },
+  ) {
+    if (subscription) {
+      return {
+        hasSupporter: true,
+        maxFeeds: subscription.maxFeeds,
+        refreshRateSeconds: subscription.refreshRate,
+        serverId,
+        webhooks: true,
+      };
+    }
+
+    if (!serverBenefits?.length) {
+      return {
+        hasSupporter: false,
+        maxFeeds: this.defaultMaxFeeds,
+        serverId,
+        webhooks: false,
+      };
+    }
+
+    return {
+      hasSupporter: serverBenefits.some((b) => b.isSupporter),
+      maxFeeds: Math.max(...serverBenefits.map((b) => b.maxFeeds)),
+      serverId,
+      webhooks: serverBenefits.some((b) => b.webhooks),
+      // Arbitrarily select one since there is no business rule on this at the moment
+      refreshRateSeconds: serverBenefits.find(
+        (b) => b.refreshRateSeconds !== undefined,
+      )?.refreshRateSeconds,
+    };
   }
 
   async serverCanUseWebhooks(serverId: string) {
@@ -216,17 +295,7 @@ export class SupportersService {
     return updatedSupporter;
   }
 
-  getBenefitsFromSupporter(supporter: {
-    maxFeeds?: number;
-    maxGuilds?: number;
-    slowRate?: boolean;
-    patrons: Array<{
-      status: Patron['status'];
-      pledge: number;
-      pledgeLifetime: number;
-      pledgeOverride?: number;
-    }>;
-  }) {
+  getBenefitsFromSupporter(supporter: SupportPatronAggregateResult) {
     if (!this.isValidSupporter(supporter)) {
       return {
         isSupporter: false,

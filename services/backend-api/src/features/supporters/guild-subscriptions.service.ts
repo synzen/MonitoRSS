@@ -4,17 +4,7 @@ import fetch from 'node-fetch';
 import { GuildSubscription } from './types/guild-subscription.type';
 import logger from '../../utils/logger';
 import qs from 'qs';
-
-interface GuildSubscriptionFormatted {
-  guildId: string;
-  maxFeeds: number;
-  /**
-   * Seconds
-   */
-  refreshRate: number;
-  slowRate: boolean;
-  expireAt: string;
-}
+import { GuildSubscriptionFormatted } from './types';
 
 interface GetAllSubscriptionsOptions {
   filters?: {

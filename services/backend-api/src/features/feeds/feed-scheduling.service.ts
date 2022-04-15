@@ -30,6 +30,10 @@ export class FeedSchedulingService {
       (this.configService.get('vipRefreshRateMinutes') as number) * 60;
   }
 
+  async getAllSchedules(): Promise<FeedSchedule[]> {
+    return this.feedScheduleModel.find({}).lean();
+  }
+
   /**
    * Determine the refresh rate of the given feeds.
    *
