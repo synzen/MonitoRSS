@@ -38,7 +38,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   WEBHOOKS_DISABLED: 'Webhooks are not enabled',
   WEBHOOK_MISSING: 'Specified webhook does not exist',
   WEBHOOK_INVALID:
-    'Specified webhook is invalid. Must be of type "Incoming Webhook" with an available token',
+    'Specified webhook is invalid. Must be of type "Incoming Webhook"' +
+    ' that has not been created by another application',
   FEED_MISSING_CHANNEL: 'Channel does not exist',
   FEED_MISSING_CHANNEL_PERMISSION: 'Insufficient bot permissions in channel',
   FEED_USER_MISSING_MANAGE_GUILD: 'User is missing Manage Server permission',

@@ -27,7 +27,7 @@
       "feedMissingChannel": "The channel does not exist",
       "feedUserMissingManageGuild": "You are missing the Manage Server permission",
       "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server.",
-      "webhookInvalid": "Webhook is invalid. Must be a webhook that has permission to be used by the bot."
+      "webhookInvalid": "Webhook is invalid. Webhooks must be integration that are not owned by other bots."
     }
   },
   "pages": {
