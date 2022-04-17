@@ -652,17 +652,22 @@ describe('FeedsService', () => {
         expect(updatedFeed?.webhook?.avatar).toEqual('my-new-webhook-avatar');
       });
 
-      it('returns the new webhook id after a webhook update', async () => {
+      it('returns the new webhook id and url after a webhook update', async () => {
         const newWebhookId = 'my-new-webhook-id';
+        const webhookToken = 'my-new-webhook-token';
         const createdFeed = await feedModel.create(createTestFeed());
 
         const result = await service.updateOne(createdFeed._id.toString(), {
           webhook: {
             id: newWebhookId,
+            token: webhookToken,
           },
         });
 
         expect(result.webhook?.id).toEqual(newWebhookId);
+        expect(result.webhook?.url).toEqual(
+          `https://discord.com/api/v9/webhooks/${newWebhookId}/${webhookToken}`,
+        );
       });
 
       it('does not persist any old webhook data if webhook is overwritten', async () => {

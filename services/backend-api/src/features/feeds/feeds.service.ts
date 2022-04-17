@@ -54,6 +54,7 @@ interface UpdateFeedInput {
     id?: string;
     name?: string;
     iconUrl?: string;
+    token?: string;
   };
   ncomparisons?: string[];
   pcomparisons?: string[];
@@ -635,6 +636,12 @@ export class FeedsService {
 
     if (typeof updateObject.webhook?.id === 'string') {
       toSet.$set.webhook.id = updateObject.webhook.id;
+
+      if (typeof updateObject.webhook?.token === 'string') {
+        toSet.$set.webhook.url =
+          `https://discord.com/api/v9/webhooks/${updateObject.webhook.id}` +
+          `/${updateObject.webhook.token}`;
+      }
     }
 
     if (typeof updateObject.webhook?.name === 'string') {

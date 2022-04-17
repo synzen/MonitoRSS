@@ -46,6 +46,7 @@ import {
   WebhookMissingException,
   WebhooksDisabledException,
 } from './exceptions';
+import { DiscordWebhook } from '../discord-webhooks/types/discord-webhook.type';
 
 @Controller('feeds')
 @UseGuards(DiscordOAuth2Guard)
@@ -136,7 +137,7 @@ export class FeedsController {
     @Param('feedId', GetFeedPipe) feed: DetailedFeed,
     @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto,
   ): Promise<UpdateFeedOutputDto> {
-    console.log(123);
+    let foundWebhook: DiscordWebhook | null = null;
 
     if (updateFeedInput.webhook?.id) {
       if (!(await this.supportersService.serverCanUseWebhooks(feed.guild))) {
@@ -145,7 +146,7 @@ export class FeedsController {
         );
       }
 
-      const foundWebhook = await this.webhooksService.getWebhook(
+      foundWebhook = await this.webhooksService.getWebhook(
         updateFeedInput.webhook.id,
       );
 
@@ -184,6 +185,7 @@ export class FeedsController {
         id: updateFeedInput.webhook?.id,
         name: updateFeedInput.webhook?.name,
         iconUrl: updateFeedInput.webhook?.iconUrl,
+        token: foundWebhook?.token,
       },
       checkDates: updateFeedInput.checkDates,
       imgLinksExistence: updateFeedInput.imgLinksExistence,
