@@ -5,6 +5,7 @@ import { StandardBaseExceptionFilter } from '../../../common/filters/standard-ex
 import {
   MissingChannelException,
   MissingChannelPermissionsException,
+  WebhookInvalidException,
   WebhookMissingException,
   WebhooksDisabledException,
 } from '../exceptions';
@@ -26,6 +27,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [MissingChannelPermissionsException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+    },
+    [WebhookInvalidException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.WEBHOOK_INVALID,
     },
   };
 

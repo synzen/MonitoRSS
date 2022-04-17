@@ -43,6 +43,7 @@ import { DiscordAccessToken } from '../discord-auth/decorators/DiscordAccessToke
 import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
 import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
 import {
+  WebhookInvalidException,
   WebhookMissingException,
   WebhooksDisabledException,
 } from './exceptions';
@@ -152,6 +153,10 @@ export class FeedsController {
 
       if (!foundWebhook) {
         throw new WebhookMissingException('Webhook not found');
+      }
+
+      if (!foundWebhook.token) {
+        throw new WebhookInvalidException();
       }
     }
 

@@ -6,3 +6,4 @@ export * from './missing-channel.exception';
 export * from './user-missing-manage-guild.exception';
 export * from './webhooks-disabled.exception';
 export * from './webhook-missing.exception';
+export * from './webhook-invalid.exception';

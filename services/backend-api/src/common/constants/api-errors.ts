@@ -12,6 +12,7 @@ export enum ApiErrorCode {
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
   WEBHOOKS_DISABLED = 'WEBHOOKS_DISABLED',
   WEBHOOK_MISSING = 'WEBHOOK_MISSING',
+  WEBHOOK_INVALID = 'WEBHOOK_INVALID',
   FEED_MISSING_CHANNEL_PERMISSION = 'FEED_MISSING_CHANNEL_PERMISSION',
   FEED_MISSING_CHANNEL = 'FEED_MISSING_CHANNEL',
   FEED_USER_MISSING_MANAGE_GUILD = 'FEED_USER_MISSING_MANAGE_GUILD',
@@ -36,6 +37,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     'Bot is missing Manage Webhooks permission',
   WEBHOOKS_DISABLED: 'Webhooks are not enabled',
   WEBHOOK_MISSING: 'Specified webhook does not exist',
+  WEBHOOK_INVALID:
+    'Specified webhook is invalid. Must be of type "Incoming Webhook" with an available token',
   FEED_MISSING_CHANNEL: 'Channel does not exist',
   FEED_MISSING_CHANNEL_PERMISSION: 'Insufficient bot permissions in channel',
   FEED_USER_MISSING_MANAGE_GUILD: 'User is missing Manage Server permission',

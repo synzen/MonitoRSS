@@ -10,7 +10,6 @@ import {
   GetFeedOutput,
   GetFeedsOutput,
   GetFeedSubscribersOutput,
-  UpdateFeedOutput,
   UpdateFeedSubscriberOutput,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
@@ -198,9 +197,13 @@ const handlers = [
   )),
 
   rest.patch('/api/v1/feeds/:feedId', (req, res, ctx) => res(
-    ctx.json<UpdateFeedOutput>({
-      result: mockFeeds[0],
-    }),
+    ctx.status(400),
+    ctx.json(generateMockApiErrorResponse({
+      code: 'WEBHOOK_INVALID',
+    })),
+    // ctx.json<UpdateFeedOutput>({
+    //   result: mockFeeds[0],
+    // }),
   )),
 
   rest.get('/api/v1/feeds/:feedId/articles', (req, res, ctx) => res(
