@@ -10,10 +10,14 @@ import { WebhookMissingPermissionsException } from './exceptions';
 
 @Injectable()
 export class DiscordWebhooksService {
+  clientId: string;
+
   constructor(
     private readonly discordApiService: DiscordAPIService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.clientId = configService.get<string>('discordClientId') as string;
+  }
 
   async getWebhooksOfServer(serverId: string): Promise<DiscordWebhook[]> {
     try {
@@ -23,7 +27,10 @@ export class DiscordWebhooksService {
         );
 
       return webhooks.filter(
-        (webhook) => webhook.type === DiscordWebhookType.INCOMING,
+        (webhook) =>
+          webhook.type === DiscordWebhookType.INCOMING &&
+          (webhook.application_id === null ||
+            webhook.application_id === this.clientId),
       );
     } catch (err) {
       if (err instanceof DiscordAPIError && err.statusCode === 403) {
