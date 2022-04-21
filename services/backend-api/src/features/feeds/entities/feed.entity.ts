@@ -34,14 +34,16 @@ export class Feed {
   @Prop({
     required: false,
   })
-  text: string;
+  text?: string;
 
   @Prop({
     required: true,
   })
   title: string;
 
-  @Prop()
+  @Prop({
+    required: true,
+  })
   url: string;
 
   @Prop({

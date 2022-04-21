@@ -13,6 +13,7 @@ enum Environment {
   Development = 'development',
   Production = 'production',
   Local = 'local',
+  Test = 'test',
 }
 
 class EnvironmentVariables {

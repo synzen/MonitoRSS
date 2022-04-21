@@ -34,6 +34,16 @@ export class FeedSchedulingService {
     return this.feedScheduleModel.find({}).lean();
   }
 
+  async findSchedulesOfRefreshRate(
+    refreshRateSeconds: number,
+  ): Promise<FeedSchedule[]> {
+    return this.feedScheduleModel
+      .find({
+        refreshRateMinutes: Math.round(refreshRateSeconds / 60),
+      })
+      .lean();
+  }
+
   /**
    * Determine the refresh rate of the given feeds.
    *
