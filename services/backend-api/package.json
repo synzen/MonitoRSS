@@ -45,7 +45,7 @@
     "feedparser": "2.2.10",
     "html-to-text": "5.1.1",
     "lodash": "4.17.21",
-    "moment": "2.29.1",
+    "moment": "2.29.2",
     "moment-timezone": "0.5.33",
     "mongodb-memory-server": "8.4.0",
     "mongoose": "6.2.2",
