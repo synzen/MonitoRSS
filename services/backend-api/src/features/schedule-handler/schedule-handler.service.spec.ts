@@ -330,7 +330,7 @@ describe('handle-schedule', () => {
     });
 
     it('does not return matches by schedule keywords if they are disabled', async () => {
-      const created = await feedModel.create([
+      await feedModel.create([
         {
           title: 'feed-title',
           url: 'new-york-times.com',
