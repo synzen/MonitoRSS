@@ -122,6 +122,7 @@ export class ScheduleHandlerService {
         disabled: {
           $exists: false,
         },
+        isFeedv2: true,
       }));
 
     let query: FilterQuery<FeedDocument> = {
@@ -132,6 +133,7 @@ export class ScheduleHandlerService {
           disabled: {
             $exists: false,
           },
+          isFeedv2: true,
         },
         {
           _id: {
@@ -144,6 +146,7 @@ export class ScheduleHandlerService {
           disabled: {
             $exists: false,
           },
+          isFeedv2: true,
         },
       ],
     };
