@@ -72,6 +72,32 @@ describe('handle-schedule', () => {
       expect(result[0]).toEqual(created[0].url);
     });
 
+    it('does not returns matches by schedule keywords if they are disabled', async () => {
+      await feedModel.create([
+        {
+          title: 'feed-title',
+          url: 'new-york-times.com',
+          guild: 'guild-id',
+          channel: 'channel-id',
+          disabled: 'disabled',
+        },
+      ]);
+
+      const result = await service.getFeedUrlsWithScheduleAndServers(
+        [
+          {
+            name: 'new york times',
+            keywords: ['YORK'],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        [],
+      );
+
+      expect(result).toEqual([]);
+    });
+
     it('returns matches on schedule feed ids', async () => {
       const created = await feedModel.insertMany(
         [
@@ -108,6 +134,43 @@ describe('handle-schedule', () => {
       expect(result[0]).toEqual(created[1].url);
     });
 
+    it('does not return matches on schedule feed ids if they are disabled', async () => {
+      const created = await feedModel.insertMany(
+        [
+          {
+            title: 'feed-title',
+            url: 'new-york-times.com',
+            guild: 'guild-id',
+            channel: 'channel-id',
+          },
+          {
+            title: 'feed-title',
+            url: 'yahoo-news.com',
+            guild: 'guild-id',
+            channel: 'channel-id',
+            disabled: 'disabled-reason',
+          },
+        ],
+        {
+          ordered: true,
+        },
+      );
+
+      const result = await service.getFeedUrlsWithScheduleAndServers(
+        [
+          {
+            name: 'new york times',
+            keywords: [],
+            feeds: [created[1]._id],
+            refreshRateMinutes: 10,
+          },
+        ],
+        [],
+      );
+
+      expect(result).toEqual([]);
+    });
+
     it('returns matches on server ids', async () => {
       const created = await feedModel.create([
         {
@@ -137,6 +200,38 @@ describe('handle-schedule', () => {
       );
 
       expect(result[0]).toEqual(created[1].url);
+    });
+
+    it('does not return matches on server ids if they are disabled', async () => {
+      const created = await feedModel.create([
+        {
+          title: 'feed-title',
+          url: 'new-york-times.com',
+          guild: 'guild-id-1',
+          channel: 'channel-id',
+        },
+        {
+          title: 'feed-title',
+          url: 'yahoo-news.com',
+          guild: 'guild-id-2',
+          channel: 'channel-id',
+          disabled: 'disabled',
+        },
+      ]);
+
+      const result = await service.getFeedUrlsWithScheduleAndServers(
+        [
+          {
+            name: 'new york times',
+            keywords: [],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        [created[1].guild],
+      );
+
+      expect(result).toEqual([]);
     });
 
     it('returns nothing if no results are found', async () => {
@@ -234,6 +329,38 @@ describe('handle-schedule', () => {
       expect(result[0]).toEqual(created[1].url);
     });
 
+    it('does not return matches by schedule keywords if they are disabled', async () => {
+      const created = await feedModel.create([
+        {
+          title: 'feed-title',
+          url: 'new-york-times.com',
+          guild: 'guild-id',
+          channel: 'channel-id',
+        },
+        {
+          title: 'feed-title',
+          url: 'yahoo-news.com',
+          guild: 'guild-id',
+          channel: 'channel-id',
+          disabled: 'disabled',
+        },
+      ]);
+
+      const result = await service.getDefaultFeedUrls(
+        [
+          {
+            name: 'new york times',
+            keywords: ['YORK'],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        [],
+      );
+
+      expect(result).toEqual([]);
+    });
+
     it('returns matches on schedule feed ids', async () => {
       const created = await feedModel.insertMany(
         [
@@ -270,6 +397,43 @@ describe('handle-schedule', () => {
       expect(result[0]).toEqual(created[0].url);
     });
 
+    it('does not return matches on schedule feed ids if they are disabled', async () => {
+      const created = await feedModel.insertMany(
+        [
+          {
+            title: 'feed-title',
+            url: 'new-york-times.com',
+            guild: 'guild-id',
+            channel: 'channel-id',
+            disabled: 'disabled',
+          },
+          {
+            title: 'feed-title',
+            url: 'yahoo-news.com',
+            guild: 'guild-id',
+            channel: 'channel-id',
+          },
+        ],
+        {
+          ordered: true,
+        },
+      );
+
+      const result = await service.getDefaultFeedUrls(
+        [
+          {
+            name: 'new york times',
+            keywords: [],
+            feeds: [created[1]._id],
+            refreshRateMinutes: 10,
+          },
+        ],
+        [],
+      );
+
+      expect(result).toEqual([]);
+    });
+
     it('returns matches on server ids', async () => {
       const created = await feedModel.create([
         {
@@ -299,6 +463,38 @@ describe('handle-schedule', () => {
       );
 
       expect(result[0]).toEqual(created[0].url);
+    });
+
+    it('does not return matches on server ids if they are disabled', async () => {
+      const created = await feedModel.create([
+        {
+          title: 'feed-title',
+          url: 'new-york-times.com',
+          guild: 'guild-id-1',
+          channel: 'channel-id',
+          disabled: 'disabled',
+        },
+        {
+          title: 'feed-title',
+          url: 'yahoo-news.com',
+          guild: 'guild-id-2',
+          channel: 'channel-id',
+        },
+      ]);
+
+      const result = await service.getDefaultFeedUrls(
+        [
+          {
+            name: 'new york times',
+            keywords: [],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        [created[1].guild],
+      );
+
+      expect(result).toEqual([]);
     });
 
     it('returns nothing if no results are found', async () => {

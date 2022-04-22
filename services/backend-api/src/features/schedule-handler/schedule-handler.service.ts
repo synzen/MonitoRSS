@@ -119,6 +119,9 @@ export class ScheduleHandlerService {
       .flat()
       .map((keyword) => ({
         url: new RegExp(keyword, 'i'),
+        disabled: {
+          $exists: false,
+        },
       }));
 
     let query: FilterQuery<FeedDocument> = {
@@ -126,6 +129,9 @@ export class ScheduleHandlerService {
         ...keywordConditions,
         {
           guild: { $in: serverIds },
+          disabled: {
+            $exists: false,
+          },
         },
         {
           _id: {
@@ -134,6 +140,9 @@ export class ScheduleHandlerService {
                 schedule.feeds.map((id) => new Types.ObjectId(id)),
               )
               .flat(),
+          },
+          disabled: {
+            $exists: false,
           },
         },
       ],
@@ -156,6 +165,9 @@ export class ScheduleHandlerService {
         url: {
           $not: new RegExp(keyword, 'i'),
         },
+        disabled: {
+          $exists: false,
+        },
       }));
 
     const query: FilterQuery<FeedDocument> = {
@@ -163,6 +175,9 @@ export class ScheduleHandlerService {
         ...keywordConditions,
         {
           guild: { $nin: serverIds },
+          disabled: {
+            $exists: false,
+          },
         },
         {
           _id: {
@@ -171,6 +186,9 @@ export class ScheduleHandlerService {
                 schedule.feeds.map((id) => new Types.ObjectId(id)),
               )
               .flat(),
+          },
+          disabled: {
+            $exists: false,
           },
         },
       ],
