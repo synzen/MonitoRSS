@@ -6,6 +6,7 @@ import {
   validateSync,
   IsOptional,
   IsBoolean,
+  IsNumber,
 } from 'class-validator';
 
 enum Environment {
@@ -49,6 +50,18 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   AWS_SQS_QUEUE_SERVICE_ENDPOINT!: string;
+
+  @IsString()
+  AWS_SQS_FAILED_URL_QUEUE_ENDPOINT!: string;
+
+  @IsString()
+  AWS_SQS_FAILED_URL_QUEUE_URL!: string;
+
+  @IsString()
+  AWS_SQS_FAILED_URL_QUEUE_REGION!: string;
+
+  @IsNumber()
+  FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

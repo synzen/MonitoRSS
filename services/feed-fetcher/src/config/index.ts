@@ -29,4 +29,13 @@ export default () =>
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
     AWS_SQS_QUEUE_SERVICE_ENDPOINT: process.env
       .AWS_SQS_QUEUE_SERVICE_ENDPOINT as string,
+    AWS_SQS_FAILED_URL_QUEUE_ENDPOINT: process.env
+      .AWS_SQS_FAILED_URL_QUEUE_ENDPOINT as string,
+    AWS_SQS_FAILED_URL_QUEUE_URL: process.env
+      .AWS_SQS_FAILED_URL_QUEUE_URL as string,
+    AWS_SQS_FAILED_URL_QUEUE_REGION: process.env
+      .AWS_SQS_FAILED_URL_QUEUE_REGION as string,
+    FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
+      process.env.FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
+    ),
   } as const);
