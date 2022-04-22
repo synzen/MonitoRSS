@@ -72,6 +72,7 @@ export class FailedUrlHandlerService {
     await this.feedModel.updateMany(
       {
         url,
+        isFeedv2: true,
       },
       {
         $set: {

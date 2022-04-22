@@ -32,6 +32,7 @@ describe('FailedUrlHandlerService Unit', () => {
       expect(feedModel.updateMany).toHaveBeenCalledWith(
         {
           url,
+          isFeedv2: true,
         },
         {
           $set: {
