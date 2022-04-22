@@ -18,8 +18,8 @@ dotenv.config({
   path: envFilePath,
 });
 
-export default () =>
-  ({
+export default function config() {
+  return {
     port: parseInt(process.env.PORT as string, 10),
     discordBotToken: process.env.DISCORD_BOT_TOKEN,
     discordClientId: process.env.DISCORD_CLIENT_ID,
@@ -49,4 +49,13 @@ export default () =>
     sessionSalt: process.env.SESSION_SALT,
     feedUserAgent: process.env.FEED_USER_AGENT,
     datadogApikey: process.env.DATADOG_API_KEY,
-  } as const);
+    awsScheduleQueueEndpoint: process.env.AWS_SCHEDULE_QUEUE_ENDPOINT,
+    awsScheduleQueueRegion: process.env.AWS_SCHEDULE_QUEUE_REGION,
+    awsScheduleQueueUrl: process.env.AWS_SCHEDULE_QUEUE_URL,
+    awsFailedUrlQueueEndpoint: process.env.AWS_FAILED_URL_QUEUE_ENDPOINT,
+    awsFailedUrlQueueRegion: process.env.AWS_FAILED_URL_QUEUE_REGION,
+    awsFailedUrlQueueUrl: process.env.AWS_FAILED_URL_QUEUE_URL,
+  } as const;
+}
+
+export type ConfigKeys = ReturnType<typeof config>;

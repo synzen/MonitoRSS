@@ -14,6 +14,7 @@ import { DiscordWebhooksModule } from './features/discord-webhooks/discord-webho
 import { FeedsModule } from './features/feeds/feeds.module';
 import { SupportersModule } from './features/supporters/supporters.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ScheduleHandlerModule } from './features/schedule-handler/schedule-handler.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
     FeedsModule,
     DiscordWebhooksModule,
     SupportersModule,
+    ScheduleHandlerModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'client', 'dist'),
     }),

@@ -22,6 +22,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.75.0",
     "@monitorss/logger": "1.1.0",
     "@nestjs/common": "8.4.1",
     "@nestjs/config": "2.0.0",
@@ -68,6 +69,7 @@
     "@types/supertest": "2.0.11",
     "@typescript-eslint/eslint-plugin": "4.28.2",
     "@typescript-eslint/parser": "4.28.2",
+    "aws-sdk-client-mock": "^0.6.2",
     "cross-env": "7.0.3",
     "eslint": "7.30.0",
     "eslint-config-prettier": "8.3.0",

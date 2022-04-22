@@ -1,38 +1,34 @@
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { TestingModule } from '@nestjs/testing';
-import {
-  Feed,
-  FeedFeature,
-  FeedModel,
-} from '../features/feeds/entities/feed.entity';
-import { FeedsModule } from '../features/feeds/feeds.module';
+import { Feed, FeedFeature, FeedModel } from '../feeds/entities/feed.entity';
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
-} from '../utils/integration-tests';
-import { MongooseTestModule } from '../utils/mongoose-test.module';
+} from '../../utils/integration-tests';
+import { MongooseTestModule } from '../../utils/mongoose-test.module';
 
 import { Types } from 'mongoose';
-import {
-  getDefaultFeedUrls,
-  getFeedUrlsWithScheduleAndServers,
-} from './handle-schedule';
+import { ScheduleHandlerModule } from './schedule-handler.module';
+import { ScheduleHandlerService } from './schedule-handler.service';
 
 describe('handle-schedule', () => {
   let module: TestingModule;
   let feedModel: FeedModel;
+  let service: ScheduleHandlerService;
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests({
-      providers: [FeedsModule],
+      providers: [],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([FeedFeature]),
+        ScheduleHandlerModule,
       ],
     });
 
     ({ module } = await init());
     feedModel = module.get<FeedModel>(getModelToken(Feed.name));
+    service = module.get<ScheduleHandlerService>(ScheduleHandlerService);
   });
 
   beforeEach(async () => {
@@ -41,7 +37,7 @@ describe('handle-schedule', () => {
 
   afterAll(async () => {
     await teardownIntegrationTests();
-    await module.close();
+    await module?.close();
   });
 
   describe('getFeedUrlsWithScheduleAndServers', () => {
@@ -61,8 +57,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getFeedUrlsWithScheduleAndServers(
-        module,
+      const result = await service.getFeedUrlsWithScheduleAndServers(
         [
           {
             name: 'new york times',
@@ -98,8 +93,7 @@ describe('handle-schedule', () => {
         },
       );
 
-      const result = await getFeedUrlsWithScheduleAndServers(
-        module,
+      const result = await service.getFeedUrlsWithScheduleAndServers(
         [
           {
             name: 'new york times',
@@ -130,8 +124,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getFeedUrlsWithScheduleAndServers(
-        module,
+      const result = await service.getFeedUrlsWithScheduleAndServers(
         [
           {
             name: 'new york times',
@@ -162,8 +155,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getFeedUrlsWithScheduleAndServers(
-        module,
+      const result = await service.getFeedUrlsWithScheduleAndServers(
         [
           {
             name: 'bloomberg news',
@@ -194,8 +186,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getFeedUrlsWithScheduleAndServers(
-        module,
+      const result = await service.getFeedUrlsWithScheduleAndServers(
         [
           {
             name: 'new york times',
@@ -228,8 +219,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getDefaultFeedUrls(
-        module,
+      const result = await service.getDefaultFeedUrls(
         [
           {
             name: 'new york times',
@@ -265,8 +255,7 @@ describe('handle-schedule', () => {
         },
       );
 
-      const result = await getDefaultFeedUrls(
-        module,
+      const result = await service.getDefaultFeedUrls(
         [
           {
             name: 'new york times',
@@ -297,8 +286,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getDefaultFeedUrls(
-        module,
+      const result = await service.getDefaultFeedUrls(
         [
           {
             name: 'new york times',
@@ -329,8 +317,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getDefaultFeedUrls(
-        module,
+      const result = await service.getDefaultFeedUrls(
         [
           {
             name: 'bloomberg news',
@@ -364,7 +351,7 @@ describe('handle-schedule', () => {
         },
       ]);
 
-      const result = await getDefaultFeedUrls(module, [], []);
+      const result = await service.getDefaultFeedUrls([], []);
 
       expect(result).toEqual(expect.arrayContaining([created[0].url]));
     });

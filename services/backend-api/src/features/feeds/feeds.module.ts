@@ -36,6 +36,10 @@ import { FeedFilteredFormatFeature } from './entities/feed-filtered-format.entit
     DiscordWebhooksModule,
     DiscordApiModule,
   ],
-  exports: [FeedsService, MongooseModule.forFeature([FeedFeature])],
+  exports: [
+    FeedsService,
+    FeedSchedulingService,
+    MongooseModule.forFeature([FeedFeature]),
+  ],
 })
 export class FeedsModule {}
