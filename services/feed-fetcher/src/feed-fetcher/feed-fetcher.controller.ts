@@ -16,6 +16,10 @@ export class FeedFetcherController {
   async fetchFeed(data: FetchFeedDto): Promise<FetchFeedDetailsDto> {
     await this.validateFetchFeedDto(data);
 
+    if (data.executeFetch) {
+      await this.feedFetcherService.fetchAndSaveResponse(data.url);
+    }
+
     try {
       const latestRequest = await this.feedFetcherService.getLatestRequest(
         data.url,
