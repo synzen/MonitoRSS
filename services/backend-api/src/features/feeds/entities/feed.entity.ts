@@ -129,7 +129,7 @@ export class Feed {
   regexOps?: FeedRegexOp[];
 
   @Prop()
-  isFeedv2: boolean;
+  isFeedv2?: boolean;
 
   createdAt?: Date;
 
