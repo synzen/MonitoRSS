@@ -89,10 +89,12 @@ export class FeedsService {
       title,
       url,
       channelId,
+      isFeedV2,
     }: {
       title: string;
       url: string;
       channelId: string;
+      isFeedV2: boolean;
     },
   ) {
     let channel: DiscordGuildChannel;
@@ -138,7 +140,12 @@ export class FeedsService {
       throw new FeedLimitReachedException();
     }
 
-    await this.feedFetcherSevice.fetchFeed(url);
+    await this.feedFetcherSevice.fetchFeed(url, {
+      fetchOptions: {
+        useServiceApi: isFeedV2,
+        useServiceApiCache: false,
+      },
+    });
 
     const bannedRecord = await this.getBannedFeedDetails(url, channel.guild_id);
 
@@ -368,7 +375,12 @@ export class FeedsService {
       throw new Error(`Feed ${feedId} does not exist`);
     }
 
-    await this.feedFetcherSevice.fetchFeed(feed.url);
+    await this.feedFetcherSevice.fetchFeed(feed.url, {
+      fetchOptions: {
+        useServiceApi: feed.isFeedv2 || false,
+        useServiceApiCache: false,
+      },
+    });
 
     await this.failRecord.deleteOne({ _id: feed.url });
 

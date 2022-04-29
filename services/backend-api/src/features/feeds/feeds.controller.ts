@@ -72,6 +72,8 @@ export class FeedsController {
       title: feedToAdd.title,
       url: feedToAdd.url,
       channelId: channelId,
+      // Hardcoded false for now until feed v2 is fully implemented
+      isFeedV2: false,
     });
 
     return CreateFeedOutputDto.fromEntity([addedFeed]);
@@ -220,6 +222,10 @@ export class FeedsController {
       formatTables: feed.formatTables,
       imgLinksExistence: feed.imgLinksExistence,
       imgPreviews: feed.imgPreviews,
+      fetchOptions: {
+        useServiceApi: feed.isFeedv2 || false,
+        useServiceApiCache: true,
+      },
     });
 
     return {

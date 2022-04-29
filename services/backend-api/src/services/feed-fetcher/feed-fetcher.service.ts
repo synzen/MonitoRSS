@@ -17,19 +17,44 @@ import {
   FeedForbiddenException,
   FeedInternalErrorException,
 } from './exceptions';
+import { FeedFetcherApiService } from './feed-fetcher-api.service';
+import { Readable } from 'stream';
 
 interface FetchFeedOptions {
   formatTables?: boolean;
   imgLinksExistence?: boolean;
   imgPreviews?: boolean;
+  fetchOptions: {
+    useServiceApi: boolean;
+    useServiceApiCache: boolean;
+  };
+}
+
+interface FeedFetchResult {
+  articles: Article[];
+  idType?: string;
 }
 
 @Injectable()
 export class FeedFetcherService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private feedFetcherApiService: FeedFetcherApiService,
+  ) {}
 
-  async fetchFeed(url: string, options?: FetchFeedOptions) {
-    const inputStream = await this.fetchFeedStream(url);
+  async fetchFeed(
+    url: string,
+    options: FetchFeedOptions,
+  ): Promise<FeedFetchResult> {
+    let inputStream: NodeJS.ReadableStream;
+
+    if (!options.fetchOptions.useServiceApi) {
+      inputStream = await this.fetchFeedStream(url);
+    } else {
+      inputStream = await this.fetchFeedStreamFromApiService(url, {
+        getCachedResponse: options.fetchOptions.useServiceApiCache,
+      });
+    }
 
     const { articleList, idType } = await this.parseFeed(inputStream);
 
@@ -52,21 +77,46 @@ export class FeedFetcherService {
       },
     });
 
-    if (!res.ok) {
-      if (res.status === HttpStatus.TOO_MANY_REQUESTS) {
-        throw new FeedTooManyRequestsException();
-      } else if (res.status === HttpStatus.UNAUTHORIZED) {
-        throw new FeedUnauthorizedException();
-      } else if (res.status === HttpStatus.FORBIDDEN) {
-        throw new FeedForbiddenException();
-      } else if (res.status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-        throw new FeedInternalErrorException();
-      } else {
-        throw new FeedRequestException(`Non-200 status code (${res.status})`);
-      }
-    }
+    this.handleStatusCode(res.status);
 
     return res.body;
+  }
+
+  async fetchFeedStreamFromApiService(
+    url: string,
+    options?: {
+      getCachedResponse?: boolean;
+    },
+  ): Promise<NodeJS.ReadableStream> {
+    const result = await this.feedFetcherApiService.fetchAndSave(url, options);
+
+    if (result.requestStatus === 'error') {
+      throw new Error('Prior feed requests have failed');
+    }
+
+    if (result.requestStatus === 'parse_error') {
+      throw new FeedParseException(
+        `Feed host failed to return a valid, parseable feed`,
+      );
+    }
+
+    if (result.requestStatus === 'success') {
+      this.handleStatusCode(result.response.statusCode);
+      const readable = new Readable();
+      readable.push(result.response.body);
+      readable.push(null);
+
+      return readable;
+    }
+
+    if (result.requestStatus === 'pending') {
+      const readable = new Readable();
+      readable.push(null);
+
+      return readable;
+    }
+
+    throw new Error(`Unhandled request status: ${result['requestStatus']}`);
   }
 
   async parseFeed(inputStream: NodeJS.ReadableStream): Promise<FeedData> {
@@ -131,6 +181,24 @@ export class FeedFetcherService {
 
       inputStream.pipe(feedparser);
     });
+  }
+
+  private handleStatusCode(code: number) {
+    if (code === HttpStatus.OK) {
+      return;
+    }
+
+    if (code === HttpStatus.TOO_MANY_REQUESTS) {
+      throw new FeedTooManyRequestsException();
+    } else if (code === HttpStatus.UNAUTHORIZED) {
+      throw new FeedUnauthorizedException();
+    } else if (code === HttpStatus.FORBIDDEN) {
+      throw new FeedForbiddenException();
+    } else if (code >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      throw new FeedInternalErrorException();
+    } else {
+      throw new FeedRequestException(`Non-200 status code (${code})`);
+    }
   }
 
   private convertRawObjectsToArticles(
