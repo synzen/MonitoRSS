@@ -18,8 +18,8 @@ dotenv.config({
   path: envFilePath,
 });
 
-export default () =>
-  ({
+export default function config() {
+  return {
     POSTGRES_URI: process.env.POSTGRES_URI as string,
     DATADOG_API_KEY: process.env.DATADOG_API_KEY as string,
     SYNC_DB: process.env.SYNC_DB === 'true',
@@ -38,4 +38,5 @@ export default () =>
     FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
       process.env.FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
     ),
-  } as const);
+  } as const;
+}

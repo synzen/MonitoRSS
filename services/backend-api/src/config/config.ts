@@ -55,6 +55,7 @@ export default function config() {
     awsFailedUrlQueueEndpoint: process.env.AWS_FAILED_URL_QUEUE_ENDPOINT,
     awsFailedUrlQueueRegion: process.env.AWS_FAILED_URL_QUEUE_REGION,
     awsFailedUrlQueueUrl: process.env.AWS_FAILED_URL_QUEUE_URL,
+    feedFetcherGrpcUrl: process.env.FEED_FETCHER_GRPC_URL,
   } as const;
 }
 

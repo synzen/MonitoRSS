@@ -52,6 +52,7 @@ class EnvironmentVariables {
   AWS_SQS_QUEUE_SERVICE_ENDPOINT!: string;
 
   @IsString()
+  @IsOptional()
   AWS_SQS_FAILED_URL_QUEUE_ENDPOINT!: string;
 
   @IsString()

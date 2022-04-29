@@ -82,6 +82,10 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   DATADOG_API_KEY: string;
+
+  @IsString()
+  @IsOptional()
+  FEED_FETCHER_GRPC_URL: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {
