@@ -44,7 +44,16 @@ export class FeedFetcherController {
         return {
           requestStatus: 'success',
           response: {
-            body: latestRequest.response.text || '',
+            body: latestRequest.response.text as string,
+            statusCode: latestRequest.response.statusCode,
+          },
+        };
+      }
+
+      if (latestRequest.status === RequestStatus.PARSE_ERROR) {
+        return {
+          requestStatus: 'parse_error',
+          response: {
             statusCode: latestRequest.response.statusCode,
           },
         };

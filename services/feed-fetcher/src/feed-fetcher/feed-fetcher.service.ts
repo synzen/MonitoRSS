@@ -65,23 +65,31 @@ export class FeedFetcherService {
     try {
       const res = await this.fetchFeedResponse(url, fetchOptions);
 
-      const isCloudflareServer = !!res.headers
-        .get('server')
-        ?.includes('cloudflare');
-
-      let responseText: string | undefined = undefined;
-
-      try {
-        responseText = await res.text();
-      } catch (err) {
-        logger.debug(`Failed to parse response text of url ${url}`, {
-          stack: (err as Error).stack,
+      if (res.ok) {
+        request.status = RequestStatus.OK;
+      } else {
+        request.status = RequestStatus.FAILED;
+        this.eventEmitter.emit('failed.url', {
+          url,
         });
       }
 
       const response = new Response();
       response.statusCode = res.status;
-      response.text = responseText;
+
+      try {
+        response.text = await res.text();
+      } catch (err) {
+        request.status = RequestStatus.PARSE_ERROR;
+        logger.debug(`Failed to parse response text of url ${url}`, {
+          stack: (err as Error).stack,
+        });
+      }
+
+      const isCloudflareServer = !!res.headers
+        .get('server')
+        ?.includes('cloudflare');
+
       response.isCloudflare = isCloudflareServer;
 
       if (res.ok) {
