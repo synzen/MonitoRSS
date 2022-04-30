@@ -4,10 +4,15 @@ import { resolve } from 'path'
 
 const VITE_ENV = process.env.ENV || 'development'
 
+// Docker-specific configurations
+const API_PROXY_URL = process.env.API_PROXY_URL || 'http://localhost:8000'
+// Cannot get non-polling to work with Docker, so this is a workaround
+const VITE_USE_POLLING = Boolean(process.env.VITE_USE_POLLING) || false
+
 const proxyOptionsByEnv: Record<string, Record<string, ProxyOptions>> = {
   'development': {
     '/api': {
-      target: 'http://localhost:8000',
+      target: API_PROXY_URL,
       changeOrigin: true,
     }
   },
@@ -29,9 +34,12 @@ export default defineConfig({
     }
   },
   server: {
-    proxy: proxyOptionsByEnv[VITE_ENV] || {}
+    proxy: proxyOptionsByEnv[VITE_ENV] || {},
+    watch: {
+      usePolling: VITE_USE_POLLING,
+    }
   },
   build: {
     sourcemap: true,
-  }
+  },
 })

@@ -1,0 +1,80 @@
+version: "3.8"
+services:
+  # Feed-fetcher
+  # request-queue:
+  #   image: s12v/elasticmq
+  #   volumes:
+  #     - ./elasticmq.conf:/etc/elasticmq/elasticmq.conf
+  #   ports:
+  #     - "9324:9324"
+  #     - "9325:9325"
+  # mrss-postgres:
+  #   restart: always
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
+  #     timeout: 45s
+  #     interval: 10s
+  #     retries: 10
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #   # Comment below to show mongo logs
+  #   # logging:
+  #   #   driver: none
+  #   image: postgres:14.1-alpine
+  #   ports:
+  #     - "5444:5432"
+  #   volumes:
+  #     - db:/var/lib/postgresql/data
+  #     - ./sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+  # mrss-feedfetcher:
+  #   restart: on-failure:3
+  #   build:
+  #     context: services/feed-fetcher
+  #     dockerfile: Dockerfile
+  #     target: build
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./:/usr/src/app
+  #     - /usr/src/app/node_modules/
+  #   command: npm run start:dev
+  #   depends_on:
+  #     - mrss-postgres
+  #     - request-queue
+  #   env_file:
+  #     - .env.local
+  #   environment:
+  #     - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
+  #     - AWS_SQS_QUEUE_URL=http://localhost:9324/queue/request-queue
+  #     - AWS_SQS_QUEUE_SERVICE_ENDPOINT=http://localhost:9324
+  #     - AWS_REGION=us-east-1
+  #     - AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://localhost:9324/queue/failed-requests-queue
+  #     - AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
+  #     - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
+
+  # Web
+  mrss-mongo:
+    restart: on-failure:5
+    command: mongod --port 27017
+    logging:
+      driver: none
+    image: mongo:latest
+    volumes:
+      - "db-data:/data/db"
+  mrss-web:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/Dockerfile
+    restart: on-failure:3
+    depends_on:
+      - mrss-mongo
+    ports:
+      - "8000:8000"
+    env_file: services/backend-api/.env.local
+    environment:
+      - NODE_ENV=local
+      - MONGODB_URI=mongodb://mrss-mongo:27017/rss
+
+volumes:
+  db-data:
