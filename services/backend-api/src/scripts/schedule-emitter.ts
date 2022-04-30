@@ -7,18 +7,17 @@ bootstrap();
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule.forRoot());
-  // application logic...
   await app.init();
 
-  const schedulEmitterService = app.get(ScheduleEmitterService);
+  const scheduleEmitterService = app.get(ScheduleEmitterService);
 
   setInterval(async () => {
     try {
       logger.info(`Syncing timer states`);
-      await schedulEmitterService.syncTimerStates(
+      await scheduleEmitterService.syncTimerStates(
         async (refreshRateSeconds) => {
           logger.info(`Refreshing at ${refreshRateSeconds}s`);
-          await schedulEmitterService.emitScheduleEvent({
+          await scheduleEmitterService.emitScheduleEvent({
             refreshRateSeconds,
           });
         },

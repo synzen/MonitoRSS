@@ -8,7 +8,6 @@ bootstrap();
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule.forRoot());
   const scheduleHandlerService = app.get(ScheduleHandlerService);
-  // application logic...
   await app.init();
 
   await scheduleHandlerService.pollForScheduleEvents(
