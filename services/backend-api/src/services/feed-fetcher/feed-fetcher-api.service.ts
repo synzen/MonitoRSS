@@ -1,6 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Client, ClientGrpc, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { ClientGrpc } from '@nestjs/microservices';
 
 interface FetchFeedApiOptions {
   url: string;
@@ -47,15 +46,11 @@ interface FeedFetcherApiProtoInterface {
 
 @Injectable()
 export class FeedFetcherApiService implements OnModuleInit {
-  @Client({
-    transport: Transport.GRPC,
-    options: {
-      package: 'feedfetcher',
-      protoPath: join(__dirname, 'feed-fetcher-api.proto'),
-    },
-  })
-  private client: ClientGrpc;
   private apiService: FeedFetcherApiProtoInterface;
+
+  constructor(
+    @Inject('FEED_FETCHER_API') private readonly client: ClientGrpc,
+  ) {}
 
   onModuleInit() {
     this.apiService = this.client.getService<FeedFetcherApiProtoInterface>(
