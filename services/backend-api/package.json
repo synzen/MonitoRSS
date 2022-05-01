@@ -11,6 +11,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:local": "cross-env NODE_ENV=local nest start --watch",
+    "start:schedule-emitter:local": "cross-env NODE_ENV=local nest start --config schedule-emitter.nest-cli.json --watch",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "start:debug": "cross-env NODE_ENV=local nest start --debug --watch",
     "start:prod": "cross-env NODE_ENV=production node dist/main",
