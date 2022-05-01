@@ -46,14 +46,14 @@ services:
       - services/feed-fetcher/.env.local
     environment:
       - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
-      - AWS_SQS_QUEUE_URL=http://localhost:9324/queue/request-queue
-      - AWS_SQS_QUEUE_SERVICE_ENDPOINT=http://localhost:9324
+      - AWS_SQS_QUEUE_URL=http://request-queue:9324/queue/request-queue
+      - AWS_SQS_QUEUE_SERVICE_ENDPOINT=http://request-queue:9324
       - AWS_REGION=us-east-1
-      - AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://localhost:9324/queue/failed-requests-queue
+      - AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://request-queue:9324
+      - AWS_SQS_FAILED_URL_QUEUE_URL=http://request-queue:9324/queue/failed-requests-queue
       - AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
       - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
 
-  # Web
   mrss-mongo:
     restart: on-failure:5
     command: mongod --port 27017
@@ -63,6 +63,28 @@ services:
     volumes:
       - "db-mongodb-data:/data/db"
 
+  # Schedule emitter
+  mrss-schedule-emitter-service:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/api.Dockerfile
+      target: build
+    restart: on-failure:3
+    volumes:
+      - ./services/backend-api:/usr/src/app
+      - /usr/src/app/node_modules/
+    depends_on:
+      - mrss-mongo
+    env_file: services/backend-api/.env.local
+    environment:
+      - NODE_ENV=local
+      - MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - AWS_SCHEDULE_QUEUE_ENDPOINT=http://request-queue:9324
+      - AWS_SCHEDULE_QUEUE_REGION=us-east-1
+      - AWS_SCHEDULE_QUEUE_URL=http://request-queue:9324/queue/schedule-queue
+    command: npm run start:schedule-emitter:local
+
+  # Web
   mrss-web-api:
     build:
       context: services/backend-api
