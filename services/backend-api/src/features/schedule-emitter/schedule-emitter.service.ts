@@ -31,6 +31,10 @@ export class ScheduleEmitterService {
     this.sqsClient = new SQSClient({
       region: this.queueRegion,
       endpoint: this.queueEndpoint,
+      credentials: {
+        accessKeyId: configService.get('awsAccessKeyId') as string,
+        secretAccessKey: configService.get('awsSecretAccessKey') as string,
+      }
     });
   }
 
@@ -132,13 +136,7 @@ export class ScheduleEmitterService {
 
       timersSet.push(refreshRate);
       const timer = setInterval(async () => {
-        try {
           await onTimerTrigger(refreshRate / 1000);
-        } catch (err) {
-          logger.error(`Failed to handle onTimerTrigger callback`, {
-            stack: err.stack,
-          });
-        }
       }, refreshRate);
       inputTimers.set(refreshRate, timer);
     });

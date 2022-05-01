@@ -81,11 +81,19 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  DATADOG_API_KEY: string;
+  DATADOG_API_KEY?: string;
 
   @IsString()
   @IsOptional()
-  FEED_FETCHER_GRPC_URL: string;
+  FEED_FETCHER_GRPC_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  AWS_ACCESS_KEY_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  AWS_SECRET_ACCESS_KEY?: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {
