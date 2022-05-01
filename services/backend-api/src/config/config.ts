@@ -27,9 +27,8 @@ export default function config() {
     discordRedirectUri: process.env.DISCORD_REDIRECT_URI,
     loginRedirectUri: process.env.LOGIN_REDIRECT_URI,
     mongodbUri: process.env.MONGODB_URI as string,
-    defaultRefreshRateMinutes: parseInt(
+    defaultRefreshRateMinutes: Number(
       process.env.DEFAULT_REFRESH_RATE_MINUTES as string,
-      10,
     ),
     defaultMaxFeeds: parseInt(process.env.DEFAULT_MAX_FEEDS as string, 10),
     defaultDateFormat:
@@ -56,6 +55,8 @@ export default function config() {
     awsFailedUrlQueueRegion: process.env.AWS_FAILED_URL_QUEUE_REGION,
     awsFailedUrlQueueUrl: process.env.AWS_FAILED_URL_QUEUE_URL,
     feedFetcherGrpcUrl: process.env.FEED_FETCHER_GRPC_URL,
+    awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   } as const;
 }
 
