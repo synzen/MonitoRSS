@@ -20,6 +20,7 @@ export class ScheduleHandlerService {
   queueUrl: string;
   queueEndpoint: string;
   sqsClient: SQSClient;
+  defaultRefreshRateSeconds: number;
 
   constructor(
     private readonly configService: ConfigService,
@@ -38,6 +39,10 @@ export class ScheduleHandlerService {
       region: this.queueRegion,
       endpoint: this.queueEndpoint,
     });
+
+    this.defaultRefreshRateSeconds =
+      (this.configService.get<number>('defaultRefreshRateMinutes') as number) *
+      60;
   }
 
   async pollForScheduleEvents(
@@ -73,12 +78,34 @@ export class ScheduleHandlerService {
     });
   }
 
-  async getUrlsMatchingRefreshRate(refreshRateSeconds: number) {
-    const defaultRefreshRateSeconds =
-      (this.configService.get<number>('defaultRefreshRateMinutes') as number) *
-      60;
+  async handleRefreshRate(
+    refreshRateSeconds: number,
+    {
+      urlHandler,
+      feedHandler,
+    }: {
+      urlHandler: (url: string) => Promise<void>;
+      feedHandler: (feed: Feed) => Promise<void>;
+    },
+  ) {
+    const urls = await this.getUrlsMatchingRefreshRate(refreshRateSeconds);
+
+    await Promise.all(urls.map((url) => urlHandler(url)));
+
+    const feedCursor = await this.getFeedCursorMatchingRefreshRate(
+      refreshRateSeconds,
+    );
+
+    for await (const feed of feedCursor) {
+      await feedHandler(feed);
+    }
+  }
+
+  async getUrlsMatchingRefreshRate(
+    refreshRateSeconds: number,
+  ): Promise<string[]> {
     const isDefaultRefreshRate =
-      refreshRateSeconds === defaultRefreshRateSeconds;
+      refreshRateSeconds === this.defaultRefreshRateSeconds;
 
     const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
     const serverIds = await this.getServerIdsWithRefreshRate(
@@ -86,10 +113,34 @@ export class ScheduleHandlerService {
     );
 
     if (isDefaultRefreshRate) {
-      return this.getDefaultFeedUrls(schedules, serverIds);
+      return this.getDefaultScheduleFeedQuery(schedules, serverIds).distinct(
+        'url',
+      );
     }
 
-    return this.getFeedUrlsWithScheduleAndServers(schedules, serverIds);
+    return this.getFeedsQueryWithScheduleAndServers(
+      schedules,
+      serverIds,
+    ).distinct('url');
+  }
+
+  async getFeedCursorMatchingRefreshRate(refreshRateSeconds: number) {
+    const isDefaultRefreshRate =
+      refreshRateSeconds === this.defaultRefreshRateSeconds;
+
+    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
+    const serverIds = await this.getServerIdsWithRefreshRate(
+      refreshRateSeconds,
+    );
+
+    if (isDefaultRefreshRate) {
+      return this.getDefaultScheduleFeedQuery(schedules, serverIds).cursor();
+    }
+
+    return this.getFeedsQueryWithScheduleAndServers(
+      schedules,
+      serverIds,
+    ).cursor();
   }
 
   async getServerIdsWithRefreshRate(refreshRateSeconds: number) {
@@ -107,12 +158,9 @@ export class ScheduleHandlerService {
     );
   }
 
-  getFeedUrlsWithScheduleAndServers(
+  getFeedsQueryWithScheduleAndServers(
     schedules: FeedSchedule[],
     serverIds: string[],
-    options?: {
-      invertQuery: boolean;
-    },
   ) {
     const keywordConditions = schedules
       .map((schedule) => schedule.keywords)
@@ -125,7 +173,7 @@ export class ScheduleHandlerService {
         isFeedv2: true,
       }));
 
-    let query: FilterQuery<FeedDocument> = {
+    const query: FilterQuery<FeedDocument> = {
       $or: [
         ...keywordConditions,
         {
@@ -151,16 +199,10 @@ export class ScheduleHandlerService {
       ],
     };
 
-    if (options?.invertQuery) {
-      query = {
-        $not: query,
-      };
-    }
-
-    return this.feedModel.find(query).distinct('url');
+    return this.feedModel.find(query);
   }
 
-  getDefaultFeedUrls(schedules: FeedSchedule[], serverIds: string[]) {
+  getDefaultScheduleFeedQuery(schedules: FeedSchedule[], serverIds: string[]) {
     const keywordConditions = schedules
       .map((schedule) => schedule.keywords)
       .flat()
@@ -171,6 +213,7 @@ export class ScheduleHandlerService {
         disabled: {
           $exists: false,
         },
+        isFeedv2: true,
       }));
 
     const query: FilterQuery<FeedDocument> = {
@@ -181,6 +224,7 @@ export class ScheduleHandlerService {
           disabled: {
             $exists: false,
           },
+          isFeedv2: true,
         },
         {
           _id: {
@@ -193,10 +237,11 @@ export class ScheduleHandlerService {
           disabled: {
             $exists: false,
           },
+          isFeedv2: true,
         },
       ],
     };
 
-    return this.feedModel.find(query).distinct('url');
+    return this.feedModel.find(query);
   }
 }

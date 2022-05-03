@@ -2,6 +2,7 @@ import { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { ScheduleEmitterService } from '../features/schedule-emitter/schedule-emitter.service';
+import { ScheduleHandlerService } from '../features/schedule-handler/schedule-handler.service';
 import logger from '../utils/logger';
 
 bootstrap();
@@ -13,10 +14,10 @@ async function bootstrap() {
     await app.init();
 
     setInterval(() => {
-      runTimerSync(app)
+      runTimerSync(app);
     }, 1000 * 60);
 
-    await runTimerSync(app)
+    await runTimerSync(app);
 
     logger.info('Initiailized schedule emitter service');
   } catch (err) {
@@ -28,23 +29,23 @@ async function bootstrap() {
 
 async function runTimerSync(app: INestApplicationContext) {
   const scheduleEmitterService = app.get(ScheduleEmitterService);
+  const scheduleHandlerService = app.get(ScheduleHandlerService);
 
   try {
     logger.info(`Syncing timer states`);
-    await scheduleEmitterService.syncTimerStates(
-      async (refreshRateSeconds) => {
-        try {
-          await scheduleEmitterService.emitScheduleEvent({
-            refreshRateSeconds,
-          });
-          logger.info(`Refreshed at ${refreshRateSeconds}s`);
+    await scheduleEmitterService.syncTimerStates(async (refreshRateSeconds) => {
+      try {
+        logger.info(`Handling refresh rate ${refreshRateSeconds}s`);
+        await scheduleHandlerService.handleRefreshRate(refreshRateSeconds, {
+          urlHandler: async (url) => console.log(url),
+          feedHandler: async (feed) => console.log(feed),
+        });
       } catch (err) {
-        logger.error(`Failed to emit schedule event`, {
+        logger.error(`Failed to handle schedule event`, {
           stack: err.stack,
         });
       }
-      },
-    );
+    });
   } catch (err) {
     logger.error(`Failed to sync timer states`, {
       stack: err.stack,
