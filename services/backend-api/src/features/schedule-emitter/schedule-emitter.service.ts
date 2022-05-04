@@ -1,19 +1,12 @@
-import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { SQSClient } from '@aws-sdk/client-sqs';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import logger from '../../utils/logger';
 import { FeedSchedulingService } from '../feeds/feed-scheduling.service';
 import { SupportersService } from '../supporters/supporters.service';
 
-interface ScheduleEvent {
-  refreshRateSeconds: number;
-}
-
 @Injectable()
 export class ScheduleEmitterService {
-  queueRegion: string;
-  queueUrl: string;
-  queueEndpoint: string;
   sqsClient: SQSClient;
   timers = new Map<number, NodeJS.Timer>();
 
@@ -21,31 +14,7 @@ export class ScheduleEmitterService {
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
     private readonly feedSchedulingService: FeedSchedulingService,
-  ) {
-    this.queueRegion = configService.get('awsScheduleQueueRegion') as string;
-    this.queueUrl = configService.get('awsScheduleQueueUrl') as string;
-    this.queueEndpoint = configService.get(
-      'awsScheduleQueueEndpoint',
-    ) as string;
-
-    this.sqsClient = new SQSClient({
-      region: this.queueRegion,
-      endpoint: this.queueEndpoint,
-      credentials: {
-        accessKeyId: configService.get('awsAccessKeyId') as string,
-        secretAccessKey: configService.get('awsSecretAccessKey') as string,
-      },
-    });
-  }
-
-  async emitScheduleEvent(scheduleEvent: ScheduleEvent) {
-    await this.sqsClient.send(
-      new SendMessageCommand({
-        MessageBody: JSON.stringify(scheduleEvent),
-        QueueUrl: this.queueUrl,
-      }),
-    );
-  }
+  ) {}
 
   async syncTimerStates(
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>,

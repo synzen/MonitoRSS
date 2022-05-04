@@ -2,7 +2,6 @@ import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { SqsPollingService } from '../../common/services/sqs-polling.service';
 import { FeedSchedule } from '../feeds/entities/feed-schedule.entity';
 import { Feed, FeedDocument, FeedModel } from '../feeds/entities/feed.entity';
 import { FeedSchedulingService } from '../feeds/feed-scheduling.service';
@@ -22,7 +21,6 @@ export class ScheduleHandlerService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly sqsPollingService: SqsPollingService,
     private readonly supportersService: SupportersService,
     private readonly feedSchedulingService: FeedSchedulingService,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
@@ -34,7 +32,7 @@ export class ScheduleHandlerService {
       'awsUrlRequestQueueRegion',
     ) as string;
     const awsUrlRequestQueueEndpoint = configService.get(
-      'awsScheduleQueueEndpoint',
+      'awsUrlRequestQueueEndpoint',
     ) as string;
     this.awsUrlRequestSqsClient = new SQSClient({
       region: awsUrlRequestQueueRegion,
@@ -58,39 +56,6 @@ export class ScheduleHandlerService {
       res,
     });
   }
-
-  // async pollForScheduleEvents(
-  //   messageHandler: (message: ScheduleEvent) => Promise<void>,
-  // ) {
-  //   await this.sqsPollingService.pollQueue({
-  //     awsQueueUrl: this.queueUrl,
-  //     awsRegion: this.queueRegion,
-  //     awsEndpoint: this.queueEndpoint,
-  //     onMessageReceived: async (message: Message) => {
-  //       if (!message.Body) {
-  //         logger.error(
-  //           `Queue ${this.queueUrl} message ${message.MessageId} has no body, skipping`,
-  //           {
-  //             message,
-  //           },
-  //         );
-
-  //         return;
-  //       }
-
-  //       const messageBody = JSON.parse(message.Body);
-
-  //       logger.debug(`Queue ${this.queueUrl} message received`, {
-  //         message,
-  //       });
-  //       await messageHandler(messageBody);
-
-  //       logger.debug(
-  //         `Queue ${this.queueUrl} message processed ${message.MessageId}`,
-  //       );
-  //     },
-  //   });
-  // }
 
   async handleRefreshRate(
     refreshRateSeconds: number,

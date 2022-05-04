@@ -81,9 +81,6 @@ services:
     environment:
       - NODE_ENV=local
       - MONGODB_URI=mongodb://mrss-mongo:27017/rss
-      - AWS_SCHEDULE_QUEUE_ENDPOINT=http://request-queue:9324
-      - AWS_SCHEDULE_QUEUE_REGION=us-east-1
-      - AWS_SCHEDULE_QUEUE_URL=http://request-queue:9324/queue/schedule-queue
       - AWS_URL_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
       - AWS_URL_REQUEST_QUEUE_REGION=us-east-1
       - AWS_URL_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
