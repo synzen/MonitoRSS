@@ -1,25 +1,23 @@
-import { Message, SQSClient } from '@aws-sdk/client-sqs';
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { SqsPollingService } from '../../common/services/sqs-polling.service';
-import logger from '../../utils/logger';
 import { FeedSchedule } from '../feeds/entities/feed-schedule.entity';
 import { Feed, FeedDocument, FeedModel } from '../feeds/entities/feed.entity';
 import { FeedSchedulingService } from '../feeds/feed-scheduling.service';
 import { SupportersService } from '../supporters/supporters.service';
 import { FilterQuery, Types } from 'mongoose';
+import logger from '../../utils/logger';
 
-interface ScheduleEvent {
-  refreshRateSeconds: number;
-}
+// interface ScheduleEvent {
+//   refreshRateSeconds: number;
+// }
 
 @Injectable()
 export class ScheduleHandlerService {
-  queueRegion: string;
-  queueUrl: string;
-  queueEndpoint: string;
-  sqsClient: SQSClient;
+  awsUrlRequestQueueUrl: string;
+  awsUrlRequestSqsClient: SQSClient;
   defaultRefreshRateSeconds: number;
 
   constructor(
@@ -29,15 +27,18 @@ export class ScheduleHandlerService {
     private readonly feedSchedulingService: FeedSchedulingService,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
   ) {
-    this.queueRegion = configService.get('awsScheduleQueueRegion') as string;
-    this.queueUrl = configService.get('awsScheduleQueueUrl') as string;
-    this.queueEndpoint = configService.get(
+    this.awsUrlRequestQueueUrl = configService.get(
+      'awsUrlRequestQueueUrl',
+    ) as string;
+    const awsUrlRequestQueueRegion = configService.get(
+      'awsUrlRequestQueueRegion',
+    ) as string;
+    const awsUrlRequestQueueEndpoint = configService.get(
       'awsScheduleQueueEndpoint',
     ) as string;
-
-    this.sqsClient = new SQSClient({
-      region: this.queueRegion,
-      endpoint: this.queueEndpoint,
+    this.awsUrlRequestSqsClient = new SQSClient({
+      region: awsUrlRequestQueueRegion,
+      endpoint: awsUrlRequestQueueEndpoint,
     });
 
     this.defaultRefreshRateSeconds =
@@ -45,38 +46,51 @@ export class ScheduleHandlerService {
       60;
   }
 
-  async pollForScheduleEvents(
-    messageHandler: (message: ScheduleEvent) => Promise<void>,
-  ) {
-    await this.sqsPollingService.pollQueue({
-      awsQueueUrl: this.queueUrl,
-      awsRegion: this.queueRegion,
-      awsEndpoint: this.queueEndpoint,
-      onMessageReceived: async (message: Message) => {
-        if (!message.Body) {
-          logger.error(
-            `Queue ${this.queueUrl} message ${message.MessageId} has no body, skipping`,
-            {
-              message,
-            },
-          );
+  async emitUrlRequestEvent(data: { url: string }) {
+    const res = await this.awsUrlRequestSqsClient.send(
+      new SendMessageCommand({
+        MessageBody: JSON.stringify(data),
+        QueueUrl: this.awsUrlRequestQueueUrl,
+      }),
+    );
 
-          return;
-        }
-
-        const messageBody = JSON.parse(message.Body);
-
-        logger.debug(`Queue ${this.queueUrl} message received`, {
-          message,
-        });
-        await messageHandler(messageBody);
-
-        logger.debug(
-          `Queue ${this.queueUrl} message processed ${message.MessageId}`,
-        );
-      },
+    logger.debug('success', {
+      res,
     });
   }
+
+  // async pollForScheduleEvents(
+  //   messageHandler: (message: ScheduleEvent) => Promise<void>,
+  // ) {
+  //   await this.sqsPollingService.pollQueue({
+  //     awsQueueUrl: this.queueUrl,
+  //     awsRegion: this.queueRegion,
+  //     awsEndpoint: this.queueEndpoint,
+  //     onMessageReceived: async (message: Message) => {
+  //       if (!message.Body) {
+  //         logger.error(
+  //           `Queue ${this.queueUrl} message ${message.MessageId} has no body, skipping`,
+  //           {
+  //             message,
+  //           },
+  //         );
+
+  //         return;
+  //       }
+
+  //       const messageBody = JSON.parse(message.Body);
+
+  //       logger.debug(`Queue ${this.queueUrl} message received`, {
+  //         message,
+  //       });
+  //       await messageHandler(messageBody);
+
+  //       logger.debug(
+  //         `Queue ${this.queueUrl} message processed ${message.MessageId}`,
+  //       );
+  //     },
+  //   });
+  // }
 
   async handleRefreshRate(
     refreshRateSeconds: number,
@@ -89,6 +103,13 @@ export class ScheduleHandlerService {
     },
   ) {
     const urls = await this.getUrlsMatchingRefreshRate(refreshRateSeconds);
+
+    logger.debug(
+      `Found ${urls.length} urls with refresh rate ${refreshRateSeconds}`,
+      {
+        urls,
+      },
+    );
 
     await Promise.all(urls.map((url) => urlHandler(url)));
 
@@ -113,6 +134,8 @@ export class ScheduleHandlerService {
     );
 
     if (isDefaultRefreshRate) {
+      logger.debug(`${refreshRateSeconds}s is default refresh rate`);
+
       return this.getDefaultScheduleFeedQuery(schedules, serverIds).distinct(
         'url',
       );

@@ -84,6 +84,15 @@ class EnvironmentVariables {
   DATADOG_API_KEY?: string;
 
   @IsString()
+  AWS_URL_REQUEST_QUEUE_ENDPOINT: string;
+
+  @IsString()
+  AWS_URL_REQUEST_QUEUE_REGION: string;
+
+  @IsString()
+  AWS_URL_REQUEST_QUEUE_URL: string;
+
+  @IsString()
   @IsOptional()
   FEED_FETCHER_GRPC_URL?: string;
 

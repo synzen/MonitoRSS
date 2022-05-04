@@ -9,6 +9,7 @@ const logger = setupLogger({
     apiKey: configValues.DATADOG_API_KEY as string,
     service: 'monitorss-feedfetcher',
   },
+  enableDebugLogs: process.env.LOG_LEVEL === 'debug',
 });
 
 export default logger;

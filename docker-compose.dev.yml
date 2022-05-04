@@ -60,6 +60,8 @@ services:
     logging:
       driver: none
     image: mongo:latest
+    ports:
+      - "27018:27017"
     volumes:
       - "db-mongodb-data:/data/db"
 
@@ -82,6 +84,9 @@ services:
       - AWS_SCHEDULE_QUEUE_ENDPOINT=http://request-queue:9324
       - AWS_SCHEDULE_QUEUE_REGION=us-east-1
       - AWS_SCHEDULE_QUEUE_URL=http://request-queue:9324/queue/schedule-queue
+      - AWS_URL_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
+      - AWS_URL_REQUEST_QUEUE_REGION=us-east-1
+      - AWS_URL_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
     command: npm run start:schedule-emitter:local
 
   # Web

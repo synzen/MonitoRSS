@@ -54,7 +54,7 @@ export class SqsPollingService {
       return;
     }
 
-    logger.debug(
+    logger.info(
       `Found ${receiveResult.Messages.length} messages in queue ${queueUrl}`,
     );
 

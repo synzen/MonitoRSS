@@ -9,6 +9,7 @@ const logger = setupLogger({
     apiKey: configValues.datadogApikey as string,
     service: 'monitorss-web-v2',
   },
+  enableDebugLogs: process.env.LOG_LEVEL === 'debug',
 });
 
 export default logger;

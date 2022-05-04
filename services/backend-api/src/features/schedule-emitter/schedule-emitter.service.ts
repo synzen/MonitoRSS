@@ -34,7 +34,7 @@ export class ScheduleEmitterService {
       credentials: {
         accessKeyId: configService.get('awsAccessKeyId') as string,
         secretAccessKey: configService.get('awsSecretAccessKey') as string,
-      }
+      },
     });
   }
 
@@ -136,7 +136,7 @@ export class ScheduleEmitterService {
 
       timersSet.push(refreshRate);
       const timer = setInterval(async () => {
-          await onTimerTrigger(refreshRate / 1000);
+        await onTimerTrigger(refreshRate / 1000);
       }, refreshRate);
       inputTimers.set(refreshRate, timer);
     });
