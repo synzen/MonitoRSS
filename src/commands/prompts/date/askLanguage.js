@@ -62,6 +62,7 @@ async function askLanguageFn (message, data) {
   } else if (!isDefault) {
     const newProfile = new Profile()
     newProfile.dateLanguage = setting
+    newProfile.name = message.guild.name
     await newProfile.save()
   }
   log.info({
