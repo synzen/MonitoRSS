@@ -52,6 +52,7 @@ async function askFormatFn (message, data) {
   } else if (!isDefault) {
     const newProfile = new Profile({
       _id: message.guild.id,
+      name: message.guild.name,
       dateFormat: setting
     })
     await newProfile.save()
