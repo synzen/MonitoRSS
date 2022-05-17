@@ -11,6 +11,7 @@ import App from './App';
 import theme from './utils/theme';
 import setupMockBrowserWorker from './mocks/browser';
 import { ForceDarkMode } from './components/ForceDarkMode';
+import { GenericErrorBoundary } from './components/GenericErrorBoundary';
 
 async function prepare() {
   if (import.meta.env.MODE === 'development-mockapi') {
@@ -40,7 +41,9 @@ prepare().then(() => {
           <QueryClientProvider client={queryClient}>
             <ReactQueryDevtools />
             <ForceDarkMode>
-              <App />
+              <GenericErrorBoundary>
+                <App />
+              </GenericErrorBoundary>
             </ForceDarkMode>
           </QueryClientProvider>
         </ChakraProvider>

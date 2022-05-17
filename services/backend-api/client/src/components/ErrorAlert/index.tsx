@@ -46,13 +46,17 @@ export const ErrorAlert: React.FC<Props> = ({ description, withGoBack }) => {
         </>
         )}
       </Stack>
-      <Divider maxWidth="50%" />
-      <Stack>
-        <Text color="gray.500">{t('common.errors.detailsTitle')}</Text>
-        <Code marginTop="4" color="gray.400">
-          {description}
-        </Code>
-      </Stack>
+      {description && (
+      <>
+        <Divider maxWidth="50%" />
+        <Stack>
+          <Text color="gray.500">{t('common.errors.detailsTitle')}</Text>
+          <Code marginTop="4" color="gray.400">
+            {description}
+          </Code>
+        </Stack>
+      </>
+      )}
     </Stack>
   );
 };
