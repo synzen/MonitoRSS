@@ -34,13 +34,13 @@ export class DiscordAuthService {
     private readonly discordApiService: DiscordAPIService,
   ) {
     this.CLIENT_ID = this.configService.get<string>(
-      'discordClientId',
+      'DISCORD_CLIENT_ID',
     ) as string;
     this.CLIENT_SECRET = this.configService.get<string>(
-      'discordClientSecret',
+      'DISCORD_CLIENT_SECRET',
     ) as string;
     this.OAUTH_REDIRECT_URI = this.configService.get<string>(
-      'discordRedirectUri',
+      'DISCORD_REDIRECT_URI',
     ) as string;
   }
 

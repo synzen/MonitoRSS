@@ -38,7 +38,7 @@ describe('SupportersService', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'defaultMaxFeeds') {
+      if (key === 'DEFAULT_MAX_FEEDS') {
         return defaultMaxFeeds;
       }
     });

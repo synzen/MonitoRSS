@@ -49,9 +49,10 @@ export class SupportersService {
     private readonly patronsService: PatronsService,
     private readonly guildSubscriptionsService: GuildSubscriptionsService,
   ) {
-    this.defaultMaxFeeds = this.configService.get<number>(
-      'defaultMaxFeeds',
-    ) as number;
+    // Conversions should be done at the config level, but this is just a hack for now
+    this.defaultMaxFeeds = Number(
+      this.configService.get<number>('DEFAULT_MAX_FEEDS') as number,
+    );
   }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [

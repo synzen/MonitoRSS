@@ -59,11 +59,13 @@ export class ScheduleEmitterService {
 
   getDefaultRefreshRate() {
     const refreshRateMinutes = this.configService.get<number>(
-      'defaultRefreshRateMinutes',
+      'DEFAULT_REFRESH_RATE_MINUTES',
     );
 
     if (refreshRateMinutes === undefined) {
-      throw new Error('defaultRefreshRateMinutes is not defined in the config');
+      throw new Error(
+        'DEFAULT_REFRESH_RATE_MINUTES is not defined in the config',
+      );
     }
 
     return refreshRateMinutes * 60 * 1000;

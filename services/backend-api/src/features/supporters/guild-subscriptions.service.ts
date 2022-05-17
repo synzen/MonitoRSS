@@ -21,15 +21,15 @@ export class GuildSubscriptionsService {
 
   constructor(private readonly configService: ConfigService) {
     this.apiHost = this.configService.get<string>(
-      'apiSubscriptionsHost',
+      'API_SUBSCRIPTIONS_HOST',
     ) as string;
 
     this.accessToken = this.configService.get<string>(
-      'apiSubscriptionsAccessToken',
+      'API_SUBSCRIPTIONS_ACCESS_TOKEN',
     ) as string;
 
     const apiEnabled =
-      this.configService.get<boolean>('apiSubscriptionsEnabled') || false;
+      this.configService.get<boolean>('API_SUBSCRIPTIONS_ENABLED') || false;
 
     this.enabled = !!this.apiHost && !!this.accessToken && apiEnabled;
   }

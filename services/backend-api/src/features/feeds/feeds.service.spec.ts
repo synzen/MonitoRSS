@@ -174,6 +174,7 @@ describe('FeedsService', () => {
       title: 'test-feed',
       url: 'https://test.com',
       channelId: 'channel-id',
+      isFeedV2: false,
     };
     const guildId = 'guild-id';
 

@@ -40,7 +40,7 @@ export class DiscordPermissionsService {
     permissions: bigint[],
   ) {
     const botUserId = this.configService.get<string>(
-      'discordClientId',
+      'DISCORD_CLIENT_ID',
     ) as string;
 
     return this.userHasPermissionInChannel(botUserId, channel, permissions);

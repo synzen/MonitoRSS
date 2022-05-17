@@ -15,6 +15,8 @@ import {
   FeedScheduleModel,
 } from '../feeds/entities/feed-schedule.entity';
 
+jest.mock('../../utils/logger');
+
 describe('handle-schedule', () => {
   let module: TestingModule;
   let feedModel: FeedModel;

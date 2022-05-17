@@ -31,6 +31,7 @@ import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.t
 import { createTestDiscordGuild } from '../../test/data/discord-guild.test-data';
 import { createTestDiscordGuildMember } from '../../test/data/discord-guild-member.test-data';
 import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
+import { DiscordWebhookType } from '../discord-webhooks/types/discord-webhook.type';
 
 const feedXml = readFileSync(
   path.join(__dirname, '../../test/data/feed.xml'),
@@ -201,7 +202,7 @@ describe('FeedsModule', () => {
 
     it('returns created feed details on success', async () => {
       mockGetMeServers();
-      const botClientId = configService.get('discordClientId');
+      const botClientId = configService.get('DISCORD_CLIENT_ID');
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${validBody.channelId}`)
@@ -613,7 +614,9 @@ describe('FeedsModule', () => {
         .reply(404, { message: 'mock GET channel failure' });
       nock(DISCORD_API_BASE_URL)
         .get(
-          `/guilds/${guildId}/members/${configService.get('discordClientId')}`,
+          `/guilds/${guildId}/members/${configService.get(
+            'DISCORD_CLIENT_ID',
+          )}`,
         )
         .reply(200, { id: 'member-id' });
 
@@ -654,9 +657,12 @@ describe('FeedsModule', () => {
         },
       };
 
-      nock(DISCORD_API_BASE_URL)
-        .get(`/webhooks/${webhookId}`)
-        .reply(200, { id: webhookId });
+      nock(DISCORD_API_BASE_URL).get(`/webhooks/${webhookId}`).reply(200, {
+        id: webhookId,
+        type: DiscordWebhookType.INCOMING,
+        application_id: null,
+        token: '123',
+      });
 
       const { statusCode, body } = await app.inject({
         method: 'PATCH',

@@ -20,11 +20,12 @@ import { DiscordGuildChannel } from '../../common';
 import { FeedFeature } from '../feeds/entities/feed.entity';
 import { FeedSubscriberFeature } from '../feeds/entities/feed-subscriber.entity';
 import { FeedFilteredFormatFeature } from '../feeds/entities/feed-filtered-format.entity';
+import config from '../../config/config';
 
-const configValues: Record<string, unknown> = {
-  defaultDateFormat: 'YYYY-MM-DD',
-  defaultTimezone: 'UTC',
-  defaultDateLanguage: 'en',
+const configValues: Partial<ReturnType<typeof config>> = {
+  DEFAULT_DATE_FORMAT: 'YYYY-MM-DD',
+  DEFAULT_TIMEZONE: 'UTC',
+  DEFAULT_DATE_LANGUAGE: 'en',
 };
 
 describe('DiscordServersService', () => {
@@ -43,6 +44,7 @@ describe('DiscordServersService', () => {
 
   beforeAll(async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      // @ts-ignore
       return configValues[key];
     });
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -214,9 +216,9 @@ describe('DiscordServersService', () => {
       const profile = await service.getServerProfile(serverId);
 
       expect(profile).toEqual({
-        dateFormat: configValues.defaultDateFormat,
-        timezone: configValues.defaultTimezone,
-        dateLanguage: configValues.defaultDateLanguage,
+        dateFormat: configValues.DEFAULT_DATE_FORMAT,
+        timezone: configValues.DEFAULT_TIMEZONE,
+        dateLanguage: configValues.DEFAULT_DATE_LANGUAGE,
       });
     });
 
@@ -230,7 +232,7 @@ describe('DiscordServersService', () => {
 
       expect(returned).toEqual({
         dateFormat: profile.dateFormat,
-        timezone: configValues.defaultTimezone,
+        timezone: configValues.DEFAULT_TIMEZONE,
         dateLanguage: profile.dateLanguage,
       });
     });

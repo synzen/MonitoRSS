@@ -28,6 +28,8 @@ import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
 import { CreateFeedSubscriberInputDto } from './dto/CreateFeedSubscriberInput.dto';
 import { UpdateFeedSubscriberInputDto } from './dto/UpdateFeedSubscriberInput.dto';
 
+jest.mock('../../utils/logger');
+
 describe('FeedSubscribersModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;

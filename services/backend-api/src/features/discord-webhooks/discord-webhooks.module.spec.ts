@@ -15,9 +15,9 @@ import {
   DiscordWebhook,
   DiscordWebhookType,
 } from './types/discord-webhook.type';
-import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { ApiErrorCode } from '../../common/constants/api-errors';
+import { DiscordWebhooksService } from './discord-webhooks.service';
 
 describe('DiscordWebhooksModule', () => {
   let app: NestFastifyApplication;
@@ -27,7 +27,6 @@ describe('DiscordWebhooksModule', () => {
       cookie: '',
     },
   };
-  let configService: ConfigService;
   const botClientId = 'bot-client-id';
 
   beforeAll(async () => {
@@ -41,12 +40,11 @@ describe('DiscordWebhooksModule', () => {
       access_token: 'accessToken',
     } as Session['accessToken']);
 
-    configService = app.get(ConfigService);
-    jest.spyOn(configService, 'get').mockImplementation((key) => {
-      if (key === 'discordClientId') {
-        return botClientId;
-      }
-    });
+    app.get(DiscordWebhooksService).clientId = botClientId;
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
   afterEach(async () => {

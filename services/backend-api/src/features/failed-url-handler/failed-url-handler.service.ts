@@ -23,10 +23,12 @@ export class FailedUrlHandlerService {
     private readonly sqsPollingService: SqsPollingService,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
   ) {
-    this.queueRegion = configService.get('awsFailedUrlQueueRegion') as string;
-    this.queueUrl = configService.get('awsFailedUrlQueueUrl') as string;
+    this.queueRegion = configService.get(
+      'AWS_FAILED_URL_QUEUE_REGION',
+    ) as string;
+    this.queueUrl = configService.get('AWS_FAILED_URL_QUEUE_URL') as string;
     this.queueEndpoint = configService.get(
-      'awsFailedUrlQueueEndpoint',
+      'AWS_FAILED_URL_QUEUE_ENDPOINT',
     ) as string;
 
     this.sqsClient = new SQSClient({

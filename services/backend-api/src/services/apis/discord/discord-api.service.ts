@@ -22,7 +22,7 @@ export class DiscordAPIService {
   restHandler: RESTHandler;
 
   constructor(private readonly configService: ConfigService) {
-    this.BOT_TOKEN = configService.get<string>('discordBotToken') as string;
+    this.BOT_TOKEN = configService.get<string>('DISCORD_BOT_TOKEN') as string;
     this.restHandler = new RESTHandler({
       /**
        * RESTHandler creates a node interval behind the scenes with this boolean, stopping
@@ -85,7 +85,7 @@ export class DiscordAPIService {
 
   async getBot(): Promise<DiscordUser> {
     const botClientId = this.configService.get<string>(
-      'discordClientId',
+      'DISCORD_CLIENT_ID',
     ) as string;
 
     return this.executeBotRequest(`/users/${botClientId}`);

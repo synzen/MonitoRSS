@@ -38,8 +38,8 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
-  const sessionSecret = config.get('sessionSecret');
-  const sessionSalt = config.get('sessionSalt');
+  const sessionSecret = config.get('SESSION_SECRET');
+  const sessionSalt = config.get('SESSION_SALT');
 
   await app.register(secureSession, {
     secret: Buffer.from(sessionSecret, 'hex'),

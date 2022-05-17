@@ -47,7 +47,7 @@ export class DiscordAuthController {
     session.set('accessToken', accessToken);
 
     const loginRedirectUri = this.configService.get<string>(
-      'loginRedirectUri',
+      'LOGIN_REDIRECT_URI',
     ) as string;
 
     return res.redirect(301, loginRedirectUri);

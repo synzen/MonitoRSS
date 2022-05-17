@@ -8,7 +8,7 @@ describe('FeedFetcherApiService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    service = new FeedFetcherApiService();
+    service = new FeedFetcherApiService({} as never);
     service['apiService'] = apiService;
   });
 

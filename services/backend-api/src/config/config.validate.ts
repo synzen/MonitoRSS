@@ -53,12 +53,6 @@ class EnvironmentVariables {
   @IsNumber()
   DEFAULT_MAX_FEEDS: number;
 
-  @IsNumber()
-  VIP_REFRESH_RATE_MINUTES: number;
-
-  @IsBoolean()
-  VIP_ENABLED: boolean;
-
   @IsBoolean()
   API_SUBSCRIPTIONS_ENABLED: boolean;
 
@@ -84,6 +78,7 @@ class EnvironmentVariables {
   DATADOG_API_KEY?: string;
 
   @IsString()
+  @IsOptional()
   AWS_URL_REQUEST_QUEUE_ENDPOINT: string;
 
   @IsString()

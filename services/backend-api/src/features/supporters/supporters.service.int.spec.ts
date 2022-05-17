@@ -45,7 +45,7 @@ describe('SupportersService Integration', () => {
       .overrideProvider(ConfigService)
       .useValue({
         get: (key: string) => {
-          if (key === 'defaultMaxFeeds') {
+          if (key === 'DEFAULT_MAX_FEEDS') {
             return defaultMaxFeeds;
           }
         },

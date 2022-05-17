@@ -21,6 +21,8 @@ import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
 import { Cache } from 'cache-manager';
 import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
 
+jest.mock('../../utils/logger');
+
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;

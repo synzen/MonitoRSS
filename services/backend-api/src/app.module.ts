@@ -43,12 +43,11 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [
-        MongooseModule.forRoot(configValues.mongodbUri),
+        MongooseModule.forRoot(configValues.MONGODB_URI),
         ConfigModule.forRoot({
           isGlobal: true,
           ignoreEnvFile: true,
           load: [process.env.NODE_ENV === 'test' ? testConfig : config],
-          validate: validateConfig,
         }),
       ],
     };

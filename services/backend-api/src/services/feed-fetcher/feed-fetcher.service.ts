@@ -67,7 +67,7 @@ export class FeedFetcherService {
   }
 
   async fetchFeedStream(url: string): Promise<NodeJS.ReadableStream> {
-    const userAgent = this.configService.get<string>('feedUserAgent');
+    const userAgent = this.configService.get<string>('FEED_USER_AGENT');
 
     const res = await fetch(url, {
       timeout: 15000,

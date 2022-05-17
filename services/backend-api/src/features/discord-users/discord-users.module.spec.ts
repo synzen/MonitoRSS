@@ -19,6 +19,8 @@ import {
 } from '../supporters/entities/supporter.entity';
 import { getModelToken } from '@nestjs/mongoose';
 
+jest.mock('../../utils/logger');
+
 describe('DiscordServersModule', () => {
   let app: NestFastifyApplication;
   let supporterModel: SupporterModel;

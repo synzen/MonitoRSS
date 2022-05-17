@@ -1,17 +1,26 @@
 import config from './config';
+import { validateConfig } from './config.validate';
 
-export default (): ReturnType<typeof config> => ({
-  ...config(),
-  discordBotToken: 'bot-token',
-  discordClientId: 'discord-client-id',
-  discordClientSecret: 'discord-client-secret',
-  discordRedirectUri: 'discord-redirect-uri',
-  defaultRefreshRateMinutes: 10,
-  defaultMaxFeeds: 5,
-  vipRefreshRateMinutes: 2,
-  vipEnabled: false,
-  apiSubscriptionsEnabled: false,
-  sessionSecret: 'secret',
-  sessionSalt: 'salt',
-  feedUserAgent: 'feed-user-agent',
-});
+export default (): ReturnType<typeof config> => {
+  const configVals = {
+    ...config({
+      skipValidation: true,
+    }),
+    DISCORD_BOT_TOKEN: 'bot-token',
+    DISCORD_CLIENT_ID: 'discord-client-id',
+    DISCORD_CLIENT_SECRET: 'discord-client-secret',
+    DISCORD_REDIRECT_URI: 'discord-redirect-uri',
+    DEFAULT_REFRESH_RATE_MINUTES: 10,
+    DEFAULT_MAX_FEEDS: 5,
+    VIP_REFRESH_RATE_MINUTES: 2,
+    VIP_ENABLED: false,
+    API_SUBSCRIPTIONS_ENABLED: false,
+    SESSION_SECRET: 'secret',
+    SESSION_SALT: 'salt',
+    FEED_USER_AGENT: 'feed-user-agent',
+  };
+
+  validateConfig(configVals);
+
+  return configVals;
+};

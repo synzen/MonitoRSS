@@ -4,7 +4,11 @@ import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-cha
 import { createTestDiscordGuildMember } from '../../test/data/discord-guild-member.test-data';
 import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
 import { createTestDiscordGuild } from '../../test/data/discord-guild.test-data';
-import { ADMINISTRATOR, SEND_CHANNEL_MESSAGE } from './constants/permissions';
+import {
+  ADMINISTRATOR,
+  SEND_CHANNEL_MESSAGE,
+  VIEW_CHANNEL,
+} from './constants/permissions';
 import { DiscordPermissionsService } from './discord-permissions.service';
 
 describe('DiscordPermissionsService', () => {
@@ -80,17 +84,21 @@ describe('DiscordPermissionsService', () => {
 
     it('returns correct permissions if one of the users has a non-administrator role', () => {
       const guildMember = createTestDiscordGuildMember({
-        roles: ['guild-id', 'random-role'],
+        roles: ['random-role-1', 'random-role-2'],
+        user: {
+          id: 'user-id',
+        },
       });
       const guild = createTestDiscordGuild({
-        id: 'guild-id',
+        id: 'random-role-1',
+        owner_id: 'owner-id',
         roles: [
           createTestDiscordGuildRole({
-            id: 'guild-id',
-            permissions: '0',
+            id: 'random-role-1',
+            permissions: VIEW_CHANNEL.toString(),
           }),
           createTestDiscordGuildRole({
-            id: 'random-role',
+            id: 'random-role-2',
             permissions: SEND_CHANNEL_MESSAGE.toString(),
           }),
         ],

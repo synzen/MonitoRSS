@@ -9,10 +9,6 @@ import { SupportersService } from '../supporters/supporters.service';
 import { FilterQuery, Types } from 'mongoose';
 import logger from '../../utils/logger';
 
-// interface ScheduleEvent {
-//   refreshRateSeconds: number;
-// }
-
 @Injectable()
 export class ScheduleHandlerService {
   awsUrlRequestQueueUrl: string;
@@ -26,22 +22,23 @@ export class ScheduleHandlerService {
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
   ) {
     this.awsUrlRequestQueueUrl = configService.get(
-      'awsUrlRequestQueueUrl',
+      'AWS_URL_REQUEST_QUEUE_URL',
     ) as string;
     const awsUrlRequestQueueRegion = configService.get(
-      'awsUrlRequestQueueRegion',
+      'AWS_URL_REQUEST_QUEUE_REGION',
     ) as string;
     const awsUrlRequestQueueEndpoint = configService.get(
-      'awsUrlRequestQueueEndpoint',
-    ) as string;
+      'AWS_URL_REQUEST_QUEUE_ENDPOINT',
+    );
     this.awsUrlRequestSqsClient = new SQSClient({
       region: awsUrlRequestQueueRegion,
       endpoint: awsUrlRequestQueueEndpoint,
     });
 
     this.defaultRefreshRateSeconds =
-      (this.configService.get<number>('defaultRefreshRateMinutes') as number) *
-      60;
+      (this.configService.get<number>(
+        'DEFAULT_REFRESH_RATE_MINUTES',
+      ) as number) * 60;
   }
 
   async emitUrlRequestEvent(data: { url: string }) {
