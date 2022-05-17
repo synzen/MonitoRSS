@@ -42,7 +42,8 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
     setArticleIndex(Number(event.target.value));
   };
 
-  const selectedArticle = articles[articleIndex];
+  // There may be no articles in the feed
+  const selectedArticle = articles?.[articleIndex];
 
   return (
     <Stack spacing="4">
@@ -63,7 +64,7 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
           overflow="auto"
           divider={<StackDivider />}
         >
-          {selectedArticle.placeholders.public.map((placeholder) => (
+          {selectedArticle?.placeholders.public.map((placeholder) => (
             <Stack display="inline-block" key={placeholder.value}>
               <Code>{placeholder.name}</Code>
               <Text>{placeholder.value}</Text>
