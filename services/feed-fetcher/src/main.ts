@@ -45,9 +45,9 @@ async function bootstrap() {
 
 async function setupQueuePoll(app: INestApplication | INestMicroservice) {
   const configService = app.get(ConfigService);
-  const queueUrl = configService.get('AWS_SQS_QUEUE_URL') as string;
-  const region = configService.get('AWS_REGION') as string;
-  const awsEndpoint = configService.get('AWS_SQS_QUEUE_SERVICE_ENDPOINT');
+  const queueUrl = configService.get('AWS_SQS_REQUEST_QUEUE_URL') as string;
+  const region = configService.get('AWS_SQS_REQUEST_QUEUE_REGION') as string;
+  const awsEndpoint = configService.get('AWS_SQS_REQUEST_QUEUE_ENDPOINT');
 
   const feedFetcherService = app.get(FeedFetcherService);
   const sqsPollingService = app.get(SqsPollingService);

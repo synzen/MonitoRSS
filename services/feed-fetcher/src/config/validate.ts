@@ -9,13 +9,13 @@ import {
   IsNumber,
 } from 'class-validator';
 
-enum Environment {
+export enum Environment {
   Development = 'development',
   Production = 'production',
   Local = 'local',
 }
 
-class EnvironmentVariables {
+export class EnvironmentVariables {
   @IsEnum(Environment)
   NODE_ENV!: Environment;
 
@@ -33,11 +33,15 @@ class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
-  AWS_SQS_QUEUE_URL!: string;
+  AWS_SQS_REQUEST_QUEUE_URL!: string;
 
   @IsString()
   @MinLength(1)
-  AWS_REGION!: string;
+  AWS_SQS_REQUEST_QUEUE_REGION!: string;
+  
+  @IsString()
+  @IsOptional()
+  AWS_SQS_REQUEST_QUEUE_ENDPOINT!: string;
 
   @IsString()
   @MinLength(1)
@@ -46,10 +50,6 @@ class EnvironmentVariables {
   @IsString()
   @MinLength(1)
   AWS_SECRET_ACCESS_KEY!: string;
-
-  @IsString()
-  @IsOptional()
-  AWS_SQS_QUEUE_SERVICE_ENDPOINT!: string;
 
   @IsString()
   @IsOptional()
@@ -63,12 +63,9 @@ class EnvironmentVariables {
 
   @IsNumber()
   FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
-
-  @IsString()
-  FEED_FETCHER_API_HOST!: string;
 }
 
-export function validateConfig(config: Record<string, unknown>) {
+export function validateConfig(config: Record<string, unknown> | EnvironmentVariables) {
   const validatedConfig = plainToClass(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });

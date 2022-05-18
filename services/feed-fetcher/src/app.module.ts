@@ -24,7 +24,6 @@ export class AppModule {
           isGlobal: true,
           ignoreEnvFile: true,
           load: [config],
-          validate: validateConfig,
         }),
         TypeOrmModule.forRoot({
           type: 'postgres',
