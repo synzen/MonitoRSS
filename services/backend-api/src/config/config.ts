@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { validateConfig } from './config.validate';
+import {
+  Environment,
+  EnvironmentVariables,
+  validateConfig,
+} from './config.validate';
 
 const envFiles: Record<string, string> = {
   development: '.env.development',
@@ -19,16 +23,18 @@ dotenv.config({
   path: envFilePath,
 });
 
-export default function config(options?: { skipValidation?: boolean }) {
+export default function config(options?: {
+  skipValidation?: boolean;
+}): EnvironmentVariables {
   const configVals = {
-    NODE_ENV: process.env.NODE_ENV,
+    NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
     port: parseInt(process.env.PORT as string, 10),
     PORT: parseInt(process.env.PORT as string, 10),
-    DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
-    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
-    DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
-    DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI,
-    LOGIN_REDIRECT_URI: process.env.LOGIN_REDIRECT_URI,
+    DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN as string,
+    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID as string,
+    DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET as string,
+    DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI as string,
+    LOGIN_REDIRECT_URI: process.env.LOGIN_REDIRECT_URI as string,
     MONGODB_URI: process.env.MONGODB_URI as string,
     DEFAULT_REFRESH_RATE_MINUTES: Number(
       process.env.DEFAULT_REFRESH_RATE_MINUTES as string,
@@ -42,19 +48,21 @@ export default function config(options?: { skipValidation?: boolean }) {
     API_SUBSCRIPTIONS_HOST: process.env.API_SUBSCRIPTIONS_HOST || '',
     API_SUBSCRIPTIONS_ACCESS_TOKEN:
       process.env.API_SUBSCRIPTIONS_ACCESS_TOKEN || '',
-    SESSION_SECRET: process.env.SESSION_SECRET,
-    SESSION_SALT: process.env.SESSION_SALT,
-    FEED_USER_AGENT: process.env.FEED_USER_AGENT,
+    SESSION_SECRET: process.env.SESSION_SECRET as string,
+    SESSION_SALT: process.env.SESSION_SALT as string,
+    FEED_USER_AGENT: process.env.FEED_USER_AGENT as string,
     DATADOG_API_KEY: process.env.DATADOG_API_KEY,
     AWS_FAILED_URL_QUEUE_ENDPOINT: process.env.AWS_FAILED_URL_QUEUE_ENDPOINT,
-    AWS_FAILED_URL_QUEUE_REGION: process.env.AWS_FAILED_URL_QUEUE_REGION,
-    AWS_FAILED_URL_QUEUE_URL: process.env.AWS_FAILED_URL_QUEUE_URL,
+    AWS_FAILED_URL_QUEUE_REGION: process.env
+      .AWS_FAILED_URL_QUEUE_REGION as string,
+    AWS_FAILED_URL_QUEUE_URL: process.env.AWS_FAILED_URL_QUEUE_URL as string,
     AWS_URL_REQUEST_QUEUE_ENDPOINT: process.env.AWS_URL_REQUEST_QUEUE_ENDPOINT,
-    AWS_URL_REQUEST_QUEUE_REGION: process.env.AWS_URL_REQUEST_QUEUE_REGION,
-    AWS_URL_REQUEST_QUEUE_URL: process.env.AWS_URL_REQUEST_QUEUE_URL,
-    FEED_FETCHER_GRPC_URL: process.env.FEED_FETCHER_GRPC_URL,
+    AWS_URL_REQUEST_QUEUE_REGION: process.env
+      .AWS_URL_REQUEST_QUEUE_REGION as string,
+    AWS_URL_REQUEST_QUEUE_URL: process.env.AWS_URL_REQUEST_QUEUE_URL as string,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+    FEED_FETCHER_API_HOST: process.env.FEED_FETCHER_API_HOST,
   } as const;
 
   if (!options?.skipValidation) {

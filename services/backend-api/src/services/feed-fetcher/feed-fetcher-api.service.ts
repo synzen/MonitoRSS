@@ -1,67 +1,71 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-
-interface FetchFeedApiOptions {
-  url: string;
-  executeFetch?: boolean;
-}
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import fetch from 'node-fetch';
+import logger from '../../utils/logger';
+import { FeedFetcherFetchFeedResponse } from './types/feed-fetcher-fetch-feed-response.type';
 
 interface FeedFetchOptions {
   getCachedResponse?: boolean;
 }
 
-interface FetchFeedResponseSuccess {
-  requestStatus: 'success';
-  response: {
-    body: string;
-    statusCode: number;
-  };
-}
-
-interface FetchFeedResponsePending {
-  requestStatus: 'pending';
-}
-
-interface FetchFeedResponseError {
-  requestStatus: 'error';
-}
-
-interface FeedFetchResponseParseError {
-  requestStatus: 'parse_error';
-  response: {
-    statusCode: number;
-  };
-}
-
-interface FeedFetcherApiProtoInterface {
-  fetchFeed(
-    options: FetchFeedApiOptions,
-  ): Promise<
-    | FetchFeedResponseSuccess
-    | FetchFeedResponseError
-    | FetchFeedResponsePending
-    | FeedFetchResponseParseError
-  >;
-}
-
 @Injectable()
-export class FeedFetcherApiService implements OnModuleInit {
-  private apiService: FeedFetcherApiProtoInterface;
+export class FeedFetcherApiService {
+  host: string;
 
-  constructor(
-    @Inject('FEED_FETCHER_API') private readonly client: ClientGrpc,
-  ) {}
-
-  onModuleInit() {
-    this.apiService = this.client.getService<FeedFetcherApiProtoInterface>(
-      'FeedFetcherController',
-    );
+  constructor(private readonly configService: ConfigService) {
+    this.host = this.configService.get<string>(
+      'FEED_FETCHER_API_HOST',
+    ) as string;
   }
 
-  async fetchAndSave(url: string, options?: FeedFetchOptions) {
-    return this.apiService.fetchFeed({
-      url,
-      executeFetch: options?.getCachedResponse ? false : true,
-    });
+  async fetchAndSave(
+    url: string,
+    options?: FeedFetchOptions,
+  ): Promise<FeedFetcherFetchFeedResponse> {
+    if (!this.host) {
+      throw new Error(
+        'FEED_FETCHER_API_HOST config variable must be defined for use before executing a request',
+      );
+    }
+
+    try {
+      const response = await fetch(`${this.host}/requests`, {
+        method: 'POST',
+        body: JSON.stringify({
+          url,
+          executeFetch: options?.getCachedResponse ? false : true,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Feed fetcher api responded with >= 500 status: ${response.status})`,
+        );
+      }
+
+      const responseBody = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          `Feed fetcher api responded with non-ok status: ${
+            response.status
+          }, response: ${JSON.stringify(responseBody)}`,
+        );
+      }
+
+      return responseBody;
+    } catch (error) {
+      logger.error(
+        `Failed to execute fetch with feed fetcher api (${error.message})`,
+        {
+          stack: error.stack,
+        },
+      );
+
+      throw error;
+    }
   }
 }

@@ -1,49 +1,72 @@
 import { FeedFetcherApiService } from './feed-fetcher-api.service';
+import nock from 'nock';
+import { FeedFetcherFetchFeedResponse } from './types/feed-fetcher-fetch-feed-response.type';
+import { ConfigService } from '@nestjs/config';
+import logger from '../../utils/logger';
+
+jest.mock('../../utils/logger');
 
 describe('FeedFetcherApiService', () => {
   let service: FeedFetcherApiService;
-  const apiService = {
-    fetchFeed: jest.fn(),
-  };
+  const configService: ConfigService = {
+    get: jest.fn(),
+  } as never;
+  const host = 'http://localhost:1234';
 
   beforeEach(() => {
     jest.resetAllMocks();
-    service = new FeedFetcherApiService({} as never);
-    service['apiService'] = apiService;
+    service = new FeedFetcherApiService(configService);
+    service.host = host;
   });
 
   describe('fetchAndSave', () => {
-    it('returns the response', async () => {
-      const mockResponse = {
-        requestStatus: 'error',
-      };
-      apiService.fetchFeed.mockResolvedValue(mockResponse);
+    const urlToRequest = 'https://example.com/feed.xml';
 
-      const response = await service.fetchAndSave('url');
+    it('throws if host is not defined', async () => {
+      service.host = undefined as never;
+
+      await expect(service.fetchAndSave(urlToRequest)).rejects.toThrow();
+    });
+
+    it('returns the response', async () => {
+      const expectedRequestBody = {
+        url: urlToRequest,
+        executeFetch: true,
+      };
+      const mockResponse: FeedFetcherFetchFeedResponse = {
+        requestStatus: 'success',
+        response: {
+          body: '',
+          statusCode: 200,
+        },
+      };
+      nock(host)
+        .post('/requests', expectedRequestBody)
+        .matchHeader('Content-Type', 'application/json')
+        .reply(200, mockResponse);
+
+      const response = await service.fetchAndSave(expectedRequestBody.url, {
+        getCachedResponse: false,
+      });
       expect(response).toEqual(mockResponse);
     });
 
-    it('calls with the correct executeFetch arg', async () => {
-      apiService.fetchFeed.mockResolvedValue({});
-      const url = 'url';
+    it('throws if the status code is >= 500', async () => {
+      nock(host).post('/requests').reply(500, {});
 
-      await service.fetchAndSave(url, {
-        getCachedResponse: true,
-      });
-      expect(apiService.fetchFeed).toHaveBeenCalledWith({
-        url,
-        executeFetch: false,
-      });
+      await expect(service.fetchAndSave('url')).rejects.toThrow();
+    });
 
-      jest.resetAllMocks();
+    it('throws if the status code is not ok, and logs the response json', async () => {
+      const loggerErrorSpy = jest.spyOn(logger, 'error');
+      const mockResponse = { message: 'An error occurred!' };
+      nock(host).post('/requests').reply(400, mockResponse);
 
-      await service.fetchAndSave(url, {
-        getCachedResponse: false,
-      });
-      expect(apiService.fetchFeed).toHaveBeenCalledWith({
-        url,
-        executeFetch: true,
-      });
+      await expect(service.fetchAndSave('url')).rejects.toThrow();
+
+      expect(loggerErrorSpy.mock.calls[0][0]).toEqual(
+        expect.stringContaining(JSON.stringify(mockResponse)),
+      );
     });
   });
 });

@@ -63,6 +63,9 @@ class EnvironmentVariables {
 
   @IsNumber()
   FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
+
+  @IsString()
+  FEED_FETCHER_API_HOST!: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

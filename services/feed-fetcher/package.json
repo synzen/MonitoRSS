@@ -31,6 +31,7 @@
     "@nestjs/event-emitter": "^1.1.0",
     "@nestjs/microservices": "^8.4.3",
     "@nestjs/platform-express": "^8.0.0",
+    "@nestjs/platform-fastify": "^8.4.5",
     "@nestjs/typeorm": "^8.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",

@@ -9,14 +9,14 @@ import {
   validateSync,
 } from 'class-validator';
 
-enum Environment {
+export enum Environment {
   Development = 'development',
   Production = 'production',
   Local = 'local',
   Test = 'test',
 }
 
-class EnvironmentVariables {
+export class EnvironmentVariables {
   @IsEnum(Environment)
   NODE_ENV: Environment;
 
@@ -79,7 +79,7 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  AWS_URL_REQUEST_QUEUE_ENDPOINT: string;
+  AWS_URL_REQUEST_QUEUE_ENDPOINT?: string;
 
   @IsString()
   AWS_URL_REQUEST_QUEUE_REGION: string;

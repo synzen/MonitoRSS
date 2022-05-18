@@ -1,29 +1,44 @@
-import { INestApplication, INestMicroservice } from '@nestjs/common';
+import {
+  INestApplication,
+  INestMicroservice,
+  VersioningType,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { FeedFetcherService } from './feed-fetcher/feed-fetcher.service';
 import { SqsPollingService } from './shared/services/sqs-polling.service';
 import logger from './utils/logger';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
+  // const app = await NestFactory.createMicroservice<MicroserviceOptions>(
+  //   AppModule.forRoot(),
+  //   {
+  //     transport: Transport.GRPC,
+  //     options: {
+  //       package: 'feedfetcher',
+  //       protoPath: join(__dirname, './feed-fetcher/feed-fetcher.proto'),
+  //       url: '0.0.0.0:5000',
+  //     },
+  //   },
+  // );
+  const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forRoot(),
-    {
-      transport: Transport.GRPC,
-      options: {
-        package: 'feedfetcher',
-        protoPath: join(__dirname, './feed-fetcher/feed-fetcher.proto'),
-        url: '0.0.0.0:5000',
-      },
-    },
+    new FastifyAdapter(),
   );
+
+  app.enableVersioning({
+    type: VersioningType.URI,
+  });
 
   // app.connectMicroservice();
   // await app.startAllMicroservices();
-  await app.listen();
+
+  await app.listen(5000, '0.0.0.0');
   logger.info(`Application is running`);
   await setupQueuePoll(app);
 }

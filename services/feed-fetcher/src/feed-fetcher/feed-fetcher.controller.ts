@@ -1,21 +1,19 @@
-import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { validate } from 'class-validator';
-import { GrpcInvalidArgumentException } from '../shared/exceptions';
-import { GrpcInternalException } from '../shared/exceptions/grpc-internal.exception';
+import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { FetchFeedDto, FetchFeedDetailsDto } from './dto';
 import { FeedFetcherService } from './feed-fetcher.service';
 
-@Controller()
+@Controller({
+  version: '1',
+})
 export class FeedFetcherController {
   constructor(private readonly feedFetcherService: FeedFetcherService) {}
 
-  @GrpcMethod()
-  async fetchFeed(data: FetchFeedDto): Promise<FetchFeedDetailsDto> {
-    await this.validateFetchFeedDto(data);
-
+  @Post('requests')
+  async fetchFeed(
+    @Body(ValidationPipe) data: FetchFeedDto,
+  ): Promise<FetchFeedDetailsDto> {
     if (data.executeFetch) {
       await this.feedFetcherService.fetchAndSaveResponse(data.url);
     }
@@ -65,26 +63,7 @@ export class FeedFetcherController {
         stack: (err as Error).stack,
       });
 
-      throw new GrpcInternalException();
-    }
-  }
-
-  private async validateFetchFeedDto(data: FetchFeedDto) {
-    const dto = new FetchFeedDto();
-    dto.url = data.url;
-
-    const errors = await validate(dto);
-
-    if (errors.length > 0) {
-      logger.error(`Invalid arguments received for fetchFeed`, {
-        errors,
-      });
-
-      const basicErrorMessage = errors
-        .map((e) => Object.values(e.constraints || {}).join(','))
-        .join(',');
-
-      throw new GrpcInvalidArgumentException(basicErrorMessage);
+      throw err;
     }
   }
 }
