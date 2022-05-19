@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config';
-import { validateConfig } from './config/validate';
 import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SqsPollingService } from './shared/services/sqs-polling.service';
