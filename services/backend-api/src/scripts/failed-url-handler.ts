@@ -1,3 +1,4 @@
+import '../utils/dd-tracer';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { FailedUrlHandlerService } from '../features/failed-url-handler/failed-url-handler.service';
