@@ -42,6 +42,22 @@ export class FeedFetcherService {
     ) as number;
   }
 
+  async requestExistsAfterTime(
+    requestQuery: {
+      url: string;
+    },
+    time: Date,
+  ) {
+    const count = await this.requestRepo.count({
+      where: {
+        url: requestQuery.url,
+        createdAt: MoreThan(time),
+      },
+    });
+
+    return count > 0;
+  }
+
   async getLatestRequest(url: string): Promise<Request | undefined> {
     const response = await this.requestRepo.findOne({
       where: { url },

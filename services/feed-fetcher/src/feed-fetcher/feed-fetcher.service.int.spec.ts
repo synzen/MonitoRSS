@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SqsPollingService } from '../shared/services/sqs-polling.service';
@@ -8,6 +8,7 @@ import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import { FeedFetcherService } from './feed-fetcher.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { testConfig } from '../config/test.config';
 
 jest.mock('../utils/logger');
 
@@ -18,6 +19,7 @@ describe('FeedFetcherService (Integration)', () => {
   let app: INestApplication;
   let service: FeedFetcherService;
   const url = 'https://rss-feed.com/feed.xml';
+  let requestRepo: Repository<Request>;
 
   beforeAll(async () => {
     const setupData = await setupPostgresTests({
@@ -27,6 +29,11 @@ describe('FeedFetcherService (Integration)', () => {
         imports: [
           TypeOrmModule.forFeature([Request, Response]),
           EventEmitterModule.forRoot(),
+          ConfigModule.forRoot({
+            isGlobal: true,
+            load: [testConfig],
+            ignoreEnvFile: true,
+          }),
         ],
       },
     });
@@ -44,17 +51,55 @@ describe('FeedFetcherService (Integration)', () => {
     await app.init();
 
     service = app.get(FeedFetcherService);
+    requestRepo = app.get<Repository<Request>>(getRepositoryToken(Request));
   });
 
   beforeEach(async () => {
     await resetDatabase();
   });
 
+  describe('requestExistsAfterTime', () => {
+    it('should return true if a request exists after the given time', async () => {
+      await requestRepo.insert([
+        {
+          status: RequestStatus.FAILED,
+          url,
+          createdAt: new Date(2020, 1, 6),
+        },
+      ]);
+
+      await expect(
+        service.requestExistsAfterTime(
+          {
+            url,
+          },
+          new Date(2019, 1, 1),
+        ),
+      ).resolves.toEqual(true);
+    });
+
+    it('should return true if no request exists after the given time', async () => {
+      await requestRepo.insert([
+        {
+          status: RequestStatus.FAILED,
+          url,
+          createdAt: new Date(2020, 1, 6),
+        },
+      ]);
+
+      await expect(
+        service.requestExistsAfterTime(
+          {
+            url,
+          },
+          new Date(2021, 1, 1),
+        ),
+      ).resolves.toEqual(false);
+    });
+  });
+
   describe('getEarliestFailedAttempt', () => {
     it('returns the earliest failed attempt if there were no previous ok attempts', async () => {
-      const requestRepo = app.get<Repository<Request>>(
-        getRepositoryToken(Request),
-      );
       const inserted = await requestRepo.insert([
         {
           status: RequestStatus.FAILED,

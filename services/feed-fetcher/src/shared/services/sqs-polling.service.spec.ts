@@ -26,7 +26,7 @@ const mockSqsMessage = {
 describe('SqsPollingService', () => {
   let service: SqsPollingService;
   const sqsClient = mockClient(SQSClient);
-  const queueUrl = 'queue-url';
+  const queueUrl = 'https://queue-url.com/123124234/queue';
 
   const onMessageReceived = jest.fn();
 
@@ -36,20 +36,18 @@ describe('SqsPollingService', () => {
     service = new SqsPollingService();
   });
 
-  describe('processQueueMessages', () => {
+  describe('handleQueuePollRun', () => {
+    const pollQueueOptions = {
+      queueUrl: queueUrl,
+      onMessageReceived,
+    };
+
     it('rejects if receive message command fails', async () => {
       const error = new Error('test');
       sqsClient.on(ReceiveMessageCommand).rejects(error);
 
       await expect(
-        service.processQueueMessages(
-          sqsClient as never,
-          queueUrl,
-          onMessageReceived,
-          {
-            awaitProcessing: true,
-          },
-        ),
+        service.handleQueuePollRun(sqsClient as never, pollQueueOptions),
       ).rejects.toBe(error);
     });
 
@@ -57,14 +55,7 @@ describe('SqsPollingService', () => {
       sqsClient.on(ReceiveMessageCommand).resolves({});
 
       await expect(
-        service.processQueueMessages(
-          sqsClient as never,
-          queueUrl,
-          onMessageReceived,
-          {
-            awaitProcessing: true,
-          },
-        ),
+        service.handleQueuePollRun(sqsClient as never, pollQueueOptions),
       ).resolves.toBeUndefined();
     });
 
@@ -74,14 +65,7 @@ describe('SqsPollingService', () => {
       });
 
       await expect(
-        service.processQueueMessages(
-          sqsClient as never,
-          queueUrl,
-          onMessageReceived,
-          {
-            awaitProcessing: true,
-          },
-        ),
+        service.handleQueuePollRun(sqsClient as never, pollQueueOptions),
       ).resolves.toBeUndefined();
     });
 
@@ -90,14 +74,7 @@ describe('SqsPollingService', () => {
         Messages: [mockSqsMessage],
       });
 
-      await service.processQueueMessages(
-        sqsClient as never,
-        queueUrl,
-        onMessageReceived,
-        {
-          awaitProcessing: true,
-        },
-      );
+      await service.handleQueuePollRun(sqsClient as never, pollQueueOptions);
 
       expect(onMessageReceived).toHaveBeenCalledTimes(1);
       expect(onMessageReceived).toHaveBeenCalledWith(mockSqsMessage);
@@ -112,14 +89,7 @@ describe('SqsPollingService', () => {
         .spyOn(service, 'deleteMessage')
         .mockImplementation();
 
-      await service.processQueueMessages(
-        sqsClient as never,
-        queueUrl,
-        onMessageReceived,
-        {
-          awaitProcessing: true,
-        },
-      );
+      await service.handleQueuePollRun(sqsClient as never, pollQueueOptions);
 
       expect(deleteSpy).toHaveBeenCalledTimes(1);
       expect(deleteSpy).toHaveBeenCalledWith(
@@ -139,14 +109,7 @@ describe('SqsPollingService', () => {
       const error = new Error('test');
       onMessageReceived.mockRejectedValue(error);
 
-      await service.processQueueMessages(
-        sqsClient as never,
-        queueUrl,
-        onMessageReceived,
-        {
-          awaitProcessing: true,
-        },
-      );
+      await service.handleQueuePollRun(sqsClient as never, pollQueueOptions);
 
       expect(mockLogger.error).toHaveBeenCalledTimes(1);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -163,14 +126,7 @@ describe('SqsPollingService', () => {
       const error = new Error('test');
       jest.spyOn(service, 'deleteMessage').mockRejectedValue(error);
 
-      await service.processQueueMessages(
-        sqsClient as never,
-        queueUrl,
-        onMessageReceived,
-        {
-          awaitProcessing: true,
-        },
-      );
+      await service.handleQueuePollRun(sqsClient as never, pollQueueOptions);
 
       expect(mockLogger.error).toHaveBeenCalledTimes(1);
       expect(mockLogger.error).toHaveBeenCalledWith(

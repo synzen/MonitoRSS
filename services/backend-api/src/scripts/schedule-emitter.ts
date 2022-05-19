@@ -41,6 +41,7 @@ async function runTimerSync(app: INestApplicationContext) {
           urlHandler: async (url) =>
             urlEventHandler(app, {
               url,
+              rateSeconds: refreshRateSeconds,
             }),
           feedHandler: async (feed) => feedEventHandler(app, { feed }),
         });
@@ -61,6 +62,7 @@ async function urlEventHandler(
   app: INestApplicationContext,
   data: {
     url: string;
+    rateSeconds: number;
   },
 ) {
   const scheduleHandlerService = app.get(ScheduleHandlerService);
@@ -69,9 +71,7 @@ async function urlEventHandler(
     logger.debug(`Handling url event`, {
       data,
     });
-    await scheduleHandlerService.emitUrlRequestEvent({
-      url: data.url,
-    });
+    await scheduleHandlerService.emitUrlRequestEvent(data);
   } catch (err) {
     logger.error(`Failed to handle url event`, {
       stack: err.stack,

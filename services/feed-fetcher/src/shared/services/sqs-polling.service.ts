@@ -8,57 +8,25 @@ import { Injectable } from '@nestjs/common';
 import logger from '../../utils/logger';
 
 interface PollQueueOptions {
-  awsQueueUrl: string;
-  awsRegion: string;
-  awsEndpoint?: string;
+  queueUrl: string;
   onMessageReceived: (message: Message) => Promise<void>;
 }
 
 @Injectable()
 export class SqsPollingService {
-  async pollQueue({
-    awsQueueUrl,
-    awsRegion,
-    awsEndpoint,
-    onMessageReceived,
-  }: PollQueueOptions) {
-    const client = new SQSClient({
-      endpoint: awsEndpoint,
-      region: awsRegion,
-    });
-
+  async pollQueue(client: SQSClient, options: PollQueueOptions) {
     while (true) {
-      await this.processQueueMessages(client, awsQueueUrl, onMessageReceived);
+      this.handleQueuePollRun(client, options);
     }
   }
 
-  async processQueueMessages(
+  async handleQueuePollRun(
     client: SQSClient,
-    queueUrl: string,
-    onMessageReceived: (message: Message) => Promise<void>,
-    options?: {
-      awaitProcessing: boolean;
-    },
+    { onMessageReceived, queueUrl }: PollQueueOptions,
   ) {
-    const receiveResult = await client.send(
-      new ReceiveMessageCommand({
-        WaitTimeSeconds: 20,
-        QueueUrl: queueUrl,
-        MessageAttributeNames: ['All'],
-      }),
-    );
+    const messages = await this.getQueueMessages(client, queueUrl);
 
-    if (!receiveResult.Messages) {
-      logger.debug(`No messages found in queue ${queueUrl}`);
-
-      return;
-    }
-
-    logger.info(
-      `Found ${receiveResult.Messages.length} messages in queue ${queueUrl}`,
-    );
-
-    const promises = receiveResult.Messages.map(async (message) => {
+    const promises = messages.map(async (message) => {
       try {
         await onMessageReceived(message);
         await this.deleteMessage(
@@ -75,13 +43,29 @@ export class SqsPollingService {
       }
     });
 
-    /**
-     * Used for testing - should never be true by default since polling would be blocked by messages
-     * being processed.
-     */
-    if (options?.awaitProcessing) {
-      await Promise.all(promises);
+    await Promise.all(promises);
+  }
+
+  async getQueueMessages(client: SQSClient, queueUrl: string) {
+    const receiveResult = await client.send(
+      new ReceiveMessageCommand({
+        WaitTimeSeconds: 20,
+        QueueUrl: queueUrl,
+        MessageAttributeNames: ['All'],
+      }),
+    );
+
+    if (!receiveResult.Messages) {
+      logger.debug(`No messages found in queue ${queueUrl}`);
+
+      return [];
     }
+
+    logger.info(
+      `Found ${receiveResult.Messages.length} messages in queue ${queueUrl}`,
+    );
+
+    return receiveResult.Messages || [];
   }
 
   async deleteMessage(

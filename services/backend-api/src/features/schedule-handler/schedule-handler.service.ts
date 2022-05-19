@@ -41,7 +41,7 @@ export class ScheduleHandlerService {
       ) as number) * 60;
   }
 
-  async emitUrlRequestEvent(data: { url: string }) {
+  async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
     const res = await this.awsUrlRequestSqsClient.send(
       new SendMessageCommand({
         MessageBody: JSON.stringify(data),
