@@ -26,7 +26,8 @@ export default function config(): EnvironmentVariables {
     DATADOG_API_KEY: process.env.DATADOG_API_KEY as string,
     SYNC_DB: process.env.SYNC_DB === 'true',
     AWS_SQS_REQUEST_QUEUE_URL: process.env.AWS_SQS_REQUEST_QUEUE_URL as string,
-    AWS_SQS_REQUEST_QUEUE_REGION: process.env.AWS_SQS_REQUEST_QUEUE_REGION as string,
+    AWS_SQS_REQUEST_QUEUE_REGION: process.env
+      .AWS_SQS_REQUEST_QUEUE_REGION as string,
     AWS_SQS_REQUEST_QUEUE_ENDPOINT: process.env
       .AWS_SQS_REQUEST_QUEUE_ENDPOINT as string,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
@@ -42,7 +43,7 @@ export default function config(): EnvironmentVariables {
     ),
   };
 
-  validateConfig(values)
+  validateConfig(values);
 
   return values;
 }

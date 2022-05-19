@@ -13,6 +13,7 @@ export enum Environment {
   Development = 'development',
   Production = 'production',
   Local = 'local',
+  Test = 'test',
 }
 
 export class EnvironmentVariables {
@@ -21,7 +22,7 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  DATADOG_API_KEY!: string;
+  DATADOG_API_KEY?: string;
 
   @IsString()
   @MinLength(1)
@@ -29,7 +30,7 @@ export class EnvironmentVariables {
 
   @IsBoolean()
   @IsOptional()
-  SYNC_DB!: boolean;
+  SYNC_DB?: boolean;
 
   @IsString()
   @MinLength(1)
@@ -38,10 +39,10 @@ export class EnvironmentVariables {
   @IsString()
   @MinLength(1)
   AWS_SQS_REQUEST_QUEUE_REGION!: string;
-  
+
   @IsString()
   @IsOptional()
-  AWS_SQS_REQUEST_QUEUE_ENDPOINT!: string;
+  AWS_SQS_REQUEST_QUEUE_ENDPOINT?: string;
 
   @IsString()
   @MinLength(1)
@@ -53,7 +54,7 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  AWS_SQS_FAILED_URL_QUEUE_ENDPOINT!: string;
+  AWS_SQS_FAILED_URL_QUEUE_ENDPOINT?: string;
 
   @IsString()
   AWS_SQS_FAILED_URL_QUEUE_URL!: string;
@@ -65,7 +66,9 @@ export class EnvironmentVariables {
   FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
 }
 
-export function validateConfig(config: Record<string, unknown> | EnvironmentVariables) {
+export function validateConfig(
+  config: Record<string, unknown> | EnvironmentVariables,
+) {
   const validatedConfig = plainToClass(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });
