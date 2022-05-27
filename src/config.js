@@ -62,6 +62,11 @@ exports.set = (override, skipValidation) => {
     apisDiscordHttpGatewayOverride.redisUri,
     apisDiscordHttpGateway.redisUri
   )
+  apis.discordHttpGateway.rabbitmqUri = resolveStringValue(
+    'DRSS_APIS_DISCORDHTTPGATEWAY_RABBITMQURI',
+    apisDiscordHttpGatewayOverride.rabbitmqUri,
+    apisDiscordHttpGateway.rabbitmqUri
+  )
 
   // LOG
   if (!override.log) {
