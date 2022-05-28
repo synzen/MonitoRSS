@@ -6,7 +6,6 @@ const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
 const { Webhook } = require('discord.js')
-const BadRequestError = require('./errors/http/BadRequestError.js')
 
 /**
  * Core delivery pipeline
@@ -18,7 +17,7 @@ class DeliveryPipeline {
     const config = configuration.get()
     this.logFiltered = config.log.unfiltered === true
     /**
-     * @type {RESTProducer|null}
+     * @type {import('@synzen/discord-rest').RESTProducer|null}
      */
     this.restProducer = restProducer
     /**
@@ -56,7 +55,9 @@ class DeliveryPipeline {
       }, {
         articleID: article._id,
         feedURL: feedObject.url,
-        channel: feedObject.channel
+        channel: feedObject.channel,
+        feedId: feedObject._id,
+        guildId: feedObject.guild
       }))
     )
   }
@@ -72,20 +73,18 @@ class DeliveryPipeline {
     const feedWebhook = feedObject.webhook && !feedObject.webhook.disabled ? feedObject.webhook : null
     const apiPayloads = articleMessage.createAPIPayloads(feedWebhook)
     const apiRoute = feedWebhook ? feedWebhook.url : `https://discord.com/api/channels/${feedObject.channel}/messages`
-    const results = await Promise.all(
-      apiPayloads.map(apiPayload => this.restProducer.fetch(apiRoute, {
+    await Promise.all(
+      apiPayloads.map(apiPayload => this.restProducer.enqueue(apiRoute, {
         method: 'POST',
         body: JSON.stringify(apiPayload)
       }, {
         articleID: article._id,
         feedURL: feedObject.url,
-        channel: feedObject.channel
+        channel: feedObject.channel,
+        feedId: feedObject._id,
+        guildId: feedObject.guild
       }))
     )
-
-    if (results.find((result) => result.status === 400)) {
-      throw new BadRequestError(feedObject._id)
-    }
   }
 
   getChannel (newArticle) {
