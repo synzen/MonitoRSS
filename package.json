@@ -21,12 +21,10 @@
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
-    "@synzen/discord-rest": "^0.6.26-beta.1",
+    "@synzen/discord-rest": "^0.6.26-beta.8",
     "abort-controller": "^3.0.0",
-    "bufferutil": "^4.0.1",
     "discord.js": "^12.5.3",
     "discord.js-prompts": "^2.2.1",
-    "erlpack": "github:discord/erlpack",
     "feedparser": "^2.2.10",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.5.2",
@@ -35,10 +33,7 @@
     "mongoose": "^5.13.8",
     "node-fetch": "^2.6.7",
     "pino": "6.8.0",
-    "pino-pretty": "4.3.0",
-    "utf-8-validate": "^5.0.2",
-    "zeromq": "^6.0.0-beta.6",
-    "zlib-sync": "^0.1.6"
+    "pino-pretty": "4.3.0"
   },
   "repository": {
     "type": "git",
