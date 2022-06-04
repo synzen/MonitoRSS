@@ -1,6 +1,6 @@
 {
   "name": "monitorss",
-  "version": "6.14.9-beta.4",
+  "version": "6.14.9-beta.5",
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
-    "@synzen/discord-rest": "^0.6.26-beta.11",
+    "@synzen/discord-rest": "^0.6.26-beta.41",
     "abort-controller": "^3.0.0",
     "discord.js": "^12.5.3",
     "discord.js-prompts": "^2.2.1",
