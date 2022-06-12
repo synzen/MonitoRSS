@@ -20,6 +20,13 @@ export class DiscordServerProfile {
 
   @Prop()
   locale?: string;
+
+  @Prop({
+    // This is not used anywhere, but is required for backwards compatibility for parsing profiles
+    // in the monitorss package
+    default: 'Name',
+  })
+  name?: string;
 }
 
 export type DiscordServerProfileDocument = DiscordServerProfile & Document;
