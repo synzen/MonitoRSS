@@ -43,7 +43,7 @@ async function setupQueuePoll(app: INestApplication) {
   });
 
   await sqsPollingService.pollQueue(client, {
-    queueUrl: awsQueueUrl,
+    queueUrl,
     onMessageReceived: async (message) => {
       if (!message.Body) {
         logger.error(
