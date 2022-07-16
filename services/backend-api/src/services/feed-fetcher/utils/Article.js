@@ -1250,18 +1250,26 @@ module.exports = class Article {
 
     // Regular
     for (const placeholder of this.placeholders) {
-      data.placeholders.public.push({
-        name: placeholder,
-        value: this[placeholder],
-      });
+      const value = this[placeholder];
+
+      if (value != null) {
+        data.placeholders.public.push({
+          name: placeholder,
+          value: this[placeholder],
+        });
+      }
     }
 
     // Private
     for (const placeholder of this.privatePlaceholders) {
-      data.placeholders.private.push({
-        name: placeholder,
-        value: this[placeholder],
-      });
+      const value = this[placeholder];
+
+      if (value != null) {
+        data.placeholders.private.push({
+          name: placeholder,
+          value: this[placeholder],
+        });
+      }
     }
 
     // Regex
@@ -1269,10 +1277,14 @@ module.exports = class Article {
       const value = this.regexPlaceholders[placeholder];
 
       for (const customName in value) {
-        data.placeholders.regex.push({
-          name: `${placeholder}:${customName}`,
-          value: value[customName],
-        });
+        const val = value[customName];
+
+        if (val != null) {
+          data.placeholders.regex.push({
+            name: `${placeholder}:${customName}`,
+            value: value[customName],
+          });
+        }
       }
     }
 
@@ -1280,10 +1292,14 @@ module.exports = class Article {
     const rawPlaceholders = this.getRawPlaceholders(this.defaultOptions);
 
     for (const rawPlaceholder in rawPlaceholders) {
-      data.placeholders.raw.push({
-        name: `raw:${rawPlaceholder}`,
-        value: rawPlaceholders[rawPlaceholder],
-      });
+      const value = rawPlaceholders[rawPlaceholder];
+
+      if (value != null) {
+        data.placeholders.raw.push({
+          name: `raw:${rawPlaceholder}`,
+          value: rawPlaceholders[rawPlaceholder],
+        });
+      }
     }
 
     return data;
