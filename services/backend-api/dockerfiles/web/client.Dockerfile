@@ -12,7 +12,7 @@ COPY . ./
 FROM node:16-alpine AS prod
 
 RUN apt install curl
-RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin
+RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 
 RUN npm run build
 

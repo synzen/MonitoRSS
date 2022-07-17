@@ -19,7 +19,7 @@ ENV SKIP_PREFLIGHT_CHECK=true
 RUN npm run build && cd client && npm run build
 
 RUN apt install curl
-RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin
+RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
