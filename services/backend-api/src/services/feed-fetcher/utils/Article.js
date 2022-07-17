@@ -1252,10 +1252,10 @@ module.exports = class Article {
     for (const placeholder of this.placeholders) {
       const value = this[placeholder];
 
-      if (value != null) {
+      if (this.isValidPlaceholderValue(value)) {
         data.placeholders.public.push({
           name: placeholder,
-          value: this[placeholder],
+          value,
         });
       }
     }
@@ -1264,10 +1264,10 @@ module.exports = class Article {
     for (const placeholder of this.privatePlaceholders) {
       const value = this[placeholder];
 
-      if (value != null) {
+      if (this.isValidPlaceholderValue(value)) {
         data.placeholders.private.push({
           name: placeholder,
-          value: this[placeholder],
+          value,
         });
       }
     }
@@ -1279,10 +1279,10 @@ module.exports = class Article {
       for (const customName in value) {
         const val = value[customName];
 
-        if (val != null) {
+        if (this.isValidPlaceholderValue(val)) {
           data.placeholders.regex.push({
             name: `${placeholder}:${customName}`,
-            value: value[customName],
+            value: val,
           });
         }
       }
@@ -1294,14 +1294,22 @@ module.exports = class Article {
     for (const rawPlaceholder in rawPlaceholders) {
       const value = rawPlaceholders[rawPlaceholder];
 
-      if (value != null) {
+      if (this.isValidPlaceholderValue(value)) {
         data.placeholders.raw.push({
           name: `raw:${rawPlaceholder}`,
-          value: rawPlaceholders[rawPlaceholder],
+          value: value,
         });
       }
     }
 
     return data;
+  }
+
+  isValidPlaceholderValue(val) {
+    if (val instanceof Date) {
+      return !isNaN(val);
+    } else {
+      return val != null;
+    }
   }
 };
