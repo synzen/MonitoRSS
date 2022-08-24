@@ -78,7 +78,10 @@ class Client extends EventEmitter {
       }
     } = config
     if (serviceEnabled) {
-      return new RESTProducer(serviceRedisUri)
+      const producer = new RESTProducer(serviceRedisUri)
+      await producer.initialize()
+
+      return producer
     }
     return null
   }
