@@ -73,12 +73,17 @@ class Client extends EventEmitter {
       apis: {
         discordHttpGateway: {
           enabled: serviceEnabled,
-          redisUri: serviceRedisUri
+          rabbitmqUri: rabbitmqUri
         }
+      },
+      bot: {
+        clientId,
       }
     } = config
     if (serviceEnabled) {
-      const producer = new RESTProducer(serviceRedisUri)
+      const producer = new RESTProducer(rabbitmqUri, {
+        clientId, 
+      })
       await producer.initialize()
 
       return producer
