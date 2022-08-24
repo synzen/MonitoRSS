@@ -14,6 +14,7 @@ const logSchema = Joi.object({
 })
 
 const botSchema = Joi.object({
+  clientId: Joi.string().strict().default(''),
   token: Joi.string().strict().default(''),
   locale: localeValidator.config().locale(),
   enableCommands: Joi.bool().strict().default(true),

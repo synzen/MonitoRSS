@@ -103,6 +103,7 @@ exports.set = (override, skipValidation) => {
   }
   const bot = config.bot
   const botOverride = override.bot
+  bot.clientId = process.env.DRSS_BOT_CLIENTID || botOverride.clientId || bot.clientId
   bot.token = process.env.DRSS_BOT_TOKEN || botOverride.token || bot.token
   bot.locale = process.env.DRSS_BOT_LOCALE || botOverride.locale || bot.locale
   bot.enableCommands = process.env.DRSS_BOT_ENABLECOMMANDS !== undefined
