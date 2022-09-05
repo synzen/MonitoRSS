@@ -4,9 +4,10 @@ import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { config } from "./config";
+import { FeedFetcherModule } from "./feed-fetcher/feed-fetcher.module";
 
 @Module({
-  imports: [],
+  imports: [FeedFetcherModule],
   controllers: [AppController],
   providers: [AppService],
 })
@@ -21,6 +22,9 @@ export class AppModule {
           autoLoadEntities: true,
           clientUrl: configVals.POSTGRES_URI,
           type: "postgresql",
+          discovery: {
+            warnWhenNoEntities: false,
+          },
         }),
         ConfigModule.forRoot({
           isGlobal: true,
