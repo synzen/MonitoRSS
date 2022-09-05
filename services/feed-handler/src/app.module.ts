@@ -1,9 +1,9 @@
-import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { DynamicModule, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { config } from './config';
+import { MikroOrmModule } from "@mikro-orm/nestjs";
+import { DynamicModule, Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { config } from "./config";
 
 @Module({
   imports: [],
@@ -20,7 +20,7 @@ export class AppModule {
         MikroOrmModule.forRoot({
           autoLoadEntities: true,
           clientUrl: configVals.POSTGRES_URI,
-          type: 'postgresql',
+          type: "postgresql",
         }),
         ConfigModule.forRoot({
           isGlobal: true,

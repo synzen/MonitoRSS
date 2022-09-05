@@ -1,18 +1,18 @@
-import dotenv from 'dotenv';
-import path from 'path';
-import { Environment, EnvironmentVariables, validateConfig } from './validate';
+import dotenv from "dotenv";
+import path from "path";
+import { Environment, EnvironmentVariables, validateConfig } from "./validate";
 
 const envFiles: Record<string, string> = {
-  development: '.env.development',
-  production: '.env.production',
-  local: '.env.local',
+  development: ".env.development",
+  production: ".env.production",
+  local: ".env.local",
 };
 
 const envFilePath = path.join(
   __dirname,
-  '..',
-  '..',
-  envFiles[process.env.NODE_ENV as string] || envFiles.local,
+  "..",
+  "..",
+  envFiles[process.env.NODE_ENV as string] || envFiles.local
 );
 
 dotenv.config({
