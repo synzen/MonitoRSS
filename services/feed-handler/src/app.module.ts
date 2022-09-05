@@ -5,9 +5,10 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { config } from "./config";
 import { FeedFetcherModule } from "./feed-fetcher/feed-fetcher.module";
+import { ArticlesModule } from "./articles/articles.module";
 
 @Module({
-  imports: [FeedFetcherModule],
+  imports: [FeedFetcherModule, ArticlesModule],
   controllers: [AppController],
   providers: [AppService],
 })
@@ -22,9 +23,8 @@ export class AppModule {
           autoLoadEntities: true,
           clientUrl: configVals.POSTGRES_URI,
           type: "postgresql",
-          discovery: {
-            warnWhenNoEntities: false,
-          },
+          forceUtcTimezone: true,
+          timezone: "UTC",
         }),
         ConfigModule.forRoot({
           isGlobal: true,
