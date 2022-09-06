@@ -6,6 +6,7 @@ const envFiles: Record<string, string> = {
   development: ".env.development",
   production: ".env.production",
   local: ".env.local",
+  test: ".env.test",
 };
 
 const envFilePath = path.join(
@@ -26,6 +27,7 @@ export function config(options?: {
     NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
     FEED_REQUEST_SERVICE_URL: process.env.FEED_REQUEST_SERVICE_URL as string,
     POSTGRES_URI: process.env.POSTGRES_URI as string,
+    POSTGRES_DATABASE: process.env.POSTGRES_DATABASE as string,
   } as const;
 
   if (!options?.skipValidation) {

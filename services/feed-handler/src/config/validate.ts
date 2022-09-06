@@ -17,6 +17,9 @@ export class EnvironmentVariables {
 
   @IsString()
   POSTGRES_URI: string;
+
+  @IsString()
+  POSTGRES_DATABASE: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

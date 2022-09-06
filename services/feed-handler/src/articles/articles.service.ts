@@ -9,4 +9,12 @@ export class ArticlesService {
     @InjectRepository(FeedArticleField)
     private readonly articleFieldRepo: EntityRepository<FeedArticleField>
   ) {}
+
+  async hasPriorArticlesStored(feedId: string) {
+    const result = await this.articleFieldRepo.count({
+      feed_id: feedId,
+    });
+
+    return result > 0;
+  }
 }
