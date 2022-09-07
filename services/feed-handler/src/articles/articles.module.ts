@@ -1,11 +1,13 @@
 import { MikroOrmModule } from "@mikro-orm/nestjs";
 import { Module } from "@nestjs/common";
 import { ArticlesService } from "./articles.service";
-import { FeedArticleField } from "./entities";
+import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
 
 @Module({
   controllers: [],
   providers: [ArticlesService],
-  imports: [MikroOrmModule.forFeature([FeedArticleField])],
+  imports: [
+    MikroOrmModule.forFeature([FeedArticleField, FeedArticleCustomComparison]),
+  ],
 })
 export class ArticlesModule {}

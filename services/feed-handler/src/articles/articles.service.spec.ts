@@ -3,7 +3,7 @@ import {
   teardownIntegrationTests,
 } from "../shared/utils/setup-integration-tests";
 import { ArticlesService } from "./articles.service";
-import { FeedArticleField } from "./entities";
+import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
 import { EntityManager, EntityRepository } from "@mikro-orm/core";
 import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
@@ -29,6 +29,7 @@ const invalidFeed = readFileSync(
 describe("ArticlesService", () => {
   let service: ArticlesService;
   let articleFieldRepo: EntityRepository<FeedArticleField>;
+  let storedCustomComparisonsRepo: EntityRepository<FeedArticleCustomComparison>;
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests(
@@ -36,7 +37,7 @@ describe("ArticlesService", () => {
         providers: [ArticlesService],
       },
       {
-        models: [FeedArticleField],
+        models: [FeedArticleField, FeedArticleCustomComparison],
       }
     );
 
@@ -45,6 +46,7 @@ describe("ArticlesService", () => {
     service = module.get<ArticlesService>(ArticlesService);
     const em = module.get(EntityManager);
     articleFieldRepo = em.getRepository(FeedArticleField);
+    storedCustomComparisonsRepo = em.getRepository(FeedArticleCustomComparison);
   });
 
   afterAll(async () => {
@@ -125,6 +127,116 @@ describe("ArticlesService", () => {
       expect(fieldValues).toEqual(
         expect.arrayContaining(articles.map((a) => a.id))
       );
+    });
+
+    it("stores custom comparisons", async () => {
+      const feedId = "feed-id";
+      const articles: Article[] = [
+        {
+          id: "id-1",
+          title: "foo",
+        },
+        {
+          id: "id-2",
+          title: "bar",
+        },
+        {
+          id: "id-2",
+        },
+      ];
+
+      await service.storeArticles(feedId, articles, {
+        comparisonFields: ["title"],
+      });
+
+      const found = await articleFieldRepo.findAll();
+      expect(found).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            feed_id: feedId,
+            field_name: "title",
+            field_value: articles[0].title,
+          }),
+          expect.objectContaining({
+            feed_id: feedId,
+            field_name: "title",
+            field_value: articles[1].title,
+          }),
+        ])
+      );
+    });
+
+    it("stores stored custom comparison fields", async () => {
+      const feedId = "feed-id";
+      const articles: Article[] = [
+        {
+          id: "id-1",
+          title: "foo",
+          description: "bar",
+        },
+        {
+          id: "id-2",
+          title: "bar",
+        },
+        {
+          id: "id-2",
+        },
+      ];
+
+      await service.storeArticles(feedId, articles, {
+        comparisonFields: ["title", "description"],
+      });
+
+      const found = await storedCustomComparisonsRepo.findAll();
+      expect(found).toHaveLength(2);
+      expect(found).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(Number),
+            feed_id: feedId,
+            field_name: "title",
+          }),
+          expect.objectContaining({
+            id: expect.any(Number),
+            feed_id: feedId,
+            field_name: "description",
+          }),
+        ])
+      );
+    });
+
+    it("does not insert duplicate custom comparison fields", async () => {
+      const feedId = "feed-id";
+      const articles: Article[] = [
+        {
+          id: "id-1",
+          title: "foo",
+          description: "bar",
+        },
+        {
+          id: "id-2",
+          title: "bar",
+        },
+        {
+          id: "id-2",
+        },
+      ];
+
+      await storedCustomComparisonsRepo.nativeInsert({
+        feed_id: feedId,
+        field_name: "title",
+        id: 100,
+        created_at: new Date(),
+      });
+
+      await service.storeArticles(feedId, articles, {
+        comparisonFields: ["title", "description"],
+      });
+
+      const found = await storedCustomComparisonsRepo.findAll();
+      const fields = found.map((f) => f.field_name);
+      expect(fields).toHaveLength(2);
+      expect(fields).toEqual(expect.arrayContaining(["title", "description"]));
     });
   });
 });

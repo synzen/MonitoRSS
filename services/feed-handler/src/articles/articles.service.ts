@@ -1,17 +1,22 @@
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
-import { FeedArticleField } from "./entities";
+import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
 import { Article } from "./types";
 import FeedParser from "feedparser";
 import { ArticleIDResolver } from "./utils";
 import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
+import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
+import { EntityManager, MikroORM } from "@mikro-orm/core";
 
 @Injectable()
 export class ArticlesService {
   constructor(
     @InjectRepository(FeedArticleField)
-    private readonly articleFieldRepo: EntityRepository<FeedArticleField>
+    private readonly articleFieldRepo: EntityRepository<FeedArticleField>,
+    @InjectRepository(FeedArticleCustomComparison)
+    private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
+    private readonly orm: MikroORM
   ) {}
 
   async hasPriorArticlesStored(feedId: string) {
@@ -22,7 +27,13 @@ export class ArticlesService {
     return result > 0;
   }
 
-  async storeArticles(feedId: string, articles: Article[]) {
+  async storeArticles(
+    feedId: string,
+    articles: Article[],
+    options?: {
+      comparisonFields?: string[];
+    }
+  ) {
     const fieldsToSave: FeedArticleField[] = [];
 
     for (let i = 0; i < articles.length; ++i) {
@@ -37,7 +48,70 @@ export class ArticlesService {
       );
     }
 
-    await this.articleFieldRepo.persistAndFlush(fieldsToSave);
+    await this.orm.em.transactional(async (em) => {
+      em.persist(fieldsToSave);
+      await this.storeArticleComparisons(
+        em,
+        feedId,
+        articles,
+        options?.comparisonFields || []
+      );
+    });
+  }
+
+  private async storeArticleComparisons(
+    em: EntityManager,
+    feedId: string,
+    articles: Article[],
+    comparisonFields: string[]
+  ) {
+    const foundComparisonNames = await this.articleCustomComparisonRepo.find(
+      {
+        feed_id: feedId,
+        field_name: {
+          $in: comparisonFields,
+        },
+      },
+      {
+        fields: ["field_name"],
+      }
+    );
+
+    const comparisonNamesToStore = comparisonFields
+      .filter(
+        (name) => !foundComparisonNames.find((n) => n.field_name === name)
+      )
+      .map(
+        (name) =>
+          new FeedArticleCustomComparison({
+            feed_id: feedId,
+            field_name: name,
+          })
+      );
+
+    em.persist(comparisonNamesToStore);
+
+    const fieldsToSave: FeedArticleField[] = [];
+
+    for (let i = 0; i < articles.length; ++i) {
+      const article = articles[i];
+
+      comparisonFields.forEach((field) => {
+        const fieldValue = getNestedPrimitiveValue(article, field);
+
+        if (fieldValue) {
+          fieldsToSave.push(
+            new FeedArticleField({
+              feed_id: feedId,
+              field_name: field,
+              field_value: fieldValue,
+            })
+          );
+        }
+      });
+    }
+
+    em.persist(fieldsToSave);
   }
 
   async getArticlesFromXml(
