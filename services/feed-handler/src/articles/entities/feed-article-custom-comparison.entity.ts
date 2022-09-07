@@ -1,7 +1,7 @@
 import { Entity, Property, PrimaryKey, Unique } from "@mikro-orm/core";
 
 @Entity()
-@Unique({ properties: ["feed_id", "field_name"] })
+@Unique({ properties: ["feed_id", "field_name"], name: "unique_feed_field" })
 export class FeedArticleCustomComparison {
   @PrimaryKey()
   id: number;
