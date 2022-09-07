@@ -1,4 +1,4 @@
-import { Article } from "../types";
+import { Article } from "../../shared/types";
 import { ArticleIDResolver } from "./article-id-resolver";
 
 describe("ArticleIDResolver", () => {

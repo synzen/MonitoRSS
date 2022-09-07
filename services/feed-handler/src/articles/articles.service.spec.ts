@@ -9,7 +9,7 @@ import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { InvalidFeedException } from "./exceptions";
-import { Article } from "./types";
+import { Article } from "../shared/types";
 
 const feedText = readFileSync(
   join(__dirname, "..", "..", "test", "data", "rss-2-feed.xml"),

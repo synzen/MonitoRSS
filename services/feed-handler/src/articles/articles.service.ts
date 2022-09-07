@@ -2,12 +2,12 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
-import { Article } from "./types";
 import FeedParser from "feedparser";
 import { ArticleIDResolver } from "./utils";
 import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
 import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
 import { EntityManager, MikroORM } from "@mikro-orm/core";
+import { Article } from "../shared/types";
 
 @Injectable()
 export class ArticlesService {
