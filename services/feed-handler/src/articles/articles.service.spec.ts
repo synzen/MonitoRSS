@@ -239,4 +239,36 @@ describe("ArticlesService", () => {
       expect(fields).toEqual(expect.arrayContaining(["title", "description"]));
     });
   });
+
+  describe("filterForNewArtileIds", () => {
+    it("returns the article IDs that are not stored", async () => {
+      const feedId = "feed-id";
+
+      await Promise.all([
+        articleFieldRepo.nativeInsert({
+          id: 1,
+          feed_id: feedId,
+          field_name: "id",
+          field_value: "1",
+          created_at: new Date(),
+        }),
+        articleFieldRepo.nativeInsert({
+          id: 2,
+          feed_id: feedId,
+          field_name: "id",
+          field_value: "2",
+          created_at: new Date(),
+        }),
+      ]);
+
+      const newIds = await service.filterForNewArticleIds(feedId, [
+        "1",
+        "2",
+        "3",
+        "4",
+      ]);
+
+      expect(newIds).toEqual(["3", "4"]);
+    });
+  });
 });

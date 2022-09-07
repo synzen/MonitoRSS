@@ -114,6 +114,25 @@ export class ArticlesService {
     em.persist(fieldsToSave);
   }
 
+  async filterForNewArticleIds(feedId: string, articleIds: string[]) {
+    const foundFieldVals = await this.articleFieldRepo.find(
+      {
+        feed_id: feedId,
+        field_name: "id",
+        field_value: {
+          $in: articleIds,
+        },
+      },
+      {
+        fields: ["field_value"],
+      }
+    );
+
+    const foundIds = new Set(foundFieldVals.map((f) => f.field_value));
+
+    return articleIds.filter((id) => !foundIds.has(id));
+  }
+
   async getArticlesFromXml(
     xml: string,
     options?: {
