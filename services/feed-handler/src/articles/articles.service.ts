@@ -22,6 +22,24 @@ export class ArticlesService {
     return result > 0;
   }
 
+  async storeArticles(feedId: string, articles: Article[]) {
+    const fieldsToSave: FeedArticleField[] = [];
+
+    for (let i = 0; i < articles.length; ++i) {
+      const article = articles[i];
+
+      fieldsToSave.push(
+        new FeedArticleField({
+          feed_id: feedId,
+          field_name: "id",
+          field_value: article.id,
+        })
+      );
+    }
+
+    await this.articleFieldRepo.persistAndFlush(fieldsToSave);
+  }
+
   async getArticlesFromXml(
     xml: string,
     options?: {

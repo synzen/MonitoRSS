@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { InvalidFeedException } from "./exceptions";
+import { Article } from "./types";
 
 const feedText = readFileSync(
   join(__dirname, "..", "..", "test", "data", "rss-2-feed.xml"),
@@ -27,7 +28,7 @@ const invalidFeed = readFileSync(
 
 describe("ArticlesService", () => {
   let service: ArticlesService;
-  let repo: EntityRepository<FeedArticleField>;
+  let articleFieldRepo: EntityRepository<FeedArticleField>;
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests(
@@ -43,7 +44,7 @@ describe("ArticlesService", () => {
 
     service = module.get<ArticlesService>(ArticlesService);
     const em = module.get(EntityManager);
-    repo = em.getRepository(FeedArticleField);
+    articleFieldRepo = em.getRepository(FeedArticleField);
   });
 
   afterAll(async () => {
@@ -58,7 +59,7 @@ describe("ArticlesService", () => {
     it("returns true correctly", async () => {
       const feedId = randomUUID();
 
-      await repo.nativeInsert({
+      await articleFieldRepo.nativeInsert({
         feed_id: feedId,
         field_name: "field-name",
         field_value: "field-value",
@@ -100,6 +101,29 @@ describe("ArticlesService", () => {
     it("rejects if it is an invalid feed", async () => {
       await expect(service.getArticlesFromXml(invalidFeed)).rejects.toThrow(
         InvalidFeedException
+      );
+    });
+  });
+
+  describe("storeArticles", () => {
+    it("stores all the article ids", async () => {
+      const feedId = "feed-id";
+      const articles: Article[] = [
+        {
+          id: "id-1",
+        },
+        {
+          id: "id-2",
+        },
+      ];
+
+      await service.storeArticles(feedId, articles);
+
+      const found = await articleFieldRepo.findAll();
+      const fieldValues = found.map((f) => f.field_value);
+      expect(fieldValues).toHaveLength(2);
+      expect(fieldValues).toEqual(
+        expect.arrayContaining(articles.map((a) => a.id))
       );
     });
   });

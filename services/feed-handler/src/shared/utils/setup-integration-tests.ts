@@ -42,6 +42,7 @@ export async function setupIntegrationTests(
         forceUtcTimezone: true,
         timezone: "UTC",
         schema: postgresSchema,
+        allowGlobalContext: true,
       }),
     ],
   });

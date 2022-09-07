@@ -16,4 +16,10 @@ export class FeedArticleField {
 
   @Property()
   created_at: Date = new Date();
+
+  constructor(data: Omit<FeedArticleField, "id" | "created_at">) {
+    this.feed_id = data.feed_id;
+    this.field_name = data.field_name;
+    this.field_value = data.field_value;
+  }
 }
