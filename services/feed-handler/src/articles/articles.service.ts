@@ -142,6 +142,24 @@ export class ArticlesService {
       .map((id) => mapOfArticles.get(id)) as Article[];
   }
 
+  async areComparisonsStored(feedId: string, comparisonFields: string[]) {
+    const rows = await this.articleCustomComparisonRepo.find(
+      {
+        feed_id: feedId,
+        field_name: {
+          $in: comparisonFields,
+        },
+      },
+      {
+        fields: ["field_name"],
+      }
+    );
+
+    const storedFields = new Set(rows.map((r) => r.field_name));
+
+    return comparisonFields.map((field) => storedFields.has(field));
+  }
+
   async getArticlesFromXml(
     xml: string,
     options?: {

@@ -270,4 +270,23 @@ describe("ArticlesService", () => {
       expect(newArticles).toEqual([{ id: "3" }, { id: "4" }]);
     });
   });
+
+  describe("areComparisonsStored", () => {
+    it("returns the correct results", async () => {
+      const feedId = "feed-id";
+
+      await storedCustomComparisonsRepo.nativeInsert({
+        feed_id: feedId,
+        field_name: "title",
+        id: 1,
+        created_at: new Date(),
+      });
+
+      const result = await service.areComparisonsStored(feedId, [
+        "title",
+        "description",
+      ]);
+      expect(result).toEqual([true, false]);
+    });
+  });
 });
