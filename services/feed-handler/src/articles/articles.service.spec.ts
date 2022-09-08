@@ -11,6 +11,8 @@ import { join } from "path";
 import { InvalidFeedException } from "./exceptions";
 import { Article } from "../shared/types";
 
+const feedId = "feed-id";
+
 const feedText = readFileSync(
   join(__dirname, "..", "..", "test", "data", "rss-2-feed.xml"),
   "utf-8"
@@ -287,6 +289,83 @@ describe("ArticlesService", () => {
         "description",
       ]);
       expect(result).toEqual([true, false]);
+    });
+  });
+
+  describe("wereSomeFieldsSeenBefore", () => {
+    it("returns true if some fields were seen before", async () => {
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "title",
+        field_value: "foobar",
+      });
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "description",
+        field_value: "foobaz",
+      });
+
+      const articles: Article[] = [
+        { id: "1", title: "foobar", description: "baz" },
+        { id: "2", title: "foobar2", description: "baz2" },
+      ];
+
+      const result = await service.wereSomeFieldsSeenBefore(feedId, articles, [
+        "title",
+        "description",
+      ]);
+      expect(result).toEqual(true);
+    });
+
+    it("returns false if fields were not seen before", async () => {
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "title",
+        field_value: "foobar",
+      });
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "description",
+        field_value: "foobaz",
+      });
+
+      const articles: Article[] = [
+        { id: "1", title: "a", description: "baz" },
+        { id: "2", title: "b", description: "baz2" },
+      ];
+
+      const result = await service.wereSomeFieldsSeenBefore(feedId, articles, [
+        "title",
+        "description",
+      ]);
+      expect(result).toEqual(false);
+    });
+
+    it("returns false if articles have no field values for the input properties", async () => {
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "title",
+        field_value: "foobar",
+      });
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "description",
+        field_value: "foobaz",
+      });
+
+      const articles: Article[] = [{ id: "1", author: "hi" }, { id: "2" }];
+
+      const result = await service.wereSomeFieldsSeenBefore(feedId, articles, [
+        "author",
+        "title",
+      ]);
+      expect(result).toEqual(false);
     });
   });
 });

@@ -65,6 +65,10 @@ export class ArticlesService {
     articles: Article[],
     comparisonFields: string[]
   ) {
+    if (comparisonFields.length === 0) {
+      return;
+    }
+
     const foundComparisonNames = await this.articleCustomComparisonRepo.find(
       {
         feed_id: feedId,
@@ -158,6 +162,43 @@ export class ArticlesService {
     const storedFields = new Set(rows.map((r) => r.field_name));
 
     return comparisonFields.map((field) => storedFields.has(field));
+  }
+
+  async wereSomeFieldsSeenBefore(
+    feedId: string,
+    articles: Article[],
+    fieldKeys: string[]
+  ) {
+    const queries: Pick<
+      FeedArticleField,
+      "feed_id" | "field_name" | "field_value"
+    >[] = [];
+
+    for (let i = 0; i < articles.length; ++i) {
+      const article = articles[i];
+
+      for (const key of fieldKeys) {
+        const value = getNestedPrimitiveValue(article, key);
+
+        if (value) {
+          queries.push({
+            feed_id: feedId,
+            field_name: key,
+            field_value: value,
+          });
+        }
+      }
+    }
+
+    if (queries.length === 0) {
+      return false;
+    }
+
+    const count = await this.articleFieldRepo.count({
+      $or: queries,
+    });
+
+    return count > 0;
   }
 
   async getArticlesFromXml(
