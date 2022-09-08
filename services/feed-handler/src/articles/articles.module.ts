@@ -9,5 +9,6 @@ import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
   imports: [
     MikroOrmModule.forFeature([FeedArticleField, FeedArticleCustomComparison]),
   ],
+  exports: [ArticlesService],
 })
 export class ArticlesModule {}
