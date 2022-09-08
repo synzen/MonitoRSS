@@ -292,7 +292,7 @@ describe("ArticlesService", () => {
     });
   });
 
-  describe("wereSomeFieldsSeenBefore", () => {
+  describe("articleFieldsSeenBefore", () => {
     it("returns true if some fields were seen before", async () => {
       await articleFieldRepo.nativeInsert({
         feed_id: feedId,
@@ -307,12 +307,9 @@ describe("ArticlesService", () => {
         field_value: "foobaz",
       });
 
-      const articles: Article[] = [
-        { id: "1", title: "foobar", description: "baz" },
-        { id: "2", title: "foobar2", description: "baz2" },
-      ];
+      const article: Article = { id: "1", title: "foobar", description: "baz" };
 
-      const result = await service.wereSomeFieldsSeenBefore(feedId, articles, [
+      const result = await service.articleFieldsSeenBefore(feedId, article, [
         "title",
         "description",
       ]);
@@ -333,36 +330,26 @@ describe("ArticlesService", () => {
         field_value: "foobaz",
       });
 
-      const articles: Article[] = [
-        { id: "1", title: "a", description: "baz" },
-        { id: "2", title: "b", description: "baz2" },
-      ];
+      const article: Article = { id: "1", title: "title", description: "baz" };
 
-      const result = await service.wereSomeFieldsSeenBefore(feedId, articles, [
+      const result = await service.articleFieldsSeenBefore(feedId, article, [
         "title",
         "description",
       ]);
       expect(result).toEqual(false);
     });
 
-    it("returns false if articles have no field values for the input properties", async () => {
+    it("returns false if article fields do not exist on article", async () => {
       await articleFieldRepo.nativeInsert({
         feed_id: feedId,
         created_at: new Date(),
         field_name: "title",
         field_value: "foobar",
       });
-      await articleFieldRepo.nativeInsert({
-        feed_id: feedId,
-        created_at: new Date(),
-        field_name: "description",
-        field_value: "foobaz",
-      });
 
-      const articles: Article[] = [{ id: "1", author: "hi" }, { id: "2" }];
+      const article: Article = { id: "1", author: "hi" };
 
-      const result = await service.wereSomeFieldsSeenBefore(feedId, articles, [
-        "author",
+      const result = await service.articleFieldsSeenBefore(feedId, article, [
         "title",
       ]);
       expect(result).toEqual(false);

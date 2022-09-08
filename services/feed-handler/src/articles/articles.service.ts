@@ -164,9 +164,9 @@ export class ArticlesService {
     return comparisonFields.map((field) => storedFields.has(field));
   }
 
-  async wereSomeFieldsSeenBefore(
+  async articleFieldsSeenBefore(
     feedId: string,
-    articles: Article[],
+    article: Article,
     fieldKeys: string[]
   ) {
     const queries: Pick<
@@ -174,19 +174,15 @@ export class ArticlesService {
       "feed_id" | "field_name" | "field_value"
     >[] = [];
 
-    for (let i = 0; i < articles.length; ++i) {
-      const article = articles[i];
+    for (const key of fieldKeys) {
+      const value = getNestedPrimitiveValue(article, key);
 
-      for (const key of fieldKeys) {
-        const value = getNestedPrimitiveValue(article, key);
-
-        if (value) {
-          queries.push({
-            feed_id: feedId,
-            field_name: key,
-            field_value: value,
-          });
-        }
+      if (value) {
+        queries.push({
+          feed_id: feedId,
+          field_name: key,
+          field_value: value,
+        });
       }
     }
 
