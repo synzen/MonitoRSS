@@ -261,14 +261,13 @@ describe("ArticlesService", () => {
         }),
       ]);
 
-      const newIds = await service.filterForNewArticleIds(feedId, [
-        "1",
-        "2",
-        "3",
-        "4",
-      ]);
+      const articles = ["1", "2", "3", "4"].map((id) => ({
+        id,
+      }));
 
-      expect(newIds).toEqual(["3", "4"]);
+      const newArticles = await service.filterForNewArticles(feedId, articles);
+
+      expect(newArticles).toEqual([{ id: "3" }, { id: "4" }]);
     });
   });
 });
