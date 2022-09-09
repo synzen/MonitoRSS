@@ -55,10 +55,12 @@ describe("App (e2e)", () => {
 
   it("sends new articles", async () => {
     const event: FeedV2Event = {
-      id: feedId,
-      blockingComparisons: [],
-      passingComparisons: [],
-      url: feedHost + feedPath,
+      article: {
+        id: feedId,
+        blockingComparisons: [],
+        passingComparisons: [],
+        url: feedHost + feedPath,
+      },
     };
 
     // Pre-initialize the database with articles of this feed

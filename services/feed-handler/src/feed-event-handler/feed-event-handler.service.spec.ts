@@ -1,9 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { Article } from "../shared/types";
+import { Article, FeedV2Event } from "../shared";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { FeedEventHandlerService } from "./feed-event-handler.service";
-import { FeedV2Event } from "./types";
 
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
@@ -45,10 +44,13 @@ describe("FeedEventHandlerService", () => {
 
   describe("handleV2Event", () => {
     const v2Event: FeedV2Event = {
-      id: "1",
-      blockingComparisons: ["title"],
-      passingComparisons: ["description"],
-      url: "url",
+      article: {
+        id: "1",
+        blockingComparisons: ["title"],
+        passingComparisons: ["description"],
+        url: "url",
+      },
+      mediums: [],
     };
 
     describe("when no feed request is pending", () => {
@@ -62,7 +64,8 @@ describe("FeedEventHandlerService", () => {
 
     describe("when feed request succeeded but there are no articles", () => {
       it("returns no articles", async () => {
-        feedFetcherService.fetch.mockResolvedValue([]);
+        feedFetcherService.fetch.mockResolvedValue("feed text");
+        articlesService.getArticlesFromXml.mockResolvedValue({ articles: [] });
 
         const returned = await service.handleV2Event(v2Event);
         expect(returned).toEqual([]);
@@ -87,12 +90,12 @@ describe("FeedEventHandlerService", () => {
       it("stores all the articles", async () => {
         await service.handleV2Event(v2Event);
         expect(articlesService.storeArticles).toHaveBeenCalledWith(
-          v2Event.id,
+          v2Event.article.id,
           articles,
           {
             comparisonFields: expect.arrayContaining([
-              ...v2Event.passingComparisons,
-              ...v2Event.blockingComparisons,
+              ...v2Event.article.passingComparisons,
+              ...v2Event.article.blockingComparisons,
             ]),
           }
         );
@@ -108,8 +111,11 @@ describe("FeedEventHandlerService", () => {
     describe("when there are new article IDs", () => {
       const event: FeedV2Event = {
         ...v2Event,
-        passingComparisons: [],
-        blockingComparisons: [],
+        article: {
+          ...v2Event.article,
+          passingComparisons: [],
+          blockingComparisons: [],
+        },
       };
       const articles: Article[] = [
         {
@@ -164,11 +170,13 @@ describe("FeedEventHandlerService", () => {
       it("stores the new articles", async () => {
         await service.handleV2Event(event);
         expect(articlesService.storeArticles).toHaveBeenCalledWith(
-          event.id,
+          event.article.id,
           filteredNewArticles,
           {
             comparisonFields: expect.arrayContaining(
-              event.passingComparisons.concat(event.blockingComparisons)
+              event.article.passingComparisons.concat(
+                event.article.blockingComparisons
+              )
             ),
           }
         );

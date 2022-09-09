@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
-import { Article } from "../shared/types";
-import { FeedV2Event } from "./types";
+import { Article, FeedV2Event } from "../shared";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -12,10 +11,7 @@ export class FeedEventHandlerService {
   ) {}
 
   async handleV2Event({
-    id,
-    url,
-    blockingComparisons,
-    passingComparisons,
+    article: { id, url, blockingComparisons, passingComparisons },
   }: FeedV2Event): Promise<Article[]> {
     const feedXml = await this.feedFetcherService.fetch(url);
 
@@ -79,7 +75,7 @@ export class FeedEventHandlerService {
   }
 
   async checkBlockingComparisons(
-    { id, blockingComparisons }: FeedV2Event,
+    { id, blockingComparisons }: FeedV2Event["article"],
     newArticles: Article[]
   ) {
     if (newArticles.length === 0) {
@@ -117,7 +113,7 @@ export class FeedEventHandlerService {
   }
 
   async checkPassingComparisons(
-    { id, passingComparisons }: FeedV2Event,
+    { id, passingComparisons }: FeedV2Event["article"],
     seenArticles: Article[]
   ) {
     if (seenArticles.length === 0) {
