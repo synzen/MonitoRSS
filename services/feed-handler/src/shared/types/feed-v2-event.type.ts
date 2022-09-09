@@ -1,18 +1,23 @@
-export type MediumKey = "discord";
-
-export interface BaseMedium {
-  key: MediumKey;
+export enum MediumKey {
+  Discord = "discord",
 }
 
-export interface DiscordMediumPayload extends BaseMedium {
-  key: "discord";
-  channelId: string;
+interface BaseMediumPayload {
+  key: MediumKey;
+  details: Record<string, unknown>;
+}
+
+export interface DiscordMediumPayload extends BaseMediumPayload {
+  key: MediumKey.Discord;
+  details: {
+    channelIds: string[];
+  };
 }
 
 export type MediumPayload = DiscordMediumPayload;
 
 export interface FeedV2Event {
-  article: {
+  feed: {
     id: string;
     url: string;
     passingComparisons: string[];

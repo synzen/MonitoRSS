@@ -11,7 +11,7 @@ export class FeedEventHandlerService {
   ) {}
 
   async handleV2Event({
-    article: { id, url, blockingComparisons, passingComparisons },
+    feed: { id, url, blockingComparisons, passingComparisons },
   }: FeedV2Event): Promise<Article[]> {
     const feedXml = await this.feedFetcherService.fetch(url);
 
@@ -75,7 +75,7 @@ export class FeedEventHandlerService {
   }
 
   async checkBlockingComparisons(
-    { id, blockingComparisons }: FeedV2Event["article"],
+    { id, blockingComparisons }: FeedV2Event["feed"],
     newArticles: Article[]
   ) {
     if (newArticles.length === 0) {
@@ -113,7 +113,7 @@ export class FeedEventHandlerService {
   }
 
   async checkPassingComparisons(
-    { id, passingComparisons }: FeedV2Event["article"],
+    { id, passingComparisons }: FeedV2Event["feed"],
     seenArticles: Article[]
   ) {
     if (seenArticles.length === 0) {

@@ -13,11 +13,6 @@ interface Options {
   models?: EntityName<Partial<any>>[];
 }
 
-afterEach(async () => {
-  const generator = orm.getSchemaGenerator();
-  await generator.refreshDatabase();
-});
-
 export async function setupIntegrationTests(
   metadata: ModuleMetadata,
   options?: Options
@@ -65,6 +60,11 @@ export async function setupIntegrationTests(
     uncompiledModule,
     init,
   };
+}
+
+export async function clearDatabase() {
+  const generator = orm?.getSchemaGenerator();
+  await generator?.refreshDatabase();
 }
 
 export async function teardownIntegrationTests() {

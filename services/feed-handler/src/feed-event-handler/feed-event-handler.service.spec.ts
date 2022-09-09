@@ -44,7 +44,7 @@ describe("FeedEventHandlerService", () => {
 
   describe("handleV2Event", () => {
     const v2Event: FeedV2Event = {
-      article: {
+      feed: {
         id: "1",
         blockingComparisons: ["title"],
         passingComparisons: ["description"],
@@ -90,12 +90,12 @@ describe("FeedEventHandlerService", () => {
       it("stores all the articles", async () => {
         await service.handleV2Event(v2Event);
         expect(articlesService.storeArticles).toHaveBeenCalledWith(
-          v2Event.article.id,
+          v2Event.feed.id,
           articles,
           {
             comparisonFields: expect.arrayContaining([
-              ...v2Event.article.passingComparisons,
-              ...v2Event.article.blockingComparisons,
+              ...v2Event.feed.passingComparisons,
+              ...v2Event.feed.blockingComparisons,
             ]),
           }
         );
@@ -111,8 +111,8 @@ describe("FeedEventHandlerService", () => {
     describe("when there are new article IDs", () => {
       const event: FeedV2Event = {
         ...v2Event,
-        article: {
-          ...v2Event.article,
+        feed: {
+          ...v2Event.feed,
           passingComparisons: [],
           blockingComparisons: [],
         },
@@ -170,12 +170,12 @@ describe("FeedEventHandlerService", () => {
       it("stores the new articles", async () => {
         await service.handleV2Event(event);
         expect(articlesService.storeArticles).toHaveBeenCalledWith(
-          event.article.id,
+          event.feed.id,
           filteredNewArticles,
           {
             comparisonFields: expect.arrayContaining(
-              event.article.passingComparisons.concat(
-                event.article.blockingComparisons
+              event.feed.passingComparisons.concat(
+                event.feed.blockingComparisons
               )
             ),
           }

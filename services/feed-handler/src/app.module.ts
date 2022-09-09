@@ -8,9 +8,15 @@ import { FeedFetcherModule } from "./feed-fetcher/feed-fetcher.module";
 import { ArticlesModule } from "./articles/articles.module";
 // eslint-disable-next-line max-len
 import { FeedEventHandlerModule } from "./feed-event-handler/feed-event-handler.module";
+import { DeliveryModule } from "./delivery/delivery.module";
 
 @Module({
-  imports: [FeedFetcherModule, ArticlesModule, FeedEventHandlerModule],
+  imports: [
+    FeedFetcherModule,
+    ArticlesModule,
+    FeedEventHandlerModule,
+    DeliveryModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

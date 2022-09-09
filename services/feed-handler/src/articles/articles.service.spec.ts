@@ -1,4 +1,5 @@
 import {
+  clearDatabase,
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "../shared/utils/setup-integration-tests";
@@ -49,6 +50,10 @@ describe("ArticlesService", () => {
     const em = module.get(EntityManager);
     articleFieldRepo = em.getRepository(FeedArticleField);
     storedCustomComparisonsRepo = em.getRepository(FeedArticleCustomComparison);
+  });
+
+  afterEach(async () => {
+    await clearDatabase();
   });
 
   afterAll(async () => {
