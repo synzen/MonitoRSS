@@ -32,6 +32,7 @@ export async function setupIntegrationTests(
       ConfigModule.forRoot({
         ignoreEnvFile: true,
         load: [config],
+        isGlobal: true,
       }),
       MikroOrmModule.forFeature(options?.models || []),
       MikroOrmModule.forRoot({
