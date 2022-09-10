@@ -4,6 +4,7 @@ import { Article } from "../../shared";
 import { ConfigService } from "@nestjs/config";
 import { RESTProducer } from "@synzen/discord-rest";
 import { DeliveryDetails } from "../types";
+import { replaceTemplateString } from "../../articles/utils/replace-template-string";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -88,7 +89,7 @@ export class DiscordMediumService implements DeliveryMedium {
       {
         method: "POST",
         body: JSON.stringify({
-          content,
+          content: replaceTemplateString(article, content),
         }),
       },
       {
@@ -117,7 +118,7 @@ export class DiscordMediumService implements DeliveryMedium {
       {
         method: "POST",
         body: JSON.stringify({
-          content,
+          content: replaceTemplateString(article, content),
         }),
       },
       {
