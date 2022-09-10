@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
-import { Article, FeedV2Event } from "../shared";
+import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -10,9 +10,15 @@ export class FeedEventHandlerService {
     private readonly feedFetcherService: FeedFetcherService
   ) {}
 
-  async handleV2Event({
-    feed: { id, url, blockingComparisons, passingComparisons },
-  }: FeedV2Event): Promise<Article[]> {
+  async handleV2Event(event: FeedV2Event): Promise<Article[]> {
+    await feedV2EventSchema.validate(event, {
+      abortEarly: false,
+    });
+
+    const {
+      feed: { id, url, blockingComparisons, passingComparisons },
+    } = event;
+
     const feedXml = await this.feedFetcherService.fetch(url);
 
     if (!feedXml) {

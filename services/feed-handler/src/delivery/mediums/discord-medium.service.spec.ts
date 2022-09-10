@@ -71,7 +71,7 @@ describe("DiscordMediumService", () => {
       },
     };
 
-    it("should call the producer for every channel with the correct arguments", async () => {
+    it("should call the producer for every channel", async () => {
       await service.deliver(deliveryDetails);
 
       expect(producer.enqueue).toHaveBeenCalledWith(

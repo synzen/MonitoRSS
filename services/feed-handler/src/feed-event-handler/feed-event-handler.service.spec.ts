@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { Article, FeedV2Event } from "../shared";
+import { Article, FeedV2Event, MediumKey } from "../shared";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { FeedEventHandlerService } from "./feed-event-handler.service";
@@ -50,8 +50,52 @@ describe("FeedEventHandlerService", () => {
         passingComparisons: ["description"],
         url: "url",
       },
-      mediums: [],
+      mediums: [
+        {
+          key: MediumKey.Discord,
+          details: {
+            guildId: "1",
+            channels: [{ id: "channel 1" }],
+          },
+        },
+      ],
     };
+
+    describe("schema validation", () => {
+      it("throws if there is not at least one medium", async () => {
+        await expect(
+          service.handleV2Event({
+            ...v2Event,
+            mediums: [],
+          })
+        ).rejects.toThrow();
+      });
+
+      it("throws if there is not a recognized medium key", async () => {
+        await expect(
+          service.handleV2Event({
+            ...v2Event,
+            mediums: [
+              {
+                key: "invalid medium key" as MediumKey,
+                details: {} as never,
+              },
+            ],
+          })
+        ).rejects.toThrow();
+      });
+
+      it("throws if feed properties are missing", async () => {
+        await expect(
+          service.handleV2Event({
+            ...v2Event,
+            feed: {
+              url: "url",
+            } as never,
+          })
+        ).rejects.toThrow();
+      });
+    });
 
     describe("when no feed request is pending", () => {
       it("returns no articles", async () => {

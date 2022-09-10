@@ -1,4 +1,4 @@
-import { Article, DiscordMediumPayload } from "../../shared";
+import { Article, DiscordMediumPayloadDetails } from "../../shared";
 
 export interface DeliveryDetails {
   articles: Article[];
@@ -8,5 +8,5 @@ export interface DeliveryDetails {
     passingComparisons: string[];
     blockingComparisons: string[];
   };
-  deliverySettings: DiscordMediumPayload["details"];
+  deliverySettings: DiscordMediumPayloadDetails;
 }
