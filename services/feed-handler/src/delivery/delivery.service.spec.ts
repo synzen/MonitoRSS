@@ -40,13 +40,15 @@ describe("DeliveryService", () => {
         {
           key: MediumKey.Discord,
           details: {
-            channelIds: ["channel 1"],
+            guildId: "1",
+            channels: [{ id: "channel 1" }],
           },
         },
         {
           key: MediumKey.Discord,
           details: {
-            channelIds: ["channel 2"],
+            guildId: "2",
+            channels: [{ id: "channel 2" }],
           },
         },
       ],

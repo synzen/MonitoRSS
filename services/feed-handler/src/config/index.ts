@@ -28,6 +28,8 @@ export function config(options?: {
     FEED_REQUEST_SERVICE_URL: process.env.FEED_REQUEST_SERVICE_URL as string,
     POSTGRES_URI: process.env.POSTGRES_URI as string,
     POSTGRES_DATABASE: process.env.POSTGRES_DATABASE as string,
+    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID as string,
+    DISCORD_RABBITMQ_URI: process.env.DISCORD_RABBITMQ_URI as string,
   } as const;
 
   if (!options?.skipValidation) {

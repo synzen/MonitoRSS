@@ -10,7 +10,15 @@ interface BaseMediumPayload {
 export interface DiscordMediumPayload extends BaseMediumPayload {
   key: MediumKey.Discord;
   details: {
-    channelIds: string[];
+    guildId: string;
+    channels?: Array<{
+      id: string;
+    }>;
+    webhooks?: Array<{
+      id: string;
+      token: string;
+    }>;
+    content?: string;
   };
 }
 

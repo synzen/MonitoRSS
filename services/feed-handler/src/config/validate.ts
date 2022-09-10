@@ -20,6 +20,12 @@ export class EnvironmentVariables {
 
   @IsString()
   POSTGRES_DATABASE: string;
+
+  @IsString()
+  DISCORD_CLIENT_ID: string;
+
+  @IsString()
+  DISCORD_RABBITMQ_URI: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {
