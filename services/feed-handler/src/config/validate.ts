@@ -19,6 +19,9 @@ export class EnvironmentVariables {
   POSTGRES_URI: string;
 
   @IsString()
+  FEED_MONGODB_URI: string;
+
+  @IsString()
   POSTGRES_DATABASE: string;
 
   @IsString()
