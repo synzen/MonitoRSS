@@ -1,4 +1,5 @@
 import { Article, FeedV2Event, MediumPayload } from "../../shared";
+import { ArticleDeliveryState } from "../types";
 
 export interface DeliveryMedium {
   deliverArticle(
@@ -7,5 +8,5 @@ export interface DeliveryMedium {
       feedDetails: FeedV2Event["feed"];
       deliverySettings: MediumPayload["details"];
     }
-  ): Promise<void>;
+  ): Promise<ArticleDeliveryState>;
 }

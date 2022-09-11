@@ -3,8 +3,13 @@ import { Injectable } from "@nestjs/common";
 import { Article } from "../../shared";
 import { ConfigService } from "@nestjs/config";
 import { RESTProducer } from "@synzen/discord-rest";
-import { DeliveryDetails } from "../types";
+import {
+  ArticleDeliveryState,
+  ArticleDeliveryStatus,
+  DeliveryDetails,
+} from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
+import { ArticleDeliveryErrorCode } from "../delivery.constants";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -32,38 +37,50 @@ export class DiscordMediumService implements DeliveryMedium {
     return `${DiscordMediumService.BASE_API_URL}/webhooks/${webhookId}/${webhookToken}`;
   }
 
-  async deliverArticle(article: Article, details: DeliveryDetails) {
-    const channels = details.deliverySettings.channels || [];
-    await Promise.all(
-      channels.map(async ({ id }) => {
-        try {
-          await this.deliverArticleToChannel(article, id, details);
-        } catch (err) {
-          console.error(
-            `Failed to deliver article ${article.id} to Discord channel ${id}`,
-            {
-              details,
-            }
-          );
-        }
-      })
-    );
+  async deliverArticle(
+    article: Article,
+    details: DeliveryDetails
+  ): Promise<ArticleDeliveryState> {
+    const { channel, webhook } = details.deliverySettings;
 
-    const webhooks = details.deliverySettings.webhooks || [];
-    await Promise.all(
-      webhooks.map(async ({ id, token }) => {
-        try {
-          await this.deliverArticleToWebhook(article, id, token, details);
-        } catch (err) {
-          console.error(
-            `Failed to deliver article ${article.id} to Discord webook ${id}`,
-            {
-              details,
-            }
-          );
+    if (!channel && !webhook) {
+      return {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+        internalMessage: "No channel or webhook specified",
+      };
+    }
+
+    try {
+      if (webhook) {
+        const { id, token } = webhook;
+        await this.deliverArticleToWebhook(article, id, token, details);
+      } else if (channel) {
+        const channelId = channel.id;
+        await this.deliverArticleToChannel(article, channelId, details);
+      }
+
+      return {
+        status: ArticleDeliveryStatus.Sent,
+      };
+    } catch (err) {
+      console.error(
+        `Failed to deliver article ${
+          article.id
+        } to Discord webook/channel. Webhook: ${JSON.stringify(
+          webhook
+        )}, channel: ${JSON.stringify(channel)}`,
+        {
+          details,
         }
-      })
-    );
+      );
+
+      return {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: (err as Error).message,
+      };
+    }
   }
 
   private async deliverArticleToChannel(

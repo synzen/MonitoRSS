@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
-import { DeliveryDetails } from "../types";
+import { ArticleDeliveryErrorCode } from "../delivery.constants";
+import { ArticleDeliveryStatus, DeliveryDetails } from "../types";
 import { DiscordMediumService } from "./discord-medium.service";
 
 jest.mock("@synzen/discord-rest", () => ({
@@ -49,17 +50,11 @@ describe("DiscordMediumService", () => {
     const deliveryDetails: DeliveryDetails = {
       deliverySettings: {
         guildId: "guild-id",
-        channels: [{ id: "channel-1" }, { id: "channel-2" }],
-        webhooks: [
-          {
-            id: "webhook-id-1",
-            token: "webhook-token-1",
-          },
-          {
-            id: "webhook-id-2",
-            token: "webhook-token-2",
-          },
-        ],
+        channel: { id: "channel-1" },
+        webhook: {
+          id: "webhook-id-1",
+          token: "webhook-token-1",
+        },
         content: "content",
       },
       feedDetails: {
@@ -70,9 +65,34 @@ describe("DiscordMediumService", () => {
       },
     };
 
-    describe("channels", () => {
-      it("should call the producer for every channel", async () => {
-        await service.deliverArticle(article, deliveryDetails);
+    it("returns sent status on success", async () => {
+      const result = await service.deliverArticle(article, deliveryDetails);
+      expect(result).toEqual({
+        status: ArticleDeliveryStatus.Sent,
+      });
+    });
+
+    it("returns failed status on error", async () => {
+      const mockError = new Error("mock error");
+      producer.enqueue.mockRejectedValue(mockError);
+      const result = await service.deliverArticle(article, deliveryDetails);
+
+      expect(result).toEqual({
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: mockError.message,
+      });
+    });
+
+    describe("channel", () => {
+      it("should call the producer for the channel", async () => {
+        await service.deliverArticle(article, {
+          ...deliveryDetails,
+          deliverySettings: {
+            ...deliveryDetails.deliverySettings,
+            webhook: undefined,
+          },
+        });
 
         expect(producer.enqueue).toHaveBeenCalledWith(
           `${DiscordMediumService.BASE_API_URL}/channels/channel-1/messages`,
@@ -90,23 +110,6 @@ describe("DiscordMediumService", () => {
             guildId: deliveryDetails.deliverySettings.guildId,
           }
         );
-
-        expect(producer.enqueue).toHaveBeenCalledWith(
-          `${DiscordMediumService.BASE_API_URL}/channels/channel-2/messages`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              content: "content",
-            }),
-          },
-          {
-            articleID: "1",
-            feedURL: deliveryDetails.feedDetails.url,
-            channel: "channel-2",
-            feedId: deliveryDetails.feedDetails.id,
-            guildId: deliveryDetails.deliverySettings.guildId,
-          }
-        );
       });
 
       it("sends messages with replaced template strings", async () => {
@@ -119,6 +122,7 @@ describe("DiscordMediumService", () => {
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
             content: "content {{title}}",
+            webhook: undefined,
           },
         };
         await service.deliverArticle(article, details);
@@ -135,16 +139,13 @@ describe("DiscordMediumService", () => {
       });
     });
 
-    describe("webhooks", () => {
-      it("should call the producer for every webhook", async () => {
+    describe("webhook", () => {
+      it("prioritizes webhook over channel, calls the producer for the webhook", async () => {
         await service.deliverArticle(article, deliveryDetails);
 
-        const webhook1Id = deliveryDetails.deliverySettings.webhooks?.[0].id;
-        const webhook1Token =
-          deliveryDetails.deliverySettings.webhooks?.[0].token;
-        const webhook2Id = deliveryDetails.deliverySettings.webhooks?.[1].id;
-        const webhook2Token =
-          deliveryDetails.deliverySettings.webhooks?.[1].token;
+        const webhook1Id = deliveryDetails.deliverySettings.webhook?.id;
+        const webhook1Token = deliveryDetails.deliverySettings.webhook?.token;
+        deliveryDetails.deliverySettings.webhook?.token;
         expect(producer.enqueue).toHaveBeenCalledWith(
           `${DiscordMediumService.BASE_API_URL}/webhooks/${webhook1Id}/${webhook1Token}`,
           {
@@ -157,23 +158,6 @@ describe("DiscordMediumService", () => {
             articleID: "1",
             feedURL: deliveryDetails.feedDetails.url,
             webhookId: webhook1Id,
-            feedId: deliveryDetails.feedDetails.id,
-            guildId: deliveryDetails.deliverySettings.guildId,
-          }
-        );
-
-        expect(producer.enqueue).toHaveBeenCalledWith(
-          `${DiscordMediumService.BASE_API_URL}/webhooks/${webhook2Id}/${webhook2Token}`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              content: "content",
-            }),
-          },
-          {
-            articleID: "1",
-            feedURL: deliveryDetails.feedDetails.url,
-            webhookId: webhook2Id,
             feedId: deliveryDetails.feedDetails.id,
             guildId: deliveryDetails.deliverySettings.guildId,
           }

@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { Article, FeedV2Event, MediumKey, MediumPayload } from "../shared";
+import { ArticleDeliveryErrorCode } from "./delivery.constants";
 import { DeliveryMedium } from "./mediums/delivery-medium.interface";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
+import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
 
 @Injectable()
 export class DeliveryService {
@@ -15,57 +17,74 @@ export class DeliveryService {
     [MediumKey.Discord]: this.discordMediumService,
   };
 
-  async deliver(event: FeedV2Event, articles: Article[]) {
+  async deliver(
+    event: FeedV2Event,
+    articles: Article[]
+  ): Promise<ArticleDeliveryState[]> {
+    let articleStates: ArticleDeliveryState[] = [];
+
     await Promise.all(
       event.mediums.map(async (medium) => {
-        try {
-          await this.deliverArticlesToMedium(event, articles, medium);
-        } catch (err) {
-          console.error(
-            `Failed to deliver event ${JSON.stringify(event)} to medium ${
-              medium.key
-            }`
-          );
-        }
+        articleStates = articleStates.concat(
+          await this.deliverArticlesToMedium(event, articles, medium)
+        );
       })
     );
+
+    return articleStates;
   }
 
   private async deliverArticlesToMedium(
     event: FeedV2Event,
     articles: Article[],
     medium: MediumPayload
-  ) {
-    await Promise.all(
-      articles.map(async (article) => {
-        const filterReferences = this.articleFiltersService.buildReferences({
-          article,
-        });
-
-        const passesFilters = !medium.filters.expression
-          ? true
-          : this.articleFiltersService.getArticleFilterResults(
-              medium.filters.expression,
-              filterReferences
-            );
-
-        if (!passesFilters) {
-          return;
-        }
-
-        try {
-          await this.mediumServices[medium.key].deliverArticle(article, {
-            deliverySettings: medium.details,
-            feedDetails: event.feed,
-          });
-        } catch (err) {
-          console.error(
-            `Failed to deliver event ${JSON.stringify(event)} to medium ${
-              medium.key
-            }`
-          );
-        }
-      })
+  ): Promise<ArticleDeliveryState[]> {
+    return Promise.all(
+      articles.map(async (article) =>
+        this.sendArticleToMedium(event, article, medium)
+      )
     );
+  }
+
+  private async sendArticleToMedium(
+    event: FeedV2Event,
+    article: Article,
+    medium: MediumPayload
+  ): Promise<ArticleDeliveryState> {
+    try {
+      const filterReferences = this.articleFiltersService.buildReferences({
+        article,
+      });
+
+      const passesFilters = !medium.filters?.expression
+        ? true
+        : await this.articleFiltersService.getArticleFilterResults(
+            medium.filters.expression,
+            filterReferences
+          );
+
+      if (!passesFilters) {
+        return {
+          status: ArticleDeliveryStatus.FilteredOut,
+        };
+      }
+
+      return await this.mediumServices[medium.key].deliverArticle(article, {
+        deliverySettings: medium.details,
+        feedDetails: event.feed,
+      });
+    } catch (err) {
+      console.error(
+        `Failed to deliver event ${JSON.stringify(event)} to medium ${
+          medium.key
+        }`
+      );
+
+      return {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: (err as Error).message,
+      };
+    }
   }
 }

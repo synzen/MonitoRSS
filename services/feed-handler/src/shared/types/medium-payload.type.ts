@@ -17,6 +17,6 @@ export const mediumPayloadSchema = baseMediumpayloadSchema.shape({
 
 export type MediumPayload = {
   key: MediumKey.Discord;
-  filters: MediumFilters;
+  filters?: MediumFilters;
   details: InferType<typeof discordMediumPayloadDetailsSchema>;
 };
