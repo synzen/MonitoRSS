@@ -9,6 +9,7 @@ import { ArticlesModule } from "./articles/articles.module";
 // eslint-disable-next-line max-len
 import { FeedEventHandlerModule } from "./feed-event-handler/feed-event-handler.module";
 import { DeliveryModule } from "./delivery/delivery.module";
+import { ArticleFiltersModule } from "./article-filters/article-filters.module";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { DeliveryModule } from "./delivery/delivery.module";
     ArticlesModule,
     FeedEventHandlerModule,
     DeliveryModule,
+    ArticleFiltersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
