@@ -24,14 +24,6 @@ export class DiscordMediumService implements DeliveryMedium {
     });
   }
 
-  async deliver(deliveryDetails: DeliveryDetails): Promise<void> {
-    await Promise.all(
-      deliveryDetails.articles.map((article) =>
-        this.deliverArticle(article, deliveryDetails)
-      )
-    );
-  }
-
   private getChannelApiUrl(channelId: string) {
     return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/messages`;
   }
@@ -40,7 +32,7 @@ export class DiscordMediumService implements DeliveryMedium {
     return `${DiscordMediumService.BASE_API_URL}/webhooks/${webhookId}/${webhookToken}`;
   }
 
-  private async deliverArticle(article: Article, details: DeliveryDetails) {
+  async deliverArticle(article: Article, details: DeliveryDetails) {
     const channels = details.deliverySettings.channels || [];
     await Promise.all(
       channels.map(async ({ id }) => {

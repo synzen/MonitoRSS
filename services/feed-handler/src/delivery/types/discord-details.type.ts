@@ -1,7 +1,6 @@
-import { Article, DiscordMediumPayloadDetails } from "../../shared";
+import { DiscordMediumPayloadDetails } from "../../shared";
 
 export interface DeliveryDetails {
-  articles: Article[];
   feedDetails: {
     id: string;
     url: string;

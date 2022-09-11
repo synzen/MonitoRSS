@@ -6,7 +6,7 @@ import { DiscordMediumService } from "./mediums/discord-medium.service";
 describe("DeliveryService", () => {
   let service: DeliveryService;
   const discordMediumService = {
-    deliver: jest.fn(),
+    deliverArticle: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -65,29 +65,45 @@ describe("DeliveryService", () => {
     it("calls deliver on the mediums", async () => {
       await service.deliver(event, articles);
 
-      expect(discordMediumService.deliver).toHaveBeenCalledTimes(2);
-      expect(discordMediumService.deliver).toHaveBeenCalledWith({
-        articles,
-        deliverySettings: event.mediums[0].details,
-        feedDetails: event.feed,
-      });
-      expect(discordMediumService.deliver).toHaveBeenCalledWith({
-        articles,
-        deliverySettings: event.mediums[1].details,
-        feedDetails: event.feed,
-      });
+      expect(discordMediumService.deliverArticle).toHaveBeenCalledTimes(4);
+      expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
+        articles[0],
+        {
+          deliverySettings: event.mediums[0].details,
+          feedDetails: event.feed,
+        }
+      );
+      expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
+        articles[0],
+        {
+          deliverySettings: event.mediums[1].details,
+          feedDetails: event.feed,
+        }
+      );
+      expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
+        articles[1],
+        {
+          deliverySettings: event.mediums[0].details,
+          feedDetails: event.feed,
+        }
+      );
+      expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
+        articles[1],
+        {
+          deliverySettings: event.mediums[1].details,
+          feedDetails: event.feed,
+        }
+      );
     });
 
-    it("logs errors if one medium fails", async () => {
+    it("logs errors if some mediums fail", async () => {
       const deliveryError = new Error("delivery err");
-      discordMediumService.deliver
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(deliveryError);
+      discordMediumService.deliverArticle.mockRejectedValue(deliveryError);
 
       const consoleSpy = jest.spyOn(console, "error").mockImplementation();
       await expect(service.deliver(event, articles)).resolves.toBeUndefined();
 
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy).toHaveBeenCalled();
     });
   });
 });

@@ -9,18 +9,22 @@ import {
 } from "./article-filterse.constants";
 import { InvalidExpressionException } from "./exceptions";
 
-interface ExpressionEvaluationData {
-  article: Article;
-}
-
 @Injectable()
 export class ArticleFiltersService {
+  async getArticleFilterResults(
+    expression: FilterLogicalExpression,
+    references: Record<string, unknown>
+  ) {
+    return this.evaluateExpression(expression, references);
+  }
+
   async evaluateExpression(
     expression: FilterLogicalExpression | FilterRelationalExpression,
-    evalData: ExpressionEvaluationData
+    references: Record<string, unknown>
   ): Promise<boolean> {
-    const { article } = evalData;
-    const references = this.buildReferences({ article });
+    if (!expression) {
+      return true;
+    }
 
     if (
       ![ExpressionType.Logical, ExpressionType.Relational].includes(
@@ -34,7 +38,7 @@ export class ArticleFiltersService {
 
     switch (expression.type) {
       case ExpressionType.Logical:
-        return this.evaluateLogicalExpression(expression, evalData);
+        return this.evaluateLogicalExpression(expression, references);
       case ExpressionType.Relational:
         return this.evaluateRelationalExpression(expression, references);
     }
@@ -42,7 +46,7 @@ export class ArticleFiltersService {
 
   private async evaluateLogicalExpression(
     expression: FilterLogicalExpression,
-    evalData: ExpressionEvaluationData
+    references: Record<string, unknown>
   ): Promise<boolean> {
     const children = expression.children;
 
@@ -50,7 +54,7 @@ export class ArticleFiltersService {
       case LogicalExpressionOperator.And: {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
-          const result = await this.evaluateExpression(child, evalData);
+          const result = await this.evaluateExpression(child, references);
 
           if (!result) {
             return false;
@@ -63,7 +67,7 @@ export class ArticleFiltersService {
       case LogicalExpressionOperator.Or: {
         for (let i = 0; i < children.length; ++i) {
           const child = children[i];
-          const result = await this.evaluateExpression(child, evalData);
+          const result = await this.evaluateExpression(child, references);
 
           if (result) {
             return true;
@@ -74,7 +78,7 @@ export class ArticleFiltersService {
       }
 
       case LogicalExpressionOperator.Not: {
-        const result = await this.evaluateExpression(children[0], evalData);
+        const result = await this.evaluateExpression(children[0], references);
 
         return !result;
       }

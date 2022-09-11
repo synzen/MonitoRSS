@@ -41,13 +41,12 @@ describe("DiscordMediumService", () => {
     jest.resetAllMocks();
   });
 
-  describe("deliver", () => {
+  describe("deliverArticle", () => {
+    const article = {
+      id: "1",
+    };
+
     const deliveryDetails: DeliveryDetails = {
-      articles: [
-        {
-          id: "1",
-        },
-      ],
       deliverySettings: {
         guildId: "guild-id",
         channels: [{ id: "channel-1" }, { id: "channel-2" }],
@@ -73,7 +72,7 @@ describe("DiscordMediumService", () => {
 
     describe("channels", () => {
       it("should call the producer for every channel", async () => {
-        await service.deliver(deliveryDetails);
+        await service.deliverArticle(article, deliveryDetails);
 
         expect(producer.enqueue).toHaveBeenCalledWith(
           `${DiscordMediumService.BASE_API_URL}/channels/channel-1/messages`,
@@ -111,20 +110,18 @@ describe("DiscordMediumService", () => {
       });
 
       it("sends messages with replaced template strings", async () => {
+        const article = {
+          id: "1",
+          title: "some-title-here",
+        };
         const details: DeliveryDetails = {
           ...deliveryDetails,
-          articles: [
-            {
-              id: "1",
-              title: "some-title-here",
-            },
-          ],
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
             content: "content {{title}}",
           },
         };
-        await service.deliver(details);
+        await service.deliverArticle(article, details);
 
         expect(producer.enqueue).toHaveBeenCalledWith(
           expect.anything(),
@@ -140,7 +137,7 @@ describe("DiscordMediumService", () => {
 
     describe("webhooks", () => {
       it("should call the producer for every webhook", async () => {
-        await service.deliver(deliveryDetails);
+        await service.deliverArticle(article, deliveryDetails);
 
         const webhook1Id = deliveryDetails.deliverySettings.webhooks?.[0].id;
         const webhook1Token =
@@ -184,20 +181,18 @@ describe("DiscordMediumService", () => {
       });
 
       it("sends messages with replaced template strings", async () => {
+        const article = {
+          id: "1",
+          title: "some-title-here",
+        };
         const details: DeliveryDetails = {
           ...deliveryDetails,
-          articles: [
-            {
-              id: "1",
-              title: "some-title-here",
-            },
-          ],
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
             content: "content {{title}}",
           },
         };
-        await service.deliver(details);
+        await service.deliverArticle(article, details);
 
         expect(producer.enqueue).toHaveBeenCalledWith(
           expect.anything(),
