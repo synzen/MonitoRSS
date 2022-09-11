@@ -84,6 +84,78 @@ describe("DiscordMediumService", () => {
       });
     });
 
+    it("sends embeds", async () => {
+      const detailsWithEmbeds: DeliveryDetails = {
+        ...deliveryDetails,
+        deliverySettings: {
+          ...deliveryDetails.deliverySettings,
+          embeds: [
+            {
+              author: {
+                name: "author-name",
+                iconUrl: "author-icon-url",
+              },
+              footer: {
+                text: "footer-text",
+                iconUrl: "footer-icon-url",
+              },
+              image: {
+                url: "image-url",
+              },
+              thumbnail: {
+                url: "thumbnail-url",
+              },
+              title: "title",
+              description: "description",
+              url: "url",
+              color: 123,
+              fields: [
+                {
+                  name: "name",
+                  value: "value",
+                  inline: true,
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      await service.deliverArticle(article, detailsWithEmbeds);
+      const callBody = JSON.parse(producer.enqueue.mock.calls[0][1].body);
+      expect(callBody).toMatchObject({
+        embeds: [
+          {
+            author: {
+              name: "author-name",
+              icon_url: "author-icon-url",
+            },
+            footer: {
+              text: "footer-text",
+              icon_url: "footer-icon-url",
+            },
+            image: {
+              url: "image-url",
+            },
+            thumbnail: {
+              url: "thumbnail-url",
+            },
+            title: "title",
+            description: "description",
+            url: "url",
+            color: 123,
+            fields: [
+              {
+                name: "name",
+                value: "value",
+                inline: true,
+              },
+            ],
+          },
+        ],
+      });
+    });
+
     describe("channel", () => {
       it("should call the producer for the channel", async () => {
         await service.deliverArticle(article, {

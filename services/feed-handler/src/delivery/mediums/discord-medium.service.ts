@@ -7,6 +7,7 @@ import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
   DeliveryDetails,
+  DiscordMessageApiPayload,
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
 import { ArticleDeliveryErrorCode } from "../delivery.constants";
@@ -86,20 +87,19 @@ export class DiscordMediumService implements DeliveryMedium {
   private async deliverArticleToChannel(
     article: Article,
     channelId: string,
-    {
-      deliverySettings: { guildId, content },
-      feedDetails: { id, url },
-    }: DeliveryDetails
+    details: DeliveryDetails
   ) {
+    const {
+      deliverySettings: { guildId },
+      feedDetails: { id, url },
+    } = details;
     const apiUrl = this.getChannelApiUrl(channelId);
 
     await this.producer.enqueue(
       apiUrl,
       {
         method: "POST",
-        body: JSON.stringify({
-          content: replaceTemplateString(article, content),
-        }),
+        body: JSON.stringify(this.generateApiPayload(article, details)),
       },
       {
         articleID: article.id,
@@ -115,20 +115,20 @@ export class DiscordMediumService implements DeliveryMedium {
     article: Article,
     webhookId: string,
     webhookToken: string,
-    {
-      deliverySettings: { guildId, content },
-      feedDetails: { id, url },
-    }: DeliveryDetails
+    details: DeliveryDetails
   ) {
+    const {
+      deliverySettings: { guildId },
+      feedDetails: { id, url },
+    } = details;
+
     const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
 
     await this.producer.enqueue(
       apiUrl,
       {
         method: "POST",
-        body: JSON.stringify({
-          content: replaceTemplateString(article, content),
-        }),
+        body: JSON.stringify(this.generateApiPayload(article, details)),
       },
       {
         articleID: article.id,
@@ -138,5 +138,54 @@ export class DiscordMediumService implements DeliveryMedium {
         guildId,
       }
     );
+  }
+
+  private generateApiPayload(
+    article: Article,
+    { deliverySettings: { embeds, content } }: DeliveryDetails
+  ): DiscordMessageApiPayload {
+    const payload: DiscordMessageApiPayload = {
+      content: replaceTemplateString(article, content),
+      embeds: embeds?.map((embed) => ({
+        title: replaceTemplateString(article, embed.title),
+        description: replaceTemplateString(article, embed.description),
+        author: !embed.author?.name
+          ? undefined
+          : {
+              name: replaceTemplateString(article, embed.author.name) as string,
+              icon_url: replaceTemplateString(article, embed.author.iconUrl),
+            },
+        color: embed.color,
+        footer: !embed.footer?.text
+          ? undefined
+          : {
+              text: replaceTemplateString(article, embed.footer.text) as string,
+              icon_url: replaceTemplateString(article, embed.footer.iconUrl),
+            },
+        image: !embed.image?.url
+          ? undefined
+          : {
+              url: replaceTemplateString(article, embed.image.url) as string,
+            },
+        thumbnail: !embed.thumbnail?.url
+          ? undefined
+          : {
+              url: replaceTemplateString(
+                article,
+                embed.thumbnail.url
+              ) as string,
+            },
+        url: replaceTemplateString(article, embed.url),
+        fields: embed.fields
+          ?.filter((field) => field.name && field.value)
+          .map((field) => ({
+            name: replaceTemplateString(article, field.name) as string,
+            value: replaceTemplateString(article, field.value) as string,
+            inline: field.inline,
+          })),
+      })),
+    };
+
+    return payload;
   }
 }
