@@ -11,6 +11,7 @@ import { SQSClient } from '@aws-sdk/client-sqs';
 import { mockClient } from 'aws-sdk-client-mock';
 import dayjs from 'dayjs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { FeedsService } from '../feeds/feeds.service';
 
 jest.mock('../utils/logger');
 
@@ -32,6 +33,10 @@ describe('FeedFetcherService', () => {
   const eventEmitter: EventEmitter2 = {
     emit: jest.fn(),
   } as never;
+  const feedsService: FeedsService = {
+    disableFeedsByUrl: jest.fn(),
+    enableFailedFeedsByUrl: jest.fn(),
+  } as never;
 
   beforeEach(() => {
     configService = {
@@ -42,6 +47,7 @@ describe('FeedFetcherService', () => {
       responseRepo,
       configService,
       eventEmitter,
+      feedsService,
     );
     sqsClient.reset();
   });
@@ -213,11 +219,11 @@ describe('FeedFetcherService', () => {
   });
 
   describe('onFailedUrl', () => {
-    it('sends the url to sqs if past failure threshold', async () => {
+    it('fails the url to sqs if past failure threshold', async () => {
       jest.spyOn(service, 'isPastFailureThreshold').mockResolvedValue(true);
 
       const sendFailedUrlToSqs = jest
-        .spyOn(service, 'sendFailedUrlToSqs')
+        .spyOn(feedsService, 'disableFeedsByUrl')
         .mockImplementation();
 
       await service.onFailedUrl({ url: feedUrl });
@@ -225,11 +231,11 @@ describe('FeedFetcherService', () => {
       expect(sendFailedUrlToSqs).toHaveBeenCalledWith(feedUrl);
     });
 
-    it('does not send the url to sqs if not past failure threshold', async () => {
+    it('does not fail url if not past failure threshold', async () => {
       jest.spyOn(service, 'isPastFailureThreshold').mockResolvedValue(false);
 
       const sendFailedUrlToSqs = jest
-        .spyOn(service, 'sendFailedUrlToSqs')
+        .spyOn(feedsService, 'disableFeedsByUrl')
         .mockImplementation();
 
       await service.onFailedUrl({ url: feedUrl });
@@ -266,7 +272,7 @@ describe('FeedFetcherService', () => {
 
   describe('isPastFailureThreshold', () => {
     it('returns false if there is no latest request', async () => {
-      jest.spyOn(requestRepo, 'findOne').mockResolvedValue(undefined);
+      jest.spyOn(requestRepo, 'findOne').mockResolvedValue(null);
 
       const result = await service.isPastFailureThreshold(feedUrl);
 
@@ -288,9 +294,7 @@ describe('FeedFetcherService', () => {
         status: RequestStatus.FAILED,
       } as never);
 
-      jest
-        .spyOn(service, 'getEarliestFailedAttempt')
-        .mockResolvedValue(undefined);
+      jest.spyOn(service, 'getEarliestFailedAttempt').mockResolvedValue(null);
 
       const result = await service.isPastFailureThreshold(feedUrl);
 

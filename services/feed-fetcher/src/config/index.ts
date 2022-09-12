@@ -23,6 +23,7 @@ export default function config(): EnvironmentVariables {
   const values: EnvironmentVariables = {
     NODE_ENV: process.env.NODE_ENV as Environment,
     POSTGRES_URI: process.env.POSTGRES_URI as string,
+    FEEDS_MONGODB_URI: process.env.FEEDS_MONGODB_URI as string,
     DATADOG_API_KEY: process.env.DATADOG_API_KEY as string,
     SYNC_DB: process.env.SYNC_DB === 'true',
     AWS_SQS_REQUEST_QUEUE_URL: process.env.AWS_SQS_REQUEST_QUEUE_URL as string,

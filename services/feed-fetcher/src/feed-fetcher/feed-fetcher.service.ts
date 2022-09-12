@@ -1,4 +1,4 @@
-import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { SQSClient } from '@aws-sdk/client-sqs';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,7 @@ import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import dayjs from 'dayjs';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { FeedsService } from '../feeds/feeds.service';
 
 interface FetchOptions {
   userAgent?: string;
@@ -27,6 +28,7 @@ export class FeedFetcherService {
     private readonly responseRepo: Repository<Response>,
     private readonly configService: ConfigService,
     private eventEmitter: EventEmitter2,
+    private readonly feedsService: FeedsService,
   ) {
     this.failedUrlSqsClient = new SQSClient({
       endpoint: this.configService.get<string>(
@@ -136,7 +138,7 @@ export class FeedFetcherService {
   async onFailedUrl({ url }: { url: string }) {
     try {
       if (await this.isPastFailureThreshold(url)) {
-        await this.sendFailedUrlToSqs(url);
+        await this.feedsService.disableFeedsByUrl(url);
       }
     } catch (err) {
       logger.error(`Failed to check failed status of url ${url}`, {
@@ -238,20 +240,20 @@ export class FeedFetcherService {
     return dayjs().isAfter(cutoffDate);
   }
 
-  async sendFailedUrlToSqs(url: string) {
-    const failedUrl = {
-      url,
-    };
+  // async sendFailedUrlToSqs(url: string) {
+  //   const failedUrl = {
+  //     url,
+  //   };
 
-    await this.failedUrlSqsClient.send(
-      new SendMessageCommand({
-        QueueUrl: this.failedUrlSqsQueueUrl,
-        MessageBody: JSON.stringify(failedUrl),
-      }),
-    );
+  //   await this.failedUrlSqsClient.send(
+  //     new SendMessageCommand({
+  //       QueueUrl: this.failedUrlSqsQueueUrl,
+  //       MessageBody: JSON.stringify(failedUrl),
+  //     }),
+  //   );
 
-    logger.debug(`Failed url ${url} sent to SQS`, {
-      url,
-    });
-  }
+  //   logger.debug(`Failed url ${url} sent to SQS`, {
+  //     url,
+  //   });
+  // }
 }

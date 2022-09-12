@@ -6,9 +6,10 @@ import config from './config';
 import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SqsPollingService } from './shared/services/sqs-polling.service';
+import { FeedsModule } from './feeds/feeds.module';
 
 @Module({
-  imports: [FeedFetcherModule],
+  imports: [FeedFetcherModule, FeedsModule],
   controllers: [AppController],
   providers: [AppService, SqsPollingService],
 })

@@ -5,6 +5,7 @@ import { Request, Response } from './entities';
 import { FeedFetcherController } from './feed-fetcher.controller';
 import { FeedFetcherService } from './feed-fetcher.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { FeedsModule } from '../feeds/feeds.module';
 
 @Module({
   controllers: [FeedFetcherController],
@@ -13,6 +14,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
   imports: [
     TypeOrmModule.forFeature([Request, Response]),
     EventEmitterModule.forRoot(),
+    FeedsModule,
   ],
 })
 export class FeedFetcherModule {}
