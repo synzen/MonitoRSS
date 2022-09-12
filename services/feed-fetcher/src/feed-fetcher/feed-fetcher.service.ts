@@ -58,7 +58,7 @@ export class FeedFetcherService {
     return count > 0;
   }
 
-  async getLatestRequest(url: string): Promise<Request | undefined> {
+  async getLatestRequest(url: string): Promise<Request | null> {
     const response = await this.requestRepo.findOne({
       where: { url },
       order: {
