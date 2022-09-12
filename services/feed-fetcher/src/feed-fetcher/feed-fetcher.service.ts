@@ -1,4 +1,3 @@
-import { SQSClient } from '@aws-sdk/client-sqs';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,8 +16,6 @@ interface FetchOptions {
 
 @Injectable()
 export class FeedFetcherService {
-  failedUrlSqsClient: SQSClient;
-  failedUrlSqsQueueUrl: string;
   failedDurationThresholdHours: number;
 
   constructor(
@@ -30,15 +27,6 @@ export class FeedFetcherService {
     private eventEmitter: EventEmitter2,
     private readonly feedsService: FeedsService,
   ) {
-    this.failedUrlSqsClient = new SQSClient({
-      endpoint: this.configService.get<string>(
-        'AWS_SQS_FAILED_URL_QUEUE_ENDPOINT',
-      ),
-      region: this.configService.get<string>('AWS_SQS_FAILED_URL_QUEUE_REGION'),
-    });
-    this.failedUrlSqsQueueUrl = this.configService.get<string>(
-      'AWS_SQS_FAILED_URL_QUEUE_URL',
-    ) as string;
     this.failedDurationThresholdHours = this.configService.get(
       'FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
     ) as number;
@@ -138,6 +126,10 @@ export class FeedFetcherService {
   async onFailedUrl({ url }: { url: string }) {
     try {
       if (await this.isPastFailureThreshold(url)) {
+        logger.info(
+          `Disabling feeds with url "${url}" due to failure threshold ` +
+            `(${this.failedDurationThresholdHours}hrs)`,
+        );
         await this.feedsService.disableFeedsByUrl(url);
       }
     } catch (err) {
