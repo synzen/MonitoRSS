@@ -33,12 +33,6 @@ export default function config(): EnvironmentVariables {
       .AWS_SQS_REQUEST_QUEUE_ENDPOINT as string,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
-    AWS_SQS_FAILED_URL_QUEUE_ENDPOINT: process.env
-      .AWS_SQS_FAILED_URL_QUEUE_ENDPOINT as string,
-    AWS_SQS_FAILED_URL_QUEUE_URL: process.env
-      .AWS_SQS_FAILED_URL_QUEUE_URL as string,
-    AWS_SQS_FAILED_URL_QUEUE_REGION: process.env
-      .AWS_SQS_FAILED_URL_QUEUE_REGION as string,
     FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
       process.env.FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
     ),
