@@ -129,12 +129,16 @@ export class FeedFetcherService {
         logger.info(
           `Disabling feeds with url "${url}" due to failure threshold ` +
             `(${this.failedDurationThresholdHours}hrs)`,
+          {
+            url,
+          },
         );
         await this.feedsService.disableFeedsByUrl(url);
       }
     } catch (err) {
       logger.error(`Failed to check failed status of url ${url}`, {
         stack: (err as Error).stack,
+        url,
       });
     }
   }
