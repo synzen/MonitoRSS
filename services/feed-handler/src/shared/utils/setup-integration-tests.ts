@@ -4,8 +4,6 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { config } from "../../config";
 import { MikroORM } from "@mikro-orm/core";
-import { MongooseModule } from "@nestjs/mongoose";
-import { ModelDefinition } from "@nestjs/mongoose";
 
 let testingModule: TestingModule;
 let orm: MikroORM;
@@ -13,7 +11,6 @@ let orm: MikroORM;
 interface Options {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   models?: EntityName<Partial<any>>[];
-  feedMongoModels?: ModelDefinition[];
 }
 
 export async function setupIntegrationTests(
@@ -43,11 +40,6 @@ export async function setupIntegrationTests(
         schema: postgresSchema,
         allowGlobalContext: true,
       }),
-      MongooseModule.forRoot(configVals.FEED_MONGODB_URI, {
-        autoIndex: false,
-        retryAttempts: 0,
-      }),
-      MongooseModule.forFeature(options?.feedMongoModels || []),
     ],
   });
 
