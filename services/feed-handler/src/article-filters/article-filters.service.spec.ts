@@ -1,12 +1,14 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "./article-filters.service";
+import { InvalidExpressionException } from "./exceptions";
 import {
   ExpressionType,
-  FilterLogicalExpression,
+  LogicalExpression,
   LogicalExpressionOperator,
+  RelationalExpressionLeft,
   RelationalExpressionOperator,
-} from "./article-filterse.constants";
-import { InvalidExpressionException } from "./exceptions";
+  RelationalExpressionRight,
+} from "./types";
 
 describe("ArticleFiltersService", () => {
   let service: ArticleFiltersService;
@@ -46,15 +48,21 @@ describe("ArticleFiltersService", () => {
       ).rejects.toThrow(InvalidExpressionException);
     });
 
-    it("throws if relational expression operator is invalid", async () => {
-      const expression: FilterLogicalExpression = {
+    it("throws if relational expression operator for string operand is invalid", async () => {
+      const expression: LogicalExpression = {
         type: ExpressionType.Logical,
         op: LogicalExpressionOperator.And,
         children: [
           {
-            left: "article:title",
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
             op: "invalid" as RelationalExpressionOperator,
-            right: "s",
+            right: {
+              type: RelationalExpressionRight.String as never,
+              value: "s",
+            },
             type: ExpressionType.Relational,
           },
         ],
@@ -70,6 +78,75 @@ describe("ArticleFiltersService", () => {
       ).rejects.toThrow(InvalidExpressionException);
     });
 
+    it("throws if relational expression operator for regex operand is invalid", async () => {
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.And,
+        children: [
+          {
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
+            op: RelationalExpressionOperator.Eq,
+            right: {
+              type: RelationalExpressionRight.RegExp as never,
+              value: "s",
+            },
+            type: ExpressionType.Relational,
+          },
+        ],
+      };
+
+      await expect(
+        service.evaluateExpression(expression as never, {
+          article: {
+            id: "1",
+            title: "1",
+          },
+        })
+      ).rejects.toThrow(InvalidExpressionException);
+    });
+
+    it("works with relationa expressions with regex right operands", async () => {
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.And,
+        children: [
+          {
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
+            op: RelationalExpressionOperator.Matches,
+            right: {
+              type: RelationalExpressionRight.RegExp,
+              value: "other",
+            },
+            type: ExpressionType.Relational,
+          },
+        ],
+      };
+
+      await expect(
+        service.evaluateExpression(expression, {
+          article: {
+            id: "1",
+            title: "MOTHER",
+          },
+        })
+      ).resolves.toEqual(true);
+
+      await expect(
+        service.evaluateExpression(expression, {
+          article: {
+            id: "1",
+            title: "father",
+          },
+        })
+      ).resolves.toEqual(false);
+    });
+
     describe("AND operand", () => {
       it("returns true correctly", async () => {
         await expect(
@@ -81,14 +158,26 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a",
+                  },
                 },
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:description",
-                  right: "b",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b",
+                  },
                 },
               ],
             },
@@ -113,14 +202,26 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a",
+                  },
                 },
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:description",
-                  right: "b-differnet",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b-different",
+                  },
                 },
               ],
             },
@@ -147,14 +248,26 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a-different",
+                  },
                 },
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:description",
-                  right: "b",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b",
+                  },
                 },
               ],
             },
@@ -179,14 +292,26 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a-different",
+                  },
                 },
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:description",
-                  right: "b-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b-different",
+                  },
                 },
               ],
             },
@@ -211,14 +336,26 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a-different",
+                  },
                 },
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:description",
-                  right: "b-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b-different",
+                  },
                 },
               ],
             },
@@ -241,14 +378,26 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a-different",
+                  },
                 },
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:description",
-                  right: "b-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b-different",
+                  },
                 },
               ],
             },
@@ -269,8 +418,14 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a-different",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a-different",
+                  },
                 },
               ],
             },
@@ -294,8 +449,14 @@ describe("ArticleFiltersService", () => {
                 {
                   type: ExpressionType.Relational,
                   op: RelationalExpressionOperator.Eq,
-                  left: "article:title",
-                  right: "a",
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a",
+                  },
                 },
               ],
             },

@@ -1,10 +1,10 @@
 import { object } from "yup";
-import { FilterLogicalExpression } from "../../article-filters/article-filterse.constants";
+import { LogicalExpression } from "../../article-filters/types";
 
 export const mediumFiltersSchema = object({
   expression: object(),
 });
 
 export type MediumFilters = {
-  expression?: FilterLogicalExpression;
+  expression?: LogicalExpression;
 };

@@ -1,25 +1,31 @@
 import { Injectable } from "@nestjs/common";
 import { getNestedPrimitiveValue } from "../articles/utils/get-nested-primitive-value";
 import { Article } from "../shared";
+import { InvalidExpressionException, RegexEvalException } from "./exceptions";
 import {
   ExpressionType,
-  FilterLogicalExpression,
-  FilterRelationalExpression,
+  LogicalExpression,
   LogicalExpressionOperator,
-} from "./article-filterse.constants";
-import { InvalidExpressionException } from "./exceptions";
+  RelationalExpression,
+  RelationalExpressionLeft,
+  RelationalExpressionOperator,
+  RelationalExpressionRight,
+} from "./types";
+import vm from "node:vm";
+
+const REGEX_TIMEOUT_MS = 5000;
 
 @Injectable()
 export class ArticleFiltersService {
   async getArticleFilterResults(
-    expression: FilterLogicalExpression,
+    expression: LogicalExpression,
     references: Record<string, unknown>
   ) {
     return this.evaluateExpression(expression, references);
   }
 
   async evaluateExpression(
-    expression: FilterLogicalExpression | FilterRelationalExpression,
+    expression: LogicalExpression | RelationalExpression,
     references: Record<string, unknown>
   ): Promise<boolean> {
     if (!expression) {
@@ -45,7 +51,7 @@ export class ArticleFiltersService {
   }
 
   private async evaluateLogicalExpression(
-    expression: FilterLogicalExpression,
+    expression: LogicalExpression,
     references: Record<string, unknown>
   ): Promise<boolean> {
     const children = expression.children;
@@ -92,61 +98,93 @@ export class ArticleFiltersService {
   }
 
   private async evaluateRelationalExpression(
-    expression: FilterRelationalExpression,
+    expression: RelationalExpression,
     references: Record<string, unknown>
   ): Promise<boolean> {
-    const { referenceKey, referencePath } = this.extractReferenceDetails(
-      expression.left
-    );
-
-    const referenceObject = references[referenceKey];
+    const { left, right } = expression;
+    const referenceObject = references[left.type];
 
     if (!referenceObject) {
       return false;
     }
 
-    const value = getNestedPrimitiveValue(
-      references[referenceKey] as Record<string, unknown>,
-      referencePath
+    const valueToCompareAgainst = getNestedPrimitiveValue(
+      referenceObject as Record<string, unknown>,
+      left.value
     );
 
-    if (value === null) {
+    if (valueToCompareAgainst === null) {
       return false;
     }
 
-    const right = expression.right;
+    if (right.type === RelationalExpressionRight.String) {
+      switch (expression.op) {
+        case RelationalExpressionOperator.Eq:
+          return valueToCompareAgainst === right.value;
+        case RelationalExpressionOperator.Contains:
+          return valueToCompareAgainst.includes(right.value);
+      }
 
-    switch (expression.op) {
-      case "eq":
-        return value === right;
-      case "contains":
-        return value.includes(right);
-    }
-
-    throw new InvalidExpressionException(
-      `Unknown operator ${
-        expression.op
-      } in relational expression ${JSON.stringify(expression)}`
-    );
-  }
-
-  private extractReferenceDetails(leftOperand: string) {
-    const splitIndex = leftOperand.indexOf(":");
-
-    const referenceKey = leftOperand.slice(0, splitIndex);
-    const referencePath = leftOperand.slice(splitIndex + 1);
-
-    if (!referenceKey || !referencePath) {
       throw new InvalidExpressionException(
-        `Invalid left operand "${leftOperand}" in relational expression. ` +
-          `Must be in the format <referenceKey>:<referencePath>. For example, "article:title".`
+        `Unknown right operator "${
+          expression.op
+        }" of string-type right operand in relational expression ${JSON.stringify(
+          expression
+        )}. Only "${RelationalExpressionOperator.Eq}" and "${
+          RelationalExpressionOperator.Contains
+        }" are supported.`
+      );
+    } else if (right.type === RelationalExpressionRight.RegExp) {
+      switch (expression.op) {
+        case RelationalExpressionOperator.Matches:
+          return this.testRegex(right.value, valueToCompareAgainst);
+      }
+
+      throw new InvalidExpressionException(
+        `Unknown right operator "${
+          expression.op
+        }" of regex-type right operand in relational expression ${JSON.stringify(
+          expression
+        )}. Only "${RelationalExpressionOperator.Matches}" is supported.`
+      );
+    } else {
+      throw new InvalidExpressionException(
+        `Unknown right type ${
+          right["type"]
+        } in relational expression ${JSON.stringify(expression)}`
       );
     }
-
-    return { referenceKey, referencePath };
   }
 
-  buildReferences(data: { article: Article }) {
+  private testRegex(inputRegex: string, reference: string) {
+    const contex = {
+      reference,
+      inputRegex,
+      matches: false,
+    };
+
+    const script = new vm.Script(`
+      const regex = new RegExp(inputRegex, 'i');
+      matches = regex.test(reference);
+    `);
+
+    try {
+      script.runInNewContext(contex, {
+        timeout: REGEX_TIMEOUT_MS,
+      });
+
+      return contex.matches;
+    } catch (err) {
+      throw new RegexEvalException(
+        `Regex "${inputRegex}" evaluation of string "${reference}" errored: ` +
+          `${(err as Error).message}`
+      );
+    }
+  }
+
+  buildReferences(data: {
+    article: Article;
+  }): Record<RelationalExpressionLeft, unknown> {
     return {
       article: data.article,
     };
