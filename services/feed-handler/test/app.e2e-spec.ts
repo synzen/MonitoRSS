@@ -1,6 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication } from "@nestjs/common";
-import request from "supertest";
 import { AppModule } from "./../src/app.module";
 import {
   setupIntegrationTests,
@@ -9,11 +6,11 @@ import {
 import { FeedEventHandlerService } from "../src/feed-event-handler/feed-event-handler.service";
 import { FeedArticleField } from "../src/articles/entities";
 import { EntityManager, EntityRepository } from "@mikro-orm/core";
-import { FeedV2Event } from "../src/feed-event-handler/types";
 import { Interceptable, MockAgent, setGlobalDispatcher } from "undici";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ConfigService } from "@nestjs/config";
+import { FeedV2Event, MediumKey } from "../src/shared";
 
 const feedId = "feed-id";
 const feedHost = "https://feed.com";
@@ -55,12 +52,24 @@ describe("App (e2e)", () => {
 
   it("sends new articles", async () => {
     const event: FeedV2Event = {
-      article: {
+      articleDayLimit: 1,
+      feed: {
         id: feedId,
         blockingComparisons: [],
         passingComparisons: [],
         url: feedHost + feedPath,
       },
+      mediums: [
+        {
+          key: MediumKey.Discord,
+          details: {
+            guildId: "1",
+            channel: { id: "channel 1" },
+            content: "1",
+            embeds: [],
+          },
+        },
+      ],
     };
 
     // Pre-initialize the database with articles of this feed

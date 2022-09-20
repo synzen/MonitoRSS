@@ -1,7 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
-import { Article, FeedV2Event, MediumKey } from "../shared";
-import { ArticleDeliveryErrorCode } from "./delivery.constants";
+import {
+  Article,
+  ArticleDeliveryErrorCode,
+  FeedV2Event,
+  MediumKey,
+} from "../shared";
 import { DeliveryService } from "./delivery.service";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
@@ -42,6 +46,7 @@ describe("DeliveryService", () => {
 
   describe("deliver", () => {
     const event: FeedV2Event = {
+      articleDayLimit: 1,
       feed: {
         id: "1",
         url: "url",
@@ -138,6 +143,7 @@ describe("DeliveryService", () => {
     describe("article states", () => {
       it("returns success states", async () => {
         const event: FeedV2Event = {
+          articleDayLimit: 1,
           feed: {
             id: "1",
             url: "url",
@@ -191,6 +197,7 @@ describe("DeliveryService", () => {
               },
             },
           ],
+          articleDayLimit: 1,
         };
         const articles: Article[] = [
           {
@@ -216,6 +223,7 @@ describe("DeliveryService", () => {
 
       it("returns filtered states", async () => {
         const event: FeedV2Event = {
+          articleDayLimit: 1,
           feed: {
             id: "1",
             url: "url",

@@ -55,10 +55,11 @@ describe("FeedEventHandlerService", () => {
           key: MediumKey.Discord,
           details: {
             guildId: "1",
-            channels: [{ id: "channel 1" }],
+            channel: { id: "channel 1" },
           },
         },
       ],
+      articleDayLimit: 100,
     };
 
     describe("schema validation", () => {
