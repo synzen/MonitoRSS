@@ -11,6 +11,7 @@ import {
 } from "../shared";
 import { DeliveryRecordService } from "./delivery-record.service";
 import { DeliveryRecord } from "./entities";
+import dayjs from "dayjs";
 
 describe("DeliveryRecordService", () => {
   let service: DeliveryRecordService;
@@ -109,6 +110,39 @@ describe("DeliveryRecordService", () => {
       expect(records).toHaveLength(1);
       expect(records[0].feed_id).toBe(feedId);
       expect(records[0].status).toBe(ArticleDeliveryStatus.FilteredOut);
+    });
+  });
+
+  describe("countDeliveriesInPastTimeframe", () => {
+    it("returns the correct number of sent and rejected deliveries", async () => {
+      const feedId = "feed-id";
+
+      const [record1, record2, record3] = [
+        deliveryRecordRepo.create({
+          created_at: dayjs().subtract(1, "hour").toDate(),
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Sent,
+        }),
+        await deliveryRecordRepo.create({
+          created_at: dayjs().subtract(1, "hour").toDate(),
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Rejected,
+        }),
+        await deliveryRecordRepo.create({
+          created_at: dayjs().subtract(1, "day").toDate(),
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Sent,
+        }),
+      ];
+
+      await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);
+
+      const count = await service.countDeliveriesInPastTimeframe(
+        { feedId },
+        60 * 60 * 2 // 2 hours
+      );
+
+      expect(count).toBe(2);
     });
   });
 });

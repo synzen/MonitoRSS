@@ -3,6 +3,7 @@ import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "../shared";
 import { DeliveryRecord } from "./entities";
+import dayjs from "dayjs";
 
 const { Failed, Rejected, Sent } = ArticleDeliveryStatus;
 
@@ -10,7 +11,7 @@ const { Failed, Rejected, Sent } = ArticleDeliveryStatus;
 export class DeliveryRecordService {
   constructor(
     @InjectRepository(DeliveryRecord)
-    private readonly articleFieldRepo: EntityRepository<DeliveryRecord>
+    private readonly recordRepo: EntityRepository<DeliveryRecord>
   ) {}
 
   async store(feedId: string, articleState: ArticleDeliveryState) {
@@ -37,6 +38,21 @@ export class DeliveryRecordService {
       });
     }
 
-    await this.articleFieldRepo.persistAndFlush(record);
+    await this.recordRepo.persistAndFlush(record);
+  }
+
+  countDeliveriesInPastTimeframe(
+    { feedId }: { feedId: string },
+    secondsInPast: number
+  ) {
+    return this.recordRepo.count({
+      feed_id: feedId,
+      status: {
+        $in: [Sent, Rejected],
+      },
+      created_at: {
+        $gte: dayjs().subtract(secondsInPast, "second").toDate(),
+      },
+    });
   }
 }
