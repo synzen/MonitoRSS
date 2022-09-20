@@ -5,10 +5,10 @@ import { DeliveryRecordService } from "../delivery-record/delivery-record.servic
 export class ArticleRateLimitService {
   constructor(private readonly deliveryRecordService: DeliveryRecordService) {}
 
-  async getArticlesRemaining(feedId: string) {
+  async getArticlesInLastTimeframe(feedId: string, secondsInPast: number) {
     return this.deliveryRecordService.countDeliveriesInPastTimeframe(
       { feedId },
-      60
+      secondsInPast
     );
   }
 }
