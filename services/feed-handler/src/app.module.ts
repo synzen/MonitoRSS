@@ -9,6 +9,7 @@ import { ArticlesModule } from "./articles/articles.module";
 import { FeedEventHandlerModule } from "./feed-event-handler/feed-event-handler.module";
 import { DeliveryModule } from "./delivery/delivery.module";
 import { ArticleFiltersModule } from "./article-filters/article-filters.module";
+import { DeliveryRecordModule } from "./delivery-record/delivery-record.module";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ArticleFiltersModule } from "./article-filters/article-filters.module";
     FeedEventHandlerModule,
     DeliveryModule,
     ArticleFiltersModule,
+    DeliveryRecordModule,
   ],
   controllers: [AppController],
   providers: [AppService],
