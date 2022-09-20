@@ -19,7 +19,6 @@ import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
   rabbitMqUri: string;
-  botToken: string;
   clientId: string;
   producer: RESTProducer;
 
@@ -27,7 +26,6 @@ export class DiscordMediumService implements DeliveryMedium {
 
   constructor(private readonly configService: ConfigService) {
     this.rabbitMqUri = this.configService.getOrThrow("DISCORD_RABBITMQ_URI");
-    this.botToken = this.configService.getOrThrow("DISCORD_BOT_TOKEN");
     this.clientId = this.configService.getOrThrow("DISCORD_CLIENT_ID");
     this.producer = new RESTProducer(this.rabbitMqUri, {
       clientId: this.clientId,
