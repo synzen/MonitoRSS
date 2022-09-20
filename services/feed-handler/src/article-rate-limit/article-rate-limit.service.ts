@@ -59,16 +59,24 @@ export class ArticleRateLimitService {
     feedId: string,
     { timeWindowSec, limit }: { timeWindowSec: number; limit: number }
   ) {
+    const existsAlready = await this.deliveryLimitRepo.count({
+      feed_id: feedId,
+      time_window_seconds: timeWindowSec,
+      limit,
+    });
+
+    if (existsAlready > 0) {
+      return;
+    }
+
     const found = await this.deliveryLimitRepo.findOne({
       feed_id: feedId,
       time_window_seconds: timeWindowSec,
     });
 
     if (found) {
-      if (found.limit !== limit) {
-        found.limit = limit;
-        await this.deliveryLimitRepo.flush();
-      }
+      found.limit = limit;
+      await this.deliveryLimitRepo.flush();
     } else {
       const newLimit = new FeedArticleDeliveryLimit({
         feed_id: feedId,
