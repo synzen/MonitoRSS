@@ -67,6 +67,7 @@ describe("App (e2e)", () => {
             channel: { id: "channel 1" },
             content: "1",
             embeds: [],
+            webhook: null,
           },
         },
       ],
