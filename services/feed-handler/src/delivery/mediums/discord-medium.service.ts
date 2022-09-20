@@ -2,7 +2,7 @@ import { DeliveryMedium } from "./delivery-medium.interface";
 import { Injectable } from "@nestjs/common";
 import { Article } from "../../shared";
 import { ConfigService } from "@nestjs/config";
-import { RESTProducer } from "@synzen/discord-rest";
+import { JobResponse, RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -10,7 +10,11 @@ import {
   DiscordMessageApiPayload,
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
-import { ArticleDeliveryErrorCode } from "../delivery.constants";
+import {
+  ArticleDeliveryErrorCode,
+  ArticleDeliveryRejectedCode,
+} from "../delivery.constants";
+import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -55,15 +59,15 @@ export class DiscordMediumService implements DeliveryMedium {
     try {
       if (webhook) {
         const { id, token } = webhook;
-        await this.deliverArticleToWebhook(article, id, token, details);
+
+        return await this.deliverArticleToWebhook(article, id, token, details);
       } else if (channel) {
         const channelId = channel.id;
-        await this.deliverArticleToChannel(article, channelId, details);
-      }
 
-      return {
-        status: ArticleDeliveryStatus.Sent,
-      };
+        return await this.deliverArticleToChannel(article, channelId, details);
+      } else {
+        throw new Error("No channel or webhook specified for Discord medium");
+      }
     } catch (err) {
       console.error(
         `Failed to deliver article ${
@@ -73,6 +77,7 @@ export class DiscordMediumService implements DeliveryMedium {
         )}, channel: ${JSON.stringify(channel)}`,
         {
           details,
+          err: (err as Error).stack,
         }
       );
 
@@ -88,14 +93,14 @@ export class DiscordMediumService implements DeliveryMedium {
     article: Article,
     channelId: string,
     details: DeliveryDetails
-  ) {
+  ): Promise<ArticleDeliveryState> {
     const {
       deliverySettings: { guildId },
       feedDetails: { id, url },
     } = details;
     const apiUrl = this.getChannelApiUrl(channelId);
 
-    await this.producer.enqueue(
+    const result = await this.producer.fetch(
       apiUrl,
       {
         method: "POST",
@@ -109,6 +114,8 @@ export class DiscordMediumService implements DeliveryMedium {
         guildId,
       }
     );
+
+    return this.extractDeliveryStatusFromProducerResult(result);
   }
 
   private async deliverArticleToWebhook(
@@ -116,7 +123,7 @@ export class DiscordMediumService implements DeliveryMedium {
     webhookId: string,
     webhookToken: string,
     details: DeliveryDetails
-  ) {
+  ): Promise<ArticleDeliveryState> {
     const {
       deliverySettings: { guildId },
       feedDetails: { id, url },
@@ -124,7 +131,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
 
-    await this.producer.enqueue(
+    const result = await this.producer.fetch(
       apiUrl,
       {
         method: "POST",
@@ -138,6 +145,8 @@ export class DiscordMediumService implements DeliveryMedium {
         guildId,
       }
     );
+
+    return this.extractDeliveryStatusFromProducerResult(result);
   }
 
   private generateApiPayload(
@@ -187,5 +196,48 @@ export class DiscordMediumService implements DeliveryMedium {
     };
 
     return payload;
+  }
+
+  private extractDeliveryStatusFromProducerResult(
+    result: JobResponse<unknown> | JobResponseError
+  ): ArticleDeliveryState {
+    if (result.state === "error") {
+      return {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: result.message,
+      };
+    }
+
+    if (result.status === 400) {
+      return {
+        status: ArticleDeliveryStatus.Rejected,
+        errorCode: ArticleDeliveryRejectedCode.BadRequest,
+      };
+    }
+
+    if (result.status >= 500) {
+      return {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
+        internalMessage: `Status code from Discord ${
+          result.status
+        } received. Body: ${JSON.stringify(result.body)}`,
+      };
+    }
+
+    if (result.status < 200 || result.status > 400) {
+      return {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: `Unhandled status code from Discord ${
+          result.status
+        } received. Body: ${JSON.stringify(result.body)}`,
+      };
+    }
+
+    return {
+      status: ArticleDeliveryStatus.Sent,
+    };
   }
 }

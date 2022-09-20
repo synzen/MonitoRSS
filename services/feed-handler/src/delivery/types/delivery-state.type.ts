@@ -1,13 +1,25 @@
-import { ArticleDeliveryErrorCode } from "../delivery.constants";
+import {
+  ArticleDeliveryErrorCode,
+  ArticleDeliveryRejectedCode,
+} from "../delivery.constants";
 
 export enum ArticleDeliveryStatus {
   Sent = "Sent",
+  // An error happened within this service
   Failed = "failed",
+  // Discord returns a 400 for example
+  Rejected = "rejected",
+  // Filters blocked the article fromg getting delivered
   FilteredOut = "filtered-out",
 }
 
 interface ArticleDeliverySentState {
   status: ArticleDeliveryStatus.Sent;
+}
+
+interface ArticleDeliveryRejectedState {
+  status: ArticleDeliveryStatus.Rejected;
+  errorCode: ArticleDeliveryRejectedCode;
 }
 
 interface ArticleDeliveryFailureState {
@@ -29,4 +41,5 @@ interface ArticleDeliveryFilteredOutState {
 export type ArticleDeliveryState =
   | ArticleDeliverySentState
   | ArticleDeliveryFailureState
-  | ArticleDeliveryFilteredOutState;
+  | ArticleDeliveryFilteredOutState
+  | ArticleDeliveryRejectedState;
