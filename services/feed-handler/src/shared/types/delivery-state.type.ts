@@ -4,7 +4,7 @@ import {
 } from "../constants";
 
 export enum ArticleDeliveryStatus {
-  Sent = "Sent",
+  Sent = "sent",
   // An error happened within this service
   Failed = "failed",
   // Discord returns a 400 for example. Requires user action.
