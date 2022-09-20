@@ -12,10 +12,43 @@ export class ArticleRateLimitService {
     private readonly deliveryLimitRepo: EntityRepository<FeedArticleDeliveryLimit>
   ) {}
 
-  async getArticlesInLastTimeframe(feedId: string, secondsInPast: number) {
-    return this.deliveryRecordService.countDeliveriesInPastTimeframe(
-      { feedId },
-      secondsInPast
+  async isUnderLimit(feedId: string) {
+    const limits = await this.getFeedLimitInformation(feedId);
+
+    return limits.every(({ remaining }) => remaining > 0);
+  }
+
+  async getFeedLimitInformation(feedId: string) {
+    const limits = await this.deliveryLimitRepo.find(
+      { feed_id: feedId },
+      {
+        orderBy: {
+          time_window_seconds: "asc",
+        },
+      }
+    );
+
+    return await Promise.all(
+      limits.map(
+        async ({
+          limit,
+          time_window_seconds: timeWindowSec,
+          feed_id: feedId,
+        }) => {
+          const articlesInTimeframe =
+            await this.deliveryRecordService.countDeliveriesInPastTimeframe(
+              { feedId },
+              timeWindowSec
+            );
+
+          return {
+            progress: articlesInTimeframe,
+            max: limit,
+            remaining: Math.max(limit - articlesInTimeframe, 0),
+            windowSeconds: timeWindowSec,
+          };
+        }
+      )
     );
   }
 
