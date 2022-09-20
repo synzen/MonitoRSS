@@ -52,6 +52,11 @@ describe("ArticlesService", () => {
     storedCustomComparisonsRepo = em.getRepository(FeedArticleCustomComparison);
   });
 
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    jest.spyOn(console, "log").mockImplementation();
+  });
+
   afterEach(async () => {
     await clearDatabase();
   });
@@ -62,6 +67,94 @@ describe("ArticlesService", () => {
 
   it("should be defined", () => {
     expect(service).toBeDefined();
+  });
+
+  describe("getArticlesToDeliverFromXml", () => {
+    const feedDetails = {
+      id: feedId,
+      passingComparisons: ["pass-1"],
+      blockingComparisons: ["block-1"],
+    };
+
+    it("returns empty array if there are no articles in xml", async () => {
+      jest
+        .spyOn(service, "getArticlesFromXml")
+        .mockResolvedValue({ articles: [] });
+
+      const articles = await service.getArticlesToDeliverFromXml(
+        feedText,
+        feedDetails
+      );
+
+      expect(articles).toHaveLength(0);
+    });
+
+    it("stores the new articles if they were not stored before", async () => {
+      const articlesFromXml = [
+        {
+          id: randomUUID(),
+        },
+      ];
+      jest.spyOn(service, "getArticlesFromXml").mockResolvedValue({
+        articles: articlesFromXml,
+      });
+      jest.spyOn(service, "hasPriorArticlesStored").mockResolvedValue(false);
+      const storeArticles = jest
+        .spyOn(service, "storeArticles")
+        .mockImplementation();
+
+      const articlesToDeliver = await service.getArticlesToDeliverFromXml(
+        feedText,
+        feedDetails
+      );
+
+      expect(storeArticles).toHaveBeenCalledTimes(1);
+      expect(storeArticles).toHaveBeenCalledWith(feedId, articlesFromXml, {
+        comparisonFields: expect.arrayContaining(["pass-1", "block-1"]),
+      });
+      // This is an entirely new feed with no prior articles stored, so initialize the DB instead
+      expect(articlesToDeliver).toHaveLength(0);
+    });
+
+    it("stores the new articles if stored prior, and returns them", async () => {
+      const articlesFromXml = [
+        {
+          id: "article id",
+        },
+        {
+          id: "article id 2",
+        },
+      ];
+      jest.spyOn(service, "getArticlesFromXml").mockResolvedValue({
+        articles: articlesFromXml,
+      });
+      jest.spyOn(service, "hasPriorArticlesStored").mockResolvedValue(true);
+      const storeArticles = jest
+        .spyOn(service, "storeArticles")
+        .mockImplementation();
+
+      jest.spyOn(service, "filterForNewArticles").mockResolvedValue([
+        {
+          id: articlesFromXml[1].id,
+        },
+      ]);
+
+      jest.spyOn(service, "checkBlockingComparisons").mockResolvedValue([]);
+      jest
+        .spyOn(service, "checkPassingComparisons")
+        .mockResolvedValue([articlesFromXml[1]]);
+
+      const articlesToDeliver = await service.getArticlesToDeliverFromXml(
+        feedText,
+        feedDetails
+      );
+
+      expect(storeArticles).toHaveBeenCalledWith(feedId, [articlesFromXml[1]], {
+        comparisonFields: expect.arrayContaining(["pass-1", "block-1"]),
+      });
+      expect(articlesToDeliver).toHaveLength(1);
+      expect(articlesToDeliver[0].id).toEqual(articlesFromXml[1].id);
+    });
   });
 
   describe("hasPriorArticlesStored", () => {

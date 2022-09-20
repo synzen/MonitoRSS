@@ -19,6 +19,68 @@ export class ArticlesService {
     private readonly orm: MikroORM
   ) {}
 
+  /**
+   * Given feed XML, get all the new articles from that XML that shoule be delivered.
+   */
+  async getArticlesToDeliverFromXml(
+    feedXml: string,
+    {
+      id,
+      blockingComparisons,
+      passingComparisons,
+    }: {
+      id: string;
+      blockingComparisons: string[];
+      passingComparisons: string[];
+    }
+  ) {
+    const { articles } = await this.getArticlesFromXml(feedXml);
+
+    if (!articles.length) {
+      console.log("no articles found");
+
+      return [];
+    }
+
+    const priorArticlesStored = await this.hasPriorArticlesStored(id);
+
+    if (!priorArticlesStored) {
+      await this.storeArticles(id, articles, {
+        comparisonFields: [...blockingComparisons, ...passingComparisons],
+      });
+
+      console.log("no prior articles stored, initializing data");
+
+      return [];
+    }
+
+    const newArticles = await this.filterForNewArticles(id, articles);
+    const seenArticles = articles.filter(
+      (article) => !newArticles.find((a) => a.id === article.id)
+    );
+
+    const articlesPastBlocks = await this.checkBlockingComparisons(
+      { id, blockingComparisons },
+      newArticles
+    );
+    const articlesPassedComparisons = await this.checkPassingComparisons(
+      {
+        id,
+        passingComparisons,
+      },
+      seenArticles
+    );
+
+    // any new comparisons stored must re-store all articles
+    if (newArticles.length > 0) {
+      await this.storeArticles(id, newArticles, {
+        comparisonFields: [...passingComparisons, ...blockingComparisons],
+      });
+    }
+
+    return [...articlesPastBlocks, ...articlesPassedComparisons];
+  }
+
   async hasPriorArticlesStored(feedId: string) {
     const result = await this.articleFieldRepo.count({
       feed_id: feedId,
@@ -258,5 +320,81 @@ export class ArticlesService {
     feedparser.end();
 
     return promise;
+  }
+
+  async checkBlockingComparisons(
+    { id, blockingComparisons }: { id: string; blockingComparisons: string[] },
+    newArticles: Article[]
+  ) {
+    if (newArticles.length === 0) {
+      return newArticles;
+    }
+
+    if (blockingComparisons.length === 0) {
+      // send to medium
+
+      return newArticles;
+    }
+
+    const relevantComparisons = await this.areComparisonsStored(
+      id,
+      blockingComparisons
+    );
+
+    const relevantCustomComparisons = relevantComparisons
+      .filter((result) => result)
+      .map((_, i) => blockingComparisons[i]);
+
+    const articlesToSend = await Promise.all(
+      newArticles.map(async (article) => {
+        const shouldBlock = await this.articleFieldsSeenBefore(
+          id,
+          article,
+          relevantCustomComparisons
+        );
+
+        return shouldBlock ? null : article;
+      })
+    );
+
+    return articlesToSend.filter((article) => !!article) as Article[];
+  }
+
+  async checkPassingComparisons(
+    { id, passingComparisons }: { id: string; passingComparisons: string[] },
+    seenArticles: Article[]
+  ) {
+    if (seenArticles.length === 0) {
+      return seenArticles;
+    }
+
+    if (passingComparisons.length === 0) {
+      // send to medium
+
+      return [];
+    }
+
+    const storedComparisonResults = await this.areComparisonsStored(
+      id,
+      passingComparisons
+    );
+
+    const relevantComparisons = storedComparisonResults
+      .filter((result) => result)
+      .map((_, i) => passingComparisons[i]);
+
+    const articlesToSend = await Promise.all(
+      seenArticles.map(async (article) => {
+        const shouldBlock = await this.articleFieldsSeenBefore(
+          id,
+          article,
+          relevantComparisons
+        );
+
+        return shouldBlock ? null : article;
+      })
+    );
+
+    return articlesToSend.filter((article) => !!article) as Article[];
   }
 }
