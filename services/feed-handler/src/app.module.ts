@@ -10,6 +10,7 @@ import { FeedEventHandlerModule } from "./feed-event-handler/feed-event-handler.
 import { DeliveryModule } from "./delivery/delivery.module";
 import { ArticleFiltersModule } from "./article-filters/article-filters.module";
 import { DeliveryRecordModule } from "./delivery-record/delivery-record.module";
+import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DeliveryRecordModule } from "./delivery-record/delivery-record.module";
     DeliveryModule,
     ArticleFiltersModule,
     DeliveryRecordModule,
+    ArticleRateLimitModule,
   ],
   controllers: [AppController],
   providers: [AppService],
