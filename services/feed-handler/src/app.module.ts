@@ -11,6 +11,7 @@ import { DeliveryModule } from "./delivery/delivery.module";
 import { ArticleFiltersModule } from "./article-filters/article-filters.module";
 import { DeliveryRecordModule } from "./delivery-record/delivery-record.module";
 import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.module";
+import { FeedsModule } from "./feeds/feeds.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.
     ArticleFiltersModule,
     DeliveryRecordModule,
     ArticleRateLimitModule,
+    FeedsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
