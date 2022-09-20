@@ -46,7 +46,7 @@ describe("ArticleRateLimitService", () => {
   });
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    jest.restoreAllMocks();
     await clearDatabase();
   });
 
