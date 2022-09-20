@@ -1,9 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { Article, FeedV2Event, MediumKey } from "../shared";
+import {
+  Article,
+  ArticleDeliveryState,
+  ArticleDeliveryStatus,
+  FeedV2Event,
+  MediumKey,
+} from "../shared";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { FeedEventHandlerService } from "./feed-event-handler.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
+import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
+import { DeliveryService } from "../delivery/delivery.service";
 
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
@@ -15,6 +23,12 @@ describe("FeedEventHandlerService", () => {
   };
   const articleRateLimitService = {
     addOrUpdateFeedLimit: jest.fn(),
+  };
+  const deliveryService = {
+    deliver: jest.fn(),
+  };
+  const deliveryRecordService = {
+    store: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -34,6 +48,14 @@ describe("FeedEventHandlerService", () => {
         {
           provide: ArticleRateLimitService,
           useValue: articleRateLimitService,
+        },
+        {
+          provide: DeliveryService,
+          useValue: deliveryService,
+        },
+        {
+          provide: DeliveryRecordService,
+          useValue: deliveryRecordService,
         },
       ],
     }).compile();
@@ -121,7 +143,7 @@ describe("FeedEventHandlerService", () => {
       });
     });
 
-    describe("when there are no articles to deliver", () => {
+    describe("when there are articles to deliver", () => {
       const articles: Article[] = [
         {
           id: "1",
@@ -139,6 +161,36 @@ describe("FeedEventHandlerService", () => {
       it("returns the articles to deliver", async () => {
         const returned = await service.handleV2Event(v2Event);
         expect(returned).toEqual(articles);
+      });
+
+      it("stores the article delivery states", async () => {
+        const deliveryStates: ArticleDeliveryState[] = [
+          {
+            status: ArticleDeliveryStatus.Sent,
+          },
+          {
+            status: ArticleDeliveryStatus.FilteredOut,
+          },
+        ];
+
+        jest
+          .spyOn(deliveryService, "deliver")
+          .mockResolvedValue(deliveryStates);
+
+        await service.handleV2Event(v2Event);
+
+        expect(deliveryRecordService.store).toHaveBeenCalledWith(
+          v2Event.feed.id,
+          deliveryStates
+        );
+      });
+
+      it("does not reject if delivery records failed to get stored", async () => {
+        jest
+          .spyOn(deliveryRecordService, "store")
+          .mockRejectedValue(new Error("error"));
+
+        await expect(service.handleV2Event(v2Event)).resolves.not.toThrow();
       });
     });
   });

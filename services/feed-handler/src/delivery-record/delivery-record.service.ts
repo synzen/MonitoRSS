@@ -14,31 +14,35 @@ export class DeliveryRecordService {
     private readonly recordRepo: EntityRepository<DeliveryRecord>
   ) {}
 
-  async store(feedId: string, articleState: ArticleDeliveryState) {
-    let record: DeliveryRecord;
+  async store(feedId: string, articleStates: ArticleDeliveryState[]) {
+    const records = articleStates.map((articleState) => {
+      const { status: articleStatus } = articleState;
 
-    const { status: articleStatus } = articleState;
+      let record: DeliveryRecord;
 
-    if (articleStatus === Sent) {
-      record = new DeliveryRecord({
-        feed_id: feedId,
-        status: articleStatus,
-      });
-    } else if (articleStatus === Failed || articleStatus === Rejected) {
-      record = new DeliveryRecord({
-        feed_id: feedId,
-        status: articleStatus,
-        error_code: articleState.errorCode,
-        internal_message: articleState.internalMessage,
-      });
-    } else {
-      record = new DeliveryRecord({
-        feed_id: feedId,
-        status: articleStatus,
-      });
-    }
+      if (articleStatus === Sent) {
+        record = new DeliveryRecord({
+          feed_id: feedId,
+          status: articleStatus,
+        });
+      } else if (articleStatus === Failed || articleStatus === Rejected) {
+        record = new DeliveryRecord({
+          feed_id: feedId,
+          status: articleStatus,
+          error_code: articleState.errorCode,
+          internal_message: articleState.internalMessage,
+        });
+      } else {
+        record = new DeliveryRecord({
+          feed_id: feedId,
+          status: articleStatus,
+        });
+      }
 
-    await this.recordRepo.persistAndFlush(record);
+      return record;
+    });
+
+    await this.recordRepo.persistAndFlush(records);
   }
 
   countDeliveriesInPastTimeframe(

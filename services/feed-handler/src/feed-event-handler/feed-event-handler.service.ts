@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { ValidationError } from "yup";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { ArticlesService } from "../articles/articles.service";
+import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
+import { DeliveryService } from "../delivery/delivery.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
 
@@ -10,7 +12,9 @@ export class FeedEventHandlerService {
   constructor(
     private readonly articlesService: ArticlesService,
     private readonly articleRateLimitService: ArticleRateLimitService,
-    private readonly feedFetcherService: FeedFetcherService
+    private readonly feedFetcherService: FeedFetcherService,
+    private readonly deliveryService: DeliveryService,
+    private readonly deliveryRecordService: DeliveryRecordService
   ) {}
 
   async handleV2Event(event: FeedV2Event): Promise<Article[]> {
@@ -58,6 +62,18 @@ export class FeedEventHandlerService {
       console.log("no articles found");
 
       return [];
+    }
+
+    const deliveryStates = await this.deliveryService.deliver(event, articles);
+
+    try {
+      await this.deliveryRecordService.store(event.feed.id, deliveryStates);
+    } catch (err) {
+      console.log(`Failed to store delivery states`, {
+        event,
+        deliveryStates,
+        error: (err as Error).stack,
+      });
     }
 
     return articles;

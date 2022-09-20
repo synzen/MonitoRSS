@@ -48,68 +48,131 @@ describe("DeliveryRecordService", () => {
   });
 
   describe("store", () => {
-    it("stores sent articles correctly", async () => {
+    it("stores sent article states correctly", async () => {
       const feedId = "feed-id";
-      const articleState: ArticleDeliveryState = {
-        status: ArticleDeliveryStatus.Sent,
-      };
-      await service.store(feedId, articleState);
+      const articleStates: ArticleDeliveryState[] = [
+        {
+          status: ArticleDeliveryStatus.Sent,
+        },
+        {
+          status: ArticleDeliveryStatus.Sent,
+        },
+      ];
+      await service.store(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(1);
-      expect(records[0].feed_id).toBe(feedId);
-      expect(records[0].status).toBe(ArticleDeliveryStatus.Sent);
+      expect(records).toHaveLength(2);
+      const feedIds = records.map((record) => record.feed_id);
+      expect(feedIds).toEqual([feedId, feedId]);
+      const statuses = records.map((record) => record.status);
+      expect(statuses).toEqual([
+        ArticleDeliveryStatus.Sent,
+        ArticleDeliveryStatus.Sent,
+      ]);
     });
 
     it("stores failed articles correctly", async () => {
       const feedId = "feed-id";
-      const articleState: ArticleDeliveryState = {
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-        internalMessage: "internal-message",
-      };
-      await service.store(feedId, articleState);
+      const articleStates: ArticleDeliveryState[] = [
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          internalMessage: "internal-message",
+        },
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.Internal,
+          internalMessage: "internal-message-2",
+        },
+      ];
+      await service.store(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(1);
-      expect(records[0].feed_id).toBe(feedId);
-      expect(records[0].status).toBe(ArticleDeliveryStatus.Failed);
-      expect(records[0].error_code).toBe(articleState.errorCode);
-      expect(records[0].internal_message).toBe(articleState.internalMessage);
+      expect(records).toHaveLength(2);
+      expect(records).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Failed,
+            error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+            internal_message: "internal-message",
+          }),
+          expect.objectContaining({
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Failed,
+            error_code: ArticleDeliveryErrorCode.Internal,
+            internal_message: "internal-message-2",
+          }),
+        ])
+      );
     });
 
     it("stores rejected articles correctly", async () => {
       const feedId = "feed-id";
-      const articleState: ArticleDeliveryState = {
-        status: ArticleDeliveryStatus.Rejected,
-        errorCode: ArticleDeliveryRejectedCode.BadRequest,
-        internalMessage: "internal-message",
-      };
-      await service.store(feedId, articleState);
+      const articleStates: ArticleDeliveryState[] = [
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          internalMessage: "internal-message",
+        },
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          internalMessage: "internal-message-2",
+        },
+      ];
+      await service.store(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(1);
-      expect(records[0].feed_id).toBe(feedId);
-      expect(records[0].status).toBe(ArticleDeliveryStatus.Rejected);
-      expect(records[0].error_code).toBe(articleState.errorCode);
-      expect(records[0].internal_message).toBe(articleState.internalMessage);
+      expect(records).toHaveLength(2);
+      expect(records).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Rejected,
+            error_code: ArticleDeliveryRejectedCode.BadRequest,
+            internal_message: "internal-message",
+          }),
+          expect.objectContaining({
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Rejected,
+            error_code: ArticleDeliveryRejectedCode.BadRequest,
+            internal_message: "internal-message-2",
+          }),
+        ])
+      );
     });
 
     it("stores other article states correctly correctly", async () => {
       const feedId = "feed-id";
-      const articleState: ArticleDeliveryState = {
-        status: ArticleDeliveryStatus.FilteredOut,
-      };
-      await service.store(feedId, articleState);
+      const articleStates: ArticleDeliveryState[] = [
+        {
+          status: ArticleDeliveryStatus.FilteredOut,
+        },
+        {
+          status: ArticleDeliveryStatus.FilteredOut,
+        },
+      ];
+      await service.store(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(1);
-      expect(records[0].feed_id).toBe(feedId);
-      expect(records[0].status).toBe(ArticleDeliveryStatus.FilteredOut);
+      expect(records).toHaveLength(2);
+      expect(records).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.FilteredOut,
+          }),
+          expect.objectContaining({
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.FilteredOut,
+          }),
+        ])
+      );
     });
   });
 
