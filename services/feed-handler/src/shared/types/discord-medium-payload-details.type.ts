@@ -4,11 +4,17 @@ export const discordMediumPayloadDetailsSchema = object({
   guildId: string().required(),
   channel: object({
     id: string().required(),
-  }).optional(),
+  })
+    .optional()
+    .nullable()
+    .default(null),
   webhook: object({
     id: string().required(),
     token: string().required(),
-  }).optional(),
+  })
+    .optional()
+    .nullable()
+    .default(null),
   content: string(),
   embeds: array(
     object({

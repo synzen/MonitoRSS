@@ -56,6 +56,7 @@ describe("FeedEventHandlerService", () => {
           details: {
             guildId: "1",
             channel: { id: "channel 1" },
+            webhook: null,
           },
         },
       ],

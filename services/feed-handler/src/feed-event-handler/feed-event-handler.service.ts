@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { ValidationError } from "yup";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
@@ -11,9 +12,17 @@ export class FeedEventHandlerService {
   ) {}
 
   async handleV2Event(event: FeedV2Event): Promise<Article[]> {
-    await feedV2EventSchema.validate(event, {
-      abortEarly: false,
-    });
+    try {
+      await feedV2EventSchema.validate(event, {
+        abortEarly: false,
+      });
+    } catch (err) {
+      const validationErrr = err as ValidationError;
+
+      throw new Error(
+        `Validation failed on incoming Feed V2 event: ${validationErrr.errors}`
+      );
+    }
 
     const {
       feed: { id, url, blockingComparisons, passingComparisons },

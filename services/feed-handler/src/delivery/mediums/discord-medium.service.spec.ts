@@ -17,7 +17,6 @@ jest.mock("@synzen/discord-rest", () => ({
   RESTProducer: jest.fn(),
 }));
 
-const botToken = "bot-token";
 const clientId = "client-id";
 const rabbitMqUri = "rabbit-mq-uri";
 const producer = {
@@ -82,7 +81,6 @@ describe("DiscordMediumService", () => {
     }).compile();
 
     service = module.get<DiscordMediumService>(DiscordMediumService);
-    service.botToken = botToken;
     service.clientId = clientId;
     service.rabbitMqUri = rabbitMqUri;
     service.producer = producer as never;
@@ -90,6 +88,7 @@ describe("DiscordMediumService", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    jest.spyOn(console, "error").mockImplementation();
   });
 
   describe("deliverArticle", () => {
@@ -218,7 +217,7 @@ describe("DiscordMediumService", () => {
           ...deliveryDetails,
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
-            webhook: undefined,
+            webhook: null,
           },
         });
 
@@ -250,7 +249,7 @@ describe("DiscordMediumService", () => {
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
             content: "content {{title}}",
-            webhook: undefined,
+            webhook: null,
           },
         };
         await service.deliverArticle(article, details);
