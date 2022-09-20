@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ValidationError } from "yup";
+import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
@@ -8,6 +9,7 @@ import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
 export class FeedEventHandlerService {
   constructor(
     private readonly articlesService: ArticlesService,
+    private readonly articleRateLimitService: ArticleRateLimitService,
     private readonly feedFetcherService: FeedFetcherService
   ) {}
 
@@ -23,6 +25,12 @@ export class FeedEventHandlerService {
         `Validation failed on incoming Feed V2 event: ${validationErrr.errors}`
       );
     }
+
+    await this.articleRateLimitService.addOrUpdateFeedLimit(event.feed.id, {
+      // hardcode seconds in a day for now
+      timeWindowSec: 86400,
+      limit: event.articleDayLimit,
+    });
 
     const {
       feed: { id, url, blockingComparisons, passingComparisons },
