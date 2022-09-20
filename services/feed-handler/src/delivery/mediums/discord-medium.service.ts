@@ -1,6 +1,10 @@
 import { DeliveryMedium } from "./delivery-medium.interface";
 import { Injectable } from "@nestjs/common";
-import { Article } from "../../shared";
+import {
+  Article,
+  ArticleDeliveryErrorCode,
+  ArticleDeliveryRejectedCode,
+} from "../../shared";
 import { ConfigService } from "@nestjs/config";
 import { JobResponse, RESTProducer } from "@synzen/discord-rest";
 import {
@@ -10,10 +14,6 @@ import {
   DiscordMessageApiPayload,
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
-import {
-  ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
-} from "../delivery.constants";
 import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 
 @Injectable()
@@ -213,6 +213,9 @@ export class DiscordMediumService implements DeliveryMedium {
       return {
         status: ArticleDeliveryStatus.Rejected,
         errorCode: ArticleDeliveryRejectedCode.BadRequest,
+        internalMessage: `Discord rejected the request with status code ${
+          result.status
+        } Body: ${JSON.stringify(result.body)}`,
       };
     }
 

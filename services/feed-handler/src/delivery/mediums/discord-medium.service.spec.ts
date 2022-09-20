@@ -5,7 +5,7 @@ import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 import {
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
-} from "../delivery.constants";
+} from "../../shared";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,

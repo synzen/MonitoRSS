@@ -1,13 +1,13 @@
 import {
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
-} from "../delivery.constants";
+} from "../constants";
 
 export enum ArticleDeliveryStatus {
   Sent = "Sent",
   // An error happened within this service
   Failed = "failed",
-  // Discord returns a 400 for example
+  // Discord returns a 400 for example. Requires user action.
   Rejected = "rejected",
   // Filters blocked the article fromg getting delivered
   FilteredOut = "filtered-out",
@@ -20,6 +20,7 @@ interface ArticleDeliverySentState {
 interface ArticleDeliveryRejectedState {
   status: ArticleDeliveryStatus.Rejected;
   errorCode: ArticleDeliveryRejectedCode;
+  internalMessage: string;
 }
 
 interface ArticleDeliveryFailureState {

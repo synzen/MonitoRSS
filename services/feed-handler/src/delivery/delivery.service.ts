@@ -1,7 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
-import { Article, FeedV2Event, MediumKey, MediumPayload } from "../shared";
-import { ArticleDeliveryErrorCode } from "./delivery.constants";
+import {
+  Article,
+  ArticleDeliveryErrorCode,
+  FeedV2Event,
+  MediumKey,
+  MediumPayload,
+} from "../shared";
 import { DeliveryMedium } from "./mediums/delivery-medium.interface";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
