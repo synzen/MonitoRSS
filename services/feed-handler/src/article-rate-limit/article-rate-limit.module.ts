@@ -10,5 +10,6 @@ import { FeedArticleDeliveryLimit } from "./entities";
     DeliveryRecordModule,
     MikroOrmModule.forFeature([FeedArticleDeliveryLimit]),
   ],
+  exports: [ArticleRateLimitService],
 })
 export class ArticleRateLimitModule {}

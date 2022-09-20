@@ -12,10 +12,13 @@ export class ArticleRateLimitService {
     private readonly deliveryLimitRepo: EntityRepository<FeedArticleDeliveryLimit>
   ) {}
 
-  async isUnderLimit(feedId: string) {
+  async getUnderLimitCheck(feedId: string) {
     const limits = await this.getFeedLimitInformation(feedId);
 
-    return limits.every(({ remaining }) => remaining > 0);
+    return {
+      underLimit: limits.every(({ remaining }) => remaining > 0),
+      remaining: Math.min(...limits.map(({ remaining }) => remaining)),
+    };
   }
 
   async getFeedLimitInformation(feedId: string) {

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
+import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import {
   Article,
   ArticleDeliveryErrorCode,
@@ -19,6 +20,9 @@ describe("DeliveryService", () => {
     buildReferences: jest.fn(),
     getArticleFilterResults: jest.fn(),
   };
+  const articleRateLimitService = {
+    getUnderLimitCheck: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -33,11 +37,22 @@ describe("DeliveryService", () => {
           provide: ArticleFiltersService,
           useValue: articleFiltersService,
         },
+        {
+          provide: ArticleRateLimitService,
+          useValue: articleRateLimitService,
+        },
       ],
     }).compile();
 
     service = module.get<DeliveryService>(DeliveryService);
     articleFiltersService.getArticleFilterResults.mockResolvedValue(true);
+  });
+
+  beforeEach(async () => {
+    jest.resetAllMocks();
+    articleRateLimitService.getUnderLimitCheck.mockResolvedValue({
+      remaining: Number.MAX_SAFE_INTEGER,
+    });
   });
 
   it("should be defined", () => {
@@ -59,6 +74,7 @@ describe("DeliveryService", () => {
           details: {
             guildId: "1",
             channel: { id: "channel 1" },
+            webhook: null,
           },
         },
         {
@@ -66,6 +82,7 @@ describe("DeliveryService", () => {
           details: {
             guildId: "2",
             channel: { id: "channel 2" },
+            webhook: null,
           },
         },
       ],
@@ -113,6 +130,19 @@ describe("DeliveryService", () => {
       );
     });
 
+    it("does not deliver articles that exceed rate limits", async () => {
+      const remainingCalls = 2;
+      articleRateLimitService.getUnderLimitCheck.mockResolvedValue({
+        remaining: remainingCalls,
+      });
+
+      await service.deliver(event, articles);
+
+      expect(discordMediumService.deliverArticle).toHaveBeenCalledTimes(
+        remainingCalls
+      );
+    });
+
     it("logs errors if some mediums fail", async () => {
       const deliveryError = new Error("delivery err");
       articleFiltersService.getArticleFilterResults.mockRejectedValue(
@@ -129,6 +159,7 @@ describe("DeliveryService", () => {
             details: {
               guildId: "1",
               channel: { id: "channel 1" },
+              webhook: null,
             },
           },
         ],
@@ -156,6 +187,7 @@ describe("DeliveryService", () => {
               details: {
                 guildId: "1",
                 channel: { id: "channel 1" },
+                webhook: null,
               },
             },
           ],
@@ -194,6 +226,7 @@ describe("DeliveryService", () => {
               details: {
                 guildId: "1",
                 channel: { id: "channel 1" },
+                webhook: null,
               },
             },
           ],
@@ -239,6 +272,7 @@ describe("DeliveryService", () => {
               details: {
                 guildId: "1",
                 channel: { id: "channel 1" },
+                webhook: null,
               },
             },
           ],

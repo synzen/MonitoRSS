@@ -11,10 +11,16 @@ export enum ArticleDeliveryStatus {
   Rejected = "rejected",
   // Filters blocked the article fromg getting delivered
   FilteredOut = "filtered-out",
+  // Rate limit enforced by this service
+  RateLimited = "rate-limited",
 }
 
 interface ArticleDeliverySentState {
   status: ArticleDeliveryStatus.Sent;
+}
+
+interface ArticleDeliveryRateLimitState {
+  status: ArticleDeliveryStatus.RateLimited;
 }
 
 interface ArticleDeliveryRejectedState {
@@ -43,4 +49,5 @@ export type ArticleDeliveryState =
   | ArticleDeliverySentState
   | ArticleDeliveryFailureState
   | ArticleDeliveryFilteredOutState
-  | ArticleDeliveryRejectedState;
+  | ArticleDeliveryRejectedState
+  | ArticleDeliveryRateLimitState;

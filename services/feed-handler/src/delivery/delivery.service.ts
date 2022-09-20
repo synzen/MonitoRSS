@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
+import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import {
   Article,
   ArticleDeliveryErrorCode,
@@ -11,11 +12,16 @@ import { DeliveryMedium } from "./mediums/delivery-medium.interface";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
 
+interface LimitState {
+  remaining: number;
+}
+
 @Injectable()
 export class DeliveryService {
   constructor(
     private readonly discordMediumService: DiscordMediumService,
-    private readonly articleFiltersService: ArticleFiltersService
+    private readonly articleFiltersService: ArticleFiltersService,
+    private readonly articleRateLimitService: ArticleRateLimitService
   ) {}
 
   private mediumServices: Record<MediumKey, DeliveryMedium> = {
@@ -27,14 +33,30 @@ export class DeliveryService {
     articles: Article[]
   ): Promise<ArticleDeliveryState[]> {
     let articleStates: ArticleDeliveryState[] = [];
+    const underLimitInfo =
+      await this.articleRateLimitService.getUnderLimitCheck(event.feed.id);
 
-    await Promise.all(
-      event.mediums.map(async (medium) => {
-        articleStates = articleStates.concat(
-          await this.deliverArticlesToMedium(event, articles, medium)
-        );
-      })
-    );
+    /**
+     * Rate limit handling in memory is not the best, especially since articles get dropped and
+     * concurrency is not handled well, but it should be good enough for now.
+     */
+    const limitState = {
+      remaining: underLimitInfo.remaining,
+    };
+
+    // Explicitly use for loop for track limit state
+    for (let i = 0; i < event.mediums.length; ++i) {
+      const medium = event.mediums[i];
+
+      const mediumStates = await this.deliverArticlesToMedium(
+        event,
+        articles,
+        medium,
+        limitState
+      );
+
+      articleStates = articleStates.concat(mediumStates);
+    }
 
     return articleStates;
   }
@@ -42,21 +64,41 @@ export class DeliveryService {
   private async deliverArticlesToMedium(
     event: FeedV2Event,
     articles: Article[],
-    medium: MediumPayload
+    medium: MediumPayload,
+    limitState: LimitState
   ): Promise<ArticleDeliveryState[]> {
-    return Promise.all(
-      articles.map(async (article) =>
-        this.sendArticleToMedium(event, article, medium)
-      )
-    );
+    const results: ArticleDeliveryState[] = [];
+
+    // Explicitly use for loop for track limit state
+    for (let i = 0; i < articles.length; ++i) {
+      const article = articles[i];
+
+      const articleState = await this.sendArticleToMedium(
+        event,
+        article,
+        medium,
+        limitState
+      );
+
+      results.push(articleState);
+    }
+
+    return results;
   }
 
   private async sendArticleToMedium(
     event: FeedV2Event,
     article: Article,
-    medium: MediumPayload
+    medium: MediumPayload,
+    limitState: LimitState
   ): Promise<ArticleDeliveryState> {
     try {
+      if (limitState.remaining <= 0) {
+        return {
+          status: ArticleDeliveryStatus.RateLimited,
+        };
+      }
+
       const filterReferences = this.articleFiltersService.buildReferences({
         article,
       });
@@ -74,10 +116,17 @@ export class DeliveryService {
         };
       }
 
-      return await this.mediumServices[medium.key].deliverArticle(article, {
-        deliverySettings: medium.details,
-        feedDetails: event.feed,
-      });
+      const articleState = await this.mediumServices[medium.key].deliverArticle(
+        article,
+        {
+          deliverySettings: medium.details,
+          feedDetails: event.feed,
+        }
+      );
+
+      limitState.remaining--;
+
+      return articleState;
     } catch (err) {
       console.error(
         `Failed to deliver event ${JSON.stringify(event)} to medium ${

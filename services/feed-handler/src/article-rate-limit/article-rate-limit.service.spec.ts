@@ -58,7 +58,7 @@ describe("ArticleRateLimitService", () => {
     expect(service).toBeDefined();
   });
 
-  describe("isUnderLimit", () => {
+  describe("getUnderLimitCheck", () => {
     it("returns true if every limit has at least 1 remaining", async () => {
       jest.spyOn(service, "getFeedLimitInformation").mockResolvedValue([
         {
@@ -69,9 +69,12 @@ describe("ArticleRateLimitService", () => {
         },
       ] as never);
 
-      const result = await service.isUnderLimit(feedId);
+      const result = await service.getUnderLimitCheck(feedId);
 
-      expect(result).toBe(true);
+      expect(result).toEqual({
+        underLimit: true,
+        remaining: 1,
+      });
     });
 
     it("returns false if any limit has 0 remaining", async () => {
@@ -84,9 +87,12 @@ describe("ArticleRateLimitService", () => {
         },
       ] as never);
 
-      const result = await service.isUnderLimit(feedId);
+      const result = await service.getUnderLimitCheck(feedId);
 
-      expect(result).toBe(false);
+      expect(result).toEqual({
+        underLimit: false,
+        remaining: 0,
+      });
     });
   });
 
