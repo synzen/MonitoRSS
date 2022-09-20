@@ -4,9 +4,12 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { config } from "../../config";
 import { MikroORM } from "@mikro-orm/core";
+import { randomUUID } from "crypto";
+import { SqlEntityManager } from "@mikro-orm/postgresql";
 
 let testingModule: TestingModule;
 let orm: MikroORM;
+const postgresSchema = randomUUID().replaceAll("-", "");
 
 interface Options {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,7 +21,6 @@ export async function setupIntegrationTests(
   options?: Options
 ) {
   const configVals = config();
-  const postgresSchema = "feedservice_int_tests";
 
   const uncompiledModule = Test.createTestingModule({
     ...metadata,
@@ -71,6 +73,12 @@ export async function teardownIntegrationTests() {
   if (orm) {
     const generator = orm.getSchemaGenerator();
     await generator.dropSchema();
+    // const typedEm = orm.em as SqlEntityManager;
+    await orm.em.transactional(async (em) => {
+      await (em as SqlEntityManager).execute(
+        `DROP SCHEMA IF EXISTS "${postgresSchema}" CASCADE`
+      );
+    });
   }
 
   await testingModule?.close();
