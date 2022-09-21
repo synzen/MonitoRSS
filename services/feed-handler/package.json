@@ -31,6 +31,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-fastify": "^9.1.1",
     "@synzen/discord-rest": "^0.7.0-beta.2",
+    "aws-sdk": "^2.1221.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "dayjs": "^1.11.5",
@@ -40,6 +41,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
+    "sqs-consumer": "^5.7.0",
     "undici": "^5.10.0",
     "yup": "^1.0.0-beta.7"
   },

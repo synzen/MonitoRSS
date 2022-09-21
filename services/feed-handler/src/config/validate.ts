@@ -37,6 +37,18 @@ export class EnvironmentVariables {
 
   @IsNumberString()
   PORT: string;
+
+  @IsString()
+  FEED_EVENT_QUEUE_URL: string;
+
+  @IsString()
+  AWS_REGION: string;
+
+  @IsString()
+  AWS_SECRET_ACCESS_KEY: string;
+
+  @IsString()
+  AWS_ACCESS_KEY_ID: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

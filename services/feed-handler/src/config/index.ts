@@ -32,6 +32,10 @@ export function config(options?: {
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID as string,
     DISCORD_RABBITMQ_URI: process.env.DISCORD_RABBITMQ_URI as string,
     PORT: process.env.PORT as string,
+    FEED_EVENT_QUEUE_URL: process.env.FEED_EVENT_QUEUE_URL as string,
+    AWS_REGION: process.env.AWS_REGION as string,
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
   } as const;
 
   if (!options?.skipValidation) {
