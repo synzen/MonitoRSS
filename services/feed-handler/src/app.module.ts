@@ -35,7 +35,8 @@ export class AppModule {
       module: AppModule,
       imports: [
         MikroOrmModule.forRoot({
-          autoLoadEntities: true,
+          entities: ["dist/**/*.entity.js"],
+          entitiesTs: ["src/**/*.entity.ts"],
           clientUrl: configVals.POSTGRES_URI,
           dbName: configVals.POSTGRES_DATABASE,
           type: "postgresql",

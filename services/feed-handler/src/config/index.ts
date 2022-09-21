@@ -31,6 +31,7 @@ export function config(options?: {
     POSTGRES_DATABASE: process.env.POSTGRES_DATABASE as string,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID as string,
     DISCORD_RABBITMQ_URI: process.env.DISCORD_RABBITMQ_URI as string,
+    PORT: process.env.PORT as string,
   } as const;
 
   if (!options?.skipValidation) {

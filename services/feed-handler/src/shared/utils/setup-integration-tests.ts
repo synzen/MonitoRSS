@@ -33,7 +33,8 @@ export async function setupIntegrationTests(
       }),
       MikroOrmModule.forFeature(options?.models || []),
       MikroOrmModule.forRoot({
-        autoLoadEntities: true,
+        entities: ["dist/**/*.entity.js"],
+        entitiesTs: ["src/**/*.entity.ts"],
         clientUrl: configVals.POSTGRES_URI,
         dbName: configVals.POSTGRES_DATABASE,
         type: "postgresql",

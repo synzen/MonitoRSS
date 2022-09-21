@@ -1,5 +1,10 @@
 import { plainToClass } from "class-transformer";
-import { IsEnum, IsString, validateSync } from "class-validator";
+import {
+  IsEnum,
+  IsNumberString,
+  IsString,
+  validateSync,
+} from "class-validator";
 
 export enum Environment {
   Development = "development",
@@ -29,6 +34,9 @@ export class EnvironmentVariables {
 
   @IsString()
   DISCORD_RABBITMQ_URI: string;
+
+  @IsNumberString()
+  PORT: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

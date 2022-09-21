@@ -44,6 +44,8 @@ describe("App (e2e)", () => {
     agent.disableNetConnect();
     client = agent.get(configService.getOrThrow("FEED_REQUEST_SERVICE_URL"));
     setGlobalDispatcher(agent);
+    jest.resetAllMocks();
+    jest.spyOn(console, "error").mockImplementation();
   });
 
   afterAll(async () => {

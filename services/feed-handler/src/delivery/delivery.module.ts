@@ -8,5 +8,6 @@ import { DiscordMediumService } from "./mediums/discord-medium.service";
   controllers: [],
   providers: [DeliveryService, DiscordMediumService],
   imports: [ArticleFiltersModule, ArticleRateLimitModule],
+  exports: [DeliveryService],
 })
 export class DeliveryModule {}
