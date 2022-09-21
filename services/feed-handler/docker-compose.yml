@@ -1,0 +1,63 @@
+version: '3.8'
+services:
+  mrss-feed-handler-feed-queue:
+    image: softwaremill/elasticmq
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+    ports:
+      - '9324:9324'
+      - '9325:9325'
+  mrss-feed-handler-postgres:
+    container_name: mrss-postgres-container
+    restart: always
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', 'postgres', '-U', 'postgres']
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    # Comment below to show mongo logs
+    logging:
+      driver: none
+    image: postgres:14.1-alpine
+    ports:
+      - '5444:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+  mrss-feed-handler:
+    container_name: mrss-service-container
+    restart: on-failure:3
+    build:
+      context: .
+      target: build
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npm run start:dev
+    depends_on:
+      - mrss-feed-handler-postgres
+      - mrss-feed-handler-feed-queue
+    env_file:
+      - .env.local
+    environment:
+      - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432
+      - POSTGRES_DATABASE=feed-handler
+      - FEED_REQUEST_SERVICE_URL=http://localhost:5000
+      - FEED_MONGODB_URI=abc
+      - DISCORD_CLIENT_ID=123
+      - DISCORD_RABBITMQ_URI=123
+      - PORT=3001
+      # Queue name is referenced in the elasticmq.conf file
+      - FEED_EVENT_QUEUE_URL=http://mrss-feed-handler-feed-queue:9324/queue/feed-handler-feed-queue
+      - AWS_REGION=us-east-1
+      - AWS_SECRET_ACCESS_KEY=123
+      - AWS_ACCESS_KEY_ID=123
+
+volumes:
+  db:
+    driver: local

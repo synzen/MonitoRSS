@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  mrss-feed-handler:
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npx jest --watchAll
+
+volumes:
+  db:
+    driver: local
