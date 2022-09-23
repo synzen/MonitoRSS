@@ -3,10 +3,12 @@ import { ThemedSelect } from '@/components';
 import { useDiscordServers } from '@/features/discordServers';
 
 interface Props {
-
+  onClick?: (serverId: string) => void;
 }
 
-export const DiscordServerSearchSelect: React.FC<Props> = () => {
+export const DiscordServerSearchSelect: React.FC<Props> = ({
+  onClick,
+}) => {
   const navigate = useNavigate();
   const { serverId } = useParams();
 
@@ -15,7 +17,11 @@ export const DiscordServerSearchSelect: React.FC<Props> = () => {
   const loading = status === 'idle' || status === 'loading';
 
   const onChangedValue = (newServerId: string) => {
-    navigate(`/servers/${newServerId}/feeds`);
+    if (onClick) {
+      onClick(newServerId);
+    } else {
+      navigate(`/servers/${newServerId}/feeds`);
+    }
   };
 
   return (

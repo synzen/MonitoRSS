@@ -17,6 +17,8 @@ import FeedClone from './FeedClone';
 import FeedComparisons from './FeedComparisons';
 import Feeds from './Feeds';
 import { RequireDiscordServers } from '@/features/discordServers';
+import { PageContentV2 } from '../components/PageContentV2';
+import FeedsV2 from './FeedsV2';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -70,16 +72,18 @@ const Pages: React.FC = () => (
         </RequireAuth>
     )}
     />
-    {/* <Route
-      path="/servers/:serverId/webhooks"
+    <Route
+      path="/v2/servers/:serverId/feeds"
       element={(
         <RequireAuth>
-          <PageContent>
-            <Webhooks />
-          </PageContent>
+          <RequireDiscordServers>
+            <PageContentV2>
+              <FeedsV2 />
+            </PageContentV2>
+          </RequireDiscordServers>
         </RequireAuth>
     )}
-    /> */}
+    />
     <Route
       path="/servers/:serverId/feeds/:feedId"
       element={(
