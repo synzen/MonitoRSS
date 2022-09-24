@@ -36,21 +36,21 @@ export const PageContentV2: React.FC<Props> = ({ requireFeed, children }) => {
       height="100%"
       alignItems="center"
       flexDir="column"
+      overflowX="auto"
     >
       <Flex
         width="100%"
         justifyContent="space-between"
-        paddingX="12"
-        paddingY="4"
-        background="gray.700"
+        background="gray.900"
+        // overflowX="auto"
       >
-        <Flex alignItems="center">
+        <Flex alignItems="center" paddingLeft={{ base: '4', lg: '8' }} paddingY="4">
           <Heading fontWeight={500} paddingRight="8">MonitoRSS</Heading>
           <DiscordServerSearchSelect
             onClick={(selectedServerId) => navigate(`/v2/servers/${selectedServerId}/feeds`)}
           />
         </Flex>
-        <Flex alignItems="center">
+        <Flex alignItems="center" paddingRight={{ base: '4', lg: '8' }} paddingY="4">
           <Avatar
             src={discordBotData?.result.avatar || undefined}
             size="sm"
@@ -61,10 +61,7 @@ export const PageContentV2: React.FC<Props> = ({ requireFeed, children }) => {
           />
         </Flex>
       </Flex>
-      <Flex
-        width="100%"
-        maxWidth="1200px"
-      >
+      <Flex width="100%" justifyContent="center">
         {children}
       </Flex>
     </Flex>

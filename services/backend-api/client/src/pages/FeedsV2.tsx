@@ -5,8 +5,7 @@ import {
   Text,
   IconButton,
 } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import RouteParams from '../types/RouteParams';
@@ -16,18 +15,18 @@ import { FeedsTableV2 } from '../features/feed/components/FeedsTableV2';
 
 const FeedsV2: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
-  const [focusedFeedId, setFocusedFeedId] = useState('');
   const { t } = useTranslation();
   const { data: serverData } = useDiscordServer({ serverId });
   const { data: feedsData } = useFeeds({ serverId });
-
-  useEffect(() => {
-    setFocusedFeedId('');
-  }, [serverId]);
+  const navigate = useNavigate();
 
   const currentFeedCount = feedsData?.total || 0;
   const maxFeedsCount = serverData?.benefits.maxFeeds || 0;
   const feedCountIsAccessible = feedsData && serverData;
+
+  const onSelectedFeed = (feedId: string) => {
+    navigate(`/v2/servers/${serverId}/feeds/${feedId}`);
+  };
 
   return (
     <RequireServerBotAccess
@@ -37,6 +36,7 @@ const FeedsV2: React.FC = () => {
         width="100%"
         height="100%"
         overflow="auto"
+        maxWidth="1200px"
       >
         <Stack
           spacing="6"
@@ -77,8 +77,7 @@ const FeedsV2: React.FC = () => {
             )}
           </Flex>
           <FeedsTableV2
-            onSelectedFeedId={setFocusedFeedId}
-            selectedFeedId={focusedFeedId}
+            onSelectedFeedId={onSelectedFeed}
             serverId={serverId}
           />
         </Stack>

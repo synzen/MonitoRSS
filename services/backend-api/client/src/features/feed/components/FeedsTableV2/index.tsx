@@ -27,12 +27,11 @@ import { debounce } from 'lodash';
 import { useFeeds } from '../../hooks';
 import { Feed } from '../../types';
 import { Loading } from '@/components';
-import { AddFeedDialog } from '../AddFeedDialog';
 import { FeedStatusTag } from '../FeedsTable/FeedStatusTag';
+import { AddFeedDialogV2 } from '../AddFeedDialogV2';
 
 interface Props {
   serverId?: string
-  selectedFeedId?: string
   onSelectedFeedId?: (feedId: string) => void
 }
 
@@ -42,7 +41,6 @@ const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
 export const FeedsTableV2: React.FC<Props> = ({
   serverId,
-  selectedFeedId,
   onSelectedFeedId,
 }) => {
   const { t } = useTranslation();
@@ -182,7 +180,7 @@ export const FeedsTableV2: React.FC<Props> = ({
             {search && isFetching && <Spinner size="sm" />}
           </InputRightElement>
         </InputGroup>
-        <AddFeedDialog />
+        <AddFeedDialogV2 />
       </HStack>
       <Box overflow="auto">
         <Table
@@ -216,7 +214,6 @@ export const FeedsTableV2: React.FC<Props> = ({
                   tabIndex={0}
                   zIndex={100}
                   position="relative"
-                  bg={selectedFeedId === feed.id ? 'gray.700' : undefined}
                   _hover={{
                     bg: 'gray.700',
                     cursor: 'pointer',

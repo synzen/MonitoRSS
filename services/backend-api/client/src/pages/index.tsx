@@ -19,6 +19,8 @@ import Feeds from './Feeds';
 import { RequireDiscordServers } from '@/features/discordServers';
 import { PageContentV2 } from '../components/PageContentV2';
 import FeedsV2 from './FeedsV2';
+import { FeedV2 } from './FeedV2';
+import { FeedMediumSettings } from './FeedMediumSettings';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -92,6 +94,31 @@ const Pages: React.FC = () => (
             <PageContent requireFeed>
               <Feed />
             </PageContent>
+          </RequireDiscordServers>
+        </RequireAuth>
+    )}
+    />
+    <Route
+      path="/v2/servers/:serverId/feeds/:feedId"
+      element={(
+        <RequireAuth>
+          <RequireDiscordServers>
+            <PageContentV2 requireFeed>
+              <FeedV2 />
+            </PageContentV2>
+          </RequireDiscordServers>
+        </RequireAuth>
+    )}
+
+    />
+    <Route
+      path="/v2/servers/:serverId/feeds/:feedId/mediums/:mediumId"
+      element={(
+        <RequireAuth>
+          <RequireDiscordServers>
+            <PageContentV2 requireFeed>
+              <FeedMediumSettings />
+            </PageContentV2>
           </RequireDiscordServers>
         </RequireAuth>
     )}
