@@ -17,7 +17,7 @@ const EmbedFieldInput = () => (
         <Input size="sm" placeholder="Title" aria-label="title" type="text" />
       </FormControl>
       <FormControl>
-        <Textarea size="sm" placeholder="Value" aria-label="value" type="text" />
+        <Textarea size="sm" placeholder="Value" aria-label="value" />
       </FormControl>
       <FormControl>
         <Checkbox size="sm">Inline</Checkbox>

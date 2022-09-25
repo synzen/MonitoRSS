@@ -6,9 +6,10 @@ import { Loading } from '../Loading';
 interface Props {
   loading?: boolean
   error?: Error | null
+  children?: React.ReactNode
 }
 
-export const DashboardContentV2: React.FC<Props> = ({ loading, error, children }) => (
+export const DashboardContentV2 = ({ loading, error, children }: Props) => (
   <Flex
     width="100%"
     justifyContent="center"

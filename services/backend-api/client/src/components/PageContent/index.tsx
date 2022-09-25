@@ -29,9 +29,10 @@ import { Loading } from '../Loading';
 
 interface Props {
   requireFeed?: boolean;
+  children?: React.ReactNode;
 }
 
-export const PageContent: React.FC<Props> = ({ requireFeed, children }) => {
+export const PageContent = ({ requireFeed, children }: Props) => {
   const staticSidebarShown = useBreakpointValue<boolean>({ base: false, xl: true });
   const navigate = useNavigate();
   const location = useLocation();

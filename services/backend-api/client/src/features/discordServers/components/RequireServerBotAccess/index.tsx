@@ -9,9 +9,10 @@ import { ErrorAlert } from '@/components/ErrorAlert';
 
 interface Props {
   serverId?: string
+  children?: React.ReactNode
 }
 
-export const RequireServerBotAccess: React.FC<Props> = ({ serverId, children }) => {
+export const RequireServerBotAccess = ({ serverId, children }: Props) => {
   const { t } = useTranslation();
   const { data, error, status } = useDiscordServerAccessStatus({ serverId });
 

@@ -7,7 +7,11 @@ import { Loading } from '@/components';
 import { useAuth } from '../hooks';
 import { ErrorAlert } from '@/components/ErrorAlert';
 
-export const RequireAuth: React.FC = ({ children }) => {
+interface Props {
+  children?: React.ReactNode;
+}
+
+export const RequireAuth = ({ children }: Props) => {
   const { status, error, authenticated } = useAuth();
   const { t } = useTranslation();
 

@@ -13,9 +13,10 @@ import { useDiscordBot } from '../../features/discordUser';
 
 interface Props {
   requireFeed?: boolean;
+  children?: React.ReactNode;
 }
 
-export const PageContentV2: React.FC<Props> = ({ requireFeed, children }) => {
+export const PageContentV2 = ({ requireFeed, children }: Props) => {
   const { feedId, serverId } = useParams();
   const navigate = useNavigate();
   const {

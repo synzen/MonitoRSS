@@ -1,12 +1,12 @@
 import './utils/setupSentry';
 import './utils/i18n';
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ReactQueryDevtools } from 'react-query/devtools';
+import { createRoot } from 'react-dom/client';
 import App from './App';
 import theme from './utils/theme';
 import setupMockBrowserWorker from './mocks/browser';
@@ -33,7 +33,15 @@ const queryClient = new QueryClient({
 });
 
 prepare().then(() => {
-  ReactDOM.render(
+  const container = document.getElementById('root');
+
+  if (!container) {
+    throw new Error('Could not find root container');
+  }
+
+  const root = createRoot(container);
+
+  root.render(
     <React.StrictMode>
       <BrowserRouter>
         <ChakraProvider>
@@ -49,6 +57,5 @@ prepare().then(() => {
         </ChakraProvider>
       </BrowserRouter>
     </React.StrictMode>,
-    document.getElementById('root'),
   );
 });

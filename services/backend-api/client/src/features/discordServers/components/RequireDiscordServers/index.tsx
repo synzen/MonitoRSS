@@ -6,7 +6,11 @@ import { Loading } from '@/components';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { useDiscordServers } from '../../hooks';
 
-export const RequireDiscordServers: React.FC = ({ children }) => {
+interface Props {
+  children?: React.ReactNode
+}
+
+export const RequireDiscordServers = ({ children }: Props) => {
   const { status, error } = useDiscordServers();
   const { t } = useTranslation();
 

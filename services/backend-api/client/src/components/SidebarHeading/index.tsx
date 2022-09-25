@@ -1,6 +1,10 @@
 import { Text, useColorModeValue } from '@chakra-ui/react';
 
-export const SidebarHeading: React.FC = ({ children }) => (
+interface Props {
+  children?: React.ReactNode
+}
+
+export const SidebarHeading = ({ children }: Props) => (
   <Text
     as="h4"
     fontSize="xs"
