@@ -13,6 +13,10 @@ import {
   Heading,
   HStack,
   Link,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Stack,
   Tab,
   TabList,
@@ -20,11 +24,17 @@ import {
   TabPanels,
   Tabs,
   Text,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import { CategoryText } from '@/components';
-import { useFeed } from '../features/feed';
+import {
+  useFeed,
+  AddMediumDiscordChannelDialog,
+  AddMediumDiscordWebhookDialog,
+} from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
@@ -32,6 +42,12 @@ import { DashboardContentV2 } from '../components/DashboardContentV2';
 export const FeedV2: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
   const { t } = useTranslation();
+  const { isOpen, onClose, onOpen } = useDisclosure();
+  const {
+    isOpen: isOpenDiscordWebhook,
+    onClose: onCloseDiscordWebhook,
+    onOpen: onOpenDiscordWebhook,
+  } = useDisclosure();
 
   const {
     feed, status, error, refetch,
@@ -44,6 +60,11 @@ export const FeedV2: React.FC = () => {
       error={error}
       loading={status === 'loading' || status === 'idle'}
     >
+      <AddMediumDiscordChannelDialog isOpen={isOpen} onClose={onClose} />
+      <AddMediumDiscordWebhookDialog
+        isOpen={isOpenDiscordWebhook}
+        onClose={onCloseDiscordWebhook}
+      />
       <Tabs isFitted>
         <Stack
           width="100%"
@@ -140,8 +161,8 @@ export const FeedV2: React.FC = () => {
               </Grid>
             </Stack>
             <TabList>
-              <Tab>Mediums</Tab>
-              <Tab>Comparisons</Tab>
+              <Tab>{t('pages.feed.connectionsTab')}</Tab>
+              <Tab>{t('pages.feed.comparisonsTab')}</Tab>
             </TabList>
           </Stack>
         </Stack>
@@ -151,15 +172,28 @@ export const FeedV2: React.FC = () => {
               <Stack width="100%" maxWidth="1200px" spacing={12}>
                 <Stack>
                   <Text>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse 
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
                     sollicitudin
                     varius quam vitae facilisis. Donec nec feugiat lacus.
                   </Text>
                 </Stack>
                 <Stack>
-                  <Button>
-                    Add new
-                  </Button>
+                  <Flex justifyContent="space-between" alignItems="center">
+                    <Heading size="md">13 connections</Heading>
+                    <Menu>
+                      <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                        {t('pages.feed.addConnectionButtonText')}
+                      </MenuButton>
+                      <MenuList>
+                        <MenuItem onClick={onOpen}>
+                          {t('pages.feed.discordChannelMenuItem')}
+                        </MenuItem>
+                        <MenuItem onClick={onOpenDiscordWebhook}>
+                          {t('pages.feed.discordWebhookMenuItem')}
+                        </MenuItem>
+                      </MenuList>
+                    </Menu>
+                  </Flex>
                   <Link
                     as={RouterLink}
                     to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}

@@ -77,7 +77,12 @@
       "channelLabel": "Channel",
       "refreshRateLabel": "Refresh Rate",
       "refreshRateValue": "{{minutes}} minutes",
-      "createdAtLabel": "Since"
+      "createdAtLabel": "Since",
+      "connectionsTab": "Connections",
+      "comparisonsTab": "Comparisons",
+      "addConnectionButtonText": "Add new",
+      "discordChannelMenuItem": "Discord Channel",
+      "discordWebhookMenuItem": "Discord Webhook"
     },
     "message": {
       "title": "Message",
@@ -225,6 +230,27 @@
           "formLinkLabel": "Link",
           "formLinkDescription": "Must be a link to a valid RSS XML feed.",
           "failedToAdd": "Failed to add feed"
+        },
+        "addDiscordChannelConnectionDialog": {
+          "title": "Add a Discord channel connection",
+          "cancelButton": "Cancel",
+          "saveButton": "Add",
+          "formTitleLabel": "Title",
+          "formTitleDescription": "This is only for your reference.",
+          "formChannelLabel": "Channel"
+        },
+        "addDiscordWebhookConnectionDialog": {
+          "title": "Add a Discord webhook connection",
+          "cancelButton": "Cancel",
+          "saveButton": "Add",
+          "webhookNameLabel": "Name",
+          "webhookNameDescription": "This will override the webhook's name.",
+          "webhookIconUrlLabel": "Icon URL",
+          "webhookIconUrlDescription": "This will override the webhook's icon.",
+          "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
+          "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
+          "webhookFormLabel": "Webhook",
+          "failedToGetWebhooks": "Failed to get server webhooks"
         },
         "sidebar": {
           "settings": "Settings",
