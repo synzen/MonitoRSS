@@ -36,7 +36,7 @@ export const FeedMediumSettings: React.FC = () => {
       error={error}
       loading={status === 'loading' || status === 'idle'}
     >
-      <Tabs>
+      <Tabs isFitted>
         <Stack
           width="100%"
           minWidth="100%"
