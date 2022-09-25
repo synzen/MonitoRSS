@@ -1,99 +1,99 @@
-import nock from 'nock';
-import { DiscordAPIError } from '../../../common/errors/DiscordAPIError';
-import { DISCORD_API_BASE_URL } from '../../../constants/discord';
-import { DiscordAPIService } from './discord-api.service';
-describe('DiscordAPIService', () => {
+import { DiscordAPIError } from "../../../common/errors/DiscordAPIError";
+import { DiscordAPIService } from "./discord-api.service";
+
+jest.mock("@synzen/discord-rest");
+
+describe("DiscordAPIService", () => {
   let discordApi: DiscordAPIService;
   const configService = {
     get: jest.fn(),
   };
+  const restHandler = {
+    fetch: jest.fn(),
+  };
 
   beforeEach(() => {
+    jest.resetAllMocks();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     discordApi = new DiscordAPIService(configService as any);
+    discordApi.restHandler = restHandler as never;
   });
 
-  describe('executeBotRequest', () => {
-    it('throws an error if status code is not ok', async () => {
+  describe("executeBotRequest", () => {
+    it("throws an error if status code is not ok", async () => {
       const endpoint = `/guilds/123456789/members/123456789`;
 
-      nock(DISCORD_API_BASE_URL)
-        .get(endpoint)
-        .matchHeader('Authorization', `Bot ${discordApi.BOT_TOKEN}`)
-        .matchHeader('Content-Type', 'application/json')
-        .reply(500, {
-          message: 'Internal server error',
-        });
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 500,
+        json: jest.fn().mockResolvedValue({}),
+      });
 
       await expect(discordApi.executeBotRequest(endpoint)).rejects.toThrow(
-        DiscordAPIError,
+        DiscordAPIError
       );
     });
 
-    it('returns the response', async () => {
+    it("returns the response", async () => {
       const endpoint = `/guilds/123456789/members/123456789`;
 
-      nock(DISCORD_API_BASE_URL)
-        .get(endpoint)
-        .matchHeader('Authorization', `Bot ${discordApi.BOT_TOKEN}`)
-        .matchHeader('Content-Type', 'application/json')
-        .reply(200, {
-          message: 'Success',
-        });
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          message: "Success",
+        }),
+      });
 
       const response = await discordApi.executeBotRequest(endpoint);
       expect(response).toEqual({
-        message: 'Success',
+        message: "Success",
       });
     });
   });
 
-  describe('executeBearerRequest', () => {
-    it('throws an error if status code is not ok', async () => {
-      const accessToken = 'mock-access-token';
+  describe("executeBearerRequest", () => {
+    it("throws an error if status code is not ok", async () => {
+      const accessToken = "mock-access-token";
       const endpoint = `/guilds/123456789/members/123456789`;
 
-      nock(DISCORD_API_BASE_URL)
-        .get(endpoint)
-        .matchHeader('Authorization', `Bearer ${accessToken}`)
-        .matchHeader('Content-Type', 'application/json')
-        .reply(500, {
-          message: 'Internal server error',
-        });
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 500,
+        json: jest.fn().mockResolvedValue({
+          message: "Internal server error",
+        }),
+      });
 
       await expect(
-        discordApi.executeBearerRequest(accessToken, endpoint),
+        discordApi.executeBearerRequest(accessToken, endpoint)
       ).rejects.toThrow(DiscordAPIError);
     });
 
-    it('returns the response', async () => {
-      const accessToken = 'mock-access-token';
+    it("returns the response", async () => {
+      const accessToken = "mock-access-token";
       const endpoint = `/guilds/123456789/members/123456789`;
 
-      nock(DISCORD_API_BASE_URL)
-        .get(endpoint)
-        .matchHeader('Authorization', `Bearer ${accessToken}`)
-        .matchHeader('Content-Type', 'application/json')
-        .reply(200, {
-          message: 'Success',
-        });
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          message: "Success",
+        }),
+      });
 
       const response = await discordApi.executeBearerRequest(
         accessToken,
-        endpoint,
+        endpoint
       );
       expect(response).toEqual({
-        message: 'Success',
+        message: "Success",
       });
     });
   });
 
-  describe('getBot', () => {
-    it('returns the bot', async () => {
-      const botClientId = '123456789';
+  describe("getBot", () => {
+    it("returns the bot", async () => {
+      const botClientId = "123456789";
 
-      jest.spyOn(configService, 'get').mockImplementation((key) => {
-        if (key === 'DISCORD_CLIENT_ID') {
+      jest.spyOn(configService, "get").mockImplementation((key) => {
+        if (key === "DISCORD_CLIENT_ID") {
           return botClientId;
         }
 
@@ -101,12 +101,13 @@ describe('DiscordAPIService', () => {
       });
 
       const discordUser = {
-        id: 'user-id',
+        id: "user-id",
       };
 
-      nock(DISCORD_API_BASE_URL)
-        .get(`/users/${botClientId}`)
-        .reply(200, discordUser);
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 200,
+        json: jest.fn().mockResolvedValue(discordUser),
+      });
 
       const response = await discordApi.getBot();
       expect(response).toEqual(discordUser);

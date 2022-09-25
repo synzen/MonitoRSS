@@ -6,58 +6,58 @@ import {
   Query,
   Res,
   Session,
-} from '@nestjs/common';
-import { DiscordAuthService } from './discord-auth.service';
-import { FastifyReply } from 'fastify';
-import { Session as FastifySession } from 'fastify-secure-session';
-import { DiscordAccessToken } from './decorators/DiscordAccessToken';
-import { SessionAccessToken } from './types/SessionAccessToken.type';
-import { ConfigService } from '@nestjs/config';
+} from "@nestjs/common";
+import { DiscordAuthService } from "./discord-auth.service";
+import { FastifyReply } from "fastify";
+import { Session as FastifySession } from "@fastify/secure-session";
+import { DiscordAccessToken } from "./decorators/DiscordAccessToken";
+import { SessionAccessToken } from "./types/SessionAccessToken.type";
+import { ConfigService } from "@nestjs/config";
 
-@Controller('discord')
+@Controller("discord")
 export class DiscordAuthController {
   constructor(
     private readonly discordAuthService: DiscordAuthService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {}
 
-  @Get('login')
+  @Get("login")
   login(@Res() res: FastifyReply) {
     const authorizationUri = this.discordAuthService.getAuthorizationUrl();
 
     res.redirect(301, authorizationUri);
   }
 
-  @Get('callback')
+  @Get("callback")
   async discordCallback(
     @Res({ passthrough: true }) res: FastifyReply,
     @Session() session: FastifySession,
-    @Query('code') code?: string,
-    @Query('error') error?: string,
+    @Query("code") code?: string,
+    @Query("error") error?: string
   ) {
-    if (error === 'access_denied') {
-      return res.redirect(301, '/');
+    if (error === "access_denied") {
+      return res.redirect(301, "/");
     }
 
     if (!code) {
-      return 'No code provided';
+      return "No code provided";
     }
 
     const accessToken = await this.discordAuthService.createAccessToken(code);
-    session.set('accessToken', accessToken);
+    session.set("accessToken", accessToken);
 
     const loginRedirectUri = this.configService.get<string>(
-      'LOGIN_REDIRECT_URI',
+      "LOGIN_REDIRECT_URI"
     ) as string;
 
     return res.redirect(301, loginRedirectUri);
   }
 
-  @Get('logout')
+  @Get("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
     @DiscordAccessToken() accessToken: SessionAccessToken,
-    @Session() session: FastifySession,
+    @Session() session: FastifySession
   ) {
     await this.discordAuthService.revokeToken(accessToken);
     session.delete();

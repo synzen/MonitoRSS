@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Response } from 'node-fetch';
-import { DISCORD_API_BASE_URL } from '../../../constants/discord';
-import { RESTHandler } from '@synzen/discord-rest';
-import { DiscordAPIError } from '../../../common/errors/DiscordAPIError';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { DISCORD_API_BASE_URL } from "../../../constants/discord";
+import { RESTHandler } from "@synzen/discord-rest";
+import { DiscordAPIError } from "../../../common/errors/DiscordAPIError";
 import {
   DiscordGuildMember,
   DiscordGuildChannel,
   DiscordGuild,
-} from '../../../common';
-import { DiscordUser } from '../../../features/discord-users/types/DiscordUser.type';
+} from "../../../common";
+import { DiscordUser } from "../../../features/discord-users/types/DiscordUser.type";
+import { FetchResponse } from "@synzen/discord-rest/dist/types/FetchResponse";
 
 interface RequestOptions {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: "GET" | "POST" | "PUT" | "DELETE";
 }
 
 @Injectable()
@@ -22,13 +22,13 @@ export class DiscordAPIService {
   restHandler: RESTHandler;
 
   constructor(private readonly configService: ConfigService) {
-    this.BOT_TOKEN = configService.get<string>('DISCORD_BOT_TOKEN') as string;
+    this.BOT_TOKEN = configService.get<string>("DISCORD_BOT_TOKEN") as string;
     this.restHandler = new RESTHandler({
       /**
        * RESTHandler creates a node interval behind the scenes with this boolean, stopping
        * tests from tearing down gracefully.
        */
-      delayOnInvalidThreshold: process.env.NODE_ENV === 'test' ? false : true,
+      delayOnInvalidThreshold: process.env.NODE_ENV === "test" ? false : true,
     });
   }
 
@@ -40,14 +40,14 @@ export class DiscordAPIService {
    */
   async executeBotRequest<T>(
     endpoint: string,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<T> {
     const url = `${this.API_URL}${endpoint}`;
     const res = await this.restHandler.fetch(url, {
-      method: options?.method || 'GET',
+      method: (options?.method as never) || "GET",
       headers: {
         Authorization: `Bot ${this.BOT_TOKEN}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -67,14 +67,14 @@ export class DiscordAPIService {
   async executeBearerRequest<T>(
     accessToken: string,
     endpoint: string,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<T> {
     const url = `${this.API_URL}${endpoint}`;
     const res = await this.restHandler.fetch(url, {
-      method: options?.method || 'GET',
+      method: (options?.method as never) || "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -85,7 +85,7 @@ export class DiscordAPIService {
 
   async getBot(): Promise<DiscordUser> {
     const botClientId = this.configService.get<string>(
-      'DISCORD_CLIENT_ID',
+      "DISCORD_CLIENT_ID"
     ) as string;
 
     return this.executeBotRequest(`/users/${botClientId}`);
@@ -101,23 +101,23 @@ export class DiscordAPIService {
 
   async getGuildMember(
     guildId: string,
-    userId: string,
+    userId: string
   ): Promise<DiscordGuildMember> {
     return this.executeBotRequest(`/guilds/${guildId}/members/${userId}`);
   }
 
-  private async handleJSONResponseError(res: Response): Promise<void> {
-    if (!res.ok && res.status < 500) {
+  private async handleJSONResponseError(res: FetchResponse): Promise<void> {
+    if (res.status >= 400 && res.status < 500) {
       throw new DiscordAPIError(
         `Discord API request failed (${JSON.stringify(await res.json())})`,
-        res.status,
+        res.status
       );
     }
 
-    if (!res.ok) {
+    if (res.status >= 500) {
       throw new DiscordAPIError(
         `Discord API request failed (${res.status} - Discord internal error)`,
-        res.status,
+        res.status
       );
     }
   }
