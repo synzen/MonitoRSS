@@ -4,5 +4,4 @@ export * from './SidebarFeedLinks';
 export * from './FiltersTable';
 export * from './FeedDumpButton';
 export * from './FeedRawDumpButton';
-export * from './AddMediumDiscordChannelDialog';
-export * from './AddMediumDiscordWebhookDialog';
+export * from './AddConnectionDialog';

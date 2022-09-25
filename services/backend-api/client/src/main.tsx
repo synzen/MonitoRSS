@@ -41,21 +41,26 @@ prepare().then(() => {
 
   const root = createRoot(container);
 
+  // Do not use strict
+  /**
+   * Do not use strict mode since this breaks Chakra UI's modal, where the overlay does not
+   * not get removed after closing the modal (making clicks on the page impossible).
+   */
   root.render(
-    <React.StrictMode>
-      <BrowserRouter>
-        <ChakraProvider>
-          <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-          <QueryClientProvider client={queryClient}>
-            <ReactQueryDevtools />
-            <ForceDarkMode>
-              <GenericErrorBoundary>
-                <App />
-              </GenericErrorBoundary>
-            </ForceDarkMode>
-          </QueryClientProvider>
-        </ChakraProvider>
-      </BrowserRouter>
-    </React.StrictMode>,
+    // <React.StrictMode>
+    <BrowserRouter>
+      <ChakraProvider>
+        <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+        <QueryClientProvider client={queryClient}>
+          <ReactQueryDevtools />
+          <ForceDarkMode>
+            <GenericErrorBoundary>
+              <App />
+            </GenericErrorBoundary>
+          </ForceDarkMode>
+        </QueryClientProvider>
+      </ChakraProvider>
+    </BrowserRouter>,
+    // </React.StrictMode>,
   );
 });

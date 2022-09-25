@@ -29,25 +29,24 @@ import {
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon } from '@chakra-ui/icons';
+import { useState } from 'react';
 import { CategoryText } from '@/components';
 import {
   useFeed,
-  AddMediumDiscordChannelDialog,
-  AddMediumDiscordWebhookDialog,
+  AddConnectionDialog,
 } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
+import { FeedConnectionType } from '../features/feed/constants';
 
 export const FeedV2: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const { isOpen, onClose, onOpen } = useDisclosure();
-  const {
-    isOpen: isOpenDiscordWebhook,
-    onClose: onCloseDiscordWebhook,
-    onOpen: onOpenDiscordWebhook,
-  } = useDisclosure();
+  const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
+    undefined,
+  );
 
   const {
     feed, status, error, refetch,
@@ -55,16 +54,17 @@ export const FeedV2: React.FC = () => {
     feedId,
   });
 
+  const onAddConnection = (type: FeedConnectionType) => {
+    setAddConnectionType(type);
+    onOpen();
+  };
+
   return (
     <DashboardContentV2
       error={error}
       loading={status === 'loading' || status === 'idle'}
     >
-      <AddMediumDiscordChannelDialog isOpen={isOpen} onClose={onClose} />
-      <AddMediumDiscordWebhookDialog
-        isOpen={isOpenDiscordWebhook}
-        onClose={onCloseDiscordWebhook}
-      />
+      <AddConnectionDialog isOpen={isOpen} type={addConnectionType} onClose={onClose} />
       <Tabs isFitted>
         <Stack
           width="100%"
@@ -185,10 +185,14 @@ export const FeedV2: React.FC = () => {
                         {t('pages.feed.addConnectionButtonText')}
                       </MenuButton>
                       <MenuList>
-                        <MenuItem onClick={onOpen}>
+                        <MenuItem
+                          onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
+                        >
                           {t('pages.feed.discordChannelMenuItem')}
                         </MenuItem>
-                        <MenuItem onClick={onOpenDiscordWebhook}>
+                        <MenuItem
+                          onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
+                        >
                           {t('pages.feed.discordWebhookMenuItem')}
                         </MenuItem>
                       </MenuList>
