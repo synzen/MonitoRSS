@@ -18,8 +18,6 @@ import {
   MenuItem,
   MenuList,
   Stack,
-  Tab,
-  TabList,
   TabPanel,
   TabPanels,
   Tabs,
@@ -70,7 +68,7 @@ export const FeedV2: React.FC = () => {
           width="100%"
           minWidth="100%"
           paddingTop={12}
-          background="gray.700"
+          background="gray.800"
           paddingX={{ base: 4, lg: 12 }}
           alignItems="center"
         >
@@ -160,180 +158,88 @@ export const FeedV2: React.FC = () => {
                 <CategoryText title={t('pages.feed.dailyLimit')}>N/A</CategoryText>
               </Grid>
             </Stack>
-            <TabList>
-              <Tab>{t('pages.feed.connectionsTab')}</Tab>
-              <Tab>{t('pages.feed.comparisonsTab')}</Tab>
-            </TabList>
+            <Stack spacing={6}>
+              <Stack>
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Heading size="md">Connections</Heading>
+                  <Menu>
+                    <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                      {t('pages.feed.addConnectionButtonText')}
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem
+                        onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
+                      >
+                        {t('pages.feed.discordChannelMenuItem')}
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
+                      >
+                        {t('pages.feed.discordWebhookMenuItem')}
+                      </MenuItem>
+                    </MenuList>
+                  </Menu>
+                </Flex>
+                <Text>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
+                  sollicitudin
+                  varius quam vitae facilisis. Donec nec feugiat lacus.
+                </Text>
+              </Stack>
+              <Stack>
+                <Link
+                  as={RouterLink}
+                  to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
+                >
+                  <Flex
+                    background="gray.700"
+                    paddingX={8}
+                    paddingY={4}
+                    alignItems="center"
+                    borderRadius="md"
+                  >
+                    <Avatar name="Go" />
+                    <Stack marginLeft={4}>
+                      <Text
+                        fontWeight={600}
+                      >
+                        Discord Channel
+                      </Text>
+                      <Text>Delivers to #hello world</Text>
+                    </Stack>
+                  </Flex>
+                </Link>
+                <Link
+                  as={RouterLink}
+                  to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
+                >
+                  <Flex
+                    background="gray.700"
+                    paddingX={8}
+                    paddingY={4}
+                    alignItems="center"
+                    borderRadius="md"
+                  >
+                    <Avatar name="Go" />
+                    <Stack marginLeft={4}>
+                      <Text
+                        fontWeight={600}
+                      >
+                        Discord Channel
+                      </Text>
+                      <Text>Delivers to #hello world</Text>
+                    </Stack>
+                  </Flex>
+                </Link>
+              </Stack>
+            </Stack>
+            <Stack spacing={6}>
+              Hello world
+            </Stack>
           </Stack>
         </Stack>
         <TabPanels>
-          <TabPanel>
-            <Flex justifyContent="center" width="100%">
-              <Stack width="100%" maxWidth="1200px" spacing={12}>
-                <Stack>
-                  <Text>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                    sollicitudin
-                    varius quam vitae facilisis. Donec nec feugiat lacus.
-                  </Text>
-                </Stack>
-                <Stack>
-                  <Flex justifyContent="space-between" alignItems="center">
-                    <Heading size="md">13 connections</Heading>
-                    <Menu>
-                      <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                        {t('pages.feed.addConnectionButtonText')}
-                      </MenuButton>
-                      <MenuList>
-                        <MenuItem
-                          onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
-                        >
-                          {t('pages.feed.discordChannelMenuItem')}
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
-                        >
-                          {t('pages.feed.discordWebhookMenuItem')}
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Flex>
-                  <Link
-                    as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      alignItems="center"
-                      borderRadius="md"
-                    >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
-                        <Text
-                          fontWeight={600}
-                        >
-                          Discord Channel
-                        </Text>
-                        <Text>Delivers to #hello world</Text>
-                      </Stack>
-                    </Flex>
-                  </Link>
-                  <Link
-                    as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      alignItems="center"
-                      borderRadius="md"
-                    >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
-                        <Text
-                          fontWeight={600}
-                        >
-                          Discord Channel
-                        </Text>
-                        <Text>Delivers to #hello world</Text>
-                      </Stack>
-                    </Flex>
-                  </Link>
-                  <Link
-                    as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      alignItems="center"
-                      borderRadius="md"
-                    >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
-                        <Text
-                          fontWeight={600}
-                        >
-                          Discord Channel
-                        </Text>
-                        <Text>Delivers to #hello world</Text>
-                      </Stack>
-                    </Flex>
-                  </Link>
-                  <Link
-                    as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      alignItems="center"
-                      borderRadius="md"
-                    >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
-                        <Text
-                          fontWeight={600}
-                        >
-                          Discord Channel
-                        </Text>
-                        <Text>Delivers to #hello world</Text>
-                      </Stack>
-                    </Flex>
-                  </Link>
-                  <Link
-                    as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      alignItems="center"
-                      borderRadius="md"
-                    >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
-                        <Text
-                          fontWeight={600}
-                        >
-                          Discord Channel
-                        </Text>
-                        <Text>Delivers to #hello world</Text>
-                      </Stack>
-                    </Flex>
-                  </Link>
-                  <Link
-                    as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      alignItems="center"
-                      borderRadius="md"
-                    >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
-                        <Text
-                          fontWeight={600}
-                        >
-                          Discord Channel
-                        </Text>
-                        <Text>Delivers to #hello world</Text>
-                      </Stack>
-                    </Flex>
-                  </Link>
-                </Stack>
-              </Stack>
-            </Flex>
-          </TabPanel>
+          <TabPanel />
           <TabPanel>
             Hello world
           </TabPanel>
