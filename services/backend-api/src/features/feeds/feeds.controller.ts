@@ -14,56 +14,56 @@ import {
   UseFilters,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { DiscordOAuth2Guard } from '../discord-auth/guards/DiscordOAuth2.guard';
-import { TransformValidationPipe } from '../../common/pipes/TransformValidationPipe';
-import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
-import { GetFeedArticlesOutputDto } from './dto/GetFeedArticlesOutput.dto';
-import { GetFeedOutputDto } from './dto/GetFeedOutput.dto';
-import { UpdateFeedInputDto } from './dto/update-feed-input.dto';
-import { UpdateFeedOutputDto } from './dto/UpdateFeedOutput.dto';
-import { FeedsService } from './feeds.service';
-import { UserManagesFeedServerGuard } from './guards/UserManagesFeedServer.guard';
-import { GetFeedPipe } from './pipes/GetFeed.pipe';
-import { DetailedFeed } from './types/detailed-feed.type';
-import { SupportersService } from '../supporters/supporters.service';
-import { DiscordWebhooksService } from '../discord-webhooks/discord-webhooks.service';
-import { HttpCacheInterceptor } from '../../common/interceptors/http-cache-interceptor';
-import _ from 'lodash';
-import { CloneFeedInputDto } from './dto/CloneFeedInput.dto';
-import { CloneFeedOutputDto } from './dto/CloneFeedOutput.dto';
+} from "@nestjs/common";
+import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
+import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
+import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
+import { GetFeedArticlesOutputDto } from "./dto/GetFeedArticlesOutput.dto";
+import { GetFeedOutputDto } from "./dto/GetFeedOutput.dto";
+import { UpdateFeedInputDto } from "./dto/update-feed-input.dto";
+import { UpdateFeedOutputDto } from "./dto/UpdateFeedOutput.dto";
+import { FeedsService } from "./feeds.service";
+import { UserManagesFeedServerGuard } from "./guards/UserManagesFeedServer.guard";
+import { GetFeedPipe } from "./pipes/GetFeed.pipe";
+import { DetailedFeed } from "./types/detailed-feed.type";
+import { SupportersService } from "../supporters/supporters.service";
+import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
+import { HttpCacheInterceptor } from "../../common/interceptors/http-cache-interceptor";
+import _ from "lodash";
+import { CloneFeedInputDto } from "./dto/CloneFeedInput.dto";
+import { CloneFeedOutputDto } from "./dto/CloneFeedOutput.dto";
 import {
   AddFeedExceptionFilter,
   FeedExceptionFilter,
   UpdateFeedExceptionFilter,
-} from './filters';
-import FlattenedJSON from '../../services/feed-fetcher/utils/FlattenedJSON';
-import { CreateFeedInputDto } from './dto/create-feed-input.dto';
-import { DiscordAccessToken } from '../discord-auth/decorators/DiscordAccessToken';
-import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
-import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
+} from "./filters";
+import FlattenedJSON from "../../services/feed-fetcher/utils/FlattenedJSON";
+import { CreateFeedInputDto } from "./dto/create-feed-input.dto";
+import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
+import { CreateFeedOutputDto } from "./dto/create-feed-output.dto";
+import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import {
   WebhookInvalidException,
   WebhookMissingException,
   WebhooksDisabledException,
-} from './exceptions';
-import { DiscordWebhook } from '../discord-webhooks/types/discord-webhook.type';
+} from "./exceptions";
+import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 
-@Controller('feeds')
+@Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)
 export class FeedsController {
   constructor(
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
-    private readonly webhooksService: DiscordWebhooksService,
+    private readonly webhooksService: DiscordWebhooksService
   ) {}
 
   @Post()
   @UseFilters(FeedExceptionFilter, AddFeedExceptionFilter)
   async createFeed(
     @Body(TransformValidationPipe) createFeedInputDto: CreateFeedInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken,
+    @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<CreateFeedOutputDto> {
     const { channelId, feeds } = createFeedInputDto;
     const feedToAdd = feeds[0];
@@ -79,82 +79,82 @@ export class FeedsController {
     return CreateFeedOutputDto.fromEntity([addedFeed]);
   }
 
-  @Get(':feedId')
+  @Get(":feedId")
   @UseGuards(UserManagesFeedServerGuard)
   async getFeed(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<GetFeedOutputDto> {
     return GetFeedOutputDto.fromEntity(feed);
   }
 
-  @Delete(':feedId')
+  @Delete(":feedId")
   @UseGuards(UserManagesFeedServerGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteFeed(@Param('feedId', GetFeedPipe) feed: DetailedFeed) {
+  async deleteFeed(@Param("feedId", GetFeedPipe) feed: DetailedFeed) {
     await this.feedsService.removeFeed(feed._id.toHexString());
   }
 
-  @Get(':feedId/refresh')
+  @Get(":feedId/refresh")
   @UseGuards(UserManagesFeedServerGuard)
   @UseFilters(FeedExceptionFilter)
   async refreshFeed(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<GetFeedOutputDto> {
     const updatedFeed = await this.feedsService.refresh(feed._id);
 
     return GetFeedOutputDto.fromEntity(updatedFeed);
   }
 
-  @Post(':feedId/clone')
+  @Post(":feedId/clone")
   @UseGuards(UserManagesFeedServerGuard)
   async cloneFeed(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
-    @Body(TransformValidationPipe) cloneFeedInput: CloneFeedInputDto,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
+    @Body(TransformValidationPipe) cloneFeedInput: CloneFeedInputDto
   ): Promise<CloneFeedOutputDto> {
     const { targetFeedIds, properties } = cloneFeedInput;
 
     if (
       !(await this.feedsService.allFeedsBelongToGuild(
         targetFeedIds,
-        feed.guild,
+        feed.guild
       ))
     ) {
       throw new BadRequestException(
-        'Some feeds do not belong to the source guild',
+        "Some feeds do not belong to the source guild"
       );
     }
 
     const clonedFeeds = await this.feedsService.cloneFeed(
       feed,
       targetFeedIds,
-      properties,
+      properties
     );
 
     return CloneFeedOutputDto.fromEntity(clonedFeeds);
   }
 
-  @Patch(':feedId')
+  @Patch(":feedId")
   @UseGuards(UserManagesFeedServerGuard)
   @UseFilters(UpdateFeedExceptionFilter)
   async updateFeed(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
-    @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
+    @Body(TransformValidationPipe) updateFeedInput: UpdateFeedInputDto
   ): Promise<UpdateFeedOutputDto> {
     let foundWebhook: DiscordWebhook | null = null;
 
     if (updateFeedInput.webhook?.id) {
       if (!(await this.supportersService.serverCanUseWebhooks(feed.guild))) {
         throw new WebhooksDisabledException(
-          'This server does not have webhooks enabled',
+          "This server does not have webhooks enabled"
         );
       }
 
       foundWebhook = await this.webhooksService.getWebhook(
-        updateFeedInput.webhook.id,
+        updateFeedInput.webhook.id
       );
 
       if (!foundWebhook) {
-        throw new WebhookMissingException('Webhook not found');
+        throw new WebhookMissingException("Webhook not found");
       }
 
       if (!foundWebhook.token) {
@@ -167,7 +167,7 @@ export class FeedsController {
     if (updateFeedInput.filters) {
       const inputFilters = _.uniqBy(
         updateFeedInput.filters,
-        (data) => data.category + data.value,
+        (data) => data.category + data.value
       ).map((data) => ({
         category: data.category,
         value: data.value.trim(),
@@ -210,13 +210,13 @@ export class FeedsController {
     return GetFeedOutputDto.fromEntity(updatedFeed);
   }
 
-  @Get('/:feedId/articles')
+  @Get("/:feedId/articles")
   @UseGuards(UserManagesFeedServerGuard)
   @UseFilters(new FeedExceptionFilter())
   @UseInterceptors(HttpCacheInterceptor)
   @CacheTTL(60 * 5)
   async getFeedArticles(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<GetFeedArticlesOutputDto> {
     const { articles } = await this.feedFetcherService.fetchFeed(feed.url, {
       formatTables: feed.formatTables,
@@ -233,21 +233,21 @@ export class FeedsController {
     };
   }
 
-  @Get('/:feedId/articles/dump')
+  @Get("/:feedId/articles/dump")
   @UseGuards(UserManagesFeedServerGuard)
   @UseFilters(new FeedExceptionFilter())
   @UseInterceptors(HttpCacheInterceptor)
   @CacheTTL(60 * 5)
   async getFeedArticlesDump(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<StreamableFile> {
     const inputStream = await this.feedFetcherService.fetchFeedStream(feed.url);
 
     const { articleList } = await this.feedFetcherService.parseFeed(
-      inputStream,
+      inputStream
     );
 
-    let textOutput = '';
+    let textOutput = "";
 
     for (let i = 0; i < articleList.length; ++i) {
       const article = articleList[i];
@@ -255,40 +255,40 @@ export class FeedsController {
         new FlattenedJSON(article, feed, {
           dateFallback: false,
           timeFallback: false,
-          dateFormat: 'ddd, D MMMM YYYY, h:mm A z',
+          dateFormat: "ddd, D MMMM YYYY, h:mm A z",
           formatTables: false,
           imgLinksExistence: true,
           imgPreviews: true,
-          timezone: 'UTC',
-        }).text + '\r\n\r\n';
+          timezone: "UTC",
+        }).text + "\r\n\r\n";
     }
 
     textOutput = textOutput.trim();
     const buffer = Buffer.from(textOutput);
 
     return new StreamableFile(buffer, {
-      disposition: 'attachment; filename=dump.txt',
+      disposition: "attachment; filename=dump.txt",
     });
   }
 
-  @Get('/:feedId/articles/raw-dump')
+  @Get("/:feedId/articles/raw-dump")
   @UseGuards(UserManagesFeedServerGuard)
   @UseFilters(new FeedExceptionFilter())
   @UseInterceptors(HttpCacheInterceptor)
   @CacheTTL(60 * 5)
   async getFeedArticlesRawDump(
-    @Param('feedId', GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<StreamableFile> {
     const inputStream = await this.feedFetcherService.fetchFeedStream(feed.url);
 
     const { articleList } = await this.feedFetcherService.parseFeed(
-      inputStream,
+      inputStream
     );
 
     const buffer = Buffer.from(JSON.stringify(articleList, null, 2));
 
     return new StreamableFile(buffer, {
-      disposition: 'attachment; filename=dump.txt',
+      disposition: "attachment; filename=dump.txt",
     });
   }
 }

@@ -1,6 +1,6 @@
-import { Catch, HttpStatus } from '@nestjs/common';
-import { ApiErrorCode } from '../../../common/constants/api-errors';
-import { StandardBaseExceptionFilter } from '../../../common/filters/standard-exception-filter';
+import { Catch, HttpStatus } from "@nestjs/common";
+import { ApiErrorCode } from "../../../common/constants/api-errors";
+import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import {
   AddFeedException,
   BannedFeedException,
@@ -8,7 +8,7 @@ import {
   MissingChannelException,
   MissingChannelPermissionsException,
   UserMissingManageGuildException,
-} from '../exceptions';
+} from "../exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   {

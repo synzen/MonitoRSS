@@ -1,5 +1,5 @@
-import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { Transform } from "class-transformer";
+import { IsInt, IsOptional, IsString, Min } from "class-validator";
 
 export class GetServerFeedsInputDto {
   @IsInt()

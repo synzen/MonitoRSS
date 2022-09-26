@@ -1,8 +1,8 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Model } from "mongoose";
 
 @Schema({
-  collection: 'profiles',
+  collection: "profiles",
   timestamps: true,
 })
 export class DiscordServerProfile {
@@ -24,7 +24,7 @@ export class DiscordServerProfile {
   @Prop({
     // This is not used anywhere, but is required for backwards compatibility for parsing profiles
     // in the monitorss package
-    default: 'Name',
+    default: "Name",
   })
   name?: string;
 }

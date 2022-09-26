@@ -1,43 +1,43 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Feed, FeedDocument, FeedModel } from './entities/feed.entity';
-import { DetailedFeed } from './types/detailed-feed.type';
-import { Types, FilterQuery } from 'mongoose';
-import _ from 'lodash';
-import { FailRecord, FailRecordModel } from './entities/fail-record.entity';
-import { FeedStatus } from './types/FeedStatus.type';
-import dayjs from 'dayjs';
-import { FeedSchedulingService } from './feed-scheduling.service';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { ConfigService } from '@nestjs/config';
-import { CloneFeedInputProperties } from './dto/CloneFeedInput.dto';
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Feed, FeedDocument, FeedModel } from "./entities/feed.entity";
+import { DetailedFeed } from "./types/detailed-feed.type";
+import { Types, FilterQuery } from "mongoose";
+import _ from "lodash";
+import { FailRecord, FailRecordModel } from "./entities/fail-record.entity";
+import { FeedStatus } from "./types/FeedStatus.type";
+import dayjs from "dayjs";
+import { FeedSchedulingService } from "./feed-scheduling.service";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { ConfigService } from "@nestjs/config";
+import { CloneFeedInputProperties } from "./dto/CloneFeedInput.dto";
 import {
   FeedSubscriber,
   FeedSubscriberModel,
-} from './entities/feed-subscriber.entity';
-import { FeedFetcherService } from '../../services/feed-fetcher/feed-fetcher.service';
-import logger from '../../utils/logger';
-import { DiscordAuthService } from '../discord-auth/discord-auth.service';
-import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
+} from "./entities/feed-subscriber.entity";
+import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
+import logger from "../../utils/logger";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
+import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import {
   BannedFeedException,
   FeedLimitReachedException,
   MissingChannelException,
   MissingChannelPermissionsException,
   UserMissingManageGuildException,
-} from './exceptions';
-import { SupportersService } from '../supporters/supporters.service';
-import { BannedFeed, BannedFeedModel } from './entities/banned-feed.entity';
-import { DiscordGuildChannel } from '../../common';
-import { DiscordPermissionsService } from '../discord-auth/discord-permissions.service';
+} from "./exceptions";
+import { SupportersService } from "../supporters/supporters.service";
+import { BannedFeed, BannedFeedModel } from "./entities/banned-feed.entity";
+import { DiscordGuildChannel } from "../../common";
+import { DiscordPermissionsService } from "../discord-auth/discord-permissions.service";
 import {
   SEND_CHANNEL_MESSAGE,
   VIEW_CHANNEL,
-} from '../discord-auth/constants/permissions';
+} from "../discord-auth/constants/permissions";
 import {
   FeedFilteredFormat,
   FeedFilteredFormatModel,
-} from './entities/feed-filtered-format.entity';
+} from "./entities/feed-filtered-format.entity";
 
 interface UpdateFeedInput {
   title?: string;
@@ -80,7 +80,7 @@ export class FeedsService {
     private readonly configService: ConfigService,
     private readonly discordAuthService: DiscordAuthService,
     private readonly supportersService: SupportersService,
-    private readonly discordPermissionsService: DiscordPermissionsService,
+    private readonly discordPermissionsService: DiscordPermissionsService
   ) {}
 
   async addFeed(
@@ -95,7 +95,7 @@ export class FeedsService {
       url: string;
       channelId: string;
       isFeedV2: boolean;
-    },
+    }
   ) {
     let channel: DiscordGuildChannel;
 
@@ -121,19 +121,19 @@ export class FeedsService {
 
     const userManagesGuild = await this.discordAuthService.userManagesGuild(
       userAccessToken,
-      channel.guild_id,
+      channel.guild_id
     );
 
     if (!userManagesGuild) {
       logger.info(
         `Blocked user from adding feed to guild ${channel.guild_id} ` +
-          `due to missing manage permissions`,
+          `due to missing manage permissions`
       );
       throw new UserMissingManageGuildException();
     }
 
     const remainingAvailableFeeds = await this.getRemainingFeedLimitCount(
-      channel.guild_id,
+      channel.guild_id
     );
 
     if (remainingAvailableFeeds <= 0) {
@@ -156,7 +156,7 @@ export class FeedsService {
     if (
       !(await this.discordPermissionsService.botHasPermissionInChannel(
         channel,
-        [SEND_CHANNEL_MESSAGE, VIEW_CHANNEL],
+        [SEND_CHANNEL_MESSAGE, VIEW_CHANNEL]
       ))
     ) {
       throw new MissingChannelPermissionsException();
@@ -176,7 +176,7 @@ export class FeedsService {
       {
         limit: 1,
         skip: 0,
-      },
+      }
     );
 
     return withDetails[0];
@@ -205,7 +205,7 @@ export class FeedsService {
       {
         limit: 1,
         skip: 0,
-      },
+      }
     );
 
     const matchedFeed = feeds[0];
@@ -223,7 +223,7 @@ export class FeedsService {
       search?: string;
       limit: number;
       offset: number;
-    },
+    }
   ): Promise<DetailedFeed[]> {
     const feeds = await this.findFeeds(
       {
@@ -233,7 +233,7 @@ export class FeedsService {
         search: options.search,
         limit: options.limit,
         skip: options.offset,
-      },
+      }
     );
 
     return feeds;
@@ -243,7 +243,7 @@ export class FeedsService {
     serverId: string,
     options?: {
       search?: string;
-    },
+    }
   ): Promise<number> {
     const query: FilterQuery<Feed> = {
       guild: serverId,
@@ -252,10 +252,10 @@ export class FeedsService {
     if (options?.search) {
       query.$or = [
         {
-          title: new RegExp(_.escapeRegExp(options.search), 'i'),
+          title: new RegExp(_.escapeRegExp(options.search), "i"),
         },
         {
-          url: new RegExp(_.escapeRegExp(options.search), 'i'),
+          url: new RegExp(_.escapeRegExp(options.search), "i"),
         },
       ];
     }
@@ -265,7 +265,7 @@ export class FeedsService {
 
   async updateOne(
     feedId: string | Types.ObjectId,
-    input: UpdateFeedInput,
+    input: UpdateFeedInput
   ): Promise<DetailedFeed> {
     const existingFeed = await this.feedModel.findById(feedId).lean();
 
@@ -275,12 +275,12 @@ export class FeedsService {
 
     const strippedUpdateObject: UpdateFeedInput = _.omitBy(
       input,
-      _.isUndefined,
+      _.isUndefined
     );
 
     const webhookUpdates = this.getUpdateWebhookObject(
       existingFeed.webhook,
-      input,
+      input
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -343,7 +343,7 @@ export class FeedsService {
     if (strippedUpdateObject.channelId) {
       await this.checkFeedGuildChannelIsValid(
         existingFeed.guild,
-        strippedUpdateObject.channelId,
+        strippedUpdateObject.channelId
       );
       updateObject.$set.channel = strippedUpdateObject.channelId;
     }
@@ -352,7 +352,7 @@ export class FeedsService {
       {
         _id: feedId,
       },
-      updateObject,
+      updateObject
     );
 
     const foundFeeds = await this.findFeeds(
@@ -362,7 +362,7 @@ export class FeedsService {
       {
         limit: 1,
         skip: 0,
-      },
+      }
     );
 
     return foundFeeds[0];
@@ -391,7 +391,7 @@ export class FeedsService {
       {
         limit: 1,
         skip: 0,
-      },
+      }
     );
 
     return feeds[0];
@@ -403,7 +403,7 @@ export class FeedsService {
       search?: string;
       limit: number;
       skip: number;
-    },
+    }
   ): Promise<DetailedFeed[]> {
     const match = {
       ...filter,
@@ -412,10 +412,10 @@ export class FeedsService {
     if (options.search) {
       match.$or = [
         {
-          title: new RegExp(_.escapeRegExp(options.search), 'i'),
+          title: new RegExp(_.escapeRegExp(options.search), "i"),
         },
         {
-          url: new RegExp(_.escapeRegExp(options.search), 'i'),
+          url: new RegExp(_.escapeRegExp(options.search), "i"),
         },
       ];
     }
@@ -437,16 +437,16 @@ export class FeedsService {
       },
       {
         $lookup: {
-          from: 'fail_records',
-          localField: 'url',
-          foreignField: '_id',
-          as: 'failRecord',
+          from: "fail_records",
+          localField: "url",
+          foreignField: "_id",
+          as: "failRecord",
         },
       },
       {
         $addFields: {
           failRecord: {
-            $first: '$failRecord',
+            $first: "$failRecord",
           },
         },
       },
@@ -458,7 +458,7 @@ export class FeedsService {
           _id: feed._id.toHexString(),
           guild: feed.guild,
           url: feed.url,
-        })),
+        }))
       );
 
     const withStatuses = feeds.map((feed, index) => {
@@ -504,24 +504,24 @@ export class FeedsService {
   async cloneFeed(
     sourceFeed: Feed,
     targetFeedIds: string[],
-    properties: CloneFeedInputProperties[],
+    properties: CloneFeedInputProperties[]
   ) {
     const propertyMap: Partial<
       Record<CloneFeedInputProperties, (keyof Feed)[]>
     > = {
-      COMPARISONS: ['ncomparisons', 'pcomparisons'],
-      FILTERS: ['filters', 'rfilters'],
-      MESSAGE: ['text', 'embeds'],
+      COMPARISONS: ["ncomparisons", "pcomparisons"],
+      FILTERS: ["filters", "rfilters"],
+      MESSAGE: ["text", "embeds"],
       MISC_OPTIONS: [
-        'checkDates',
-        'checkTitles',
-        'imgPreviews',
-        'imgLinksExistence',
-        'formatTables',
-        'split',
+        "checkDates",
+        "checkTitles",
+        "imgPreviews",
+        "imgLinksExistence",
+        "formatTables",
+        "split",
       ],
-      WEBHOOK: ['webhook'],
-      REGEXOPS: ['regexOps'],
+      WEBHOOK: ["webhook"],
+      REGEXOPS: ["regexOps"],
     };
 
     const toUpdate = {
@@ -548,7 +548,7 @@ export class FeedsService {
           $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
         },
       },
-      toUpdate,
+      toUpdate
     );
 
     const foundFeeds = await this.findFeeds(
@@ -560,7 +560,7 @@ export class FeedsService {
       {
         limit: targetFeedIds.length,
         skip: 0,
-      },
+      }
     );
 
     return foundFeeds;
@@ -584,7 +584,7 @@ export class FeedsService {
 
   private async checkFeedGuildChannelIsValid(
     guildId: string,
-    channelId: string,
+    channelId: string
   ) {
     let channel: DiscordGuildChannel;
 
@@ -595,7 +595,7 @@ export class FeedsService {
         `Skipped updating feed channel because failed to get channel`,
         {
           stack: err.stack,
-        },
+        }
       );
 
       if (err instanceof DiscordAPIError) {
@@ -627,14 +627,14 @@ export class FeedsService {
   }
 
   private getUpdateWebhookObject(
-    existingFeedWebhook: Feed['webhook'],
-    updateObject: UpdateFeedInput,
+    existingFeedWebhook: Feed["webhook"],
+    updateObject: UpdateFeedInput
   ) {
-    if (updateObject.webhook?.id === '') {
+    if (updateObject.webhook?.id === "") {
       return {
         $set: {},
         $unset: {
-          webhook: '',
+          webhook: "",
         },
       };
     }
@@ -646,21 +646,21 @@ export class FeedsService {
       $unset: {},
     };
 
-    if (typeof updateObject.webhook?.id === 'string') {
+    if (typeof updateObject.webhook?.id === "string") {
       toSet.$set.webhook.id = updateObject.webhook.id;
 
-      if (typeof updateObject.webhook?.token === 'string') {
+      if (typeof updateObject.webhook?.token === "string") {
         toSet.$set.webhook.url =
           `https://discord.com/api/v9/webhooks/${updateObject.webhook.id}` +
           `/${updateObject.webhook.token}`;
       }
     }
 
-    if (typeof updateObject.webhook?.name === 'string') {
+    if (typeof updateObject.webhook?.name === "string") {
       toSet.$set.webhook.name = updateObject.webhook.name;
     }
 
-    if (typeof updateObject.webhook?.iconUrl === 'string') {
+    if (typeof updateObject.webhook?.iconUrl === "string") {
       toSet.$set.webhook.avatar = updateObject.webhook.iconUrl;
     }
 
@@ -693,7 +693,7 @@ export class FeedsService {
 
   private async cloneSubscribers(
     sourceFeedId: string,
-    targetFeedIds: string[],
+    targetFeedIds: string[]
   ) {
     const subscribers: FeedSubscriber[] = await this.feedSubscriberModel
       .find({
@@ -734,13 +734,13 @@ export class FeedsService {
    */
   private isValidFailRecord(
     failRecord: FailRecord | null,
-    requiredLifetimeHours = 18,
+    requiredLifetimeHours = 18
   ) {
     if (!failRecord) {
       return false;
     }
 
-    const hoursDiff = dayjs().diff(dayjs(failRecord.failedAt), 'hours');
+    const hoursDiff = dayjs().diff(dayjs(failRecord.failedAt), "hours");
 
     return hoursDiff >= requiredLifetimeHours;
   }

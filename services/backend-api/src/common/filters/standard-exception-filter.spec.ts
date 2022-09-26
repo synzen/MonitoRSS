@@ -1,10 +1,10 @@
-import { ArgumentsHost, HttpStatus } from '@nestjs/common';
-import logger from '../../utils/logger';
-import { ApiErrorCode, API_ERROR_MESSAGES } from '../constants/api-errors';
-import { StandardException } from '../exceptions/standard-exception.exception';
-import { StandardBaseExceptionFilter } from './standard-exception-filter';
+import { ArgumentsHost, HttpStatus } from "@nestjs/common";
+import logger from "../../utils/logger";
+import { ApiErrorCode, API_ERROR_MESSAGES } from "../constants/api-errors";
+import { StandardException } from "../exceptions/standard-exception.exception";
+import { StandardBaseExceptionFilter } from "./standard-exception-filter";
 
-jest.mock('../../utils/logger');
+jest.mock("../../utils/logger");
 
 class MockException extends StandardException {}
 class UnhandledMockException extends StandardException {}
@@ -23,7 +23,7 @@ class TestExceptionFilter extends StandardBaseExceptionFilter {
   exceptions = exceptionsRecord;
 }
 
-describe('StandardExceptionFilter', () => {
+describe("StandardExceptionFilter", () => {
   let filter: StandardBaseExceptionFilter;
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe('StandardExceptionFilter', () => {
     jest.resetAllMocks();
   });
 
-  describe('catch', () => {
+  describe("catch", () => {
     const exceptionDetails = {
       code: ApiErrorCode.FEED_INVALID,
       message: API_ERROR_MESSAGES.FEED_INVALID,
@@ -43,7 +43,7 @@ describe('StandardExceptionFilter', () => {
 
     beforeEach(() => {
       jest
-        .spyOn(filter, 'getExceptionDetails')
+        .spyOn(filter, "getExceptionDetails")
         .mockReturnValue(exceptionDetails);
 
       code.mockReturnValue({
@@ -59,7 +59,7 @@ describe('StandardExceptionFilter', () => {
       } as never;
     });
 
-    it('returns the correct status for a non-standard exception', () => {
+    it("returns the correct status for a non-standard exception", () => {
       const exception = new Error();
 
       filter.catch(exception, host);
@@ -74,7 +74,7 @@ describe('StandardExceptionFilter', () => {
       });
     });
 
-    it('returns suberrors for a standard exception if they exist', () => {
+    it("returns suberrors for a standard exception if they exist", () => {
       const exception = new MockException([
         new MockException(),
         new MockException(),
@@ -101,10 +101,10 @@ describe('StandardExceptionFilter', () => {
       });
     });
 
-    it('logs internal server errors', () => {
+    it("logs internal server errors", () => {
       const exception = new Error();
 
-      jest.spyOn(filter, 'getExceptionDetails').mockReturnValue({
+      jest.spyOn(filter, "getExceptionDetails").mockReturnValue({
         code: ApiErrorCode.INTERNAL_ERROR,
         message: API_ERROR_MESSAGES.INTERNAL_ERROR,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -116,9 +116,9 @@ describe('StandardExceptionFilter', () => {
     });
   });
 
-  describe('getExceptionDetails', () => {
-    it('returns internal server error if it is not a standard exception', async () => {
-      const exception = new Error('test');
+  describe("getExceptionDetails", () => {
+    it("returns internal server error if it is not a standard exception", async () => {
+      const exception = new Error("test");
 
       const details = filter.getExceptionDetails(exception);
 
@@ -126,7 +126,7 @@ describe('StandardExceptionFilter', () => {
       expect(details.code).toBe(ApiErrorCode.INTERNAL_ERROR);
     });
 
-    it('returns interanl error if standard exception is unhandled', async () => {
+    it("returns interanl error if standard exception is unhandled", async () => {
       const exception = new UnhandledMockException();
 
       const details = filter.getExceptionDetails(exception);
@@ -135,7 +135,7 @@ describe('StandardExceptionFilter', () => {
       expect(details.code).toBe(ApiErrorCode.INTERNAL_ERROR);
     });
 
-    it('returns the status, message, and code for a handled exception', () => {
+    it("returns the status, message, and code for a handled exception", () => {
       const exception = new MockException();
 
       const details = filter.getExceptionDetails(exception);
@@ -143,7 +143,7 @@ describe('StandardExceptionFilter', () => {
       expect(details.status).toBe(HttpStatus.BAD_REQUEST);
       expect(details.code).toBe(ApiErrorCode.FEED_INVALID);
       expect(details.message).toEqual(
-        API_ERROR_MESSAGES[ApiErrorCode.FEED_INVALID],
+        API_ERROR_MESSAGES[ApiErrorCode.FEED_INVALID]
       );
     });
   });

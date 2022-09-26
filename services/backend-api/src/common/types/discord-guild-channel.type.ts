@@ -1,6 +1,6 @@
 interface ChannelPermissionOverwrite {
   id: string;
-  type: 'role' | 'member';
+  type: "role" | "member";
   allow: string;
   deny: string;
 }

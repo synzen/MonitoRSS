@@ -1,24 +1,24 @@
-import { SessionAccessToken } from '../discord-auth/types/SessionAccessToken.type';
-import { DiscordUsersController } from './discord-users.controller';
-import { GetMeOutputDto } from './dto';
-import { PartialUserGuildFormatted } from './types/PartialUserGuild.type';
+import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import { DiscordUsersController } from "./discord-users.controller";
+import { GetMeOutputDto } from "./dto";
+import { PartialUserGuildFormatted } from "./types/PartialUserGuild.type";
 
-describe('DiscordUsersController', () => {
+describe("DiscordUsersController", () => {
   let controller: DiscordUsersController;
   const discordUsersService = {
     getUser: jest.fn(),
     getGuilds: jest.fn(),
   };
   const discordAccessToken: SessionAccessToken = {
-    access_token: 'abc',
+    access_token: "abc",
     discord: {
-      id: '123',
+      id: "123",
     },
     expiresAt: 1,
     expires_in: 3600,
-    refresh_token: 'def',
-    scope: 'guilds',
-    token_type: 'Bearer',
+    refresh_token: "def",
+    scope: "guilds",
+    token_type: "Bearer",
   };
 
   beforeEach(() => {
@@ -26,14 +26,14 @@ describe('DiscordUsersController', () => {
     controller = new DiscordUsersController(discordUsersService as never);
   });
 
-  describe('getMe', () => {
-    it('returns correctly', async () => {
+  describe("getMe", () => {
+    it("returns correctly", async () => {
       const discordUser = {
-        id: 'id',
-        username: 'username',
-        avatarUrl: 'avatarUrl',
+        id: "id",
+        username: "username",
+        avatarUrl: "avatarUrl",
         supporter: {
-          guilds: ['1'],
+          guilds: ["1"],
           maxFeeds: 10,
           maxGuilds: 10,
           expireAt: new Date(),
@@ -54,14 +54,14 @@ describe('DiscordUsersController', () => {
       };
 
       await expect(controller.getMe(discordAccessToken)).resolves.toEqual(
-        expectedResponse,
+        expectedResponse
       );
     });
-    it('returns correctly without supporter', async () => {
+    it("returns correctly without supporter", async () => {
       const discordUser = {
-        id: 'id',
-        username: 'username',
-        avatarUrl: 'avatarUrl',
+        id: "id",
+        username: "username",
+        avatarUrl: "avatarUrl",
       };
       discordUsersService.getUser.mockResolvedValue(discordUser);
 
@@ -72,20 +72,20 @@ describe('DiscordUsersController', () => {
       };
 
       await expect(controller.getMe(discordAccessToken)).resolves.toEqual(
-        expectedResponse,
+        expectedResponse
       );
     });
   });
 
-  describe('getMyServers', () => {
-    it('returns the response correctly', async () => {
+  describe("getMyServers", () => {
+    it("returns the response correctly", async () => {
       const discordGuilds: PartialUserGuildFormatted[] = [
         {
-          id: 'guild_id',
-          name: 'test',
-          iconUrl: 'iconUrl',
+          id: "guild_id",
+          name: "test",
+          iconUrl: "iconUrl",
           owner: true,
-          permissions: '123',
+          permissions: "123",
           benefits: {
             maxFeeds: 10,
             webhooks: true,
@@ -110,7 +110,7 @@ describe('DiscordUsersController', () => {
       };
 
       await expect(
-        controller.getMyServers(discordAccessToken),
+        controller.getMyServers(discordAccessToken)
       ).resolves.toEqual(expectedResponse);
     });
   });

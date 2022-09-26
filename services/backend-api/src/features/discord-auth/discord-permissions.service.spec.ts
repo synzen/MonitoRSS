@@ -1,17 +1,17 @@
-import { ConfigService } from '@nestjs/config';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
-import { createTestDiscordGuildMember } from '../../test/data/discord-guild-member.test-data';
-import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
-import { createTestDiscordGuild } from '../../test/data/discord-guild.test-data';
+import { ConfigService } from "@nestjs/config";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { createTestDiscordGuildChannel } from "../../test/data/discord-guild-channel.test-data";
+import { createTestDiscordGuildMember } from "../../test/data/discord-guild-member.test-data";
+import { createTestDiscordGuildRole } from "../../test/data/discord-guild-role.test-data";
+import { createTestDiscordGuild } from "../../test/data/discord-guild.test-data";
 import {
   ADMINISTRATOR,
   SEND_CHANNEL_MESSAGE,
   VIEW_CHANNEL,
-} from './constants/permissions';
-import { DiscordPermissionsService } from './discord-permissions.service';
+} from "./constants/permissions";
+import { DiscordPermissionsService } from "./discord-permissions.service";
 
-describe('DiscordPermissionsService', () => {
+describe("DiscordPermissionsService", () => {
   const discordApiService: DiscordAPIService = {
     getGuild: jest.fn(),
     getChannel: jest.fn(),
@@ -25,20 +25,20 @@ describe('DiscordPermissionsService', () => {
   beforeEach(() => {
     permissionsService = new DiscordPermissionsService(
       discordApiService,
-      configService,
+      configService
     );
   });
 
-  describe('computeBasePermissions', () => {
-    it('returns correct permissions if @everyone role has administrator', () => {
+  describe("computeBasePermissions", () => {
+    it("returns correct permissions if @everyone role has administrator", () => {
       const guildMember = createTestDiscordGuildMember({
-        roles: ['1', 'everyone-role'],
+        roles: ["1", "everyone-role"],
       });
       const guild = createTestDiscordGuild({
-        id: 'everyone-role',
+        id: "everyone-role",
         roles: [
           createTestDiscordGuildRole({
-            id: 'everyone-role',
+            id: "everyone-role",
             permissions: ADMINISTRATOR.toString(),
           }),
         ],
@@ -46,59 +46,59 @@ describe('DiscordPermissionsService', () => {
 
       const basePermissions = permissionsService.computeBasePermissions(
         guildMember,
-        guild,
+        guild
       );
 
       expect(basePermissions & ADMINISTRATOR).toEqual(ADMINISTRATOR);
     });
 
-    it('returns correct permissions if one of user roles has administrator', () => {
+    it("returns correct permissions if one of user roles has administrator", () => {
       const guildMember = createTestDiscordGuildMember({
-        roles: ['guild-id', 'administrator-role', 'random-role'],
+        roles: ["guild-id", "administrator-role", "random-role"],
       });
       const guild = createTestDiscordGuild({
-        id: 'guild-id',
+        id: "guild-id",
         roles: [
           createTestDiscordGuildRole({
-            id: 'administrator-role',
+            id: "administrator-role",
             permissions: ADMINISTRATOR.toString(),
           }),
           createTestDiscordGuildRole({
-            id: 'guild-id',
-            permissions: '0',
+            id: "guild-id",
+            permissions: "0",
           }),
           createTestDiscordGuildRole({
-            id: 'random-role',
-            permissions: '0',
+            id: "random-role",
+            permissions: "0",
           }),
         ],
       });
 
       const basePermissions = permissionsService.computeBasePermissions(
         guildMember,
-        guild,
+        guild
       );
 
       expect(basePermissions & ADMINISTRATOR).toEqual(ADMINISTRATOR);
     });
 
-    it('returns correct permissions if one of the users has a non-administrator role', () => {
+    it("returns correct permissions if one of the users has a non-administrator role", () => {
       const guildMember = createTestDiscordGuildMember({
-        roles: ['random-role-1', 'random-role-2'],
+        roles: ["random-role-1", "random-role-2"],
         user: {
-          id: 'user-id',
+          id: "user-id",
         },
       });
       const guild = createTestDiscordGuild({
-        id: 'random-role-1',
-        owner_id: 'owner-id',
+        id: "random-role-1",
+        owner_id: "owner-id",
         roles: [
           createTestDiscordGuildRole({
-            id: 'random-role-1',
+            id: "random-role-1",
             permissions: VIEW_CHANNEL.toString(),
           }),
           createTestDiscordGuildRole({
-            id: 'random-role-2',
+            id: "random-role-2",
             permissions: SEND_CHANNEL_MESSAGE.toString(),
           }),
         ],
@@ -106,17 +106,17 @@ describe('DiscordPermissionsService', () => {
 
       const basePermissions = permissionsService.computeBasePermissions(
         guildMember,
-        guild,
+        guild
       );
 
       expect(basePermissions & SEND_CHANNEL_MESSAGE).toEqual(
-        SEND_CHANNEL_MESSAGE,
+        SEND_CHANNEL_MESSAGE
       );
     });
   });
 
-  describe('computeOverwritePermissions', () => {
-    it('returns administrator if base permission has administrator', () => {
+  describe("computeOverwritePermissions", () => {
+    it("returns administrator if base permission has administrator", () => {
       const perm = SEND_CHANNEL_MESSAGE | ADMINISTRATOR;
       const member = createTestDiscordGuildMember();
       const channel = createTestDiscordGuildChannel();

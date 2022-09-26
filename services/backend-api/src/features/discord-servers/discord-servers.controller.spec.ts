@@ -1,11 +1,10 @@
-import { StreamableFile } from '@nestjs/common';
-import { createTestFeed } from '../../test/data/feeds.test-data';
-import { Feed } from '../feeds/entities/feed.entity';
-import { FeedStatus } from '../feeds/types/FeedStatus.type';
-import { DiscordServersController } from './discord-servers.controller';
-import { DiscordServersService } from './discord-servers.service';
+import { createTestFeed } from "../../test/data/feeds.test-data";
+import { Feed } from "../feeds/entities/feed.entity";
+import { FeedStatus } from "../feeds/types/FeedStatus.type";
+import { DiscordServersController } from "./discord-servers.controller";
+import { DiscordServersService } from "./discord-servers.service";
 
-describe('DiscordServersController', () => {
+describe("DiscordServersController", () => {
   let controller: DiscordServersController;
   let discordServersService: DiscordServersService;
 
@@ -19,12 +18,12 @@ describe('DiscordServersController', () => {
     controller = new DiscordServersController(discordServersService);
   });
 
-  describe('getServerStatus', () => {
-    it('should return the server status if server exists', async () => {
+  describe("getServerStatus", () => {
+    it("should return the server status if server exists", async () => {
       jest
-        .spyOn(discordServersService, 'getServer')
+        .spyOn(discordServersService, "getServer")
         .mockResolvedValue({} as never);
-      const serverId = 'serverId';
+      const serverId = "serverId";
 
       const result = await controller.getServerStatus(serverId);
 
@@ -35,9 +34,9 @@ describe('DiscordServersController', () => {
       });
     });
 
-    it('should return the server status if server does not exist', async () => {
-      jest.spyOn(discordServersService, 'getServer').mockResolvedValue(null);
-      const serverId = 'serverId';
+    it("should return the server status if server does not exist", async () => {
+      jest.spyOn(discordServersService, "getServer").mockResolvedValue(null);
+      const serverId = "serverId";
 
       const result = await controller.getServerStatus(serverId);
 
@@ -49,8 +48,8 @@ describe('DiscordServersController', () => {
     });
   });
 
-  describe('getServerFeeds', () => {
-    it('returns the response correctly formatted', async () => {
+  describe("getServerFeeds", () => {
+    it("returns the response correctly formatted", async () => {
       const mockFeeds: (Feed & { status: FeedStatus })[] = [
         {
           ...createTestFeed(),
@@ -63,14 +62,14 @@ describe('DiscordServersController', () => {
       ];
 
       jest
-        .spyOn(discordServersService, 'getServerFeeds')
+        .spyOn(discordServersService, "getServerFeeds")
         .mockResolvedValue(mockFeeds);
 
       jest
-        .spyOn(discordServersService, 'countServerFeeds')
+        .spyOn(discordServersService, "countServerFeeds")
         .mockResolvedValue(mockFeeds.length);
 
-      const response = await controller.getServerFeeds('server-1', {
+      const response = await controller.getServerFeeds("server-1", {
         limit: 1,
         offset: 0,
       });

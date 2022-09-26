@@ -3,10 +3,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { FeedsService } from '../feeds.service';
-import { DetailedFeed } from '../types/detailed-feed.type';
-import { Types } from 'mongoose';
+} from "@nestjs/common";
+import { FeedsService } from "../feeds.service";
+import { DetailedFeed } from "../types/detailed-feed.type";
+import { Types } from "mongoose";
 
 @Injectable()
 export class GetFeedPipe implements PipeTransform {

@@ -1,8 +1,8 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model } from 'mongoose';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Model } from "mongoose";
 
 @Schema({
-  collection: 'schedules',
+  collection: "schedules",
 })
 export class FeedSchedule {
   @Prop({

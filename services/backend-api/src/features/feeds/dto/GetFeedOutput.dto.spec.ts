@@ -1,7 +1,7 @@
-import { createTestFeed } from '../../../test/data/feeds.test-data';
-import { FeedStatus } from '../types/FeedStatus.type';
-import { DetailedFeed } from '../types/detailed-feed.type';
-import { GetFeedOutputDto } from './GetFeedOutput.dto';
+import { createTestFeed } from "../../../test/data/feeds.test-data";
+import { FeedStatus } from "../types/FeedStatus.type";
+import { DetailedFeed } from "../types/detailed-feed.type";
+import { GetFeedOutputDto } from "./GetFeedOutput.dto";
 
 const createDetailedFeed = (details?: Partial<DetailedFeed>): DetailedFeed => ({
   ...createTestFeed(),
@@ -10,14 +10,14 @@ const createDetailedFeed = (details?: Partial<DetailedFeed>): DetailedFeed => ({
   ...details,
 });
 
-describe('GetFeedOutputDto', () => {
-  describe('fromEntity', () => {
-    it('returns the formatted dto object', () => {
+describe("GetFeedOutputDto", () => {
+  describe("fromEntity", () => {
+    it("returns the formatted dto object", () => {
       const feed = createDetailedFeed({
         webhook: {
-          id: '1234',
-          name: 'webhook-name',
-          avatar: 'webhook-avatar',
+          id: "1234",
+          name: "webhook-name",
+          avatar: "webhook-avatar",
         },
       });
 
@@ -32,7 +32,7 @@ describe('GetFeedOutputDto', () => {
           url: feed.url,
           createdAt: feed.addedAt.toISOString(),
           refreshRateSeconds: feed.refreshRateSeconds,
-          text: feed.text || '',
+          text: feed.text || "",
           checkDates: feed.checkDates ?? true,
           checkTitles: feed.checkTitles || false,
           directSubscribers: feed.directSubscribers || false,
@@ -76,32 +76,32 @@ describe('GetFeedOutputDto', () => {
       });
     });
 
-    describe('failReason', () => {
-      it('returns fail reason if it exists', () => {
+    describe("failReason", () => {
+      it("returns fail reason if it exists", () => {
         const feed = createDetailedFeed({
-          failReason: 'test',
+          failReason: "test",
         });
 
         const result = GetFeedOutputDto.fromEntity(feed);
 
-        expect(result.result.failReason).toEqual('test');
+        expect(result.result.failReason).toEqual("test");
       });
     });
 
-    describe('disabledReason', () => {
-      it('returns disabledReason if it exists', () => {
+    describe("disabledReason", () => {
+      it("returns disabledReason if it exists", () => {
         const feed = createDetailedFeed({
-          disabledReason: 'test',
+          disabledReason: "test",
         });
 
         const result = GetFeedOutputDto.fromEntity(feed);
 
-        expect(result.result.disabledReason).toEqual('test');
+        expect(result.result.disabledReason).toEqual("test");
       });
     });
 
-    describe('status', () => {
-      it('returns the status', () => {
+    describe("status", () => {
+      it("returns the status", () => {
         const feed = createDetailedFeed({
           status: FeedStatus.DISABLED,
         });
@@ -112,8 +112,8 @@ describe('GetFeedOutputDto', () => {
       });
     });
 
-    describe('splitMessage', () => {
-      it('sets true correctly', () => {
+    describe("splitMessage", () => {
+      it("sets true correctly", () => {
         const testFeed = createDetailedFeed({
           split: {
             enabled: true,
@@ -125,7 +125,7 @@ describe('GetFeedOutputDto', () => {
         expect(result.result.splitMessage).toBe(true);
       });
 
-      it('sets false correctly', () => {
+      it("sets false correctly", () => {
         const testFeed = createDetailedFeed({
           split: {
             enabled: false,
@@ -137,7 +137,7 @@ describe('GetFeedOutputDto', () => {
         expect(result.result.splitMessage).toBe(false);
       });
 
-      it('sets false correctly when split is undefined', () => {
+      it("sets false correctly when split is undefined", () => {
         const testFeed = createDetailedFeed({
           split: undefined,
         });
@@ -148,7 +148,7 @@ describe('GetFeedOutputDto', () => {
       });
     });
 
-    it('does not add the webhook object if there is no webhook object', () => {
+    it("does not add the webhook object if there is no webhook object", () => {
       const feed = createTestFeed({});
       const feedWithRefreshRate: DetailedFeed = {
         ...feed,
@@ -161,14 +161,14 @@ describe('GetFeedOutputDto', () => {
       const result = GetFeedOutputDto.fromEntity(feedWithRefreshRate);
       expect(result.result.webhook).toBeUndefined();
     });
-    it('does not add the webhook object if there is no webhook id', () => {
+    it("does not add the webhook object if there is no webhook id", () => {
       const feed = createTestFeed({});
       const feedWithRefreshRate: DetailedFeed = {
         ...feed,
         refreshRateSeconds: 10,
         status: FeedStatus.OK,
         webhook: {
-          id: '',
+          id: "",
         },
       };
 
@@ -177,47 +177,47 @@ describe('GetFeedOutputDto', () => {
     });
   });
 
-  describe('getFeedFiltersDto', () => {
-    it('returns an empty array if there are no filters', () => {
+  describe("getFeedFiltersDto", () => {
+    it("returns an empty array if there are no filters", () => {
       const result = GetFeedOutputDto.getFeedFiltersDto();
       expect(result).toEqual([]);
     });
 
-    it('returns all values in their own object', () => {
+    it("returns all values in their own object", () => {
       const feedFilters = {
-        title: ['a', 'b'],
+        title: ["a", "b"],
       };
 
       const result = GetFeedOutputDto.getFeedFiltersDto(feedFilters);
 
       expect(result).toEqual([
         {
-          category: 'title',
-          value: 'a',
+          category: "title",
+          value: "a",
         },
         {
-          category: 'title',
-          value: 'b',
+          category: "title",
+          value: "b",
         },
       ]);
     });
 
-    it('returns all values sorted by category', () => {
+    it("returns all values sorted by category", () => {
       const feedFilters = {
-        title: ['a'],
-        description: ['b'],
+        title: ["a"],
+        description: ["b"],
       };
 
       const result = GetFeedOutputDto.getFeedFiltersDto(feedFilters);
 
       expect(result).toEqual([
         {
-          category: 'description',
-          value: 'b',
+          category: "description",
+          value: "b",
         },
         {
-          category: 'title',
-          value: 'a',
+          category: "title",
+          value: "a",
         },
       ]);
     });

@@ -1,4 +1,4 @@
-import { IsMongoId } from 'class-validator';
+import { IsMongoId } from "class-validator";
 
 export class DeleteFeedSubscriberInputDto {
   @IsMongoId()

@@ -1,8 +1,8 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model } from 'mongoose';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Model } from "mongoose";
 
 @Schema({
-  collection: 'fail_records',
+  collection: "fail_records",
 })
 export class FailRecord {
   @Prop({

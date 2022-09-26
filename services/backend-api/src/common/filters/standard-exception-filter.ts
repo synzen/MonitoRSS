@@ -4,13 +4,13 @@ import {
   ArgumentsHost,
   ExceptionFilter,
   HttpStatus,
-} from '@nestjs/common';
-import { FastifyReply } from 'fastify';
-import { ApiErrorResponse } from '../types/api-error.type';
-import logger from '../../utils/logger';
-import { inspect } from 'util';
-import { ApiErrorCode, API_ERROR_MESSAGES } from '../constants/api-errors';
-import { StandardException } from '../exceptions/standard-exception.exception';
+} from "@nestjs/common";
+import { FastifyReply } from "fastify";
+import { ApiErrorResponse } from "../types/api-error.type";
+import logger from "../../utils/logger";
+import { inspect } from "util";
+import { ApiErrorCode, API_ERROR_MESSAGES } from "../constants/api-errors";
+import { StandardException } from "../exceptions/standard-exception.exception";
 
 @Catch()
 export abstract class StandardBaseExceptionFilter implements ExceptionFilter {

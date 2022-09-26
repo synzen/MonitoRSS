@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
-import { CacheInterceptor, ExecutionContext, Injectable } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { getAccessTokenFromRequest } from '../../features/discord-auth/utils/get-access-token-from-session';
+import { CacheInterceptor, ExecutionContext, Injectable } from "@nestjs/common";
+import { FastifyRequest } from "fastify";
+import { getAccessTokenFromRequest } from "../../features/discord-auth/utils/get-access-token-from-session";
 
 @Injectable()
 export class HttpCacheInterceptor extends CacheInterceptor {

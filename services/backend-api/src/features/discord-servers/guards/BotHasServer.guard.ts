@@ -3,9 +3,9 @@ import {
   ExecutionContext,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { DiscordServersService } from '../discord-servers.service';
+} from "@nestjs/common";
+import { FastifyRequest } from "fastify";
+import { DiscordServersService } from "../discord-servers.service";
 
 @Injectable()
 export class BotHasServerGuard implements CanActivate {
@@ -18,14 +18,14 @@ export class BotHasServerGuard implements CanActivate {
 
     if (!serverId) {
       throw new Error(
-        'Server ID is missing while validating if bot has server',
+        "Server ID is missing while validating if bot has server"
       );
     }
 
     const server = await this.discordServersService.getServer(serverId);
 
     if (!server) {
-      throw new NotFoundException('Server not found');
+      throw new NotFoundException("Server not found");
     }
 
     return true;

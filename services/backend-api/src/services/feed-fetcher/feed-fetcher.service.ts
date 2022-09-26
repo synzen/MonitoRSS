@@ -1,12 +1,12 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import FeedParser from 'feedparser';
-import fetch from 'node-fetch';
-import { FeedData } from './types/FeedData.type';
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import FeedParser from "feedparser";
+import fetch from "node-fetch";
+import { FeedData } from "./types/FeedData.type";
 // @ts-ignore
-import ArticleIDResolver from './utils/ArticleIDResolver';
+import ArticleIDResolver from "./utils/ArticleIDResolver";
 // @ts-ignore
-import Article from './utils/Article';
+import Article from "./utils/Article";
 import {
   InvalidFeedException,
   FeedParseException,
@@ -16,9 +16,9 @@ import {
   FeedUnauthorizedException,
   FeedForbiddenException,
   FeedInternalErrorException,
-} from './exceptions';
-import { FeedFetcherApiService } from './feed-fetcher-api.service';
-import { Readable } from 'stream';
+} from "./exceptions";
+import { FeedFetcherApiService } from "./feed-fetcher-api.service";
+import { Readable } from "stream";
 
 interface FetchFeedOptions {
   formatTables?: boolean;
@@ -39,12 +39,12 @@ interface FeedFetchResult {
 export class FeedFetcherService {
   constructor(
     private readonly configService: ConfigService,
-    private feedFetcherApiService: FeedFetcherApiService,
+    private feedFetcherApiService: FeedFetcherApiService
   ) {}
 
   async fetchFeed(
     url: string,
-    options: FetchFeedOptions,
+    options: FetchFeedOptions
   ): Promise<FeedFetchResult> {
     let inputStream: NodeJS.ReadableStream;
 
@@ -67,13 +67,13 @@ export class FeedFetcherService {
   }
 
   async fetchFeedStream(url: string): Promise<NodeJS.ReadableStream> {
-    const userAgent = this.configService.get<string>('FEED_USER_AGENT');
+    const userAgent = this.configService.get<string>("FEED_USER_AGENT");
 
     const res = await fetch(url, {
       timeout: 15000,
       follow: 5,
       headers: {
-        'user-agent': userAgent || '',
+        "user-agent": userAgent || "",
       },
     });
 
@@ -86,21 +86,21 @@ export class FeedFetcherService {
     url: string,
     options?: {
       getCachedResponse?: boolean;
-    },
+    }
   ): Promise<NodeJS.ReadableStream> {
     const result = await this.feedFetcherApiService.fetchAndSave(url, options);
 
-    if (result.requestStatus === 'error') {
-      throw new Error('Prior feed requests have failed');
+    if (result.requestStatus === "error") {
+      throw new Error("Prior feed requests have failed");
     }
 
-    if (result.requestStatus === 'parse_error') {
+    if (result.requestStatus === "parse_error") {
       throw new FeedParseException(
-        `Feed host failed to return a valid, parseable feed`,
+        `Feed host failed to return a valid, parseable feed`
       );
     }
 
-    if (result.requestStatus === 'success') {
+    if (result.requestStatus === "success") {
       this.handleStatusCode(result.response.statusCode);
       const readable = new Readable();
       readable.push(result.response.body);
@@ -109,14 +109,14 @@ export class FeedFetcherService {
       return readable;
     }
 
-    if (result.requestStatus === 'pending') {
+    if (result.requestStatus === "pending") {
       const readable = new Readable();
       readable.push(null);
 
       return readable;
     }
 
-    throw new Error(`Unhandled request status: ${result['requestStatus']}`);
+    throw new Error(`Unhandled request status: ${result["requestStatus"]}`);
   }
 
   async parseFeed(inputStream: NodeJS.ReadableStream): Promise<FeedData> {
@@ -129,25 +129,25 @@ export class FeedFetcherService {
         reject(new FeedParseTimeoutException());
       }, 10000);
 
-      inputStream.on('error', (err: Error) => {
+      inputStream.on("error", (err: Error) => {
         // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
         reject(new FeedParseException(err.message));
       });
 
-      feedparser.on('error', (err: Error) => {
-        if (err.message === 'Not a feed') {
+      feedparser.on("error", (err: Error) => {
+        if (err.message === "Not a feed") {
           reject(
             new InvalidFeedException(
-              'That is a not a valid feed. Note that you cannot add just any link. ' +
-                'You may check if it is a valid feed by using online RSS feed validators',
-            ),
+              "That is a not a valid feed. Note that you cannot add just any link. " +
+                "You may check if it is a valid feed by using online RSS feed validators"
+            )
           );
         } else {
           reject(new FeedParseException(err.message));
         }
       });
 
-      feedparser.on('readable', function (this: FeedParser) {
+      feedparser.on("readable", function (this: FeedParser) {
         let item;
 
         do {
@@ -160,7 +160,7 @@ export class FeedFetcherService {
         } while (item);
       });
 
-      feedparser.on('end', () => {
+      feedparser.on("end", () => {
         clearTimeout(timeout);
 
         if (articleList.length === 0) {
@@ -203,7 +203,7 @@ export class FeedFetcherService {
 
   private convertRawObjectsToArticles(
     feedparserItems: FeedParser.Item[],
-    feedOptions?: FetchFeedOptions,
+    feedOptions?: FetchFeedOptions
   ): Article[] {
     return feedparserItems.map(
       (item) =>
@@ -215,13 +215,13 @@ export class FeedFetcherService {
           {
             dateFallback: false,
             timeFallback: false,
-            dateFormat: 'ddd, D MMMM YYYY, h:mm A z',
+            dateFormat: "ddd, D MMMM YYYY, h:mm A z",
             formatTables: false,
             imgLinksExistence: true,
             imgPreviews: true,
-            timezone: 'UTC',
-          },
-        ),
+            timezone: "UTC",
+          }
+        )
     );
   }
 }

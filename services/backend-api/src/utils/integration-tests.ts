@@ -1,7 +1,7 @@
-import { ModuleMetadata } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import { stopMemoryServer } from './mongoose-test.module';
+import { ModuleMetadata } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { Test, TestingModule } from "@nestjs/testing";
+import { stopMemoryServer } from "./mongoose-test.module";
 
 let testingModule: TestingModule;
 

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Catch, ArgumentsHost, HttpException } from '@nestjs/common';
-import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
-import { Response } from 'express';
-import * as util from 'util';
-import logger from '../../utils/logger';
+import { Catch, ArgumentsHost, HttpException } from "@nestjs/common";
+import { BaseExceptionFilter, HttpAdapterHost } from "@nestjs/core";
+import { Response } from "express";
+import * as util from "util";
+import logger from "../../utils/logger";
 
 @Catch()
 export class AllExceptionsFilter extends BaseExceptionFilter {
@@ -37,7 +37,7 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
       `Unhandled error - ${exception.message || util.inspect(exception)}`,
       {
         exception: exception.stack || exception,
-      },
+      }
     );
 
     super.catch(exception, host);

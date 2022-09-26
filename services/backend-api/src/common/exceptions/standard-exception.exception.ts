@@ -2,7 +2,7 @@ export class StandardException extends Error {
   subErrors: StandardException[];
 
   constructor(message?: string | StandardException[]) {
-    if (typeof message === 'string') {
+    if (typeof message === "string") {
       super(message);
     } else {
       super();

@@ -1,14 +1,14 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types, Model } from 'mongoose';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types, Model } from "mongoose";
 
 export enum PatronStatus {
-  ACTIVE = 'active_patron',
-  FORMER = 'former_patron',
-  DECLINED = 'declined_patron',
+  ACTIVE = "active_patron",
+  FORMER = "former_patron",
+  DECLINED = "declined_patron",
 }
 
 @Schema({
-  collection: 'patrons',
+  collection: "patrons",
 })
 export class Patron {
   _id: Types.ObjectId;

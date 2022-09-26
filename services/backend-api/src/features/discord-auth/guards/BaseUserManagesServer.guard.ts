@@ -4,10 +4,10 @@ import {
   ForbiddenException,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { DiscordAuthService } from '../discord-auth.service';
-import { getAccessTokenFromRequest } from '../utils/get-access-token-from-session';
+} from "@nestjs/common";
+import { FastifyRequest } from "fastify";
+import { DiscordAuthService } from "../discord-auth.service";
+import { getAccessTokenFromRequest } from "../utils/get-access-token-from-session";
 
 @Injectable()
 export abstract class BaseUserManagesServerGuard implements CanActivate {
@@ -22,14 +22,14 @@ export abstract class BaseUserManagesServerGuard implements CanActivate {
 
     if (!serverId) {
       throw new Error(
-        'Server ID is missing while validating if user manages server',
+        "Server ID is missing while validating if user manages server"
       );
     }
 
     const accessToken = this.getUserAccessToken(request);
     const managesGuild = await this.discordAuthService.userManagesGuild(
       accessToken,
-      serverId,
+      serverId
     );
 
     if (!managesGuild) {

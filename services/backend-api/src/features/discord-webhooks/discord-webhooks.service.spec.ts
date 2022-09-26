@@ -1,17 +1,17 @@
-import { ConfigService } from '@nestjs/config';
-import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { DiscordWebhooksService } from './discord-webhooks.service';
+import { ConfigService } from "@nestjs/config";
+import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { DiscordWebhooksService } from "./discord-webhooks.service";
 import {
   DiscordWebhook,
   DiscordWebhookType,
-} from './types/discord-webhook.type';
+} from "./types/discord-webhook.type";
 
-describe('DiscordWebhooksService', () => {
+describe("DiscordWebhooksService", () => {
   let service: DiscordWebhooksService;
   let discordApiService: DiscordAPIService;
   let configService: ConfigService;
-  const botClientId = 'bot-client-id';
+  const botClientId = "bot-client-id";
 
   beforeEach(() => {
     configService = {
@@ -23,28 +23,28 @@ describe('DiscordWebhooksService', () => {
     service.clientId = botClientId;
   });
 
-  describe('getWebhooksOfServer', () => {
-    it('should return the incoming webhooks of server', async () => {
-      const serverId = 'serverId';
+  describe("getWebhooksOfServer", () => {
+    it("should return the incoming webhooks of server", async () => {
+      const serverId = "serverId";
       const webhooks: DiscordWebhook[] = [
         {
-          id: '12345',
+          id: "12345",
           type: DiscordWebhookType.INCOMING,
-          channel_id: '12345',
+          channel_id: "12345",
           application_id: botClientId,
-          name: 'test',
+          name: "test",
         },
         {
-          id: '12345',
+          id: "12345",
           type: DiscordWebhookType.INCOMING,
-          channel_id: '12345',
+          channel_id: "12345",
           application_id: botClientId,
-          name: 'test2',
+          name: "test2",
         },
       ];
 
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(webhooks);
 
       const result = await service.getWebhooksOfServer(serverId);
@@ -52,26 +52,26 @@ describe('DiscordWebhooksService', () => {
       expect(result).toEqual(webhooks);
     });
     it('does not return webhooks that are not of type "incoming"', async () => {
-      const serverId = 'serverId';
+      const serverId = "serverId";
       const webhooks: DiscordWebhook[] = [
         {
-          id: '12345',
+          id: "12345",
           type: DiscordWebhookType.APPLICATION,
-          channel_id: '12345',
+          channel_id: "12345",
           application_id: botClientId,
-          name: 'test',
+          name: "test",
         },
         {
-          id: '12345',
+          id: "12345",
           type: DiscordWebhookType.CHANNEL_FOLLOWER,
-          channel_id: '12345',
+          channel_id: "12345",
           application_id: botClientId,
-          name: 'test2',
+          name: "test2",
         },
       ];
 
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(webhooks);
 
       const result = await service.getWebhooksOfServer(serverId);
@@ -79,39 +79,39 @@ describe('DiscordWebhooksService', () => {
       expect(result).toEqual([]);
     });
     it("does not return webhooks whose application id is not the bot's", async () => {
-      const serverId = 'serverId';
+      const serverId = "serverId";
       const webhooks: DiscordWebhook[] = [
         {
-          id: '12345',
+          id: "12345",
           type: DiscordWebhookType.INCOMING,
-          channel_id: '12345',
-          application_id: botClientId + '1',
-          name: 'test',
+          channel_id: "12345",
+          application_id: botClientId + "1",
+          name: "test",
         },
       ];
 
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(webhooks);
 
       const result = await service.getWebhooksOfServer(serverId);
 
       expect(result).toEqual([]);
     });
-    it('does return webhooks whose application id is null', async () => {
-      const serverId = 'serverId';
+    it("does return webhooks whose application id is null", async () => {
+      const serverId = "serverId";
       const webhooks: DiscordWebhook[] = [
         {
-          id: '12345',
+          id: "12345",
           type: DiscordWebhookType.INCOMING,
-          channel_id: '12345',
+          channel_id: "12345",
           application_id: null,
-          name: 'test',
+          name: "test",
         },
       ];
 
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(webhooks);
 
       const result = await service.getWebhooksOfServer(serverId);
@@ -120,41 +120,41 @@ describe('DiscordWebhooksService', () => {
     });
   });
 
-  describe('getWebhook', () => {
-    it('returns the webhook', async () => {
-      const webhookId = 'webhookId';
+  describe("getWebhook", () => {
+    it("returns the webhook", async () => {
+      const webhookId = "webhookId";
       const webhook: DiscordWebhook = {
-        id: '12345',
+        id: "12345",
         type: DiscordWebhookType.INCOMING,
-        channel_id: '12345',
+        channel_id: "12345",
         application_id: botClientId,
-        name: 'test',
+        name: "test",
       };
 
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(webhook);
 
       const result = await service.getWebhook(webhookId);
 
       expect(result).toEqual(webhook);
     });
-    it('returns null if the webhook does not exist', async () => {
-      const webhookId = 'webhookId';
+    it("returns null if the webhook does not exist", async () => {
+      const webhookId = "webhookId";
 
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
-        .mockRejectedValue(new DiscordAPIError('webhook not found', 404));
+        .spyOn(discordApiService, "executeBotRequest")
+        .mockRejectedValue(new DiscordAPIError("webhook not found", 404));
 
       const result = await service.getWebhook(webhookId);
 
       expect(result).toBeNull();
     });
-    it('throws an unhandled error', async () => {
-      const webhookId = 'webhookId';
-      const err = new Error('unhandled error');
+    it("throws an unhandled error", async () => {
+      const webhookId = "webhookId";
+      const err = new Error("unhandled error");
 
-      jest.spyOn(discordApiService, 'executeBotRequest').mockRejectedValue(err);
+      jest.spyOn(discordApiService, "executeBotRequest").mockRejectedValue(err);
 
       await expect(service.getWebhook(webhookId)).rejects.toThrow(err);
     });

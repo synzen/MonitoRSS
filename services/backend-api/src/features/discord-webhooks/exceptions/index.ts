@@ -1,1 +1,1 @@
-export * from './webhook-missing-permissions.exception';
+export * from "./webhook-missing-permissions.exception";

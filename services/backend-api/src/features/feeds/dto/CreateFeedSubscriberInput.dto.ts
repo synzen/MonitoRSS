@@ -1,5 +1,5 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { FeedSubscriberType } from '../entities/feed-subscriber.entity';
+import { IsEnum, IsNotEmpty, IsString } from "class-validator";
+import { FeedSubscriberType } from "../entities/feed-subscriber.entity";
 
 export class CreateFeedSubscriberInputDto {
   @IsEnum(FeedSubscriberType)

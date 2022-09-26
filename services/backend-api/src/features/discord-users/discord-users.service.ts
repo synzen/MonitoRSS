@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { MANAGE_CHANNEL } from '../discord-auth/constants/permissions';
-import { SupportersService } from '../supporters/supporters.service';
-import { DiscordBotUser } from './types/discord-bot-user.type';
-import { DiscordUser, DiscordUserFormatted } from './types/DiscordUser.type';
+import { Injectable } from "@nestjs/common";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { MANAGE_CHANNEL } from "../discord-auth/constants/permissions";
+import { SupportersService } from "../supporters/supporters.service";
+import { DiscordBotUser } from "./types/discord-bot-user.type";
+import { DiscordUser, DiscordUserFormatted } from "./types/DiscordUser.type";
 import {
   PartialUserGuild,
   PartialUserGuildFormatted,
-} from './types/PartialUserGuild.type';
+} from "./types/PartialUserGuild.type";
 
 interface UpdateSupporterInput {
   guildIds?: string[];
@@ -15,11 +15,11 @@ interface UpdateSupporterInput {
 
 @Injectable()
 export class DiscordUsersService {
-  BASE_ENDPOINT = '/users';
+  BASE_ENDPOINT = "/users";
 
   constructor(
     private readonly discordApiService: DiscordAPIService,
-    private readonly supportersService: SupportersService,
+    private readonly supportersService: SupportersService
   ) {}
 
   async getBot(): Promise<DiscordBotUser> {
@@ -48,11 +48,11 @@ export class DiscordUsersService {
     accessToken: string,
     options?: {
       guildIconSize?: string;
-      guildIconFormat?: 'png' | 'jpeg' | 'webp' | 'gif';
-    },
+      guildIconFormat?: "png" | "jpeg" | "webp" | "gif";
+    }
   ): Promise<PartialUserGuildFormatted[]> {
-    const iconSize = options?.guildIconSize || '128';
-    const iconFormat = options?.guildIconFormat || 'png';
+    const iconSize = options?.guildIconSize || "128";
+    const iconFormat = options?.guildIconFormat || "png";
     const endpoint = this.BASE_ENDPOINT + `/@me/guilds`;
 
     const guilds = await this.discordApiService.executeBearerRequest<
@@ -62,12 +62,12 @@ export class DiscordUsersService {
     const guildsWithPermission = guilds.filter(
       (guild) =>
         guild.owner ||
-        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL,
+        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL
     );
 
     const guildIds = guildsWithPermission.map((guild) => guild.id);
     const guildBenefits = await this.supportersService.getBenefitsOfServers(
-      guildIds,
+      guildIds
     );
 
     return guildsWithPermission.map((guild, index) => {
@@ -97,11 +97,11 @@ export class DiscordUsersService {
 
     const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
       accessToken,
-      endpoint,
+      endpoint
     );
 
     const benefits = await this.supportersService.getBenefitsOfDiscordUser(
-      user.id,
+      user.id
     );
 
     const toReturn: DiscordUserFormatted = {

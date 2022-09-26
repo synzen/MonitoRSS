@@ -1,8 +1,8 @@
 import {
   FeedSubscriber,
   FeedSubscriberType,
-} from '../entities/feed-subscriber.entity';
-import { GetFeedOutputDto } from './GetFeedOutput.dto';
+} from "../entities/feed-subscriber.entity";
+import { GetFeedOutputDto } from "./GetFeedOutput.dto";
 
 interface CreateFeedSubscriberDto {
   id: string;

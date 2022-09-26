@@ -1,11 +1,11 @@
-import { Message, SQSClient } from '@aws-sdk/client-sqs';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { SqsPollingService } from '../../common/services/sqs-polling.service';
-import logger from '../../utils/logger';
-import { FEED_DISABLED_CODES } from '../feeds/constants';
-import { Feed, FeedModel } from '../feeds/entities/feed.entity';
+import { Message, SQSClient } from "@aws-sdk/client-sqs";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectModel } from "@nestjs/mongoose";
+import { SqsPollingService } from "../../common/services/sqs-polling.service";
+import logger from "../../utils/logger";
+import { FEED_DISABLED_CODES } from "../feeds/constants";
+import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 
 interface FailedUrlEvent {
   url: string;
@@ -21,14 +21,14 @@ export class FailedUrlHandlerService {
   constructor(
     private readonly configService: ConfigService,
     private readonly sqsPollingService: SqsPollingService,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel,
+    @InjectModel(Feed.name) private readonly feedModel: FeedModel
   ) {
     this.queueRegion = configService.get(
-      'AWS_FAILED_URL_QUEUE_REGION',
+      "AWS_FAILED_URL_QUEUE_REGION"
     ) as string;
-    this.queueUrl = configService.get('AWS_FAILED_URL_QUEUE_URL') as string;
+    this.queueUrl = configService.get("AWS_FAILED_URL_QUEUE_URL") as string;
     this.queueEndpoint = configService.get(
-      'AWS_FAILED_URL_QUEUE_ENDPOINT',
+      "AWS_FAILED_URL_QUEUE_ENDPOINT"
     ) as string;
 
     this.sqsClient = new SQSClient({
@@ -38,7 +38,7 @@ export class FailedUrlHandlerService {
   }
 
   async pollForFailedUrlEvents(
-    messageHandler: (message: FailedUrlEvent) => Promise<void>,
+    messageHandler: (message: FailedUrlEvent) => Promise<void>
   ) {
     await this.sqsPollingService.pollQueue({
       awsQueueUrl: this.queueUrl,
@@ -50,7 +50,7 @@ export class FailedUrlHandlerService {
             `Queue ${this.queueUrl} message ${message.MessageId} has no body, skipping`,
             {
               message,
-            },
+            }
           );
 
           return;
@@ -64,7 +64,7 @@ export class FailedUrlHandlerService {
         await messageHandler(messageBody);
 
         logger.debug(
-          `Queue ${this.queueUrl} message processed ${message.MessageId}`,
+          `Queue ${this.queueUrl} message processed ${message.MessageId}`
         );
       },
     });
@@ -80,7 +80,7 @@ export class FailedUrlHandlerService {
         $set: {
           disabled: FEED_DISABLED_CODES.CONNECTION_FAILURE,
         },
-      },
+      }
     );
   }
 }

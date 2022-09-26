@@ -1,13 +1,13 @@
-import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { FeedSchedule } from '../feeds/entities/feed-schedule.entity';
-import { Feed, FeedDocument, FeedModel } from '../feeds/entities/feed.entity';
-import { FeedSchedulingService } from '../feeds/feed-scheduling.service';
-import { SupportersService } from '../supporters/supporters.service';
-import { FilterQuery, Types } from 'mongoose';
-import logger from '../../utils/logger';
+import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectModel } from "@nestjs/mongoose";
+import { FeedSchedule } from "../feeds/entities/feed-schedule.entity";
+import { Feed, FeedDocument, FeedModel } from "../feeds/entities/feed.entity";
+import { FeedSchedulingService } from "../feeds/feed-scheduling.service";
+import { SupportersService } from "../supporters/supporters.service";
+import { FilterQuery, Types } from "mongoose";
+import logger from "../../utils/logger";
 
 @Injectable()
 export class ScheduleHandlerService {
@@ -19,16 +19,16 @@ export class ScheduleHandlerService {
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
     private readonly feedSchedulingService: FeedSchedulingService,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel,
+    @InjectModel(Feed.name) private readonly feedModel: FeedModel
   ) {
     this.awsUrlRequestQueueUrl = configService.get(
-      'AWS_URL_REQUEST_QUEUE_URL',
+      "AWS_URL_REQUEST_QUEUE_URL"
     ) as string;
     const awsUrlRequestQueueRegion = configService.get(
-      'AWS_URL_REQUEST_QUEUE_REGION',
+      "AWS_URL_REQUEST_QUEUE_REGION"
     ) as string;
     const awsUrlRequestQueueEndpoint = configService.get(
-      'AWS_URL_REQUEST_QUEUE_ENDPOINT',
+      "AWS_URL_REQUEST_QUEUE_ENDPOINT"
     );
     this.awsUrlRequestSqsClient = new SQSClient({
       region: awsUrlRequestQueueRegion,
@@ -37,7 +37,7 @@ export class ScheduleHandlerService {
 
     this.defaultRefreshRateSeconds =
       (this.configService.get<number>(
-        'DEFAULT_REFRESH_RATE_MINUTES',
+        "DEFAULT_REFRESH_RATE_MINUTES"
       ) as number) * 60;
   }
 
@@ -46,10 +46,10 @@ export class ScheduleHandlerService {
       new SendMessageCommand({
         MessageBody: JSON.stringify(data),
         QueueUrl: this.awsUrlRequestQueueUrl,
-      }),
+      })
     );
 
-    logger.debug('success', {
+    logger.debug("success", {
       res,
     });
   }
@@ -62,7 +62,7 @@ export class ScheduleHandlerService {
     }: {
       urlHandler: (url: string) => Promise<void>;
       feedHandler: (feed: Feed) => Promise<void>;
-    },
+    }
   ) {
     const urls = await this.getUrlsMatchingRefreshRate(refreshRateSeconds);
 
@@ -70,13 +70,13 @@ export class ScheduleHandlerService {
       `Found ${urls.length} urls with refresh rate ${refreshRateSeconds}`,
       {
         urls,
-      },
+      }
     );
 
     await Promise.all(urls.map((url) => urlHandler(url)));
 
     const feedCursor = await this.getFeedCursorMatchingRefreshRate(
-      refreshRateSeconds,
+      refreshRateSeconds
     );
 
     for await (const feed of feedCursor) {
@@ -85,28 +85,28 @@ export class ScheduleHandlerService {
   }
 
   async getUrlsMatchingRefreshRate(
-    refreshRateSeconds: number,
+    refreshRateSeconds: number
   ): Promise<string[]> {
     const isDefaultRefreshRate =
       refreshRateSeconds === this.defaultRefreshRateSeconds;
 
     const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
     const serverIds = await this.getServerIdsWithRefreshRate(
-      refreshRateSeconds,
+      refreshRateSeconds
     );
 
     if (isDefaultRefreshRate) {
       logger.debug(`${refreshRateSeconds}s is default refresh rate`);
 
       return this.getDefaultScheduleFeedQuery(schedules, serverIds).distinct(
-        'url',
+        "url"
       );
     }
 
     return this.getFeedsQueryWithScheduleAndServers(
       schedules,
-      serverIds,
-    ).distinct('url');
+      serverIds
+    ).distinct("url");
   }
 
   async getFeedCursorMatchingRefreshRate(refreshRateSeconds: number) {
@@ -115,7 +115,7 @@ export class ScheduleHandlerService {
 
     const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
     const serverIds = await this.getServerIdsWithRefreshRate(
-      refreshRateSeconds,
+      refreshRateSeconds
     );
 
     if (isDefaultRefreshRate) {
@@ -124,14 +124,14 @@ export class ScheduleHandlerService {
 
     return this.getFeedsQueryWithScheduleAndServers(
       schedules,
-      serverIds,
+      serverIds
     ).cursor();
   }
 
   async getServerIdsWithRefreshRate(refreshRateSeconds: number) {
     const allBenefits = await this.supportersService.getBenefitsOfAllServers();
     const benefitsWithMatchedRefreshRate = allBenefits.filter(
-      (benefit) => benefit.refreshRateSeconds === refreshRateSeconds,
+      (benefit) => benefit.refreshRateSeconds === refreshRateSeconds
     );
 
     return benefitsWithMatchedRefreshRate.map((benefit) => benefit.serverId);
@@ -139,19 +139,19 @@ export class ScheduleHandlerService {
 
   getSchedulesOfRefreshRate(refreshRateSeconds: number) {
     return this.feedSchedulingService.findSchedulesOfRefreshRate(
-      refreshRateSeconds,
+      refreshRateSeconds
     );
   }
 
   getFeedsQueryWithScheduleAndServers(
     schedules: FeedSchedule[],
-    serverIds: string[],
+    serverIds: string[]
   ) {
     const keywordConditions = schedules
       .map((schedule) => schedule.keywords)
       .flat()
       .map((keyword) => ({
-        url: new RegExp(keyword, 'i'),
+        url: new RegExp(keyword, "i"),
         disabled: {
           $exists: false,
         },
@@ -172,7 +172,7 @@ export class ScheduleHandlerService {
           _id: {
             $in: schedules
               .map((schedule) =>
-                schedule.feeds.map((id) => new Types.ObjectId(id)),
+                schedule.feeds.map((id) => new Types.ObjectId(id))
               )
               .flat(),
           },
@@ -193,7 +193,7 @@ export class ScheduleHandlerService {
       .flat()
       .map((keyword) => ({
         url: {
-          $not: new RegExp(keyword, 'i'),
+          $not: new RegExp(keyword, "i"),
         },
         disabled: {
           $exists: false,
@@ -215,7 +215,7 @@ export class ScheduleHandlerService {
           _id: {
             $nin: schedules
               .map((schedule) =>
-                schedule.feeds.map((id) => new Types.ObjectId(id)),
+                schedule.feeds.map((id) => new Types.ObjectId(id))
               )
               .flat(),
           },

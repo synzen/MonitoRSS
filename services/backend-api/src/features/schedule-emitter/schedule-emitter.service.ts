@@ -1,9 +1,9 @@
-import { SQSClient } from '@aws-sdk/client-sqs';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import logger from '../../utils/logger';
-import { FeedSchedulingService } from '../feeds/feed-scheduling.service';
-import { SupportersService } from '../supporters/supporters.service';
+import { SQSClient } from "@aws-sdk/client-sqs";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import logger from "../../utils/logger";
+import { FeedSchedulingService } from "../feeds/feed-scheduling.service";
+import { SupportersService } from "../supporters/supporters.service";
 
 @Injectable()
 export class ScheduleEmitterService {
@@ -13,11 +13,11 @@ export class ScheduleEmitterService {
   constructor(
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
-    private readonly feedSchedulingService: FeedSchedulingService,
+    private readonly feedSchedulingService: FeedSchedulingService
   ) {}
 
   async syncTimerStates(
-    onTimerTrigger: (refreshRateSeconds: number) => Promise<void>,
+    onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
     const supporterRefreshRates = await this.getSupporterRefreshRates();
     logger.info(`Supporter refresh rates: [${supporterRefreshRates}]`);
@@ -41,7 +41,7 @@ export class ScheduleEmitterService {
   async getSupporterRefreshRates() {
     const allBenefits = await this.supportersService.getBenefitsOfAllServers();
     const supporterRefreshRates = new Set(
-      allBenefits.map((benefit) => benefit.refreshRateSeconds * 1000),
+      allBenefits.map((benefit) => benefit.refreshRateSeconds * 1000)
     );
 
     return [...supporterRefreshRates];
@@ -59,12 +59,12 @@ export class ScheduleEmitterService {
 
   getDefaultRefreshRate() {
     const refreshRateMinutes = this.configService.get<number>(
-      'DEFAULT_REFRESH_RATE_MINUTES',
+      "DEFAULT_REFRESH_RATE_MINUTES"
     );
 
     if (refreshRateMinutes === undefined) {
       throw new Error(
-        'DEFAULT_REFRESH_RATE_MINUTES is not defined in the config',
+        "DEFAULT_REFRESH_RATE_MINUTES is not defined in the config"
       );
     }
 
@@ -73,7 +73,7 @@ export class ScheduleEmitterService {
 
   cleanupTimers(
     inputTimers: Map<number, NodeJS.Timer>,
-    refreshRates: Set<number>,
+    refreshRates: Set<number>
   ) {
     const timersRemoved: number[] = [];
     inputTimers.forEach((timer, key) => {
@@ -88,15 +88,15 @@ export class ScheduleEmitterService {
 
     logger.info(
       `Removed ${timersRemoved.length} timers: [${timersRemoved.map(
-        (refreshRate) => `${refreshRate / 1000}s`,
-      )}]`,
+        (refreshRate) => `${refreshRate / 1000}s`
+      )}]`
     );
   }
 
   setNewTimers(
     inputTimers: Map<number, NodeJS.Timer>,
     refreshRates: Set<number>,
-    onTimerTrigger: (refreshRateSeconds: number) => Promise<void>,
+    onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
     const timersSet: number[] = [];
 
@@ -114,8 +114,8 @@ export class ScheduleEmitterService {
 
     logger.info(
       `Set ${timersSet.length} timers: [${timersSet.map(
-        (refreshRate) => `${refreshRate / 1000}s`,
-      )}]`,
+        (refreshRate) => `${refreshRate / 1000}s`
+      )}]`
     );
   }
 }

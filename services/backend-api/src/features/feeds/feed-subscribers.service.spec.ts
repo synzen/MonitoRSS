@@ -1,20 +1,20 @@
-import { getModelToken, MongooseModule } from '@nestjs/mongoose';
+import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
-} from '../../utils/integration-tests';
-import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import { FeedSubscribersService } from './feed-subscribers.service';
+} from "../../utils/integration-tests";
+import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import { FeedSubscribersService } from "./feed-subscribers.service";
 import {
   FeedSubscriber,
   FeedSubscriberFeature,
   FeedSubscriberModel,
   FeedSubscriberType,
-} from './entities/feed-subscriber.entity';
-import { createTestFeedSubscriber } from '../../test/data/subscriber.test-data';
-import { Types } from 'mongoose';
+} from "./entities/feed-subscriber.entity";
+import { createTestFeedSubscriber } from "../../test/data/subscriber.test-data";
+import { Types } from "mongoose";
 
-describe('FeedSubscribersService', () => {
+describe("FeedSubscribersService", () => {
   let service: FeedSubscribersService;
   let feedSubscriberModel: FeedSubscriberModel;
 
@@ -31,7 +31,7 @@ describe('FeedSubscribersService', () => {
 
     service = module.get<FeedSubscribersService>(FeedSubscribersService);
     feedSubscriberModel = module.get<FeedSubscriberModel>(
-      getModelToken(FeedSubscriber.name),
+      getModelToken(FeedSubscriber.name)
     );
   });
 
@@ -47,12 +47,12 @@ describe('FeedSubscribersService', () => {
     await teardownIntegrationTests();
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('getSubscribersOfFeed', () => {
-    it('returns the subscribers of the feed', async () => {
+  describe("getSubscribersOfFeed", () => {
+    it("returns the subscribers of the feed", async () => {
       const subscribers = [
         createTestFeedSubscriber({
           _id: new Types.ObjectId(),
@@ -69,25 +69,25 @@ describe('FeedSubscribersService', () => {
       expect(found).toHaveLength(subscribers.length);
       expect(found).toEqual(
         expect.arrayContaining(
-          subscribers.map((s) => expect.objectContaining(s)),
-        ),
+          subscribers.map((s) => expect.objectContaining(s))
+        )
       );
     });
-    it('sorts by createdAt descending', async () => {
+    it("sorts by createdAt descending", async () => {
       const subscribers = [
         createTestFeedSubscriber({
           _id: new Types.ObjectId(),
-          id: '2020',
+          id: "2020",
           createdAt: new Date(2020, 1, 1),
         }),
         createTestFeedSubscriber({
           _id: new Types.ObjectId(),
-          id: '2017',
+          id: "2017",
           createdAt: new Date(2017, 1, 2),
         }),
         createTestFeedSubscriber({
           _id: new Types.ObjectId(),
-          id: '2025',
+          id: "2025",
           createdAt: new Date(2025, 1, 2),
         }),
       ];
@@ -104,33 +104,33 @@ describe('FeedSubscribersService', () => {
               $set: {
                 createdAt: s.createdAt,
               },
-            },
-          ),
-        ),
+            }
+          )
+        )
       );
 
       const found = await service.getSubscribersOfFeed(subscribers[0].feed);
       const foundIds = found.map((s) => s.id);
-      expect(foundIds).toEqual(['2025', '2020', '2017']);
+      expect(foundIds).toEqual(["2025", "2020", "2017"]);
     });
   });
 
-  describe('createFeedSubscriber', () => {
-    it('throws if the feedId is not a valid object id', async () => {
-      const feedId = 'invalid-id';
+  describe("createFeedSubscriber", () => {
+    it("throws if the feedId is not a valid object id", async () => {
+      const feedId = "invalid-id";
 
       await expect(
         service.createFeedSubscriber({
           feedId,
-          discordId: 'user-id',
+          discordId: "user-id",
           type: FeedSubscriberType.USER,
-        }),
+        })
       ).rejects.toThrow();
     });
 
-    it('creates a new feed subscriber', async () => {
+    it("creates a new feed subscriber", async () => {
       const details = {
-        discordId: 'discord-id',
+        discordId: "discord-id",
         type: FeedSubscriberType.ROLE,
         feedId: new Types.ObjectId().toHexString(),
       };
@@ -142,14 +142,14 @@ describe('FeedSubscribersService', () => {
         expect.objectContaining({
           type: details.type,
           id: details.discordId,
-        }),
+        })
       );
       expect(String(found?.feed)).toEqual(details.feedId);
     });
 
-    it('returns the created subscriber', async () => {
+    it("returns the created subscriber", async () => {
       const details = {
-        discordId: 'discord-id',
+        discordId: "discord-id",
         type: FeedSubscriberType.ROLE,
         feedId: new Types.ObjectId().toHexString(),
       };
@@ -159,14 +159,14 @@ describe('FeedSubscribersService', () => {
         expect.objectContaining({
           type: details.type,
           id: details.discordId,
-        }),
+        })
       );
       expect(String(created?.feed)).toEqual(details.feedId);
     });
   });
 
-  describe('remove', () => {
-    it('removes the subscriber', async () => {
+  describe("remove", () => {
+    it("removes the subscriber", async () => {
       const subscriber = createTestFeedSubscriber();
       await feedSubscriberModel.create(subscriber);
 
@@ -178,8 +178,8 @@ describe('FeedSubscribersService', () => {
     });
   });
 
-  describe('findById', () => {
-    it('returns the subscriber', async () => {
+  describe("findById", () => {
+    it("returns the subscriber", async () => {
       const subscriber = createTestFeedSubscriber({
         feed: new Types.ObjectId(),
         _id: new Types.ObjectId(),
@@ -195,12 +195,12 @@ describe('FeedSubscribersService', () => {
         expect.objectContaining({
           type: subscriber.type,
           id: subscriber.id,
-        }),
+        })
       );
       expect(String(found?.feed)).toEqual(subscriber.feed.toHexString());
     });
 
-    it('returns null if not found', async () => {
+    it("returns null if not found", async () => {
       const found = await service.findByIdAndFeed({
         subscriberId: new Types.ObjectId(),
         feedId: new Types.ObjectId(),
@@ -210,26 +210,26 @@ describe('FeedSubscribersService', () => {
     });
   });
 
-  describe('updateOne', () => {
-    describe('filters', () => {
-      it('adds new filters properly if they do not exist', async () => {
+  describe("updateOne", () => {
+    describe("filters", () => {
+      it("adds new filters properly if they do not exist", async () => {
         const subscriber = await feedSubscriberModel.create(
-          createTestFeedSubscriber(),
+          createTestFeedSubscriber()
         );
 
         const updateObj = {
           filters: [
             {
-              category: 'title',
-              value: 'title-1',
+              category: "title",
+              value: "title-1",
             },
             {
-              category: 'description',
-              value: 'description-1',
+              category: "description",
+              value: "description-1",
             },
             {
-              category: 'title',
-              value: 'title-2',
+              category: "title",
+              value: "title-2",
             },
           ],
         };
@@ -238,15 +238,15 @@ describe('FeedSubscribersService', () => {
         const found = await feedSubscriberModel.findOne(subscriber._id).lean();
 
         expect(found?.filters).toEqual({
-          title: ['title-1', 'title-2'],
-          description: ['description-1'],
+          title: ["title-1", "title-2"],
+          description: ["description-1"],
         });
       });
 
-      it('does not save duplicate filters if they exist on the subscriber', async () => {
+      it("does not save duplicate filters if they exist on the subscriber", async () => {
         const subscriber = createTestFeedSubscriber({
           filters: {
-            title: ['title-1'],
+            title: ["title-1"],
           },
         });
         await feedSubscriberModel.create(subscriber);
@@ -254,8 +254,8 @@ describe('FeedSubscribersService', () => {
         const updateObj = {
           filters: [
             {
-              category: 'title',
-              value: 'title-1',
+              category: "title",
+              value: "title-1",
             },
           ],
         };
@@ -264,24 +264,24 @@ describe('FeedSubscribersService', () => {
         const found = await feedSubscriberModel.findOne(subscriber._id).lean();
 
         expect(found?.filters).toEqual({
-          title: ['title-1'],
+          title: ["title-1"],
         });
       });
 
-      it('does not save duplicate filters if they exist on the update object', async () => {
+      it("does not save duplicate filters if they exist on the update object", async () => {
         const subscriber = await feedSubscriberModel.create(
-          createTestFeedSubscriber(),
+          createTestFeedSubscriber()
         );
 
         const updateObj = {
           filters: [
             {
-              category: 'title',
-              value: 'title-1',
+              category: "title",
+              value: "title-1",
             },
             {
-              category: 'title',
-              value: 'title-1',
+              category: "title",
+              value: "title-1",
             },
           ],
         };
@@ -290,14 +290,14 @@ describe('FeedSubscribersService', () => {
         const found = await feedSubscriberModel.findOne(subscriber._id).lean();
 
         expect(found?.filters).toEqual({
-          title: ['title-1'],
+          title: ["title-1"],
         });
       });
 
-      it('overwrites existing filters', async () => {
+      it("overwrites existing filters", async () => {
         const subscriber = createTestFeedSubscriber({
           filters: {
-            title: ['title-1'],
+            title: ["title-1"],
           },
         });
         await feedSubscriberModel.create(subscriber);
@@ -305,8 +305,8 @@ describe('FeedSubscribersService', () => {
         const updateObj = {
           filters: [
             {
-              category: 'title',
-              value: 'title-2',
+              category: "title",
+              value: "title-2",
             },
           ],
         };
@@ -315,27 +315,27 @@ describe('FeedSubscribersService', () => {
         const found = await feedSubscriberModel.findOne(subscriber._id).lean();
 
         expect(found?.filters).toEqual({
-          title: ['title-2'],
+          title: ["title-2"],
         });
       });
 
-      it('returns the updated subscriber', async () => {
+      it("returns the updated subscriber", async () => {
         const subscriber = await feedSubscriberModel.create(
-          createTestFeedSubscriber(),
+          createTestFeedSubscriber()
         );
 
         const updateObj = {
           filters: [
             {
-              category: 'title',
-              value: 'title-1',
+              category: "title",
+              value: "title-1",
             },
           ],
         };
         const updated = await service.updateOne(subscriber._id, updateObj);
 
         expect(updated?.filters).toEqual({
-          title: ['title-1'],
+          title: ["title-1"],
         });
       });
     });

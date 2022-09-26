@@ -1,13 +1,13 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model, Types, Schema as MongooseSchema } from 'mongoose';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Model, Types, Schema as MongooseSchema } from "mongoose";
 
 export enum FeedSubscriberType {
-  USER = 'user',
-  ROLE = 'role',
+  USER = "user",
+  ROLE = "role",
 }
 
 @Schema({
-  collection: 'subscribers',
+  collection: "subscribers",
   timestamps: true,
 })
 export class FeedSubscriber {

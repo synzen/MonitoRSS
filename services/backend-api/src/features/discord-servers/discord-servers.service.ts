@@ -1,29 +1,29 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
-import { Feed, FeedModel } from '../feeds/entities/feed.entity';
-import { FeedsService } from '../feeds/feeds.service';
-import { FeedStatus } from '../feeds/types/FeedStatus.type';
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectModel } from "@nestjs/mongoose";
+import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { FeedsService } from "../feeds/feeds.service";
+import { FeedStatus } from "../feeds/types/FeedStatus.type";
 import {
   DiscordServerProfile,
   DiscordServerProfileModel,
-} from './entities/discord-server-profile.entity';
+} from "./entities/discord-server-profile.entity";
 import {
   DiscordGuild,
   DiscordGuildRole,
   DiscordGuildChannel,
-} from '../../common';
+} from "../../common";
 import {
   FeedSubscriber,
   FeedSubscriberModel,
-} from '../feeds/entities/feed-subscriber.entity';
+} from "../feeds/entities/feed-subscriber.entity";
 import {
   FeedFilteredFormat,
   FeedFilteredFormatModel,
-} from '../feeds/entities/feed-filtered-format.entity';
-import { ProfileSettings, ServerBackup } from './types';
+} from "../feeds/entities/feed-filtered-format.entity";
+import { ProfileSettings, ServerBackup } from "./types";
 
 @Injectable()
 export class DiscordServersService {
@@ -42,16 +42,16 @@ export class DiscordServersService {
     private readonly feedFilteredFormatModel: FeedFilteredFormatModel,
     private readonly configService: ConfigService,
     private readonly discordApiService: DiscordAPIService,
-    private readonly feedsService: FeedsService,
+    private readonly feedsService: FeedsService
   ) {
     this.defaultDateFormat = this.configService.get<string>(
-      'DEFAULT_DATE_FORMAT',
+      "DEFAULT_DATE_FORMAT"
     ) as string;
     this.defaultTimezone = this.configService.get<string>(
-      'DEFAULT_TIMEZONE',
+      "DEFAULT_TIMEZONE"
     ) as string;
     this.defaultDateLanguage = this.configService.get<string>(
-      'DEFAULT_DATE_LANGUAGE',
+      "DEFAULT_DATE_LANGUAGE"
     ) as string;
   }
 
@@ -88,12 +88,12 @@ export class DiscordServersService {
       feeds,
       filteredFormats,
       subscribers,
-      backupVersion: '1',
+      backupVersion: "1",
     };
   }
 
   async restoreBackup(backup: ServerBackup) {
-    if (backup.backupVersion !== '1') {
+    if (backup.backupVersion !== "1") {
       throw new Error(`Backup version ${backup.backupVersion} not supported`);
     }
 
@@ -143,7 +143,7 @@ export class DiscordServersService {
       dateFormat?: string;
       dateLanguage?: string;
       timezone?: string;
-    },
+    }
   ) {
     const toUpdate: { $set: Partial<DiscordServerProfile> } = {
       $set: {},
@@ -167,7 +167,7 @@ export class DiscordServersService {
       {
         upsert: true,
         new: true,
-      },
+      }
     );
 
     return this.getProfileSettingsWithDefaults(updated);
@@ -179,7 +179,7 @@ export class DiscordServersService {
       search?: string;
       limit: number;
       offset: number;
-    },
+    }
   ): Promise<(Feed & { status: FeedStatus })[]> {
     return this.feedsService.getServerFeeds(serverId, options);
   }
@@ -188,7 +188,7 @@ export class DiscordServersService {
     serverId: string,
     options?: {
       search?: string;
-    },
+    }
   ): Promise<number> {
     return this.feedsService.countServerFeeds(serverId, {
       search: options?.search,
@@ -218,7 +218,7 @@ export class DiscordServersService {
   async getChannelsOfServer(serverId: string) {
     const channels: DiscordGuildChannel[] =
       await this.discordApiService.executeBotRequest(
-        `/guilds/${serverId}/channels`,
+        `/guilds/${serverId}/channels`
       );
 
     return channels;
@@ -227,14 +227,14 @@ export class DiscordServersService {
   async getRolesOfServer(serverId: string) {
     const roles: DiscordGuildRole[] =
       await this.discordApiService.executeBotRequest(
-        `/guilds/${serverId}/roles`,
+        `/guilds/${serverId}/roles`
       );
 
     return roles;
   }
 
   private getProfileSettingsWithDefaults(
-    profile?: DiscordServerProfile | null,
+    profile?: DiscordServerProfile | null
   ) {
     return {
       dateFormat: profile?.dateFormat || this.defaultDateFormat,

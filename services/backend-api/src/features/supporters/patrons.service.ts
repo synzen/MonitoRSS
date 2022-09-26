@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { Patron, PatronStatus } from './entities/patron.entity';
-import dayjs from 'dayjs';
-import { ConfigService } from '@nestjs/config';
+import { Injectable } from "@nestjs/common";
+import { Patron, PatronStatus } from "./entities/patron.entity";
+import dayjs from "dayjs";
+import { ConfigService } from "@nestjs/config";
 
 interface PatronBenefits {
   maxFeeds: number;
@@ -11,7 +11,7 @@ interface PatronBenefits {
 }
 
 interface PatronDetails {
-  status: Patron['status'];
+  status: Patron["status"];
   pledge: number;
   pledgeOverride?: number;
   pledgeLifetime: number;
@@ -23,7 +23,7 @@ export class PatronsService {
 
   constructor(private readonly configsService: ConfigService) {
     this.defaultMaxFeeds = this.configsService.get<number>(
-      'DEFAULT_MAX_FEEDS',
+      "DEFAULT_MAX_FEEDS"
     ) as number;
   }
 
@@ -46,13 +46,13 @@ export class PatronsService {
       allowWebhooks: allBenefits.some((benefits) => benefits.allowWebhooks),
       // Arbitrarily select one since there is no business rule on this at the moment
       refreshRateSeconds: allBenefits.find(
-        (benefits) => benefits.refreshRateSeconds !== undefined,
+        (benefits) => benefits.refreshRateSeconds !== undefined
       )?.refreshRateSeconds,
     };
   }
 
   isValidPatron(patron: {
-    status: Patron['status'];
+    status: Patron["status"];
     pledge: number;
     lastCharge?: Date;
   }) {
@@ -71,7 +71,7 @@ export class PatronsService {
         return false;
       }
 
-      const oldestAllowableDate = dayjs().subtract(4, 'days');
+      const oldestAllowableDate = dayjs().subtract(4, "days");
 
       return lastChargeDate.isAfter(oldestAllowableDate);
     }

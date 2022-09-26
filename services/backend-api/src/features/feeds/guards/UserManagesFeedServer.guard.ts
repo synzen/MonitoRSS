@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { BaseUserManagesServerGuard } from '../../discord-auth/guards/BaseUserManagesServer.guard';
-import { DiscordAuthService } from '../../discord-auth/discord-auth.service';
-import { FeedsService } from '../feeds.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { FastifyRequest } from "fastify";
+import { BaseUserManagesServerGuard } from "../../discord-auth/guards/BaseUserManagesServer.guard";
+import { DiscordAuthService } from "../../discord-auth/discord-auth.service";
+import { FeedsService } from "../feeds.service";
 
 @Injectable()
 export class UserManagesFeedServerGuard extends BaseUserManagesServerGuard {
   constructor(
     private readonly feedsService: FeedsService,
-    protected readonly discordAuthService: DiscordAuthService,
+    protected readonly discordAuthService: DiscordAuthService
   ) {
     super(discordAuthService);
   }
@@ -18,7 +18,7 @@ export class UserManagesFeedServerGuard extends BaseUserManagesServerGuard {
 
     if (!feedId) {
       throw new Error(
-        'Feed ID is missing while validating if user manages server',
+        "Feed ID is missing while validating if user manages server"
       );
     }
 

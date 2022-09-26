@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Supporter, SupporterModel } from './entities/supporter.entity';
-import dayjs from 'dayjs';
-import { Patron } from './entities/patron.entity';
-import { ConfigService } from '@nestjs/config';
-import { PipelineStage } from 'mongoose';
-import { PatronsService } from './patrons.service';
-import { GuildSubscriptionsService } from './guild-subscriptions.service';
-import { GuildSubscriptionFormatted } from './types';
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Supporter, SupporterModel } from "./entities/supporter.entity";
+import dayjs from "dayjs";
+import { Patron } from "./entities/patron.entity";
+import { ConfigService } from "@nestjs/config";
+import { PipelineStage } from "mongoose";
+import { PatronsService } from "./patrons.service";
+import { GuildSubscriptionsService } from "./guild-subscriptions.service";
+import { GuildSubscriptionFormatted } from "./types";
 
 interface SupporterBenefits {
   isSupporter: boolean;
@@ -31,7 +31,7 @@ interface SupportPatronAggregateResult {
   maxGuilds?: number;
   slowRate?: boolean;
   patrons: Array<{
-    status: Patron['status'];
+    status: Patron["status"];
     pledge: number;
     pledgeLifetime: number;
     pledgeOverride?: number;
@@ -47,27 +47,27 @@ export class SupportersService {
     private readonly supporterModel: SupporterModel,
     private readonly configService: ConfigService,
     private readonly patronsService: PatronsService,
-    private readonly guildSubscriptionsService: GuildSubscriptionsService,
+    private readonly guildSubscriptionsService: GuildSubscriptionsService
   ) {
     // Conversions should be done at the config level, but this is just a hack for now
     this.defaultMaxFeeds = Number(
-      this.configService.get<number>('DEFAULT_MAX_FEEDS') as number,
+      this.configService.get<number>("DEFAULT_MAX_FEEDS") as number
     );
   }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
       $lookup: {
-        from: 'patrons',
-        localField: '_id',
-        foreignField: 'discord',
-        as: 'patrons',
+        from: "patrons",
+        localField: "_id",
+        foreignField: "discord",
+        as: "patrons",
       },
     },
   ];
 
   async getBenefitsOfDiscordUser(
-    discordId: string,
+    discordId: string
   ): Promise<SupporterBenefits> {
     const aggregate: Array<
       Supporter & {
@@ -108,11 +108,11 @@ export class SupportersService {
       await this.guildSubscriptionsService.getAllSubscriptions();
 
     const subscriptionsByGuildId = new Map<string, GuildSubscriptionFormatted>(
-      subscriptions.map((sub) => [sub.guildId, sub]),
+      subscriptions.map((sub) => [sub.guildId, sub])
     );
 
     const allSupportersWithGuild: Array<
-      Omit<Supporter, 'guilds'> & {
+      Omit<Supporter, "guilds"> & {
         patrons: Patron[];
         guilds: string; // Unwinded to actually be guild IDs
         guildId: string; // An alias to unwinded "guilds" for readability
@@ -139,7 +139,7 @@ export class SupportersService {
     }
 
     const serverIds = allSupportersWithGuild.map(
-      (supporter) => supporter.guildId,
+      (supporter) => supporter.guildId
     );
 
     return serverIds.map((serverId) => {
@@ -162,7 +162,7 @@ export class SupportersService {
       });
 
     const allSupportersWithGuild: Array<
-      Omit<Supporter, 'guilds'> & {
+      Omit<Supporter, "guilds"> & {
         patrons: Patron[];
         guilds: string; // Unwinded to actually be guild IDs
         guildId: string; // An alias to unwinded "guilds" for readability
@@ -177,7 +177,7 @@ export class SupportersService {
       },
       ...SupportersService.SUPPORTER_PATRON_PIPELINE,
       {
-        $unwind: '$guilds',
+        $unwind: "$guilds",
       },
       {
         $match: {
@@ -188,7 +188,7 @@ export class SupportersService {
       },
       {
         $addFields: {
-          guildId: '$guilds',
+          guildId: "$guilds",
         },
       },
     ]);
@@ -212,7 +212,7 @@ export class SupportersService {
 
     return serverIds.map((serverId) => {
       const subscription = subscriptions.find(
-        (sub) => sub.guildId === serverId,
+        (sub) => sub.guildId === serverId
       );
       const serverBenefits = benefitsMappedBySeverIds.get(serverId);
 
@@ -231,7 +231,7 @@ export class SupportersService {
     }: {
       subscription?: GuildSubscriptionFormatted;
       supporterBenefits?: ReturnType<typeof this.getBenefitsFromSupporter>[];
-    },
+    }
   ) {
     if (subscription) {
       return {
@@ -259,7 +259,7 @@ export class SupportersService {
       webhooks: serverBenefits.some((b) => b.webhooks),
       // Arbitrarily select one since there is no business rule on this at the moment
       refreshRateSeconds: serverBenefits.find(
-        (b) => b.refreshRateSeconds !== undefined,
+        (b) => b.refreshRateSeconds !== undefined
       )?.refreshRateSeconds,
     };
   }
@@ -283,13 +283,13 @@ export class SupportersService {
         },
         {
           new: true,
-        },
+        }
       )
       .lean();
 
     if (!updatedSupporter) {
       throw new Error(
-        `User ${userId} was not found while updating supporter guild ids`,
+        `User ${userId} was not found while updating supporter guild ids`
       );
     }
 
@@ -328,7 +328,7 @@ export class SupportersService {
       isSupporter: true,
       maxFeeds: Math.max(
         supporter.maxFeeds ?? this.defaultMaxFeeds,
-        patronMaxFeeds,
+        patronMaxFeeds
       ),
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
@@ -341,10 +341,10 @@ export class SupportersService {
       expireAt?: Date;
     } & {
       patrons: {
-        status: Patron['status'];
+        status: Patron["status"];
         pledge: number;
       }[];
-    },
+    }
   ) {
     if (!supporter) {
       return false;
@@ -358,7 +358,7 @@ export class SupportersService {
       }
 
       return patrons.some((patron) =>
-        this.patronsService.isValidPatron(patron),
+        this.patronsService.isValidPatron(patron)
       );
     }
 

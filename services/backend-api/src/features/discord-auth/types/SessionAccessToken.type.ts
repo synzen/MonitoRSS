@@ -1,4 +1,4 @@
-import { DiscordAuthToken } from '../discord-auth.service';
+import { DiscordAuthToken } from "../discord-auth.service";
 
 export type SessionAccessToken = DiscordAuthToken & {
   /**

@@ -1,12 +1,12 @@
-import { GetServerChannelsOutputDto } from './GetServerChannelsOutput.dto';
+import { GetServerChannelsOutputDto } from "./GetServerChannelsOutput.dto";
 
-describe('GetServerChannelsOutputDto', () => {
-  it('returns the mapped entities from discord channels', () => {
+describe("GetServerChannelsOutputDto", () => {
+  it("returns the mapped entities from discord channels", () => {
     const channels = [
       {
-        id: 'channel_id',
-        name: 'test',
-        guild_id: 'guild_id',
+        id: "channel_id",
+        name: "test",
+        guild_id: "guild_id",
         permission_overwrites: [],
       },
     ];

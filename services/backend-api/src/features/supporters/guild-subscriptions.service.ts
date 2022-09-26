@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import fetch from 'node-fetch';
-import { GuildSubscription } from './types/guild-subscription.type';
-import logger from '../../utils/logger';
-import qs from 'qs';
-import { GuildSubscriptionFormatted } from './types';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import fetch from "node-fetch";
+import { GuildSubscription } from "./types/guild-subscription.type";
+import logger from "../../utils/logger";
+import qs from "qs";
+import { GuildSubscriptionFormatted } from "./types";
 
 interface GetAllSubscriptionsOptions {
   filters?: {
@@ -21,15 +21,15 @@ export class GuildSubscriptionsService {
 
   constructor(private readonly configService: ConfigService) {
     this.apiHost = this.configService.get<string>(
-      'API_SUBSCRIPTIONS_HOST',
+      "API_SUBSCRIPTIONS_HOST"
     ) as string;
 
     this.accessToken = this.configService.get<string>(
-      'API_SUBSCRIPTIONS_ACCESS_TOKEN',
+      "API_SUBSCRIPTIONS_ACCESS_TOKEN"
     ) as string;
 
     const apiEnabled =
-      this.configService.get<boolean>('API_SUBSCRIPTIONS_ENABLED') || false;
+      this.configService.get<boolean>("API_SUBSCRIPTIONS_ENABLED") || false;
 
     this.enabled = !!this.apiHost && !!this.accessToken && apiEnabled;
   }
@@ -49,7 +49,7 @@ export class GuildSubscriptionsService {
   }
 
   async getSubscription(
-    guildId: string,
+    guildId: string
   ): Promise<GuildSubscriptionFormatted | null> {
     const { apiHost, accessToken, enabled } = this;
 
@@ -89,7 +89,7 @@ export class GuildSubscriptionsService {
   }
 
   async getAllSubscriptions(
-    options?: GetAllSubscriptionsOptions,
+    options?: GetAllSubscriptionsOptions
   ): Promise<GuildSubscriptionFormatted[]> {
     const { apiHost, accessToken, enabled } = this;
 

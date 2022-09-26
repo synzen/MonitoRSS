@@ -1,22 +1,22 @@
-import dotenv from 'dotenv';
-import path from 'path';
+import dotenv from "dotenv";
+import path from "path";
 import {
   Environment,
   EnvironmentVariables,
   validateConfig,
-} from './config.validate';
+} from "./config.validate";
 
 const envFiles: Record<string, string> = {
-  development: '.env.development',
-  production: '.env.production',
-  local: '.env.local',
+  development: ".env.development",
+  production: ".env.production",
+  local: ".env.local",
 };
 
 const envFilePath = path.join(
   __dirname,
-  '..',
-  '..',
-  envFiles[process.env.NODE_ENV as string] || envFiles.local,
+  "..",
+  "..",
+  envFiles[process.env.NODE_ENV as string] || envFiles.local
 );
 
 dotenv.config({
@@ -37,17 +37,17 @@ export default function config(options?: {
     LOGIN_REDIRECT_URI: process.env.LOGIN_REDIRECT_URI as string,
     MONGODB_URI: process.env.MONGODB_URI as string,
     DEFAULT_REFRESH_RATE_MINUTES: Number(
-      process.env.DEFAULT_REFRESH_RATE_MINUTES as string,
+      process.env.DEFAULT_REFRESH_RATE_MINUTES as string
     ),
     DEFAULT_MAX_FEEDS: parseInt(process.env.DEFAULT_MAX_FEEDS as string, 10),
     DEFAULT_DATE_FORMAT:
-      process.env.DEFAULT_DATE_FORMAT || 'ddd, D MMMM YYYY, h:mm A z',
-    DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE || 'UTC',
-    DEFAULT_DATE_LANGUAGE: process.env.DEFAULT_DATE_LANGUAGE || 'en',
-    API_SUBSCRIPTIONS_ENABLED: process.env.API_SUBSCRIPTIONS_ENABLED === 'true',
-    API_SUBSCRIPTIONS_HOST: process.env.API_SUBSCRIPTIONS_HOST || '',
+      process.env.DEFAULT_DATE_FORMAT || "ddd, D MMMM YYYY, h:mm A z",
+    DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE || "UTC",
+    DEFAULT_DATE_LANGUAGE: process.env.DEFAULT_DATE_LANGUAGE || "en",
+    API_SUBSCRIPTIONS_ENABLED: process.env.API_SUBSCRIPTIONS_ENABLED === "true",
+    API_SUBSCRIPTIONS_HOST: process.env.API_SUBSCRIPTIONS_HOST || "",
     API_SUBSCRIPTIONS_ACCESS_TOKEN:
-      process.env.API_SUBSCRIPTIONS_ACCESS_TOKEN || '',
+      process.env.API_SUBSCRIPTIONS_ACCESS_TOKEN || "",
     SESSION_SECRET: process.env.SESSION_SECRET as string,
     SESSION_SALT: process.env.SESSION_SALT as string,
     FEED_USER_AGENT: process.env.FEED_USER_AGENT as string,

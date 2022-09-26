@@ -1,21 +1,21 @@
-import { UserManagesServerGuard } from './UserManagesServer.guard';
+import { UserManagesServerGuard } from "./UserManagesServer.guard";
 
-describe('UserManagesServerGuard', () => {
+describe("UserManagesServerGuard", () => {
   let guard: UserManagesServerGuard;
-  const serverId = 'server-id';
+  const serverId = "server-id";
 
   beforeEach(() => {
     guard = new UserManagesServerGuard({} as never);
   });
 
-  describe('getServerId', () => {
-    it('returns the server id from params', () => {
+  describe("getServerId", () => {
+    it("returns the server id from params", () => {
       expect(
         guard.getServerId({
           params: {
             serverId,
           },
-        } as never),
+        } as never)
       ).resolves.toEqual(serverId);
     });
   });

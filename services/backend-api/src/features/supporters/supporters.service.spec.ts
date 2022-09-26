@@ -1,13 +1,13 @@
 /* eslint-disable max-len */
-import { PatronStatus } from './entities/patron.entity';
-import { SupporterModel } from './entities/supporter.entity';
-import { SupportersService } from './supporters.service';
-import dayjs from 'dayjs';
-import { PatronsService } from './patrons.service';
-import { ConfigService } from '@nestjs/config';
-import { GuildSubscriptionsService } from './guild-subscriptions.service';
+import { PatronStatus } from "./entities/patron.entity";
+import { SupporterModel } from "./entities/supporter.entity";
+import { SupportersService } from "./supporters.service";
+import dayjs from "dayjs";
+import { PatronsService } from "./patrons.service";
+import { ConfigService } from "@nestjs/config";
+import { GuildSubscriptionsService } from "./guild-subscriptions.service";
 
-describe('SupportersService', () => {
+describe("SupportersService", () => {
   let supportersService: SupportersService;
   const patronsService: PatronsService = {
     isValidPatron: jest.fn(),
@@ -29,7 +29,7 @@ describe('SupportersService', () => {
       supporterModel,
       configService,
       patronsService,
-      guildSubscriptionsService,
+      guildSubscriptionsService
     );
 
     supportersService.defaultMaxFeeds = defaultMaxFeeds;
@@ -37,20 +37,20 @@ describe('SupportersService', () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
-    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'DEFAULT_MAX_FEEDS') {
+    jest.spyOn(configService, "get").mockImplementation((key: string) => {
+      if (key === "DEFAULT_MAX_FEEDS") {
         return defaultMaxFeeds;
       }
     });
     jest
-      .spyOn(guildSubscriptionsService, 'getAllSubscriptions')
+      .spyOn(guildSubscriptionsService, "getAllSubscriptions")
       .mockResolvedValue([]);
   });
 
-  describe('serverCanUseWebhooks', () => {
-    it('returns true correctly', async () => {
-      const serverId = 'server-id';
-      jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
+  describe("serverCanUseWebhooks", () => {
+    it("returns true correctly", async () => {
+      const serverId = "server-id";
+      jest.spyOn(supportersService, "getBenefitsOfServers").mockResolvedValue([
         {
           hasSupporter: true,
           serverId,
@@ -63,9 +63,9 @@ describe('SupportersService', () => {
       const result = await supportersService.serverCanUseWebhooks(serverId);
       expect(result).toBe(true);
     });
-    it('returns false if the benefits have webhooks false', async () => {
-      const serverId = 'server-id';
-      jest.spyOn(supportersService, 'getBenefitsOfServers').mockResolvedValue([
+    it("returns false if the benefits have webhooks false", async () => {
+      const serverId = "server-id";
+      jest.spyOn(supportersService, "getBenefitsOfServers").mockResolvedValue([
         {
           hasSupporter: false,
           serverId,
@@ -78,10 +78,10 @@ describe('SupportersService', () => {
       const result = await supportersService.serverCanUseWebhooks(serverId);
       expect(result).toBe(false);
     });
-    it('returns false if the server has no benefits', async () => {
-      const serverId = 'server-id';
+    it("returns false if the server has no benefits", async () => {
+      const serverId = "server-id";
       jest
-        .spyOn(supportersService, 'getBenefitsOfServers')
+        .spyOn(supportersService, "getBenefitsOfServers")
         .mockResolvedValue([]);
 
       const result = await supportersService.serverCanUseWebhooks(serverId);
@@ -89,7 +89,7 @@ describe('SupportersService', () => {
     });
   });
 
-  describe('getBenefitsFromSupporter', () => {
+  describe("getBenefitsFromSupporter", () => {
     const supporter = {
       maxFeeds: 10,
       maxGuilds: 5,
@@ -105,12 +105,12 @@ describe('SupportersService', () => {
 
     beforeEach(() => {
       jest
-        .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+        .spyOn(patronsService, "getMaxBenefitsFromPatrons")
         .mockReturnValue(patronBenefits);
     });
 
-    it('returns the correct benefits if it is not a valid supporter', () => {
-      jest.spyOn(supportersService, 'isValidSupporter').mockReturnValue(false);
+    it("returns the correct benefits if it is not a valid supporter", () => {
+      jest.spyOn(supportersService, "isValidSupporter").mockReturnValue(false);
 
       const result = supportersService.getBenefitsFromSupporter(supporter);
 
@@ -123,27 +123,27 @@ describe('SupportersService', () => {
       });
     });
 
-    describe('if valid supporter', () => {
-      it('returns isSupporter true', () => {
-        jest.spyOn(supportersService, 'isValidSupporter').mockReturnValue(true);
+    describe("if valid supporter", () => {
+      it("returns isSupporter true", () => {
+        jest.spyOn(supportersService, "isValidSupporter").mockReturnValue(true);
 
         const result = supportersService.getBenefitsFromSupporter(supporter);
 
         expect(result.isSupporter).toEqual(true);
       });
 
-      it('returns webhooks true', () => {
-        jest.spyOn(supportersService, 'isValidSupporter').mockReturnValue(true);
+      it("returns webhooks true", () => {
+        jest.spyOn(supportersService, "isValidSupporter").mockReturnValue(true);
 
         const result = supportersService.getBenefitsFromSupporter(supporter);
 
         expect(result.webhooks).toEqual(true);
       });
 
-      describe('maxFeeds', () => {
-        it('returns the patron max feeds if patron max feeds is larger', () => {
+      describe("maxFeeds", () => {
+        it("returns the patron max feeds if patron max feeds is larger", () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
 
           const result = supportersService.getBenefitsFromSupporter({
@@ -154,9 +154,9 @@ describe('SupportersService', () => {
           expect(result.maxFeeds).toEqual(patronBenefits.maxFeeds);
         });
 
-        it('returns the supporter max feeds if supporter max feeds is larger', () => {
+        it("returns the supporter max feeds if supporter max feeds is larger", () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
@@ -165,7 +165,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 2,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = supportersService.getBenefitsFromSupporter({
@@ -176,9 +176,9 @@ describe('SupportersService', () => {
           expect(result.maxFeeds).toEqual(patronBenefits.maxFeeds + 5);
         });
 
-        it('returns default max feeds if supporter max feeds does not exist and is larger than patron max feeds', () => {
+        it("returns default max feeds if supporter max feeds does not exist and is larger than patron max feeds", () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: defaultMaxFeeds - 10,
@@ -187,7 +187,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 2,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = supportersService.getBenefitsFromSupporter({
@@ -199,10 +199,10 @@ describe('SupportersService', () => {
         });
       });
 
-      describe('maxGuilds', () => {
-        it('returns the patron max guilds if patron max guilds is larger', () => {
+      describe("maxGuilds", () => {
+        it("returns the patron max guilds if patron max guilds is larger", () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 5,
@@ -211,7 +211,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 2,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = supportersService.getBenefitsFromSupporter({
@@ -222,9 +222,9 @@ describe('SupportersService', () => {
           expect(result.maxGuilds).toEqual(patronBenefits.maxGuilds);
         });
 
-        it('returns the supporter max guilds if supporter max guilds is larger', () => {
+        it("returns the supporter max guilds if supporter max guilds is larger", () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
@@ -233,7 +233,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 2,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = supportersService.getBenefitsFromSupporter({
@@ -244,9 +244,9 @@ describe('SupportersService', () => {
           expect(result.maxGuilds).toEqual(patronBenefits.maxGuilds + 5);
         });
 
-        it('returns default 1 if supporter max guilds does not exist and 1 is larger than patron max guilds', () => {
+        it("returns default 1 if supporter max guilds does not exist and 1 is larger than patron max guilds", () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
@@ -255,7 +255,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 2,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = supportersService.getBenefitsFromSupporter({
@@ -267,10 +267,10 @@ describe('SupportersService', () => {
         });
       });
 
-      describe('refreshRateSeconds', () => {
-        it('returns patron refresh rate if supporter comes from patron rate exists', async () => {
+      describe("refreshRateSeconds", () => {
+        it("returns patron refresh rate if supporter comes from patron rate exists", async () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 5,
@@ -279,7 +279,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 1,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = await supportersService.getBenefitsFromSupporter({
@@ -294,13 +294,13 @@ describe('SupportersService', () => {
           });
 
           expect(result.refreshRateSeconds).toEqual(
-            patronBenefits.refreshRateSeconds,
+            patronBenefits.refreshRateSeconds
           );
         });
 
-        it('returns unndefined refresh rate if supporter is on slow rate', async () => {
+        it("returns unndefined refresh rate if supporter is on slow rate", async () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
@@ -309,7 +309,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: 8,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = await supportersService.getBenefitsFromSupporter({
@@ -327,9 +327,9 @@ describe('SupportersService', () => {
           expect(result.refreshRateSeconds).toEqual(undefined);
         });
 
-        it('returns 120 if supporter does not have patrons and is not slow rate', async () => {
+        it("returns 120 if supporter does not have patrons and is not slow rate", async () => {
           jest
-            .spyOn(supportersService, 'isValidSupporter')
+            .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
@@ -338,7 +338,7 @@ describe('SupportersService', () => {
             refreshRateSeconds: undefined,
           };
           jest
-            .spyOn(patronsService, 'getMaxBenefitsFromPatrons')
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
             .mockReturnValue(patronBenefits);
 
           const result = await supportersService.getBenefitsFromSupporter({
@@ -353,9 +353,9 @@ describe('SupportersService', () => {
     });
   });
 
-  describe('isValidSupporter', () => {
-    describe('when there are no patrons', () => {
-      it('returns true if there is no expiration date', () => {
+  describe("isValidSupporter", () => {
+    describe("when there are no patrons", () => {
+      it("returns true if there is no expiration date", () => {
         const supporter = {
           patrons: [],
         };
@@ -365,10 +365,10 @@ describe('SupportersService', () => {
         expect(result).toBe(true);
       });
 
-      it('returns true if supporter is not expired yet', () => {
+      it("returns true if supporter is not expired yet", () => {
         const supporter = {
           patrons: [],
-          expireAt: dayjs().add(1, 'month').toDate(),
+          expireAt: dayjs().add(1, "month").toDate(),
         };
 
         const result = supportersService.isValidSupporter(supporter);
@@ -376,10 +376,10 @@ describe('SupportersService', () => {
         expect(result).toBe(true);
       });
 
-      it('returns false if supporter is expired', () => {
+      it("returns false if supporter is expired", () => {
         const supporter = {
           patrons: [],
-          expireAt: dayjs().subtract(1, 'month').toDate(),
+          expireAt: dayjs().subtract(1, "month").toDate(),
         };
 
         const result = supportersService.isValidSupporter(supporter);
@@ -388,8 +388,8 @@ describe('SupportersService', () => {
       });
     });
 
-    describe('when there are patrons', () => {
-      it('returns true if some patron is a valid patron', () => {
+    describe("when there are patrons", () => {
+      it("returns true if some patron is a valid patron", () => {
         const supporter = {
           patrons: [
             {
@@ -404,7 +404,7 @@ describe('SupportersService', () => {
         };
 
         jest
-          .spyOn(patronsService, 'isValidPatron')
+          .spyOn(patronsService, "isValidPatron")
           .mockReturnValueOnce(true)
           .mockReturnValueOnce(false);
 
@@ -412,7 +412,7 @@ describe('SupportersService', () => {
 
         expect(result).toBe(true);
       });
-      it('returns false if all patrons are invalid', () => {
+      it("returns false if all patrons are invalid", () => {
         const supporter = {
           patrons: [
             {
@@ -426,7 +426,7 @@ describe('SupportersService', () => {
           ],
         };
 
-        jest.spyOn(patronsService, 'isValidPatron').mockReturnValue(false);
+        jest.spyOn(patronsService, "isValidPatron").mockReturnValue(false);
 
         const result = supportersService.isValidSupporter(supporter);
 

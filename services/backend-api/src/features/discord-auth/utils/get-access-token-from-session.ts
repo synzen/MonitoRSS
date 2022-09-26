@@ -1,8 +1,8 @@
-import { FastifyRequest } from 'fastify';
-import { SessionAccessToken } from '../types/SessionAccessToken.type';
+import { FastifyRequest } from "fastify";
+import { SessionAccessToken } from "../types/SessionAccessToken.type";
 
 export const getAccessTokenFromRequest = (
-  request: FastifyRequest,
+  request: FastifyRequest
 ): SessionAccessToken | undefined => {
-  return request.session.get('accessToken') as SessionAccessToken | undefined;
+  return request.session.get("accessToken") as SessionAccessToken | undefined;
 };

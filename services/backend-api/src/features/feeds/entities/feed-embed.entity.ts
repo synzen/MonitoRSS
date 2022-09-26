@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { FeedWebhook, FeedWebhookSchema } from './feed-webhook.entity';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { FeedWebhook, FeedWebhookSchema } from "./feed-webhook.entity";
 
 @Schema({
   _id: false,

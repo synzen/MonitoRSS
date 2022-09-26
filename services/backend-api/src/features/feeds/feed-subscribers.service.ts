@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Types } from "mongoose";
 import {
   FeedSubscriber,
   FeedSubscriberModel,
   FeedSubscriberType,
-} from './entities/feed-subscriber.entity';
+} from "./entities/feed-subscriber.entity";
 
 interface CreateFeedSubscriberDetails {
   type: FeedSubscriberType;
@@ -21,11 +21,11 @@ interface UpdateFeedSubscriberDetails {
 export class FeedSubscribersService {
   constructor(
     @InjectModel(FeedSubscriber.name)
-    private readonly feedSubscriber: FeedSubscriberModel,
+    private readonly feedSubscriber: FeedSubscriberModel
   ) {}
 
   async getSubscribersOfFeed(
-    feedId: string | Types.ObjectId,
+    feedId: string | Types.ObjectId
   ): Promise<FeedSubscriber[]> {
     const subscribers = await this.feedSubscriber
       .find({
@@ -40,11 +40,11 @@ export class FeedSubscribersService {
   }
 
   async createFeedSubscriber(
-    details: CreateFeedSubscriberDetails,
+    details: CreateFeedSubscriberDetails
   ): Promise<FeedSubscriber> {
     if (!Types.ObjectId.isValid(details.feedId)) {
       throw new Error(
-        'Feed ID is not a valid ObjectId when trying to create a feed subscriber',
+        "Feed ID is not a valid ObjectId when trying to create a feed subscriber"
       );
     }
 
@@ -80,7 +80,7 @@ export class FeedSubscribersService {
 
   async updateOne(
     subscriberId: Types.ObjectId | string,
-    { filters }: UpdateFeedSubscriberDetails,
+    { filters }: UpdateFeedSubscriberDetails
   ): Promise<FeedSubscriber> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mongoUpdate: Record<string, any> = {

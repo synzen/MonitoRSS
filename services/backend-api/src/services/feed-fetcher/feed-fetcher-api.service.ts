@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import fetch from 'node-fetch';
-import logger from '../../utils/logger';
-import { FeedFetcherFetchFeedResponse } from './types/feed-fetcher-fetch-feed-response.type';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import fetch from "node-fetch";
+import logger from "../../utils/logger";
+import { FeedFetcherFetchFeedResponse } from "./types/feed-fetcher-fetch-feed-response.type";
 
 interface FeedFetchOptions {
   getCachedResponse?: boolean;
@@ -14,35 +14,35 @@ export class FeedFetcherApiService {
 
   constructor(private readonly configService: ConfigService) {
     this.host = this.configService.get<string>(
-      'FEED_FETCHER_API_HOST',
+      "FEED_FETCHER_API_HOST"
     ) as string;
   }
 
   async fetchAndSave(
     url: string,
-    options?: FeedFetchOptions,
+    options?: FeedFetchOptions
   ): Promise<FeedFetcherFetchFeedResponse> {
     if (!this.host) {
       throw new Error(
-        'FEED_FETCHER_API_HOST config variable must be defined for use before executing a request',
+        "FEED_FETCHER_API_HOST config variable must be defined for use before executing a request"
       );
     }
 
     try {
       const response = await fetch(`${this.host}/requests`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           url,
           executeFetch: options?.getCachedResponse ? false : true,
         }),
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (response.status >= 500) {
         throw new Error(
-          `Feed fetcher api responded with >= 500 status: ${response.status})`,
+          `Feed fetcher api responded with >= 500 status: ${response.status})`
         );
       }
 
@@ -52,7 +52,7 @@ export class FeedFetcherApiService {
         throw new Error(
           `Feed fetcher api responded with non-ok status: ${
             response.status
-          }, response: ${JSON.stringify(responseBody)}`,
+          }, response: ${JSON.stringify(responseBody)}`
         );
       }
 
@@ -62,7 +62,7 @@ export class FeedFetcherApiService {
         `Failed to execute fetch with feed fetcher api (${error.message})`,
         {
           stack: error.stack,
-        },
+        }
       );
 
       throw error;

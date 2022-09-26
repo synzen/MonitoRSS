@@ -1,8 +1,8 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types, Model } from 'mongoose';
-import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
-import { FeedRegexOp, FeedRegexOpSchema } from './feed-regexop.entity';
-import { FeedWebhook, FeedWebhookSchema } from './feed-webhook.entity';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types, Model } from "mongoose";
+import { FeedEmbed, FeedEmbedSchema } from "./feed-embed.entity";
+import { FeedRegexOp, FeedRegexOpSchema } from "./feed-regexop.entity";
+import { FeedWebhook, FeedWebhookSchema } from "./feed-webhook.entity";
 
 @Schema({
   _id: false,
@@ -25,7 +25,7 @@ class FeedSplitOptions {
 }
 
 @Schema({
-  collection: 'feeds',
+  collection: "feeds",
   timestamps: true,
 })
 export class Feed {

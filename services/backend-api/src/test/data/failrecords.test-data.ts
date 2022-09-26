@@ -1,14 +1,14 @@
-import { FailRecord } from '../../features/feeds/entities/fail-record.entity';
+import { FailRecord } from "../../features/feeds/entities/fail-record.entity";
 
 const boilerplate: FailRecord = {
-  _id: 'https://www.google.com',
+  _id: "https://www.google.com",
   alerted: false,
   failedAt: new Date(),
-  reason: '',
+  reason: "",
 };
 
 export const createTestFailRecord = (
-  override: { _id: string } & Partial<FailRecord>,
+  override: { _id: string } & Partial<FailRecord>
 ): FailRecord => ({
   ...boilerplate,
   ...override,

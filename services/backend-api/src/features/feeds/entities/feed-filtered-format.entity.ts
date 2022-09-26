@@ -1,9 +1,9 @@
-import { ModelDefinition, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model, Types, Schema as MongooseSchema } from 'mongoose';
-import { FeedEmbed, FeedEmbedSchema } from './feed-embed.entity';
+import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Model, Types, Schema as MongooseSchema } from "mongoose";
+import { FeedEmbed, FeedEmbedSchema } from "./feed-embed.entity";
 
 @Schema({
-  collection: 'filtered_formats',
+  collection: "filtered_formats",
 })
 export class FeedFilteredFormat {
   _id: Types.ObjectId;

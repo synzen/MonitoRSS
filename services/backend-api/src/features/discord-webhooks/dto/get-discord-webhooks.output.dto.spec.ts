@@ -1,16 +1,16 @@
-import { DiscordWebhook } from '../types/discord-webhook.type';
-import { GetDiscordWebhooksOutputDto } from './get-discord-webhooks.output.dto';
+import { DiscordWebhook } from "../types/discord-webhook.type";
+import { GetDiscordWebhooksOutputDto } from "./get-discord-webhooks.output.dto";
 
-describe('GetDiscordWebhooksOutputDto', () => {
-  describe('static fromEntity', () => {
-    it('returns correctly', () => {
+describe("GetDiscordWebhooksOutputDto", () => {
+  describe("static fromEntity", () => {
+    it("returns correctly", () => {
       const webhooks: DiscordWebhook[] = [
         {
-          channel_id: 'channel-id',
-          id: 'id',
-          name: 'name',
+          channel_id: "channel-id",
+          id: "id",
+          name: "name",
           type: 1,
-          application_id: 'application-id',
+          application_id: "application-id",
         },
       ];
 
@@ -19,22 +19,22 @@ describe('GetDiscordWebhooksOutputDto', () => {
       expect(result).toEqual({
         results: [
           {
-            id: 'id',
-            channelId: 'channel-id',
+            id: "id",
+            channelId: "channel-id",
             avatarUrl: undefined,
-            name: 'name',
+            name: "name",
           },
         ],
       });
     });
-    it('coerces avatar into undefined', () => {
+    it("coerces avatar into undefined", () => {
       const webhooks: DiscordWebhook[] = [
         {
-          channel_id: 'channel-id',
-          id: 'id',
-          name: 'name',
+          channel_id: "channel-id",
+          id: "id",
+          name: "name",
           type: 1,
-          application_id: 'application-id',
+          application_id: "application-id",
           avatar: null,
         },
       ];
@@ -44,10 +44,10 @@ describe('GetDiscordWebhooksOutputDto', () => {
       expect(result).toEqual({
         results: [
           {
-            id: 'id',
-            channelId: 'channel-id',
+            id: "id",
+            channelId: "channel-id",
             avatarUrl: undefined,
-            name: 'name',
+            name: "name",
           },
         ],
       });

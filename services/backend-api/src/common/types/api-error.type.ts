@@ -1,4 +1,4 @@
-import { ApiErrorCode } from '../constants/api-errors';
+import { ApiErrorCode } from "../constants/api-errors";
 
 export interface ApiError {
   /**

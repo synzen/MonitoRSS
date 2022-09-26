@@ -1,13 +1,13 @@
-import { Supporter } from '../../features/supporters/entities/supporter.entity';
+import { Supporter } from "../../features/supporters/entities/supporter.entity";
 
 const boilerplate: Supporter = {
-  _id: 'discord-user-id',
-  guilds: ['serverid'],
+  _id: "discord-user-id",
+  guilds: ["serverid"],
   patron: true,
 };
 
 export const createTestSupporter = (
-  overrides: Partial<Supporter> = {},
+  overrides: Partial<Supporter> = {}
 ): Supporter => ({
   ...boilerplate,
   ...overrides,

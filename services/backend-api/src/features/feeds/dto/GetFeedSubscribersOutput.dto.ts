@@ -1,8 +1,8 @@
 import {
   FeedSubscriber,
   FeedSubscriberType,
-} from '../entities/feed-subscriber.entity';
-import { GetFeedOutputDto } from './GetFeedOutput.dto';
+} from "../entities/feed-subscriber.entity";
+import { GetFeedOutputDto } from "./GetFeedOutput.dto";
 
 interface FeedSubscribersOutputDto {
   id: string;
@@ -17,7 +17,7 @@ export class GetFeedSubscribersOutputDto {
   total: number;
 
   static fromEntity(
-    subscribers: FeedSubscriber[],
+    subscribers: FeedSubscriber[]
   ): GetFeedSubscribersOutputDto {
     const resultSoFar: GetFeedSubscribersOutputDto = {
       results: subscribers.map((subscriber) => ({

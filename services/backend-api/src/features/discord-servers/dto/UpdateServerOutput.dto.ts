@@ -1,3 +1,3 @@
-import { GetServerOutputDto } from './GetServerOutput.dto';
+import { GetServerOutputDto } from "./GetServerOutput.dto";
 
 export class UpdateServerOutputDto extends GetServerOutputDto {}

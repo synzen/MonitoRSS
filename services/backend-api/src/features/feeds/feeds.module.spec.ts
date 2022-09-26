@@ -1,58 +1,58 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { NestFastifyApplication } from "@nestjs/platform-fastify";
 import {
   setupEndpointTests,
   teardownEndpointTests,
-} from '../../utils/endpoint-tests';
-import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import nock from 'nock';
-import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
-import { Session } from '../../common';
-import { FeedsModule } from './feeds.module';
-import { Types } from 'mongoose';
-import { DISCORD_API_BASE_URL } from '../../constants/discord';
-import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
-import { getModelToken } from '@nestjs/mongoose';
-import { Feed, FeedModel } from './entities/feed.entity';
-import { createTestFeed } from '../../test/data/feeds.test-data';
-import path from 'path';
+} from "../../utils/endpoint-tests";
+import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import nock from "nock";
+import { CACHE_MANAGER, HttpStatus } from "@nestjs/common";
+import { Session } from "../../common";
+import { FeedsModule } from "./feeds.module";
+import { Types } from "mongoose";
+import { DISCORD_API_BASE_URL } from "../../constants/discord";
+import { PartialUserGuild } from "../discord-users/types/PartialUserGuild.type";
+import { getModelToken } from "@nestjs/mongoose";
+import { Feed, FeedModel } from "./entities/feed.entity";
+import { createTestFeed } from "../../test/data/feeds.test-data";
+import path from "path";
 import {
   Supporter,
   SupporterModel,
-} from '../supporters/entities/supporter.entity';
-import { Cache } from 'cache-manager';
-import { ConfigService } from '@nestjs/config';
-import { URL } from 'url';
-import { readFileSync } from 'fs';
-import { ApiErrorCode } from '../../common/constants/api-errors';
-import { CreateFeedInputDto } from './dto/create-feed-input.dto';
-import { CreateFeedOutputDto } from './dto/create-feed-output.dto';
-import { ADMINISTRATOR } from '../discord-auth/constants/permissions';
-import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
-import { createTestDiscordGuild } from '../../test/data/discord-guild.test-data';
-import { createTestDiscordGuildMember } from '../../test/data/discord-guild-member.test-data';
-import { createTestDiscordGuildChannel } from '../../test/data/discord-guild-channel.test-data';
-import { DiscordWebhookType } from '../discord-webhooks/types/discord-webhook.type';
+} from "../supporters/entities/supporter.entity";
+import { Cache } from "cache-manager";
+import { ConfigService } from "@nestjs/config";
+import { URL } from "url";
+import { readFileSync } from "fs";
+import { ApiErrorCode } from "../../common/constants/api-errors";
+import { CreateFeedInputDto } from "./dto/create-feed-input.dto";
+import { CreateFeedOutputDto } from "./dto/create-feed-output.dto";
+import { ADMINISTRATOR } from "../discord-auth/constants/permissions";
+import { createTestDiscordGuildRole } from "../../test/data/discord-guild-role.test-data";
+import { createTestDiscordGuild } from "../../test/data/discord-guild.test-data";
+import { createTestDiscordGuildMember } from "../../test/data/discord-guild-member.test-data";
+import { createTestDiscordGuildChannel } from "../../test/data/discord-guild-channel.test-data";
+import { DiscordWebhookType } from "../discord-webhooks/types/discord-webhook.type";
 
 const feedXml = readFileSync(
-  path.join(__dirname, '../../test/data/feed.xml'),
-  'utf-8',
+  path.join(__dirname, "../../test/data/feed.xml"),
+  "utf-8"
 );
 
-jest.mock('../../utils/logger');
+jest.mock("../../utils/logger");
 
-describe('FeedsModule', () => {
+describe("FeedsModule", () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
   let supporterModel: SupporterModel;
   let configService: ConfigService;
-  let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
+  let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
-      cookie: '',
+      cookie: "",
     },
   };
   const feedId = new Types.ObjectId().toHexString();
-  const guildId = 'guild-id';
+  const guildId = "guild-id";
 
   beforeAll(async () => {
     const { init } = setupEndpointTests({
@@ -62,8 +62,8 @@ describe('FeedsModule', () => {
     ({ app, setAccessToken } = await init());
 
     standardRequestOptions.headers.cookie = await setAccessToken({
-      access_token: 'accessToken',
-    } as Session['accessToken']);
+      access_token: "accessToken",
+    } as Session["accessToken"]);
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
@@ -86,9 +86,9 @@ describe('FeedsModule', () => {
   const mockServers: PartialUserGuild[] = [
     {
       id: guildId,
-      name: 'Test Guild',
+      name: "Test Guild",
       owner: true,
-      permissions: '0',
+      permissions: "0",
     },
   ];
 
@@ -98,22 +98,22 @@ describe('FeedsModule', () => {
       .reply(200, overrideServers || mockServers);
   };
 
-  describe('POST /feeds', () => {
+  describe("POST /feeds", () => {
     const validBody: CreateFeedInputDto = {
-      channelId: 'channel-id',
+      channelId: "channel-id",
       feeds: [
         {
-          title: 'Test Feed',
-          url: 'https://example.com/feed.xml',
+          title: "Test Feed",
+          url: "https://example.com/feed.xml",
         },
       ],
     };
 
-    it('returns 401 if not logged in with discord', async () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'POST',
+        method: "POST",
         url: `/feeds`,
         payload: validBody,
       });
@@ -121,17 +121,17 @@ describe('FeedsModule', () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 400 with the right error code if channel returns 403', async () => {
+    it("returns 400 with the right error code if channel returns 403", async () => {
       mockGetMeServers();
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${validBody.channelId}`)
         .reply(403, {
-          message: 'fake forbidden errro',
+          message: "fake forbidden errro",
         });
 
       const { statusCode, body } = await app.inject({
-        method: 'POST',
+        method: "POST",
         url: `/feeds`,
         payload: validBody,
         ...standardRequestOptions,
@@ -139,23 +139,23 @@ describe('FeedsModule', () => {
 
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
       expect(JSON.parse(body).code).toEqual(
-        ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+        ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION
       );
     });
 
-    it('returns 400 with the right error code if user does not manage channel guild', async () => {
+    it("returns 400 with the right error code if user does not manage channel guild", async () => {
       mockGetMeServers();
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${validBody.channelId}`)
         .reply(200, {
-          guild_id: 'other-guild-id',
+          guild_id: "other-guild-id",
         });
 
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode, body } = await app.inject({
-        method: 'POST',
+        method: "POST",
         url: `/feeds`,
         payload: validBody,
         ...standardRequestOptions,
@@ -163,11 +163,11 @@ describe('FeedsModule', () => {
 
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
       expect(JSON.parse(body).code).toEqual(
-        ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+        ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD
       );
     });
 
-    it('returns the correct error codes for feed request-related errors', async () => {
+    it("returns the correct error codes for feed request-related errors", async () => {
       mockGetMeServers();
 
       nock(DISCORD_API_BASE_URL)
@@ -185,10 +185,10 @@ describe('FeedsModule', () => {
           },
         ]);
 
-      nock(validBody.feeds[0].url).get('').reply(429);
+      nock(validBody.feeds[0].url).get("").reply(429);
 
       const { statusCode, body } = await app.inject({
-        method: 'POST',
+        method: "POST",
         url: `/feeds`,
         payload: validBody,
         ...standardRequestOptions,
@@ -196,13 +196,13 @@ describe('FeedsModule', () => {
 
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
       expect(JSON.parse(body).code).toEqual(
-        ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+        ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS
       );
     });
 
-    it('returns created feed details on success', async () => {
+    it("returns created feed details on success", async () => {
       mockGetMeServers();
-      const botClientId = configService.get('DISCORD_CLIENT_ID');
+      const botClientId = configService.get("DISCORD_CLIENT_ID");
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${validBody.channelId}`)
@@ -211,7 +211,7 @@ describe('FeedsModule', () => {
           createTestDiscordGuildChannel({
             guild_id: guildId,
             id: validBody.channelId,
-          }),
+          })
         )
         .persist();
 
@@ -227,7 +227,7 @@ describe('FeedsModule', () => {
                 permissions: ADMINISTRATOR.toString(),
               }),
             ],
-          }),
+          })
         )
         .persist();
 
@@ -239,7 +239,7 @@ describe('FeedsModule', () => {
             user: {
               id: botClientId,
             },
-          }),
+          })
         )
         .persist();
 
@@ -253,10 +253,10 @@ describe('FeedsModule', () => {
         ])
         .persist();
 
-      nock(validBody.feeds[0].url).get('').reply(200, feedXml);
+      nock(validBody.feeds[0].url).get("").reply(200, feedXml);
 
       const { statusCode, body } = await app.inject({
-        method: 'POST',
+        method: "POST",
         url: `/feeds`,
         payload: validBody,
         ...standardRequestOptions,
@@ -274,36 +274,36 @@ describe('FeedsModule', () => {
     });
   });
 
-  describe('GET /feeds/:feedId', () => {
-    it('returns 401 if not logged in with discord', async () => {
+  describe("GET /feeds/:feedId", () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${feedId}`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 403 if use does not have permission of guild of feed', async () => {
+    it("returns 403 if use does not have permission of guild of feed", async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
           guild: guildId,
-        }),
+        })
       );
 
       mockGetMeServers([
         {
-          id: createdFeed.guild + '1',
-          name: 'Test Guild 3',
+          id: createdFeed.guild + "1",
+          name: "Test Guild 3",
           owner: true,
-          permissions: '0',
+          permissions: "0",
         },
       ]);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${createdFeed._id}`,
         ...standardRequestOptions,
       });
@@ -311,11 +311,11 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 404 if the feed does not exist', async () => {
+    it("returns 404 if the feed does not exist", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${new Types.ObjectId()}`,
         ...standardRequestOptions,
       });
@@ -323,7 +323,7 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
     });
 
-    it('returns the feed', async () => {
+    it("returns the feed", async () => {
       mockGetMeServers();
 
       const feed = createTestFeed({
@@ -333,7 +333,7 @@ describe('FeedsModule', () => {
       await feedModel.create(feed);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${feed._id}`,
         ...standardRequestOptions,
       });
@@ -346,36 +346,36 @@ describe('FeedsModule', () => {
     });
   });
 
-  describe('DELETE /feeds/:feedId', () => {
-    it('returns 401 if not logged in with discord', async () => {
+  describe("DELETE /feeds/:feedId", () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'DELETE',
+        method: "DELETE",
         url: `/feeds/${feedId}`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 403 if use does not have permission of guild of feed', async () => {
+    it("returns 403 if use does not have permission of guild of feed", async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
           guild: guildId,
-        }),
+        })
       );
 
       mockGetMeServers([
         {
-          id: createdFeed.guild + '1',
-          name: 'Test Guild 3',
+          id: createdFeed.guild + "1",
+          name: "Test Guild 3",
           owner: true,
-          permissions: '0',
+          permissions: "0",
         },
       ]);
 
       const { statusCode } = await app.inject({
-        method: 'DELETE',
+        method: "DELETE",
         url: `/feeds/${createdFeed._id}`,
         ...standardRequestOptions,
       });
@@ -383,11 +383,11 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 404 if the feed does not exist', async () => {
+    it("returns 404 if the feed does not exist", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'DELETE',
+        method: "DELETE",
         url: `/feeds/${new Types.ObjectId()}`,
         ...standardRequestOptions,
       });
@@ -395,7 +395,7 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
     });
 
-    it('returns 204', async () => {
+    it("returns 204", async () => {
       mockGetMeServers();
 
       const feed = createTestFeed({
@@ -405,7 +405,7 @@ describe('FeedsModule', () => {
       await feedModel.create(feed);
 
       const { statusCode } = await app.inject({
-        method: 'DELETE',
+        method: "DELETE",
         url: `/feeds/${feed._id}`,
         ...standardRequestOptions,
       });
@@ -414,36 +414,36 @@ describe('FeedsModule', () => {
     });
   });
 
-  describe('GET /feeds/:feedId/refresh', () => {
-    it('returns 401 if not logged in with discord', async () => {
+  describe("GET /feeds/:feedId/refresh", () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${feedId}/refresh`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 403 if use does not have permission of guild of feed', async () => {
+    it("returns 403 if use does not have permission of guild of feed", async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
           guild: guildId,
-        }),
+        })
       );
 
       mockGetMeServers([
         {
-          id: createdFeed.guild + '1',
-          name: 'Test Guild 3',
+          id: createdFeed.guild + "1",
+          name: "Test Guild 3",
           owner: true,
-          permissions: '0',
+          permissions: "0",
         },
       ]);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${createdFeed._id}/refresh`,
         ...standardRequestOptions,
       });
@@ -451,11 +451,11 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 404 if the feed does not exist', async () => {
+    it("returns 404 if the feed does not exist", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${new Types.ObjectId()}/refresh`,
         ...standardRequestOptions,
       });
@@ -463,7 +463,7 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.NOT_FOUND);
     });
 
-    it('returns the feed', async () => {
+    it("returns the feed", async () => {
       mockGetMeServers();
 
       const feed = createTestFeed({
@@ -472,10 +472,10 @@ describe('FeedsModule', () => {
 
       await feedModel.create(feed);
 
-      nock(feed.url).get('').reply(200, feedXml);
+      nock(feed.url).get("").reply(200, feedXml);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${feed._id}/refresh`,
         ...standardRequestOptions,
       });
@@ -487,7 +487,7 @@ describe('FeedsModule', () => {
       });
     });
 
-    it('throws feed-specific errors if fetching the feed failed', async () => {
+    it("throws feed-specific errors if fetching the feed failed", async () => {
       mockGetMeServers();
 
       const feed = createTestFeed({
@@ -496,51 +496,51 @@ describe('FeedsModule', () => {
 
       await feedModel.create(feed);
 
-      nock(feed.url).get('').reply(429, 'Fake Too Many Requests Error');
+      nock(feed.url).get("").reply(429, "Fake Too Many Requests Error");
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${feed._id}/refresh`,
         ...standardRequestOptions,
       });
 
       expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
       expect(JSON.parse(body).code).toEqual(
-        ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+        ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS
       );
     });
   });
 
-  describe('PATCH /feeds/:feedId', () => {
-    it('returns 401 if not logged in with discord', async () => {
+  describe("PATCH /feeds/:feedId", () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/feeds/${feedId}`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 403 if use does not have permission of guild of feed', async () => {
+    it("returns 403 if use does not have permission of guild of feed", async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
           guild: guildId,
-        }),
+        })
       );
 
       mockGetMeServers([
         {
-          id: createdFeed.guild + '1',
-          name: 'Test Guild 3',
+          id: createdFeed.guild + "1",
+          name: "Test Guild 3",
           owner: true,
-          permissions: '0',
+          permissions: "0",
         },
       ]);
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/feeds/${createdFeed._id}`,
         ...standardRequestOptions,
       });
@@ -548,7 +548,7 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('updates and returns the updated feed', async () => {
+    it("updates and returns the updated feed", async () => {
       mockGetMeServers();
 
       const feed = createTestFeed({
@@ -558,8 +558,8 @@ describe('FeedsModule', () => {
       await feedModel.create(feed);
 
       const payload = {
-        title: 'newtitle',
-        text: 'Hello world',
+        title: "newtitle",
+        text: "Hello world",
         checkTitles: true,
         checkDates: true,
         imgPreviews: true,
@@ -568,22 +568,22 @@ describe('FeedsModule', () => {
         splitMessage: true,
         filters: [
           {
-            category: 'description',
-            value: 'desc',
+            category: "description",
+            value: "desc",
           },
           {
-            category: 'title',
-            value: 'title1',
+            category: "title",
+            value: "title1",
           },
           {
-            category: 'title',
-            value: 'title2',
+            category: "title",
+            value: "title2",
           },
         ],
       };
 
       const { statusCode, body } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/feeds/${feed._id}`,
         payload,
         ...standardRequestOptions,
@@ -593,12 +593,12 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.OK);
       expect(parsedBody.result.text).toEqual(payload.text);
       expect(parsedBody.result.filters).toEqual(
-        expect.arrayContaining(payload.filters),
+        expect.arrayContaining(payload.filters)
       );
     });
 
-    it('returns 400 if channel that is being updated is not found', async () => {
-      const channelId = 'channel-id';
+    it("returns 400 if channel that is being updated is not found", async () => {
+      const channelId = "channel-id";
       mockGetMeServers();
 
       const feed = createTestFeed({
@@ -607,25 +607,23 @@ describe('FeedsModule', () => {
 
       await feedModel.create(feed);
 
-      jest.spyOn(console, 'error').mockImplementation();
+      jest.spyOn(console, "error").mockImplementation();
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${channelId}`)
-        .reply(404, { message: 'mock GET channel failure' });
+        .reply(404, { message: "mock GET channel failure" });
       nock(DISCORD_API_BASE_URL)
         .get(
-          `/guilds/${guildId}/members/${configService.get(
-            'DISCORD_CLIENT_ID',
-          )}`,
+          `/guilds/${guildId}/members/${configService.get("DISCORD_CLIENT_ID")}`
         )
-        .reply(200, { id: 'member-id' });
+        .reply(200, { id: "member-id" });
 
       const payload = {
         channelId,
       };
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/feeds/${feed._id}`,
         payload,
         ...standardRequestOptions,
@@ -634,9 +632,9 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
     });
 
-    it('updates webhooks correctly', async () => {
+    it("updates webhooks correctly", async () => {
       mockGetMeServers();
-      const webhookId = 'webhook-id';
+      const webhookId = "webhook-id";
 
       const feed = createTestFeed({
         guild: guildId,
@@ -645,7 +643,7 @@ describe('FeedsModule', () => {
 
       await supporterModel.create({
         guilds: [guildId],
-        _id: 'discord-user-id',
+        _id: "discord-user-id",
         webhook: true,
       });
 
@@ -661,11 +659,11 @@ describe('FeedsModule', () => {
         id: webhookId,
         type: DiscordWebhookType.INCOMING,
         application_id: null,
-        token: '123',
+        token: "123",
       });
 
       const { statusCode, body } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/feeds/${feed._id}`,
         payload,
         ...standardRequestOptions,
@@ -676,12 +674,12 @@ describe('FeedsModule', () => {
       expect(parsedBody.result.webhook).toEqual(
         expect.objectContaining({
           id: webhookId,
-        }),
+        })
       );
     });
   });
 
-  it('throws 403 if server has no access to webhooks (server has no supporter)', async () => {
+  it("throws 403 if server has no access to webhooks (server has no supporter)", async () => {
     mockGetMeServers();
     const feed = createTestFeed({
       guild: guildId,
@@ -692,12 +690,12 @@ describe('FeedsModule', () => {
 
     const payload = {
       webhook: {
-        id: 'webhook-id',
+        id: "webhook-id",
       },
     };
 
     const { statusCode } = await app.inject({
-      method: 'PATCH',
+      method: "PATCH",
       url: `/feeds/${feed._id}`,
       payload,
       ...standardRequestOptions,
@@ -706,9 +704,9 @@ describe('FeedsModule', () => {
     expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
   });
 
-  it('returns 400 if webhook was not found by Discord', async () => {
+  it("returns 400 if webhook was not found by Discord", async () => {
     mockGetMeServers();
-    const webhookId = 'webhook-id';
+    const webhookId = "webhook-id";
 
     const feed = createTestFeed({
       guild: guildId,
@@ -717,7 +715,7 @@ describe('FeedsModule', () => {
 
     await supporterModel.create({
       guilds: [guildId],
-      _id: 'discord-user-id',
+      _id: "discord-user-id",
       webhook: true,
     });
 
@@ -731,10 +729,10 @@ describe('FeedsModule', () => {
 
     nock(DISCORD_API_BASE_URL)
       .get(`/webhooks/${webhookId}`)
-      .reply(404, { message: 'Webhook not found' });
+      .reply(404, { message: "Webhook not found" });
 
     const { statusCode } = await app.inject({
-      method: 'PATCH',
+      method: "PATCH",
       url: `/feeds/${feed._id}`,
       payload,
       ...standardRequestOptions,
@@ -743,54 +741,54 @@ describe('FeedsModule', () => {
     expect(statusCode).toEqual(HttpStatus.BAD_REQUEST);
   });
 
-  describe('GET /feeds/:feedId/articles', () => {
-    const feedUrl = 'https://rss-feed.com/feed.xml';
+  describe("GET /feeds/:feedId/articles", () => {
+    const feedUrl = "https://rss-feed.com/feed.xml";
 
     beforeEach(() => {
       const url = new URL(feedUrl);
       const feedFilePath = path.join(
         __dirname,
-        '..',
-        '..',
-        'test',
-        'data',
-        'feed.xml',
+        "..",
+        "..",
+        "test",
+        "data",
+        "feed.xml"
       );
 
       nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
-        'Content-Type': 'application/xml',
+        "Content-Type": "application/xml",
       });
     });
-    it('returns 401 if not logged in with discord', async () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${feedId}/articles`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 403 if use does not have permission of guild of feed', async () => {
+    it("returns 403 if use does not have permission of guild of feed", async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
           guild: guildId,
           url: feedUrl,
-        }),
+        })
       );
 
       mockGetMeServers([
         {
-          id: createdFeed.guild + '1',
-          name: 'Test Guild 3',
+          id: createdFeed.guild + "1",
+          name: "Test Guild 3",
           owner: true,
-          permissions: '0',
+          permissions: "0",
         },
       ]);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${createdFeed._id}/articles`,
         ...standardRequestOptions,
       });
@@ -798,18 +796,18 @@ describe('FeedsModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('returns the feed articles', async () => {
+    it("returns the feed articles", async () => {
       const createdFeed = await feedModel.create(
         createTestFeed({
           guild: guildId,
           url: feedUrl,
-        }),
+        })
       );
 
       mockGetMeServers();
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/feeds/${createdFeed._id}/articles`,
         ...standardRequestOptions,
       });
@@ -830,7 +828,7 @@ describe('FeedsModule', () => {
               raw: expect.any(Array),
               regex: expect.any(Array),
             }),
-          }),
+          })
         );
       }
     });

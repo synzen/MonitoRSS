@@ -1,3 +1,3 @@
-import { GetFeedOutputDto } from './GetFeedOutput.dto';
+import { GetFeedOutputDto } from "./GetFeedOutput.dto";
 
 export type UpdateFeedOutputDto = GetFeedOutputDto;

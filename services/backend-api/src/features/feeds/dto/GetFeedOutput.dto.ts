@@ -1,8 +1,8 @@
-import { DetailedFeed } from '../types/detailed-feed.type';
+import { DetailedFeed } from "../types/detailed-feed.type";
 
 export enum FeedEmbedTimestamp {
-  ARTICLE = 'article',
-  NOW = 'now',
+  ARTICLE = "article",
+  NOW = "now",
 }
 
 export interface FeedEmbedOutputDto {
@@ -36,7 +36,7 @@ export interface FeedEmbedOutputDto {
 interface FeedOutputDto {
   id: string;
   title: string;
-  status: 'ok' | 'failed' | 'disabled' | 'failing';
+  status: "ok" | "failed" | "disabled" | "failing";
   failReason?: string;
   disabledReason?: string;
   filters: Array<{ category: string; value: string }>;
@@ -77,7 +77,7 @@ export class GetFeedOutputDto {
         title: feed.title,
         url: feed.url,
         refreshRateSeconds: feed.refreshRateSeconds,
-        text: feed.text || '',
+        text: feed.text || "",
         /**
          * The defaults for these booleans match the defaults on the public hosting of the bot.
          * While not ideal to hardcode, it's the easiest way to get this out quick without
@@ -131,9 +131,9 @@ export class GetFeedOutputDto {
   }
 
   static getFeedFiltersDto(
-    feedFilters?: DetailedFeed['filters'],
-  ): GetFeedOutputDto['result']['filters'] {
-    const filters: FeedOutputDto['filters'] = [];
+    feedFilters?: DetailedFeed["filters"]
+  ): GetFeedOutputDto["result"]["filters"] {
+    const filters: FeedOutputDto["filters"] = [];
 
     Object.entries(feedFilters || {}).forEach(([category, values]) => {
       values.forEach((value) => {

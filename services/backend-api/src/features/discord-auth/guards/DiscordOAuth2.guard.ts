@@ -3,10 +3,10 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-} from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { DiscordAuthService } from '../discord-auth.service';
-import { SessionAccessToken } from '../types/SessionAccessToken.type';
+} from "@nestjs/common";
+import { FastifyRequest } from "fastify";
+import { DiscordAuthService } from "../discord-auth.service";
+import { SessionAccessToken } from "../types/SessionAccessToken.type";
 
 @Injectable()
 export class DiscordOAuth2Guard implements CanActivate {
@@ -15,7 +15,7 @@ export class DiscordOAuth2Guard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest() as FastifyRequest;
 
-    let token = request.session.get('accessToken') as
+    let token = request.session.get("accessToken") as
       | SessionAccessToken
       | undefined;
 
@@ -25,7 +25,7 @@ export class DiscordOAuth2Guard implements CanActivate {
 
     if (this.discordAuthService.isTokenExpired(token)) {
       token = await this.discordAuthService.refreshToken(token);
-      request.session.set('accessToken', token);
+      request.session.set("accessToken", token);
     }
 
     return true;

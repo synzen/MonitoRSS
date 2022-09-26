@@ -1,12 +1,12 @@
-import { createTestFeedSubscriber } from '../../../test/data/subscriber.test-data';
-import { CreateFeedSubscriberOutputDto } from './CreateFeedSubscriberOutput.dto';
+import { createTestFeedSubscriber } from "../../../test/data/subscriber.test-data";
+import { CreateFeedSubscriberOutputDto } from "./CreateFeedSubscriberOutput.dto";
 
-describe('CreateFeedSubscriberOutputDto', () => {
-  it('returns the formatted result', () => {
+describe("CreateFeedSubscriberOutputDto", () => {
+  it("returns the formatted result", () => {
     const entity = createTestFeedSubscriber({
       filters: {
-        title: ['hello', 'hello2'],
-        description: ['world'],
+        title: ["hello", "hello2"],
+        description: ["world"],
       },
     });
     const formatted = CreateFeedSubscriberOutputDto.fromEntity(entity);
@@ -19,16 +19,16 @@ describe('CreateFeedSubscriberOutputDto', () => {
         type: entity.type,
         filters: [
           {
-            category: 'description',
-            value: 'world',
+            category: "description",
+            value: "world",
           },
           {
-            category: 'title',
-            value: 'hello',
+            category: "title",
+            value: "hello",
           },
           {
-            category: 'title',
-            value: 'hello2',
+            category: "title",
+            value: "hello2",
           },
         ],
       },

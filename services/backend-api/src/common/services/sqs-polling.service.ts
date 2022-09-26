@@ -3,9 +3,9 @@ import {
   Message,
   ReceiveMessageCommand,
   SQSClient,
-} from '@aws-sdk/client-sqs';
-import { Injectable } from '@nestjs/common';
-import logger from '../../utils/logger';
+} from "@aws-sdk/client-sqs";
+import { Injectable } from "@nestjs/common";
+import logger from "../../utils/logger";
 
 interface PollQueueOptions {
   awsQueueUrl: string;
@@ -38,14 +38,14 @@ export class SqsPollingService {
     onMessageReceived: (message: Message) => Promise<void>,
     options?: {
       awaitProcessing: boolean;
-    },
+    }
   ) {
     const receiveResult = await client.send(
       new ReceiveMessageCommand({
         WaitTimeSeconds: 20,
         QueueUrl: queueUrl,
-        MessageAttributeNames: ['All'],
-      }),
+        MessageAttributeNames: ["All"],
+      })
     );
 
     if (!receiveResult.Messages) {
@@ -55,7 +55,7 @@ export class SqsPollingService {
     }
 
     logger.debug(
-      `Found ${receiveResult.Messages.length} messages in queue ${queueUrl}`,
+      `Found ${receiveResult.Messages.length} messages in queue ${queueUrl}`
     );
 
     const promises = receiveResult.Messages.map(async (message) => {
@@ -66,7 +66,7 @@ export class SqsPollingService {
             client,
             url: queueUrl,
           },
-          message,
+          message
         );
       } catch (err) {
         logger.error(`Error processing message ${message.MessageId}`, {
@@ -92,14 +92,14 @@ export class SqsPollingService {
       client: SQSClient;
       url: string;
     },
-    message: Message,
+    message: Message
   ) {
     try {
       await client.send(
         new DeleteMessageCommand({
           QueueUrl: url,
           ReceiptHandle: message.ReceiptHandle,
-        }),
+        })
       );
     } catch (err) {
       logger.error(`Error deleting message ${message.MessageId}`, {

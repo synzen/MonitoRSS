@@ -1,40 +1,40 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { NestFastifyApplication } from "@nestjs/platform-fastify";
 import {
   setupEndpointTests,
   teardownEndpointTests,
-} from '../../utils/endpoint-tests';
-import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import nock from 'nock';
-import { HttpStatus } from '@nestjs/common';
-import { DISCORD_API_BASE_URL } from '../../constants/discord';
-import { Session } from '../../common';
-import { DiscordUserModule } from './discord-users.module';
-import { DiscordUser } from './types/DiscordUser.type';
-import { PartialUserGuild } from './types/PartialUserGuild.type';
-import { createTestSupporter } from '../../test/data/supporters.test-data';
-import dayjs from 'dayjs';
+} from "../../utils/endpoint-tests";
+import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import nock from "nock";
+import { HttpStatus } from "@nestjs/common";
+import { DISCORD_API_BASE_URL } from "../../constants/discord";
+import { Session } from "../../common";
+import { DiscordUserModule } from "./discord-users.module";
+import { DiscordUser } from "./types/DiscordUser.type";
+import { PartialUserGuild } from "./types/PartialUserGuild.type";
+import { createTestSupporter } from "../../test/data/supporters.test-data";
+import dayjs from "dayjs";
 import {
   Supporter,
   SupporterModel,
-} from '../supporters/entities/supporter.entity';
-import { getModelToken } from '@nestjs/mongoose';
+} from "../supporters/entities/supporter.entity";
+import { getModelToken } from "@nestjs/mongoose";
 
-jest.mock('../../utils/logger');
+jest.mock("../../utils/logger");
 
-describe('DiscordServersModule', () => {
+describe("DiscordServersModule", () => {
   let app: NestFastifyApplication;
   let supporterModel: SupporterModel;
-  let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
+  let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
-      cookie: '',
+      cookie: "",
     },
   };
   const mockUser: DiscordUser = {
-    id: '12345',
-    username: 'Test User',
-    discriminator: '1234',
-    avatar: 'avatar-hash',
+    id: "12345",
+    username: "Test User",
+    discriminator: "1234",
+    avatar: "avatar-hash",
   };
 
   beforeAll(async () => {
@@ -47,11 +47,11 @@ describe('DiscordServersModule', () => {
     // To do - set up an endpoint to use the session middleware, set the session, and then run tests
 
     standardRequestOptions.headers.cookie = await setAccessToken({
-      access_token: 'accessToken',
+      access_token: "accessToken",
       discord: {
         id: mockUser.id,
       },
-    } as Session['accessToken']);
+    } as Session["accessToken"]);
 
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
   });
@@ -75,30 +75,30 @@ describe('DiscordServersModule', () => {
       .persist();
   };
 
-  describe('GET /discord-users/@me', () => {
-    it('returns 401 if not logged in with discord', async () => {
+  describe("GET /discord-users/@me", () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMe();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-users/@me`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns user with no supporter details', async () => {
+    it("returns user with no supporter details", async () => {
       const mockUser: DiscordUser = {
-        id: '1',
-        username: 'username',
-        discriminator: '1234',
-        avatar: '123345',
+        id: "1",
+        username: "username",
+        discriminator: "1234",
+        avatar: "123345",
       };
 
       mockGetMe(mockUser);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-users/@me`,
         ...standardRequestOptions,
       });
@@ -112,28 +112,28 @@ describe('DiscordServersModule', () => {
       });
     });
 
-    it('returns user with supporter details', async () => {
+    it("returns user with supporter details", async () => {
       const mockUser: DiscordUser = {
-        id: '1',
-        username: 'username',
-        discriminator: '1234',
-        avatar: '123345',
+        id: "1",
+        username: "username",
+        discriminator: "1234",
+        avatar: "123345",
       };
 
       mockGetMe(mockUser);
 
       const supporter = createTestSupporter({
         _id: mockUser.id,
-        expireAt: dayjs().add(2, 'day').toDate(),
+        expireAt: dayjs().add(2, "day").toDate(),
         maxGuilds: 10,
         maxFeeds: 11,
-        guilds: ['1', '2'],
+        guilds: ["1", "2"],
       });
 
       await supporterModel.create(supporter);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-users/@me`,
         ...standardRequestOptions,
       });
@@ -154,27 +154,27 @@ describe('DiscordServersModule', () => {
     });
   });
 
-  describe('PATCH /discord-users/@me/supporter', () => {
-    it('returns 401 if not logged in with discord', async () => {
+  describe("PATCH /discord-users/@me/supporter", () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMe();
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-users/@me/supporter`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 403 if user is not a supporter', async () => {
+    it("returns 403 if user is not a supporter", async () => {
       mockGetMe();
       // User has no "supporter" document
       const payload = {
-        guildIds: ['1', '2', '3'],
+        guildIds: ["1", "2", "3"],
       };
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-users/@me/supporter`,
         payload,
         ...standardRequestOptions,
@@ -183,25 +183,25 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toEqual(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 204 if valid supporter', async () => {
+    it("returns 204 if valid supporter", async () => {
       mockGetMe(mockUser);
 
       const supporter = createTestSupporter({
         _id: mockUser.id,
-        expireAt: dayjs().add(2, 'day').toDate(),
+        expireAt: dayjs().add(2, "day").toDate(),
         maxGuilds: 10,
         maxFeeds: 11,
-        guilds: ['1', '2'],
+        guilds: ["1", "2"],
       });
 
       await supporterModel.create(supporter);
 
       const payload = {
-        guildIds: ['1', '2', '3'],
+        guildIds: ["1", "2", "3"],
       };
 
       const result = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-users/@me/supporter`,
         payload,
         ...standardRequestOptions,
@@ -210,25 +210,25 @@ describe('DiscordServersModule', () => {
       expect(result.statusCode).toEqual(HttpStatus.NO_CONTENT);
     });
 
-    it('ignores empty strings in guild ids', async () => {
+    it("ignores empty strings in guild ids", async () => {
       mockGetMe(mockUser);
 
       const supporter = createTestSupporter({
         _id: mockUser.id,
-        expireAt: dayjs().add(2, 'day').toDate(),
+        expireAt: dayjs().add(2, "day").toDate(),
         maxGuilds: 10,
         maxFeeds: 11,
-        guilds: ['1', '2'],
+        guilds: ["1", "2"],
       });
 
       await supporterModel.create(supporter);
 
       const payload = {
-        guildIds: ['1', '', '3', ''],
+        guildIds: ["1", "", "3", ""],
       };
 
       const result = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-users/@me/supporter`,
         payload,
         ...standardRequestOptions,
@@ -249,19 +249,19 @@ describe('DiscordServersModule', () => {
     });
   });
 
-  describe('GET /users/@me/servers', () => {
+  describe("GET /users/@me/servers", () => {
     const mockServers: PartialUserGuild[] = [
       {
-        id: '123',
-        name: 'Test Guild',
+        id: "123",
+        name: "Test Guild",
         owner: true,
-        permissions: '0',
+        permissions: "0",
       },
       {
-        id: '456',
-        name: 'Test Guild 2',
+        id: "456",
+        name: "Test Guild 2",
         owner: true,
-        permissions: '0',
+        permissions: "0",
       },
     ];
 
@@ -271,11 +271,11 @@ describe('DiscordServersModule', () => {
         .reply(200, overrideServers || mockServers);
     };
 
-    it('returns 401 if not logged in with discord', async () => {
+    it("returns 401 if not logged in with discord", async () => {
       mockGetMeServers();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-users/@me/servers`,
       });
 
@@ -286,7 +286,7 @@ describe('DiscordServersModule', () => {
       mockGetMeServers();
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-users/@me/servers`,
         ...standardRequestOptions,
       });
@@ -307,18 +307,18 @@ describe('DiscordServersModule', () => {
       });
     });
 
-    it('does not return servers the user does not have permission in', async () => {
+    it("does not return servers the user does not have permission in", async () => {
       mockGetMeServers([
         {
-          id: '789',
-          name: 'Test Guild 3',
+          id: "789",
+          name: "Test Guild 3",
           owner: false,
-          permissions: '0',
+          permissions: "0",
         },
       ]);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-users/@me/servers`,
         ...standardRequestOptions,
       });

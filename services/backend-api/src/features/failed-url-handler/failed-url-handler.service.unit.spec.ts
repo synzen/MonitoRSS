@@ -1,9 +1,9 @@
-import { ConfigService } from '@nestjs/config';
-import { SqsPollingService } from '../../common/services/sqs-polling.service';
-import { FeedModel } from '../feeds/entities/feed.entity';
-import { FailedUrlHandlerService } from './failed-url-handler.service';
+import { ConfigService } from "@nestjs/config";
+import { SqsPollingService } from "../../common/services/sqs-polling.service";
+import { FeedModel } from "../feeds/entities/feed.entity";
+import { FailedUrlHandlerService } from "./failed-url-handler.service";
 
-describe('FailedUrlHandlerService Unit', () => {
+describe("FailedUrlHandlerService Unit", () => {
   let service: FailedUrlHandlerService;
   const configService: ConfigService = {
     get: jest.fn(),
@@ -20,14 +20,14 @@ describe('FailedUrlHandlerService Unit', () => {
     service = new FailedUrlHandlerService(
       configService,
       sqsPollingService,
-      feedModel,
+      feedModel
     );
   });
 
-  describe('disableFeedsWithUrl', () => {
-    const url = 'foobar';
+  describe("disableFeedsWithUrl", () => {
+    const url = "foobar";
 
-    it('calls updateMany correctly', async () => {
+    it("calls updateMany correctly", async () => {
       await service.disableFeedsWithUrl(url);
       expect(feedModel.updateMany).toHaveBeenCalledWith(
         {
@@ -36,9 +36,9 @@ describe('FailedUrlHandlerService Unit', () => {
         },
         {
           $set: {
-            disabled: 'CONNECTION_FAILURE',
+            disabled: "CONNECTION_FAILURE",
           },
-        },
+        }
       );
     });
   });

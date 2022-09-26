@@ -1,17 +1,17 @@
-import '../utils/dd-tracer';
-import { INestApplicationContext } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app.module';
-import { Feed } from '../features/feeds/entities/feed.entity';
-import { ScheduleEmitterService } from '../features/schedule-emitter/schedule-emitter.service';
-import { ScheduleHandlerService } from '../features/schedule-handler/schedule-handler.service';
-import logger from '../utils/logger';
+import "../utils/dd-tracer";
+import { INestApplicationContext } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "../app.module";
+import { Feed } from "../features/feeds/entities/feed.entity";
+import { ScheduleEmitterService } from "../features/schedule-emitter/schedule-emitter.service";
+import { ScheduleHandlerService } from "../features/schedule-handler/schedule-handler.service";
+import logger from "../utils/logger";
 
 bootstrap();
 
 async function bootstrap() {
   try {
-    logger.info('Starting schedule emitter service...');
+    logger.info("Starting schedule emitter service...");
     const app = await NestFactory.createApplicationContext(AppModule.forRoot());
     await app.init();
 
@@ -21,7 +21,7 @@ async function bootstrap() {
 
     await runTimerSync(app);
 
-    logger.info('Initiailized schedule emitter service');
+    logger.info("Initiailized schedule emitter service");
   } catch (err) {
     logger.error(`Failed to initialize schedule emitter`, {
       stack: err.stack,
@@ -64,7 +64,7 @@ async function urlEventHandler(
   data: {
     url: string;
     rateSeconds: number;
-  },
+  }
 ) {
   const scheduleHandlerService = app.get(ScheduleHandlerService);
 
@@ -84,7 +84,7 @@ async function feedEventHandler(
   app: INestApplicationContext,
   data: {
     feed: Feed;
-  },
+  }
 ) {
   try {
     logger.debug(`Handling feed event`, {

@@ -1,4 +1,4 @@
-import { DiscordBotUser } from '../types/discord-bot-user.type';
+import { DiscordBotUser } from "../types/discord-bot-user.type";
 
 export class GetBotOutputDto {
   result: {

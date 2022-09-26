@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -6,7 +6,7 @@ import {
   IsString,
   IsUrl,
   ValidateNested,
-} from 'class-validator';
+} from "class-validator";
 
 class CreateFeedInputFeedsDto {
   @IsString()

@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { SupportersService } from '../supporters/supporters.service';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectModel } from "@nestjs/mongoose";
+import { SupportersService } from "../supporters/supporters.service";
 import {
   FeedSchedule,
   FeedScheduleModel,
-} from './entities/feed-schedule.entity';
+} from "./entities/feed-schedule.entity";
 
 interface FeedDetails {
   _id: string;
@@ -22,12 +22,12 @@ export class FeedSchedulingService {
     private readonly supportersService: SupportersService,
     private readonly configService: ConfigService,
     @InjectModel(FeedSchedule.name)
-    private readonly feedScheduleModel: FeedScheduleModel,
+    private readonly feedScheduleModel: FeedScheduleModel
   ) {
     this.defaultRefreshRateSeconds =
-      (this.configService.get('DEFAULT_REFRESH_RATE_MINUTES') as number) * 60;
+      (this.configService.get("DEFAULT_REFRESH_RATE_MINUTES") as number) * 60;
     this.vipRefreshRateSeconds =
-      (this.configService.get('VIP_REFRESH_RATE_MINUTES') as number) * 60;
+      (this.configService.get("VIP_REFRESH_RATE_MINUTES") as number) * 60;
   }
 
   async getAllSchedules(): Promise<FeedSchedule[]> {
@@ -35,7 +35,7 @@ export class FeedSchedulingService {
   }
 
   async findSchedulesOfRefreshRate(
-    refreshRateSeconds: number,
+    refreshRateSeconds: number
   ): Promise<FeedSchedule[]> {
     return this.feedScheduleModel
       .find({
@@ -55,7 +55,7 @@ export class FeedSchedulingService {
       this.feedScheduleModel
         .find({
           name: {
-            $ne: 'default',
+            $ne: "default",
           },
         })
         .lean(),
@@ -64,12 +64,12 @@ export class FeedSchedulingService {
 
     return feeds.map((feed) => {
       const feedServerBenefits = serverBenefits.find(
-        (serverBenefit) => serverBenefit.serverId === feed.guild,
+        (serverBenefit) => serverBenefit.serverId === feed.guild
       );
 
       if (!feedServerBenefits) {
         console.error(
-          `Missing calculated server benefits for ${feed.guild} when determing feed refresh rates`,
+          `Missing calculated server benefits for ${feed.guild} when determing feed refresh rates`
         );
 
         return this.defaultRefreshRateSeconds;
@@ -79,7 +79,7 @@ export class FeedSchedulingService {
       if (
         feedServerBenefits.hasSupporter &&
         feedServerBenefits.refreshRateSeconds !== undefined &&
-        !feed.url.includes('feed43')
+        !feed.url.includes("feed43")
       ) {
         return feedServerBenefits.refreshRateSeconds;
       }
@@ -90,7 +90,7 @@ export class FeedSchedulingService {
 
   private getRefreshRateOfFeedFromSchedules(
     feed: FeedDetails,
-    schedules: FeedSchedule[],
+    schedules: FeedSchedule[]
   ) {
     for (const schedule of schedules) {
       if (schedule?.feeds?.includes(feed._id)) {
@@ -98,7 +98,7 @@ export class FeedSchedulingService {
       }
 
       const someKeywordMatch = schedule?.keywords?.some((word) =>
-        feed.url.includes(word),
+        feed.url.includes(word)
       );
 
       if (someKeywordMatch) {

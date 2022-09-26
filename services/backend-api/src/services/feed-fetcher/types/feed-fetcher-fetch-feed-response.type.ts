@@ -1,5 +1,5 @@
 interface FetchFeedResponseSuccess {
-  requestStatus: 'success';
+  requestStatus: "success";
   response: {
     body: string;
     statusCode: number;
@@ -7,15 +7,15 @@ interface FetchFeedResponseSuccess {
 }
 
 interface FetchFeedResponsePending {
-  requestStatus: 'pending';
+  requestStatus: "pending";
 }
 
 interface FetchFeedResponseError {
-  requestStatus: 'error';
+  requestStatus: "error";
 }
 
 interface FeedFetchResponseParseError {
-  requestStatus: 'parse_error';
+  requestStatus: "parse_error";
   response: {
     statusCode: number;
   };

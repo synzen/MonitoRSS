@@ -1,6 +1,6 @@
-import { FeedSchedulingService } from './feed-scheduling.service';
+import { FeedSchedulingService } from "./feed-scheduling.service";
 
-describe('FeedSchedulingService', () => {
+describe("FeedSchedulingService", () => {
   const feedScheduleFind = jest.fn();
   const supportersService = {
     getBenefitsOfServers: jest.fn(),
@@ -21,23 +21,23 @@ describe('FeedSchedulingService', () => {
     service = new FeedSchedulingService(
       supportersService as never,
       configService as never,
-      feedScheduleModel as never,
+      feedScheduleModel as never
     );
     service.defaultRefreshRateSeconds = 600;
     service.vipRefreshRateSeconds = 120;
   });
 
-  describe('getRefreshRateOfFeeds', () => {
+  describe("getRefreshRateOfFeeds", () => {
     const sampleFeedDetails = [
       {
-        _id: '1',
-        url: 'https://example.com',
-        guild: '1',
+        _id: "1",
+        url: "https://example.com",
+        guild: "1",
       },
     ];
 
-    it('returns the default refresh rate if server benefits failed to calculate', async () => {
-      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+    it("returns the default refresh rate if server benefits failed to calculate", async () => {
+      const consoleError = jest.spyOn(console, "error").mockImplementation();
       supportersService.getBenefitsOfServers.mockResolvedValue([]);
       const result = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
@@ -46,8 +46,8 @@ describe('FeedSchedulingService', () => {
       consoleError.mockRestore();
     });
 
-    describe('when the feeds are backed by a supporter', () => {
-      it('returns the refreh rates of the benefits', async () => {
+    describe("when the feeds are backed by a supporter", () => {
+      it("returns the refreh rates of the benefits", async () => {
         const serverBenefits = [
           {
             serverId: sampleFeedDetails[0].guild,
@@ -57,34 +57,34 @@ describe('FeedSchedulingService', () => {
         ];
 
         supportersService.getBenefitsOfServers.mockResolvedValue(
-          serverBenefits,
+          serverBenefits
         );
 
         const refreshRates = await service.getRefreshRatesOfFeeds(
-          sampleFeedDetails,
+          sampleFeedDetails
         );
         expect(refreshRates[0]).toBe(serverBenefits[0].refreshRateSeconds);
       });
     });
 
-    describe('when the feeds are not backed by supporters', () => {
+    describe("when the feeds are not backed by supporters", () => {
       beforeEach(() => {
         supportersService.getBenefitsOfServers.mockResolvedValue(
           sampleFeedDetails.map(() => ({
             hasSupporter: false,
             serverId: sampleFeedDetails[0].guild,
-          })),
+          }))
         );
       });
 
-      it('returns the default refresh rate if no schedule matches', async () => {
+      it("returns the default refresh rate if no schedule matches", async () => {
         const refreshRates = await service.getRefreshRatesOfFeeds(
-          sampleFeedDetails,
+          sampleFeedDetails
         );
         expect(refreshRates[0]).toBe(service.defaultRefreshRateSeconds);
       });
 
-      it('returns the refresh rate of the schedule that matches the keywords', async () => {
+      it("returns the refresh rate of the schedule that matches the keywords", async () => {
         const mockScheduleFindResponse = [
           {
             keywords: [sampleFeedDetails[0].url],
@@ -93,14 +93,14 @@ describe('FeedSchedulingService', () => {
         ];
         feedScheduleFind.mockResolvedValue(mockScheduleFindResponse);
         const refreshRates = await service.getRefreshRatesOfFeeds(
-          sampleFeedDetails,
+          sampleFeedDetails
         );
         expect(refreshRates[0]).toBe(
-          mockScheduleFindResponse[0].refreshRateMinutes * 60,
+          mockScheduleFindResponse[0].refreshRateMinutes * 60
         );
       });
 
-      it('returns the refresh rate of the schedule that matches the feed id', async () => {
+      it("returns the refresh rate of the schedule that matches the feed id", async () => {
         const mockScheduleFindResponse = [
           {
             feeds: [sampleFeedDetails[0]._id],
@@ -109,23 +109,23 @@ describe('FeedSchedulingService', () => {
         ];
         feedScheduleFind.mockResolvedValue(mockScheduleFindResponse);
         const refreshRates = await service.getRefreshRatesOfFeeds(
-          sampleFeedDetails,
+          sampleFeedDetails
         );
         expect(refreshRates[0]).toBe(
-          mockScheduleFindResponse[0].refreshRateMinutes * 60,
+          mockScheduleFindResponse[0].refreshRateMinutes * 60
         );
       });
 
-      it('returns the default refresh rate if no schedules match', async () => {
+      it("returns the default refresh rate if no schedules match", async () => {
         const mockScheduleFindResponse = [
           {
-            keywords: ['not-a-match-for-anything'],
+            keywords: ["not-a-match-for-anything"],
             refreshRateMinutes: 1,
           },
         ];
         feedScheduleFind.mockResolvedValue(mockScheduleFindResponse);
         const refreshRates = await service.getRefreshRatesOfFeeds(
-          sampleFeedDetails,
+          sampleFeedDetails
         );
         expect(refreshRates[0]).toBe(service.defaultRefreshRateSeconds);
       });

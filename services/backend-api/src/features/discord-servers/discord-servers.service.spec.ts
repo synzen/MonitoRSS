@@ -1,34 +1,34 @@
-import { HttpStatus } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { DiscordAPIError } from '../../common/errors/DiscordAPIError';
-import { DiscordAPIService } from '../../services/apis/discord/discord-api.service';
+import { HttpStatus } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { getModelToken, MongooseModule } from "@nestjs/mongoose";
+import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
-} from '../../utils/integration-tests';
-import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import { FeedsModule } from '../feeds/feeds.module';
-import { FeedsService } from '../feeds/feeds.service';
-import { DiscordServersService } from './discord-servers.service';
+} from "../../utils/integration-tests";
+import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import { FeedsModule } from "../feeds/feeds.module";
+import { FeedsService } from "../feeds/feeds.service";
+import { DiscordServersService } from "./discord-servers.service";
 import {
   DiscordServerProfile,
   DiscordServerProfileFeature,
   DiscordServerProfileModel,
-} from './entities/discord-server-profile.entity';
-import { DiscordGuildChannel } from '../../common';
-import { FeedFeature } from '../feeds/entities/feed.entity';
-import { FeedSubscriberFeature } from '../feeds/entities/feed-subscriber.entity';
-import { FeedFilteredFormatFeature } from '../feeds/entities/feed-filtered-format.entity';
-import config from '../../config/config';
+} from "./entities/discord-server-profile.entity";
+import { DiscordGuildChannel } from "../../common";
+import { FeedFeature } from "../feeds/entities/feed.entity";
+import { FeedSubscriberFeature } from "../feeds/entities/feed-subscriber.entity";
+import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-format.entity";
+import config from "../../config/config";
 
 const configValues: Partial<ReturnType<typeof config>> = {
-  DEFAULT_DATE_FORMAT: 'YYYY-MM-DD',
-  DEFAULT_TIMEZONE: 'UTC',
-  DEFAULT_DATE_LANGUAGE: 'en',
+  DEFAULT_DATE_FORMAT: "YYYY-MM-DD",
+  DEFAULT_TIMEZONE: "UTC",
+  DEFAULT_DATE_LANGUAGE: "en",
 };
 
-describe('DiscordServersService', () => {
+describe("DiscordServersService", () => {
   let service: DiscordServersService;
   let profileModel: DiscordServerProfileModel;
   const configService: ConfigService = {
@@ -43,7 +43,7 @@ describe('DiscordServersService', () => {
   };
 
   beforeAll(async () => {
-    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+    jest.spyOn(configService, "get").mockImplementation((key: string) => {
       // @ts-ignore
       return configValues[key];
     });
@@ -73,7 +73,7 @@ describe('DiscordServersService', () => {
 
     service = module.get<DiscordServersService>(DiscordServersService);
     profileModel = module.get<DiscordServerProfileModel>(
-      getModelToken(DiscordServerProfile.name),
+      getModelToken(DiscordServerProfile.name)
     );
   });
 
@@ -86,32 +86,32 @@ describe('DiscordServersService', () => {
     await teardownIntegrationTests();
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('createBackup', () => {
-    const guildId = 'mock-guild-id';
+  describe("createBackup", () => {
+    const guildId = "mock-guild-id";
     const mockProfile = {
       id: guildId,
-      data: 'foo',
+      data: "foo",
     };
     const mockFeeds = [
       {
-        _id: '1',
+        _id: "1",
       },
       {
-        _id: '2',
+        _id: "2",
       },
     ];
     const mockFilteredFormats = [
       {
-        _id: 'filtered-format-id',
+        _id: "filtered-format-id",
       },
     ];
     const mockSubscribers = [
       {
-        _id: 'subscriber-id',
+        _id: "subscriber-id",
       },
     ];
     let feedModelFind: jest.SpyInstance;
@@ -120,42 +120,42 @@ describe('DiscordServersService', () => {
 
     beforeEach(() => {
       jest
-        .spyOn(service, 'getServerProfile')
+        .spyOn(service, "getServerProfile")
         .mockResolvedValue(mockProfile as never);
-      feedModelFind = jest.spyOn(service['feedModel'], 'find').mockReturnValue({
+      feedModelFind = jest.spyOn(service["feedModel"], "find").mockReturnValue({
         lean: async () => [
           {
-            _id: '1',
+            _id: "1",
           },
           {
-            _id: '2',
+            _id: "2",
           },
         ],
       } as never);
 
       subscriberModelFind = jest
-        .spyOn(service['feedSubscriberModel'], 'find')
+        .spyOn(service["feedSubscriberModel"], "find")
         .mockReturnValue({
           lean: async () => [
             {
-              _id: 'subscriber-id',
+              _id: "subscriber-id",
             },
           ],
         } as never);
 
       filteredFormatModelFind = jest
-        .spyOn(service['feedFilteredFormatModel'], 'find')
+        .spyOn(service["feedFilteredFormatModel"], "find")
         .mockReturnValue({
           lean: async () => [
             {
-              _id: 'filtered-format-id',
+              _id: "filtered-format-id",
             },
           ],
         } as never);
     });
 
-    it('calls the correct queries', async () => {
-      const guildId = 'mock-guild-id';
+    it("calls the correct queries", async () => {
+      const guildId = "mock-guild-id";
 
       await service.createBackup(guildId);
 
@@ -165,23 +165,23 @@ describe('DiscordServersService', () => {
 
       expect(filteredFormatModelFind).toHaveBeenCalledWith({
         feed: {
-          $in: ['1', '2'],
+          $in: ["1", "2"],
         },
       });
       expect(subscriberModelFind).toHaveBeenCalledWith({
         feed: {
-          $in: ['1', '2'],
+          $in: ["1", "2"],
         },
       });
     });
 
-    it('returns the correct data', () => {
-      const guildId = 'mock-guild-id';
+    it("returns the correct data", () => {
+      const guildId = "mock-guild-id";
 
       const result = service.createBackup(guildId);
 
       expect(result).resolves.toEqual({
-        backupVersion: '1',
+        backupVersion: "1",
         profile: {
           ...mockProfile,
           _id: guildId,
@@ -193,15 +193,15 @@ describe('DiscordServersService', () => {
     });
   });
 
-  describe('getServerProfile', () => {
-    const serverId = 'server-id';
+  describe("getServerProfile", () => {
+    const serverId = "server-id";
 
-    it('returns the profile if it exists', async () => {
+    it("returns the profile if it exists", async () => {
       const created = await profileModel.create({
         _id: serverId,
-        dateFormat: 'date-format',
-        dateLanguage: 'date-language',
-        timezone: 'timezone',
+        dateFormat: "date-format",
+        dateLanguage: "date-language",
+        timezone: "timezone",
       });
       const profile = await service.getServerProfile(serverId);
 
@@ -212,7 +212,7 @@ describe('DiscordServersService', () => {
       });
     });
 
-    it('returns defaults if no profile is found', async () => {
+    it("returns defaults if no profile is found", async () => {
       const profile = await service.getServerProfile(serverId);
 
       expect(profile).toEqual({
@@ -222,11 +222,11 @@ describe('DiscordServersService', () => {
       });
     });
 
-    it('returns defaults if only some fields are not found', async () => {
+    it("returns defaults if only some fields are not found", async () => {
       const profile = await profileModel.create({
         _id: serverId,
-        dateFormat: 'date-format',
-        dateLanguage: 'date-language',
+        dateFormat: "date-format",
+        dateLanguage: "date-language",
       });
       const returned = await service.getServerProfile(serverId);
 
@@ -238,18 +238,18 @@ describe('DiscordServersService', () => {
     });
   });
 
-  describe('updateServerProfile', () => {
-    it.each(['dateFormat', 'timezone', 'dateLanguage'])(
-      'updates %s',
+  describe("updateServerProfile", () => {
+    it.each(["dateFormat", "timezone", "dateLanguage"])(
+      "updates %s",
       async (field) => {
-        const serverId = 'server-id';
+        const serverId = "server-id";
         const profile = await profileModel.create({
           _id: serverId,
-          dateFormat: 'date-format',
-          dateLanguage: 'date-language',
-          timezone: 'timezone',
+          dateFormat: "date-format",
+          dateLanguage: "date-language",
+          timezone: "timezone",
         });
-        const newValue = 'new-value';
+        const newValue = "new-value";
         const updated = await service.updateServerProfile(serverId, {
           [field]: newValue,
         });
@@ -260,49 +260,49 @@ describe('DiscordServersService', () => {
           dateLanguage: profile.dateLanguage,
           [field]: newValue,
         });
-      },
+      }
     );
 
-    it('updates all the fields', async () => {
-      const serverId = 'server-id';
+    it("updates all the fields", async () => {
+      const serverId = "server-id";
       await profileModel.create({
         _id: serverId,
-        dateFormat: 'date-format',
-        dateLanguage: 'date-language',
-        timezone: 'timezone',
+        dateFormat: "date-format",
+        dateLanguage: "date-language",
+        timezone: "timezone",
       });
       const updated = await service.updateServerProfile(serverId, {
-        dateFormat: 'new-date-format',
-        timezone: 'new-timezone',
-        dateLanguage: 'new-date-language',
+        dateFormat: "new-date-format",
+        timezone: "new-timezone",
+        dateLanguage: "new-date-language",
       });
 
       expect(updated).toEqual({
-        dateFormat: 'new-date-format',
-        timezone: 'new-timezone',
-        dateLanguage: 'new-date-language',
+        dateFormat: "new-date-format",
+        timezone: "new-timezone",
+        dateLanguage: "new-date-language",
       });
     });
 
-    it('upserts the fields if necessary', async () => {
-      const serverId = 'server-id';
+    it("upserts the fields if necessary", async () => {
+      const serverId = "server-id";
       const updated = await service.updateServerProfile(serverId, {
-        dateFormat: 'new-date-format',
-        timezone: 'new-timezone',
-        dateLanguage: 'new-date-language',
+        dateFormat: "new-date-format",
+        timezone: "new-timezone",
+        dateLanguage: "new-date-language",
       });
 
       expect(updated).toEqual({
-        dateFormat: 'new-date-format',
-        timezone: 'new-timezone',
-        dateLanguage: 'new-date-language',
+        dateFormat: "new-date-format",
+        timezone: "new-timezone",
+        dateLanguage: "new-date-language",
       });
     });
   });
 
-  describe('getServerFeeds', () => {
-    it('calls the feeds service correctly', async () => {
-      const serverId = 'server-id';
+  describe("getServerFeeds", () => {
+    it("calls the feeds service correctly", async () => {
+      const serverId = "server-id";
       const options = {
         limit: 10,
         offset: 20,
@@ -311,14 +311,14 @@ describe('DiscordServersService', () => {
 
       expect(feedsService.getServerFeeds).toHaveBeenCalledWith(
         serverId,
-        options,
+        options
       );
     });
   });
 
-  describe('countServerFeeds', () => {
-    it('calls the feeds service correctly', async () => {
-      const serverId = 'server-id';
+  describe("countServerFeeds", () => {
+    it("calls the feeds service correctly", async () => {
+      const serverId = "server-id";
       await service.countServerFeeds(serverId);
 
       expect(feedsService.countServerFeeds).toHaveBeenCalledWith(serverId, {
@@ -326,10 +326,10 @@ describe('DiscordServersService', () => {
       });
     });
 
-    it('calls the feed service with search correctly', async () => {
-      const serverId = 'server-id';
+    it("calls the feed service with search correctly", async () => {
+      const serverId = "server-id";
       const options = {
-        search: 'search',
+        search: "search",
       };
       await service.countServerFeeds(serverId, options);
 
@@ -339,13 +339,13 @@ describe('DiscordServersService', () => {
     });
   });
 
-  describe('getServer', () => {
-    it('returns the guild', async () => {
+  describe("getServer", () => {
+    it("returns the guild", async () => {
       const mockGuild = {
-        id: 'server-1',
+        id: "server-1",
       };
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(mockGuild);
 
       const guild = await service.getServer(mockGuild.id);
@@ -353,57 +353,57 @@ describe('DiscordServersService', () => {
       expect(guild).toEqual(mockGuild);
     });
 
-    it('returns null if the bot was forbidden', async () => {
+    it("returns null if the bot was forbidden", async () => {
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockRejectedValue(
-          new DiscordAPIError('Forbidden', HttpStatus.FORBIDDEN),
+          new DiscordAPIError("Forbidden", HttpStatus.FORBIDDEN)
         );
 
-      const guild = await service.getServer('server-1');
+      const guild = await service.getServer("server-1");
 
       expect(guild).toBeNull();
     });
-    it('returns null if 404 is returned', async () => {
+    it("returns null if 404 is returned", async () => {
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockRejectedValue(
-          new DiscordAPIError('Not Found', HttpStatus.NOT_FOUND),
+          new DiscordAPIError("Not Found", HttpStatus.NOT_FOUND)
         );
 
-      const guild = await service.getServer('server-1');
+      const guild = await service.getServer("server-1");
 
       expect(guild).toBeNull();
     });
 
-    it('throws for an unhandled error', async () => {
+    it("throws for an unhandled error", async () => {
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
-        .mockRejectedValue(new Error('Unhandled error'));
+        .spyOn(discordApiService, "executeBotRequest")
+        .mockRejectedValue(new Error("Unhandled error"));
 
-      await expect(service.getServer('server-1')).rejects.toThrow();
+      await expect(service.getServer("server-1")).rejects.toThrow();
     });
   });
 
-  describe('getChannelsOfServer', () => {
-    it('returns the channels from Discord', async () => {
-      const serverId = 'server-id';
+  describe("getChannelsOfServer", () => {
+    it("returns the channels from Discord", async () => {
+      const serverId = "server-id";
       const mockChannels: DiscordGuildChannel[] = [
         {
-          id: 'channel-1',
+          id: "channel-1",
           guild_id: serverId,
           permission_overwrites: [],
-          name: 'channel-1',
+          name: "channel-1",
         },
         {
-          id: 'id-2',
-          name: 'channel-2',
+          id: "id-2",
+          name: "channel-2",
           guild_id: serverId,
           permission_overwrites: [],
         },
       ];
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(mockChannels);
 
       const channels = await service.getChannelsOfServer(serverId);
@@ -412,21 +412,21 @@ describe('DiscordServersService', () => {
     });
   });
 
-  describe('getRolesOfServer', () => {
-    it('returns the roles from Discord', async () => {
-      const serverId = 'server-id';
+  describe("getRolesOfServer", () => {
+    it("returns the roles from Discord", async () => {
+      const serverId = "server-id";
       const mockRoles = [
         {
-          id: 'id-1',
-          name: 'role-1',
+          id: "id-1",
+          name: "role-1",
         },
         {
-          id: 'id-2',
-          name: 'role-2',
+          id: "id-2",
+          name: "role-2",
         },
       ];
       jest
-        .spyOn(discordApiService, 'executeBotRequest')
+        .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(mockRoles);
 
       const roles = await service.getRolesOfServer(serverId);

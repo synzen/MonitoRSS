@@ -1,33 +1,33 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { NestFastifyApplication } from "@nestjs/platform-fastify";
 import {
   setupEndpointTests,
   teardownEndpointTests,
-} from '../../utils/endpoint-tests';
-import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import nock from 'nock';
-import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
-import { DISCORD_API_BASE_URL } from '../../constants/discord';
-import { Session } from '../../common';
-import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
-import { DiscordWebhooksModule } from './discord-webhooks.module';
-import * as qs from 'qs';
+} from "../../utils/endpoint-tests";
+import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import nock from "nock";
+import { CACHE_MANAGER, HttpStatus } from "@nestjs/common";
+import { DISCORD_API_BASE_URL } from "../../constants/discord";
+import { Session } from "../../common";
+import { PartialUserGuild } from "../discord-users/types/PartialUserGuild.type";
+import { DiscordWebhooksModule } from "./discord-webhooks.module";
+import * as qs from "qs";
 import {
   DiscordWebhook,
   DiscordWebhookType,
-} from './types/discord-webhook.type';
-import { Cache } from 'cache-manager';
-import { ApiErrorCode } from '../../common/constants/api-errors';
-import { DiscordWebhooksService } from './discord-webhooks.service';
+} from "./types/discord-webhook.type";
+import { Cache } from "cache-manager";
+import { ApiErrorCode } from "../../common/constants/api-errors";
+import { DiscordWebhooksService } from "./discord-webhooks.service";
 
-describe('DiscordWebhooksModule', () => {
+describe("DiscordWebhooksModule", () => {
   let app: NestFastifyApplication;
-  let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
+  let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
-      cookie: '',
+      cookie: "",
     },
   };
-  const botClientId = 'bot-client-id';
+  const botClientId = "bot-client-id";
 
   beforeAll(async () => {
     const { init } = setupEndpointTests({
@@ -37,8 +37,8 @@ describe('DiscordWebhooksModule', () => {
     ({ app, setAccessToken } = await init());
 
     standardRequestOptions.headers.cookie = await setAccessToken({
-      access_token: 'accessToken',
-    } as Session['accessToken']);
+      access_token: "accessToken",
+    } as Session["accessToken"]);
 
     app.get(DiscordWebhooksService).clientId = botClientId;
   });
@@ -57,15 +57,15 @@ describe('DiscordWebhooksModule', () => {
     await teardownEndpointTests();
   });
 
-  describe('GET /discord-webhooks', () => {
-    const serverId = '633432788015644722';
+  describe("GET /discord-webhooks", () => {
+    const serverId = "633432788015644722";
     const sampleWebhooks: DiscordWebhook[] = [
       {
-        id: '12345',
+        id: "12345",
         type: DiscordWebhookType.INCOMING,
-        channel_id: '12345',
+        channel_id: "12345",
         application_id: botClientId,
-        name: 'test',
+        name: "test",
       },
     ];
     const standardQuery = qs.stringify({
@@ -93,11 +93,11 @@ describe('DiscordWebhooksModule', () => {
         .reply(200, sampleWebhooks);
     };
 
-    it('returns forbidden if user does not own requested server', async () => {
+    it("returns forbidden if user does not own requested server", async () => {
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-webhooks?${standardQuery}`,
         ...standardRequestOptions,
       });
@@ -105,7 +105,7 @@ describe('DiscordWebhooksModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 400 if serverId filter is missing', async () => {
+    it("returns 400 if serverId filter is missing", async () => {
       mockGetUserGuilds();
 
       const badFilters = qs.stringify({
@@ -113,7 +113,7 @@ describe('DiscordWebhooksModule', () => {
       });
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-webhooks?${badFilters}`,
         ...standardRequestOptions,
       });
@@ -121,12 +121,12 @@ describe('DiscordWebhooksModule', () => {
       expect(statusCode).toBe(400);
     });
 
-    it('returns the correct response', async () => {
+    it("returns the correct response", async () => {
       mockGetUserGuilds();
       mockGetServerWebhooks();
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-webhooks?${standardQuery}`,
         ...standardRequestOptions,
       });
@@ -135,23 +135,23 @@ describe('DiscordWebhooksModule', () => {
       const parsedBody = JSON.parse(body);
       expect(parsedBody.results).toEqual([
         {
-          id: '12345',
-          channelId: '12345',
-          name: 'test',
+          id: "12345",
+          channelId: "12345",
+          name: "test",
         },
       ]);
     });
 
-    it('returns 403 with the correct error code if discord returns 403', async () => {
+    it("returns 403 with the correct error code if discord returns 403", async () => {
       mockGetUserGuilds();
       nock(DISCORD_API_BASE_URL)
         .get(`/guilds/${serverId}/webhooks`)
         .reply(403, {
-          message: 'no access!',
+          message: "no access!",
         });
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-webhooks?${standardQuery}`,
         ...standardRequestOptions,
       });
@@ -159,7 +159,7 @@ describe('DiscordWebhooksModule', () => {
       expect(statusCode).toBe(403);
       const parsedBody = JSON.parse(body);
       expect(parsedBody.code).toBe(
-        ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
+        ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS
       );
     });
   });

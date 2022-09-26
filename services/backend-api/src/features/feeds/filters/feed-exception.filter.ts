@@ -1,6 +1,6 @@
-import { Catch, RequestTimeoutException, HttpStatus } from '@nestjs/common';
-import { ApiErrorCode } from '../../../common/constants/api-errors';
-import { StandardBaseExceptionFilter } from '../../../common/filters/standard-exception-filter';
+import { Catch, RequestTimeoutException, HttpStatus } from "@nestjs/common";
+import { ApiErrorCode } from "../../../common/constants/api-errors";
+import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import {
   FeedException,
   FeedForbiddenException,
@@ -11,7 +11,7 @@ import {
   FeedTooManyRequestsException,
   FeedUnauthorizedException,
   InvalidFeedException,
-} from '../../../services/feed-fetcher/exceptions';
+} from "../../../services/feed-fetcher/exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   {

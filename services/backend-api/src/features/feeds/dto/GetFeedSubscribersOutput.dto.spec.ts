@@ -1,19 +1,19 @@
-import { createTestFeedSubscriber } from '../../../test/data/subscriber.test-data';
-import { GetFeedOutputDto } from './GetFeedOutput.dto';
-import { GetFeedSubscribersOutputDto } from './GetFeedSubscribersOutput.dto';
+import { createTestFeedSubscriber } from "../../../test/data/subscriber.test-data";
+import { GetFeedOutputDto } from "./GetFeedOutput.dto";
+import { GetFeedSubscribersOutputDto } from "./GetFeedSubscribersOutput.dto";
 
-describe('GetFeedSubscribersOutputDto', () => {
+describe("GetFeedSubscribersOutputDto", () => {
   beforeAll(() => {
     jest.resetAllMocks();
   });
 
-  describe('fromEntity', () => {
-    it('returns the formatted dto object', () => {
+  describe("fromEntity", () => {
+    it("returns the formatted dto object", () => {
       const subscribers = [createTestFeedSubscriber()];
 
       const result = GetFeedSubscribersOutputDto.fromEntity(subscribers);
 
-      jest.spyOn(GetFeedOutputDto, 'getFeedFiltersDto').mockReturnValue([]);
+      jest.spyOn(GetFeedOutputDto, "getFeedFiltersDto").mockReturnValue([]);
 
       expect(result).toEqual({
         results: [

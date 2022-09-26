@@ -1,38 +1,38 @@
-import { getModelToken } from '@nestjs/mongoose';
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { createTestFeed } from '../../test/data/feeds.test-data';
+import { getModelToken } from "@nestjs/mongoose";
+import { NestFastifyApplication } from "@nestjs/platform-fastify";
+import { createTestFeed } from "../../test/data/feeds.test-data";
 import {
   setupEndpointTests,
   teardownEndpointTests,
-} from '../../utils/endpoint-tests';
-import { MongooseTestModule } from '../../utils/mongoose-test.module';
-import { Feed, FeedModel } from '../feeds/entities/feed.entity';
-import { DiscordServersModule } from './discord-servers.module';
-import nock from 'nock';
-import { CACHE_MANAGER, HttpStatus } from '@nestjs/common';
-import { DISCORD_API_BASE_URL } from '../../constants/discord';
+} from "../../utils/endpoint-tests";
+import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { DiscordServersModule } from "./discord-servers.module";
+import nock from "nock";
+import { CACHE_MANAGER, HttpStatus } from "@nestjs/common";
+import { DISCORD_API_BASE_URL } from "../../constants/discord";
 import {
   DiscordGuild,
   DiscordGuildRole,
   DiscordGuildChannel,
   Session,
-} from '../../common';
-import { PartialUserGuild } from '../discord-users/types/PartialUserGuild.type';
-import { Cache } from 'cache-manager';
-import { createTestDiscordGuildRole } from '../../test/data/discord-guild-role.test-data';
+} from "../../common";
+import { PartialUserGuild } from "../discord-users/types/PartialUserGuild.type";
+import { Cache } from "cache-manager";
+import { createTestDiscordGuildRole } from "../../test/data/discord-guild-role.test-data";
 
-jest.mock('../../utils/logger');
+jest.mock("../../utils/logger");
 
-describe('DiscordServersModule', () => {
+describe("DiscordServersModule", () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
-  let setAccessToken: (accessToken: Session['accessToken']) => Promise<string>;
+  let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
-      cookie: '',
+      cookie: "",
     },
   };
-  const serverId = '633432788015644722';
+  const serverId = "633432788015644722";
 
   beforeAll(async () => {
     const { init } = setupEndpointTests({
@@ -42,8 +42,8 @@ describe('DiscordServersModule', () => {
     ({ app, setAccessToken } = await init());
 
     standardRequestOptions.headers.cookie = await setAccessToken({
-      access_token: 'accessToken',
-    } as Session['accessToken']);
+      access_token: "accessToken",
+    } as Session["accessToken"]);
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
   });
@@ -65,10 +65,10 @@ describe('DiscordServersModule', () => {
       .get(`/guilds/${serverId}`)
       .reply(200, {
         id: serverId,
-        name: 'Test Guild',
-        icon: '',
+        name: "Test Guild",
+        icon: "",
         roles: [],
-        owner_id: '123456789',
+        owner_id: "123456789",
       } as DiscordGuild);
   };
 
@@ -107,21 +107,21 @@ describe('DiscordServersModule', () => {
     mockGetServerRoles(data?.roles || []);
   };
 
-  describe('GET /discord-servers/:serverId', () => {
-    it('returns 401 if user is not authorized', async () => {
+  describe("GET /discord-servers/:serverId", () => {
+    it("returns 401 if user is not authorized", async () => {
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
-    it('returns 400 if bot has no access to discord server', async () => {
+    it("returns 400 if bot has no access to discord server", async () => {
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}`,
         ...standardRequestOptions,
       });
@@ -129,12 +129,12 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does not own server', async () => {
+    it("returns forbidden if user does not own server", async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}`,
         ...standardRequestOptions,
       });
@@ -142,16 +142,16 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns forbidden if user does not manage server', async () => {
+    it("returns forbidden if user does not manage server", async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: '0',
+        permissions: "0",
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}`,
         ...standardRequestOptions,
       });
@@ -159,11 +159,11 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns the correct payload', async () => {
+    it("returns the correct payload", async () => {
       mockAllDiscordEndpoints();
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}`,
         ...standardRequestOptions,
       });
@@ -182,28 +182,28 @@ describe('DiscordServersModule', () => {
     });
   });
 
-  describe('PATCH /discord-servers/:serverId', () => {
+  describe("PATCH /discord-servers/:serverId", () => {
     const validPayload = {
-      dateFormat: 'date-format',
-      dateLanguage: 'en',
-      timezone: 'UTC',
+      dateFormat: "date-format",
+      dateLanguage: "en",
+      timezone: "UTC",
     };
 
-    it('returns 401 if user is not authorized', async () => {
+    it("returns 401 if user is not authorized", async () => {
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: validPayload,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
-    it('returns 400 if bot has no access to discord server', async () => {
+    it("returns 400 if bot has no access to discord server", async () => {
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: validPayload,
         ...standardRequestOptions,
@@ -212,12 +212,12 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does not own server', async () => {
+    it("returns forbidden if user does not own server", async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: validPayload,
         ...standardRequestOptions,
@@ -226,16 +226,16 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns forbidden if user does not manage server', async () => {
+    it("returns forbidden if user does not manage server", async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: '0',
+        permissions: "0",
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: validPayload,
         ...standardRequestOptions,
@@ -244,14 +244,14 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 400 on a bad payload', async () => {
+    it("returns 400 on a bad payload", async () => {
       mockAllDiscordEndpoints();
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: {
-          dateFormat: '',
+          dateFormat: "",
         },
         ...standardRequestOptions,
       });
@@ -259,15 +259,15 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
-    it('returns 400 on bad timezone', async () => {
+    it("returns 400 on bad timezone", async () => {
       mockAllDiscordEndpoints();
 
       const { statusCode } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: {
           ...validPayload,
-          timezone: 'fake timezone',
+          timezone: "fake timezone",
         },
         ...standardRequestOptions,
       });
@@ -275,11 +275,11 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
-    it('returns the correct payload', async () => {
+    it("returns the correct payload", async () => {
       mockAllDiscordEndpoints();
 
       const { statusCode, body } = await app.inject({
-        method: 'PATCH',
+        method: "PATCH",
         url: `/discord-servers/${serverId}`,
         payload: validPayload,
         ...standardRequestOptions,
@@ -299,24 +299,24 @@ describe('DiscordServersModule', () => {
     });
   });
 
-  describe('GET /discord-servers/:serverId/status', () => {
-    it('returns 401 if user is not authorized', async () => {
+  describe("GET /discord-servers/:serverId/status", () => {
+    it("returns 401 if user is not authorized", async () => {
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/status`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns the correct response bot is forbidden from accessing discord server', async () => {
+    it("returns the correct response bot is forbidden from accessing discord server", async () => {
       mockGetUserGuilds();
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(403, {
-        message: 'Forbidden',
+        message: "Forbidden",
       });
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/status`,
         ...standardRequestOptions,
       });
@@ -330,14 +330,14 @@ describe('DiscordServersModule', () => {
       });
     });
 
-    it('returns the correct response if discord server does not exist', async () => {
+    it("returns the correct response if discord server does not exist", async () => {
       mockGetUserGuilds();
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {
-        message: 'Not found',
+        message: "Not found",
       });
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/status`,
         ...standardRequestOptions,
       });
@@ -351,12 +351,12 @@ describe('DiscordServersModule', () => {
       });
     });
 
-    it('returns the correct response if bot has access to server', async () => {
+    it("returns the correct response if bot has access to server", async () => {
       mockGetUserGuilds();
       mockGetServer();
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/status`,
         ...standardRequestOptions,
       });
@@ -371,21 +371,21 @@ describe('DiscordServersModule', () => {
     });
   });
 
-  describe('GET /discord-servers/:serverId/channels', () => {
-    it('returns 401 if user is not authorized', async () => {
+  describe("GET /discord-servers/:serverId/channels", () => {
+    it("returns 401 if user is not authorized", async () => {
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/channels`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
-    it('returns 400 if bot has no access to discord server', async () => {
+    it("returns 400 if bot has no access to discord server", async () => {
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/channels`,
         ...standardRequestOptions,
       });
@@ -393,12 +393,12 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does not own server', async () => {
+    it("returns forbidden if user does not own server", async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/channels`,
         ...standardRequestOptions,
       });
@@ -406,16 +406,16 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns forbidden if user does not manage server', async () => {
+    it("returns forbidden if user does not manage server", async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: '0',
+        permissions: "0",
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/channels`,
         ...standardRequestOptions,
       });
@@ -423,18 +423,18 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns the discord server channels', async () => {
+    it("returns the discord server channels", async () => {
       const serverChannels: DiscordGuildChannel[] = [
         {
-          id: 'id1',
-          name: 'name1',
-          guild_id: 'guildId1',
+          id: "id1",
+          name: "name1",
+          guild_id: "guildId1",
           permission_overwrites: [],
         },
         {
-          id: 'id2',
-          name: 'name2',
-          guild_id: 'guildId1',
+          id: "id2",
+          name: "name2",
+          guild_id: "guildId1",
           permission_overwrites: [],
         },
       ];
@@ -443,7 +443,7 @@ describe('DiscordServersModule', () => {
       });
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/channels`,
         ...standardRequestOptions,
       });
@@ -460,21 +460,21 @@ describe('DiscordServersModule', () => {
     });
   });
 
-  describe('GET /discord-servers/:serverId/roles', () => {
-    it('returns 401 if user is not authorized', async () => {
+  describe("GET /discord-servers/:serverId/roles", () => {
+    it("returns 401 if user is not authorized", async () => {
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/roles`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
-    it('returns 400 if bot has no access to discord server', async () => {
+    it("returns 400 if bot has no access to discord server", async () => {
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/roles`,
         ...standardRequestOptions,
       });
@@ -482,12 +482,12 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does not own server', async () => {
+    it("returns forbidden if user does not own server", async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/roles`,
         ...standardRequestOptions,
       });
@@ -495,16 +495,16 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns forbidden if user does not manage server', async () => {
+    it("returns forbidden if user does not manage server", async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: '0',
+        permissions: "0",
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/roles`,
         ...standardRequestOptions,
       });
@@ -512,16 +512,16 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns the discord server roles', async () => {
+    it("returns the discord server roles", async () => {
       const serverRoles: DiscordGuildRole[] = [
         createTestDiscordGuildRole({
-          id: 'id1',
-          name: 'name1',
+          id: "id1",
+          name: "name1",
           color: 123,
         }),
         createTestDiscordGuildRole({
-          id: 'id2',
-          name: 'name2',
+          id: "id2",
+          name: "name2",
           color: 456,
         }),
       ];
@@ -530,7 +530,7 @@ describe('DiscordServersModule', () => {
       });
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/roles`,
         ...standardRequestOptions,
       });
@@ -545,34 +545,34 @@ describe('DiscordServersModule', () => {
                 id: channel.id,
                 name: channel.name,
                 color: expect.any(String),
-              }),
-            ),
+              })
+            )
           ),
           total: serverRoles.length,
-        }),
+        })
       );
     });
   });
 
-  describe('GET /discord-servers/:serverId/feeds', () => {
-    it('returns 401 if user is not authenticated', async () => {
+  describe("GET /discord-servers/:serverId/feeds", () => {
+    it("returns 401 if user is not authenticated", async () => {
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns 400 if bot has no access to discord server', async () => {
+    it("returns 400 if bot has no access to discord server", async () => {
       nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
         ...standardRequestOptions,
       });
@@ -580,12 +580,12 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it('returns forbidden if user does own server', async () => {
+    it("returns forbidden if user does own server", async () => {
       mockGetServer();
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
         ...standardRequestOptions,
       });
@@ -593,16 +593,16 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns forbidden if user does not manage server', async () => {
+    it("returns forbidden if user does not manage server", async () => {
       mockGetServer();
       mockGetUserGuilds({
-        permissions: '0',
+        permissions: "0",
         owner: false,
       });
       nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
 
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
         ...standardRequestOptions,
       });
@@ -610,31 +610,31 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it('returns 400 if limit is missing', async () => {
+    it("returns 400 if limit is missing", async () => {
       mockGetServer();
       mockGetUserGuilds();
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?offset=0`,
         ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(400);
     });
-    it('returns 400 if offset is missing', async () => {
+    it("returns 400 if offset is missing", async () => {
       mockAllDiscordEndpoints();
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?limit=10`,
         ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(400);
     });
-    it('returns 400 if offset is not a number', async () => {
+    it("returns 400 if offset is not a number", async () => {
       mockAllDiscordEndpoints();
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?limit=10&offset=foo`,
         ...standardRequestOptions,
       });
@@ -642,17 +642,17 @@ describe('DiscordServersModule', () => {
       expect(statusCode).toBe(400);
     });
 
-    it('returns 401 if no access token set via header cookie', async () => {
+    it("returns 401 if no access token set via header cookie", async () => {
       mockAllDiscordEndpoints();
       const { statusCode } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?offset=0&limit=10`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it('returns the correct response', async () => {
+    it("returns the correct response", async () => {
       mockAllDiscordEndpoints();
       await feedModel.insertMany([
         createTestFeed({
@@ -664,7 +664,7 @@ describe('DiscordServersModule', () => {
       ]);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?limit=10&offset=0`,
         ...standardRequestOptions,
       });
@@ -675,21 +675,21 @@ describe('DiscordServersModule', () => {
       expect(parsedBody.total).toEqual(2);
     });
 
-    it('works with search', async () => {
+    it("works with search", async () => {
       mockAllDiscordEndpoints();
       await feedModel.insertMany([
         createTestFeed({
           guild: serverId,
-          title: 'goo',
+          title: "goo",
         }),
         createTestFeed({
           guild: serverId,
-          title: 'foo',
+          title: "foo",
         }),
       ]);
 
       const { statusCode, body } = await app.inject({
-        method: 'GET',
+        method: "GET",
         url: `/discord-servers/${serverId}/feeds?limit=10&offset=0&search=foo`,
         ...standardRequestOptions,
       });

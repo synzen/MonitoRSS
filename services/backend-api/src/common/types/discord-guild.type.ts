@@ -1,4 +1,4 @@
-import { DiscordGuildRole } from './discord-guild-role.type';
+import { DiscordGuildRole } from "./discord-guild-role.type";
 
 export interface DiscordGuild {
   id: string;
