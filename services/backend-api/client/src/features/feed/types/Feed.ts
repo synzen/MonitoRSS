@@ -2,7 +2,7 @@ import {
   array, boolean, InferType, number, object, string,
 } from 'yup';
 
-const FeedEmbed = object({
+export const FeedEmbedSchema = object({
   title: string().optional(),
   description: string().optional(),
   url: string().optional(),
@@ -48,7 +48,7 @@ export const FeedSchema = object({
   })).required(),
   refreshRateSeconds: number().required(),
   text: string().defined(),
-  embeds: array(FeedEmbed).required(),
+  embeds: array(FeedEmbedSchema).required(),
   checkTitles: boolean().required(),
   checkDates: boolean().required(),
   imgPreviews: boolean().required(),

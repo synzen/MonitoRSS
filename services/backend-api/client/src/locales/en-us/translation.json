@@ -237,7 +237,8 @@
           "saveButton": "Add",
           "formTitleLabel": "Title",
           "formTitleDescription": "This is only for your reference.",
-          "formChannelLabel": "Channel"
+          "formChannelLabel": "Channel",
+          "failedToAdd": "Failed to add Discord channel connection"
         },
         "addDiscordWebhookConnectionDialog": {
           "title": "Add a Discord webhook connection",
