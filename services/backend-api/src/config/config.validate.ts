@@ -98,6 +98,18 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   AWS_SECRET_ACCESS_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  DEFAULT_DATE_FORMAT?: string;
+
+  @IsString()
+  @IsOptional()
+  DEFAULT_TIMEZONE?: string;
+
+  @IsString()
+  @IsOptional()
+  DEFAULT_DATE_LANGUAGE?: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {
