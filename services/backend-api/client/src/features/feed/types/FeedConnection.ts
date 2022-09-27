@@ -40,4 +40,20 @@ interface FeedDiscordChannelConnection {
   }
 }
 
-export type FeedConnection = FeedDiscordChannelConnection;
+interface FeedDiscordWebhookConnection {
+  id: string
+  key: FeedConnectionType.DiscordWebhook
+  filters?: {
+    expression: Record<string, never>
+  }
+  details: {
+    embeds: Feed['embeds']
+    webhook: {
+      id: string
+      name?: string
+      iconUrl?: string
+    }
+  }
+}
+
+export type FeedConnection = FeedDiscordChannelConnection | FeedDiscordWebhookConnection;

@@ -19,9 +19,8 @@ import { useEffect } from 'react';
 import { useDiscordServerChannels } from '@/features/discordServers';
 import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
-import { useCreateFeedConnection } from '../../hooks';
 import { notifyError } from '../../../../utils/notifyError';
-import { FeedConnectionType } from '../../constants';
+import { useCreateDiscordChannelConnection } from '../../hooks';
 
 const formSchema = object({
   channelId: string().required(),
@@ -54,7 +53,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
     mode: 'all',
   });
   const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
-  const { mutateAsync } = useCreateFeedConnection();
+  const { mutateAsync } = useCreateDiscordChannelConnection();
 
   const loadingChannels = status === 'loading' || status === 'idle';
 
@@ -67,7 +66,6 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
       await mutateAsync({
         feedId,
         details: {
-          type: FeedConnectionType.DiscordChannel,
           channelId,
         },
       });

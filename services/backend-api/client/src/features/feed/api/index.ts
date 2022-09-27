@@ -12,4 +12,5 @@ export * from './getFeedArticlesDump';
 export * from './getFeedArticlesRawDump';
 export * from './createFeed';
 export * from './deleteFeed';
-export * from './createFeedConnection';
+export * from './createDiscordChannelConnection';
+export * from './createDiscordWebhookConnection';

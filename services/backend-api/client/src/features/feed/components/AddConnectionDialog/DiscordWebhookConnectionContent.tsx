@@ -26,9 +26,8 @@ import { useDiscordServer } from '@/features/discordServers';
 import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
 import { useDiscordWebhooks } from '../../../discordWebhooks';
-import { useCreateFeedConnection, useFeed } from '../../hooks';
+import { useCreateDiscordWebhookConnection, useFeed } from '../../hooks';
 import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
-import { FeedConnectionType } from '../../constants';
 import { notifyError } from '../../../../utils/notifyError';
 
 const formSchema = object({
@@ -85,7 +84,7 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
     resolver: yupResolver(formSchema),
     defaultValues: defaultFormValues,
   });
-  const { mutateAsync } = useCreateFeedConnection();
+  const { mutateAsync } = useCreateDiscordWebhookConnection();
 
   const onSubmit = async ({ webhookId, name, iconUrl }: FormData) => {
     if (!feedId) {
@@ -96,7 +95,6 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
       await mutateAsync({
         feedId,
         details: {
-          type: FeedConnectionType.DiscordWebhook,
           webhookId,
           name,
           iconUrl,
