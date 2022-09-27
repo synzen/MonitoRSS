@@ -50,7 +50,6 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
   const { serverId, feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const {
-    feed,
     status: feedStatus,
   } = useFeed({
     feedId,

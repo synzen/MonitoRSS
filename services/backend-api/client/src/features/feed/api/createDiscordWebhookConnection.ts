@@ -22,7 +22,7 @@ export type CreateDiscordWebhookConnectionOutput = {
 export const createDiscordWebhookConnection = async (
   options: CreateDiscordWebhookConnectionInput,
 ): Promise<CreateDiscordWebhookConnectionOutput> => fetchRest(
-  `/api/v1/feeds/${options.feedId}/connections/discord-webhook`,
+  `/api/v1/feeds/${options.feedId}/connections/discord-webhooks`,
   {
     validateSchema: CreateFeedConnectionOutputSchema,
     requestOptions: {

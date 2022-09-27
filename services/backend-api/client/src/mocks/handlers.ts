@@ -4,7 +4,8 @@ import { GetDiscordBotOutput, GetDiscordMeOutput } from '@/features/discordUser'
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
   CloneFeedOutput,
-  CreateFeedConnectionOutput,
+  CreateDiscordChannelConnectionOutput,
+  CreateDiscordWebhookConnectionOutput,
   CreateFeedSubscriberOutput,
   FeedSummary,
   GetFeedArticlesOutput,
@@ -166,16 +167,16 @@ const handlers = [
     }),
   )),
 
-  rest.post('/api/v1/feeds/:feedId/connections/discord-channel', (req, res, ctx) => res(
+  rest.post('/api/v1/feeds/:feedId/connections/discord-channels', (req, res, ctx) => res(
     ctx.delay(500),
-    ctx.json<CreateFeedConnectionOutput>({
+    ctx.json<CreateDiscordChannelConnectionOutput>({
       result: mockFeedConnections[0],
     }),
   )),
 
-  rest.post('/api/v1/feeds/:feedId/connections/discord-webhook', (req, res, ctx) => res(
+  rest.post('/api/v1/feeds/:feedId/connections/discord-webhooks', (req, res, ctx) => res(
     ctx.delay(500),
-    ctx.json<CreateFeedConnectionOutput>({
+    ctx.json<CreateDiscordWebhookConnectionOutput>({
       result: mockFeedConnections[0],
     }),
   )),
