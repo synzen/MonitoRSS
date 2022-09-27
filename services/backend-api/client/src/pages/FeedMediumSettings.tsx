@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { useFeed } from '../features/feed';
-import { MediumSettings } from '../features/feed/components/MediumSettings';
+import { ConnectionDiscordWebhookSettings } from '../features/feedConnections';
 import RouteParams from '../types/RouteParams';
 
 export const FeedMediumSettings: React.FC = () => {
@@ -17,7 +17,8 @@ export const FeedMediumSettings: React.FC = () => {
       error={error}
       loading={status === 'loading' || status === 'idle'}
     >
-      <MediumSettings />
+      {/* <DiscordChannelSettings /> */}
+      <ConnectionDiscordWebhookSettings />
     </DashboardContentV2>
   );
 };

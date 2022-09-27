@@ -31,12 +31,12 @@ import { useState } from 'react';
 import { CategoryText } from '@/components';
 import {
   useFeed,
-  AddConnectionDialog,
 } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { FeedConnectionType } from '../features/feed/constants';
+import { AddConnectionDialog } from '../features/feedConnections';
 
 export const FeedV2: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();

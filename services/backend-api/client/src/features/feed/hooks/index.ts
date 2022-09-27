@@ -9,5 +9,3 @@ export * from './useDeleteFeedSubscriber';
 export * from './useCloneFeed';
 export * from './useCreateFeed';
 export * from './useDeleteFeed';
-export * from './useCreateDiscordChannelConnection';
-export * from './useCreateDiscordWebhookConnection';

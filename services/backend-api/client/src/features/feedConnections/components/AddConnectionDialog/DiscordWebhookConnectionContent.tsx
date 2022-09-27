@@ -26,9 +26,10 @@ import { useDiscordServer } from '@/features/discordServers';
 import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
 import { useDiscordWebhooks } from '../../../discordWebhooks';
-import { useCreateDiscordWebhookConnection, useFeed } from '../../hooks';
+import { useFeed } from '../../../feed/hooks';
 import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
 import { notifyError } from '../../../../utils/notifyError';
+import { useCreateDiscordWebhookConnection } from '../..';
 
 const formSchema = object({
   webhookId: string().required(),

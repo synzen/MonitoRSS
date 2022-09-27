@@ -1,5 +1,5 @@
 import { Modal, ModalOverlay } from '@chakra-ui/react';
-import { FeedConnectionType } from '../../constants';
+import { FeedConnectionType } from '../../../feed/constants';
 import { DiscordChannelConnectionContent } from './DiscordChannelConnectionContent';
 import { DiscordWebhookConnectionContent } from './DiscordWebhookConnectionContent';
 

@@ -4,8 +4,6 @@ import { GetDiscordBotOutput, GetDiscordMeOutput } from '@/features/discordUser'
 import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
   CloneFeedOutput,
-  CreateDiscordChannelConnectionOutput,
-  CreateDiscordWebhookConnectionOutput,
   CreateFeedSubscriberOutput,
   FeedSummary,
   GetFeedArticlesOutput,
@@ -34,6 +32,10 @@ import mockDiscordWebhooks from './data/discordWebhooks';
 import { generateMockApiErrorResponse } from './generateMockApiErrorResponse';
 import mockDiscordBot from './data/discordBot';
 import mockFeedConnections from './data/feedConnection';
+import {
+  CreateDiscordChannelConnectionOutput,
+  CreateDiscordWebhookConnectionOutput,
+} from '../features/feedConnections';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(

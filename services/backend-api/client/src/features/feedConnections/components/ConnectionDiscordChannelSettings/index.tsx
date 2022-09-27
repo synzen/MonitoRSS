@@ -18,10 +18,10 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { CategoryText } from '../../../../components';
 import RouteParams from '../../../../types/RouteParams';
-import { useFeed } from '../../hooks';
-import { RefreshButton } from '../RefreshButton';
+import { RefreshButton } from '../../../feed/components/RefreshButton';
+import { useFeed } from '../../../feed/hooks';
 
-export const DiscordMediumSettings: React.FC = () => {
+export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
   const {
     feed, refetch,
@@ -61,10 +61,15 @@ export const DiscordMediumSettings: React.FC = () => {
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbItem>
-                    <BreadcrumbLink href="#">{feed?.title}</BreadcrumbLink>
+                    <BreadcrumbLink
+                      as={RouterLink}
+                      to={`/v2/servers/${serverId}/feeds/${feedId}`}
+                    >
+                      {feed?.title}
+                    </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbItem isCurrentPage>
-                    <BreadcrumbLink href="#">Medium</BreadcrumbLink>
+                    <BreadcrumbLink href="#">Channel</BreadcrumbLink>
                   </BreadcrumbItem>
                 </Breadcrumb>
                 <HStack alignItems="center">
@@ -106,10 +111,8 @@ export const DiscordMediumSettings: React.FC = () => {
               columnGap="20"
               rowGap={{ base: '8', lg: '14' }}
             >
-              <CategoryText title={t('pages.feed.refreshRateLabel')}>
-                {t('pages.feed.refreshRateValue', {
-                  seconds: feed?.refreshRateSeconds,
-                })}
+              <CategoryText title="Channel">
+                #logs
               </CategoryText>
               <CategoryText
                 title={t('pages.feed.createdAtLabel')}

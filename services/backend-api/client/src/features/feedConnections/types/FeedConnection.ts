@@ -1,8 +1,8 @@
 import {
   array, object, string,
 } from 'yup';
-import { FeedConnectionType } from '../constants';
-import { Feed, FeedEmbedSchema } from './Feed';
+import { FeedConnectionType } from '../../feed/constants';
+import { Feed, FeedEmbedSchema } from '../../feed/types/Feed';
 
 const DiscordChannelConnectionDetailsSchema = object({
   embeds: array(FeedEmbedSchema).required(),
