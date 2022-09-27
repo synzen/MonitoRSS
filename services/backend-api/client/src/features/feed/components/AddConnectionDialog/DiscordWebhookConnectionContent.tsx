@@ -26,11 +26,13 @@ import { useDiscordServer } from '@/features/discordServers';
 import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
 import { useDiscordWebhooks } from '../../../discordWebhooks';
-import { useFeed } from '../../hooks';
+import { useCreateFeedConnection, useFeed } from '../../hooks';
 import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
+import { FeedConnectionType } from '../../constants';
+import { notifyError } from '../../../../utils/notifyError';
 
 const formSchema = object({
-  webhookId: string().optional(),
+  webhookId: string().required(),
   name: string().optional(),
   iconUrl: string().optional(),
 });
@@ -67,7 +69,7 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
   const defaultFormValues: FormData = {
-    webhookId: feed?.webhook?.id,
+    webhookId: feed?.webhook?.id as string,
     name: feed?.webhook?.name,
     iconUrl: feed?.webhook?.iconUrl,
   };
@@ -83,8 +85,28 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
     resolver: yupResolver(formSchema),
     defaultValues: defaultFormValues,
   });
+  const { mutateAsync } = useCreateFeedConnection();
 
-  const onSubmit = async ({ webhookId, name }: FormData) => {
+  const onSubmit = async ({ webhookId, name, iconUrl }: FormData) => {
+    if (!feedId) {
+      throw new Error('Feed ID missing while creating discord channel connection');
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        details: {
+          type: FeedConnectionType.DiscordWebhook,
+          webhookId,
+          name,
+          iconUrl,
+        },
+      });
+      onClose();
+    } catch (err) {
+      notifyError(t('features.feed.components.addDiscordChannelConnectionDialog'
+      + '.failedToAdd'), err as Error);
+    }
   };
 
   useEffect(() => {

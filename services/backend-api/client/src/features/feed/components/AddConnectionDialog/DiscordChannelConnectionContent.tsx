@@ -21,6 +21,7 @@ import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
 import { useCreateFeedConnection } from '../../hooks';
 import { notifyError } from '../../../../utils/notifyError';
+import { FeedConnectionType } from '../../constants';
 
 const formSchema = object({
   channelId: string().required(),
@@ -66,6 +67,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
       await mutateAsync({
         feedId,
         details: {
+          type: FeedConnectionType.DiscordChannel,
           channelId,
         },
       });

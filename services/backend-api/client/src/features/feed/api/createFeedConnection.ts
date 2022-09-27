@@ -1,13 +1,28 @@
 import { object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
+import { FeedConnectionType } from '../constants';
 import { FeedConnection, FeedConnectionSchema } from '../types';
 
-export interface CreateFeedConnectionInput {
-  feedId: string
+export interface CreateDiscordChannelFeedConnectionInput {
+  feedId: string;
   details: {
-    channelId: string
+    type: FeedConnectionType.DiscordChannel
+    channelId: string;
   }
 }
+
+export interface CreateDiscordWebhookFeedConnectionInput {
+  feedId: string;
+  details: {
+    type: FeedConnectionType.DiscordWebhook
+    webhookId: string;
+    name?: string
+    iconUrl?: string
+  }
+}
+
+export type CreateFeedConnectionInput = CreateDiscordChannelFeedConnectionInput
+| CreateDiscordWebhookFeedConnectionInput;
 
 const CreateFeedConnectionOutputSchema = object({
   result: FeedConnectionSchema,
