@@ -67,11 +67,6 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
     serverId,
     isWebhooksEnabled: discordServerData?.benefits.webhooks,
   });
-  const defaultFormValues: FormData = {
-    webhookId: feed?.webhook?.id as string,
-    name: feed?.webhook?.name,
-    iconUrl: feed?.webhook?.iconUrl,
-  };
   const {
     handleSubmit,
     control,
@@ -82,7 +77,6 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
     },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    defaultValues: defaultFormValues,
   });
   const { mutateAsync } = useCreateDiscordWebhookConnection();
 
