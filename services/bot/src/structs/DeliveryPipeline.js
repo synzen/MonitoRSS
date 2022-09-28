@@ -7,6 +7,16 @@ const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
 const { Webhook } = require('discord.js')
 
+const stripNullsOut = obj => {
+  const newObj = {}
+  for (const key in obj) {
+    if (obj[key] !== null) {
+      newObj[key] = obj[key]
+    }
+  }
+  return newObj
+}
+
 /**
  * Core delivery pipeline
  */
@@ -72,7 +82,8 @@ class DeliveryPipeline {
     const { article, feedObject } = newArticle
     const feedWebhook = feedObject.webhook && !feedObject.webhook.disabled ? feedObject.webhook : null
     const apiPayloads = articleMessage.createAPIPayloads(feedWebhook)
-    const apiRoute = feedWebhook ? feedWebhook.url : `https://discord.com/api/channels/${feedObject.channel}/messages`
+    const apiRoute = feedWebhook ? feedWebhook.url : `https://discord.com/api/v9/channels/${feedObject.channel}/messages`
+
     await Promise.all(
       apiPayloads.map(apiPayload => this.restProducer.enqueue(apiRoute, {
         method: 'POST',
