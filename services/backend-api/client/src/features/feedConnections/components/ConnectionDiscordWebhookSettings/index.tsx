@@ -22,6 +22,11 @@ import { CategoryText, DiscordMessageForm } from '../../../../components';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
+import {
+  FilterExpressionType,
+  LogicalExpressionOperator,
+  RelationalExpressionOperator,
+} from '../../types';
 import { FiltersForm } from '../FiltersForm';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
@@ -157,7 +162,34 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
           </Stack>
         </TabPanel>
         <TabPanel maxWidth="1200px" width="100%">
-          <FiltersForm />
+          <FiltersForm
+            expression={{
+              type: FilterExpressionType.Logical,
+              op: LogicalExpressionOperator.And,
+              // Everything in children is customizable
+              children: [{
+                type: FilterExpressionType.Logical,
+                op: LogicalExpressionOperator.And,
+                // Each relational field is a input row
+                children: [{
+                  type: FilterExpressionType.Relational,
+                  left: 'title',
+                  op: RelationalExpressionOperator.Contains,
+                  right: 'test',
+                }, {
+                  type: FilterExpressionType.Relational,
+                  left: 'description',
+                  op: RelationalExpressionOperator.Equals,
+                  right: 'myvalue',
+                }],
+              }, {
+                type: FilterExpressionType.Logical,
+                op: LogicalExpressionOperator.And,
+                // Each relational field is a input row
+                children: [],
+              }],
+            }}
+          />
         </TabPanel>
       </TabPanels>
     </Tabs>

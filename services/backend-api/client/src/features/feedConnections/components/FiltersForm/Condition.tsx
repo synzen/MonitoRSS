@@ -20,13 +20,17 @@ interface FormData {
 interface Props {
   values: FormData
   defaultValues?: FormData
-  onChange: (details: Partial<FormData>) => void
+  onChange: (details: Partial<FormData> & {
+    operator: RelationalExpressionOperator
+  }) => void
+  onDelete: () => void
 }
 
 export const Condition = ({
   values,
   defaultValues,
   onChange,
+  onDelete,
 }: Props) => {
   const onLeftValueChange = (value: string) => {
     onChange({
@@ -78,7 +82,7 @@ export const Condition = ({
           value={values.rightValue}
         />
       </HStack>
-      <CloseButton />
+      <CloseButton size="sm" onClick={onDelete} />
     </HStack>
   );
 };
