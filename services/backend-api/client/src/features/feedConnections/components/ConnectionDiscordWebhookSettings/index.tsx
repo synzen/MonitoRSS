@@ -12,11 +12,13 @@ import {
   Stack,
   Tab,
   TabList,
+  TabPanel,
+  TabPanels,
   Tabs,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { CategoryText } from '../../../../components';
+import { CategoryText, DiscordMessageForm } from '../../../../components';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
@@ -129,7 +131,31 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
             <Tab>Settings</Tab>
           </TabList>
         </Stack>
+
       </Stack>
+      <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
+        <TabPanel maxWidth="1200px" width="100%">
+          <Stack>
+            <DiscordMessageForm
+              defaultValues={{
+                embedAuthorIconUrl: undefined,
+                embedAuthorTitle: undefined,
+                embedAuthorUrl: undefined,
+                embedColor: undefined,
+                embedDescription: undefined,
+                embedFooterIconUrl: undefined,
+                embedFooterText: undefined,
+                embedImageUrl: undefined,
+                embedThumbnailUrl: undefined,
+                embedTitle: undefined,
+                embedUrl: undefined,
+                content: undefined,
+              }}
+              onClickSave={console.log}
+            />
+          </Stack>
+        </TabPanel>
+      </TabPanels>
     </Tabs>
   );
 };

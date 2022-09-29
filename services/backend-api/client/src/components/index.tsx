@@ -6,3 +6,4 @@ export * from './Navbar';
 export * from './SidebarHeading';
 export * from './SidebarLink';
 export * from './ThemedSelect';
+export * from './DiscordMessageForm';
