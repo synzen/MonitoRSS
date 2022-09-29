@@ -29,7 +29,7 @@ import { useDiscordWebhooks } from '../../../discordWebhooks';
 import { useFeed } from '../../../feed/hooks';
 import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
 import { notifyError } from '../../../../utils/notifyError';
-import { useCreateDiscordWebhookConnection } from '../..';
+import { useCreateDiscordWebhookConnection } from '../../hooks';
 
 const formSchema = object({
   webhookId: string().required(),

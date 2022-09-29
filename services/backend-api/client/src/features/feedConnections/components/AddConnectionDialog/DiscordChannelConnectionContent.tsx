@@ -20,7 +20,7 @@ import { useDiscordServerChannels } from '@/features/discordServers';
 import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
 import { notifyError } from '../../../../utils/notifyError';
-import { useCreateDiscordChannelConnection } from '../..';
+import { useCreateDiscordChannelConnection } from '../../hooks';
 
 const formSchema = object({
   channelId: string().required(),
