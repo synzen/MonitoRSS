@@ -35,6 +35,8 @@ import mockFeedConnections from './data/feedConnection';
 import {
   CreateDiscordChannelConnectionOutput,
   CreateDiscordWebhookConnectionOutput,
+  UpdateDiscordChannelConnectionOutput,
+  UpdateDiscordWebhookConnectionOutput,
 } from '../features/feedConnections';
 
 const handlers = [
@@ -176,9 +178,23 @@ const handlers = [
     }),
   )),
 
+  rest.put('/api/v1/feeds/:feedId/connections/discord-channels/:id', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<UpdateDiscordChannelConnectionOutput>({
+      result: mockFeedConnections[0],
+    }),
+  )),
+
   rest.post('/api/v1/feeds/:feedId/connections/discord-webhooks', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordWebhookConnectionOutput>({
+      result: mockFeedConnections[0],
+    }),
+  )),
+
+  rest.put('/api/v1/feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<UpdateDiscordWebhookConnectionOutput>({
       result: mockFeedConnections[0],
     }),
   )),
