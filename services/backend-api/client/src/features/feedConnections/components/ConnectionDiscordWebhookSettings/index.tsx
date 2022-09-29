@@ -22,6 +22,7 @@ import { CategoryText, DiscordMessageForm } from '../../../../components';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
+import { FiltersForm } from '../FiltersForm';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
@@ -154,6 +155,9 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               onClickSave={console.log}
             />
           </Stack>
+        </TabPanel>
+        <TabPanel maxWidth="1200px" width="100%">
+          <FiltersForm />
         </TabPanel>
       </TabPanels>
     </Tabs>
