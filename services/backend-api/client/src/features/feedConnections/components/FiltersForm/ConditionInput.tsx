@@ -1,7 +1,8 @@
 import {
-  FormControl, FormErrorMessage, Input,
+  FormControl,
+  FormErrorMessage,
+  Input,
 } from '@chakra-ui/react';
-import { useState } from 'react';
 
 interface Props {
   defaultValue?: string
@@ -14,18 +15,15 @@ export const ConditionInput = ({
   onChange,
   value,
 }: Props) => {
-  const [hasFocused, setHasFocused] = useState(false);
-
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
 
-  const hasError = !value && hasFocused;
+  const hasError = !value;
 
   return (
     <FormControl isInvalid={hasError}>
       <Input
-        onFocus={() => setHasFocused(true)}
         flexGrow={1}
         onChange={onInputChange}
         value={value}

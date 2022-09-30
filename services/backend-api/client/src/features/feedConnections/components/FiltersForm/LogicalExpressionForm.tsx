@@ -58,17 +58,21 @@ export const LogicalExpressionForm = ({
 
   const onAddRelational = () => {
     const newChildren = [...expression.children];
-    newChildren.push({
+
+    const indexOfLastRelational = newChildren
+      .findIndex((child) => child.type === FilterExpressionType.Relational);
+
+    newChildren.splice(indexOfLastRelational + 1, 0, {
       type: FilterExpressionType.Relational,
       left: '',
       op: RelationalExpressionOperator.Equals,
       right: '',
     });
+
     onChange({
       type: FilterExpressionType.Logical,
       op: expression.op,
-      children: newChildren
-        .sort((child) => (child.type === FilterExpressionType.Relational ? -1 : 1)),
+      children: newChildren,
     });
   };
 
@@ -82,8 +86,7 @@ export const LogicalExpressionForm = ({
     onChange({
       type: FilterExpressionType.Logical,
       op: expression.op,
-      children: newChildren
-        .sort((child) => (child.type === FilterExpressionType.Relational ? -1 : 1)),
+      children: newChildren,
     });
   };
 
@@ -113,95 +116,107 @@ export const LogicalExpressionForm = ({
     });
   };
 
+  const hasError = expression.children.length === 0;
+
   return (
-    <Box
-      border="solid"
-      borderWidth="1px"
-      borderColor={expression.children.length === 0 ? 'red.500' : 'gray.600'}
-      padding="4"
-      borderRadius="md"
-      width="100%"
-    >
-      <Flex justifyContent="space-between">
-        <Box width="100%">
-          <Text display="inline" paddingRight={2}>
-            When
-          </Text>
-          <AnyAllSelector
-            value={expression.op}
-            onChange={onAnyAllChange}
+    <Stack>
+      <Box
+        border="solid"
+        borderWidth={hasError ? '2px' : '1px'}
+        borderColor={hasError ? 'red.300' : 'gray.600'}
+        padding="4"
+        borderRadius="md"
+        width="100%"
+      >
+        <Flex justifyContent="space-between">
+          <Box width="100%">
+            <Text display="inline" paddingRight={2}>
+              When
+            </Text>
+            <AnyAllSelector
+              value={expression.op}
+              onChange={onAnyAllChange}
+            />
+            <Text display="inline" paddingLeft={2} paddingBottom={4}>
+              of the conditions match:
+            </Text>
+          </Box>
+          <CloseButton
+            aria-label="Delete condition group"
+            onClick={onDeleted}
           />
-          <Text display="inline" paddingLeft={2} paddingBottom={4}>
-            of the conditions match:
-          </Text>
-        </Box>
-        <CloseButton onClick={onDeleted} />
-      </Flex>
-      <Stack>
-        <Stack spacing={2} marginTop={4} width="100%">
-          {expression.children.map((child, childIndex) => {
-            if (child.type === FilterExpressionType.Logical) {
+        </Flex>
+        <Stack>
+          <Stack spacing={2} marginTop={4} width="100%">
+            {expression.children.map((child, childIndex) => {
+              if (child.type === FilterExpressionType.Logical) {
+                return (
+                  <LogicalExpressionForm
+                    expression={child}
+                    onChange={(newExpression) => onLogicalChildChanged(childIndex, newExpression)}
+                    onDeleted={() => onChildDeleted(childIndex)}
+                  />
+                );
+              }
+
+              const {
+                left, op, right,
+              } = child;
+
               return (
-                <LogicalExpressionForm
-                  expression={child}
-                  onChange={(newExpression) => onLogicalChildChanged(childIndex, newExpression)}
-                  onDeleted={() => onChildDeleted(childIndex)}
+                <Condition
+                  values={{
+                    leftValue: left,
+                    operator: op,
+                    rightValue: right,
+                  }}
+                  onChange={({
+                    leftValue,
+                    operator,
+                    rightValue,
+                  }) => onRelationalChildChanged(childIndex, {
+                    leftValue,
+                    opValue: operator,
+                    rightValue,
+                  })}
+                  onDelete={() => onChildDeleted(childIndex)}
                 />
               );
-            }
+            })}
+          </Stack>
+          <Box>
+            <Menu>
+              <MenuButton
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                variant="ghost"
+              >
+                {t('features.feedConnections.components.filtersForm.addButtonText')}
 
-            const {
-              left, op, right,
-            } = child;
+              </MenuButton>
+              <MenuList>
+                <MenuItem
+                  onClick={onAddRelational}
+                >
+                  {t('features.feedConnections.components.filtersForm.addRelationalButtonText')}
 
-            return (
-              <Condition
-                values={{
-                  leftValue: left,
-                  operator: op,
-                  rightValue: right,
-                }}
-                onChange={({
-                  leftValue,
-                  operator,
-                  rightValue,
-                }) => onRelationalChildChanged(childIndex, {
-                  leftValue,
-                  opValue: operator,
-                  rightValue,
-                })}
-                onDelete={() => onChildDeleted(childIndex)}
-              />
-            );
-          })}
+                </MenuItem>
+                <MenuItem
+                  onClick={onAddLogical}
+                >
+                  {t('features.feedConnections.components.filtersForm.addLogicalButtonText')}
+
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Box>
         </Stack>
-        <Box>
-          <Menu>
-            <MenuButton
-              as={Button}
-              rightIcon={<ChevronDownIcon />}
-              variant="ghost"
-            >
-              {t('features.feedConnections.components.filtersForm.addButtonText')}
-
-            </MenuButton>
-            <MenuList>
-              <MenuItem
-                onClick={onAddRelational}
-              >
-                {t('features.feedConnections.components.filtersForm.addRelationalButtonText')}
-
-              </MenuItem>
-              <MenuItem
-                onClick={onAddLogical}
-              >
-                {t('features.feedConnections.components.filtersForm.addLogicalButtonText')}
-
-              </MenuItem>
-            </MenuList>
-          </Menu>
-        </Box>
-      </Stack>
-    </Box>
+      </Box>
+      {hasError && (
+      <Text color="red.300">
+        {t('features.feedConnections.components.filtersForm.errorMissingConditions')}
+      </Text>
+      )}
+    </Stack>
   );
 };

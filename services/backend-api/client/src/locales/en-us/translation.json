@@ -290,8 +290,9 @@
           "addNewFiltersButtonText": "Add new filters",
           "saveButtonText": "Save",
           "addButtonText": "Add",
-          "addLogicalButtonText": "Logical expression",
-          "addRelationalButtonText": "Relational expression"
+          "addLogicalButtonText": "Condition group",
+          "addRelationalButtonText": "Condition",
+          "errorMissingConditions": "At least one condition must be added to the group above"
         },
         "discordWebhookSettings": {
           "filtersUpdateFailed": "Failed to update filters"

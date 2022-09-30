@@ -57,7 +57,7 @@ export const Condition = ({
   };
 
   return (
-    <HStack width="100%">
+    <HStack width="100%" alignItems="flex-start">
       <HStack width="100%" spacing={8} alignItems="flex-start">
         <ConditionInput
           onChange={onLeftValueChange}
@@ -82,7 +82,11 @@ export const Condition = ({
           value={values.rightValue}
         />
       </HStack>
-      <CloseButton size="sm" onClick={onDelete} />
+      <CloseButton
+        aria-label="Delete condition"
+        size="sm"
+        onClick={onDelete}
+      />
     </HStack>
   );
 };
