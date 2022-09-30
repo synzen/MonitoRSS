@@ -6,8 +6,8 @@ export interface UpdateDiscordWebhookConnectionInput {
   feedId: string;
   connectionId: string
   details: {
-    content?: string
-    filters?: Record<string, any>
+    content?: string | null
+    filters?: Record<string, any> | null
   }
 }
 
@@ -22,7 +22,7 @@ export type UpdateDiscordWebhookConnectionOutput = {
 export const updateDiscordWebhookConnection = async (
   options: UpdateDiscordWebhookConnectionInput,
 ): Promise<UpdateDiscordWebhookConnectionOutput> => fetchRest(
-  `/api/v1/feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
+  `/api/v1/feeds/${options.feedId}/connections/discord-webhooks/${options.connectionId}`,
   {
     validateSchema: UpdateDiscordWebhookConnectionOutputSchema,
     requestOptions: {

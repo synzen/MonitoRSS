@@ -1,28 +1,78 @@
 import { useState } from 'react';
 import { cloneDeep } from 'lodash';
 import {
+  Button, HStack, Stack,
+} from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
+import {
+  FilterExpression,
   LogicalFilterExpression,
 } from '../../types';
 import { LogicalExpressionForm } from './LogicalExpressionForm';
+import { notifyError } from '../../../../utils/notifyError';
 
 interface Props {
   expression: LogicalFilterExpression
+  onSave: (expression: LogicalFilterExpression | null) => Promise<void>
 }
 
 export const FiltersForm = ({
   expression,
+  onSave,
 }: Props) => {
-  const [editingExpression, setEditingExpression] = useState(cloneDeep(expression));
+  const { t } = useTranslation();
+  const [editingExpression, setEditingExpression] = useState<FilterExpression | null>(
+    expression ? cloneDeep(expression) : null,
+  );
+  const [savingFilters, setSavingFilters] = useState(false);
+  const [dirtyForm, setDirtyForm] = useState(false);
 
-  const onDeletedExpression = () => {
-    console.log('deleted');
+  const onExpressionChanged = (newExpression: FilterExpression) => {
+    setEditingExpression(newExpression);
+    setDirtyForm(true);
   };
 
+  const onDeletedExpression = async () => {
+    setEditingExpression(null);
+  };
+
+  const onSaveExpression = async () => {
+    setSavingFilters(true);
+
+    try {
+      await onSave(editingExpression);
+      setDirtyForm(false);
+    } catch (err) {
+      notifyError(
+        t('features.feedConnections.components.discordWebhookSettings.filtersUpdateFailed'),
+        err as Error,
+      );
+    } finally {
+      setSavingFilters(false);
+    }
+  };
+
+  if (!editingExpression) {
+    return null;
+  }
+
   return (
-    <LogicalExpressionForm
-      expression={editingExpression}
-      onChange={setEditingExpression}
-      onDeleted={onDeletedExpression}
-    />
+    <Stack>
+      <LogicalExpressionForm
+        expression={editingExpression}
+        onChange={onExpressionChanged}
+        onDeleted={onDeletedExpression}
+      />
+      <HStack justifyContent="flex-end">
+        <Button
+          colorScheme="blue"
+          onClick={onSaveExpression}
+          isLoading={savingFilters}
+          disabled={!dirtyForm || savingFilters}
+        >
+          Save
+        </Button>
+      </HStack>
+    </Stack>
   );
 };

@@ -189,7 +189,7 @@ export const FeedV2: React.FC = () => {
               <Stack>
                 <Link
                   as={RouterLink}
-                  to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
+                  to={`/v2/servers/${serverId}/feeds/${feedId}/connections/123`}
                 >
                   <Flex
                     background="gray.700"
@@ -211,7 +211,7 @@ export const FeedV2: React.FC = () => {
                 </Link>
                 <Link
                   as={RouterLink}
-                  to={`/v2/servers/${serverId}/feeds/${feedId}/mediums/123`}
+                  to={`/v2/servers/${serverId}/feeds/${feedId}/connections/123`}
                 >
                   <Flex
                     background="gray.700"

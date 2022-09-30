@@ -22,7 +22,9 @@ import { CategoryText, DiscordMessageForm } from '../../../../components';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
+import { useUpdateDiscordWebhookConnection } from '../../hooks';
 import {
+  FilterExpression,
   FilterExpressionType,
   LogicalExpressionOperator,
   RelationalExpressionOperator,
@@ -30,13 +32,28 @@ import {
 import { FiltersForm } from '../FiltersForm';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
-  const { feedId, serverId } = useParams<RouteParams>();
+  const { feedId, serverId, connectionId } = useParams<RouteParams>();
   const {
     feed, refetch,
   } = useFeed({
     feedId,
   });
   const { t } = useTranslation();
+  const { mutateAsync } = useUpdateDiscordWebhookConnection();
+
+  const onFiltersUpdated = async (filters: FilterExpression | null) => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        filters,
+      },
+    });
+  };
 
   return (
     <Tabs isFitted>
@@ -189,6 +206,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                 children: [],
               }],
             }}
+            onSave={onFiltersUpdated}
           />
         </TabPanel>
       </TabPanels>

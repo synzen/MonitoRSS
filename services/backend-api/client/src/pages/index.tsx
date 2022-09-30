@@ -112,7 +112,7 @@ const Pages: React.FC = () => (
 
     />
     <Route
-      path="/v2/servers/:serverId/feeds/:feedId/mediums/:mediumId"
+      path="/v2/servers/:serverId/feeds/:feedId/connections/:connectionId"
       element={(
         <RequireAuth>
           <RequireDiscordServers>

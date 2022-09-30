@@ -1,3 +1,3 @@
-type RouteParams = 'serverId' | 'feedId';
+type RouteParams = 'serverId' | 'feedId' | 'connectionId';
 
 export default RouteParams;
