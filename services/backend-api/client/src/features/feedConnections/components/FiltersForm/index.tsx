@@ -6,6 +6,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   FilterExpression,
+  FilterExpressionType,
+  LogicalExpressionOperator,
   LogicalFilterExpression,
 } from '../../types';
 import { LogicalExpressionForm } from './LogicalExpressionForm';
@@ -53,7 +55,31 @@ export const FiltersForm = ({
   };
 
   if (!editingExpression) {
-    return null;
+    return (
+      <Stack>
+        <Button
+          onClick={() => {
+            onExpressionChanged({
+              type: FilterExpressionType.Logical,
+              op: LogicalExpressionOperator.And,
+              children: [],
+            });
+          }}
+        >
+          {t('features.feedConnections.components.filtersForm.addNewFiltersButtonText')}
+        </Button>
+        <HStack justifyContent="flex-end">
+          <Button
+            colorScheme="blue"
+            onClick={onSaveExpression}
+            isLoading={savingFilters}
+            disabled={!dirtyForm || savingFilters}
+          >
+            {t('features.feedConnections.components.filtersForm.saveButtonText')}
+          </Button>
+        </HStack>
+      </Stack>
+    );
   }
 
   return (
@@ -70,7 +96,7 @@ export const FiltersForm = ({
           isLoading={savingFilters}
           disabled={!dirtyForm || savingFilters}
         >
-          Save
+          {t('features.feedConnections.components.filtersForm.saveButtonText')}
         </Button>
       </HStack>
     </Stack>

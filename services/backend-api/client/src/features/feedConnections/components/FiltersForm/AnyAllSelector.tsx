@@ -28,7 +28,6 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
         variant={value === And ? 'solid' : 'outline'}
       >
         ALL
-
       </Button>
       <Button
         onClick={onSelectOr}
@@ -36,7 +35,6 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
         variant={value === Or ? 'solid' : 'outline'}
       >
         ANY
-
       </Button>
     </ButtonGroup>
   );

@@ -284,6 +284,20 @@
         }
       }
     },
+    "feedConnections": {
+      "components": {
+        "filtersForm": {
+          "addNewFiltersButtonText": "Add new filters",
+          "saveButtonText": "Save",
+          "addButtonText": "Add",
+          "addLogicalButtonText": "Logical expression",
+          "addRelationalButtonText": "Relational expression"
+        },
+        "discordWebhookSettings": {
+          "filtersUpdateFailed": "Failed to update filters"
+        }
+      }
+    },
     "discordServers": {
       "components": {
         "liveClock": {

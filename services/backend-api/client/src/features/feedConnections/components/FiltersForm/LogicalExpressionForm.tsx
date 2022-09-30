@@ -2,6 +2,7 @@ import { ChevronDownIcon } from '@chakra-ui/icons';
 import {
   Box, Button, CloseButton, Flex, Menu, MenuButton, MenuItem, MenuList, Stack, Text,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import {
   FilterExpressionType,
   LogicalExpressionOperator,
@@ -22,6 +23,8 @@ export const LogicalExpressionForm = ({
   onChange,
   onDeleted,
 }: Props) => {
+  const { t } = useTranslation();
+
   const onAnyAllChange = (value: LogicalFilterExpression['op']) => {
     onChange({
       type: FilterExpressionType.Logical,
@@ -53,7 +56,7 @@ export const LogicalExpressionForm = ({
     });
   };
 
-  const onAddCondition = () => {
+  const onAddRelational = () => {
     const newChildren = [...expression.children];
     newChildren.push({
       type: FilterExpressionType.Relational,
@@ -69,7 +72,7 @@ export const LogicalExpressionForm = ({
     });
   };
 
-  const onAddGroup = () => {
+  const onAddLogical = () => {
     const newChildren = [...expression.children];
     newChildren.push({
       type: FilterExpressionType.Logical,
@@ -179,12 +182,22 @@ export const LogicalExpressionForm = ({
               rightIcon={<ChevronDownIcon />}
               variant="ghost"
             >
-              Add expression
+              {t('features.feedConnections.components.filtersForm.addButtonText')}
 
             </MenuButton>
             <MenuList>
-              <MenuItem onClick={onAddCondition}>Add relational</MenuItem>
-              <MenuItem onClick={onAddGroup}>Add logical</MenuItem>
+              <MenuItem
+                onClick={onAddRelational}
+              >
+                {t('features.feedConnections.components.filtersForm.addRelationalButtonText')}
+
+              </MenuItem>
+              <MenuItem
+                onClick={onAddLogical}
+              >
+                {t('features.feedConnections.components.filtersForm.addLogicalButtonText')}
+
+              </MenuItem>
             </MenuList>
           </Menu>
         </Box>
