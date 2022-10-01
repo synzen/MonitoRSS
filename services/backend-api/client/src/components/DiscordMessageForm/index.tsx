@@ -1,49 +1,56 @@
+import { AddIcon } from '@chakra-ui/icons';
 import {
-  Box,
   Button,
   Flex,
-  FormLabel,
+  Heading,
   HStack,
-  Input,
+  IconButton,
   Stack,
-  StackDivider,
-  Text,
-  Textarea,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { InferType, object, string } from 'yup';
 import { notifyError } from '../../utils/notifyError';
-
-const formSchema = object({
-  content: string(),
-  embedColor: string(),
-  embedAuthorTitle: string(),
-  embedAuthorUrl: string(),
-  embedAuthorIconUrl: string(),
-  embedTitle: string(),
-  embedUrl: string(),
-  embedDescription: string(),
-  embedThumbnailUrl: string(),
-  embedImageUrl: string(),
-  embedFooterText: string(),
-  embedFooterIconUrl: string(),
-});
-
-type FormData = InferType<typeof formSchema>;
+import { ContentForm } from './ContentForm';
+import { EmbedForm } from './EmbedForm';
+import {
+  DiscordMessageEmbedFormData,
+  DiscordMessageFormData,
+  discordMessageFormSchema,
+} from './types';
 
 interface Props {
-  defaultValues?: FormData
-  onClickSave: (data: FormData) => void
+  defaultValues?: DiscordMessageFormData
+  onClickSave: (data: DiscordMessageFormData) => void
 }
+
+const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({
+  embedAuthorIconUrl: '',
+  embedAuthorTitle: '',
+  embedAuthorUrl: '',
+  embedColor: undefined,
+  embedDescription: '',
+  embedFooterIconUrl: '',
+  embedFooterText: '',
+  embedImageUrl: '',
+  embedThumbnailUrl: '',
+  embedTitle: '',
+  embedUrl: '',
+});
 
 export const DiscordMessageForm = ({
   defaultValues,
   onClickSave,
 }: Props) => {
   const { t } = useTranslation();
+  const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultValues?.embeds?.length ?? 0);
+
   const {
     handleSubmit,
     control,
@@ -51,17 +58,20 @@ export const DiscordMessageForm = ({
     formState: {
       isDirty,
       isSubmitting,
+      errors,
     },
-  } = useForm<FormData>({
-    resolver: yupResolver(formSchema),
+    setValue,
+  } = useForm<DiscordMessageFormData>({
+    resolver: yupResolver(discordMessageFormSchema),
     defaultValues,
+    mode: 'onChange',
+  });
+  const currentEmbeds = useWatch({
+    control,
+    name: 'embeds',
   });
 
-  const resetForm = () => {
-    reset(defaultValues);
-  };
-
-  const onSubmit = async (formData: FormData) => {
+  const onSubmit = async (formData: DiscordMessageFormData) => {
     try {
       onClickSave(formData);
     } catch (err) {
@@ -69,292 +79,108 @@ export const DiscordMessageForm = ({
     }
   };
 
-  useEffect(() => {
-    resetForm();
-  }, [defaultValues]);
+  const onAddEmbed = () => {
+    const newEmbeds = [...(currentEmbeds || []), {
+      ...templateEmbed,
+    }];
+
+    setValue('embeds', newEmbeds);
+    setActiveEmbedIndex(newEmbeds.length - 1);
+  };
+
+  const onRemoveEmbed = (index: number) => {
+    const newEmbeds = [...(currentEmbeds || [])];
+    newEmbeds.splice(index, 1);
+
+    setValue('embeds', newEmbeds);
+    const newIndex = Math.max(index - 1, 0);
+    setActiveEmbedIndex(newIndex);
+  };
+
+  const onEmbedTabChanged = (index: number) => {
+    setActiveEmbedIndex(index);
+  };
+
+  const errorsExist = Object.keys(errors).length > 0;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing="5">
-        <Stack spacing="5" divider={<StackDivider />}>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Content</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Text</FormLabel>
-                  <Controller
-                    name="content"
-                    control={control}
-                    render={({ field }) => (
-                      <Textarea {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Color</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Hex</FormLabel>
-                  <Controller
-                    name="embedColor"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Author</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Title</FormLabel>
-                  <Controller
-                    name="embedAuthorTitle"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">URL</FormLabel>
-                  <Controller
-                    name="embedAuthorUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Icon URL</FormLabel>
-                  <Controller
-                    name="embedAuthorIconUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Title</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Title</FormLabel>
-                  <Controller
-                    name="embedTitle"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">URL</FormLabel>
-                  <Controller
-                    name="embedUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Description</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Text</FormLabel>
-                  <Controller
-                    name="embedDescription"
-                    control={control}
-                    render={({ field }) => (
-                      <Textarea {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Image</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Image URL</FormLabel>
-                  <Controller
-                    name="embedImageUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Thumbnail</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Image URL</FormLabel>
-                  <Controller
-                    name="embedThumbnailUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              spacing={{ base: '1.5', md: '8' }}
-              justify="space-between"
-            >
-              <Text>Embed Footer</Text>
-              <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">Text</FormLabel>
-                  <Controller
-                    name="embedFooterText"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-                <Stack
-                  display="flex"
-                  width="100%"
-                  alignSelf="flex-end"
-                >
-                  <FormLabel variant="inline">
-                    Icon URL
-                  </FormLabel>
-                  <Controller
-                    name="embedFooterIconUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
-          <Flex direction="row-reverse">
-            <HStack>
-              <Button
-                onClick={() => reset()}
-                variant="ghost"
-                disabled={!isDirty || isSubmitting}
-              >
-                {t('features.feed.components.sidebar.resetButton')}
-              </Button>
-              <Button
-                type="submit"
-                colorScheme="blue"
-                disabled={isSubmitting || !isDirty}
-                isLoading={isSubmitting}
-              >
-                {t('features.feed.components.sidebar.saveButton')}
-              </Button>
-            </HStack>
-          </Flex>
+      <Stack spacing={16}>
+        <Stack spacing={4}>
+          <Heading size="md">Text</Heading>
+          <ContentForm
+            control={control}
+            errors={errors}
+          />
         </Stack>
+        <Stack spacing={4}>
+          <Heading size="md">Embeds</Heading>
+          <Tabs
+            variant="soft-rounded"
+            index={activeEmbedIndex}
+            onChange={onEmbedTabChanged}
+          >
+            <HStack overflow="auto">
+              <TabList>
+                {currentEmbeds?.map((_, index) => (
+                  <Tab key={index as any}>
+                    Embed
+                    {' '}
+                    {index + 1}
+                  </Tab>
+                ))}
+              </TabList>
+              {(currentEmbeds?.length ?? 0) < 10 && (
+                <IconButton
+                  onClick={onAddEmbed}
+                  variant="ghost"
+                  aria-label="Add new embed"
+                  icon={<AddIcon />}
+                />
+              )}
+            </HStack>
+            <TabPanels>
+              {currentEmbeds?.map((embed, index) => (
+                <TabPanel key={index as any}>
+                  <Flex justifyContent="flex-end">
+                    <Button
+                      colorScheme="red"
+                      variant="outline"
+                      onClick={() => onRemoveEmbed(index)}
+                    >
+                      Delete Embed
+
+                    </Button>
+                  </Flex>
+                  <EmbedForm
+                    control={control}
+                    index={index}
+                    errors={errors}
+                  />
+                </TabPanel>
+              ))}
+            </TabPanels>
+          </Tabs>
+        </Stack>
+        <Flex direction="row-reverse">
+          <HStack>
+            <Button
+              onClick={() => reset()}
+              variant="ghost"
+              disabled={!isDirty || isSubmitting}
+            >
+              {t('features.feed.components.sidebar.resetButton')}
+            </Button>
+            <Button
+              type="submit"
+              colorScheme="blue"
+              disabled={isSubmitting || !isDirty || errorsExist}
+              isLoading={isSubmitting}
+            >
+              {t('features.feed.components.sidebar.saveButton')}
+            </Button>
+          </HStack>
+        </Flex>
       </Stack>
     </form>
   );

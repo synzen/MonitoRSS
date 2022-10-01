@@ -160,20 +160,6 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         <TabPanel maxWidth="1200px" width="100%">
           <Stack>
             <DiscordMessageForm
-              defaultValues={{
-                embedAuthorIconUrl: undefined,
-                embedAuthorTitle: undefined,
-                embedAuthorUrl: undefined,
-                embedColor: undefined,
-                embedDescription: undefined,
-                embedFooterIconUrl: undefined,
-                embedFooterText: undefined,
-                embedImageUrl: undefined,
-                embedThumbnailUrl: undefined,
-                embedTitle: undefined,
-                embedUrl: undefined,
-                content: undefined,
-              }}
               onClickSave={console.log}
             />
           </Stack>
