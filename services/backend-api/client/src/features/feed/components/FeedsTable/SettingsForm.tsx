@@ -12,7 +12,7 @@ import { useFeed } from '../../hooks';
 import { DiscordChannelDropdown } from '@/features/discordServers';
 import { notifySuccess } from '@/utils/notifySuccess';
 import { useUpdateFeed } from '../../hooks/useUpdateFeed';
-import { Feed } from '../../types';
+import { Feed } from '@/types';
 import { notifyError } from '@/utils/notifyError';
 import { UpdateFeedInput } from '../../api';
 

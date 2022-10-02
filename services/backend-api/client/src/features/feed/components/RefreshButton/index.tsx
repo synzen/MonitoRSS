@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { notifyError } from '@/utils/notifyError';
 import { refreshFeed } from '../..';
 import { notifySuccess } from '@/utils/notifySuccess';
-import { Feed } from '../../types';
+import { Feed } from '@/types';
 
 interface Props {
   feedId: string

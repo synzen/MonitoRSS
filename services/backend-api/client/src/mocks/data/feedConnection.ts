@@ -1,5 +1,5 @@
 import { FeedConnectionType } from '@/features/feed/constants';
-import { FeedConnection } from '@/features/feedConnections';
+import { FeedConnection } from '@/types';
 import mockDiscordChannels from './discordChannels';
 
 export const mockFeedChannelConnections: FeedConnection[] = [{

@@ -1,34 +1,13 @@
 import {
-  array, boolean, InferType, number, object, string,
+  array,
+  boolean,
+  InferType,
+  number,
+  object,
+  string,
 } from 'yup';
-
-export const FeedEmbedSchema = object({
-  title: string().optional(),
-  description: string().optional(),
-  url: string().optional(),
-  timestamp: string().oneOf(['now', 'article']).optional(),
-  footer: object({
-    text: string().optional(),
-    iconUrl: string().optional(),
-  }).optional(),
-  thumbnail: object({
-    url: string().optional(),
-  }).optional(),
-  image: object({
-    url: string().optional(),
-  }).optional(),
-  author: object({
-    name: string().optional(),
-    url: string().optional(),
-    iconUrl: string().optional(),
-  }).optional(),
-  color: number().optional(),
-  fields: array(object({
-    name: string(),
-    value: string(),
-    inline: boolean().optional(),
-  })).optional(),
-}).required();
+import { FeedConnectionSchema } from './FeedConnection';
+import { FeedEmbedSchema } from './FeedEmbed';
 
 export const FeedSchema = object({
   // From FeedSumarySchema, copied over since TypeScript doesn't work well with yup's .concat()
@@ -63,6 +42,8 @@ export const FeedSchema = object({
     name: string().optional(),
     iconUrl: string().optional(),
   }).optional(),
+  isFeedv2: boolean().optional().default(false),
+  connections: array(FeedConnectionSchema.required()).optional(),
 });
 
 export type Feed = InferType<typeof FeedSchema>;

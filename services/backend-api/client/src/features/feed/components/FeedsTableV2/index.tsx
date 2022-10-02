@@ -25,7 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
 import { useFeeds } from '../../hooks';
-import { Feed } from '../../types';
+import { Feed } from '@/types/Feed';
 import { Loading } from '@/components';
 import { FeedStatusTag } from '../FeedsTable/FeedStatusTag';
 import { AddFeedDialogV2 } from '../AddFeedDialogV2';

@@ -1,5 +1,5 @@
 import { InferType, object } from 'yup';
-import { FeedSchema, Feed } from '../types';
+import { FeedSchema, Feed } from '@/types';
 import fetchRest from '@/utils/fetchRest';
 
 export interface UpdateFeedInput {

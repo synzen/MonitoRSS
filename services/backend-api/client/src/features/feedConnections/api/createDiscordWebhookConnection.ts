@@ -1,6 +1,6 @@
 import { InferType, object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { FeedConnectionSchema } from '../types';
+import { FeedConnectionSchema } from '@/types';
 
 export interface CreateDiscordWebhookConnectionInput {
   feedId: string;

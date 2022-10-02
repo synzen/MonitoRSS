@@ -1,5 +1,5 @@
 import { Badge } from '@chakra-ui/react';
-import { Feed } from '../../types';
+import { Feed } from '@/types';
 
 interface Props {
   status: Feed['status']

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from 'react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getFeed, GetFeedOutput } from '../api';
-import { Feed } from '../types';
+import { Feed } from '@/types';
 
 interface Props {
   feedId?: string

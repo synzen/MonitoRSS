@@ -18,7 +18,7 @@ import { useDiscordServer } from '@/features/discordServers';
 import { useDiscordWebhooks } from '@/features/discordWebhooks';
 import { notifySuccess } from '@/utils/notifySuccess';
 import { useUpdateFeed } from '../../hooks/useUpdateFeed';
-import { Feed } from '../../types';
+import { Feed } from '@/types';
 import { notifyError } from '@/utils/notifyError';
 import { UpdateFeedInput } from '../../api';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';

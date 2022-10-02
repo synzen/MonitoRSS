@@ -24,7 +24,7 @@ import { SettingsForm } from './SettingsForm';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 import { notifyError } from '@/utils/notifyError';
-import { Feed } from '../../types';
+import { Feed } from '@/types';
 import { FeedStatusTag } from './FeedStatusTag';
 import { WebhookForm } from './WebhookForm';
 

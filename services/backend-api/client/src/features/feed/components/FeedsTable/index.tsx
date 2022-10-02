@@ -25,7 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
 import { useFeeds } from '../../hooks';
-import { Feed } from '../../types';
+import { Feed } from '@/types';
 import { Loading } from '@/components';
 import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
 import { AddFeedDialog } from '../AddFeedDialog';

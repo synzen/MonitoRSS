@@ -1,6 +1,7 @@
 import { array, InferType, object } from 'yup';
-import { FeedSchema, FeedCloneProperties } from '../types';
+import { FeedSchema } from '@/types';
 import fetchRest from '@/utils/fetchRest';
+import { FeedCloneProperties } from '../types';
 
 export interface CloneFeedInput {
   feedId: string
