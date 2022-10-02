@@ -122,10 +122,7 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
         <ModalBody>
           {webhooksDisabled && (
             <Text color="orange.500">
-              {t(
-                'features.feed.components.addDiscordWebhookConnectionDialog'
-                + '.webhooksPremiumDisabled',
-              )}
+              {t('common.errors.supporterRequiredAccess')}
             </Text>
           )}
           {!webhooksDisabled && (

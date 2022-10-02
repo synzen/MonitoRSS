@@ -6,6 +6,7 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  Button,
   Grid,
   Heading,
   HStack,
@@ -18,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
+import { EditIcon } from '@chakra-ui/icons';
 import { CategoryText, DiscordMessageForm } from '@/components';
 import { DiscordMessageFormData } from '@/types/discord';
 import RouteParams from '@/types/RouteParams';
@@ -28,6 +30,7 @@ import {
   FilterExpression,
 } from '../../types';
 import { FiltersForm } from '../FiltersForm';
+import { EditConnectionWebhookDialog } from './EditConnectionWebhookDialog';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, serverId, connectionId } = useParams<RouteParams>();
@@ -80,6 +83,20 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
     });
   };
 
+  const onWebhookUpdated = async (data: { webhookId: string, name?: string, iconUrl?: string }) => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        webhookId: data.webhookId,
+      },
+    });
+  };
+
   return (
     <Tabs isFitted>
       <Stack
@@ -123,13 +140,31 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     <BreadcrumbLink href="#">Webhook</BreadcrumbLink>
                   </BreadcrumbItem>
                 </Breadcrumb>
-                <HStack alignItems="center">
+                <HStack alignItems="center" justifyContent="space-between">
                   <Heading
                     size="lg"
-                    marginRight={4}
                   >
                     Stocks
                   </Heading>
+                  <EditConnectionWebhookDialog
+                    feedId={feedId}
+                    serverId={serverId}
+                    onUpdate={onWebhookUpdated}
+                    defaultValues={{
+                      webhookId: '1',
+                      iconUrl: 'icon-url',
+                      name: 'name',
+                    }}
+                    trigger={(
+                      <Button
+                        aria-label="Edit"
+                        variant="outline"
+                        leftIcon={<EditIcon />}
+                      >
+                        Configure
+                      </Button>
+                    )}
+                  />
                 </HStack>
               </Box>
               <Alert status="error" hidden={feed?.status !== 'failed'}>

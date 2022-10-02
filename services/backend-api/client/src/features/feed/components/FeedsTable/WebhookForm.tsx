@@ -125,7 +125,7 @@ export const WebhookForm: React.FC<Props> = ({
     <form onSubmit={handleSubmit(onSubmit)}>
       {webhooksDisabled && (
       <Text color="orange.500">
-        {t('features.feed.components.sidebar.webhooksPremiumDisabled')}
+        {t('common.errors.supporterRequiredAccess')}
       </Text>
       )}
       {!webhooksDisabled && (

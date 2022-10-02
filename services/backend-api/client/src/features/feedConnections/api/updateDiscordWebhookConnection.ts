@@ -6,6 +6,9 @@ export interface UpdateDiscordWebhookConnectionInput {
   feedId: string;
   connectionId: string
   details: {
+    webhookId?: string
+    name?: string
+    iconUrl?: string
     content?: string | null
     filters?: Record<string, any> | null
     embeds?: Array<{

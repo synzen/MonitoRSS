@@ -1,6 +1,7 @@
 {
   "common": {
     "buttons": {
+      "cancel": "Cancel",
       "reset": "Reset",
       "save": "Save"
     },
@@ -9,7 +10,8 @@
       "tryAgainLater": "Please try again later.",
       "detailsTitle": "Details",
       "goBack": "Go back",
-      "failedToSave": "Failed to save changes"
+      "failedToSave": "Failed to save changes",
+      "supporterRequiredAccess": "You need to be a supporter to access this."
     },
     "api": {
       "missingBotAccessTitle": "Missing Bot Access",
@@ -241,18 +243,18 @@
           "saveButton": "Add",
           "formTitleLabel": "Title",
           "formTitleDescription": "This is only for your reference.",
-          "formChannelLabel": "Channel",
-          "failedToAdd": "Failed to add Discord channel connection"
+          "formChannelLabel": "Channel"
+        },
+        "updateDiscordWebhookConnectionDialog": {
+          "title": "Update Discord webhook connection"
         },
         "addDiscordWebhookConnectionDialog": {
           "title": "Add a Discord webhook connection",
-          "cancelButton": "Cancel",
           "saveButton": "Add",
           "webhookNameLabel": "Name",
           "webhookNameDescription": "This will override the webhook's name.",
           "webhookIconUrlLabel": "Icon URL",
           "webhookIconUrlDescription": "This will override the webhook's icon.",
-          "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
           "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
           "webhookFormLabel": "Webhook",
           "failedToGetWebhooks": "Failed to get server webhooks"
@@ -323,6 +325,13 @@
           "description": "The server IDs below will receive your benefits.",
           "serverInputPlaceholder": "Discord Server ID",
           "serversUpdatedSuccess": "Successfully updated servers"
+        }
+      }
+    },
+    "discordWebhooks": {
+      "components": {
+        "dropdown": {
+          "failedToGetWebhooks":"Failed to get server webhooks"
         }
       }
     }
