@@ -1,4 +1,4 @@
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon } from '@chakra-ui/icons';
 import {
   Button,
   Flex,
@@ -18,14 +18,14 @@ import {
   FormProvider, useFieldArray, useForm,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { notifyError } from '../../utils/notifyError';
-import { ContentForm } from './ContentForm';
-import { EmbedForm } from './EmbedForm';
 import {
   DiscordMessageEmbedFormData,
   DiscordMessageFormData,
   discordMessageFormSchema,
-} from './types';
+} from '@/types/discord';
+import { notifyError } from '../../utils/notifyError';
+import { ContentForm } from './ContentForm';
+import { EmbedForm } from './EmbedForm';
 
 interface Props {
   defaultValues?: DiscordMessageFormData
@@ -80,6 +80,7 @@ export const DiscordMessageForm = ({
   const onSubmit = async (formData: DiscordMessageFormData) => {
     try {
       await onClickSave(formData);
+      reset(formData);
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
@@ -162,6 +163,7 @@ export const DiscordMessageForm = ({
           </Stack>
           <Flex direction="row-reverse">
             <HStack>
+              {isDirty && (
               <Button
                 onClick={() => reset()}
                 variant="ghost"
@@ -169,6 +171,7 @@ export const DiscordMessageForm = ({
               >
                 {t('features.feed.components.sidebar.resetButton')}
               </Button>
+              )}
               <Button
                 type="submit"
                 colorScheme="blue"

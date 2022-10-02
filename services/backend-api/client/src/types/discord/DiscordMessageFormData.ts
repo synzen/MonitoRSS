@@ -8,8 +8,6 @@ export const discordMessageEmbedFormSchema = object().shape({
     .typeError('Must be a positive number less than 16777216'),
   embedAuthorTitle: string().max(256),
   embedAuthorUrl: string().when('embedAuthorTitle', ([embedAuthorTitle], schema) => {
-    console.log('EMBEF AUTHOR URL', embedAuthorTitle);
-
     if (!embedAuthorTitle) {
       return schema.oneOf([''], 'Must be empty if there is no author title');
     }

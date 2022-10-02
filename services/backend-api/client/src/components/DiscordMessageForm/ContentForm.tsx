@@ -33,7 +33,7 @@ export const ContentForm = ({
           name="content"
           control={control}
           render={({ field }) => (
-            <Textarea {...field} />
+            <Textarea spellCheck={false} {...field} />
           )}
         />
         {errors.content && (

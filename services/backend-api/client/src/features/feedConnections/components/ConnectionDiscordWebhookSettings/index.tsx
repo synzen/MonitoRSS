@@ -19,6 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { CategoryText, DiscordMessageForm } from '../../../../components';
+import { DiscordMessageFormData } from '../../../../types/discord';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
@@ -48,6 +49,33 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       connectionId,
       details: {
         filters,
+      },
+    });
+  };
+
+  const onMessageUpdated = async (data: DiscordMessageFormData) => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        content: data.content,
+        embeds: data.embeds?.map((embed) => ({
+          authorIconUrl: embed.embedAuthorIconUrl,
+          authorTitle: embed.embedAuthorTitle,
+          authorUrl: embed.embedAuthorUrl,
+          color: embed.embedColor,
+          description: embed.embedDescription,
+          url: embed.embedUrl,
+          footerIconUrl: embed.embedFooterIconUrl,
+          footerText: embed.embedFooterText,
+          imageUrl: embed.embedImageUrl,
+          thumbnailUrl: embed.embedThumbnailUrl,
+          title: embed.embedTitle,
+        })),
       },
     });
   };
@@ -157,7 +185,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         <TabPanel maxWidth="1200px" width="100%">
           <Stack>
             <DiscordMessageForm
-              onClickSave={async () => { console.log('saved'); }}
+              onClickSave={onMessageUpdated}
             />
           </Stack>
         </TabPanel>

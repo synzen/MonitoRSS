@@ -8,6 +8,19 @@ export interface UpdateDiscordWebhookConnectionInput {
   details: {
     content?: string | null
     filters?: Record<string, any> | null
+    embeds?: Array<{
+      color?: number
+      authorTitle?: string | null
+      authorUrl?: string | null
+      authorIconUrl?: string | null
+      title?: string | null
+      url?: string | null
+      description?: string | null
+      thumbnailUrl?: string | null
+      imageUrl?: string | null
+      footerText?: string | null
+      footerIconUrl?: string | null
+    }>
   }
 }
 
