@@ -9,10 +9,13 @@ import {
   StackDivider,
   Textarea,
 } from '@chakra-ui/react';
+import { useEffect } from 'react';
 import {
-  Controller, FieldError, useFormContext,
+  Controller, FieldError, useFormContext, useWatch,
 } from 'react-hook-form';
-import { DiscordMessageEmbedFormData } from './types';
+import { useTranslation } from 'react-i18next';
+import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from './constants';
+import { DiscordMessageEmbedFormData, DiscordMessageFormData } from './types';
 
 interface Props {
   index: number
@@ -26,7 +29,31 @@ export const EmbedForm = ({
     formState: {
       errors,
     },
-  } = useFormContext();
+    setError,
+    clearErrors,
+  } = useFormContext<DiscordMessageFormData>();
+  const embed = useWatch({
+    control,
+    name: `embeds.${index}`,
+  });
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    const atLeastOneRequiredValueExists = EMBED_REQUIRES_ONE_OF.some((key) => embed[key]);
+
+    if (!atLeastOneRequiredValueExists) {
+      EMBED_REQUIRES_ONE_OF.forEach((key) => {
+        setError(`embeds.${index}.${key}` as any, {
+          type: EMBED_REQUIRES_ONE_OF_ERROR_KEY,
+          message: t('features.feedConnections.components.embedForm.errorOneOfRequiredFields'),
+        });
+      });
+    } else {
+      EMBED_REQUIRES_ONE_OF.forEach((key) => {
+        clearErrors(`embeds.${index}.${key}` as any);
+      });
+    }
+  }, EMBED_REQUIRES_ONE_OF.map((key) => embed[key]));
 
   const getEmbedError = (fieldName: keyof DiscordMessageEmbedFormData) => {
     const error: FieldError = (errors.embeds as any)?.[index]?.[fieldName];
@@ -67,7 +94,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedColorError && (
-                  <FormErrorMessage color="red.400">{embedColorError}</FormErrorMessage>
+                  <FormErrorMessage>{embedColorError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -91,7 +118,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedAuthorTitleError && (
-                <FormErrorMessage color="red.400">{embedAuthorTitleError}</FormErrorMessage>
+                <FormErrorMessage>{embedAuthorTitleError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
@@ -106,7 +133,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedAuthorUrlError && (
-                <FormErrorMessage color="red.400">{embedAuthorUrlError}</FormErrorMessage>
+                <FormErrorMessage>{embedAuthorUrlError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
@@ -121,7 +148,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedAuthorIconUrlError && (
-                <FormErrorMessage color="red.400">{embedAuthorIconUrlError}</FormErrorMessage>
+                <FormErrorMessage>{embedAuthorIconUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -147,7 +174,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedTitleError && (
-                <FormErrorMessage color="red.400">{embedTitleError}</FormErrorMessage>
+                <FormErrorMessage>{embedTitleError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
@@ -162,7 +189,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedUrlError && (
-                <FormErrorMessage color="red.400">{embedUrlError}</FormErrorMessage>
+                <FormErrorMessage>{embedUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -188,7 +215,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedDescriptionError && (
-                <FormErrorMessage color="red.400">{embedDescriptionError}</FormErrorMessage>
+                <FormErrorMessage>{embedDescriptionError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -214,7 +241,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedImageUrlError && (
-                <FormErrorMessage color="red.400">{embedImageUrlError}</FormErrorMessage>
+                <FormErrorMessage>{embedImageUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -240,7 +267,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedThumbnailUrlError && (
-                <FormErrorMessage color="red.400">{embedThumbnailUrlError}</FormErrorMessage>
+                <FormErrorMessage>{embedThumbnailUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -266,7 +293,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedFooterTextError && (
-                <FormErrorMessage color="red.400">{embedFooterTextError}</FormErrorMessage>
+                <FormErrorMessage>{embedFooterTextError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
@@ -283,7 +310,7 @@ export const EmbedForm = ({
                   )}
                 />
                 {embedFooterIconUrlError && (
-                <FormErrorMessage color="red.400">{embedFooterIconUrlError}</FormErrorMessage>
+                <FormErrorMessage>{embedFooterIconUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>

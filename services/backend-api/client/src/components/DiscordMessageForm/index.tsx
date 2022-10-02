@@ -29,7 +29,7 @@ import {
 
 interface Props {
   defaultValues?: DiscordMessageFormData
-  onClickSave: (data: DiscordMessageFormData) => void
+  onClickSave: (data: DiscordMessageFormData) => Promise<void>
 }
 
 const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({
@@ -79,14 +79,14 @@ export const DiscordMessageForm = ({
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
     try {
-      onClickSave(formData);
+      await onClickSave(formData);
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
   };
 
   const onAddEmbed = () => {
-    append(templateEmbed);
+    append(templateEmbed as never);
     setActiveEmbedIndex(embeds.length);
   };
 

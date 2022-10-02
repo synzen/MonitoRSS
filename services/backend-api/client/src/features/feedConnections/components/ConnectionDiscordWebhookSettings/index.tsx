@@ -157,7 +157,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         <TabPanel maxWidth="1200px" width="100%">
           <Stack>
             <DiscordMessageForm
-              onClickSave={console.log}
+              onClickSave={async () => { console.log('saved'); }}
             />
           </Stack>
         </TabPanel>

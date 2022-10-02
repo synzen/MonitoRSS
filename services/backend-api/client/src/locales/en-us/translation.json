@@ -290,6 +290,9 @@
     },
     "feedConnections": {
       "components": {
+        "embedForm": {
+          "errorOneOfRequiredFields": "One of the following fields that are title, description, author, image, thumbnail, footer is required"
+        },
         "filtersForm": {
           "addNewFiltersButtonText": "Add new filters",
           "addButtonText": "Add",
