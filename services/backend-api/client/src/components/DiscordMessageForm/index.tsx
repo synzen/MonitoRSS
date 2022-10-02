@@ -24,8 +24,8 @@ import {
   discordMessageFormSchema,
 } from '@/types/discord';
 import { notifyError } from '../../utils/notifyError';
-import { ContentForm } from './ContentForm';
-import { EmbedForm } from './EmbedForm';
+import { DiscordMessageContentForm } from './DiscordMessageContentForm';
+import { DiscordMessageEmbedForm } from './DiscordMessageEmbedForm';
 
 interface Props {
   defaultValues?: DiscordMessageFormData
@@ -109,7 +109,7 @@ export const DiscordMessageForm = ({
         <Stack spacing={16}>
           <Stack spacing={4}>
             <Heading size="md">Text</Heading>
-            <ContentForm
+            <DiscordMessageContentForm
               control={control}
               errors={errors}
             />
@@ -153,7 +153,7 @@ export const DiscordMessageForm = ({
                         {t('features.feedConnections.components.embedForm.deleteButtonText')}
                       </Button>
                     </Flex>
-                    <EmbedForm
+                    <DiscordMessageEmbedForm
                       index={index}
                     />
                   </TabPanel>

@@ -22,7 +22,7 @@ interface Props {
   index: number
 }
 
-export const EmbedForm = ({
+export const DiscordMessageEmbedForm = ({
   index,
 }: Props) => {
   const {
