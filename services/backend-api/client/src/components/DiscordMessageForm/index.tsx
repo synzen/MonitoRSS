@@ -32,19 +32,7 @@ interface Props {
   onClickSave: (data: DiscordMessageFormData) => Promise<void>
 }
 
-const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({
-  embedAuthorIconUrl: '',
-  embedAuthorTitle: '',
-  embedAuthorUrl: '',
-  embedColor: undefined,
-  embedDescription: '',
-  embedFooterIconUrl: '',
-  embedFooterText: '',
-  embedImageUrl: '',
-  embedThumbnailUrl: '',
-  embedTitle: '',
-  embedUrl: '',
-});
+const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({});
 
 export const DiscordMessageForm = ({
   defaultValues,

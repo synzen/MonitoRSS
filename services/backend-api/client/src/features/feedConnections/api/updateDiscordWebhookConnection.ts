@@ -13,16 +13,24 @@ export interface UpdateDiscordWebhookConnectionInput {
     filters?: Record<string, any> | null
     embeds?: Array<{
       color?: number
-      authorTitle?: string | null
-      authorUrl?: string | null
-      authorIconUrl?: string | null
+      author?: {
+        name?: string
+        url?: string
+        iconUrl?: string
+      }
+      thumbnail?: {
+        url?: string
+      }
+      image?: {
+        url?: string
+      }
+      footer?: {
+        text?: string
+        iconUrl?: string
+      }
       title?: string | null
       url?: string | null
       description?: string | null
-      thumbnailUrl?: string | null
-      imageUrl?: string | null
-      footerText?: string | null
-      footerIconUrl?: string | null
     }>
   }
 }

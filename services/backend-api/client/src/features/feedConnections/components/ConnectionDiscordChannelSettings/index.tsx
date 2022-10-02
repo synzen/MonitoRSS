@@ -66,19 +66,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       connectionId,
       details: {
         content: data.content,
-        embeds: data.embeds?.map((embed) => ({
-          authorIconUrl: embed.embedAuthorIconUrl,
-          authorTitle: embed.embedAuthorTitle,
-          authorUrl: embed.embedAuthorUrl,
-          color: embed.embedColor,
-          description: embed.embedDescription,
-          url: embed.embedUrl,
-          footerIconUrl: embed.embedFooterIconUrl,
-          footerText: embed.embedFooterText,
-          imageUrl: embed.embedImageUrl,
-          thumbnailUrl: embed.embedThumbnailUrl,
-          title: embed.embedTitle,
-        })),
+        embeds: data.embeds,
       },
     });
   };

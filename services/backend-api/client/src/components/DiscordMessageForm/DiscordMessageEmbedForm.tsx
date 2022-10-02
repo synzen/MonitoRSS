@@ -2,6 +2,7 @@ import {
   Box,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
   Heading,
   Input,
@@ -14,7 +15,7 @@ import {
   Controller, FieldError, useFormContext, useWatch,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { DiscordMessageEmbedFormData, DiscordMessageFormData } from '@/types/discord';
+import { DiscordMessageFormData } from '@/types/discord';
 import { getNestedField } from '@/utils/getNestedField';
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from './constants';
 
@@ -40,7 +41,8 @@ export const DiscordMessageEmbedForm = ({
   const { t } = useTranslation();
 
   useEffect(() => {
-    const atLeastOneRequiredValueExists = EMBED_REQUIRES_ONE_OF.some((key) => embed[key]);
+    const atLeastOneRequiredValueExists = EMBED_REQUIRES_ONE_OF
+      .some((key) => getNestedField(embed, key));
 
     if (!atLeastOneRequiredValueExists) {
       EMBED_REQUIRES_ONE_OF.forEach((key) => {
@@ -61,25 +63,28 @@ export const DiscordMessageEmbedForm = ({
         }
       });
     }
-  }, EMBED_REQUIRES_ONE_OF.map((key) => embed[key]));
+  }, EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed, key)));
 
-  const getEmbedError = (fieldName: keyof DiscordMessageEmbedFormData) => {
-    const error: FieldError = (errors.embeds as any)?.[index]?.[fieldName];
+  const getEmbedError = (fieldName: string) => {
+    const error: FieldError | undefined = getNestedField(
+      (errors.embeds as any)?.[index],
+      fieldName,
+    );
 
     return error ? error.message : undefined;
   };
 
-  const embedColorError = getEmbedError('embedColor');
-  const embedAuthorIconUrlError = getEmbedError('embedAuthorIconUrl');
-  const embedAuthorTitleError = getEmbedError('embedAuthorTitle');
-  const embedAuthorUrlError = getEmbedError('embedAuthorUrl');
-  const embedDescriptionError = getEmbedError('embedDescription');
-  const embedFooterIconUrlError = getEmbedError('embedFooterIconUrl');
-  const embedFooterTextError = getEmbedError('embedFooterText');
-  const embedImageUrlError = getEmbedError('embedImageUrl');
-  const embedThumbnailUrlError = getEmbedError('embedThumbnailUrl');
-  const embedTitleError = getEmbedError('embedTitle');
-  const embedUrlError = getEmbedError('embedUrl');
+  const colorError = getEmbedError('color');
+  const authorIconUrlError = getEmbedError('author.iconUrl');
+  const authorNameError = getEmbedError('author.name');
+  const authorUrlError = getEmbedError('author.url');
+  const descriptionError = getEmbedError('description');
+  const footerIconUrlError = getEmbedError('footer.iconUrl');
+  const footerTextError = getEmbedError('footer.text');
+  const imageUrlError = getEmbedError('image.url');
+  const thumbnailUrlError = getEmbedError('thumbnail.url');
+  const titleError = getEmbedError('title');
+  const urlError = getEmbedError('url');
 
   return (
     <Stack spacing={8}>
@@ -92,17 +97,18 @@ export const DiscordMessageEmbedForm = ({
           >
             <Heading size="sm">Color</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-              <FormControl isInvalid={!!embedColorError}>
-                <FormLabel variant="inline">Hex</FormLabel>
+              <FormControl isInvalid={!!colorError}>
+                <FormLabel variant="inline">Integer</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedColor`}
+                  name={`embeds.${index}.color`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedColorError && (
-                  <FormErrorMessage>{embedColorError}</FormErrorMessage>
+                <FormHelperText>An integer between 0 and 16777215, inclusive</FormHelperText>
+                {colorError && (
+                  <FormErrorMessage>{colorError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -116,47 +122,47 @@ export const DiscordMessageEmbedForm = ({
           >
             <Heading size="sm">Author</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
-              <FormControl isInvalid={!!embedAuthorTitleError}>
-                <FormLabel variant="inline">Title</FormLabel>
+              <FormControl isInvalid={!!authorNameError}>
+                <FormLabel variant="inline">Name</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedAuthorTitle`}
+                  name={`embeds.${index}.author.name`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedAuthorTitleError && (
-                <FormErrorMessage>{embedAuthorTitleError}</FormErrorMessage>
+                {authorNameError && (
+                <FormErrorMessage>{authorNameError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
-                isInvalid={!!embedAuthorUrlError}
+                isInvalid={!!authorUrlError}
               >
                 <FormLabel variant="inline">URL</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedAuthorUrl`}
+                  name={`embeds.${index}.author.url`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedAuthorUrlError && (
-                <FormErrorMessage>{embedAuthorUrlError}</FormErrorMessage>
+                {authorUrlError && (
+                <FormErrorMessage>{authorUrlError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
-                isInvalid={!!embedAuthorIconUrlError}
+                isInvalid={!!authorIconUrlError}
               >
                 <FormLabel variant="inline">Icon URL</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedAuthorIconUrl`}
+                  name={`embeds.${index}.author.iconUrl`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedAuthorIconUrlError && (
-                <FormErrorMessage>{embedAuthorIconUrlError}</FormErrorMessage>
+                {authorIconUrlError && (
+                <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -171,33 +177,33 @@ export const DiscordMessageEmbedForm = ({
             <Heading size="sm">Title</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
               <FormControl
-                isInvalid={!!embedTitleError}
+                isInvalid={!!titleError}
               >
                 <FormLabel variant="inline">Title</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedTitle`}
+                  name={`embeds.${index}.title`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedTitleError && (
-                <FormErrorMessage>{embedTitleError}</FormErrorMessage>
+                {titleError && (
+                <FormErrorMessage>{titleError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
-                isInvalid={!!embedUrlError}
+                isInvalid={!!urlError}
               >
                 <FormLabel variant="inline">URL</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedUrl`}
+                  name={`embeds.${index}.url`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedUrlError && (
-                <FormErrorMessage>{embedUrlError}</FormErrorMessage>
+                {urlError && (
+                <FormErrorMessage>{urlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -212,18 +218,18 @@ export const DiscordMessageEmbedForm = ({
             <Heading size="sm">Description</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
               <FormControl
-                isInvalid={!!embedDescriptionError}
+                isInvalid={!!descriptionError}
               >
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedDescription`}
+                  name={`embeds.${index}.description`}
                   control={control}
                   render={({ field }) => (
                     <Textarea {...field} />
                   )}
                 />
-                {embedDescriptionError && (
-                <FormErrorMessage>{embedDescriptionError}</FormErrorMessage>
+                {descriptionError && (
+                <FormErrorMessage>{descriptionError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -238,18 +244,18 @@ export const DiscordMessageEmbedForm = ({
             <Heading size="sm">Image</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
               <FormControl
-                isInvalid={!!embedImageUrlError}
+                isInvalid={!!imageUrlError}
               >
                 <FormLabel variant="inline">Image URL</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedImageUrl`}
+                  name={`embeds.${index}.image.url`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedImageUrlError && (
-                <FormErrorMessage>{embedImageUrlError}</FormErrorMessage>
+                {imageUrlError && (
+                <FormErrorMessage>{imageUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -264,18 +270,18 @@ export const DiscordMessageEmbedForm = ({
             <Heading size="sm">Thumbnail</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
               <FormControl
-                isInvalid={!!embedThumbnailUrlError}
+                isInvalid={!!thumbnailUrlError}
               >
                 <FormLabel variant="inline">Image URL</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedThumbnailUrl`}
+                  name={`embeds.${index}.thumbnail.url`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedThumbnailUrlError && (
-                <FormErrorMessage>{embedThumbnailUrlError}</FormErrorMessage>
+                {thumbnailUrlError && (
+                <FormErrorMessage>{thumbnailUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>
@@ -290,35 +296,35 @@ export const DiscordMessageEmbedForm = ({
             <Heading size="sm">Footer</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
               <FormControl
-                isInvalid={!!embedFooterTextError}
+                isInvalid={!!footerTextError}
               >
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedFooterText`}
+                  name={`embeds.${index}.footer.text`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedFooterTextError && (
-                <FormErrorMessage>{embedFooterTextError}</FormErrorMessage>
+                {footerTextError && (
+                <FormErrorMessage>{footerTextError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
-                isInvalid={!!embedFooterIconUrlError}
+                isInvalid={!!footerIconUrlError}
               >
                 <FormLabel variant="inline">
                   Icon URL
                 </FormLabel>
                 <Controller
-                  name={`embeds.${index}.embedFooterIconUrl`}
+                  name={`embeds.${index}.footer.iconUrl`}
                   control={control}
                   render={({ field }) => (
                     <Input {...field} />
                   )}
                 />
-                {embedFooterIconUrlError && (
-                <FormErrorMessage>{embedFooterIconUrlError}</FormErrorMessage>
+                {footerIconUrlError && (
+                <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>

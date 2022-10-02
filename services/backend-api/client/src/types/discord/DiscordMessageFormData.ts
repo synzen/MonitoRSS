@@ -4,42 +4,50 @@ import {
 } from 'yup';
 
 export const discordMessageEmbedFormSchema = object().shape({
-  embedColor: number().positive().max(16777215)
+  color: number().positive().max(16777215)
     .typeError('Must be a positive number less than 16777216'),
-  embedAuthorTitle: string().max(256),
-  embedAuthorUrl: string().when('embedAuthorTitle', ([embedAuthorTitle], schema) => {
-    if (!embedAuthorTitle) {
-      return schema.oneOf([''], 'Must be empty if there is no author title');
-    }
+  author: object({
+    name: string().max(256),
+    url: string().when('name', ([name], schema) => {
+      if (!name) {
+        return schema.oneOf([''], 'Must be empty if there is no author name');
+      }
 
-    return schema;
-  }),
-  embedAuthorIconUrl: string().when('embedAuthorTitle', ([embedAuthorTitle], schema) => {
-    if (!embedAuthorTitle) {
-      return schema.oneOf([''], 'Must be empty if there is no author title');
-    }
+      return schema;
+    }),
+    iconUrl: string().when('name', ([name], schema) => {
+      if (!name) {
+        return schema.oneOf([''], 'Must be empty if there is no author name');
+      }
 
-    return schema;
-  }),
-  embedTitle: string().max(256),
-  embedUrl: string().when('embedTitle', ([embedTitle], schema) => {
-    if (!embedTitle) {
+      return schema;
+    }),
+  }).optional(),
+  title: string().max(256),
+  url: string().when('title', ([title], schema) => {
+    if (!title) {
       return schema.oneOf([''], 'Must be empty if there is no title');
     }
 
     return schema;
   }),
-  embedDescription: string().max(4096),
-  embedThumbnailUrl: string(),
-  embedImageUrl: string(),
-  embedFooterText: string().max(2048),
-  embedFooterIconUrl: string().when('embedFooterText', ([embedFooterText], schema) => {
-    if (!embedFooterText) {
-      return schema.oneOf([''], 'Must be empty if there is no footer text');
-    }
+  description: string().max(4096),
+  thumbnail: object({
+    url: string(),
+  }).optional(),
+  image: object({
+    url: string(),
+  }).optional(),
+  footer: object({
+    text: string().max(2048),
+    iconUrl: string().when('text', ([text], schema) => {
+      if (!text) {
+        return schema.oneOf([''], 'Must be empty if there is no footer text');
+      }
 
-    return schema;
-  }),
+      return schema;
+    }),
+  }).optional(),
 });
 
 export const discordMessageFormSchema = object({
