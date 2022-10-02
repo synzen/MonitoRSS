@@ -5,6 +5,7 @@ import { FeedConnectionSchema } from '@/types';
 export interface CreateDiscordChannelConnectionInput {
   feedId: string;
   details: {
+    name: string;
     channelId: string;
   }
 }

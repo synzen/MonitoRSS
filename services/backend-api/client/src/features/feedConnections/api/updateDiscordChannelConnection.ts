@@ -6,6 +6,7 @@ export interface UpdateDiscordChannelConnectionInput {
   feedId: string;
   connectionId: string
   details: {
+    name?: string
     channelId?: string
     content?: string | null;
     filters?: Record<string, any> | null

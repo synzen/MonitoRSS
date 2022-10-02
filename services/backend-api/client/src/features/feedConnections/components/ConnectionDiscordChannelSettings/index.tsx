@@ -71,7 +71,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
     });
   };
 
-  const onChannelUpdated = async (data: { channelId: string }) => {
+  const onChannelUpdated = async (data: { channelId?: string, name?: string }) => {
     if (!feedId || !connectionId) {
       return;
     }
@@ -80,6 +80,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       feedId,
       connectionId,
       details: {
+        name: data.name,
         channelId: data.channelId,
       },
     });
@@ -137,6 +138,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   <EditConnectionChannelDialog
                     defaultValues={{
                       channelId: 'channel',
+                      name: 'hello',
                     }}
                     onUpdate={onChannelUpdated}
                     trigger={(

@@ -2,7 +2,9 @@ import {
   Button,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
+  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -22,7 +24,8 @@ import { useDiscordServerChannels } from '@/features/discordServers';
 import { ThemedSelect } from '@/components';
 
 const formSchema = object({
-  channelId: string().required(),
+  name: string().optional(),
+  channelId: string().optional(),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -31,7 +34,7 @@ interface Props {
   serverId?: string
   onUpdate: (data: FormData) => Promise<void>
   trigger: React.ReactElement
-  defaultValues: FormData
+  defaultValues: Required<FormData>
 }
 
 export const EditConnectionChannelDialog: React.FC<Props> = ({
@@ -60,10 +63,10 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
 
   const loadingChannels = status === 'loading' || status === 'idle';
 
-  const onSubmit = async ({ channelId }: FormData) => {
-    await onUpdate({ channelId });
+  const onSubmit = async ({ channelId, name }: FormData) => {
+    await onUpdate({ channelId, name });
     onClose();
-    reset({ channelId });
+    reset({ channelId, name });
   };
 
   useEffect(() => {
@@ -83,6 +86,27 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
           <ModalBody>
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
+                <FormControl isInvalid={!!errors.name}>
+                  <FormLabel>
+                    {t('features.feed.components.addDiscordChannelConnectionDialog.formNameLabel')}
+                  </FormLabel>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} />
+                    )}
+                  />
+                  {errors.name && (
+                  <FormErrorMessage>
+                    {errors.name.message}
+                  </FormErrorMessage>
+                  )}
+                  <FormHelperText>
+                    {t('features.feed.components'
+                  + '.addDiscordChannelConnectionDialog.formNameDescription')}
+                  </FormHelperText>
+                </FormControl>
                 <FormControl isInvalid={!!errors.channelId}>
                   <FormLabel>
                     {t('features.feed.components'

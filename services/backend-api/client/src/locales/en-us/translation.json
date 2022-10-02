@@ -241,19 +241,18 @@
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
           "saveButton": "Add",
-          "formTitleLabel": "Title",
-          "formTitleDescription": "This is only for your reference.",
+          "formNameLabel": "Title",
+          "formNameDescription": "This is only for your reference.",
           "formChannelLabel": "Channel"
         },
         "updateDiscordChannelConnectionDialog": {
           "title": "Update Discord channel connection"
         },
-        "updateDiscordWebhookConnectionDialog": {
-          "title": "Update Discord webhook connection"
-        },
         "addDiscordWebhookConnectionDialog": {
           "title": "Add a Discord webhook connection",
           "saveButton": "Add",
+          "formNameLabel": "Title",
+          "formNameDescription": "This is only for your reference.",
           "webhookNameLabel": "Name",
           "webhookNameDescription": "This will override the webhook's name.",
           "webhookIconUrlLabel": "Icon URL",
@@ -261,6 +260,9 @@
           "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
           "webhookFormLabel": "Webhook",
           "failedToGetWebhooks": "Failed to get server webhooks"
+        },
+        "updateDiscordWebhookConnectionDialog": {
+          "title": "Update Discord webhook connection"
         },
         "sidebar": {
           "settings": "Settings",
