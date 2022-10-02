@@ -10,21 +10,24 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import {
-  Control, Controller, FieldError, FieldErrorsImpl,
+  Controller, FieldError, useFormContext,
 } from 'react-hook-form';
-import { DiscordMessageEmbedFormData, DiscordMessageFormData } from './types';
+import { DiscordMessageEmbedFormData } from './types';
 
 interface Props {
-  control: Control<DiscordMessageFormData>
   index: number
-  errors: FieldErrorsImpl<DiscordMessageFormData>
 }
 
 export const EmbedForm = ({
-  control,
   index,
-  errors,
 }: Props) => {
+  const {
+    control,
+    formState: {
+      errors,
+    },
+  } = useFormContext();
+
   const getEmbedError = (fieldName: keyof DiscordMessageEmbedFormData) => {
     const error: FieldError = (errors.embeds as any)?.[index]?.[fieldName];
 

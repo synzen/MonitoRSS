@@ -14,7 +14,9 @@ import {
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import {
+  FormProvider, useFieldArray, useForm,
+} from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { notifyError } from '../../utils/notifyError';
 import { ContentForm } from './ContentForm';
@@ -51,6 +53,11 @@ export const DiscordMessageForm = ({
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultValues?.embeds?.length ?? 0);
 
+  const formMethods = useForm<DiscordMessageFormData>({
+    resolver: yupResolver(discordMessageFormSchema),
+    defaultValues,
+    mode: 'onChange',
+  });
   const {
     handleSubmit,
     control,
@@ -60,13 +67,12 @@ export const DiscordMessageForm = ({
       isSubmitting,
       errors,
     },
-    setValue,
-  } = useForm<DiscordMessageFormData>({
-    resolver: yupResolver(discordMessageFormSchema),
-    defaultValues,
-    mode: 'onChange',
-  });
-  const currentEmbeds = useWatch({
+  } = formMethods;
+  const {
+    fields: embeds,
+    append,
+    remove,
+  } = useFieldArray({
     control,
     name: 'embeds',
   });
@@ -80,19 +86,12 @@ export const DiscordMessageForm = ({
   };
 
   const onAddEmbed = () => {
-    const newEmbeds = [...(currentEmbeds || []), {
-      ...templateEmbed,
-    }];
-
-    setValue('embeds', newEmbeds);
-    setActiveEmbedIndex(newEmbeds.length - 1);
+    append(templateEmbed);
+    setActiveEmbedIndex(embeds.length);
   };
 
   const onRemoveEmbed = (index: number) => {
-    const newEmbeds = [...(currentEmbeds || [])];
-    newEmbeds.splice(index, 1);
-
-    setValue('embeds', newEmbeds);
+    remove(index);
     const newIndex = Math.max(index - 1, 0);
     setActiveEmbedIndex(newIndex);
   };
@@ -104,84 +103,84 @@ export const DiscordMessageForm = ({
   const errorsExist = Object.keys(errors).length > 0;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={16}>
-        <Stack spacing={4}>
-          <Heading size="md">Text</Heading>
-          <ContentForm
-            control={control}
-            errors={errors}
-          />
-        </Stack>
-        <Stack spacing={4}>
-          <Heading size="md">Embeds</Heading>
-          <Tabs
-            variant="soft-rounded"
-            index={activeEmbedIndex}
-            onChange={onEmbedTabChanged}
-          >
-            <HStack overflow="auto">
-              <TabList>
-                {currentEmbeds?.map((_, index) => (
-                  <Tab key={index as any}>
-                    Embed
-                    {' '}
-                    {index + 1}
-                  </Tab>
-                ))}
-              </TabList>
-              {(currentEmbeds?.length ?? 0) < 10 && (
+    <FormProvider {...formMethods}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={16}>
+          <Stack spacing={4}>
+            <Heading size="md">Text</Heading>
+            <ContentForm
+              control={control}
+              errors={errors}
+            />
+          </Stack>
+          <Stack spacing={4}>
+            <Heading size="md">Embeds</Heading>
+            <Tabs
+              variant="soft-rounded"
+              index={activeEmbedIndex}
+              onChange={onEmbedTabChanged}
+            >
+              <HStack overflow="auto">
+                <TabList>
+                  {embeds?.map((embed, index) => (
+                    <Tab key={embed.id}>
+                      Embed
+                      {' '}
+                      {index + 1}
+                    </Tab>
+                  ))}
+                </TabList>
+                {(embeds?.length ?? 0) < 10 && (
                 <IconButton
                   onClick={onAddEmbed}
                   variant="ghost"
                   aria-label="Add new embed"
                   icon={<AddIcon />}
                 />
-              )}
-            </HStack>
-            <TabPanels>
-              {currentEmbeds?.map((embed, index) => (
-                <TabPanel key={index as any}>
-                  <Flex justifyContent="flex-end">
-                    <Button
-                      colorScheme="red"
-                      variant="outline"
-                      onClick={() => onRemoveEmbed(index)}
-                    >
-                      Delete Embed
+                )}
+              </HStack>
+              <TabPanels>
+                {embeds?.map((embed, index) => (
+                  <TabPanel key={embed.id}>
+                    <Flex justifyContent="flex-end">
+                      <Button
+                        colorScheme="red"
+                        variant="outline"
+                        onClick={() => onRemoveEmbed(index)}
+                      >
+                        Delete Embed
 
-                    </Button>
-                  </Flex>
-                  <EmbedForm
-                    control={control}
-                    index={index}
-                    errors={errors}
-                  />
-                </TabPanel>
-              ))}
-            </TabPanels>
-          </Tabs>
+                      </Button>
+                    </Flex>
+                    <EmbedForm
+                      index={index}
+                    />
+                  </TabPanel>
+                ))}
+              </TabPanels>
+            </Tabs>
+          </Stack>
+          <Flex direction="row-reverse">
+            <HStack>
+              <Button
+                onClick={() => reset()}
+                variant="ghost"
+                disabled={!isDirty || isSubmitting}
+              >
+                {t('features.feed.components.sidebar.resetButton')}
+              </Button>
+              <Button
+                type="submit"
+                colorScheme="blue"
+                disabled={isSubmitting || !isDirty || errorsExist}
+                isLoading={isSubmitting}
+              >
+                {t('features.feed.components.sidebar.saveButton')}
+              </Button>
+            </HStack>
+          </Flex>
         </Stack>
-        <Flex direction="row-reverse">
-          <HStack>
-            <Button
-              onClick={() => reset()}
-              variant="ghost"
-              disabled={!isDirty || isSubmitting}
-            >
-              {t('features.feed.components.sidebar.resetButton')}
-            </Button>
-            <Button
-              type="submit"
-              colorScheme="blue"
-              disabled={isSubmitting || !isDirty || errorsExist}
-              isLoading={isSubmitting}
-            >
-              {t('features.feed.components.sidebar.saveButton')}
-            </Button>
-          </HStack>
-        </Flex>
-      </Stack>
-    </form>
+      </form>
+    </FormProvider>
   );
 };
