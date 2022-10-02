@@ -42,4 +42,9 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
+  test: {
+    setupFiles: ['setupTests.ts'],
+    globals: true,
+    environment: "happy-dom"
+  }
 })

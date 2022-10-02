@@ -2,8 +2,9 @@ import {
   render, fireEvent, waitFor, screen,
 } from '@testing-library/react';
 import App from './App';
+import '@testing-library/jest-dom';
 
-test('loads and displays greeting', async () => {
+describe('loads and displays greeting', async () => {
   render(<App />);
 
   fireEvent.click(screen.getByRole('button'));

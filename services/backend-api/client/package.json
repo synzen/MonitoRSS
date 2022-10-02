@@ -7,7 +7,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
-    "test": "jest"
+    "test": "vitest"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.0.10",
@@ -17,7 +17,6 @@
     "@hookform/resolvers": "^2.8.8",
     "@sentry/react": "^6.18.2",
     "@sentry/tracing": "^6.18.2",
-    "@testing-library/jest-dom": "^5.16.5",
     "cross-env": "^7.0.3",
     "eslint-config-airbnb-typescript": "^16.1.0",
     "framer-motion": "^5.5.6",
@@ -39,8 +38,8 @@
   },
   "devDependencies": {
     "@testing-library/dom": "^8.18.1",
+    "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
-    "@types/jest": "^27.4.0",
     "@types/qs": "^6.9.7",
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
@@ -55,11 +54,11 @@
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
     "eslint-plugin-unused-imports": "^2.0.0",
-    "jest": "^27.4.7",
+    "happy-dom": "^6.0.4",
     "msw": "^0.47.3",
-    "ts-jest": "^27.1.2",
     "typescript": "^4.5.4",
-    "vite": "^2.8.6"
+    "vite": "^2.8.6",
+    "vitest": "^0.23.4"
   },
   "msw": {
     "workerDirectory": "public"
