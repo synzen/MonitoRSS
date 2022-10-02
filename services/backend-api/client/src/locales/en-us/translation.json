@@ -291,7 +291,8 @@
     "feedConnections": {
       "components": {
         "embedForm": {
-          "errorOneOfRequiredFields": "One of the following fields that are title, description, author, image, thumbnail, footer is required"
+          "errorOneOfRequiredFields": "One of the following fields that are title, description, author, image, thumbnail, footer is required",
+          "deleteButtonText": "Delete embed"
         },
         "filtersForm": {
           "addNewFiltersButtonText": "Add new filters",

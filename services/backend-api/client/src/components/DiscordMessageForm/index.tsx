@@ -1,4 +1,4 @@
-import { AddIcon } from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import {
   Button,
   Flex,
@@ -145,11 +145,11 @@ export const DiscordMessageForm = ({
                     <Flex justifyContent="flex-end">
                       <Button
                         colorScheme="red"
+                        size="sm"
                         variant="outline"
                         onClick={() => onRemoveEmbed(index)}
                       >
-                        Delete Embed
-
+                        {t('features.feedConnections.components.embedForm.deleteButtonText')}
                       </Button>
                     </Flex>
                     <EmbedForm
