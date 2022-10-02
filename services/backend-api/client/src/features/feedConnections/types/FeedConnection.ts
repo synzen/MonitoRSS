@@ -2,7 +2,7 @@ import {
   array, InferType, object, string,
 } from 'yup';
 import { FeedConnectionType } from '../../feed/constants';
-import { Feed, FeedEmbedSchema } from '../../feed/types/Feed';
+import { FeedEmbedSchema } from '../../feed/types/Feed';
 
 const DiscordChannelConnectionDetailsSchema = object({
   embeds: array(FeedEmbedSchema).required(),
@@ -36,37 +36,5 @@ export const FeedConnectionSchema = object({
     return DiscordChannelConnectionDetailsSchema;
   }),
 });
-
-export interface FeedDiscordChannelConnection {
-  id: string
-  key: FeedConnectionType.DiscordChannel
-  filters?: {
-    expression: Record<string, never>
-  }
-  details: {
-    embeds: Feed['embeds']
-    channel: {
-      id: string
-    }
-    content?: string;
-  }
-}
-
-export interface FeedDiscordWebhookConnection {
-  id: string
-  key: FeedConnectionType.DiscordWebhook
-  filters?: {
-    expression: Record<string, never>
-  }
-  details: {
-    content: string;
-    embeds: Feed['embeds']
-    webhook: {
-      id: string
-      name?: string
-      iconUrl?: string
-    }
-  }
-}
 
 export type FeedConnection = InferType<typeof FeedConnectionSchema>;
