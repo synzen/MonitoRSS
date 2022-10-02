@@ -3,11 +3,13 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
+  Modal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
   ModalFooter,
   ModalHeader,
+  ModalOverlay,
   Stack,
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -81,62 +83,69 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
   }, [isOpen]);
 
   return (
-    <ModalContent>
-      <ModalHeader>
-        {t('features.feed.components.addDiscordChannelConnectionDialog.title')}
-      </ModalHeader>
-      <ModalCloseButton />
-      <ModalBody>
-        <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={4}>
-            <FormControl isInvalid={!!errors.channelId}>
-              <FormLabel>
-                {t('features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel')}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnOverlayClick={!isSubmitting}
+    >
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          {t('features.feed.components.addDiscordChannelConnectionDialog.title')}
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
+            <Stack spacing={4}>
+              <FormControl isInvalid={!!errors.channelId}>
+                <FormLabel>
+                  {t('features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel')}
 
-              </FormLabel>
-              <Controller
-                name="channelId"
-                control={control}
-                render={({ field }) => (
-                  <ThemedSelect
-                    loading={loadingChannels}
-                    isDisabled={isSubmitting || loadingChannels || !!channelsError}
-                    options={data?.results.map((channel) => ({
-                      label: channel.name,
-                      value: channel.id,
-                    })) || []}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                  />
-                )}
-              />
-              <FormErrorMessage>
-                {errors.channelId?.message}
-              </FormErrorMessage>
-            </FormControl>
-          </Stack>
-        </form>
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          variant="ghost"
-          mr={3}
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
-          {t('features.feed.components.addDiscordChannelConnectionDialog.cancelButton')}
-        </Button>
-        <Button
-          colorScheme="blue"
-          type="submit"
-          form="addfeed"
-          isLoading={isSubmitting}
-          isDisabled={!isDirty || isSubmitting}
-        >
-          {t('features.feed.components.addDiscordChannelConnectionDialog.saveButton')}
-        </Button>
-      </ModalFooter>
-    </ModalContent>
+                </FormLabel>
+                <Controller
+                  name="channelId"
+                  control={control}
+                  render={({ field }) => (
+                    <ThemedSelect
+                      loading={loadingChannels}
+                      isDisabled={isSubmitting || loadingChannels || !!channelsError}
+                      options={data?.results.map((channel) => ({
+                        label: channel.name,
+                        value: channel.id,
+                      })) || []}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                    />
+                  )}
+                />
+                <FormErrorMessage>
+                  {errors.channelId?.message}
+                </FormErrorMessage>
+              </FormControl>
+            </Stack>
+          </form>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="ghost"
+            mr={3}
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            {t('common.buttons.cancel')}
+          </Button>
+          <Button
+            colorScheme="blue"
+            type="submit"
+            form="addfeed"
+            isLoading={isSubmitting}
+            isDisabled={!isDirty || isSubmitting}
+          >
+            {t('features.feed.components.addDiscordChannelConnectionDialog.saveButton')}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };

@@ -8,11 +8,13 @@ import {
   FormHelperText,
   FormLabel,
   Input,
+  Modal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
   ModalFooter,
   ModalHeader,
+  ModalOverlay,
   Stack,
   Text,
 } from '@chakra-ui/react';
@@ -112,20 +114,26 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
     || discordWebhooksStatus === 'loading';
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <ModalContent>
-        <ModalHeader>
-          {t('features.feed.components.addDiscordWebhookConnectionDialog.title')}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnOverlayClick={!isSubmitting}
+    >
+      <ModalOverlay />
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <ModalContent>
+          <ModalHeader>
+            {t('features.feed.components.addDiscordWebhookConnectionDialog.title')}
 
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          {webhooksDisabled && (
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {webhooksDisabled && (
             <Text color="orange.500">
               {t('common.errors.supporterRequiredAccess')}
             </Text>
-          )}
-          {!webhooksDisabled && (
+            )}
+            {!webhooksDisabled && (
             <Stack spacing={4}>
               <FormControl>
                 <FormLabel htmlFor="webhook">
@@ -222,26 +230,27 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
                 </FormHelperText>
               </FormControl>
             </Stack>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            disabled={!isDirty || isSubmitting}
-          >
-            {t('features.feed.components.addDiscordWebhookConnectionDialog.cancelButton')}
-          </Button>
-          <Button
-            type="submit"
-            colorScheme="blue"
-            disabled={isSubmitting || !isDirty}
-            isLoading={isSubmitting}
-          >
-            {t('features.feed.components.addDiscordWebhookConnectionDialog.saveButton')}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </form>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              disabled={isSubmitting}
+            >
+              {t('common.buttons.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              colorScheme="blue"
+              disabled={isSubmitting || !isDirty}
+              isLoading={isSubmitting}
+            >
+              {t('features.feed.components.addDiscordWebhookConnectionDialog.saveButton')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </form>
+    </Modal>
   );
 };
