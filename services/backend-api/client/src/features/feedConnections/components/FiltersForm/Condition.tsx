@@ -2,6 +2,8 @@ import {
   CloseButton,
   FormControl, HStack, Select,
 } from '@chakra-ui/react';
+import { Controller, useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { RelationalExpressionOperator } from '../../types';
 import { ConditionInput } from './ConditionInput';
 
@@ -11,82 +13,70 @@ const {
   Matches,
 } = RelationalExpressionOperator;
 
-interface FormData {
-  operator: RelationalExpressionOperator
-  leftValue: string
-  rightValue: string
-}
-
 interface Props {
-  values: FormData
-  defaultValues?: FormData
-  onChange: (details: Partial<FormData> & {
-    operator: RelationalExpressionOperator
-  }) => void
   onDelete: () => void
+  prefix?: string
+  deletable?: boolean
 }
 
 export const Condition = ({
-  values,
-  defaultValues,
-  onChange,
   onDelete,
+  prefix = '',
+  deletable,
 }: Props) => {
-  const onLeftValueChange = (value: string) => {
-    onChange({
-      leftValue: value,
-      rightValue: values.rightValue,
-      operator: values.operator,
-    });
-  };
-
-  const onRightValueChange = (value: string) => {
-    onChange({
-      leftValue: values.leftValue,
-      rightValue: value,
-      operator: values.operator,
-    });
-  };
-
-  const onOperatorChange = (value: RelationalExpressionOperator) => {
-    onChange({
-      leftValue: values.leftValue,
-      rightValue: values.rightValue,
-      operator: value,
-    });
-  };
+  const {
+    control,
+  } = useFormContext();
+  const { t } = useTranslation();
 
   return (
     <HStack width="100%" alignItems="flex-start">
       <HStack width="100%" spacing={8} alignItems="flex-start">
         <ConditionInput
-          onChange={onLeftValueChange}
-          defaultValue={defaultValues?.leftValue}
-          value={values.leftValue}
+          controllerName={`${prefix}left`}
         />
         <FormControl>
-          <Select
-            flexShrink={1}
-            defaultValue={Equals}
-            onChange={(e) => onOperatorChange(e.target.value as RelationalExpressionOperator)}
-            value={values.operator}
-          >
-            <option value={Equals}>is</option>
-            <option value={Contains}>contains</option>
-            <option value={Matches}>matches</option>
-          </Select>
+          <Controller
+            name={`${prefix}op`}
+            control={control}
+            render={({ field }) => (
+              <Select
+                flexShrink={1}
+                {...field}
+              >
+                <option
+                  value={Equals}
+                >
+                  {t('features.feedConnections.components.filtersForm.relationalOpEquals')}
+
+                </option>
+                <option
+                  value={Contains}
+                >
+                  {t('features.feedConnections.components.filtersForm.relationalOpContains')}
+
+                </option>
+                <option
+                  value={Matches}
+                >
+                  {t('features.feedConnections.components.filtersForm.relationalOpMatches')}
+
+                </option>
+              </Select>
+            )}
+          />
         </FormControl>
         <ConditionInput
-          onChange={(value) => onRightValueChange(value)}
-          defaultValue={defaultValues?.rightValue}
-          value={values.rightValue}
+          controllerName={`${prefix}right`}
         />
       </HStack>
+      {deletable && (
       <CloseButton
         aria-label="Delete condition"
         size="sm"
         onClick={onDelete}
       />
+      )}
     </HStack>
   );
 };

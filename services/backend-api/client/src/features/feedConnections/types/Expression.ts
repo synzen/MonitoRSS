@@ -18,4 +18,4 @@ export interface LogicalFilterExpression {
   children: (RelationalFilterExpression | LogicalFilterExpression)[]
 }
 
-export type FilterExpression = LogicalFilterExpression;
+export type FilterExpression = LogicalFilterExpression | RelationalFilterExpression;

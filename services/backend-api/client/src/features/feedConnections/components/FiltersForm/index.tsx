@@ -1,104 +1,152 @@
-import { useState } from 'react';
-import { cloneDeep } from 'lodash';
 import {
   Button, HStack, Stack,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import {
-  FilterExpression,
+  FormProvider, useForm, useWatch,
+} from 'react-hook-form';
+import React from 'react';
+import {
   FilterExpressionType,
   LogicalExpressionOperator,
   LogicalFilterExpression,
+  RelationalExpressionOperator,
 } from '../../types';
 import { LogicalExpressionForm } from './LogicalExpressionForm';
 import { notifyError } from '../../../../utils/notifyError';
 
+interface FormData {
+  expression: LogicalFilterExpression | null
+}
+
 interface Props {
-  expression: LogicalFilterExpression
+  expression?: LogicalFilterExpression | null
   onSave: (expression: LogicalFilterExpression | null) => Promise<void>
 }
 
 export const FiltersForm = ({
-  expression,
+  expression = null,
   onSave,
 }: Props) => {
   const { t } = useTranslation();
-  const [editingExpression, setEditingExpression] = useState<FilterExpression | null>(
-    expression ? cloneDeep(expression) : null,
-  );
-  const [savingFilters, setSavingFilters] = useState(false);
-  const [dirtyForm, setDirtyForm] = useState(false);
+  const formMethods = useForm<FormData>({
+    mode: 'onChange',
+    defaultValues: {
+      expression,
+    },
+  });
+  const {
+    handleSubmit,
+    control,
+    formState: {
+      isDirty,
+      isSubmitting,
+    },
+    setValue,
+    resetField,
+    reset,
+  } = formMethods;
+  // @ts-ignore cyclical references in typescript types
+  const watchedExpression = useWatch({
+    control,
+    name: 'expression',
+  });
 
-  const onExpressionChanged = (newExpression: FilterExpression) => {
-    setEditingExpression(newExpression);
-    setDirtyForm(true);
+  const onClickReset = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    resetField('expression');
   };
 
   const onDeletedExpression = async () => {
-    setEditingExpression(null);
+    setValue('expression', null, {
+      shouldDirty: true,
+    });
   };
 
-  const onSaveExpression = async () => {
-    setSavingFilters(true);
-
+  const onSaveExpression = async ({ expression: finalExpression }: FormData) => {
     try {
-      await onSave(editingExpression);
-      setDirtyForm(false);
+      await onSave(finalExpression);
+      reset({
+        expression: finalExpression,
+      });
     } catch (err) {
       notifyError(
-        t('features.feedConnections.components.discordWebhookSettings.filtersUpdateFailed'),
+        t('common.errors.failedToSave'),
         err as Error,
       );
-    } finally {
-      setSavingFilters(false);
     }
   };
 
-  if (!editingExpression) {
+  const addInitialExpression = () => {
+    setValue('expression', {
+      type: FilterExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [{
+        type: FilterExpressionType.Relational,
+        op: RelationalExpressionOperator.Equals,
+        left: '',
+        right: '',
+      }],
+    }, {
+      shouldDirty: true,
+    });
+  };
+
+  if (!watchedExpression) {
     return (
-      <Stack>
-        <Button
-          onClick={() => {
-            onExpressionChanged({
-              type: FilterExpressionType.Logical,
-              op: LogicalExpressionOperator.And,
-              children: [],
-            });
-          }}
-        >
-          {t('features.feedConnections.components.filtersForm.addNewFiltersButtonText')}
-        </Button>
-        <HStack justifyContent="flex-end">
-          <Button
-            colorScheme="blue"
-            onClick={onSaveExpression}
-            isLoading={savingFilters}
-            disabled={!dirtyForm || savingFilters}
-          >
-            {t('features.feedConnections.components.filtersForm.saveButtonText')}
-          </Button>
-        </HStack>
-      </Stack>
+      <FormProvider {...formMethods}>
+        <form onSubmit={handleSubmit(onSaveExpression)}>
+          <Stack>
+            <Button
+              onClick={addInitialExpression}
+            >
+              {t('features.feedConnections.components.filtersForm.addNewFiltersButtonText')}
+            </Button>
+            <HStack justifyContent="flex-end">
+              <Button
+                colorScheme="blue"
+                type="submit"
+                isLoading={isSubmitting}
+                disabled={!isDirty || isSubmitting}
+              >
+                {t('common.buttons.save')}
+              </Button>
+            </HStack>
+          </Stack>
+        </form>
+      </FormProvider>
     );
   }
 
   return (
-    <Stack>
-      <LogicalExpressionForm
-        expression={editingExpression}
-        onChange={onExpressionChanged}
-        onDeleted={onDeletedExpression}
-      />
-      <HStack justifyContent="flex-end">
-        <Button
-          colorScheme="blue"
-          onClick={onSaveExpression}
-          isLoading={savingFilters}
-          disabled={!dirtyForm || savingFilters}
-        >
-          {t('features.feedConnections.components.filtersForm.saveButtonText')}
-        </Button>
-      </HStack>
-    </Stack>
+    <FormProvider {...formMethods}>
+      <form onSubmit={handleSubmit(onSaveExpression)}>
+        <Stack>
+          <LogicalExpressionForm
+            onDeleted={onDeletedExpression}
+            prefix="expression."
+          />
+          <HStack justifyContent="flex-end">
+            {isDirty && (
+            <Button
+              variant="outline"
+              onClick={onClickReset}
+              type="reset"
+            >
+              {t('common.buttons.reset')}
+            </Button>
+            )}
+            <Button
+              colorScheme="blue"
+              isLoading={isSubmitting}
+              disabled={!isDirty || isSubmitting}
+              type="submit"
+            >
+              {t('common.buttons.save')}
+            </Button>
+          </HStack>
+        </Stack>
+      </form>
+    </FormProvider>
   );
 };

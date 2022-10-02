@@ -2,8 +2,10 @@ import { ChevronDownIcon } from '@chakra-ui/icons';
 import {
   Box, Button, CloseButton, Flex, Menu, MenuButton, MenuItem, MenuList, Stack, Text,
 } from '@chakra-ui/react';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
+  FilterExpression,
   FilterExpressionType,
   LogicalExpressionOperator,
   LogicalFilterExpression,
@@ -13,117 +15,80 @@ import { AnyAllSelector } from './AnyAllSelector';
 import { Condition } from './Condition';
 
 interface Props {
-  expression: LogicalFilterExpression
-  onChange: (expression: LogicalFilterExpression) => void
   onDeleted: () => void
+  prefix?: string
 }
 
 export const LogicalExpressionForm = ({
-  expression,
-  onChange,
   onDeleted,
+  prefix = '',
 }: Props) => {
+  const {
+    control,
+    setValue,
+  } = useFormContext();
+  const {
+    fields,
+    append,
+    remove,
+    insert,
+  } = useFieldArray({
+    control,
+    name: `${prefix}children`,
+  });
+  const operator: LogicalExpressionOperator = useWatch({
+    control,
+    name: `${prefix}op`,
+  });
+
   const { t } = useTranslation();
 
   const onAnyAllChange = (value: LogicalFilterExpression['op']) => {
-    onChange({
-      type: FilterExpressionType.Logical,
-      op: value,
-      children: expression.children,
-    });
-  };
-
-  const onLogicalChildChanged = (
-    index: number,
-    child: LogicalFilterExpression['children'][number],
-  ) => {
-    const newChildren = [...expression.children];
-    newChildren[index] = child;
-    onChange({
-      type: FilterExpressionType.Logical,
-      op: expression.op,
-      children: newChildren,
+    setValue(`${prefix}op`, value, {
+      shouldDirty: true,
     });
   };
 
   const onChildDeleted = (index: number) => {
-    const newChildren = [...expression.children];
-    newChildren.splice(index, 1);
-    onChange({
-      type: FilterExpressionType.Logical,
-      op: expression.op,
-      children: newChildren,
-    });
+    remove(index);
   };
 
   const onAddRelational = () => {
-    const newChildren = [...expression.children];
+    const indexOfLastRelational = (fields as Array<(FilterExpression & {
+      id: string
+    })>)?.findIndex((child) => child?.type === FilterExpressionType.Relational) || -1;
 
-    const indexOfLastRelational = newChildren
-      .findIndex((child) => child.type === FilterExpressionType.Relational);
-
-    newChildren.splice(indexOfLastRelational + 1, 0, {
+    insert(indexOfLastRelational + 1, {
       type: FilterExpressionType.Relational,
-      left: '',
       op: RelationalExpressionOperator.Equals,
+      left: '',
       right: '',
-    });
-
-    onChange({
-      type: FilterExpressionType.Logical,
-      op: expression.op,
-      children: newChildren,
     });
   };
 
   const onAddLogical = () => {
-    const newChildren = [...expression.children];
-    newChildren.push({
+    append({
       type: FilterExpressionType.Logical,
       op: LogicalExpressionOperator.And,
-      children: [],
-    });
-    onChange({
-      type: FilterExpressionType.Logical,
-      op: expression.op,
-      children: newChildren,
-    });
-  };
-
-  const onRelationalChildChanged = (
-    index: number,
-    {
-      leftValue,
-      opValue,
-      rightValue,
-    }: {
-      leftValue?: string,
-      opValue: RelationalExpressionOperator,
-      rightValue?: string
-    },
-  ) => {
-    const newChildren = [...expression.children];
-    newChildren[index] = {
-      type: FilterExpressionType.Relational,
-      left: leftValue as string,
-      op: opValue,
-      right: rightValue as string,
-    };
-    onChange({
-      type: FilterExpressionType.Logical,
-      op: expression.op,
-      children: newChildren,
+      children: [{
+        type: FilterExpressionType.Relational,
+        op: RelationalExpressionOperator.Equals,
+        left: '',
+        right: '',
+      }],
     });
   };
 
-  const hasError = expression.children.length === 0;
+  const numberOfRelational = (fields as Array<(FilterExpression & {
+    id: string
+  })>)?.filter((child) => child?.type === FilterExpressionType.Relational).length || 0;
 
   return (
     <Stack>
       <Box
         border="solid"
-        borderWidth={hasError ? '2px' : '1px'}
-        borderColor={hasError ? 'red.300' : 'gray.600'}
+        borderWidth="1px"
+        borderColor="gray.600"
         padding="4"
         borderRadius="md"
         width="100%"
@@ -134,7 +99,7 @@ export const LogicalExpressionForm = ({
               When
             </Text>
             <AnyAllSelector
-              value={expression.op}
+              value={operator}
               onChange={onAnyAllChange}
             />
             <Text display="inline" paddingLeft={2} paddingBottom={4}>
@@ -148,40 +113,29 @@ export const LogicalExpressionForm = ({
         </Flex>
         <Stack>
           <Stack spacing={2} marginTop={4} width="100%">
-            {expression.children.map((child, childIndex) => {
-              if (child.type === FilterExpressionType.Logical) {
+            {(fields as Array<FilterExpression & { id: string }>)?.map((child, childIndex) => {
+              if (child?.type === FilterExpressionType.Logical) {
                 return (
                   <LogicalExpressionForm
-                    expression={child}
-                    onChange={(newExpression) => onLogicalChildChanged(childIndex, newExpression)}
+                    key={child.id}
                     onDeleted={() => onChildDeleted(childIndex)}
+                    prefix={`${prefix}children.${childIndex}.`}
                   />
                 );
               }
 
-              const {
-                left, op, right,
-              } = child;
+              if (child?.type === FilterExpressionType.Relational) {
+                return (
+                  <Condition
+                    key={child.id}
+                    onDelete={() => onChildDeleted(childIndex)}
+                    prefix={`${prefix}children.${childIndex}.`}
+                    deletable={numberOfRelational > 1}
+                  />
+                );
+              }
 
-              return (
-                <Condition
-                  values={{
-                    leftValue: left,
-                    operator: op,
-                    rightValue: right,
-                  }}
-                  onChange={({
-                    leftValue,
-                    operator,
-                    rightValue,
-                  }) => onRelationalChildChanged(childIndex, {
-                    leftValue,
-                    opValue: operator,
-                    rightValue,
-                  })}
-                  onDelete={() => onChildDeleted(childIndex)}
-                />
-              );
+              return null;
             })}
           </Stack>
           <Box>
@@ -212,11 +166,6 @@ export const LogicalExpressionForm = ({
           </Box>
         </Stack>
       </Box>
-      {hasError && (
-      <Text color="red.300">
-        {t('features.feedConnections.components.filtersForm.errorMissingConditions')}
-      </Text>
-      )}
     </Stack>
   );
 };

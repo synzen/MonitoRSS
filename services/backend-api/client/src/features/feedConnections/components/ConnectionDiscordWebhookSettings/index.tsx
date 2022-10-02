@@ -25,9 +25,6 @@ import { useFeed } from '../../../feed/hooks';
 import { useUpdateDiscordWebhookConnection } from '../../hooks';
 import {
   FilterExpression,
-  FilterExpressionType,
-  LogicalExpressionOperator,
-  RelationalExpressionOperator,
 } from '../../types';
 import { FiltersForm } from '../FiltersForm';
 
@@ -166,32 +163,6 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         </TabPanel>
         <TabPanel maxWidth="1200px" width="100%">
           <FiltersForm
-            expression={{
-              type: FilterExpressionType.Logical,
-              op: LogicalExpressionOperator.And,
-              // Everything in children is customizable
-              children: [{
-                type: FilterExpressionType.Logical,
-                op: LogicalExpressionOperator.And,
-                // Each relational field is a input row
-                children: [{
-                  type: FilterExpressionType.Relational,
-                  left: 'title',
-                  op: RelationalExpressionOperator.Contains,
-                  right: 'test',
-                }, {
-                  type: FilterExpressionType.Relational,
-                  left: 'description',
-                  op: RelationalExpressionOperator.Equals,
-                  right: 'myvalue',
-                }],
-              }, {
-                type: FilterExpressionType.Logical,
-                op: LogicalExpressionOperator.And,
-                // Each relational field is a input row
-                children: [],
-              }],
-            }}
             onSave={onFiltersUpdated}
           />
         </TabPanel>

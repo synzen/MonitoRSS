@@ -7,7 +7,7 @@ const {
 } = LogicalExpressionOperator;
 
 interface Props {
-  value: LogicalExpressionOperator
+  value?: LogicalExpressionOperator
   onChange: (value: LogicalExpressionOperator) => void
 }
 

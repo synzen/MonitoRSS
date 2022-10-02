@@ -1,5 +1,9 @@
 {
   "common": {
+    "buttons": {
+      "reset": "Reset",
+      "save": "Save"
+    },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
       "tryAgainLater": "Please try again later.",
@@ -288,14 +292,13 @@
       "components": {
         "filtersForm": {
           "addNewFiltersButtonText": "Add new filters",
-          "saveButtonText": "Save",
           "addButtonText": "Add",
           "addLogicalButtonText": "Condition group",
           "addRelationalButtonText": "Condition",
-          "errorMissingConditions": "At least one condition must be added to the group above"
-        },
-        "discordWebhookSettings": {
-          "filtersUpdateFailed": "Failed to update filters"
+          "errorMissingConditions": "At least one condition must be added to the group above",
+          "relationalOpEquals": "is",
+          "relationalOpContains": "contains",
+          "relationalOpMatches": "matches"
         }
       }
     },

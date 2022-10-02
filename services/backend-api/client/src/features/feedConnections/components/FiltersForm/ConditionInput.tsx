@@ -3,33 +3,47 @@ import {
   FormErrorMessage,
   Input,
 } from '@chakra-ui/react';
+import {
+  Controller, FieldError, useFormContext,
+} from 'react-hook-form';
+import { getNestedField } from '../../../../utils/getNestedField';
 
 interface Props {
-  defaultValue?: string
-  value?: string
-  onChange: (value: string) => void
+  controllerName: string
 }
 
 export const ConditionInput = ({
-  defaultValue,
-  onChange,
-  value,
+  controllerName,
 }: Props) => {
-  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
-  };
-
-  const hasError = !value;
+  const {
+    control,
+    formState: {
+      errors,
+    },
+  } = useFormContext();
+  // Using bracket notation on the errors object will not work since the prefix is a string
+  const error = getNestedField<FieldError>(errors, controllerName);
 
   return (
-    <FormControl isInvalid={hasError}>
-      <Input
-        flexGrow={1}
-        onChange={onInputChange}
-        value={value}
-        defaultValue={defaultValue}
+    <FormControl isInvalid={!!error}>
+      <Controller
+        name={controllerName}
+        control={control}
+        rules={{ required: true }}
+        render={({ field }) => (
+          <>
+            <Input
+              flexGrow={1}
+              {...field}
+            />
+            {error?.type === 'required' && (
+            <FormErrorMessage>
+              Value is required
+            </FormErrorMessage>
+            )}
+          </>
+        )}
       />
-      {hasError && <FormErrorMessage>Value is required</FormErrorMessage>}
     </FormControl>
   );
 };
