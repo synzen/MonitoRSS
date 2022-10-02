@@ -7,7 +7,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { Control, Controller, FieldErrorsImpl } from 'react-hook-form';
-import { DiscordMessageFormData } from './types';
+import { DiscordMessageFormData } from '@/types/discord';
 
 interface Props {
   control: Control<DiscordMessageFormData>

@@ -14,9 +14,9 @@ import {
   Controller, FieldError, useFormContext, useWatch,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { getNestedField } from '../../utils/getNestedField';
+import { DiscordMessageEmbedFormData, DiscordMessageFormData } from '@/types/discord';
+import { getNestedField } from '@/utils/getNestedField';
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from './constants';
-import { DiscordMessageEmbedFormData, DiscordMessageFormData } from './types';
 
 interface Props {
   index: number

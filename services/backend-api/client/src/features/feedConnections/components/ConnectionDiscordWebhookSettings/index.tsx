@@ -18,9 +18,9 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { CategoryText, DiscordMessageForm } from '../../../../components';
-import { DiscordMessageFormData } from '../../../../types/discord';
-import RouteParams from '../../../../types/RouteParams';
+import { CategoryText, DiscordMessageForm } from '@/components';
+import { DiscordMessageFormData } from '@/types/discord';
+import RouteParams from '@/types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
 import { useUpdateDiscordWebhookConnection } from '../../hooks';
