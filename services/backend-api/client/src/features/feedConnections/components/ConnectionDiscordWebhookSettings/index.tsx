@@ -71,7 +71,16 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
     });
   };
 
-  const onWebhookUpdated = async (data: { webhookId: string, name?: string, iconUrl?: string }) => {
+  const onWebhookUpdated = async ({
+    webhook,
+    name,
+  }: {
+    webhook?: {
+      id?: string,
+      name?: string,
+      iconUrl?: string
+    },
+    name?: string }) => {
     if (!feedId || !connectionId) {
       return;
     }
@@ -80,7 +89,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       feedId,
       connectionId,
       details: {
-        webhookId: data.webhookId,
+        webhook,
+        name,
       },
     });
   };
@@ -139,9 +149,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     serverId={serverId}
                     onUpdate={onWebhookUpdated}
                     defaultValues={{
-                      webhookId: '1',
-                      iconUrl: 'icon-url',
-                      name: 'name',
+                      name: '1',
+                      webhook: {
+                        id: '1',
+                        iconUrl: 'icon-url',
+                        name: 'name',
+                      },
                     }}
                     trigger={(
                       <Button

@@ -33,9 +33,12 @@ import { useFeed } from '../../../feed/hooks';
 import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
 
 const formSchema = object({
-  webhookId: string().required('This is a required field'),
   name: string().optional(),
-  iconUrl: string().optional(),
+  webhook: object({
+    id: string().required('This is a required field'),
+    name: string().optional(),
+    iconUrl: string().optional(),
+  }),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -43,7 +46,7 @@ type FormData = InferType<typeof formSchema>;
 interface Props {
   serverId?: string
   feedId?: string
-  defaultValues: FormData
+  defaultValues: Required<FormData>
   onUpdate: (data: FormData) => Promise<void>
   trigger: React.ReactElement
 }
@@ -124,13 +127,34 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
               )}
               {!webhooksDisabled && (
               <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.webhookId}>
+                <FormControl isInvalid={!!errors.name}>
+                  <FormLabel>
+                    {t('features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel')}
+                  </FormLabel>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} />
+                    )}
+                  />
+                  {errors.name && (
+                  <FormErrorMessage>
+                    {errors.name.message}
+                  </FormErrorMessage>
+                  )}
+                  <FormHelperText>
+                    {t('features.feed.components'
+                  + '.addDiscordWebhookConnectionDialog.formNameDescription')}
+                  </FormHelperText>
+                </FormControl>
+                <FormControl isInvalid={!!errors?.webhook?.id}>
                   <FormLabel htmlFor="webhook">
                     {t('features.feed.components'
                     + '.addDiscordWebhookConnectionDialog.webhookFormLabel')}
                   </FormLabel>
                   <Controller
-                    name="webhookId"
+                    name="webhook.id"
                     control={control}
                     render={({ field }) => (
                       <ThemedSelect
@@ -160,9 +184,9 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     )}
                   />
                   <Stack>
-                    {errors.webhookId && (
+                    {errors.webhook && (
                       <FormErrorMessage>
-                        {errors.webhookId.message}
+                        {errors.webhook.message}
                       </FormErrorMessage>
                     )}
                     <FormHelperText>
@@ -185,12 +209,12 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   </Stack>
                 </FormControl>
                 <FormControl>
-                  <FormLabel htmlFor="title">
+                  <FormLabel>
                     {t('features.feed.components'
                     + '.addDiscordWebhookConnectionDialog.webhookNameLabel')}
                   </FormLabel>
                   <Controller
-                    name="name"
+                    name="webhook.name"
                     control={control}
                     render={({ field }) => (
                       <Input
@@ -206,12 +230,12 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   </FormHelperText>
                 </FormControl>
                 <FormControl>
-                  <FormLabel htmlFor="iconUrl">
+                  <FormLabel>
                     {t('features.feed.components.addDiscordWebhookConnectionDialog'
                   + '.webhookIconUrlLabel')}
                   </FormLabel>
                   <Controller
-                    name="iconUrl"
+                    name="webhook.iconUrl"
                     control={control}
                     render={({ field }) => (
                       <Input

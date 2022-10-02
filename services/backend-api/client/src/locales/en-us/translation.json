@@ -241,7 +241,7 @@
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
           "saveButton": "Add",
-          "formNameLabel": "Title",
+          "formNameLabel": "Connection name",
           "formNameDescription": "This is only for your reference.",
           "formChannelLabel": "Channel"
         },
@@ -251,7 +251,7 @@
         "addDiscordWebhookConnectionDialog": {
           "title": "Add a Discord webhook connection",
           "saveButton": "Add",
-          "formNameLabel": "Title",
+          "formNameLabel": "Connection name",
           "formNameDescription": "This is only for your reference.",
           "webhookNameLabel": "Name",
           "webhookNameDescription": "This will override the webhook's name.",

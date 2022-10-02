@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { useFeed } from '../features/feed';
-import { ConnectionDiscordChannelSettings } from '../features/feedConnections';
+import { ConnectionDiscordWebhookSettings } from '../features/feedConnections';
 import RouteParams from '../types/RouteParams';
 
 export const FeedConnectionSettings: React.FC = () => {
@@ -17,7 +17,7 @@ export const FeedConnectionSettings: React.FC = () => {
       error={error}
       loading={status === 'loading' || status === 'idle'}
     >
-      <ConnectionDiscordChannelSettings />
+      <ConnectionDiscordWebhookSettings />
     </DashboardContentV2>
   );
 };
