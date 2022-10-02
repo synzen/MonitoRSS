@@ -14,15 +14,20 @@ import {
   Stack,
   Tab,
   TabList,
+  TabPanel,
+  TabPanels,
   Tabs,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { CategoryText } from '../../../../components';
+import { CategoryText, DiscordMessageForm } from '../../../../components';
+import { DiscordMessageFormData } from '../../../../types/discord';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
 import { useUpdateDiscordChannelConnection } from '../../hooks';
+import { FilterExpression } from '../../types';
+import { FiltersForm } from '../FiltersForm';
 import { EditConnectionChannelDialog } from './EditConnectionChannelDialog';
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
@@ -36,6 +41,47 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const {
     mutateAsync,
   } = useUpdateDiscordChannelConnection();
+
+  const onFiltersUpdated = async (filters: FilterExpression | null) => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        filters,
+      },
+    });
+  };
+
+  const onMessageUpdated = async (data: DiscordMessageFormData) => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        content: data.content,
+        embeds: data.embeds?.map((embed) => ({
+          authorIconUrl: embed.embedAuthorIconUrl,
+          authorTitle: embed.embedAuthorTitle,
+          authorUrl: embed.embedAuthorUrl,
+          color: embed.embedColor,
+          description: embed.embedDescription,
+          url: embed.embedUrl,
+          footerIconUrl: embed.embedFooterIconUrl,
+          footerText: embed.embedFooterText,
+          imageUrl: embed.embedImageUrl,
+          thumbnailUrl: embed.embedThumbnailUrl,
+          title: embed.embedTitle,
+        })),
+      },
+    });
+  };
 
   const onChannelUpdated = async (data: { channelId: string }) => {
     if (!feedId || !connectionId) {
@@ -118,7 +164,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   />
                 </HStack>
               </Box>
-              <Alert status="error" hidden={feed?.status !== 'failed'}>
+              <Alert status="error" hidden={feed?.status === 'failed'}>
                 <Box>
                   <AlertTitle>
                     {t('pages.feed.connectionFailureTitle')}
@@ -151,12 +197,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <CategoryText title="Channel">
                 #logs
               </CategoryText>
-              <CategoryText
-                title={t('pages.feed.createdAtLabel')}
-              >
-                {feed?.createdAt}
-              </CategoryText>
-              <CategoryText title={t('pages.feed.dailyLimit')}>N/A</CategoryText>
             </Grid>
           </Stack>
           <TabList>
@@ -166,6 +206,20 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           </TabList>
         </Stack>
       </Stack>
+      <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
+        <TabPanel maxWidth="1200px" width="100%">
+          <Stack>
+            <DiscordMessageForm
+              onClickSave={onMessageUpdated}
+            />
+          </Stack>
+        </TabPanel>
+        <TabPanel maxWidth="1200px" width="100%">
+          <FiltersForm
+            onSave={onFiltersUpdated}
+          />
+        </TabPanel>
+      </TabPanels>
     </Tabs>
   );
 };
