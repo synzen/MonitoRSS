@@ -1,3 +1,4 @@
+import { Box } from '@chakra-ui/react';
 import { FeedConnectionType } from '../../../feed/constants';
 import { DiscordChannelConnectionContent } from './DiscordChannelConnectionContent';
 import { DiscordWebhookConnectionContent } from './DiscordWebhookConnectionContent';
@@ -17,5 +18,5 @@ export const AddConnectionDialog = ({ type, isOpen, onClose }: Props) => {
     modalContent = <DiscordWebhookConnectionContent onClose={onClose} isOpen={isOpen} />;
   }
 
-  return modalContent;
+  return <Box>{modalContent}</Box>;
 };
