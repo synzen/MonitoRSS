@@ -1,5 +1,5 @@
 import {
-  array, object, string,
+  array, InferType, object, string,
 } from 'yup';
 import { FeedConnectionType } from '../../feed/constants';
 import { Feed, FeedEmbedSchema } from '../../feed/types/Feed';
@@ -12,20 +12,32 @@ const DiscordChannelConnectionDetailsSchema = object({
   content: string().optional(),
 });
 
+const DiscordWebhookConnectionDetailsSchema = object({
+  embeds: array(FeedEmbedSchema).required(),
+  webhook: object({
+    id: string().required(),
+    name: string().optional(),
+    iconUrl: string().optional(),
+  }).required(),
+  content: string().optional(),
+});
+
 export const FeedConnectionSchema = object({
   id: string().required(),
   key: string().oneOf(Object.values(FeedConnectionType)).required(),
   filters: object({
     expression: object(),
-  }).optional().default(undefined),
-  details: object().when('key', {
-    is: FeedConnectionType.DiscordChannel,
-    then: DiscordChannelConnectionDetailsSchema,
-    otherwise: object().oneOf([null]),
+  }).optional().default(undefined).nullable(),
+  details: object().when('key', ([key]) => {
+    if (key === FeedConnectionType.DiscordWebhook) {
+      return DiscordWebhookConnectionDetailsSchema;
+    }
+
+    return DiscordChannelConnectionDetailsSchema;
   }),
 });
 
-interface FeedDiscordChannelConnection {
+export interface FeedDiscordChannelConnection {
   id: string
   key: FeedConnectionType.DiscordChannel
   filters?: {
@@ -40,13 +52,14 @@ interface FeedDiscordChannelConnection {
   }
 }
 
-interface FeedDiscordWebhookConnection {
+export interface FeedDiscordWebhookConnection {
   id: string
   key: FeedConnectionType.DiscordWebhook
   filters?: {
     expression: Record<string, never>
   }
   details: {
+    content: string;
     embeds: Feed['embeds']
     webhook: {
       id: string
@@ -56,4 +69,4 @@ interface FeedDiscordWebhookConnection {
   }
 }
 
-export type FeedConnection = FeedDiscordChannelConnection | FeedDiscordWebhookConnection;
+export type FeedConnection = InferType<typeof FeedConnectionSchema>;

@@ -8,9 +8,13 @@ const GetBotOutputSchema = object({
 
 export type GetDiscordBotOutput = InferType<typeof GetBotOutputSchema>;
 
-export const getDiscordBot = async (): Promise<GetDiscordBotOutput> => fetchRest(
-  '/api/v1/discord-users/bot',
-  {
-    validateSchema: GetBotOutputSchema,
-  },
-);
+export const getDiscordBot = async (): Promise<GetDiscordBotOutput> => {
+  const res = await fetchRest(
+    '/api/v1/discord-users/bot',
+    {
+      validateSchema: GetBotOutputSchema,
+    },
+  );
+
+  return res as GetDiscordBotOutput;
+};

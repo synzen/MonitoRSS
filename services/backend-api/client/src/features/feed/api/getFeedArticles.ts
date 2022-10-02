@@ -14,9 +14,13 @@ export type GetFeedArticlesOutput = InferType<typeof GetFeedArticlesSchema>;
 
 export const getFeedArticles = async (
   options: GetFeedArticlesInput,
-): Promise<GetFeedArticlesOutput> => fetchRest(
-  `/api/v1/feeds/${options.feedId}/articles`,
-  {
-    validateSchema: GetFeedArticlesSchema,
-  },
-);
+): Promise<GetFeedArticlesOutput> => {
+  const res = await fetchRest(
+    `/api/v1/feeds/${options.feedId}/articles`,
+    {
+      validateSchema: GetFeedArticlesSchema,
+    },
+  );
+
+  return res as GetFeedArticlesOutput;
+};

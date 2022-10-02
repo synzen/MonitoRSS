@@ -25,10 +25,12 @@ export const getFeeds = async (options: GetFeedsInput): Promise<GetFeedsOutput> 
     search: options.search || '',
   });
 
-  return fetchRest(
+  const res = await fetchRest(
     `/api/v1/discord-servers/${options.serverId}/feeds?${searchParams}`,
     {
       validateSchema: GetFeedsOutputSchema,
     },
   );
+
+  return res as GetFeedsOutput;
 };

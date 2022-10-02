@@ -1,6 +1,6 @@
-import { object } from 'yup';
+import { InferType, object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { FeedConnection, FeedConnectionSchema } from '../types';
+import { FeedConnectionSchema } from '../types';
 
 export interface UpdateDiscordChannelConnectionInput {
   feedId: string;
@@ -15,19 +15,23 @@ const UpdateDiscordChannelConnectionOutputSchema = object({
   result: FeedConnectionSchema,
 }).required();
 
-export type UpdateDiscordChannelConnectionOutput = {
-  result: FeedConnection
-};
+export type UpdateDiscordChannelConnectionOutput = InferType<
+  typeof UpdateDiscordChannelConnectionOutputSchema
+>;
 
 export const updateDiscordChannelConnection = async (
   options: UpdateDiscordChannelConnectionInput,
-): Promise<UpdateDiscordChannelConnectionOutput> => fetchRest(
-  `/api/v1/feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
-  {
-    validateSchema: UpdateDiscordChannelConnectionOutputSchema,
-    requestOptions: {
-      method: 'PUT',
-      body: JSON.stringify(options.details),
+): Promise<UpdateDiscordChannelConnectionOutput> => {
+  const res = await fetchRest(
+    `/api/v1/feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
+    {
+      validateSchema: UpdateDiscordChannelConnectionOutputSchema,
+      requestOptions: {
+        method: 'PUT',
+        body: JSON.stringify(options.details),
+      },
     },
-  },
-);
+  );
+
+  return res as UpdateDiscordChannelConnectionOutput;
+};

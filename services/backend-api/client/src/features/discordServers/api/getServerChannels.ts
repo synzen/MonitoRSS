@@ -17,9 +17,13 @@ export type GetServerChannelsOutput = InferType<typeof GetServersChannelsOutputS
 
 export const getServerChannels = async (
   options: GetServerChannelsInput,
-): Promise<GetServerChannelsOutput> => fetchRest(
-  `/api/v1/discord-servers/${options.serverId}/channels`,
-  {
-    validateSchema: GetServersChannelsOutputSchema,
-  },
-);
+): Promise<GetServerChannelsOutput> => {
+  const res = await fetchRest(
+    `/api/v1/discord-servers/${options.serverId}/channels`,
+    {
+      validateSchema: GetServersChannelsOutputSchema,
+    },
+  );
+
+  return res as GetServerChannelsOutput;
+};

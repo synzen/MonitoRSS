@@ -31,13 +31,13 @@ import { GetDiscordWebhooksOutput } from '@/features/discordWebhooks';
 import mockDiscordWebhooks from './data/discordWebhooks';
 import { generateMockApiErrorResponse } from './generateMockApiErrorResponse';
 import mockDiscordBot from './data/discordBot';
-import mockFeedConnections from './data/feedConnection';
 import {
   CreateDiscordChannelConnectionOutput,
   CreateDiscordWebhookConnectionOutput,
   UpdateDiscordChannelConnectionOutput,
   UpdateDiscordWebhookConnectionOutput,
 } from '../features/feedConnections';
+import { mockFeedChannelConnections, mockFeedWebhookConnections } from './data/feedConnection';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
@@ -174,28 +174,28 @@ const handlers = [
   rest.post('/api/v1/feeds/:feedId/connections/discord-channels', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordChannelConnectionOutput>({
-      result: mockFeedConnections[0],
+      result: mockFeedChannelConnections[0],
     }),
   )),
 
   rest.put('/api/v1/feeds/:feedId/connections/discord-channels/:id', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<UpdateDiscordChannelConnectionOutput>({
-      result: mockFeedConnections[0],
+      result: mockFeedChannelConnections[0],
     }),
   )),
 
   rest.post('/api/v1/feeds/:feedId/connections/discord-webhooks', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordWebhookConnectionOutput>({
-      result: mockFeedConnections[0],
+      result: mockFeedWebhookConnections[0],
     }),
   )),
 
   rest.put('/api/v1/feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<UpdateDiscordWebhookConnectionOutput>({
-      result: mockFeedConnections[0],
+      result: mockFeedWebhookConnections[0],
     }),
   )),
 

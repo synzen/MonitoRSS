@@ -1,6 +1,6 @@
-import { object } from 'yup';
+import { InferType, object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { FeedConnection, FeedConnectionSchema } from '../types';
+import { FeedConnectionSchema } from '../types';
 
 export interface CreateDiscordWebhookConnectionInput {
   feedId: string;
@@ -15,19 +15,23 @@ const CreateFeedConnectionOutputSchema = object({
   result: FeedConnectionSchema,
 }).required();
 
-export type CreateDiscordWebhookConnectionOutput = {
-  result: FeedConnection
-};
+export type CreateDiscordWebhookConnectionOutput = InferType<
+  typeof CreateFeedConnectionOutputSchema
+>;
 
 export const createDiscordWebhookConnection = async (
   options: CreateDiscordWebhookConnectionInput,
-): Promise<CreateDiscordWebhookConnectionOutput> => fetchRest(
-  `/api/v1/feeds/${options.feedId}/connections/discord-webhooks`,
-  {
-    validateSchema: CreateFeedConnectionOutputSchema,
-    requestOptions: {
-      method: 'POST',
-      body: JSON.stringify(options.details),
+): Promise<CreateDiscordWebhookConnectionOutput> => {
+  const res = await fetchRest(
+    `/api/v1/feeds/${options.feedId}/connections/discord-webhooks`,
+    {
+      validateSchema: CreateFeedConnectionOutputSchema,
+      requestOptions: {
+        method: 'POST',
+        body: JSON.stringify(options.details),
+      },
     },
-  },
-);
+  );
+
+  return res as CreateDiscordWebhookConnectionOutput;
+};

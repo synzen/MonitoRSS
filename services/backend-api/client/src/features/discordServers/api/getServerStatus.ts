@@ -15,9 +15,13 @@ export type GetServerStatusOutput = InferType<typeof GetServerStatusOutputSchema
 
 export const getServerStatus = async (
   options: GetServerStatusInput,
-): Promise<GetServerStatusOutput> => fetchRest(
-  `/api/v1/discord-servers/${options.serverId}/status`,
-  {
-    validateSchema: GetServerStatusOutputSchema,
-  },
-);
+): Promise<GetServerStatusOutput> => {
+  const res = await fetchRest(
+    `/api/v1/discord-servers/${options.serverId}/status`,
+    {
+      validateSchema: GetServerStatusOutputSchema,
+    },
+  );
+
+  return res as GetServerStatusOutput;
+};

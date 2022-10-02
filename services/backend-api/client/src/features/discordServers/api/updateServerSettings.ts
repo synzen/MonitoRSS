@@ -20,13 +20,17 @@ export type UpdateServerSettingsOutput = InferType<typeof UpdateServerSettingsOu
 
 export const updateServerSettings = async (
   options: UpdateServerSettingsInput,
-): Promise<UpdateServerSettingsOutput> => fetchRest(
-  `/api/v1/discord-servers/${options.serverId}`,
-  {
-    validateSchema: UpdateServerSettingsOutputSchema,
-    requestOptions: {
-      method: 'PATCH',
-      body: JSON.stringify(options.details),
+): Promise<UpdateServerSettingsOutput> => {
+  const res = await fetchRest(
+    `/api/v1/discord-servers/${options.serverId}`,
+    {
+      validateSchema: UpdateServerSettingsOutputSchema,
+      requestOptions: {
+        method: 'PATCH',
+        body: JSON.stringify(options.details),
+      },
     },
-  },
-);
+  );
+
+  return res as UpdateServerSettingsOutput;
+};

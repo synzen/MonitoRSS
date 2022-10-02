@@ -22,7 +22,9 @@ export const getServers = async (options?: GetServersInput): Promise<GetServersO
     offset: options?.offset?.toString() || '0',
   });
 
-  return fetchRest(`/api/v1/discord-users/@me/servers?${searchParams}`, {
+  const res = await fetchRest(`/api/v1/discord-users/@me/servers?${searchParams}`, {
     validateSchema: GetServersOutputSchema,
   });
+
+  return res as GetServersOutput;
 };

@@ -1,4 +1,6 @@
-import { AnySchema, ValidationError } from 'yup';
+import {
+  Schema, ValidationError,
+} from 'yup';
 import ApiAdapterError from './ApiAdapterError';
 import { getStandardErrorCodeMessage } from './getStandardErrorCodeMessage copy';
 import getStatusCodeErrorMessage from './getStatusCodeErrorMessage';
@@ -39,7 +41,7 @@ interface StandardApiErrorResponse {
 
 interface FetchOptions<T> {
   requestOptions?: RequestInit
-  validateSchema?: AnySchema<T>
+  validateSchema?: Schema<T>
   skipJsonParse?: boolean
 }
 

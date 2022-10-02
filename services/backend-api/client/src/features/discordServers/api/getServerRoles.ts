@@ -17,9 +17,13 @@ export type GetServerRolesOutput = InferType<typeof GetServersRolesOutputSchema>
 
 export const getServerRoles = async (
   options: GetServerRolesInput,
-): Promise<GetServerRolesOutput> => fetchRest(
-  `/api/v1/discord-servers/${options.serverId}/roles`,
-  {
-    validateSchema: GetServersRolesOutputSchema,
-  },
-);
+): Promise<GetServerRolesOutput> => {
+  const res = await fetchRest(
+    `/api/v1/discord-servers/${options.serverId}/roles`,
+    {
+      validateSchema: GetServersRolesOutputSchema,
+    },
+  );
+
+  return res as GetServerRolesOutput;
+};

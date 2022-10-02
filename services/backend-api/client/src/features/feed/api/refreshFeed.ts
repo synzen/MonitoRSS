@@ -14,9 +14,13 @@ export type RefreshFeedOutput = InferType<typeof RefreshFeedOutputSchema>;
 
 export const refreshFeed = async (options: RefreshFeedInput): Promise<
 RefreshFeedOutput
-> => fetchRest(
-  `/api/v1/feeds/${options.feedId}/refresh`,
-  {
-    validateSchema: RefreshFeedOutputSchema,
-  },
-);
+> => {
+  const res = await fetchRest(
+    `/api/v1/feeds/${options.feedId}/refresh`,
+    {
+      validateSchema: RefreshFeedOutputSchema,
+    },
+  );
+
+  return res as RefreshFeedOutput;
+};
