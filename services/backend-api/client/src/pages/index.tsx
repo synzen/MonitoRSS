@@ -20,7 +20,7 @@ import { RequireDiscordServers } from '@/features/discordServers';
 import { PageContentV2 } from '../components/PageContentV2';
 import FeedsV2 from './FeedsV2';
 import { FeedV2 } from './FeedV2';
-import { FeedMediumSettings } from './FeedMediumSettings';
+import { FeedConnectionSettings } from './FeedConnectionSettings';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -117,7 +117,7 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <RequireDiscordServers>
             <PageContentV2 requireFeed>
-              <FeedMediumSettings />
+              <FeedConnectionSettings />
             </PageContentV2>
           </RequireDiscordServers>
         </RequireAuth>

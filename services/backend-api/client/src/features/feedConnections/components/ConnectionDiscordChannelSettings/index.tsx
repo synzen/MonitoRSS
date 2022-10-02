@@ -1,3 +1,4 @@
+import { EditIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -6,6 +7,7 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  Button,
   Grid,
   Heading,
   HStack,
@@ -20,15 +22,34 @@ import { CategoryText } from '../../../../components';
 import RouteParams from '../../../../types/RouteParams';
 import { RefreshButton } from '../../../feed/components/RefreshButton';
 import { useFeed } from '../../../feed/hooks';
+import { useUpdateDiscordChannelConnection } from '../../hooks';
+import { EditConnectionChannelDialog } from './EditConnectionChannelDialog';
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
-  const { feedId, serverId } = useParams<RouteParams>();
+  const { feedId, serverId, connectionId } = useParams<RouteParams>();
   const {
     feed, refetch,
   } = useFeed({
     feedId,
   });
   const { t } = useTranslation();
+  const {
+    mutateAsync,
+  } = useUpdateDiscordChannelConnection();
+
+  const onChannelUpdated = async (data: { channelId: string }) => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        channelId: data.channelId,
+      },
+    });
+  };
 
   return (
     <Tabs isFitted>
@@ -72,13 +93,29 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     <BreadcrumbLink href="#">Channel</BreadcrumbLink>
                   </BreadcrumbItem>
                 </Breadcrumb>
-                <HStack alignItems="center">
+                <HStack alignItems="center" justifyContent="space-between">
                   <Heading
                     size="lg"
                     marginRight={4}
                   >
                     Stocks
                   </Heading>
+                  <EditConnectionChannelDialog
+                    defaultValues={{
+                      channelId: 'channel',
+                    }}
+                    onUpdate={onChannelUpdated}
+                    trigger={(
+                      <Button
+                        aria-label="Edit"
+                        variant="outline"
+                        leftIcon={<EditIcon />}
+                      >
+                        {t('common.buttons.configure')}
+                      </Button>
+                  )}
+                    serverId={serverId}
+                  />
                 </HStack>
               </Box>
               <Alert status="error" hidden={feed?.status !== 'failed'}>

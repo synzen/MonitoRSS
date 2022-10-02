@@ -3,7 +3,8 @@
     "buttons": {
       "cancel": "Cancel",
       "reset": "Reset",
-      "save": "Save"
+      "save": "Save",
+      "configure": "Configure"
     },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
@@ -239,11 +240,13 @@
         },
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
-          "cancelButton": "Cancel",
           "saveButton": "Add",
           "formTitleLabel": "Title",
           "formTitleDescription": "This is only for your reference.",
           "formChannelLabel": "Channel"
+        },
+        "updateDiscordChannelConnectionDialog": {
+          "title": "Update Discord channel connection"
         },
         "updateDiscordWebhookConnectionDialog": {
           "title": "Update Discord webhook connection"

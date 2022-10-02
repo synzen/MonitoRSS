@@ -91,7 +91,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
   const onSubmit = async (formData: FormData) => {
     await onUpdate(formData);
     onClose();
-    reset();
+    reset(formData);
   };
 
   useEffect(() => {

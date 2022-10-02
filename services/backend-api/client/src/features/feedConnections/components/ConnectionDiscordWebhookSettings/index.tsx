@@ -161,7 +161,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                         variant="outline"
                         leftIcon={<EditIcon />}
                       >
-                        Configure
+                        {t('common.buttons.configure')}
                       </Button>
                     )}
                   />
