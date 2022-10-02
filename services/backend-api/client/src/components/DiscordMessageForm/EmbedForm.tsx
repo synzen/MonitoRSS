@@ -14,6 +14,7 @@ import {
   Controller, FieldError, useFormContext, useWatch,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { getNestedField } from '../../utils/getNestedField';
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from './constants';
 import { DiscordMessageEmbedFormData, DiscordMessageFormData } from './types';
 
@@ -50,7 +51,14 @@ export const EmbedForm = ({
       });
     } else {
       EMBED_REQUIRES_ONE_OF.forEach((key) => {
-        clearErrors(`embeds.${index}.${key}` as any);
+        const existingError = getNestedField(
+          errors,
+          `embeds.${index}.${key}` as any,
+        ) as FieldError | undefined;
+
+        if (existingError?.type === EMBED_REQUIRES_ONE_OF_ERROR_KEY) {
+          clearErrors(`embeds.${index}.${key}` as any);
+        }
       });
     }
   }, EMBED_REQUIRES_ONE_OF.map((key) => embed[key]));
