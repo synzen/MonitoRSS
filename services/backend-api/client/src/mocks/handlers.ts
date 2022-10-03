@@ -192,6 +192,13 @@ const handlers = [
     }),
   )),
 
+  rest.get('/api/v1/feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<CreateDiscordWebhookConnectionOutput>({
+      result: mockFeedWebhookConnections[0],
+    }),
+  )),
+
   rest.post('/api/v1/feeds/:feedId/connections/discord-webhooks', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordWebhookConnectionOutput>({

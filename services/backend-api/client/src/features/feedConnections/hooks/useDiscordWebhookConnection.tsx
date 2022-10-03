@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getDiscordChannelConnection, GetDiscordChannelConnectionOutput } from '../api';
+import { getDiscordWebhookConnection, GetDiscordWebhookConnectionOutput } from '../api';
 
 interface Props {
   feedId?: string
   connectionId?: string
 }
 
-export const useDiscordChannelConnection = ({ feedId, connectionId }: Props) => {
+export const useDiscordWebhookConnection = ({ feedId, connectionId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
 
   const { data, status, error } = useQuery<
-  GetDiscordChannelConnectionOutput, ApiAdapterError | Error
+  GetDiscordWebhookConnectionOutput, ApiAdapterError | Error
   >(
-    ['connections-discord-channel', {
+    ['connections-discord-webhook', {
       feedId,
       connectionId,
     }],
@@ -23,7 +23,7 @@ export const useDiscordChannelConnection = ({ feedId, connectionId }: Props) => 
         throw new Error('Missing feed or connection ID selection');
       }
 
-      return getDiscordChannelConnection({
+      return getDiscordWebhookConnection({
         feedId,
         connectionId,
       });

@@ -27,6 +27,8 @@ import {
   EditConnectionWebhookDialog,
   FilterExpression,
   FiltersForm,
+  LogicalFilterExpression,
+  useDiscordWebhookConnection,
   useUpdateDiscordWebhookConnection,
 } from '../features/feedConnections';
 import { useFeed } from '../features/feed';
@@ -40,6 +42,14 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
     error: feedError,
   } = useFeed({
     feedId,
+  });
+  const {
+    connection,
+    status: connectionStatus,
+    error: connectionError,
+  } = useDiscordWebhookConnection({
+    feedId,
+    connectionId,
   });
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateDiscordWebhookConnection();
@@ -99,8 +109,11 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
 
   return (
     <DashboardContentV2
-      error={feedError}
-      loading={feedStatus === 'loading' || feedStatus === 'idle'}
+      error={feedError || connectionError}
+      loading={feedStatus === 'loading'
+      || feedStatus === 'idle'
+      || connectionStatus === 'loading'
+      || connectionStatus === 'idle'}
     >
       <Tabs isFitted>
         <Stack
@@ -197,14 +210,16 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                 rowGap={{ base: '8', lg: '14' }}
               >
                 <CategoryText title="Webhook">
-                  John Doe
+                  {connection?.details.webhook.id}
                 </CategoryText>
                 <CategoryText
                   title="Custom name"
                 >
-                  {feed?.createdAt}
+                  {connection?.details.webhook.name || 'N/A'}
                 </CategoryText>
-                <CategoryText title="Custom icon">N/A</CategoryText>
+                <CategoryText title="Custom icon">
+                  {connection?.details.webhook.iconUrl || 'N/A'}
+                </CategoryText>
               </Grid>
             </Stack>
             <TabList>
@@ -220,12 +235,17 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
             <Stack>
               <DiscordMessageForm
                 onClickSave={onMessageUpdated}
+                defaultValues={{
+                  content: connection?.details.content,
+                  embeds: connection?.details.embeds,
+                }}
               />
             </Stack>
           </TabPanel>
           <TabPanel maxWidth="1200px" width="100%">
             <FiltersForm
               onSave={onFiltersUpdated}
+              expression={connection?.filters?.expression as LogicalFilterExpression}
             />
           </TabPanel>
         </TabPanels>
