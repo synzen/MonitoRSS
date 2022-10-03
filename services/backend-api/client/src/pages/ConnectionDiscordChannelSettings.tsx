@@ -21,11 +21,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { CategoryText, DiscordMessageForm, DashboardContentV2 } from '../components';
+import { DiscordChannelName } from '../features/discordServers';
 import { useFeed } from '../features/feed';
 import {
   EditConnectionChannelDialog,
   FilterExpression,
   FiltersForm,
+  LogicalFilterExpression,
+  useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
 } from '../features/feedConnections';
 import { DiscordMessageFormData } from '../types/discord';
@@ -38,6 +41,14 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
     status: feedStatus,
     error: feedError,
   } = useFeed({
+    feedId,
+  });
+  const {
+    connection,
+    status: connectionStatus,
+    error: connectionError,
+  } = useDiscordChannelConnection({
+    connectionId,
     feedId,
   });
   const { t } = useTranslation();
@@ -91,8 +102,13 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
 
   return (
     <DashboardContentV2
-      error={feedError}
-      loading={feedStatus === 'loading' || feedStatus === 'idle'}
+      error={feedError || connectionError}
+      loading={
+        feedStatus === 'loading'
+         || feedStatus === 'idle'
+          || connectionStatus === 'loading'
+           || connectionStatus === 'idle'
+      }
     >
       <Tabs isFitted>
         <Stack
@@ -184,7 +200,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 rowGap={{ base: '8', lg: '14' }}
               >
                 <CategoryText title="Channel">
-                  #logs
+                  <DiscordChannelName
+                    serverId={serverId}
+                    channelId={connection
+                      ?.details.channel.id as string}
+                  />
                 </CategoryText>
               </Grid>
             </Stack>
@@ -199,6 +219,10 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           <TabPanel maxWidth="1200px" width="100%">
             <Stack>
               <DiscordMessageForm
+                defaultValues={{
+                  content: connection?.details.content,
+                  embeds: connection?.details.embeds,
+                }}
                 onClickSave={onMessageUpdated}
               />
             </Stack>
@@ -206,6 +230,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           <TabPanel maxWidth="1200px" width="100%">
             <FiltersForm
               onSave={onFiltersUpdated}
+              expression={connection?.filters?.expression as LogicalFilterExpression}
             />
           </TabPanel>
         </TabPanels>

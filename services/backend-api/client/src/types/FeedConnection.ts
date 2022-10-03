@@ -43,3 +43,9 @@ export const FeedConnectionSchema = object({
 });
 
 export type FeedConnection = InferType<typeof FeedConnectionSchema>;
+export type FeedDiscordChannelConnection = FeedConnection & {
+  details: InferType<typeof DiscordChannelConnectionDetailsSchema>;
+};
+export type FeedDiscordWebhookConnection = FeedConnection & {
+  details: InferType<typeof DiscordWebhookConnectionDetailsSchema>;
+};
