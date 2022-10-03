@@ -1,4 +1,4 @@
-export * from './ConnectionDiscordChannelSettings';
-export * from './ConnectionDiscordWebhookSettings';
 export * from './AddConnectionDialog';
 export * from './FiltersForm';
+export * from './EditConnectionWebhookDialog';
+export * from './EditConnectionChannelDialog';

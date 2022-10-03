@@ -20,7 +20,8 @@ import { RequireDiscordServers } from '@/features/discordServers';
 import { PageContentV2 } from '../components/PageContentV2';
 import FeedsV2 from './FeedsV2';
 import { FeedV2 } from './FeedV2';
-import { FeedConnectionSettings } from './FeedConnectionSettings';
+import { ConnectionDiscordChannelSettings } from './ConnectionDiscordChannelSettings';
+import { ConnectionDiscordWebhookSettings } from './ConnectionDiscordWebhookSettings';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -112,12 +113,24 @@ const Pages: React.FC = () => (
 
     />
     <Route
-      path="/v2/servers/:serverId/feeds/:feedId/connections/:connectionId"
+      path="/v2/servers/:serverId/feeds/:feedId/discord-channel-connections/:connectionId"
       element={(
         <RequireAuth>
           <RequireDiscordServers>
             <PageContentV2 requireFeed>
-              <FeedConnectionSettings />
+              <ConnectionDiscordChannelSettings />
+            </PageContentV2>
+          </RequireDiscordServers>
+        </RequireAuth>
+    )}
+    />
+    <Route
+      path="/v2/servers/:serverId/feeds/:feedId/discord-webhook-connections/:connectionId"
+      element={(
+        <RequireAuth>
+          <RequireDiscordServers>
+            <PageContentV2 requireFeed>
+              <ConnectionDiscordWebhookSettings />
             </PageContentV2>
           </RequireDiscordServers>
         </RequireAuth>

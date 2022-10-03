@@ -38,6 +38,17 @@ import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { AddConnectionDialog } from '../features/feedConnections';
 import { FeedConnectionType } from '../types';
 
+const getConnectionUrlByType = (type: FeedConnectionType) => {
+  switch (type) {
+    case FeedConnectionType.DiscordChannel:
+      return '/discord-channel-connections';
+    case FeedConnectionType.DiscordWebhook:
+      return '/discord-webhook-connections';
+    default:
+      return '';
+  }
+};
+
 export const FeedV2: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
   const { t } = useTranslation();
@@ -191,7 +202,9 @@ export const FeedV2: React.FC = () => {
                   <Link
                     key={connection.id}
                     as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}/connections/${connection.id}`}
+                    to={`/v2/servers/${serverId}/feeds/${feedId}${
+                      getConnectionUrlByType(connection.key)
+                    }/${connection.id}`}
                   >
                     <Flex
                       background="gray.700"

@@ -7,3 +7,4 @@ export * from './SidebarHeading';
 export * from './SidebarLink';
 export * from './ThemedSelect';
 export * from './DiscordMessageForm';
+export * from './DashboardContentV2';
