@@ -35,8 +35,8 @@ import {
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
-import { FeedConnectionType } from '../features/feed/constants';
 import { AddConnectionDialog } from '../features/feedConnections';
+import { FeedConnectionType } from '../types';
 
 export const FeedV2: React.FC = () => {
   const { feedId, serverId } = useParams<RouteParams>();
@@ -187,50 +187,31 @@ export const FeedV2: React.FC = () => {
                 </Text>
               </Stack>
               <Stack>
-                <Link
-                  as={RouterLink}
-                  to={`/v2/servers/${serverId}/feeds/${feedId}/connections/123`}
-                >
-                  <Flex
-                    background="gray.700"
-                    paddingX={8}
-                    paddingY={4}
-                    alignItems="center"
-                    borderRadius="md"
+                {feed?.connections?.map((connection) => (
+                  <Link
+                    key={connection.id}
+                    as={RouterLink}
+                    to={`/v2/servers/${serverId}/feeds/${feedId}/connections/${connection.id}`}
                   >
-                    <Avatar name="Go" />
-                    <Stack marginLeft={4}>
-                      <Text
-                        fontWeight={600}
-                      >
-                        Discord Channel
-                      </Text>
-                      <Text>Delivers to #hello world</Text>
-                    </Stack>
-                  </Flex>
-                </Link>
-                <Link
-                  as={RouterLink}
-                  to={`/v2/servers/${serverId}/feeds/${feedId}/connections/123`}
-                >
-                  <Flex
-                    background="gray.700"
-                    paddingX={8}
-                    paddingY={4}
-                    alignItems="center"
-                    borderRadius="md"
-                  >
-                    <Avatar name="Go" />
-                    <Stack marginLeft={4}>
-                      <Text
-                        fontWeight={600}
-                      >
-                        Discord Channel
-                      </Text>
-                      <Text>Delivers to #hello world</Text>
-                    </Stack>
-                  </Flex>
-                </Link>
+                    <Flex
+                      background="gray.700"
+                      paddingX={8}
+                      paddingY={4}
+                      alignItems="center"
+                      borderRadius="md"
+                    >
+                      <Avatar name="Go" />
+                      <Stack marginLeft={4}>
+                        <Text
+                          fontWeight={600}
+                        >
+                          {connection.name}
+                        </Text>
+                        <Text>Delivers to #hello world</Text>
+                      </Stack>
+                    </Flex>
+                  </Link>
+                ))}
               </Stack>
             </Stack>
             <Stack spacing={6}>

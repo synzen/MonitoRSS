@@ -1,10 +1,10 @@
-import { FeedConnectionType } from '@/features/feed/constants';
-import { FeedConnection } from '@/types';
+import { FeedConnection, FeedConnectionType } from '@/types';
 import mockDiscordChannels from './discordChannels';
 
 export const mockFeedChannelConnections: FeedConnection[] = [{
   id: '1',
   filters: null,
+  name: 'discord-channel-connection-1',
   details: {
     embeds: [],
     channel: {
@@ -16,8 +16,9 @@ export const mockFeedChannelConnections: FeedConnection[] = [{
 }];
 
 export const mockFeedWebhookConnections: FeedConnection[] = [{
-  id: '1',
+  id: '2',
   filters: null,
+  name: 'discord-webhook-connection-1',
   details: {
     webhook: {
       id: '1',

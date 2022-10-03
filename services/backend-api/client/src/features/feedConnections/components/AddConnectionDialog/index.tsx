@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import { FeedConnectionType } from '../../../feed/constants';
+import { FeedConnectionType } from '@/types';
 import { DiscordChannelConnectionContent } from './DiscordChannelConnectionContent';
 import { DiscordWebhookConnectionContent } from './DiscordWebhookConnectionContent';
 

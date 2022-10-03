@@ -1,6 +1,7 @@
 import { Feed } from '@/types';
 import mockDiscordChannels from './discordChannels';
 import mockDiscordWebhooks from './discordWebhooks';
+import { mockFeedChannelConnections, mockFeedWebhookConnections } from './feedConnection';
 
 const mockFeeds: Feed[] = [{
   id: '1',
@@ -38,7 +39,7 @@ const mockFeeds: Feed[] = [{
     value: 'Yahoo News',
   }],
   disabledReason: undefined,
-  connections: undefined,
+  connections: [mockFeedChannelConnections[0], mockFeedWebhookConnections[0]],
   isFeedv2: false,
 }];
 
