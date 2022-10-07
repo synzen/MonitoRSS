@@ -17,6 +17,7 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Spinner,
   Stack,
   TabPanel,
   TabPanels,
@@ -30,6 +31,7 @@ import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { CategoryText } from '@/components';
 import {
+  useArticleDailyLimit,
   useFeed,
 } from '../features/feed';
 import RouteParams from '../types/RouteParams';
@@ -56,6 +58,11 @@ export const FeedV2: React.FC = () => {
   const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
     undefined,
   );
+  const {
+    data: dailyLimit,
+  } = useArticleDailyLimit({
+    feedId,
+  });
 
   const {
     feed, status, error, refetch,
@@ -166,7 +173,10 @@ export const FeedV2: React.FC = () => {
                 >
                   {feed?.createdAt}
                 </CategoryText>
-                <CategoryText title={t('pages.feed.dailyLimit')}>N/A</CategoryText>
+                <CategoryText title={t('pages.feed.articleDailyLimit')}>
+                  {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                  {!dailyLimit && <Spinner size="sm" />}
+                </CategoryText>
               </Grid>
             </Stack>
             <Stack spacing={6}>

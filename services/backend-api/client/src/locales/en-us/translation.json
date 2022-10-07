@@ -89,7 +89,8 @@
       "comparisonsTab": "Comparisons",
       "addConnectionButtonText": "Add new",
       "discordChannelMenuItem": "Discord Channel",
-      "discordWebhookMenuItem": "Discord Webhook"
+      "discordWebhookMenuItem": "Discord Webhook",
+      "articleDailyLimit": "Article Daily Limit"
     },
     "message": {
       "title": "Message",

@@ -159,6 +159,23 @@ const handlers = [
     }),
   )),
 
+  rest.get('/api/v1/feeds/:feedId', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<GetFeedOutput>({
+      result: mockFeeds[0],
+    }),
+  )),
+
+  rest.get('/api/v1/feeds/:feedId/daily-limits', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json({
+      result: {
+        current: 100,
+        max: 500,
+      },
+    }),
+  )),
+
   rest.delete('/api/v1/feeds/:feedId', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.status(204),
