@@ -12,7 +12,7 @@
       "detailsTitle": "Details",
       "goBack": "Go back",
       "failedToSave": "Failed to save changes",
-      "supporterRequiredAccess": "You need to be a supporter to access this."
+      "supporterRequiredAccess": "This server needs to be backed by a supporter to access this."
     },
     "api": {
       "missingBotAccessTitle": "Missing Bot Access",
