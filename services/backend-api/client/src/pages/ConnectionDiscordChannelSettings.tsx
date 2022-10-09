@@ -24,6 +24,7 @@ import { CategoryText, DiscordMessageForm, DashboardContentV2 } from '../compone
 import { DiscordChannelName } from '../features/discordServers';
 import { useFeed } from '../features/feed';
 import {
+  DeleteConnectionButton,
   EditConnectionChannelDialog,
   FilterExpression,
   FiltersForm,
@@ -158,23 +159,30 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     >
                       Stocks
                     </Heading>
-                    <EditConnectionChannelDialog
-                      defaultValues={{
-                        channelId: 'channel',
-                        name: 'hello',
-                      }}
-                      onUpdate={onChannelUpdated}
-                      trigger={(
-                        <Button
-                          aria-label="Edit"
-                          variant="outline"
-                          leftIcon={<EditIcon />}
-                        >
-                          {t('common.buttons.configure')}
-                        </Button>
+                    <HStack>
+                      <EditConnectionChannelDialog
+                        defaultValues={{
+                          channelId: 'channel',
+                          name: 'hello',
+                        }}
+                        onUpdate={onChannelUpdated}
+                        trigger={(
+                          <Button
+                            aria-label="Edit"
+                            variant="outline"
+                            leftIcon={<EditIcon />}
+                          >
+                            {t('common.buttons.configure')}
+                          </Button>
                   )}
-                      serverId={serverId}
-                    />
+                        serverId={serverId}
+                      />
+                      <DeleteConnectionButton
+                        serverId={serverId as string}
+                        connectionId={connectionId as string}
+                        feedId={feedId as string}
+                      />
+                    </HStack>
                   </HStack>
                 </Box>
                 <Alert status="error" hidden={feed?.status === 'failed'}>

@@ -4,7 +4,8 @@
       "cancel": "Cancel",
       "reset": "Reset",
       "save": "Save",
-      "configure": "Configure"
+      "configure": "Configure",
+      "delete": "Delete"
     },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
@@ -13,6 +14,9 @@
       "goBack": "Go back",
       "failedToSave": "Failed to save changes",
       "supporterRequiredAccess": "This server needs to be backed by a supporter to access this."
+    },
+    "success": {
+      "deleted": "Successfully deleted"
     },
     "api": {
       "missingBotAccessTitle": "Missing Bot Access",
@@ -311,6 +315,10 @@
           "relationalOpEquals": "is",
           "relationalOpContains": "contains",
           "relationalOpMatches": "matches"
+        },
+        "deleteButton": {
+          "confirmTitle": "Confirmation",
+          "confirmDescription": "Are you sure you want to delete this connection? This cannot be undone."
         }
       }
     },

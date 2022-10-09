@@ -230,6 +230,11 @@ const handlers = [
     }),
   )),
 
+  rest.delete('/api/v1/feeds/:feedId/connections/:id', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.status(204),
+  )),
+
   rest.get('/api/v1/feeds/:feedId/subscribers', (req, res, ctx) => res(
     ctx.json<GetFeedSubscribersOutput>({
       results: mockFeedSubscribers,

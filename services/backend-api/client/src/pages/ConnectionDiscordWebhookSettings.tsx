@@ -30,6 +30,7 @@ import {
   LogicalFilterExpression,
   useDiscordWebhookConnection,
   useUpdateDiscordWebhookConnection,
+  DeleteConnectionButton,
 } from '../features/feedConnections';
 import { useFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
@@ -163,28 +164,35 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     >
                       Stocks
                     </Heading>
-                    <EditConnectionWebhookDialog
-                      feedId={feedId}
-                      serverId={serverId}
-                      onUpdate={onWebhookUpdated}
-                      defaultValues={{
-                        name: '1',
-                        webhook: {
-                          id: '1',
-                          iconUrl: 'icon-url',
-                          name: 'name',
-                        },
-                      }}
-                      trigger={(
-                        <Button
-                          aria-label="Edit"
-                          variant="outline"
-                          leftIcon={<EditIcon />}
-                        >
-                          {t('common.buttons.configure')}
-                        </Button>
+                    <HStack>
+                      <EditConnectionWebhookDialog
+                        feedId={feedId}
+                        serverId={serverId}
+                        onUpdate={onWebhookUpdated}
+                        defaultValues={{
+                          name: '1',
+                          webhook: {
+                            id: '1',
+                            iconUrl: 'icon-url',
+                            name: 'name',
+                          },
+                        }}
+                        trigger={(
+                          <Button
+                            aria-label="Edit"
+                            variant="outline"
+                            leftIcon={<EditIcon />}
+                          >
+                            {t('common.buttons.configure')}
+                          </Button>
                     )}
-                    />
+                      />
+                      <DeleteConnectionButton
+                        serverId={serverId as string}
+                        connectionId={connectionId as string}
+                        feedId={feedId as string}
+                      />
+                    </HStack>
                   </HStack>
                 </Box>
                 <Alert status="error" hidden={feed?.status !== 'failed'}>
