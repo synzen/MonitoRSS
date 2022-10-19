@@ -97,6 +97,59 @@ export class FeedsService {
       isFeedV2: boolean;
     }
   ) {
+    const channel: DiscordGuildChannel = await this.canUseChannel({
+      channelId,
+      userAccessToken,
+    });
+
+    const remainingAvailableFeeds = await this.getRemainingFeedLimitCount(
+      channel.guild_id
+    );
+
+    if (remainingAvailableFeeds <= 0) {
+      throw new FeedLimitReachedException();
+    }
+
+    await this.feedFetcherSevice.fetchFeed(url, {
+      fetchOptions: {
+        useServiceApi: isFeedV2,
+        useServiceApiCache: false,
+      },
+    });
+
+    const bannedRecord = await this.getBannedFeedDetails(url, channel.guild_id);
+
+    if (bannedRecord) {
+      throw new BannedFeedException();
+    }
+
+    const created = await this.feedModel.create({
+      title,
+      url,
+      channel: channelId,
+      guild: channel.guild_id,
+    });
+
+    const withDetails = await this.findFeeds(
+      {
+        _id: created._id,
+      },
+      {
+        limit: 1,
+        skip: 0,
+      }
+    );
+
+    return withDetails[0];
+  }
+
+  async canUseChannel({
+    channelId,
+    userAccessToken,
+  }: {
+    channelId: string;
+    userAccessToken: string;
+  }) {
     let channel: DiscordGuildChannel;
 
     try {
@@ -132,27 +185,6 @@ export class FeedsService {
       throw new UserMissingManageGuildException();
     }
 
-    const remainingAvailableFeeds = await this.getRemainingFeedLimitCount(
-      channel.guild_id
-    );
-
-    if (remainingAvailableFeeds <= 0) {
-      throw new FeedLimitReachedException();
-    }
-
-    await this.feedFetcherSevice.fetchFeed(url, {
-      fetchOptions: {
-        useServiceApi: isFeedV2,
-        useServiceApiCache: false,
-      },
-    });
-
-    const bannedRecord = await this.getBannedFeedDetails(url, channel.guild_id);
-
-    if (bannedRecord) {
-      throw new BannedFeedException();
-    }
-
     if (
       !(await this.discordPermissionsService.botHasPermissionInChannel(
         channel,
@@ -162,24 +194,7 @@ export class FeedsService {
       throw new MissingChannelPermissionsException();
     }
 
-    const created = await this.feedModel.create({
-      title,
-      url,
-      channel: channelId,
-      guild: channel.guild_id,
-    });
-
-    const withDetails = await this.findFeeds(
-      {
-        _id: created._id,
-      },
-      {
-        limit: 1,
-        skip: 0,
-      }
-    );
-
-    return withDetails[0];
+    return channel;
   }
 
   async removeFeed(feedId: string) {
