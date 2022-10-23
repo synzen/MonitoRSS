@@ -84,7 +84,6 @@ export class FeedConnectionsService {
     );
 
     if (!createdConnection) {
-      console.log("no created con");
       throw new Error(
         "Connection was not successfuly created. Check insertion statement and schemas are correct."
       );
