@@ -16,6 +16,7 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emitter.module";
 import { FailedUrlHandlerModule } from "./features/failed-url-handler/failed-url-handler.module";
+import { FeedConnectionsModule } from "./features/feed-connections/feed-connections.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { FailedUrlHandlerModule } from "./features/failed-url-handler/failed-url
     ScheduleHandlerModule,
     ScheduleEmitterModule,
     FailedUrlHandlerModule,
+    FeedConnectionsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
     }),

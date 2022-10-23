@@ -1,5 +1,9 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types, Model } from "mongoose";
+import {
+  FeedConnections,
+  FeedConnectionSchema,
+} from "./feed-connections.entity";
 import { FeedEmbed, FeedEmbedSchema } from "./feed-embed.entity";
 import { FeedRegexOp, FeedRegexOpSchema } from "./feed-regexop.entity";
 import { FeedWebhook, FeedWebhookSchema } from "./feed-webhook.entity";
@@ -130,6 +134,13 @@ export class Feed {
 
   @Prop()
   isFeedv2?: boolean;
+
+  @Prop({
+    type: FeedConnectionSchema,
+    required: false,
+    default: {},
+  })
+  connections: FeedConnections;
 
   createdAt?: Date;
 

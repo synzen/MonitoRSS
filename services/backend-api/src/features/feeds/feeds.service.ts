@@ -97,10 +97,30 @@ export class FeedsService {
       isFeedV2: boolean;
     }
   ) {
-    const channel: DiscordGuildChannel = await this.canUseChannel({
-      channelId,
-      userAccessToken,
-    });
+    let channel: DiscordGuildChannel;
+
+    try {
+      channel = await this.canUseChannel({
+        channelId,
+        userAccessToken,
+      });
+    } catch (err) {
+      logger.info(`Error while getting channel ${channelId} of feed addition`, {
+        stack: err.stack,
+      });
+
+      if (err instanceof DiscordAPIError) {
+        if (err.statusCode === HttpStatus.NOT_FOUND) {
+          throw new MissingChannelException();
+        }
+
+        if (err.statusCode === HttpStatus.FORBIDDEN) {
+          throw new MissingChannelPermissionsException();
+        }
+      }
+
+      throw err;
+    }
 
     const remainingAvailableFeeds = await this.getRemainingFeedLimitCount(
       channel.guild_id
@@ -150,27 +170,7 @@ export class FeedsService {
     channelId: string;
     userAccessToken: string;
   }) {
-    let channel: DiscordGuildChannel;
-
-    try {
-      channel = await this.discordApiService.getChannel(channelId);
-    } catch (err) {
-      logger.info(`Error while getting channel ${channelId} of feed addition`, {
-        stack: err.stack,
-      });
-
-      if (err instanceof DiscordAPIError) {
-        if (err.statusCode === HttpStatus.NOT_FOUND) {
-          throw new MissingChannelException();
-        }
-
-        if (err.statusCode === HttpStatus.FORBIDDEN) {
-          throw new MissingChannelPermissionsException();
-        }
-      }
-
-      throw err;
-    }
+    const channel = await this.discordApiService.getChannel(channelId);
 
     const userManagesGuild = await this.discordAuthService.userManagesGuild(
       userAccessToken,
@@ -178,10 +178,6 @@ export class FeedsService {
     );
 
     if (!userManagesGuild) {
-      logger.info(
-        `Blocked user from adding feed to guild ${channel.guild_id} ` +
-          `due to missing manage permissions`
-      );
       throw new UserMissingManageGuildException();
     }
 
