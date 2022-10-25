@@ -16,9 +16,14 @@ import { DetailedFeed } from "../feeds/types/detailed-feed.type";
 import {
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
+  CreateDiscordWebhookConnectionInputDto,
+  CreateDiscordWebhookConnectionOutputDto,
 } from "./dto";
 import { FeedConnectionsService } from "./feed-connections.service";
-import { AddDiscordChannelConnectionFilter } from "./filters";
+import {
+  AddDiscordChannelConnectionFilter,
+  AddDiscordWebhookConnectionFilter,
+} from "./filters";
 
 @Controller("feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
@@ -55,6 +60,44 @@ export class FeedsConnectionsController {
         },
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
+      },
+    };
+  }
+
+  @Post("/discord-webhooks")
+  @UseFilters(AddDiscordWebhookConnectionFilter)
+  async createDiscordWebhookConnection(
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
+    @Body(ValidationPipe)
+    { name, webhook }: CreateDiscordWebhookConnectionInputDto,
+    @DiscordAccessToken() { access_token }: SessionAccessToken
+  ): Promise<CreateDiscordWebhookConnectionOutputDto> {
+    const createdConnection =
+      await this.feedConnectionsService.createDiscordWebhookConnection({
+        accessToken: access_token,
+        feedId: feed._id.toHexString(),
+        name,
+        webhook: {
+          id: webhook.id,
+          iconUrl: webhook.iconUrl,
+          name: webhook.name,
+        },
+        guildId: feed.guild,
+      });
+
+    return {
+      id: createdConnection.id.toHexString(),
+      name: createdConnection.name,
+      key: FeedConnectionType.DiscordWebhook,
+      filters: createdConnection.filters,
+      details: {
+        embeds: createdConnection.details.embeds,
+        content: createdConnection.details.content,
+        webhook: {
+          id: createdConnection.details.webhook.id,
+          iconUrl: createdConnection.details.webhook.iconUrl,
+          name: createdConnection.details.webhook.name,
+        },
       },
     };
   }

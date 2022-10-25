@@ -22,6 +22,11 @@ class Webhook {
     required: false,
   })
   iconUrl?: string;
+
+  @Prop({
+    required: true,
+  })
+  token: string;
 }
 
 const WebhookSchema = SchemaFactory.createForClass(Webhook);
@@ -54,6 +59,20 @@ class Details {
 const DetailsSchema = SchemaFactory.createForClass(Details);
 
 @Schema({
+  _id: false,
+  versionKey: false,
+  timestamps: false,
+})
+class Filters {
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+  })
+  expression: Record<string, unknown>;
+}
+
+const FiltersSchema = SchemaFactory.createForClass(Filters);
+
+@Schema({
   versionKey: false,
   timestamps: true,
   _id: false,
@@ -69,6 +88,12 @@ export class DiscordWebhookConnection {
     required: true,
   })
   name: string;
+
+  @Prop({
+    type: FiltersSchema,
+    required: false,
+  })
+  filters?: Filters;
 
   @Prop({
     type: DetailsSchema,

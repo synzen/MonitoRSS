@@ -12,4 +12,5 @@ export interface DiscordWebhook {
   avatar?: string | null;
   token?: string;
   application_id?: string | null;
+  guild_id?: string;
 }
