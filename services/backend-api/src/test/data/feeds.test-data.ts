@@ -9,12 +9,16 @@ const boilerplate: Feed = {
   url: "https://www.somefakefeed.com/rss",
   text: "text-1",
   addedAt: new Date(),
+  connections: {
+    discordChannels: [],
+    discordWebhooks: [],
+  },
   embeds: [
     {
       authorIconURL: "author-icon-url-1",
       authorName: "author-name-1",
       authorURL: "author-url-1",
-      color: 10,
+      color: "10",
       description: "description-1",
       fields: [
         {

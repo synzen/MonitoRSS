@@ -45,6 +45,20 @@ const DetailsSchema = SchemaFactory.createForClass(Details);
 
 @Schema({
   _id: false,
+  versionKey: false,
+  timestamps: false,
+})
+class Filters {
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+  })
+  expression: Record<string, unknown>;
+}
+
+const FiltersSchema = SchemaFactory.createForClass(Filters);
+
+@Schema({
+  _id: false,
   timestamps: true,
   versionKey: false,
 })
@@ -59,6 +73,12 @@ export class DiscordChannelConnection {
     required: true,
   })
   name: string;
+
+  @Prop({
+    type: FiltersSchema,
+    required: false,
+  })
+  filters?: Filters;
 
   @Prop({
     type: DetailsSchema,

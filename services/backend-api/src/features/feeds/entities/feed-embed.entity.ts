@@ -36,7 +36,7 @@ export class FeedEmbed {
   url?: string;
 
   @Prop()
-  color?: number;
+  color?: string;
 
   @Prop()
   footerText?: string;

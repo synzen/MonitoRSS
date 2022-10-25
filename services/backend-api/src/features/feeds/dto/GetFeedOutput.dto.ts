@@ -25,7 +25,7 @@ export interface FeedEmbedOutputDto {
     url?: string;
     iconUrl?: string;
   };
-  color?: number;
+  color?: string;
   fields: Array<{
     name: string;
     value: string;

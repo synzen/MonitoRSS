@@ -9,7 +9,6 @@ import {
 } from "class-validator";
 import { DiscordEmbed } from "../../../common";
 import { FeedConnectionType } from "../../feeds/constants";
-import { DiscordChannelConnectionDetails } from "../../feeds/entities/feed-connections";
 
 class FiltersDto {
   @IsObject()
@@ -57,5 +56,5 @@ export class CreateDiscordChannelConnectionOutputDto {
   @IsObject()
   @Type(() => DetailsDto)
   @ValidateNested()
-  details: DiscordChannelConnectionDetails;
+  details: DetailsDto;
 }

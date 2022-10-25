@@ -48,12 +48,12 @@ export class FeedsConnectionsController {
       id: createdConnection.id.toHexString(),
       name: createdConnection.name,
       key: FeedConnectionType.DiscordChannel,
+      filters: createdConnection.filters,
       details: {
         channel: {
           id: createdConnection.details.channel.id,
         },
         embeds: createdConnection.details.embeds,
-        type: FeedConnectionType.DiscordChannel,
         content: createdConnection.details.content,
       },
     };
