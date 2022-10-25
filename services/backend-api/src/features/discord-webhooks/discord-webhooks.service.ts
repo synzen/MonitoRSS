@@ -26,12 +26,7 @@ export class DiscordWebhooksService {
           `/guilds/${serverId}/webhooks`
         );
 
-      return webhooks.filter(
-        (webhook) =>
-          webhook.type === DiscordWebhookType.INCOMING &&
-          (webhook.application_id === null ||
-            webhook.application_id === this.clientId)
-      );
+      return webhooks.filter((webhook) => this.canBeUsedByBot(webhook));
     } catch (err) {
       if (err instanceof DiscordAPIError && err.statusCode === 403) {
         throw new WebhookMissingPermissionsException();
@@ -56,5 +51,13 @@ export class DiscordWebhooksService {
 
       throw err;
     }
+  }
+
+  canBeUsedByBot(webhook: DiscordWebhook): boolean {
+    return (
+      webhook.type === DiscordWebhookType.INCOMING &&
+      (webhook.application_id === null ||
+        webhook.application_id === this.clientId)
+    );
   }
 }

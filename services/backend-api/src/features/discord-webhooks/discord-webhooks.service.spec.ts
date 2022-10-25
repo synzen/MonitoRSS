@@ -159,4 +159,62 @@ describe("DiscordWebhooksService", () => {
       await expect(service.getWebhook(webhookId)).rejects.toThrow(err);
     });
   });
+
+  describe("canBeUsedByBot", () => {
+    it("returns true correctly", () => {
+      const webhook: DiscordWebhook = {
+        id: "12345",
+        type: DiscordWebhookType.INCOMING,
+        channel_id: "12345",
+        application_id: botClientId,
+        name: "test",
+      };
+
+      const result = service.canBeUsedByBot(webhook);
+
+      expect(result).toBe(true);
+    });
+
+    it("returns false if the webhook is not of type incoming", () => {
+      const webhook: DiscordWebhook = {
+        id: "12345",
+        type: DiscordWebhookType.APPLICATION,
+        channel_id: "12345",
+        application_id: botClientId,
+        name: "test",
+      };
+
+      const result = service.canBeUsedByBot(webhook);
+
+      expect(result).toBe(false);
+    });
+
+    it("returns false if the webhook's application id is not the bot's", () => {
+      const webhook: DiscordWebhook = {
+        id: "12345",
+        type: DiscordWebhookType.INCOMING,
+        channel_id: "12345",
+        application_id: botClientId + "1",
+        name: "test",
+      };
+
+      const result = service.canBeUsedByBot(webhook);
+
+      expect(result).toBe(false);
+    });
+
+    it("returns true if the webhook's application id is null", () => {
+      const webhook: DiscordWebhook = {
+        id: "12345",
+        type: DiscordWebhookType.INCOMING,
+        channel_id: "12345",
+        application_id: null,
+        name: "test",
+      };
+
+      const result = service.canBeUsedByBot(webhook);
+
+      expect(result).toBe(true);
+    });
+  });
 });
