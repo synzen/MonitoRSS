@@ -99,6 +99,10 @@ export class DiscordAPIService {
     return this.executeBotRequest(`/guilds/${guildId}`);
   }
 
+  async getWebhook(webhookId: string) {
+    return this.executeBotRequest(`/webhooks/${webhookId}`);
+  }
+
   async getGuildMember(
     guildId: string,
     userId: string

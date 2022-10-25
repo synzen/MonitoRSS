@@ -113,4 +113,44 @@ describe("DiscordAPIService", () => {
       expect(response).toEqual(discordUser);
     });
   });
+
+  describe("getWebhook", () => {
+    it("calls the correct endpoint", async () => {
+      const webhookId = "123456789";
+
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 200,
+        json: jest.fn().mockResolvedValue({}),
+      });
+
+      await discordApi.getWebhook(webhookId);
+
+      expect(restHandler.fetch).toHaveBeenCalledWith(
+        `https://discord.com/api/v9/webhooks/${webhookId}`,
+        {
+          method: "GET",
+          headers: expect.objectContaining({
+            Authorization: `Bot ${discordApi.BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          }),
+        }
+      );
+    });
+
+    it("returns the json", async () => {
+      const webhookId = "123456789";
+
+      const webhook = {
+        id: webhookId,
+      };
+
+      jest.spyOn(restHandler, "fetch").mockResolvedValue({
+        status: 200,
+        json: jest.fn().mockResolvedValue(webhook),
+      });
+
+      const response = await discordApi.getWebhook(webhookId);
+      expect(response).toEqual(webhook);
+    });
+  });
 });
