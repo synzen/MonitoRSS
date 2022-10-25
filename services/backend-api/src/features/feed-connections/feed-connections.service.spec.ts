@@ -2,6 +2,7 @@ import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import {
   DiscordWebhookInvalidTypeException,
+  DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
   DiscordWebhookNotOwnedException,
 } from "../../common/exceptions";
@@ -10,6 +11,7 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
 import { Feed, FeedFeature } from "../feeds/entities/feed.entity";
 import { FeedsService } from "../feeds/feeds.service";
@@ -25,6 +27,9 @@ describe("FeedConnectionsService", () => {
     getWebhook: jest.fn(),
     canBeUsedByBot: jest.fn(),
   };
+  const discordAuthService = {
+    userManagesGuild: jest.fn(),
+  };
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests({
@@ -37,6 +42,10 @@ describe("FeedConnectionsService", () => {
         {
           provide: DiscordWebhooksService,
           useValue: discordWebhooksService,
+        },
+        {
+          provide: DiscordAuthService,
+          useValue: discordAuthService,
         },
       ],
       imports: [
@@ -104,6 +113,7 @@ describe("FeedConnectionsService", () => {
   describe("createDiscordWebhookConnection", () => {
     let createdFeed: Feed;
     let creationDetails: {
+      accessToken: string;
       feedId: string;
       guildId: string;
       name: string;
@@ -124,6 +134,7 @@ describe("FeedConnectionsService", () => {
       });
 
       creationDetails = {
+        accessToken: "access-token",
         feedId: createdFeed._id.toHexString(),
         guildId: createdFeed.guild,
         name: "name",
@@ -138,8 +149,10 @@ describe("FeedConnectionsService", () => {
     it("saves the new connection", async () => {
       discordWebhooksService.getWebhook.mockResolvedValue({
         token: "token",
+        guild_id: creationDetails.guildId,
       });
-      discordWebhooksService.canBeUsedByBot.mockResolvedValue(true);
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
+      discordAuthService.userManagesGuild.mockResolvedValue(true);
 
       await service.createDiscordWebhookConnection(creationDetails);
 
@@ -175,7 +188,7 @@ describe("FeedConnectionsService", () => {
       discordWebhooksService.getWebhook.mockResolvedValue({
         token: "token",
       });
-      discordWebhooksService.canBeUsedByBot.mockResolvedValue(false);
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(false);
 
       await expect(
         service.createDiscordWebhookConnection(creationDetails)
@@ -187,11 +200,24 @@ describe("FeedConnectionsService", () => {
         token: "token",
         guild_id: creationDetails.guildId + "-other",
       });
-      discordWebhooksService.canBeUsedByBot.mockResolvedValue(true);
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
 
       await expect(
         service.createDiscordWebhookConnection(creationDetails)
       ).rejects.toThrowError(DiscordWebhookNotOwnedException);
+    });
+
+    it("throws an error if the user does not manage the guild", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue({
+        token: "token",
+        guild_id: creationDetails.guildId,
+      });
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
+      discordAuthService.userManagesGuild.mockResolvedValue(false);
+
+      await expect(
+        service.createDiscordWebhookConnection(creationDetails)
+      ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
     });
   });
 });

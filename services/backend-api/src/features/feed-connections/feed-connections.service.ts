@@ -4,10 +4,12 @@ import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import {
   DiscordWebhookInvalidTypeException,
+  DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
   DiscordWebhookNotOwnedException,
 } from "../../common/exceptions";
 import logger from "../../utils/logger";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
 import { FeedConnectionType } from "../feeds/constants";
 import {
@@ -26,7 +28,8 @@ export class FeedConnectionsService {
   constructor(
     private readonly feedsService: FeedsService,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
-    private readonly discordWebhooksService: DiscordWebhooksService
+    private readonly discordWebhooksService: DiscordWebhooksService,
+    private readonly discordAuthService: DiscordAuthService
   ) {}
 
   async createDiscordChannelConnection({
@@ -103,11 +106,13 @@ export class FeedConnectionsService {
   }
 
   async createDiscordWebhookConnection({
+    accessToken,
     feedId,
     guildId,
     name,
     webhook: { id, name: webhookName, iconUrl },
   }: {
+    accessToken: string;
     feedId: string;
     guildId: string;
     name: string;
@@ -134,6 +139,14 @@ export class FeedConnectionsService {
     if (webhook.guild_id !== guildId) {
       throw new DiscordWebhookNotOwnedException(
         `Discord webhook ${id} is not owned by guild ${guildId}`
+      );
+    }
+
+    if (
+      !(await this.discordAuthService.userManagesGuild(accessToken, guildId))
+    ) {
+      throw new DiscordWebhookMissingUserPermException(
+        `User does not manage guild of webhook webhook ${id}`
       );
     }
 
