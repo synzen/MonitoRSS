@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Param,
+  Patch,
   Post,
   UseFilters,
   UseGuards,
@@ -18,12 +19,19 @@ import {
   CreateDiscordChnnnelConnectionInputDto,
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
+  UpdateDiscordChannelConnectionInputDto,
+  UpdateDiscordChannelConnectionOutputDto,
 } from "./dto";
 import { FeedConnectionsService } from "./feed-connections.service";
 import {
   AddDiscordChannelConnectionFilter,
   AddDiscordWebhookConnectionFilter,
+  UpdateDiscordChannelConnectionFilter,
 } from "./filters";
+import {
+  GetFeedDiscordChannelConnectionPipe,
+  GetFeedDiscordChannelConnectionPipeOutput,
+} from "./pipes";
 
 @Controller("feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
@@ -47,7 +55,61 @@ export class FeedsConnectionsController {
         name,
         channelId,
         userAccessToken: access_token,
+        guildId: feed.guild,
       });
+
+    return {
+      id: createdConnection.id.toHexString(),
+      name: createdConnection.name,
+      key: FeedConnectionType.DiscordChannel,
+      filters: createdConnection.filters,
+      details: {
+        channel: {
+          id: createdConnection.details.channel.id,
+        },
+        embeds: createdConnection.details.embeds,
+        content: createdConnection.details.content,
+      },
+    };
+  }
+
+  @Patch("/discord-channels/:connectionId")
+  @UseFilters(UpdateDiscordChannelConnectionFilter)
+  async updateDiscordChannelConnection(
+    @Param("feedId", GetFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Body(ValidationPipe)
+    {
+      channelId,
+      name,
+      content,
+      embeds,
+      filters,
+    }: UpdateDiscordChannelConnectionInputDto,
+    @DiscordAccessToken() { access_token }: SessionAccessToken
+  ): Promise<UpdateDiscordChannelConnectionOutputDto> {
+    const createdConnection =
+      await this.feedConnectionsService.updateDiscordChannelConnection(
+        feed._id.toHexString(),
+        connection.id.toHexString(),
+        {
+          accessToken: access_token,
+          guildId: feed.guild,
+          updates: {
+            filters,
+            name,
+            details: {
+              channel: channelId
+                ? {
+                    id: channelId,
+                  }
+                : undefined,
+              embeds,
+              content,
+            },
+          },
+        }
+      );
 
     return {
       id: createdConnection.id.toHexString(),

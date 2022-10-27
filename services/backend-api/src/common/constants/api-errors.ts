@@ -9,6 +9,7 @@ export enum ApiErrorCode {
   FEED_REQUEST_INTERNAL_ERROR = "FEED_REQUEST_INTERNAL_ERROR",
   FEED_REQUEST_TOO_MANY_REQUESTS = "FEED_REQUEST_TOO_MANY_REQUESTS",
   FEED_REQUEST_UNAUTHORIZED = "FEED_REQUEST_UNAUTHORIZED",
+  FEED_CONNECTION_NOT_FOUND = "FEED_CONNECTION_NOT_FOUND",
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = "WEBHOOKS_MANAGE_MISSING_PERMISSIONS",
   WEBHOOKS_DISABLED = "WEBHOOKS_DISABLED",
   WEBHOOK_MISSING = "WEBHOOK_MISSING",
@@ -18,6 +19,7 @@ export enum ApiErrorCode {
   FEED_USER_MISSING_MANAGE_GUILD = "FEED_USER_MISSING_MANAGE_GUILD",
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
   BANNED_FEED = "BANNED_FEED",
+  DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
 }
 
 // Create a package for the frontend?
@@ -33,6 +35,7 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_REQUEST_INTERNAL_ERROR: "Request to feed failed (5xx code)",
   FEED_REQUEST_TOO_MANY_REQUESTS: "Request to feed failed (429 code)",
   FEED_REQUEST_UNAUTHORIZED: "Request to feed failed (401 code)",
+  FEED_CONNECTION_NOT_FOUND: "Feed connection was not found",
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS:
     "Bot is missing Manage Webhooks permission",
   WEBHOOKS_DISABLED: "Webhooks are not enabled",
@@ -45,4 +48,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_USER_MISSING_MANAGE_GUILD: "User is missing Manage Server permission",
   FEED_LIMIT_REACHED: "Feed limit reached",
   BANNED_FEED: "Feed is banned",
+  DISCORD_CHANNEL_NOT_OWNED_BY_GUILD:
+    "Channel is not owned by the current guild",
 };

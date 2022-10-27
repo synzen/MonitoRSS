@@ -19,6 +19,7 @@ import {
 import { FeedConnectionType } from "../feeds/constants";
 import { Types } from "mongoose";
 import {
+  DiscordChannelNotOwnedException,
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
@@ -62,6 +63,7 @@ describe("FeedConnectionsModule", () => {
     uncompiledModule.overrideProvider(FeedConnectionsService).useValue({
       createDiscordChannelConnection: jest.fn(),
       createDiscordWebhookConnection: jest.fn(),
+      updateDiscordChannelConnection: jest.fn(),
     });
 
     ({ app, setAccessToken } = await init());
@@ -228,6 +230,211 @@ describe("FeedConnectionsModule", () => {
       );
 
       expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("PATCH /discord-channels/:id", () => {
+    const validBody = {
+      name: "connection-name",
+    };
+    const connectionIdToUse = new Types.ObjectId();
+
+    beforeEach(async () => {
+      await feedModel.updateOne(
+        {
+          _id: createdFeed._id,
+        },
+        {
+          $set: {
+            connections: {
+              discordChannels: [
+                {
+                  id: connectionIdToUse,
+                  name: "name",
+                  details: {
+                    channel: {
+                      id: "channel-id",
+                    },
+                    embeds: [],
+                  },
+                },
+              ],
+            },
+          },
+        }
+      );
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 400 with the right error code if channel returns 403", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordChannelConnection")
+        .mockRejectedValue(new DiscordChannelPermissionsException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 with the right error code if channel does not exist", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordChannelConnection")
+        .mockRejectedValue(new MissingDiscordChannelException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.FEED_MISSING_CHANNEL,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 if input channel id does not match guild of feed", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordChannelConnection")
+        .mockRejectedValue(new DiscordChannelNotOwnedException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.DISCORD_CHANNEL_NOT_OWNED_BY_GUILD,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 with the right error code if user does not manage channel guild", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordChannelConnection")
+        .mockRejectedValue(new UserMissingManageGuildException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it("returns 400 with bad payload", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: {
+          channelId: {
+            id: "1",
+          },
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 404 if feed is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl.replace(
+          createdFeed._id.toHexString(),
+          new Types.ObjectId().toHexString()
+        )}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed connection is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${new Types.ObjectId()}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns the updated discord channel connection", async () => {
+      const connection = {
+        id: new Types.ObjectId(),
+        name: "name",
+        details: {
+          channel: {
+            id: "id",
+          },
+          embeds: [],
+          content: "content",
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordChannelConnection")
+        .mockResolvedValue(connection);
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        id: connection.id.toHexString(),
+        name: connection.name,
+        key: FeedConnectionType.DiscordChannel,
+        details: {
+          channel: {
+            id: connection.details.channel.id,
+          },
+          embeds: connection.details.embeds,
+          content: connection.details.content,
+        },
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
     });
   });
 
