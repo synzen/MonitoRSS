@@ -13,6 +13,7 @@ describe("FeedConnectionsController", () => {
     feedConnectionsDiscordWebhooksService = {
       createDiscordWebhookConnection: jest.fn(),
       updateDiscordWebhookConnection: jest.fn(),
+      deleteDiscordWebhookConnection: jest.fn(),
     } as never;
     controller = new FeedConnectionsDiscordWebhooksController(
       feedConnectionsDiscordWebhooksService
@@ -220,6 +221,50 @@ describe("FeedConnectionsController", () => {
           },
         },
       });
+    });
+  });
+
+  describe("deleteDiscordWebhookConnection", () => {
+    const feedId = new Types.ObjectId();
+    const connectionId = new Types.ObjectId();
+
+    it("deletes the discord webhook connection", async () => {
+      const deleteSpy = jest.spyOn(
+        feedConnectionsDiscordWebhooksService,
+        "deleteDiscordWebhookConnection"
+      );
+
+      await controller.deleteDiscordWebhookConnection({
+        feed: {
+          _id: feedId,
+        },
+        connection: {
+          id: connectionId,
+        },
+      } as never);
+
+      expect(deleteSpy).toHaveBeenCalledWith({
+        feedId: feedId.toHexString(),
+        connectionId: connectionId.toHexString(),
+      });
+    });
+
+    it("returns undefined", async () => {
+      jest.spyOn(
+        feedConnectionsDiscordWebhooksService,
+        "deleteDiscordWebhookConnection"
+      );
+
+      const result = await controller.deleteDiscordWebhookConnection({
+        feed: {
+          _id: feedId,
+        },
+        connection: {
+          id: connectionId,
+        },
+      } as never);
+
+      expect(result).toBeUndefined();
     });
   });
 });

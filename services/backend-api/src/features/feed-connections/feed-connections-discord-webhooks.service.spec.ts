@@ -338,4 +338,51 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
     });
   });
+
+  describe("deleteDiscordWebhookConnection", () => {
+    const connectionIdToUse = new Types.ObjectId().toHexString();
+    let createdFeed: Feed;
+    const guildId = "guild-id";
+
+    beforeEach(async () => {
+      createdFeed = await feedModel.create({
+        title: "my feed",
+        channel: "688445354513137784",
+        guild: guildId,
+        isFeedv2: true,
+        url: "url",
+        connections: {
+          discordWebhooks: [
+            {
+              id: connectionIdToUse,
+              name: "name",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              details: {
+                embeds: [],
+                webhook: {
+                  id: "old-webhook-id",
+                  token: "old-token",
+                  name: "old-webhook-name",
+                  iconUrl: "old-icon-url",
+                },
+                content: "old-content",
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it("deletes connection", async () => {
+      await service.deleteDiscordWebhookConnection({
+        feedId: createdFeed._id.toHexString(),
+        connectionId: connectionIdToUse,
+      });
+
+      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordWebhooks).toHaveLength(0);
+    });
+  });
 });

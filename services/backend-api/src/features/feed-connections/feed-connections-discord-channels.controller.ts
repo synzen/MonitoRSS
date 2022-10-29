@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Delete,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -126,6 +128,7 @@ export class FeedConnectionsDiscordChannelsController {
   }
 
   @Delete("/discord-channels/:connectionId")
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseFilters(DeleteDiscordChannelConnectionFilter)
   async deleteDiscordChannelConnection(
     @Param("feedId", GetFeedPipe, GetFeedDiscordChannelConnectionPipe)

@@ -63,6 +63,7 @@ describe("FeedConnectionsModule", () => {
       .useValue({
         createDiscordWebhookConnection: jest.fn(),
         updateDiscordWebhookConnection: jest.fn(),
+        deleteDiscordWebhookConnection: jest.fn(),
       });
 
     ({ app, setAccessToken } = await init());
@@ -462,6 +463,78 @@ describe("FeedConnectionsModule", () => {
       );
 
       expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
+  describe("DELETE /discord-webhooks/:connectionId", () => {
+    const connectionIdToUse = new Types.ObjectId();
+
+    beforeEach(async () => {
+      await feedModel.updateOne(
+        {
+          _id: createdFeed._id,
+        },
+        {
+          $set: {
+            connections: {
+              discordWebhooks: [
+                {
+                  id: connectionIdToUse,
+                  name: "name",
+                  details: {
+                    webhook: {
+                      id: "webhook-id",
+                    },
+                    embeds: [],
+                  },
+                },
+              ],
+            },
+          },
+        }
+      );
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl.replace(
+          createdFeed._id.toHexString(),
+          new Types.ObjectId().toHexString()
+        )}/discord-webhooks/${connectionIdToUse}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if connection is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-webhooks/${new Types.ObjectId()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 204 if connection is deleted", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NO_CONTENT);
     });
   });
 });

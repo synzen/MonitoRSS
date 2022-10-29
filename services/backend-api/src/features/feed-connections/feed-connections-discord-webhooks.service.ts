@@ -190,6 +190,27 @@ export class FeedConnectionsDiscordWebhooksService {
     return updatedConnection;
   }
 
+  async deleteDiscordWebhookConnection({
+    feedId,
+    connectionId,
+  }: {
+    feedId: string;
+    connectionId: string;
+  }) {
+    await this.feedModel.updateOne(
+      {
+        _id: feedId,
+      },
+      {
+        $pull: {
+          "connections.discordWebhooks": {
+            id: connectionId,
+          },
+        },
+      }
+    );
+  }
+
   private async assertDiscordWebhookCanBeUsed(
     id: string,
     guildId: string

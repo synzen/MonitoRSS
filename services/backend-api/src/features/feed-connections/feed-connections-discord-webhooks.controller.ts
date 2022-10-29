@@ -1,6 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -23,6 +26,7 @@ import {
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 import {
   AddDiscordWebhookConnectionFilter,
+  DeleteDiscordWebhookConnectionFilter,
   UpdateDiscordWebhookConnectionFilter,
 } from "./filters";
 import {
@@ -128,5 +132,18 @@ export class FeedConnectionsDiscordWebhooksController {
         },
       },
     };
+  }
+
+  @Delete("/discord-webhooks/:connectionId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseFilters(DeleteDiscordWebhookConnectionFilter)
+  async deleteDiscordWebhookConnection(
+    @Param("feedId", GetFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput
+  ): Promise<void> {
+    await this.service.deleteDiscordWebhookConnection({
+      connectionId: connection.id.toHexString(),
+      feedId: feed._id.toHexString(),
+    });
   }
 }
