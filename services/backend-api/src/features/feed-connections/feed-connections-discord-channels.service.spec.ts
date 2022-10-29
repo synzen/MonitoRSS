@@ -145,7 +145,13 @@ describe("FeedConnectionsDiscordChannelsService", () => {
                 channel: {
                   id: "channel-id",
                 },
-                embeds: [],
+                embeds: [
+                  {
+                    author: {
+                      name: "hi",
+                    },
+                  },
+                ],
               },
             },
           ],

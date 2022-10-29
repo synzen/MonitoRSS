@@ -11,6 +11,7 @@ import {
   UseGuards,
   ValidationPipe,
 } from "@nestjs/common";
+import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
@@ -104,7 +105,7 @@ export class FeedConnectionsDiscordWebhooksController {
           filters,
           details: {
             content,
-            embeds,
+            embeds: convertToFlatDiscordEmbeds(embeds),
             webhook: webhook
               ? {
                   id: webhook.id,

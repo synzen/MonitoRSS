@@ -3,6 +3,7 @@ import { FeedConnectionType } from "../feeds/constants";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 // eslint-disable-next-line max-len
 import { FeedConnectionsDiscordWebhooksController } from "./feed-connections-discord-webhooks.controller";
+import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
 
 describe("FeedConnectionsController", () => {
   let feedConnectionsDiscordWebhooksService: FeedConnectionsDiscordWebhooksService;
@@ -217,6 +218,122 @@ describe("FeedConnectionsController", () => {
           details: {
             content: undefined,
             embeds: undefined,
+            webhook: undefined,
+          },
+        },
+      });
+    });
+
+    it("flattens the input embed before passing it to the service", async () => {
+      const name = "name";
+      const feedId = new Types.ObjectId();
+      const connectionId = new Types.ObjectId();
+      const guildId = "guildId";
+      const connection = {
+        id: connectionId,
+        name,
+        filters: {
+          expression: {},
+        },
+        details: {
+          type: FeedConnectionType.DiscordWebhook,
+          webhook: {
+            id: "id",
+            name: "name",
+            iconUrl: "iconurl",
+            token: "token",
+          },
+          embeds: [],
+          content: "content",
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updateSpy = jest
+        .spyOn(
+          feedConnectionsDiscordWebhooksService,
+          "updateDiscordWebhookConnection"
+        )
+        .mockResolvedValue(connection);
+
+      await controller.updateDiscordWebhookConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+          },
+        } as never,
+        {
+          embeds: [
+            {
+              title: "title",
+              description: "description",
+              url: "url",
+              color: "0",
+              timestamp: "now",
+              footer: {
+                text: "footerText",
+                iconUrl: "footerIconUrl",
+              },
+              image: {
+                url: "imageUrl",
+              },
+              thumbnail: {
+                url: "thumbnailUrl",
+              },
+              author: {
+                name: "authorName",
+                iconUrl: "authorIconUrl",
+                url: "authorUrl",
+              },
+              fields: [
+                {
+                  name: "fieldName",
+                  value: "fieldValue",
+                  inline: true,
+                },
+              ],
+            },
+          ],
+        }
+      );
+
+      const expectedEmbed: FeedEmbed = {
+        title: "title",
+        description: "description",
+        url: "url",
+        color: "0",
+        timestamp: "now",
+        footerText: "footerText",
+        footerIconURL: "footerIconUrl",
+        imageURL: "imageUrl",
+        thumbnailURL: "thumbnailUrl",
+        authorName: "authorName",
+        authorIconURL: "authorIconUrl",
+        authorURL: "authorUrl",
+        fields: [
+          {
+            name: "fieldName",
+            value: "fieldValue",
+            inline: true,
+          },
+        ],
+      };
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        feedId: feedId.toHexString(),
+        connectionId: connectionId.toHexString(),
+        guildId,
+        updates: {
+          name: undefined,
+          filters: undefined,
+          details: {
+            content: undefined,
+            embeds: [expectedEmbed],
             webhook: undefined,
           },
         },

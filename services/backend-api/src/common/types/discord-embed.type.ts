@@ -14,7 +14,7 @@ class DiscordEmbedFooter {
 
   @IsString()
   @IsOptional()
-  icon_url?: string;
+  iconUrl?: string;
 }
 
 class DiscordEmbedAuthor {
@@ -27,7 +27,7 @@ class DiscordEmbedAuthor {
 
   @IsString()
   @IsOptional()
-  icon_url?: string;
+  iconUrl?: string;
 }
 
 class DiscordEmbedThumbnail {
