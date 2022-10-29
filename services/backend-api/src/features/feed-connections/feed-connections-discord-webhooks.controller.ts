@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Param,
+  Patch,
   Post,
   UseFilters,
   UseGuards,
@@ -16,9 +17,18 @@ import { DetailedFeed } from "../feeds/types/detailed-feed.type";
 import {
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
+  UpdateDiscordWebhookConnectionInputDto,
+  UpdateDiscordWebhookConnectionOutputDto,
 } from "./dto";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
-import { AddDiscordWebhookConnectionFilter } from "./filters";
+import {
+  AddDiscordWebhookConnectionFilter,
+  UpdateDiscordWebhookConnectionFilter,
+} from "./filters";
+import {
+  GetFeedDiscordWebhookConnectionPipe,
+  GetFeedDiscordWebhookConnectionPipeOutput,
+} from "./pipes";
 
 @Controller("feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
@@ -26,6 +36,7 @@ export class FeedConnectionsDiscordWebhooksController {
   constructor(
     private readonly service: FeedConnectionsDiscordWebhooksService
   ) {}
+
   @Post("/discord-webhooks")
   @UseFilters(AddDiscordWebhookConnectionFilter)
   async createDiscordWebhookConnection(
@@ -60,6 +71,60 @@ export class FeedConnectionsDiscordWebhooksController {
           id: createdConnection.details.webhook.id,
           iconUrl: createdConnection.details.webhook.iconUrl,
           name: createdConnection.details.webhook.name,
+        },
+      },
+    };
+  }
+
+  @Patch("/discord-webhooks/:connectionId")
+  @UseFilters(UpdateDiscordWebhookConnectionFilter)
+  async updateDiscordWebhookConnection(
+    @Param("feedId", GetFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
+    @Body(ValidationPipe)
+    {
+      content,
+      embeds,
+      filters,
+      name,
+      webhook,
+    }: UpdateDiscordWebhookConnectionInputDto
+  ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
+    const updatedConnection = await this.service.updateDiscordWebhookConnection(
+      {
+        connectionId: connection.id.toHexString(),
+        feedId: feed._id.toHexString(),
+        guildId: feed.guild,
+        updates: {
+          name,
+          filters,
+          details: {
+            content,
+            embeds,
+            webhook: webhook
+              ? {
+                  id: webhook.id,
+                  iconUrl: webhook.iconUrl,
+                  name: webhook.name,
+                }
+              : undefined,
+          },
+        },
+      }
+    );
+
+    return {
+      id: updatedConnection.id.toHexString(),
+      name: updatedConnection.name,
+      key: FeedConnectionType.DiscordWebhook,
+      filters: updatedConnection.filters,
+      details: {
+        embeds: updatedConnection.details.embeds,
+        content: updatedConnection.details.content,
+        webhook: {
+          id: updatedConnection.details.webhook.id,
+          iconUrl: updatedConnection.details.webhook.iconUrl,
+          name: updatedConnection.details.webhook.name,
         },
       },
     };

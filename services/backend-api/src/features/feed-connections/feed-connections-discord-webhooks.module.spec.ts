@@ -61,9 +61,8 @@ describe("FeedConnectionsModule", () => {
     uncompiledModule
       .overrideProvider(FeedConnectionsDiscordWebhooksService)
       .useValue({
-        createDiscordChannelConnection: jest.fn(),
         createDiscordWebhookConnection: jest.fn(),
-        updateDiscordChannelConnection: jest.fn(),
+        updateDiscordWebhookConnection: jest.fn(),
       });
 
     ({ app, setAccessToken } = await init());
@@ -269,6 +268,200 @@ describe("FeedConnectionsModule", () => {
       );
 
       expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("PATCH /discord-webhooks/:connectionId", () => {
+    const validBody = {
+      name: "connection-name",
+      webhook: {
+        id: "webhook-id",
+        iconUrl: "icon-url",
+        name: "webhook-name",
+      },
+    };
+    const connectionIdToUse = new Types.ObjectId();
+
+    beforeEach(async () => {
+      await feedModel.updateOne(
+        {
+          _id: createdFeed._id,
+        },
+        {
+          $set: {
+            connections: {
+              discordWebhooks: [
+                {
+                  id: connectionIdToUse,
+                  name: "name",
+                  details: {
+                    webhook: {
+                      id: "webhook-id",
+                    },
+                    embeds: [],
+                  },
+                },
+              ],
+            },
+          },
+        }
+      );
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        payload: validBody,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 400 with the right error code if webhook does not exist", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordWebhookConnection")
+        .mockRejectedValue(new DiscordWebhookNonexistentException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.WEBHOOK_MISSING,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 with the right error code if webhook is an invalid type", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordWebhookConnection")
+        .mockRejectedValue(new DiscordWebhookInvalidTypeException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.WEBHOOK_INVALID,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 with the right error code if webhook is not owned by guild", async () => {
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordWebhookConnection")
+        .mockRejectedValue(new DiscordWebhookNotOwnedException());
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          code: ApiErrorCode.WEBHOOK_MISSING,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 with bad payload", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        payload: {
+          channelId: "1",
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 404 if feed is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl.replace(
+          createdFeed._id.toHexString(),
+          new Types.ObjectId().toHexString()
+        )}/discord-webhooks`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns the updated discord webhook connection", async () => {
+      const connection = {
+        id: new Types.ObjectId(),
+        name: "name",
+        filters: {
+          expression: {
+            foo: "bar",
+          },
+        },
+        details: {
+          embeds: [],
+          content: "content",
+          webhook: {
+            id: "id",
+            iconUrl: "iconUrl",
+            name: "name",
+            token: "token",
+          },
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest
+        .spyOn(feedConnectionsService, "updateDiscordWebhookConnection")
+        .mockResolvedValue(connection);
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          id: connection.id.toHexString(),
+          name: connection.name,
+          key: FeedConnectionType.DiscordWebhook,
+          filters: {
+            expression: {
+              foo: "bar",
+            },
+          },
+          details: {
+            embeds: connection.details.embeds,
+            content: connection.details.content,
+            webhook: {
+              id: connection.details.webhook.id,
+              iconUrl: connection.details.webhook.iconUrl,
+              name: connection.details.webhook.name,
+            },
+          },
+        })
+      );
+
+      expect(statusCode).toBe(HttpStatus.OK);
     });
   });
 });

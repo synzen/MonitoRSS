@@ -174,4 +174,168 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
     });
   });
+
+  describe("updateDiscordWebhookConnection", () => {
+    const connectionIdToUse = new Types.ObjectId().toHexString();
+    let createdFeed: Feed;
+    const guildId = "guild-id";
+    const updateDetails = {
+      filters: {
+        expression: {
+          foo: "new-filters",
+        },
+      },
+      name: "new-name",
+      details: {
+        embeds: [
+          {
+            title: "new-embed-title",
+          },
+        ],
+        webhook: {
+          id: "new-webhook-id",
+          iconUrl: "new-icon-url",
+          name: "new-webhook-name",
+          token: "new-token",
+        },
+        content: "new-content",
+      },
+    };
+
+    beforeEach(async () => {
+      createdFeed = await feedModel.create({
+        title: "my feed",
+        channel: "688445354513137784",
+        guild: guildId,
+        isFeedv2: true,
+        url: "url",
+        connections: {
+          discordWebhooks: [
+            {
+              id: connectionIdToUse,
+              name: "name",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              details: {
+                embeds: [],
+                webhook: {
+                  id: "old-webhook-id",
+                  token: "old-token",
+                  name: "old-webhook-name",
+                  iconUrl: "old-icon-url",
+                },
+                content: "old-content",
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it("updates new connection", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue({
+        token: "token",
+        guild_id: guildId,
+      });
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
+      discordAuthService.userManagesGuild.mockResolvedValue(true);
+
+      await service.updateDiscordWebhookConnection({
+        feedId: createdFeed._id.toHexString(),
+        connectionId: connectionIdToUse,
+        updates: updateDetails,
+        guildId,
+      });
+
+      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordWebhooks).toHaveLength(1);
+      expect(updatedFeed?.connections.discordWebhooks[0]).toMatchObject({
+        id: new Types.ObjectId(connectionIdToUse),
+        name: updateDetails.name,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+        filters: updateDetails.filters,
+        details: {
+          embeds: updateDetails.details.embeds,
+          webhook: {
+            id: updateDetails.details.webhook.id,
+            token: "token",
+            name: updateDetails.details.webhook.name,
+            iconUrl: updateDetails.details.webhook.iconUrl,
+          },
+          content: updateDetails.details.content,
+        },
+      });
+    });
+
+    it("throws an error if the webhook is not found", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue(null);
+
+      await expect(
+        service.updateDiscordWebhookConnection({
+          feedId: createdFeed._id.toHexString(),
+          connectionId: connectionIdToUse,
+          updates: updateDetails,
+          guildId,
+        })
+      ).rejects.toThrowError(DiscordWebhookNonexistentException);
+    });
+
+    it("throws an error if the webhook cannot be used by the bot", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue({
+        token: "token",
+      });
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(false);
+
+      await expect(
+        service.updateDiscordWebhookConnection({
+          feedId: createdFeed._id.toHexString(),
+          connectionId: connectionIdToUse,
+          updates: updateDetails,
+          guildId,
+        })
+      ).rejects.toThrowError(DiscordWebhookInvalidTypeException);
+    });
+
+    it("throws an error if webhook guild does not equal input", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue({
+        token: "token",
+        guild_id: guildId + "-other",
+      });
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
+
+      await expect(
+        service.updateDiscordWebhookConnection({
+          feedId: createdFeed._id.toHexString(),
+          connectionId: connectionIdToUse,
+          updates: updateDetails,
+          guildId,
+        })
+      ).rejects.toThrowError(DiscordWebhookNotOwnedException);
+    });
+
+    it("throws an error if the user does not manage the guild", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue({
+        token: "token",
+        guild_id: guildId,
+      });
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
+      discordAuthService.userManagesGuild.mockResolvedValue(false);
+
+      await expect(
+        service.updateDiscordWebhookConnection({
+          feedId: createdFeed._id.toHexString(),
+          connectionId: connectionIdToUse,
+          updates: updateDetails,
+          guildId,
+        })
+      ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
+    });
+  });
 });
