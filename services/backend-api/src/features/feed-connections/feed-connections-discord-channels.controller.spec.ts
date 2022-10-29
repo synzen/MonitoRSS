@@ -12,7 +12,8 @@ describe("FeedConnectionsDiscordChannelsController", () => {
     jest.resetAllMocks();
     feedConnectionsDiscordChannelsService = {
       createDiscordChannelConnection: jest.fn(),
-      createDiscordWebhookConnection: jest.fn(),
+      updateDiscordChannelConnection: jest.fn(),
+      deleteConnection: jest.fn(),
     } as never;
     controller = new FeedConnectionsDiscordChannelsController(
       feedConnectionsDiscordChannelsService
@@ -77,6 +78,35 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           content: connection.details.content,
         },
       });
+    });
+  });
+
+  describe("deleteDiscordChannelConnection", () => {
+    const feedId = new Types.ObjectId();
+    const connectionId = new Types.ObjectId();
+    const pipeOutput = {
+      feed: {
+        _id: feedId,
+      },
+      connection: {
+        id: connectionId,
+      },
+    };
+
+    it("calls the service to delete the connection", async () => {
+      await controller.deleteDiscordChannelConnection(pipeOutput as never);
+
+      expect(
+        feedConnectionsDiscordChannelsService.deleteConnection
+      ).toHaveBeenCalledWith(feedId.toHexString(), connectionId.toHexString());
+    });
+
+    it("returns undefined", async () => {
+      const result = await controller.deleteDiscordChannelConnection(
+        pipeOutput as never
+      );
+
+      expect(result).toBeUndefined();
     });
   });
 });

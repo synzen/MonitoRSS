@@ -147,6 +147,21 @@ export class FeedConnectionsDiscordChannelsService {
     return updatedConnection;
   }
 
+  async deleteConnection(feedId: string, connectionId: string) {
+    await this.feedModel.updateOne(
+      {
+        _id: feedId,
+      },
+      {
+        $pull: {
+          "connections.discordChannels": {
+            id: connectionId,
+          },
+        },
+      }
+    );
+  }
+
   private async assertDiscordChannelCanBeUsed(
     accessToken: string,
     channelId: string,

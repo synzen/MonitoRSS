@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Param,
   Patch,
   Post,
@@ -23,6 +24,7 @@ import {
 import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 import {
   AddDiscordChannelConnectionFilter,
+  DeleteDiscordChannelConnectionFilter,
   UpdateDiscordChannelConnectionFilter,
 } from "./filters";
 import {
@@ -121,5 +123,17 @@ export class FeedConnectionsDiscordChannelsController {
         content: createdConnection.details.content,
       },
     };
+  }
+
+  @Delete("/discord-channels/:connectionId")
+  @UseFilters(DeleteDiscordChannelConnectionFilter)
+  async deleteDiscordChannelConnection(
+    @Param("feedId", GetFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput
+  ): Promise<void> {
+    await this.service.deleteConnection(
+      feed._id.toHexString(),
+      connection.id.toHexString()
+    );
   }
 }

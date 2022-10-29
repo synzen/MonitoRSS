@@ -61,8 +61,8 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       .overrideProvider(FeedConnectionsDiscordChannelsService)
       .useValue({
         createDiscordChannelConnection: jest.fn(),
-        createDiscordWebhookConnection: jest.fn(),
         updateDiscordChannelConnection: jest.fn(),
+        deleteConnection: jest.fn(),
       });
 
     ({ app, setAccessToken } = await init());
@@ -434,6 +434,78 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       });
 
       expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
+  describe("DELETE /discord-channels/:id", () => {
+    const connectionIdToUse = new Types.ObjectId();
+
+    beforeEach(async () => {
+      await feedModel.updateOne(
+        {
+          _id: createdFeed._id,
+        },
+        {
+          $set: {
+            connections: {
+              discordChannels: [
+                {
+                  id: connectionIdToUse,
+                  name: "name",
+                  details: {
+                    channel: {
+                      id: "channel-id",
+                    },
+                    embeds: [],
+                  },
+                },
+              ],
+            },
+          },
+        }
+      );
+    });
+
+    it("returns 401 if not authenticated", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if the connection does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-channels/${new Types.ObjectId()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if the feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl.replace(
+          createdFeed._id.toHexString(),
+          new Types.ObjectId().toHexString()
+        )}/discord-channels/${connectionIdToUse}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 204 and deletes the connection", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NO_CONTENT);
     });
   });
 });

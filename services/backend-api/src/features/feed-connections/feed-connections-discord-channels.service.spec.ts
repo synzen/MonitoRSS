@@ -223,4 +223,41 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       ).rejects.toThrow(DiscordChannelNotOwnedException);
     });
   });
+
+  describe("deleteConnection", () => {
+    it("removes the discord channel connection by id", async () => {
+      const guildId = "guild-id";
+      const connectionIdToUse = new Types.ObjectId();
+      const createdFeed = await feedModel.create({
+        title: "my feed",
+        channel: "688445354513137784",
+        guild: guildId,
+        isFeedv2: true,
+        url: "url",
+        connections: {
+          discordChannels: [
+            {
+              id: connectionIdToUse,
+              name: "name",
+              details: {
+                channel: {
+                  id: "channel-id",
+                },
+                embeds: [],
+              },
+            },
+          ],
+        },
+      });
+
+      await service.deleteConnection(
+        createdFeed._id.toHexString(),
+        connectionIdToUse.toHexString()
+      );
+
+      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordChannels).toHaveLength(0);
+    });
+  });
 });
