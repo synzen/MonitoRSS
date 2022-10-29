@@ -17,15 +17,12 @@ import { DetailedFeed } from "../feeds/types/detailed-feed.type";
 import {
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
-  CreateDiscordWebhookConnectionInputDto,
-  CreateDiscordWebhookConnectionOutputDto,
   UpdateDiscordChannelConnectionInputDto,
   UpdateDiscordChannelConnectionOutputDto,
 } from "./dto";
-import { FeedConnectionsService } from "./feed-connections.service";
+import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 import {
   AddDiscordChannelConnectionFilter,
-  AddDiscordWebhookConnectionFilter,
   UpdateDiscordChannelConnectionFilter,
 } from "./filters";
 import {
@@ -35,9 +32,9 @@ import {
 
 @Controller("feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
-export class FeedsConnectionsController {
+export class FeedConnectionsDiscordChannelsController {
   constructor(
-    private readonly feedConnectionsService: FeedConnectionsService
+    private readonly service: FeedConnectionsDiscordChannelsService
   ) {}
 
   // TODO: Make sure user owns feed
@@ -49,14 +46,15 @@ export class FeedsConnectionsController {
     { channelId, name }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<CreateDiscordChannelConnectionOutputDto> {
-    const createdConnection =
-      await this.feedConnectionsService.createDiscordChannelConnection({
+    const createdConnection = await this.service.createDiscordChannelConnection(
+      {
         feedId: feed._id.toHexString(),
         name,
         channelId,
         userAccessToken: access_token,
         guildId: feed.guild,
-      });
+      }
+    );
 
     return {
       id: createdConnection.id.toHexString(),
@@ -88,28 +86,27 @@ export class FeedsConnectionsController {
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
-    const createdConnection =
-      await this.feedConnectionsService.updateDiscordChannelConnection(
-        feed._id.toHexString(),
-        connection.id.toHexString(),
-        {
-          accessToken: access_token,
-          guildId: feed.guild,
-          updates: {
-            filters,
-            name,
-            details: {
-              channel: channelId
-                ? {
-                    id: channelId,
-                  }
-                : undefined,
-              embeds,
-              content,
-            },
+    const createdConnection = await this.service.updateDiscordChannelConnection(
+      feed._id.toHexString(),
+      connection.id.toHexString(),
+      {
+        accessToken: access_token,
+        guildId: feed.guild,
+        updates: {
+          filters,
+          name,
+          details: {
+            channel: channelId
+              ? {
+                  id: channelId,
+                }
+              : undefined,
+            embeds,
+            content,
           },
-        }
-      );
+        },
+      }
+    );
 
     return {
       id: createdConnection.id.toHexString(),
@@ -122,44 +119,6 @@ export class FeedsConnectionsController {
         },
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
-      },
-    };
-  }
-
-  @Post("/discord-webhooks")
-  @UseFilters(AddDiscordWebhookConnectionFilter)
-  async createDiscordWebhookConnection(
-    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
-    @Body(ValidationPipe)
-    { name, webhook }: CreateDiscordWebhookConnectionInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken
-  ): Promise<CreateDiscordWebhookConnectionOutputDto> {
-    const createdConnection =
-      await this.feedConnectionsService.createDiscordWebhookConnection({
-        accessToken: access_token,
-        feedId: feed._id.toHexString(),
-        name,
-        webhook: {
-          id: webhook.id,
-          iconUrl: webhook.iconUrl,
-          name: webhook.name,
-        },
-        guildId: feed.guild,
-      });
-
-    return {
-      id: createdConnection.id.toHexString(),
-      name: createdConnection.name,
-      key: FeedConnectionType.DiscordWebhook,
-      filters: createdConnection.filters,
-      details: {
-        embeds: createdConnection.details.embeds,
-        content: createdConnection.details.content,
-        webhook: {
-          id: createdConnection.details.webhook.id,
-          iconUrl: createdConnection.details.webhook.iconUrl,
-          name: createdConnection.details.webhook.name,
-        },
       },
     };
   }

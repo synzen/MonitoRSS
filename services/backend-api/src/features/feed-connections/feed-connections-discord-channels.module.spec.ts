@@ -6,11 +6,9 @@ import {
 } from "../../utils/endpoint-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
-import { FeedConnectionsModule } from "./feed-connections.module";
 import { getModelToken } from "@nestjs/mongoose";
 import { ApiErrorCode } from "../../common/constants/api-errors";
 import { HttpStatus } from "@nestjs/common";
-import { FeedConnectionsService } from "./feed-connections.service";
 import { UserMissingManageGuildException } from "../feeds/exceptions";
 import {
   DiscordChannelPermissionsException,
@@ -18,17 +16,13 @@ import {
 } from "./exceptions";
 import { FeedConnectionType } from "../feeds/constants";
 import { Types } from "mongoose";
-import {
-  DiscordChannelNotOwnedException,
-  DiscordWebhookInvalidTypeException,
-  DiscordWebhookMissingUserPermException,
-  DiscordWebhookNonexistentException,
-  DiscordWebhookNotOwnedException,
-} from "../../common/exceptions";
+import { DiscordChannelNotOwnedException } from "../../common/exceptions";
+import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
+import { FeedConnectionsDiscordChannelsModule } from "./feed-connections-discord-channels.module";
 
 jest.mock("../../utils/logger");
 
-describe("FeedConnectionsModule", () => {
+describe("FeedConnectionsDiscordChannelsModule", () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
   let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
@@ -39,7 +33,7 @@ describe("FeedConnectionsModule", () => {
   };
   let createdFeed: Feed;
   let baseApiUrl: string;
-  let feedConnectionsService: FeedConnectionsService;
+  let feedConnectionsService: FeedConnectionsDiscordChannelsService;
 
   beforeEach(async () => {
     [createdFeed] = await feedModel.create([
@@ -57,14 +51,19 @@ describe("FeedConnectionsModule", () => {
 
   beforeAll(async () => {
     const { init, uncompiledModule } = setupEndpointTests({
-      imports: [FeedConnectionsModule, MongooseTestModule.forRoot()],
+      imports: [
+        FeedConnectionsDiscordChannelsModule,
+        MongooseTestModule.forRoot(),
+      ],
     });
 
-    uncompiledModule.overrideProvider(FeedConnectionsService).useValue({
-      createDiscordChannelConnection: jest.fn(),
-      createDiscordWebhookConnection: jest.fn(),
-      updateDiscordChannelConnection: jest.fn(),
-    });
+    uncompiledModule
+      .overrideProvider(FeedConnectionsDiscordChannelsService)
+      .useValue({
+        createDiscordChannelConnection: jest.fn(),
+        createDiscordWebhookConnection: jest.fn(),
+        updateDiscordChannelConnection: jest.fn(),
+      });
 
     ({ app, setAccessToken } = await init());
 
@@ -73,7 +72,7 @@ describe("FeedConnectionsModule", () => {
     } as Session["accessToken"]);
 
     feedModel = app.get<FeedModel>(getModelToken(Feed.name));
-    feedConnectionsService = app.get(FeedConnectionsService);
+    feedConnectionsService = app.get(FeedConnectionsDiscordChannelsService);
   });
 
   afterEach(async () => {
@@ -435,194 +434,6 @@ describe("FeedConnectionsModule", () => {
       });
 
       expect(statusCode).toBe(HttpStatus.OK);
-    });
-  });
-
-  describe("POST /discord-webhooks", () => {
-    const validBody = {
-      name: "connection-name",
-      webhook: {
-        id: "webhook-id",
-        iconUrl: "icon-url",
-        name: "webhook-name",
-      },
-    };
-
-    it("returns 401 if not logged in with discord", async () => {
-      const { statusCode } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-      });
-
-      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
-    });
-
-    it("returns 400 with the right error code if webhook does not exist", async () => {
-      jest
-        .spyOn(feedConnectionsService, "createDiscordWebhookConnection")
-        .mockRejectedValue(new DiscordWebhookNonexistentException());
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.WEBHOOK_MISSING,
-        })
-      );
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 400 with the right error code if webhook is an invalid type", async () => {
-      jest
-        .spyOn(feedConnectionsService, "createDiscordWebhookConnection")
-        .mockRejectedValue(new DiscordWebhookInvalidTypeException());
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.WEBHOOK_INVALID,
-        })
-      );
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 400 with the right error code if webhook is not owned by guild", async () => {
-      jest
-        .spyOn(feedConnectionsService, "createDiscordWebhookConnection")
-        .mockRejectedValue(new DiscordWebhookNotOwnedException());
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.WEBHOOK_MISSING,
-        })
-      );
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 403 with the right code if user does not manage guild of webhook", async () => {
-      jest
-        .spyOn(feedConnectionsService, "createDiscordWebhookConnection")
-        .mockRejectedValue(new DiscordWebhookMissingUserPermException());
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
-        })
-      );
-
-      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
-    });
-
-    it("returns 400 with bad payload", async () => {
-      const { statusCode } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: {
-          channelId: "1",
-        },
-        ...standardRequestOptions,
-      });
-
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 404 if feed is not found", async () => {
-      const { statusCode } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl.replace(
-          createdFeed._id.toHexString(),
-          new Types.ObjectId().toHexString()
-        )}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
-    });
-
-    it("returns the created discord webhook connection", async () => {
-      const connection = {
-        id: new Types.ObjectId(),
-        name: "name",
-        filters: {
-          expression: {
-            foo: "bar",
-          },
-        },
-        details: {
-          embeds: [],
-          content: "content",
-          webhook: {
-            id: "id",
-            iconUrl: "iconUrl",
-            name: "name",
-            token: "token",
-          },
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      jest
-        .spyOn(feedConnectionsService, "createDiscordWebhookConnection")
-        .mockResolvedValue(connection);
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          id: connection.id.toHexString(),
-          name: connection.name,
-          key: FeedConnectionType.DiscordWebhook,
-          filters: {
-            expression: {
-              foo: "bar",
-            },
-          },
-          details: {
-            embeds: connection.details.embeds,
-            content: connection.details.content,
-            webhook: {
-              id: connection.details.webhook.id,
-              iconUrl: connection.details.webhook.iconUrl,
-              name: connection.details.webhook.name,
-            },
-          },
-        })
-      );
-
-      expect(statusCode).toBe(HttpStatus.CREATED);
     });
   });
 });

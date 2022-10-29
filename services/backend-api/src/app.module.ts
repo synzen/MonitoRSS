@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { DynamicModule, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { MongooseModule } from "@nestjs/mongoose";
@@ -16,7 +17,8 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emitter.module";
 import { FailedUrlHandlerModule } from "./features/failed-url-handler/failed-url-handler.module";
-import { FeedConnectionsModule } from "./features/feed-connections/feed-connections.module";
+import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connections/feed-connections-discord-channels.module";
+import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
 
 @Module({
   imports: [
@@ -29,7 +31,8 @@ import { FeedConnectionsModule } from "./features/feed-connections/feed-connecti
     ScheduleHandlerModule,
     ScheduleEmitterModule,
     FailedUrlHandlerModule,
-    FeedConnectionsModule,
+    FeedConnectionsDiscordChannelsModule,
+    FeedConnectionsDiscordWebhooksModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
     }),
