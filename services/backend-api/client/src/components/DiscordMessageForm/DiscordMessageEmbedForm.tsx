@@ -179,7 +179,7 @@ export const DiscordMessageEmbedForm = ({
               <FormControl
                 isInvalid={!!titleError}
               >
-                <FormLabel variant="inline">Title</FormLabel>
+                <FormLabel variant="inline">Text</FormLabel>
                 <Controller
                   name={`embeds.${index}.title`}
                   control={control}

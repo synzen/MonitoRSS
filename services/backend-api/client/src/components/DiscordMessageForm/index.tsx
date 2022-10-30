@@ -11,6 +11,7 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  Text,
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useState } from 'react';
@@ -38,8 +39,10 @@ export const DiscordMessageForm = ({
   defaultValues,
   onClickSave,
 }: Props) => {
+  const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
+
   const { t } = useTranslation();
-  const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultValues?.embeds?.length ?? 0);
+  const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
 
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
@@ -67,10 +70,35 @@ export const DiscordMessageForm = ({
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
     try {
-      await onClickSave(formData);
+      const embedsWithoutEmptyObjects = formData.embeds?.map((embed) => {
+        const newEmbed = { ...embed };
+
+        if (!newEmbed.author?.name) {
+          newEmbed.author = null;
+        }
+
+        if (!newEmbed.footer?.text) {
+          newEmbed.footer = null;
+        }
+
+        if (!newEmbed.thumbnail?.url) {
+          newEmbed.thumbnail = null;
+        }
+
+        if (!newEmbed.image?.url) {
+          newEmbed.image = null;
+        }
+
+        return newEmbed;
+      });
+
+      await onClickSave({
+        content: formData.content,
+        embeds: embedsWithoutEmptyObjects,
+      });
       reset(formData);
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t('common.errors.failedToSave'), err as Error);
     }
   };
 
@@ -97,6 +125,9 @@ export const DiscordMessageForm = ({
         <Stack spacing={16}>
           <Stack spacing={4}>
             <Heading size="md">Text</Heading>
+            <Text>
+              {t('components.discordMessageForm.textSectionDescription')}
+            </Text>
             <DiscordMessageContentForm
               control={control}
               errors={errors}
@@ -104,6 +135,9 @@ export const DiscordMessageForm = ({
           </Stack>
           <Stack spacing={4}>
             <Heading size="md">Embeds</Heading>
+            <Text>
+              {t('components.discordMessageForm.embedSectionDescription')}
+            </Text>
             <Tabs
               variant="soft-rounded"
               index={activeEmbedIndex}

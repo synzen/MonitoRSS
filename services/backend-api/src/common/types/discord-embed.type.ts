@@ -2,6 +2,7 @@ import { Type } from "class-transformer";
 import {
   IsArray,
   IsIn,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -10,6 +11,7 @@ import {
 
 class DiscordEmbedFooter {
   @IsString()
+  @IsNotEmpty()
   text: string;
 
   @IsString()
@@ -19,6 +21,7 @@ class DiscordEmbedFooter {
 
 class DiscordEmbedAuthor {
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsString()
@@ -32,19 +35,23 @@ class DiscordEmbedAuthor {
 
 class DiscordEmbedThumbnail {
   @IsString()
+  @IsNotEmpty()
   url: string;
 }
 
 class DiscordEmbedImage {
   @IsString()
+  @IsNotEmpty()
   url: string;
 }
 
 class DiscordEmbedField {
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsString()
+  @IsNotEmpty()
   value: string;
 
   @IsString()

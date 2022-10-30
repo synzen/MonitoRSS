@@ -97,23 +97,31 @@ export class GetFeedOutputDto {
           title: embed.title,
           description: embed.description,
           url: embed.url,
-          thumbnail: {
-            url: embed.thumbnailURL,
-          },
-          author: {
-            iconUrl: embed.authorIconURL,
-            name: embed.authorName,
-            url: embed.authorURL,
-          },
+          thumbnail: embed.thumbnailURL
+            ? {
+                url: embed.thumbnailURL,
+              }
+            : undefined,
+          author: embed.authorName
+            ? {
+                iconUrl: embed.authorIconURL,
+                name: embed.authorName,
+                url: embed.authorURL,
+              }
+            : undefined,
           fields: embed.fields || [],
-          color: embed.color,
-          footer: {
-            text: embed.footerText,
-            iconUrl: embed.footerIconURL,
-          },
-          image: {
-            url: embed.imageURL,
-          },
+          color: String(embed.color),
+          footer: embed.footerText
+            ? {
+                text: embed.footerText,
+                iconUrl: embed.footerIconURL,
+              }
+            : undefined,
+          image: embed.imageURL
+            ? {
+                url: embed.imageURL,
+              }
+            : undefined,
           timestamp: embed.timestamp as FeedEmbedTimestamp,
         })),
       },

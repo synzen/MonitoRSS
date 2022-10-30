@@ -1,11 +1,14 @@
 import {
   array,
-  InferType, number, object, string,
+  InferType, object, string,
 } from 'yup';
 
 export const discordMessageEmbedFormSchema = object().shape({
-  color: number().positive().max(16777215)
-    .typeError('Must be a positive number less than 16777216'),
+  color: string().test(
+    'Numbers',
+    'Must be a positive number less than 16777216',
+    (v) => !!v && /^\d+$/.test(v) && Number(v) < 16777216,
+  ),
   author: object({
     name: string().max(256),
     url: string().when('name', ([name], schema) => {
@@ -22,7 +25,7 @@ export const discordMessageEmbedFormSchema = object().shape({
 
       return schema;
     }),
-  }).optional(),
+  }).optional().nullable(),
   title: string().max(256),
   url: string().when('title', ([title], schema) => {
     if (!title) {
@@ -34,10 +37,10 @@ export const discordMessageEmbedFormSchema = object().shape({
   description: string().max(4096),
   thumbnail: object({
     url: string(),
-  }).optional(),
+  }).optional().nullable(),
   image: object({
     url: string(),
-  }).optional(),
+  }).optional().nullable(),
   footer: object({
     text: string().max(2048),
     iconUrl: string().when('text', ([text], schema) => {
@@ -47,7 +50,7 @@ export const discordMessageEmbedFormSchema = object().shape({
 
       return schema;
     }),
-  }).optional(),
+  }).optional().nullable(),
 });
 
 export const discordMessageFormSchema = object({

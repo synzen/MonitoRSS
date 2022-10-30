@@ -352,8 +352,12 @@ export class FeedsService {
       updateObject.$set.pcomparisons = strippedUpdateObject.pcomparisons;
     }
 
-    if (strippedUpdateObject.embeds) {
-      updateObject.$set.embeds = strippedUpdateObject.embeds;
+    const cleanedEmbeds = strippedUpdateObject.embeds
+      ?.map((obj) => _.omitBy(obj, _.isUndefined))
+      .filter((obj) => Object.keys(obj).length > 0);
+
+    if (Array.isArray(cleanedEmbeds)) {
+      updateObject.$set.embeds = cleanedEmbeds;
     }
 
     if (strippedUpdateObject.channelId) {

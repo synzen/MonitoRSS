@@ -22,7 +22,29 @@ export interface UpdateFeedInput {
     directSubscribers?: boolean;
     splitMessage?: boolean;
     ncomparisons?: string[]
-    pcomparisons?: string[]
+    pcomparisons?: string[];
+    embeds?: Array<{
+      title?: string
+      description?: string
+      url?: string
+      color?: string
+      footer?: {
+        text?: string
+        iconUrl?: string
+      } | null
+      author?: {
+        name?: string
+        url?: string
+        iconUrl?: string
+      } | null
+      thumbnail?: {
+        url?: string
+      } | null
+      image?: {
+        url?: string
+      } | null
+      timestamp?: 'now' | 'article'
+    }>
   }
 }
 

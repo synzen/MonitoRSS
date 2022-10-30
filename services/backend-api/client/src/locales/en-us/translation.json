@@ -16,7 +16,8 @@
       "supporterRequiredAccess": "This server needs to be backed by a supporter to access this."
     },
     "success": {
-      "deleted": "Successfully deleted"
+      "deleted": "Successfully deleted",
+      "savedChanges": "Successfully saved changes"
     },
     "api": {
       "missingBotAccessTitle": "Missing Bot Access",
@@ -195,6 +196,10 @@
       "formCategoryDescription": "You may also use unlisted properties by typing. If it comes from the placeholder dump, prepend them with \"raw:\".",
       "formValueLabel": "Value",
       "formValueDescription": "Each new line indicates a new and separate filter. Modifiers would apply to the beginning to each line."
+    },
+    "discordMessageForm": {
+        "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
+        "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field)."
     },
     "sidebar": {
       "supporterUserTag": "Supporter",

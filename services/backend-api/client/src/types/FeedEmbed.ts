@@ -1,5 +1,5 @@
 import {
-  array, boolean, number, object, string,
+  array, boolean, object, string,
 } from 'yup';
 
 export const FeedEmbedSchema = object({
@@ -22,7 +22,7 @@ export const FeedEmbedSchema = object({
     url: string().optional(),
     iconUrl: string().optional(),
   }).optional(),
-  color: number().optional(),
+  color: string().optional(),
   fields: array(object({
     name: string(),
     value: string(),
