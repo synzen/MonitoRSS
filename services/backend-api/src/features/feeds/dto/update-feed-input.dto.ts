@@ -8,6 +8,7 @@ import {
   IsString,
   ValidateNested,
 } from "class-validator";
+import { DiscordEmbed } from "../../../common";
 
 class UpdateFeedInputFiltersDto {
   @IsString()
@@ -44,6 +45,12 @@ export class UpdateFeedInputDto {
   @IsString()
   @IsOptional()
   text?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordEmbed)
+  @IsOptional()
+  embeds?: DiscordEmbed[];
 
   @ValidateNested()
   @IsOptional()

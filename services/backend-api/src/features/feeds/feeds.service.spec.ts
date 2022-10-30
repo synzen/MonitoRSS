@@ -459,6 +459,44 @@ describe("FeedsService", () => {
   });
 
   describe("updateOne", () => {
+    describe("embeds", () => {
+      it("updates the embeds", async () => {
+        const feed = await feedModel.create(createTestFeed({}));
+
+        const updateInput: Feed["embeds"] = [
+          {
+            title: "title",
+            description: "description",
+            authorIconURL: "authorIconURL",
+            authorName: "authorName",
+            authorURL: "authorURL",
+            color: "color",
+            footerIconURL: "footerIconURL",
+            footerText: "footerText",
+            imageURL: "imageURL",
+            thumbnailURL: "thumbnailURL",
+            timestamp: "timestamp",
+            url: "url",
+            fields: [
+              {
+                name: "name",
+                value: "value",
+                inline: true,
+              },
+            ],
+          },
+        ];
+
+        await service.updateOne(feed._id, {
+          embeds: updateInput,
+        });
+
+        const updatedFeed = await feedModel.findById(feed._id).lean();
+
+        expect(updatedFeed?.embeds).toEqual(updateInput);
+      });
+    });
+
     describe("channelId", () => {
       it("throws missing channel permission if discord api error is thrown", async () => {
         const feed = await feedModel.create(createTestFeed());

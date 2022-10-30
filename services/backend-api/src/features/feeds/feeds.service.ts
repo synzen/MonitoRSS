@@ -50,6 +50,7 @@ interface UpdateFeedInput {
   formatTables?: boolean;
   splitMessage?: boolean;
   channelId?: string;
+  embeds?: Feed["embeds"];
   webhook?: {
     id?: string;
     name?: string;
@@ -349,6 +350,10 @@ export class FeedsService {
 
     if (strippedUpdateObject.pcomparisons) {
       updateObject.$set.pcomparisons = strippedUpdateObject.pcomparisons;
+    }
+
+    if (strippedUpdateObject.embeds) {
+      updateObject.$set.embeds = strippedUpdateObject.embeds;
     }
 
     if (strippedUpdateObject.channelId) {

@@ -48,6 +48,7 @@ import {
   WebhooksDisabledException,
 } from "./exceptions";
 import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
+import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -194,6 +195,7 @@ export class FeedsController {
         iconUrl: updateFeedInput.webhook?.iconUrl,
         token: foundWebhook?.token,
       },
+      embeds: convertToFlatDiscordEmbeds(updateFeedInput.embeds),
       checkDates: updateFeedInput.checkDates,
       imgLinksExistence: updateFeedInput.imgLinksExistence,
       imgPreviews: updateFeedInput.imgPreviews,
