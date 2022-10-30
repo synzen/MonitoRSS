@@ -15,22 +15,22 @@ export interface UpdateDiscordWebhookConnectionInput {
     content?: string | null
     filters?: Record<string, any> | null
     embeds?: Array<{
-      color?: number
+      color?: string
       author?: {
         name?: string
         url?: string
         iconUrl?: string
-      }
+      } | null
       thumbnail?: {
         url?: string
-      }
+      } | null
       image?: {
         url?: string
-      }
+      } | null
       footer?: {
         text?: string
         iconUrl?: string
-      }
+      } | null
       title?: string | null
       url?: string | null
       description?: string | null

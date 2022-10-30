@@ -11,7 +11,7 @@ export interface UpdateDiscordChannelConnectionInput {
     content?: string | null;
     filters?: Record<string, any> | null
     embeds?: Array<{
-      color?: number
+      color?: string
       authorTitle?: string | null
       authorUrl?: string | null
       authorIconUrl?: string | null
