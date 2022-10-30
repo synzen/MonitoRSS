@@ -7,8 +7,8 @@ export const discordMessageEmbedFormSchema = object().shape({
   color: string().test(
     'Numbers',
     'Must be a positive number less than 16777216',
-    (v) => !!v && /^\d+$/.test(v) && Number(v) < 16777216,
-  ),
+    (v) => !v || (!!v && /^\d+$/.test(v) && Number(v) < 16777216),
+  ).optional(),
   author: object({
     name: string().max(256),
     url: string().when('name', ([name], schema) => {
