@@ -11,8 +11,11 @@ class ArticleMessage {
    * @param {Object<string, any>} article
    * @param {import('./FeedData.js')} feedData
    * @param {boolean} [debug]
+   * @param {{
+   *  forceMultipleEmbeds?: boolean
+   * }}
    */
-  constructor (article, feedData, debug = false) {
+  constructor (article, feedData, debug = false, options) {
     this.config = getConfig()
     this.debug = debug
     this.article = article
@@ -20,21 +23,29 @@ class ArticleMessage {
     this.filteredFormats = feedData.filteredFormats
     this.sendFailed = 0
     this.parsedArticle = new Article(article, feedData)
+    this.forceMultipleEmbeds = options.forceMultipleEmbeds || false
   }
 
   /**
    * @param {import('./db/Feed.js')|Object<string, any>} feed
    * @param {Object<string, any>} article
    * @param {boolean} [debug]
+   * @param {{
+   *  forceMultipleEmbeds?: boolean
+   * }}
    */
-  static async create (feed, article, debug) {
+  static async create (feed, article, debug, options) {
     if (feed instanceof Feed) {
       const feedData = await FeedData.ofFeed(feed)
-      return new ArticleMessage(article, feedData, debug)
+      return new ArticleMessage(article, feedData, debug, {
+        forceMultipleEmbeds: options.forceMultipleEmbeds
+      })
     } else {
       const reconstructedFeed = new Feed(feed)
       const feedData = await FeedData.ofFeed(reconstructedFeed)
-      return new ArticleMessage(article, feedData, debug)
+      return new ArticleMessage(article, feedData, debug, {
+        forceMultipleEmbeds: options.forceMultipleEmbeds
+      })
     }
   }
 
@@ -281,6 +292,8 @@ class ArticleMessage {
       const webhookSettings = this.getWebhookNameAvatar(feedWebhook)
       options.username = webhookSettings.username
       options.avatarURL = webhookSettings.avatarURL
+    } else if (this.forceMultipleEmbeds) {
+      options.embeds = embeds
     } else {
       options.embed = embeds[0]
     }

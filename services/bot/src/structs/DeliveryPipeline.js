@@ -103,14 +103,16 @@ class DeliveryPipeline {
     return this.bot.channels.cache.get(feedObject.channel)
   }
 
-  async createArticleMessage (newArticle, debug) {
+  async createArticleMessage (newArticle, debug, withoutBot) {
     const { article, feedObject } = newArticle
-    return ArticleMessage.create(feedObject, article, debug)
+    return ArticleMessage.create(feedObject, article, debug, {
+      forceMultipleEmbeds: !!withoutBot
+    })
   }
 
   async deliver (newArticle, debug, withoutBot) {
     try {
-      const articleMessage = await this.createArticleMessage(newArticle, debug)
+      const articleMessage = await this.createArticleMessage(newArticle, debug, withoutBot)
       if (!articleMessage.passedFilters()) {
         return await this.handleArticleBlocked(newArticle)
       }
