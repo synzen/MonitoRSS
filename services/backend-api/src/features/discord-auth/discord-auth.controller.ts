@@ -8,8 +8,7 @@ import {
   Session,
 } from "@nestjs/common";
 import { DiscordAuthService } from "./discord-auth.service";
-import { FastifyReply } from "fastify";
-import { Session as FastifySession } from "@fastify/secure-session";
+import { FastifyReply, FastifyRequest } from "fastify";
 import { DiscordAccessToken } from "./decorators/DiscordAccessToken";
 import { SessionAccessToken } from "./types/SessionAccessToken.type";
 import { ConfigService } from "@nestjs/config";
@@ -31,7 +30,7 @@ export class DiscordAuthController {
   @Get("callback")
   async discordCallback(
     @Res({ passthrough: true }) res: FastifyReply,
-    @Session() session: FastifySession,
+    @Session() session: FastifyRequest['session'],
     @Query("code") code?: string,
     @Query("error") error?: string
   ) {
@@ -57,9 +56,9 @@ export class DiscordAuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
     @DiscordAccessToken() accessToken: SessionAccessToken,
-    @Session() session: FastifySession
+    @Session() session: FastifyRequest['session']
   ) {
     await this.discordAuthService.revokeToken(accessToken);
-    session.delete();
+    await session.destroy()
   }
 }

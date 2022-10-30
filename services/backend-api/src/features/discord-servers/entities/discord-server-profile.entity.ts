@@ -1,5 +1,5 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Document, Model } from "mongoose";
 
 @Schema({
   collection: "profiles",

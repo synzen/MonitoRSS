@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Catch, ArgumentsHost, HttpException } from "@nestjs/common";
 import { BaseExceptionFilter, HttpAdapterHost } from "@nestjs/core";
-import { Response } from "express";
+import { FastifyReply } from "fastify";
 import * as util from "util";
 import logger from "../../utils/logger";
 
@@ -22,7 +22,7 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
   private handleHttpException(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const statusCode = exception.getStatus();
-    const response = ctx.getResponse<Response>();
+    const response = ctx.getResponse<FastifyReply>();
     const { httpAdapter } = this.httpAdapterHost;
 
     const res = exception.getResponse() as Record<string, any>;

@@ -6,13 +6,13 @@ import {
 } from "@nestjs/platform-fastify";
 import { Test, TestingModule } from "@nestjs/testing";
 import { useContainer } from "class-validator";
-import SecureSessionPlugin from "@fastify/secure-session";
 import { stopMemoryServer } from "./mongoose-test.module";
 import crypto from "crypto";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { equal } from "assert";
 import { Session, SessionKey } from "../common";
 import testConfig from "../config/test-config";
+import session from '@fastify/session'
 
 let testingModule: TestingModule;
 let app: NestFastifyApplication;
@@ -38,11 +38,9 @@ export function setupEndpointTests(metadata: ModuleMetadata) {
       new FastifyAdapter()
     );
 
-    await app.register(SecureSessionPlugin, {
+    await app.register(session, {
       // Secret must be 32 bytes
       secret: crypto.randomBytes(32).toString("hex"),
-      // Salt must be 16 characters
-      salt: crypto.randomBytes(8).toString("hex"),
     });
 
     useContainer(app, { fallbackOnErrors: true });

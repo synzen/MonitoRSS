@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.75.0",
-    "@fastify/secure-session": "^5.2.0",
+    "@fastify/cookie": "8.3.0",
+    "@fastify/session": "10.0.2",
     "@fastify/static": "^6.5.0",
     "@grpc/grpc-js": "^1.6.7",
     "@grpc/proto-loader": "^0.6.9",
@@ -69,6 +70,7 @@
     "@types/lodash": "4.14.179",
     "@types/node": "16.0.0",
     "@types/node-fetch": "2.6.1",
+    "@types/qs": "6.9.7",
     "@types/supertest": "2.0.11",
     "@typescript-eslint/eslint-plugin": "4.28.2",
     "@typescript-eslint/parser": "4.28.2",
@@ -86,7 +88,7 @@
     "ts-loader": "9.2.3",
     "ts-node": "10.5.0",
     "tsconfig-paths": "3.10.1",
-    "typescript": "4.5.5"
+    "typescript": "4.8.4"
   },
   "jest": {
     "testTimeout": 20000,
