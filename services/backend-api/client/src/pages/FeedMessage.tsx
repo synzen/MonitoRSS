@@ -1,19 +1,38 @@
 import { Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DashboardContent } from '@/components';
+import { DashboardContent, DiscordMessageForm } from '@/components';
 import { FeedArticlesPlaceholders, useFeed } from '../features/feed';
 import RouteParams from '../types/RouteParams';
-import { TextForm } from '@/features/feed/components/TextForm';
+import { DiscordMessageFormData } from '../types/discord';
+import { useUpdateFeed } from '../features/feed/hooks/useUpdateFeed';
+import { notifySuccess } from '../utils/notifySuccess';
 
 const FeedMessage: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const {
-    feed, status: feedStatus, error: feedError, refetch,
+    feed, status: feedStatus, error: feedError,
   } = useFeed({
     feedId,
   });
+  const { mutateAsync } = useUpdateFeed();
   const { t } = useTranslation();
+
+  const onFormSaved = async (data: DiscordMessageFormData) => {
+    if (!feedId) {
+      return;
+    }
+
+    await mutateAsync({
+      feedId,
+      details: {
+        text: data.content,
+        embeds: data.embeds,
+      },
+    });
+
+    notifySuccess(t('common.success.savedChanges'));
+  };
 
   return (
     <Stack>
@@ -31,37 +50,14 @@ const FeedMessage: React.FC = () => {
             />
           </Stack>
           <Stack spacing="4">
-            <Heading size="md">{t('pages.message.textSectionTitle')}</Heading>
-            <Text>
-              {t('pages.message.textSectionDescription')}
-            </Text>
-            <TextForm
-              feedId={feedId as string}
-              text={feed?.text || ''}
-              onUpdated={refetch}
+            <DiscordMessageForm
+              defaultValues={{
+                content: feed?.text || '',
+                embeds: feed?.embeds,
+              }}
+              onClickSave={onFormSaved}
             />
           </Stack>
-          {/* <Stack spacing="4">
-            <Stack direction="row" justifyContent="space-between">
-              <Heading size="md">Embeds</Heading>
-              <ButtonGroup>
-                <IconButton
-                  aria-label="previous embed"
-                  icon={<ChevronLeftIcon fontSize="xl" />}
-                />
-                <Text
-                  alignSelf="center"
-                >
-                  1/3
-                </Text>
-                <IconButton
-                  aria-label="next embed"
-                  icon={<ChevronRightIcon fontSize="xl" />}
-                />
-              </ButtonGroup>
-            </Stack>
-            <EmbedForm />
-          </Stack> */}
         </Stack>
       </DashboardContent>
     </Stack>
