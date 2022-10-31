@@ -29,7 +29,7 @@
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/mapped-types": "*",
-    "@nestjs/platform-fastify": "^9.1.1",
+    "@nestjs/platform-fastify": "^9.1.6",
     "@synzen/discord-rest": "^0.7.0-beta.2",
     "aws-sdk": "^2.1221.0",
     "class-transformer": "^0.5.1",
