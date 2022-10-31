@@ -7,8 +7,7 @@ import {
   FastifyAdapter,
 } from "@nestjs/platform-fastify";
 import { useContainer } from "class-validator";
-import fastifyCookie from '@fastify/cookie'
-import fastifySession from "@fastify/session";
+import fastifySession from "@fastify/secure-session";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -40,10 +39,11 @@ async function bootstrap() {
 
   const config = app.get(ConfigService);
   const sessionSecret = config.get("SESSION_SECRET");
+  const sessionSalt = config.get("SESSION_SALT");
 
-  await app.register(fastifyCookie)
   await app.register(fastifySession, {
     secret: sessionSecret,
+    salt: sessionSalt,
     cookie: {
       path: "/",
       httpOnly: true,

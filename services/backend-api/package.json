@@ -26,7 +26,7 @@
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.75.0",
     "@fastify/cookie": "8.3.0",
-    "@fastify/session": "10.0.2",
+    "@fastify/secure-session": "5.2.0",
     "@fastify/static": "^6.5.0",
     "@grpc/grpc-js": "^1.6.7",
     "@grpc/proto-loader": "^0.6.9",

@@ -12,7 +12,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { equal } from "assert";
 import { Session, SessionKey } from "../common";
 import testConfig from "../config/test-config";
-import session from '@fastify/session'
+import session from '@fastify/secure-session'
 
 let testingModule: TestingModule;
 let app: NestFastifyApplication;
@@ -41,6 +41,7 @@ export function setupEndpointTests(metadata: ModuleMetadata) {
     await app.register(session, {
       // Secret must be 32 bytes
       secret: crypto.randomBytes(32).toString("hex"),
+      salt: crypto.randomBytes(16).toString("hex"),
     });
 
     useContainer(app, { fallbackOnErrors: true });

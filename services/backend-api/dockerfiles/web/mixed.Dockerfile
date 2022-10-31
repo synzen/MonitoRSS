@@ -24,7 +24,7 @@ RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
-FROM node:16-alpine AS prod
+FROM node:16-slim AS prod
 
 WORKDIR /usr/src/app
 
