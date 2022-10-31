@@ -24,6 +24,7 @@ RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
+# Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
 FROM node:16-slim AS prod
 
 WORKDIR /usr/src/app
