@@ -47,7 +47,7 @@ export const DiscordMessageForm = ({
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
     defaultValues,
-    mode: 'onChange',
+    mode: 'all',
   });
   const {
     handleSubmit,

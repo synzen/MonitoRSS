@@ -2,9 +2,10 @@ import {
   Box,
   FormControl,
   FormErrorMessage,
-  FormHelperText,
   FormLabel,
   Heading,
+  HStack,
+  IconButton,
   Input,
   Stack,
   StackDivider,
@@ -15,6 +16,7 @@ import {
   Controller, FieldError, useFormContext, useWatch,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { CloseIcon } from '@chakra-ui/icons';
 import { DiscordMessageFormData } from '@/types/discord';
 import { getNestedField } from '@/utils/getNestedField';
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from './constants';
@@ -98,15 +100,45 @@ export const DiscordMessageEmbedForm = ({
             <Heading size="sm">Color</Heading>
             <Stack spacing={8} width="100%" maxW={{ md: '3xl' }}>
               <FormControl isInvalid={!!colorError}>
-                <FormLabel variant="inline">Integer</FormLabel>
+                <FormLabel variant="inline">Color</FormLabel>
                 <Controller
                   name={`embeds.${index}.color`}
                   control={control}
-                  render={({ field }) => (
-                    <Input {...field} />
-                  )}
+                  render={({ field }) => {
+                    const hexValue = field.value
+                      ? `#${Number(field.value).toString(16).padStart(6, '0')}`
+                      : '';
+
+                    return (
+                      <HStack>
+                        <input
+                          type="color"
+                          {...field}
+                          value={hexValue}
+                          onChange={(e) => {
+                            const hexColorAsNumberString = parseInt(
+                              e.target.value.replace('#', ''),
+                              16,
+                            ).toString();
+
+                            field.onChange(hexColorAsNumberString);
+                          }}
+                          style={{
+                            cursor: 'pointer',
+                            width: '100%',
+                          }}
+                        />
+                        <IconButton
+                          size="xs"
+                          aria-label="Clear color"
+                          icon={<CloseIcon />}
+                          disabled={!field.value}
+                          onClick={() => field.onChange('')}
+                        />
+                      </HStack>
+                    );
+                  }}
                 />
-                <FormHelperText>An integer between 0 and 16777215, inclusive</FormHelperText>
                 {colorError && (
                   <FormErrorMessage>{colorError}</FormErrorMessage>
                 )}
@@ -132,7 +164,7 @@ export const DiscordMessageEmbedForm = ({
                   )}
                 />
                 {authorNameError && (
-                <FormErrorMessage>{authorNameError}</FormErrorMessage>
+                  <FormErrorMessage>{authorNameError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
@@ -147,7 +179,7 @@ export const DiscordMessageEmbedForm = ({
                   )}
                 />
                 {authorUrlError && (
-                <FormErrorMessage>{authorUrlError}</FormErrorMessage>
+                  <FormErrorMessage>{authorUrlError}</FormErrorMessage>
                 )}
               </FormControl>
               <FormControl
@@ -162,7 +194,7 @@ export const DiscordMessageEmbedForm = ({
                   )}
                 />
                 {authorIconUrlError && (
-                <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>
+                  <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>
                 )}
               </FormControl>
             </Stack>

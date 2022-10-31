@@ -5,8 +5,8 @@ import {
 
 export const discordMessageEmbedFormSchema = object().shape({
   color: string().test(
-    'Numbers',
-    'Must be a positive number less than 16777216',
+    'color',
+    'Must be a valid color',
     (v) => !v || (!!v && /^\d+$/.test(v) && Number(v) < 16777216),
   ).optional(),
   author: object({
