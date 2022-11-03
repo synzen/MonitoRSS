@@ -30,7 +30,7 @@ export class DiscordAuthController {
   @Get("callback")
   async discordCallback(
     @Res({ passthrough: true }) res: FastifyReply,
-    @Session() session: FastifyRequest['session'],
+    @Session() session: FastifyRequest["session"],
     @Query("code") code?: string,
     @Query("error") error?: string
   ) {
@@ -56,9 +56,9 @@ export class DiscordAuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
     @DiscordAccessToken() accessToken: SessionAccessToken,
-    @Session() session: FastifyRequest['session']
+    @Session() session: FastifyRequest["session"]
   ) {
     await this.discordAuthService.revokeToken(accessToken);
-    await session.destroy()
+    await session.destroy();
   }
 }

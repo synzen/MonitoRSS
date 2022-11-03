@@ -12,7 +12,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { equal } from "assert";
 import { Session, SessionKey } from "../common";
 import testConfig from "../config/test-config";
-import session from '@fastify/secure-session'
+import session from "@fastify/secure-session";
 
 let testingModule: TestingModule;
 let app: NestFastifyApplication;
