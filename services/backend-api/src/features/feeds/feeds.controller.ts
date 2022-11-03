@@ -49,6 +49,7 @@ import {
 } from "./exceptions";
 import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
+import { FEED_DISABLED_LEGACY_CODES } from "./constants";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -208,6 +209,13 @@ export class FeedsController {
         channelId: updateFeedInput.channelId,
       }),
     });
+
+    if (
+      (updateFeedInput.text || updateFeedInput.embeds) &&
+      updatedFeed.disabled === FEED_DISABLED_LEGACY_CODES.BAD_FORMAT
+    ) {
+      await this.feedsService.enableFeed(updatedFeed._id.toHexString());
+    }
 
     return GetFeedOutputDto.fromEntity(updatedFeed);
   }

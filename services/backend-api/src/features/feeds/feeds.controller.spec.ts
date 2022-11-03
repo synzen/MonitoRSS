@@ -1,4 +1,5 @@
 import { createTestFeed } from "../../test/data/feeds.test-data";
+import { FEED_DISABLED_LEGACY_CODES } from "./constants";
 import { UpdateFeedInputDto } from "./dto/update-feed-input.dto";
 import { FeedsController } from "./feeds.controller";
 import { DetailedFeed } from "./types/detailed-feed.type";
@@ -8,6 +9,7 @@ describe("FeedsController", () => {
   const feedsService = {
     updateOne: jest.fn(),
     refresh: jest.fn(),
+    enableFeed: jest.fn(),
   };
   const feedFetcherService = {
     fetchFeed: jest.fn(),
@@ -39,6 +41,36 @@ describe("FeedsController", () => {
 
     beforeEach(() => {
       feedsService.updateOne.mockResolvedValue(feed);
+    });
+
+    it("enables feed if text or embed is updated, and was disabled from bad format", async () => {
+      const updateFeedInputDto: UpdateFeedInputDto = {
+        text: "new text",
+      };
+
+      jest.spyOn(feedsService, "updateOne").mockResolvedValue({
+        ...feed,
+        disabled: FEED_DISABLED_LEGACY_CODES.BAD_FORMAT,
+      });
+
+      await controller.updateFeed(feed, updateFeedInputDto);
+
+      expect(feedsService.enableFeed).toHaveBeenCalledWith(
+        feed._id.toHexString()
+      );
+    });
+
+    it("does not enable feeds with bad format if text or embed is not updated", async () => {
+      const updateFeedInputDto: UpdateFeedInputDto = {};
+
+      jest.spyOn(feedsService, "updateOne").mockResolvedValue({
+        ...feed,
+        disabled: FEED_DISABLED_LEGACY_CODES.BAD_FORMAT,
+      });
+
+      await controller.updateFeed(feed, updateFeedInputDto);
+
+      expect(feedsService.enableFeed).not.toHaveBeenCalled();
     });
 
     describe("channelId", () => {

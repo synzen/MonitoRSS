@@ -164,6 +164,19 @@ export class FeedsService {
     return withDetails[0];
   }
 
+  async enableFeed(feedId: string) {
+    await this.feedModel.updateOne(
+      {
+        _id: feedId,
+      },
+      {
+        $unset: {
+          disabled: "",
+        },
+      }
+    );
+  }
+
   async canUseChannel({
     channelId,
     userAccessToken,

@@ -313,6 +313,22 @@ describe("FeedsService", () => {
     });
   });
 
+  describe("enableFeed", () => {
+    it("unsets the disabled field", async () => {
+      const feed = await feedModel.create(
+        createTestFeed({
+          disabled: "test",
+        })
+      );
+
+      await service.enableFeed(feed.id);
+
+      const updatedFeed = await feedModel.findById(feed.id);
+
+      expect(updatedFeed?.disabled).toBeUndefined();
+    });
+  });
+
   describe("removeFeed", () => {
     it("removes all the associated entities", async () => {
       const feed = await feedModel.create(createTestFeed({}));
