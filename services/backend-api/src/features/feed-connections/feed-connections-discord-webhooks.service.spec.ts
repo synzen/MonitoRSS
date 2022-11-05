@@ -13,12 +13,12 @@ import {
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
-import { Feed, FeedFeature } from "../feeds/entities/feed.entity";
+import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 
 describe("FeedConnectionsDiscordWebhooksService", () => {
   let service: FeedConnectionsDiscordWebhooksService;
-  let feedModel: Model<Feed>;
+  let userFeedModel: Model<UserFeed>;
   const discordWebhooksService = {
     getWebhook: jest.fn(),
     canBeUsedByBot: jest.fn(),
@@ -42,14 +42,14 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       ],
       imports: [
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([FeedFeature]),
+        MongooseModule.forFeature([UserFeedFeature]),
       ],
     });
 
     const { module } = await init();
 
     service = module.get(FeedConnectionsDiscordWebhooksService);
-    feedModel = module.get(getModelToken(Feed.name));
+    userFeedModel = module.get(getModelToken(UserFeed.name));
   });
 
   beforeEach(() => {
@@ -57,7 +57,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
   });
 
   afterEach(async () => {
-    await feedModel.deleteMany({});
+    await userFeedModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -65,7 +65,8 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
   });
 
   describe("createDiscordWebhookConnection", () => {
-    let createdFeed: Feed;
+    let createdFeed: UserFeed;
+    const guildId = "guild-id";
     let creationDetails: {
       accessToken: string;
       feedId: string;
@@ -79,10 +80,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
     };
 
     beforeEach(async () => {
-      createdFeed = await feedModel.create({
+      createdFeed = await userFeedModel.create({
         title: "my feed",
         channel: "688445354513137784",
-        guild: "guild",
         isFeedv2: true,
         url: "url",
       });
@@ -90,7 +90,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       creationDetails = {
         accessToken: "access-token",
         feedId: createdFeed._id.toHexString(),
-        guildId: createdFeed.guild,
+        guildId,
         name: "name",
         webhook: {
           id: "webhook-id",
@@ -110,7 +110,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
 
       await service.createDiscordWebhookConnection(creationDetails);
 
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+      const updatedFeed = await userFeedModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordWebhooks).toHaveLength(1);
       expect(updatedFeed?.connections.discordWebhooks[0]).toMatchObject({
@@ -177,7 +177,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
 
   describe("updateDiscordWebhookConnection", () => {
     const connectionIdToUse = new Types.ObjectId().toHexString();
-    let createdFeed: Feed;
+    let createdFeed: UserFeed;
     const guildId = "guild-id";
     const updateDetails = {
       filters: {
@@ -201,13 +201,11 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         content: "new-content",
       },
     };
+    const accessToken = "access-token";
 
     beforeEach(async () => {
-      createdFeed = await feedModel.create({
+      createdFeed = await userFeedModel.create({
         title: "my feed",
-        channel: "688445354513137784",
-        guild: guildId,
-        isFeedv2: true,
         url: "url",
         connections: {
           discordWebhooks: [
@@ -250,9 +248,10 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         connectionId: connectionIdToUse,
         updates: updateDetails,
         guildId,
+        accessToken,
       });
 
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+      const updatedFeed = await userFeedModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordWebhooks).toHaveLength(1);
       expect(updatedFeed?.connections.discordWebhooks[0]).toMatchObject({
@@ -283,6 +282,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           connectionId: connectionIdToUse,
           updates: updateDetails,
           guildId,
+          accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookNonexistentException);
     });
@@ -299,6 +299,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           connectionId: connectionIdToUse,
           updates: updateDetails,
           guildId,
+          accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookInvalidTypeException);
     });
@@ -316,6 +317,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           connectionId: connectionIdToUse,
           updates: updateDetails,
           guildId,
+          accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookNotOwnedException);
     });
@@ -334,6 +336,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           connectionId: connectionIdToUse,
           updates: updateDetails,
           guildId,
+          accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
     });
@@ -341,15 +344,11 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
 
   describe("deleteDiscordWebhookConnection", () => {
     const connectionIdToUse = new Types.ObjectId().toHexString();
-    let createdFeed: Feed;
-    const guildId = "guild-id";
+    let createdFeed: UserFeed;
 
     beforeEach(async () => {
-      createdFeed = await feedModel.create({
+      createdFeed = await userFeedModel.create({
         title: "my feed",
-        channel: "688445354513137784",
-        guild: guildId,
-        isFeedv2: true,
         url: "url",
         connections: {
           discordWebhooks: [
@@ -380,7 +379,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         connectionId: connectionIdToUse,
       });
 
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+      const updatedFeed = await userFeedModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordWebhooks).toHaveLength(0);
     });

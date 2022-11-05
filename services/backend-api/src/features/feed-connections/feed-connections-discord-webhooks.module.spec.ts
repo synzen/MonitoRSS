@@ -23,7 +23,7 @@ import { FeedConnectionsDiscordWebhooksModule } from "./feed-connections-discord
 
 jest.mock("../../utils/logger");
 
-describe("FeedConnectionsModule", () => {
+describe("FeedConnectionsDiscordWebhooksModule", () => {
   let app: NestFastifyApplication;
   let feedModel: FeedModel;
   let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;

@@ -91,6 +91,8 @@ describe("FeedConnectionsController", () => {
   });
 
   describe("updateDiscordWebhookConnection", () => {
+    const accessToken = "access-token";
+
     it("returns the updated discord webhook connection", async () => {
       const name = "name";
       const connectionId = new Types.ObjectId();
@@ -138,7 +140,10 @@ describe("FeedConnectionsController", () => {
             name: "name",
           },
           name,
-        }
+        },
+        {
+          access_token: accessToken,
+        } as never
       );
 
       expect(result).toEqual({
@@ -205,10 +210,14 @@ describe("FeedConnectionsController", () => {
         } as never,
         {
           name,
-        }
+        },
+        {
+          access_token: accessToken,
+        } as never
       );
 
       expect(updateSpy).toHaveBeenCalledWith({
+        accessToken,
         feedId: feedId.toHexString(),
         connectionId: connectionId.toHexString(),
         guildId,
@@ -299,7 +308,10 @@ describe("FeedConnectionsController", () => {
               ],
             },
           ],
-        }
+        },
+        {
+          access_token: accessToken,
+        } as never
       );
 
       const expectedEmbed: FeedEmbed = {
@@ -325,6 +337,7 @@ describe("FeedConnectionsController", () => {
       };
 
       expect(updateSpy).toHaveBeenCalledWith({
+        accessToken,
         feedId: feedId.toHexString(),
         connectionId: connectionId.toHexString(),
         guildId,

@@ -93,10 +93,12 @@ export class FeedConnectionsDiscordWebhooksController {
       filters,
       name,
       webhook,
-    }: UpdateDiscordWebhookConnectionInputDto
+    }: UpdateDiscordWebhookConnectionInputDto,
+    @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
     const updatedConnection = await this.service.updateDiscordWebhookConnection(
       {
+        accessToken: access_token,
         connectionId: connection.id.toHexString(),
         feedId: feed._id.toHexString(),
         guildId: feed.guild,

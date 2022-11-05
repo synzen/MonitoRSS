@@ -41,7 +41,8 @@ export function setupEndpointTests(metadata: ModuleMetadata) {
     await app.register(session, {
       // Secret must be 32 bytes
       secret: crypto.randomBytes(32).toString("hex"),
-      salt: crypto.randomBytes(16).toString("hex"),
+      // salt must have a length of 16
+      salt: crypto.randomBytes(8).toString("hex"),
     });
 
     useContainer(app, { fallbackOnErrors: true });
