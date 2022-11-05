@@ -5,8 +5,8 @@ import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { DiscordChannelNotOwnedException } from "../../common/exceptions";
 import { FeedConnectionType } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
-import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { FeedsService } from "../feeds/feeds.service";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {
   DiscordChannelPermissionsException,
   MissingDiscordChannelException,
@@ -26,7 +26,7 @@ export interface UpdateDiscordChannelConnectionInput {
 export class FeedConnectionsDiscordChannelsService {
   constructor(
     private readonly feedsService: FeedsService,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
   ) {}
 
   async createDiscordChannelConnection({
@@ -50,7 +50,7 @@ export class FeedConnectionsDiscordChannelsService {
 
     const connectionId = new Types.ObjectId();
 
-    const updated = await this.feedModel.findOneAndUpdate(
+    const updated = await this.userFeedModel.findOneAndUpdate(
       {
         _id: feedId,
       },
@@ -126,7 +126,7 @@ export class FeedConnectionsDiscordChannelsService {
       },
     };
 
-    const updated = await this.feedModel.findOneAndUpdate(
+    const updated = await this.userFeedModel.findOneAndUpdate(
       findQuery,
       updateQuery,
       {
@@ -148,7 +148,7 @@ export class FeedConnectionsDiscordChannelsService {
   }
 
   async deleteConnection(feedId: string, connectionId: string) {
-    await this.feedModel.updateOne(
+    await this.userFeedModel.updateOne(
       {
         _id: feedId,
       },

@@ -7,8 +7,8 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { Feed, FeedFeature } from "../feeds/entities/feed.entity";
 import { FeedsService } from "../feeds/feeds.service";
+import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import {
   DiscordChannelPermissionsException,
   MissingDiscordChannelException,
@@ -17,7 +17,7 @@ import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discor
 
 describe("FeedConnectionsDiscordChannelsService", () => {
   let service: FeedConnectionsDiscordChannelsService;
-  let feedModel: Model<Feed>;
+  let userFeedsModel: Model<UserFeed>;
   const feedsService = {
     canUseChannel: jest.fn(),
   };
@@ -33,14 +33,14 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       ],
       imports: [
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([FeedFeature]),
+        MongooseModule.forFeature([UserFeedFeature]),
       ],
     });
 
     const { module } = await init();
 
     service = module.get(FeedConnectionsDiscordChannelsService);
-    feedModel = module.get(getModelToken(Feed.name));
+    userFeedsModel = module.get(getModelToken(UserFeed.name));
   });
 
   beforeEach(() => {
@@ -48,7 +48,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   });
 
   afterEach(async () => {
-    await feedModel.deleteMany({});
+    await userFeedsModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -57,11 +57,11 @@ describe("FeedConnectionsDiscordChannelsService", () => {
 
   describe("createDiscordChannelConnection", () => {
     const guildId = "guild-id";
+    const channelId = "channel-id";
 
     it("saves the new connection", async () => {
-      const createdFeed = await feedModel.create({
+      const createdFeed = await userFeedsModel.create({
         title: "my feed",
-        channel: "688445354513137784",
         guild: guildId,
         isFeedv2: true,
         url: "url",
@@ -73,14 +73,14 @@ describe("FeedConnectionsDiscordChannelsService", () => {
 
       const creationDetails = {
         feedId: createdFeed._id.toHexString(),
-        channelId: createdFeed.channel,
+        channelId,
         name: "name",
         userAccessToken: "user-access-token",
         guildId: guildId,
       };
       await service.createDiscordChannelConnection(creationDetails);
 
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordChannels).toHaveLength(1);
       expect(updatedFeed?.connections.discordChannels[0]).toMatchObject({
@@ -101,7 +101,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   describe("updateDiscordChannelConnection", () => {
     const guildId = "guild-id";
     const connectionIdToUse = new Types.ObjectId();
-    let createdFeed: Feed;
+    let createdFeed: UserFeed;
     const updateInput = {
       accessToken: "access-token",
       guildId,
@@ -130,11 +130,8 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     };
 
     beforeEach(async () => {
-      createdFeed = await feedModel.create({
+      createdFeed = await userFeedsModel.create({
         title: "my feed",
-        channel: "688445354513137784",
-        guild: guildId,
-        isFeedv2: true,
         url: "url",
         connections: {
           discordChannels: [
@@ -170,7 +167,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         updateInput
       );
 
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordChannels).toHaveLength(1);
       expect(updatedFeed?.connections.discordChannels[0]).toMatchObject({
@@ -232,13 +229,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
 
   describe("deleteConnection", () => {
     it("removes the discord channel connection by id", async () => {
-      const guildId = "guild-id";
       const connectionIdToUse = new Types.ObjectId();
-      const createdFeed = await feedModel.create({
+      const createdFeed = await userFeedsModel.create({
         title: "my feed",
-        channel: "688445354513137784",
-        guild: guildId,
-        isFeedv2: true,
         url: "url",
         connections: {
           discordChannels: [
@@ -261,7 +254,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connectionIdToUse.toHexString()
       );
 
-      const updatedFeed = await feedModel.findById(createdFeed._id).lean();
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordChannels).toHaveLength(0);
     });
