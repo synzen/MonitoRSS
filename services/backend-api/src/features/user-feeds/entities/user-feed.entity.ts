@@ -4,6 +4,7 @@ import {
   FeedConnections,
   FeedConnectionSchema,
 } from "../../feeds/entities/feed-connections.entity";
+import { UserFeedUser, UserFeedUserSchema } from "./user-feed-user.entity";
 
 @Schema({
   timestamps: true,
@@ -30,6 +31,12 @@ export class UserFeed {
     default: {},
   })
   connections: FeedConnections;
+
+  @Prop({
+    required: true,
+    schema: UserFeedUserSchema,
+  })
+  user: UserFeedUser;
 
   createdAt?: Date;
   updatedAt?: Date;

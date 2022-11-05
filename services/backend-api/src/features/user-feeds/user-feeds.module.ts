@@ -7,6 +7,7 @@ import { DiscordWebhooksModule } from "../discord-webhooks/discord-webhooks.modu
 import { DiscordApiModule } from "../../services/apis/discord/discord-api.module";
 import { UserFeedFeature } from "./entities";
 import { UserFeedsService } from "./user-feeds.service";
+import { FeedsModule } from "../feeds/feeds.module";
 
 @Module({
   controllers: [],
@@ -18,6 +19,7 @@ import { UserFeedsService } from "./user-feeds.service";
     SupportersModule,
     DiscordWebhooksModule,
     DiscordApiModule,
+    FeedsModule,
   ],
   exports: [MongooseModule.forFeature([UserFeedFeature])],
 })

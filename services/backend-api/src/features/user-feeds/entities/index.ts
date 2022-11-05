@@ -1,1 +1,1 @@
-export * from "./feed.entity";
+export * from "./user-feed.entity";

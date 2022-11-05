@@ -204,6 +204,16 @@ export class DiscordAuthService {
     return guildsWithPermission.some((guild) => guild.id === guildId);
   }
 
+  async getUser(accessToken: string) {
+    const endpoint = `/users/@me`;
+    const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
+      accessToken,
+      endpoint
+    );
+
+    return user;
+  }
+
   /**
    * Format the Discord token object to return an object containing the expiresAt field,
    * which is the time at which the token expires in seconds.
@@ -226,15 +236,5 @@ export class DiscordAuthService {
         id: user.id,
       },
     };
-  }
-
-  private async getUser(accessToken: string) {
-    const endpoint = `/users/@me`;
-    const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
-      accessToken,
-      endpoint
-    );
-
-    return user;
   }
 }
