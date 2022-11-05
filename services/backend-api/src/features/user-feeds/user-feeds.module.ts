@@ -8,9 +8,10 @@ import { DiscordApiModule } from "../../services/apis/discord/discord-api.module
 import { UserFeedFeature } from "./entities";
 import { UserFeedsService } from "./user-feeds.service";
 import { FeedsModule } from "../feeds/feeds.module";
+import { UserFeedsController } from "./user-feeds.controller";
 
 @Module({
-  controllers: [],
+  controllers: [UserFeedsController],
   providers: [UserFeedsService],
   imports: [
     DiscordAuthModule,
