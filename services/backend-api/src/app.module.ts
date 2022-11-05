@@ -19,6 +19,7 @@ import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emit
 import { FailedUrlHandlerModule } from "./features/failed-url-handler/failed-url-handler.module";
 import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connections/feed-connections-discord-channels.module";
 import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
+import { UserFeedsModule } from "./features/user-feeds/user-feeds.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connection
     FailedUrlHandlerModule,
     FeedConnectionsDiscordChannelsModule,
     FeedConnectionsDiscordWebhooksModule,
+    UserFeedsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
     }),
