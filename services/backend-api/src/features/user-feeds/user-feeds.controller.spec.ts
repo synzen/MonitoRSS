@@ -10,9 +10,18 @@ describe("UserFeedsController", () => {
     addFeed: jest.fn(),
     updateFeedById: jest.fn(),
   };
+  const supportersService = {
+    getBenefitsOfDiscordUser: jest.fn(),
+  };
 
   beforeEach(async () => {
-    controller = new UserFeedsController(userFeedsService as never);
+    supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
+      refreshRateSeconds: 60,
+    });
+    controller = new UserFeedsController(
+      userFeedsService as never,
+      supportersService as never
+    );
   });
 
   describe("createFeed", () => {
@@ -47,7 +56,7 @@ describe("UserFeedsController", () => {
   });
 
   describe("getFeed", () => {
-    it("returns the feed", async () => {
+    it("returns the feed and refresh rate", async () => {
       const discordUserId = "discord id";
       const feed = {
         title: "title",
@@ -92,6 +101,10 @@ describe("UserFeedsController", () => {
         updatedAt: new Date(),
       };
 
+      supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
+        refreshRateSeconds: 123,
+      } as never);
+
       const result = await controller.getFeed(
         {
           discord: {
@@ -108,6 +121,7 @@ describe("UserFeedsController", () => {
           url: feed.url,
           healthStatus: feed.healthStatus,
           disabledCode: feed.disabledCode,
+          refreshRateSeconds: 123,
           connections: [
             ...feed.connections.discordChannels.map((con) => ({
               id: con.id.toHexString(),

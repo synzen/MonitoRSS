@@ -30,6 +30,7 @@ describe("SupportersService Integration", () => {
   let supporterModel: SupporterModel;
   let patronModel: PatronModel;
   const defaultMaxFeeds = 5;
+  const defaultRefreshRateSeconds = 60;
   const userDiscordId = "user-discord-id";
 
   beforeAll(async () => {
@@ -41,14 +42,25 @@ describe("SupportersService Integration", () => {
       ],
     });
 
+    const configGetter = (key: string) => {
+      if (key === "DEFAULT_MAX_FEEDS") {
+        return defaultMaxFeeds;
+      }
+
+      if (key === "DEFAULT_REFRESH_RATE_MINUTES") {
+        return defaultRefreshRateSeconds / 60;
+      }
+
+      throw new Error(
+        `Config key ${key} not found. Implement it as a mock within the test`
+      );
+    };
+
     uncompiledModule
       .overrideProvider(ConfigService)
       .useValue({
-        get: (key: string) => {
-          if (key === "DEFAULT_MAX_FEEDS") {
-            return defaultMaxFeeds;
-          }
-        },
+        getOrThrow: configGetter,
+        get: configGetter,
       })
       .overrideProvider(GuildSubscriptionsService)
       .useValue({
@@ -70,8 +82,8 @@ describe("SupportersService Integration", () => {
   });
 
   afterEach(async () => {
-    await supporterModel.deleteMany({});
-    await patronModel.deleteMany({});
+    await supporterModel?.deleteMany({});
+    await patronModel?.deleteMany({});
   });
 
   afterAll(async () => {
@@ -90,6 +102,7 @@ describe("SupportersService Integration", () => {
         guilds: [],
         maxGuilds: 0,
         expireAt: undefined,
+        refreshRateSeconds: defaultRefreshRateSeconds,
       });
     });
     it("returns the correct benefits", async () => {

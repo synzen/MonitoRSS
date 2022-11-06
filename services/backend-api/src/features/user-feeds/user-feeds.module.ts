@@ -21,6 +21,7 @@ import { UserFeedsController } from "./user-feeds.controller";
     DiscordWebhooksModule,
     DiscordApiModule,
     FeedsModule,
+    SupportersModule,
   ],
   exports: [MongooseModule.forFeature([UserFeedFeature])],
 })

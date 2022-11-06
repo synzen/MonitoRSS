@@ -17,12 +17,13 @@ describe("SupportersService", () => {
     aggregate: jest.fn(),
   } as never;
   const configService: ConfigService = {
-    get: jest.fn(),
+    getOrThrow: jest.fn(),
   } as never;
   const guildSubscriptionsService: GuildSubscriptionsService = {
     getAllSubscriptions: jest.fn(),
   } as never;
   const defaultMaxFeeds = 5;
+  const defaultRefreshRateSeconds = 60;
 
   beforeAll(async () => {
     supportersService = new SupportersService(
@@ -33,15 +34,11 @@ describe("SupportersService", () => {
     );
 
     supportersService.defaultMaxFeeds = defaultMaxFeeds;
+    supportersService.defaultRefreshRateSeconds = defaultRefreshRateSeconds;
   });
 
   beforeEach(() => {
     jest.restoreAllMocks();
-    jest.spyOn(configService, "get").mockImplementation((key: string) => {
-      if (key === "DEFAULT_MAX_FEEDS") {
-        return defaultMaxFeeds;
-      }
-    });
     jest
       .spyOn(guildSubscriptionsService, "getAllSubscriptions")
       .mockResolvedValue([]);
@@ -119,7 +116,7 @@ describe("SupportersService", () => {
         maxGuilds: 0,
         isSupporter: false,
         webhooks: false,
-        refreshRateSeconds: undefined,
+        refreshRateSeconds: defaultRefreshRateSeconds,
       });
     });
 
@@ -298,7 +295,7 @@ describe("SupportersService", () => {
           );
         });
 
-        it("returns unndefined refresh rate if supporter is on slow rate", async () => {
+        it("returns default refresh rate if supporter is on slow rate", async () => {
           jest
             .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
@@ -324,7 +321,7 @@ describe("SupportersService", () => {
             slowRate: true,
           });
 
-          expect(result.refreshRateSeconds).toEqual(undefined);
+          expect(result.refreshRateSeconds).toEqual(defaultRefreshRateSeconds);
         });
 
         it("returns 120 if supporter does not have patrons and is not slow rate", async () => {

@@ -3,6 +3,7 @@ import { Type } from "class-transformer";
 import {
   IsDateString,
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -62,6 +63,9 @@ class GetUserFeedOutputResultDto {
   @IsString()
   @IsIn(Object.values(UserFeedHealthStatus))
   healthStatus: UserFeedHealthStatus;
+
+  @IsInt()
+  refreshRateSeconds: number;
 
   @IsDateString()
   createdAt: string;

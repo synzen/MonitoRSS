@@ -26,6 +26,7 @@ import {
 } from "../feed-connections/dto";
 import { FeedConnectionType } from "../feeds/constants";
 import { FeedExceptionFilter } from "../feeds/filters";
+import { SupportersService } from "../supporters/supporters.service";
 import {
   CreateUserFeedInputDto,
   CreateUserFeedOutputDto,
@@ -42,7 +43,10 @@ import { UserFeedsService } from "./user-feeds.service";
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
 export class UserFeedsController {
-  constructor(private readonly userFeedsService: UserFeedsService) {}
+  constructor(
+    private readonly userFeedsService: UserFeedsService,
+    private readonly supportersService: SupportersService
+  ) {}
 
   @Post()
   @UseFilters(FeedExceptionFilter)
@@ -98,6 +102,9 @@ export class UserFeedsController {
         filters: con.filters,
       }));
 
+    const { refreshRateSeconds } =
+      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+
     return {
       result: {
         id: feed._id.toHexString(),
@@ -111,6 +118,7 @@ export class UserFeedsController {
         healthStatus: feed.healthStatus,
         createdAt: feed.createdAt.toISOString(),
         updatedAt: feed.updatedAt.toISOString(),
+        refreshRateSeconds,
       },
     };
   }

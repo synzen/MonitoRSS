@@ -15,7 +15,7 @@ interface SupporterBenefits {
   guilds: string[];
   maxGuilds: number;
   expireAt?: Date;
-  refreshRateSeconds?: number;
+  refreshRateSeconds: number;
 }
 
 interface ServerBenefits {
@@ -41,6 +41,7 @@ interface SupportPatronAggregateResult {
 @Injectable()
 export class SupportersService {
   defaultMaxFeeds: number;
+  defaultRefreshRateSeconds: number;
 
   constructor(
     @InjectModel(Supporter.name)
@@ -51,8 +52,11 @@ export class SupportersService {
   ) {
     // Conversions should be done at the config level, but this is just a hack for now
     this.defaultMaxFeeds = Number(
-      this.configService.get<number>("DEFAULT_MAX_FEEDS") as number
+      this.configService.getOrThrow<number>("DEFAULT_MAX_FEEDS") as number
     );
+    this.defaultRefreshRateSeconds =
+      this.configService.getOrThrow<number>("DEFAULT_REFRESH_RATE_MINUTES") *
+      60;
   }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
@@ -88,6 +92,7 @@ export class SupportersService {
         maxFeeds: this.defaultMaxFeeds,
         guilds: [],
         maxGuilds: 0,
+        refreshRateSeconds: this.defaultRefreshRateSeconds,
       };
     }
 
@@ -303,6 +308,7 @@ export class SupportersService {
         maxFeeds: this.defaultMaxFeeds,
         maxGuilds: 0,
         webhooks: false,
+        refreshRateSeconds: this.defaultRefreshRateSeconds,
       };
     }
 
@@ -314,12 +320,13 @@ export class SupportersService {
       refreshRateSeconds: patronRefreshRateSeconds,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
-    let refreshRateSeconds: number | undefined;
+    let refreshRateSeconds: number;
 
     if (supporter.slowRate) {
-      refreshRateSeconds = undefined;
+      refreshRateSeconds = this.defaultRefreshRateSeconds;
     } else if (isFromPatrons) {
-      refreshRateSeconds = patronRefreshRateSeconds;
+      refreshRateSeconds =
+        patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
     } else {
       refreshRateSeconds = 120;
     }
