@@ -8,6 +8,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   Button,
+  Divider,
   Flex,
   Grid,
   Heading,
@@ -94,7 +95,7 @@ export const FeedV2: React.FC = () => {
           <Stack
             maxWidth="1200px"
             width="100%"
-            spacing={12}
+            spacing={6}
           >
             <Stack spacing={6}>
               <Stack
@@ -183,6 +184,7 @@ export const FeedV2: React.FC = () => {
                 </CategoryText>
               </Grid>
             </Stack>
+            <Divider />
             <Stack spacing={6}>
               <Stack>
                 <Flex justifyContent="space-between" alignItems="center">

@@ -251,6 +251,7 @@
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
           "saveButton": "Add",
+          "formServerLabel": "Server",
           "formNameLabel": "Connection name",
           "formNameDescription": "This is only for your reference.",
           "formChannelLabel": "Channel"
