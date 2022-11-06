@@ -36,6 +36,9 @@ describe("UserFeedsModule", () => {
     },
   };
   let discordAuthService: DiscordAuthService;
+  const mockDiscordUser = {
+    id: "discord-user-id",
+  };
 
   beforeAll(async () => {
     const { init, uncompiledModule } = setupEndpointTests({
@@ -59,7 +62,14 @@ describe("UserFeedsModule", () => {
       .getOrThrow<string>("FEED_FETCHER_API_HOST");
   });
 
+  beforeEach(() => {
+    jest
+      .spyOn(discordAuthService, "getUser")
+      .mockResolvedValue(mockDiscordUser as never);
+  });
+
   afterEach(async () => {
+    jest.resetAllMocks();
     nock.cleanAll();
     await userFeedModel?.deleteMany({});
 
@@ -121,10 +131,6 @@ describe("UserFeedsModule", () => {
           },
         });
 
-      jest.spyOn(discordAuthService, "getUser").mockResolvedValue({
-        id: "123",
-      } as never);
-
       const { statusCode, body } = await app.inject({
         method: "POST",
         url: `/user-feeds`,
@@ -140,6 +146,63 @@ describe("UserFeedsModule", () => {
         },
       });
       expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("DELETE /:feedId", () => {
+    let feed: UserFeed;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `/user-feeds/${feed._id}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `/user-feeds/123`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 403 if feed does not belong to user", async () => {
+      jest.spyOn(discordAuthService, "getUser").mockResolvedValue({
+        id: mockDiscordUser + "-other",
+      } as never);
+
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `/user-feeds/${feed._id}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it("returns 204 on success", async () => {
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `/user-feeds/${feed._id}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NO_CONTENT);
     });
   });
 });

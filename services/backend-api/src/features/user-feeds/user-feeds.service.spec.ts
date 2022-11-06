@@ -1,4 +1,5 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
+import { Types } from "mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
 import {
   setupIntegrationTests,
@@ -119,6 +120,55 @@ describe("UserFeedsService", () => {
           discordUserId: discordUser.id,
         },
       });
+    });
+  });
+
+  describe("getFeedById", () => {
+    it("returns the feed", async () => {
+      const feed = await userFeedModel.create({
+        title: "title",
+        url: "url",
+        user: {
+          discordUserId: "123",
+        },
+      });
+
+      const result = await service.getFeedById(feed.id);
+
+      expect(result).toMatchObject({
+        _id: feed._id,
+        title: "title",
+        url: "url",
+        user: {
+          discordUserId: "123",
+        },
+      });
+    });
+
+    it("returns null if feed does not exist", async () => {
+      const result = await service.getFeedById(
+        new Types.ObjectId().toHexString()
+      );
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("deleteFeeById", () => {
+    it("deletes the feed", async () => {
+      const feed = await userFeedModel.create({
+        title: "title",
+        url: "url",
+        user: {
+          discordUserId: "123",
+        },
+      });
+
+      await service.deleteFeedById(feed.id);
+
+      const result = await userFeedModel.findById(feed.id);
+
+      expect(result).toBeNull();
     });
   });
 });

@@ -3,7 +3,7 @@ import { DiscordUser } from "../../discord-users/types/DiscordUser.type";
 import { DiscordAuthService } from "../discord-auth.service";
 import { SessionAccessToken } from "../types/SessionAccessToken.type";
 
-interface GetDiscordUserFromAccessTokenOutput {
+export interface GetDiscordUserFromAccessTokenOutput {
   accessToken: SessionAccessToken;
   user: DiscordUser;
 }

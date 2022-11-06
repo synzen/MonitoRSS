@@ -50,4 +50,12 @@ export class UserFeedsService {
 
     return created;
   }
+
+  async getFeedById(id: string) {
+    return this.userFeedModel.findById(id).lean();
+  }
+
+  async deleteFeedById(id: string) {
+    await this.userFeedModel.findByIdAndDelete(id);
+  }
 }
