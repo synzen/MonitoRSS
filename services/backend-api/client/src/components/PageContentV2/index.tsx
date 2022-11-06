@@ -3,10 +3,7 @@ import {
   Flex,
   Heading,
 } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
-import {
-  DiscordServerSearchSelect,
-} from '../../features/discordServers/components/DiscordServerSearchSelect';
+
 import { useDiscordBot } from '../../features/discordUser';
 
 interface Props {
@@ -16,7 +13,6 @@ interface Props {
 }
 
 export const PageContentV2 = ({ children }: Props) => {
-  const navigate = useNavigate();
   const {
     data: discordBotData,
   } = useDiscordBot();
@@ -37,9 +33,6 @@ export const PageContentV2 = ({ children }: Props) => {
       >
         <Flex alignItems="center" paddingLeft={{ base: '4', lg: '8' }} paddingY="4">
           <Heading fontWeight={500} paddingRight="8">MonitoRSS</Heading>
-          <DiscordServerSearchSelect
-            onClick={(selectedServerId) => navigate(`/v2/servers/${selectedServerId}/feeds`)}
-          />
         </Flex>
         <Flex alignItems="center" paddingRight={{ base: '4', lg: '8' }} paddingY="4">
           <Avatar
