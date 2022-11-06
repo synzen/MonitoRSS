@@ -34,7 +34,11 @@ export class UserFeedsService {
   ) {}
 
   async addFeed(
-    userAccessToken: string,
+    {
+      discordUserId,
+    }: {
+      discordUserId: string;
+    },
     {
       title,
       url,
@@ -45,13 +49,11 @@ export class UserFeedsService {
   ) {
     await this.checkUrlIsValid(url);
 
-    const user = await this.discordAuthService.getUser(userAccessToken);
-
     const created = await this.userFeedModel.create({
       title,
       url,
       user: {
-        discordUserId: user.id,
+        discordUserId,
       },
     });
 

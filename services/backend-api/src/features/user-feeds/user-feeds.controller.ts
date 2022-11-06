@@ -17,10 +17,7 @@ import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
-import {
-  GetDiscordUserFromAccessTokenOutput,
-  GetDiscordUserFromAccessTokenPipe,
-} from "../discord-auth/pipes";
+
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { FeedExceptionFilter } from "../feeds/filters";
 import {
@@ -44,12 +41,18 @@ export class UserFeedsController {
   @UseFilters(FeedExceptionFilter)
   async createFeed(
     @Body(ValidationPipe) { title, url }: CreateUserFeedInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<CreateUserFeedOutputDto> {
-    const result = await this.userFeedsService.addFeed(access_token, {
-      title,
-      url,
-    });
+    const result = await this.userFeedsService.addFeed(
+      {
+        discordUserId,
+      },
+      {
+        title,
+        url,
+      }
+    );
 
     return {
       result: {
@@ -64,11 +67,11 @@ export class UserFeedsController {
   @UseFilters(FeedExceptionFilter)
   async updateFeed(
     @DiscordAccessToken()
-    { discord }: SessionAccessToken,
+    { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed,
     @Body(ValidationPipe) { title, url }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
-    if (feed.user.discordUserId !== discord.id) {
+    if (feed.user.discordUserId !== discordUserId) {
       throw new ForbiddenException();
     }
 
@@ -91,20 +94,20 @@ export class UserFeedsController {
 
   @Get()
   async getFeeds(
-    @DiscordAccessToken(GetDiscordUserFromAccessTokenPipe)
-    { user }: GetDiscordUserFromAccessTokenOutput,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
     @NestedQuery(TransformValidationPipe)
     { limit, offset, search }: GetUserFeedsInputDto
   ): Promise<GetUserFeedsOutputDto> {
     const [feeds, count] = await Promise.all([
       this.userFeedsService.getFeedsByUser({
-        userId: user.id,
+        userId: discordUserId,
         limit,
         offset,
         search,
       }),
       this.userFeedsService.getFeedCountByUser({
-        userId: user.id,
+        userId: discordUserId,
         search,
       }),
     ]);
@@ -122,11 +125,11 @@ export class UserFeedsController {
   @Delete("/:feedId")
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFeed(
-    @DiscordAccessToken(GetDiscordUserFromAccessTokenPipe)
-    { user }: GetDiscordUserFromAccessTokenOutput,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ) {
-    if (feed.user.discordUserId !== user.id) {
+    if (feed.user.discordUserId !== discordUserId) {
       throw new ForbiddenException();
     }
 

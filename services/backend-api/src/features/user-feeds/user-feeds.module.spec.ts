@@ -357,13 +357,17 @@ describe("UserFeedsModule", () => {
     });
 
     it("returns 403 if feed does not belong to user", async () => {
-      jest.spyOn(discordAuthService, "getUser").mockResolvedValue({
-        id: mockDiscordUser + "-other",
-      } as never);
+      const otherUserFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-user",
+        },
+      });
 
       const { statusCode } = await app.inject({
         method: "DELETE",
-        url: `/user-feeds/${feed._id}`,
+        url: `/user-feeds/${otherUserFeed._id}`,
         ...standardRequestOptions,
       });
 

@@ -1,3 +1,4 @@
+import { ForbiddenException } from "@nestjs/common";
 import { Types } from "mongoose";
 import { UserFeedsController } from "./user-feeds.controller";
 
@@ -27,12 +28,14 @@ describe("UserFeedsController", () => {
           url: createdFeed.url,
         },
         {
-          access_token: "token",
+          discord: {
+            id: "discord id",
+          },
         } as never
       );
 
       expect(result).toMatchObject({
-        data: {
+        result: {
           title: createdFeed.title,
           url: createdFeed.url,
           id: createdFeed._id.toHexString(),
@@ -42,6 +45,28 @@ describe("UserFeedsController", () => {
   });
 
   describe("updateFeed", () => {
+    it("throws forbidden exception if discord user id does not match feed", async () => {
+      const feed = {
+        user: {
+          discordUserId: "discord user id",
+        },
+      } as never;
+
+      await expect(
+        controller.updateFeed(
+          {
+            discord: {
+              id: "other discord user id",
+            },
+          } as never,
+          feed,
+          {
+            title: "title",
+            url: "url",
+          }
+        )
+      ).rejects.toThrow(ForbiddenException);
+    });
     it("returns the updated feed", async () => {
       const accessTokenInfo = {
         discord: {
@@ -53,6 +78,9 @@ describe("UserFeedsController", () => {
         title: "title",
         url: "url",
         _id: new Types.ObjectId(),
+        user: {
+          discordUserId: accessTokenInfo.discord.id,
+        },
       };
 
       const updateBody = {

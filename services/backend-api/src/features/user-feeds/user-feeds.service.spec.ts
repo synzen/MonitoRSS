@@ -77,10 +77,15 @@ describe("UserFeedsService", () => {
         .mockResolvedValue({} as never);
 
       await expect(
-        service.addFeed("123", {
-          title: "title",
-          url: "url",
-        })
+        service.addFeed(
+          {
+            discordUserId: "123",
+          },
+          {
+            title: "title",
+            url: "url",
+          }
+        )
       ).rejects.toThrow(BannedFeedException);
     });
 
@@ -89,10 +94,15 @@ describe("UserFeedsService", () => {
       jest.spyOn(feedFetcherService, "fetchFeed").mockRejectedValue(err);
 
       await expect(
-        service.addFeed("123", {
-          title: "title",
-          url: "url",
-        })
+        service.addFeed(
+          {
+            discordUserId: "123",
+          },
+          {
+            title: "title",
+            url: "url",
+          }
+        )
       ).rejects.toThrow(err);
     });
 
@@ -112,7 +122,12 @@ describe("UserFeedsService", () => {
         title: "title",
         url: "url",
       };
-      const entity = await service.addFeed("123", createDetails);
+      const entity = await service.addFeed(
+        {
+          discordUserId: "123",
+        },
+        createDetails
+      );
 
       expect(entity).toMatchObject({
         title: "title",
