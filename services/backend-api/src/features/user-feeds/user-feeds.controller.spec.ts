@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Types } from "mongoose";
 import { FeedConnectionType } from "../feeds/constants";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsController } from "./user-feeds.controller";
 
 describe("UserFeedsController", () => {
@@ -55,6 +56,8 @@ describe("UserFeedsController", () => {
         user: {
           discordUserId,
         },
+        disabledCode: UserFeedDisabledCode.Manual,
+        healthStatus: UserFeedHealthStatus.Failed,
         connections: {
           discordChannels: [
             {
@@ -85,6 +88,8 @@ describe("UserFeedsController", () => {
             },
           ],
         },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       const result = await controller.getFeed(
@@ -101,6 +106,8 @@ describe("UserFeedsController", () => {
           id: feed._id.toHexString(),
           title: feed.title,
           url: feed.url,
+          healthStatus: feed.healthStatus,
+          disabledCode: feed.disabledCode,
           connections: [
             ...feed.connections.discordChannels.map((con) => ({
               id: con.id.toHexString(),
@@ -134,6 +141,8 @@ describe("UserFeedsController", () => {
           discordChannels: [],
           discordWebhooks: [],
         },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       await expect(

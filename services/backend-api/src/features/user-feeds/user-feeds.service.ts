@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
-import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { BannedFeedException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "./entities";
@@ -29,8 +28,7 @@ export class UserFeedsService {
   constructor(
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly feedsService: FeedsService,
-    private readonly feedFetcherService: FeedFetcherService,
-    private readonly discordAuthService: DiscordAuthService
+    private readonly feedFetcherService: FeedFetcherService
   ) {}
 
   async addFeed(

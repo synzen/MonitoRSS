@@ -6,7 +6,6 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { BannedFeedException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
@@ -16,18 +15,12 @@ describe("UserFeedsService", () => {
   let service: UserFeedsService;
   let userFeedModel: UserFeedModel;
   let feedFetcherService: FeedFetcherService;
-  let discordAuthService: DiscordAuthService;
   let feedsService: FeedsService;
   const discordUserId = "discordUserId";
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
-      providers: [
-        FeedsService,
-        FeedFetcherService,
-        DiscordAuthService,
-        UserFeedsService,
-      ],
+      providers: [FeedsService, FeedFetcherService, UserFeedsService],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([UserFeedFeature]),
@@ -38,10 +31,6 @@ describe("UserFeedsService", () => {
       .overrideProvider(FeedFetcherService)
       .useValue({
         fetchFeed: jest.fn(),
-      })
-      .overrideProvider(DiscordAuthService)
-      .useValue({
-        getUser: jest.fn(),
       })
       .overrideProvider(FeedsService)
       .useValue({
@@ -54,7 +43,6 @@ describe("UserFeedsService", () => {
     service = module.get<UserFeedsService>(UserFeedsService);
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
-    discordAuthService = module.get<DiscordAuthService>(DiscordAuthService);
     feedsService = module.get<FeedsService>(FeedsService);
   });
 
@@ -111,20 +99,13 @@ describe("UserFeedsService", () => {
         .spyOn(feedFetcherService, "fetchFeed")
         .mockResolvedValue({} as never);
 
-      const discordUser = {
-        id: "123",
-      };
-      jest
-        .spyOn(discordAuthService, "getUser")
-        .mockResolvedValue(discordUser as never);
-
       const createDetails = {
         title: "title",
         url: "url",
       };
       const entity = await service.addFeed(
         {
-          discordUserId: "123",
+          discordUserId,
         },
         createDetails
       );
@@ -133,7 +114,7 @@ describe("UserFeedsService", () => {
         title: "title",
         url: "url",
         user: {
-          discordUserId: discordUser.id,
+          discordUserId,
         },
       });
     });

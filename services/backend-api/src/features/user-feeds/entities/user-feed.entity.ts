@@ -4,6 +4,7 @@ import {
   FeedConnections,
   FeedConnectionSchema,
 } from "../../feeds/entities/feed-connections.entity";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 import { UserFeedUser, UserFeedUserSchema } from "./user-feed-user.entity";
 
 @Schema({
@@ -22,8 +23,18 @@ export class UserFeed {
   })
   url: string;
 
-  @Prop()
-  disabled?: string;
+  @Prop({
+    enum: Object.values(UserFeedDisabledCode),
+    required: false,
+  })
+  disabledCode?: UserFeedDisabledCode;
+
+  @Prop({
+    enum: Object.values(UserFeedHealthStatus),
+    required: true,
+    default: UserFeedHealthStatus.Ok,
+  })
+  healthStatus: UserFeedHealthStatus;
 
   @Prop({
     type: FeedConnectionSchema,
@@ -38,8 +49,8 @@ export class UserFeed {
   })
   user: UserFeedUser;
 
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type UserFeedDocument = UserFeed & Document;

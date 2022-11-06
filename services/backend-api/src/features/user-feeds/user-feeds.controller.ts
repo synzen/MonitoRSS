@@ -107,6 +107,10 @@ export class UserFeedsController {
           ...discordChannelConnections,
           ...discordWebhookConnections,
         ],
+        disabledCode: feed.disabledCode,
+        healthStatus: feed.healthStatus,
+        createdAt: feed.createdAt.toISOString(),
+        updatedAt: feed.updatedAt.toISOString(),
       },
     };
   }
