@@ -98,7 +98,7 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/v2/servers/:serverId/feeds/:feedId"
+      path="/v2/feeds/:feedId"
       element={(
         <RequireAuth>
           <RequireDiscordServers>

@@ -32,7 +32,8 @@ import { useState } from 'react';
 import { CategoryText } from '@/components';
 import {
   useArticleDailyLimit,
-  useFeed,
+  UserFeedHealthStatus,
+  useUserFeed,
 } from '../features/feed';
 import RouteParams from '../types/RouteParams';
 import { RefreshButton } from '@/features/feed/components/RefreshButton';
@@ -66,7 +67,7 @@ export const FeedV2: React.FC = () => {
 
   const {
     feed, status, error, refetch,
-  } = useFeed({
+  } = useUserFeed({
     feedId,
   });
 
@@ -133,14 +134,17 @@ export const FeedV2: React.FC = () => {
                     {feed?.url}
                   </Link>
                 </Box>
-                <Alert status="error" hidden={feed?.status !== 'failed'}>
+                <Alert
+                  status="error"
+                  hidden={!feed || feed.healthStatus !== UserFeedHealthStatus.Ok}
+                >
                   <Box>
                     <AlertTitle>
                       {t('pages.feed.connectionFailureTitle')}
                     </AlertTitle>
                     <AlertDescription display="block">
                       {t('pages.feed.connectionFailureText', {
-                        reason: feed?.failReason || t('pages.feed.unknownReason'),
+                        reason: feed?.healthStatus,
                       })}
                       <Box marginTop="1rem">
                         {feedId && (

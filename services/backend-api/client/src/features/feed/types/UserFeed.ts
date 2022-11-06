@@ -1,4 +1,9 @@
-import { InferType, object, string } from 'yup';
+import {
+  array, InferType, number, object, string,
+} from 'yup';
+import { FeedConnectionSchema } from '../../../types';
+import { UserFeedDisabledCode } from './UserFeedDisabledCode';
+import { UserFeedHealthStatus } from './UserFeedHealthStatus';
 
 export const UserFeedSchema = object({
   id: string().required(),
@@ -6,7 +11,10 @@ export const UserFeedSchema = object({
   url: string().required(),
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
   updatedAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
-  status: string().oneOf(['ok', 'failed', 'disabled', 'failing']).required(),
+  disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
+  healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
+  connections: array(FeedConnectionSchema).required(),
+  refreshRateSeconds: number().required(),
 });
 
 export type UserFeed = InferType<typeof UserFeedSchema>;

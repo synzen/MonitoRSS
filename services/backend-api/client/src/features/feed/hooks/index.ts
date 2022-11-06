@@ -11,3 +11,4 @@ export * from './useCreateFeed';
 export * from './useDeleteFeed';
 export * from './useArticleDailyLimit';
 export * from './useUserFeeds';
+export * from './useUserFeed';

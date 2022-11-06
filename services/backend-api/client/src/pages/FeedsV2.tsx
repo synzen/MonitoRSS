@@ -3,18 +3,16 @@ import {
   Stack,
   Heading,
 } from '@chakra-ui/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import RouteParams from '../types/RouteParams';
 import { FeedsTableV2 } from '../features/feed/components/FeedsTableV2';
 
 const FeedsV2: React.FC = () => {
-  const { serverId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   const onSelectedFeed = (feedId: string) => {
-    navigate(`/v2/servers/${serverId}/feeds/${feedId}`);
+    navigate(`/v2/feeds/${feedId}`);
   };
 
   return (
