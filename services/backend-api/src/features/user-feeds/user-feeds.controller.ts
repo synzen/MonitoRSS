@@ -20,6 +20,10 @@ import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToke
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import {
+  CreateDiscordChannelConnectionOutputDto,
+  CreateDiscordWebhookConnectionOutputDto,
+} from "../feed-connections/dto";
 import { FeedConnectionType } from "../feeds/constants";
 import { FeedExceptionFilter } from "../feeds/filters";
 import {
@@ -76,27 +80,33 @@ export class UserFeedsController {
       throw new NotFoundException();
     }
 
+    const discordChannelConnections: CreateDiscordChannelConnectionOutputDto[] =
+      feed.connections.discordChannels.map((con) => ({
+        id: con.id.toHexString(),
+        name: con.name,
+        key: FeedConnectionType.DiscordChannel,
+        details: con.details,
+        filters: con.filters,
+      }));
+
+    const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
+      feed.connections.discordWebhooks.map((con) => ({
+        id: con.id.toHexString(),
+        name: con.name,
+        key: FeedConnectionType.DiscordWebhook,
+        details: con.details,
+        filters: con.filters,
+      }));
+
     return {
       result: {
         id: feed._id.toHexString(),
         title: feed.title,
         url: feed.url,
-        connections: {
-          discordChannels: feed.connections.discordChannels.map((con) => ({
-            id: con.id.toHexString(),
-            name: con.name,
-            key: FeedConnectionType.DiscordChannel,
-            details: con.details,
-            filters: con.filters,
-          })),
-          discordWebhooks: feed.connections.discordWebhooks.map((con) => ({
-            id: con.id.toHexString(),
-            name: con.name,
-            key: FeedConnectionType.DiscordWebhook,
-            details: con.details,
-            filters: con.filters,
-          })),
-        },
+        connections: [
+          ...discordChannelConnections,
+          ...discordWebhookConnections,
+        ],
       },
     };
   }

@@ -1,8 +1,7 @@
 /* eslint-disable max-len */
 import { Type } from "class-transformer";
 import {
-  IsArray,
-  IsInt,
+  IsIn,
   IsNotEmpty,
   IsObject,
   IsString,
@@ -10,17 +9,11 @@ import {
 } from "class-validator";
 import { CreateDiscordChannelConnectionOutputDto } from "../../feed-connections/dto/create-discord-channel-connection-output.dto";
 import { CreateDiscordWebhookConnectionOutputDto } from "../../feed-connections/dto/create-discord-webhook-connection-output.dto";
+import { FeedConnectionType } from "../../feeds/constants";
 
-class GetUserFeedOutputResultConnectionsDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateDiscordChannelConnectionOutputDto)
-  discordChannels: CreateDiscordChannelConnectionOutputDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateDiscordWebhookConnectionOutputDto)
-  discordWebhooks: CreateDiscordWebhookConnectionOutputDto[];
+class ConnectionBaseDto {
+  @IsIn(Object.values(FeedConnectionType))
+  key: FeedConnectionType;
 }
 
 class GetUserFeedOutputResultDto {
@@ -38,8 +31,25 @@ class GetUserFeedOutputResultDto {
 
   @IsObject()
   @ValidateNested()
-  @Type(() => GetUserFeedOutputResultConnectionsDto)
-  connections: GetUserFeedOutputResultConnectionsDto;
+  @Type(() => ConnectionBaseDto, {
+    discriminator: {
+      property: "key",
+      subTypes: [
+        {
+          value: CreateDiscordChannelConnectionOutputDto,
+          name: FeedConnectionType.DiscordChannel,
+        },
+        {
+          value: CreateDiscordWebhookConnectionOutputDto,
+          name: FeedConnectionType.DiscordWebhook,
+        },
+      ],
+    },
+  })
+  connections: Array<
+    | CreateDiscordChannelConnectionOutputDto
+    | CreateDiscordWebhookConnectionOutputDto
+  >;
 }
 
 export class GetUserFeedOutputDto {

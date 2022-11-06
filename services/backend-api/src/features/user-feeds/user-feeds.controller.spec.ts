@@ -101,27 +101,27 @@ describe("UserFeedsController", () => {
           id: feed._id.toHexString(),
           title: feed.title,
           url: feed.url,
-          connections: {
-            discordChannels: feed.connections.discordChannels.map((con) => ({
+          connections: [
+            ...feed.connections.discordChannels.map((con) => ({
               id: con.id.toHexString(),
               name: con.name,
               key: FeedConnectionType.DiscordChannel,
               details: con.details,
               filters: con.filters,
             })),
-            discordWebhooks: feed.connections.discordWebhooks.map((con) => ({
+            ...feed.connections.discordWebhooks.map((con) => ({
               id: con.id.toHexString(),
               name: con.name,
               key: FeedConnectionType.DiscordWebhook,
               details: con.details,
               filters: con.filters,
             })),
-          },
+          ],
         },
       });
     });
 
-    it("throws a forbidden exception if the feed does not belong to the user", async () => {
+    it("throws a not found exception if the feed does not belong to the user", async () => {
       const discordUserId = "discord id";
       const feed = {
         title: "title",
