@@ -1,5 +1,6 @@
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Types } from "mongoose";
+import { FeedConnectionType } from "../feeds/constants";
 import { UserFeedsController } from "./user-feeds.controller";
 
 describe("UserFeedsController", () => {
@@ -41,6 +42,110 @@ describe("UserFeedsController", () => {
           id: createdFeed._id.toHexString(),
         },
       });
+    });
+  });
+
+  describe("getFeed", () => {
+    it("returns the feed", async () => {
+      const discordUserId = "discord id";
+      const feed = {
+        title: "title",
+        url: "url",
+        _id: new Types.ObjectId(),
+        user: {
+          discordUserId,
+        },
+        connections: {
+          discordChannels: [
+            {
+              id: new Types.ObjectId(),
+              name: "discord channel con name",
+              filters: {
+                expression: {
+                  foo: "discord channel filters",
+                },
+              },
+              details: {
+                hello: "discord channel details",
+              },
+            },
+          ],
+          discordWebhooks: [
+            {
+              id: new Types.ObjectId(),
+              name: "discord webhook con name",
+              filters: {
+                expression: {
+                  foo: "discord webhook filters",
+                },
+              },
+              details: {
+                hello: "discord webhook details",
+              },
+            },
+          ],
+        },
+      };
+
+      const result = await controller.getFeed(
+        {
+          discord: {
+            id: discordUserId,
+          },
+        } as never,
+        feed as never
+      );
+
+      expect(result).toMatchObject({
+        result: {
+          id: feed._id.toHexString(),
+          title: feed.title,
+          url: feed.url,
+          connections: {
+            discordChannels: feed.connections.discordChannels.map((con) => ({
+              id: con.id.toHexString(),
+              name: con.name,
+              key: FeedConnectionType.DiscordChannel,
+              details: con.details,
+              filters: con.filters,
+            })),
+            discordWebhooks: feed.connections.discordWebhooks.map((con) => ({
+              id: con.id.toHexString(),
+              name: con.name,
+              key: FeedConnectionType.DiscordWebhook,
+              details: con.details,
+              filters: con.filters,
+            })),
+          },
+        },
+      });
+    });
+
+    it("throws a forbidden exception if the feed does not belong to the user", async () => {
+      const discordUserId = "discord id";
+      const feed = {
+        title: "title",
+        url: "url",
+        _id: new Types.ObjectId(),
+        user: {
+          discordUserId: "other discord id",
+        },
+        connections: {
+          discordChannels: [],
+          discordWebhooks: [],
+        },
+      };
+
+      await expect(
+        controller.getFeed(
+          {
+            discord: {
+              id: discordUserId,
+            },
+          } as never,
+          feed as never
+        )
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

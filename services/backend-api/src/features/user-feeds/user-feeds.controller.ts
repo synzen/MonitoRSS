@@ -6,6 +6,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -19,10 +20,12 @@ import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToke
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import { FeedConnectionType } from "../feeds/constants";
 import { FeedExceptionFilter } from "../feeds/filters";
 import {
   CreateUserFeedInputDto,
   CreateUserFeedOutputDto,
+  GetUserFeedOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
   UpdateUserFeedInputDto,
@@ -59,6 +62,41 @@ export class UserFeedsController {
         id: result._id.toHexString(),
         title: result.title,
         url: result.url,
+      },
+    };
+  }
+
+  @Get("/:feedId")
+  async getFeed(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+  ): Promise<GetUserFeedOutputDto> {
+    if (feed.user.discordUserId !== discordUserId) {
+      throw new NotFoundException();
+    }
+
+    return {
+      result: {
+        id: feed._id.toHexString(),
+        title: feed.title,
+        url: feed.url,
+        connections: {
+          discordChannels: feed.connections.discordChannels.map((con) => ({
+            id: con.id.toHexString(),
+            name: con.name,
+            key: FeedConnectionType.DiscordChannel,
+            details: con.details,
+            filters: con.filters,
+          })),
+          discordWebhooks: feed.connections.discordWebhooks.map((con) => ({
+            id: con.id.toHexString(),
+            name: con.name,
+            key: FeedConnectionType.DiscordWebhook,
+            details: con.details,
+            filters: con.filters,
+          })),
+        },
       },
     };
   }

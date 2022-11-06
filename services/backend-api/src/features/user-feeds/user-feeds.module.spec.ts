@@ -153,6 +153,76 @@ describe("UserFeedsModule", () => {
     });
   });
 
+  describe("GET /:feedId", () => {
+    let feed: UserFeed;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}1`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed does not belong to user", async () => {
+      const otherFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-discord-user-id",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${otherFeed._id.toHexString()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns feed details on success", async () => {
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toEqual(
+        expect.objectContaining({
+          result: expect.objectContaining({
+            title: "title",
+            url: "https://www.feed.com",
+            id: feed._id.toHexString(),
+          }),
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
   describe("PATCH /:feedId", () => {
     let feed: UserFeed;
     const validBody = {

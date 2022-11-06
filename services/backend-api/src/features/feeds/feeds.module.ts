@@ -16,6 +16,7 @@ import { FeedSubscribersService } from "./feed-subscribers.service";
 import { DiscordApiModule } from "../../services/apis/discord/discord-api.module";
 import { BannedFeedFeature } from "./entities/banned-feed.entity";
 import { FeedFilteredFormatFeature } from "./entities/feed-filtered-format.entity";
+import { UserFeedFeature } from "../user-feeds/entities";
 
 @Module({
   controllers: [FeedsController, FeedSubscribersController],
@@ -30,6 +31,7 @@ import { FeedFilteredFormatFeature } from "./entities/feed-filtered-format.entit
       FeedSubscriberFeature,
       BannedFeedFeature,
       FeedFilteredFormatFeature,
+      UserFeedFeature,
     ]),
     FeedFetcherModule,
     SupportersModule,
