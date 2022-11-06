@@ -10,12 +10,12 @@ import {
   GetFeedOutput,
   GetFeedsOutput,
   GetFeedSubscribersOutput,
+  GetUserFeedsOutput,
   UpdateFeedSubscriberOutput,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
 import mockFeeds from './data/feed';
 import mockFeedArticles from './data/feedArticles';
-import mockFeedSummaries from './data/feeds';
 import mockDiscordUser from './data/discordUser';
 import {
   GetServerChannelsOutput,
@@ -38,6 +38,8 @@ import {
   UpdateDiscordWebhookConnectionOutput,
 } from '../features/feedConnections';
 import { mockFeedChannelConnections, mockFeedWebhookConnections } from './data/feedConnection';
+import mockUserFeeds from './data/userFeeds';
+import mockFeedSummaries from './data/feeds';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
@@ -150,6 +152,14 @@ const handlers = [
     ctx.json(generateMockApiErrorResponse({
       code: 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
     })),
+  )),
+
+  rest.get('/api/v1/user-feeds', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<GetUserFeedsOutput>({
+      results: mockUserFeeds,
+      total: mockUserFeeds.length,
+    }),
   )),
 
   rest.get('/api/v1/feeds/:feedId', (req, res, ctx) => res(

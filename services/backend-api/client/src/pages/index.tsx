@@ -76,14 +76,12 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/v2/servers/:serverId/feeds"
+      path="/v2/feeds"
       element={(
         <RequireAuth>
-          <RequireDiscordServers>
-            <PageContentV2>
-              <FeedsV2 />
-            </PageContentV2>
-          </RequireDiscordServers>
+          <PageContentV2>
+            <FeedsV2 />
+          </PageContentV2>
         </RequireAuth>
     )}
     />

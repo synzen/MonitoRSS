@@ -13,3 +13,4 @@ export * from './getFeedArticlesRawDump';
 export * from './createFeed';
 export * from './deleteFeed';
 export * from './getArticleDailyLimit';
+export * from './getUserFeeds';

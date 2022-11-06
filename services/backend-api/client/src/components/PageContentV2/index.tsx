@@ -3,33 +3,23 @@ import {
   Flex,
   Heading,
 } from '@chakra-ui/react';
-import {
-  Navigate, useNavigate, useParams,
-} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   DiscordServerSearchSelect,
 } from '../../features/discordServers/components/DiscordServerSearchSelect';
 import { useDiscordBot } from '../../features/discordUser';
 
 interface Props {
-  requireFeed?: boolean;
+  // eslint-disable-next-line react/no-unused-prop-types
+  requireFeed?: boolean
   children?: React.ReactNode;
 }
 
-export const PageContentV2 = ({ requireFeed, children }: Props) => {
-  const { feedId, serverId } = useParams();
+export const PageContentV2 = ({ children }: Props) => {
   const navigate = useNavigate();
   const {
     data: discordBotData,
   } = useDiscordBot();
-
-  if (!serverId) {
-    return <Navigate to="/v2/servers" />;
-  }
-
-  if (!feedId && requireFeed) {
-    return <Navigate to={`/v2/servers/${serverId}/feeds`} />;
-  }
 
   return (
     <Flex

@@ -24,14 +24,13 @@ import {
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
-import { useFeeds } from '../../hooks';
-import { Feed } from '@/types/Feed';
+import { useUserFeeds } from '../../hooks';
 import { Loading } from '@/components';
 import { FeedStatusTag } from '../FeedsTable/FeedStatusTag';
 import { AddFeedDialogV2 } from '../AddFeedDialogV2';
+import { UserFeed } from '../../types';
 
 interface Props {
-  serverId?: string
   onSelectedFeedId?: (feedId: string) => void
 }
 
@@ -40,7 +39,6 @@ const DEFAULT_MAX_PER_PAGE = 10;
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
 export const FeedsTableV2: React.FC<Props> = ({
-  serverId,
   onSelectedFeedId,
 }) => {
   const { t } = useTranslation();
@@ -53,8 +51,7 @@ export const FeedsTableV2: React.FC<Props> = ({
     search,
     setSearch,
     isFetching,
-  } = useFeeds({
-    serverId,
+  } = useUserFeeds({
     initialLimit: maxPerPage,
   });
 
@@ -70,7 +67,7 @@ export const FeedsTableV2: React.FC<Props> = ({
 
   const total = data?.total || 0;
 
-  const columns = useMemo<Column<Pick<Feed, 'status' | 'title' | 'url' | 'id'>>[]>(
+  const columns = useMemo<Column<Pick<UserFeed, 'status' | 'title' | 'url' | 'id'>>[]>(
     () => [
       {
         Header: t('pages.feeds.tableStatus') as string,
@@ -90,9 +87,7 @@ export const FeedsTableV2: React.FC<Props> = ({
         accessor: 'url',
       },
     ],
-    [
-      serverId,
-    ],
+    [],
   );
 
   const tableInstance = useTable(
