@@ -5,6 +5,14 @@ import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { BannedFeedException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "./entities";
+import _ from "lodash";
+
+interface GetFeedsInput {
+  userId: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
 
 @Injectable()
 export class UserFeedsService {
@@ -53,6 +61,44 @@ export class UserFeedsService {
 
   async getFeedById(id: string) {
     return this.userFeedModel.findById(id).lean();
+  }
+
+  async getFeedsByUser({
+    userId,
+    limit = 10,
+    offset = 0,
+    search,
+  }: GetFeedsInput) {
+    const query = this.userFeedModel.find({
+      "user.discordUserId": userId,
+    });
+
+    if (search) {
+      query.where("title").find({
+        $or: [
+          {
+            title: new RegExp(_.escapeRegExp(search), "i"),
+          },
+          {
+            url: new RegExp(_.escapeRegExp(search), "i"),
+          },
+        ],
+      });
+    }
+
+    if (limit) {
+      query.limit(limit);
+    }
+
+    if (offset) {
+      query.skip(offset);
+    }
+
+    return query
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
   }
 
   async deleteFeedById(id: string) {
