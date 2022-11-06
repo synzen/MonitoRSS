@@ -407,4 +407,123 @@ describe("UserFeedsService", () => {
       },
     ]);
   });
+
+  describe("getFeedCountByUser", () => {
+    it("returns the count of feeds owned by a user", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      await userFeedModel.create([
+        {
+          title: "title",
+          url: "url",
+          user,
+        },
+        {
+          title: "title",
+          url: "url",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+      ]);
+
+      const result = await service.getFeedCountByUser({
+        userId: user.discordUserId,
+      });
+
+      expect(result).toEqual(1);
+    });
+
+    it("works with search on title", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url1",
+          user,
+        },
+        {
+          title: "title2 HERE",
+          url: "url2",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title2 HERE",
+          url: "url3",
+          user,
+        },
+      ]);
+
+      const result = await service.getFeedCountByUser({
+        userId: user.discordUserId,
+        search: "2 here",
+      });
+
+      expect(result).toEqual(1);
+    });
+
+    it("works with search on url", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+        },
+      ]);
+
+      const result = await service.getFeedCountByUser({
+        userId: user.discordUserId,
+        search: "here",
+      });
+
+      expect(result).toEqual(1);
+    });
+
+    it("returns no results if no matches", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+      ]);
+
+      const result = await service.getFeedCountByUser({
+        userId: user.discordUserId,
+        search: "no matches",
+      });
+
+      expect(result).toEqual(0);
+    });
+  });
 });

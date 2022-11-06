@@ -14,6 +14,11 @@ interface GetFeedsInput {
   offset?: number;
 }
 
+interface GetFeedsCountInput {
+  userId: string;
+  search?: string;
+}
+
 @Injectable()
 export class UserFeedsService {
   constructor(
@@ -99,6 +104,27 @@ export class UserFeedsService {
         createdAt: -1,
       })
       .lean();
+  }
+
+  async getFeedCountByUser({ userId, search }: GetFeedsCountInput) {
+    const query = this.userFeedModel.where({
+      "user.discordUserId": userId,
+    });
+
+    if (search) {
+      query.where("title").find({
+        $or: [
+          {
+            title: new RegExp(_.escapeRegExp(search), "i"),
+          },
+          {
+            url: new RegExp(_.escapeRegExp(search), "i"),
+          },
+        ],
+      });
+    }
+
+    return query.countDocuments();
   }
 
   async deleteFeedById(id: string) {
