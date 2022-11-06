@@ -149,6 +149,59 @@ describe("UserFeedsModule", () => {
     });
   });
 
+  describe("GET /", () => {
+    let feed: UserFeed;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 400 if missing query params", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns the count and feeds", async () => {
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds?limit=10&offset=0`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        count: 1,
+        results: [
+          {
+            id: feed._id.toHexString(),
+            title: feed.title,
+            url: feed.url,
+          },
+        ],
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
   describe("DELETE /:feedId", () => {
     let feed: UserFeed;
 
