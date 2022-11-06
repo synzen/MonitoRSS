@@ -13,7 +13,8 @@
       "detailsTitle": "Details",
       "goBack": "Go back",
       "failedToSave": "Failed to save changes",
-      "supporterRequiredAccess": "This server needs to be backed by a supporter to access this."
+      "supporterRequiredAccess": "This server needs to be backed by a supporter to access this.",
+      "supporterRequiredAccessV2": "You must be a supporter to access this."
     },
     "success": {
       "deleted": "Successfully deleted",
@@ -263,6 +264,7 @@
           "title": "Add a Discord webhook connection",
           "saveButton": "Add",
           "formNameLabel": "Connection name",
+          "formServerLabel": "Server",
           "formNameDescription": "This is only for your reference.",
           "webhookNameLabel": "Name",
           "webhookNameDescription": "This will override the webhook's name.",

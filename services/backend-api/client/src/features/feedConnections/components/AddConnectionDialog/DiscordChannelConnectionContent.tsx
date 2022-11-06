@@ -4,6 +4,7 @@ import {
   FormErrorMessage,
   FormHelperText,
   FormLabel,
+  HStack,
   Input,
   Modal,
   ModalBody,
@@ -50,7 +51,6 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
     control,
     reset,
     formState: {
-      isDirty,
       errors,
       isSubmitting,
       isValid,
@@ -153,7 +153,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
                   render={({ field }) => (
                     <ThemedSelect
                       loading={loadingChannels}
-                      isDisabled={isSubmitting || loadingChannels || !!channelsError}
+                      isDisabled={isSubmitting || loadingChannels || !!channelsError || !serverId}
                       options={data?.results.map((channel) => ({
                         label: channel.name,
                         value: channel.id,
@@ -172,23 +172,25 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
           </form>
         </ModalBody>
         <ModalFooter>
-          <Button
-            variant="ghost"
-            mr={3}
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            {t('common.buttons.cancel')}
-          </Button>
-          <Button
-            colorScheme="blue"
-            type="submit"
-            form="addfeed"
-            isLoading={isSubmitting}
-            isDisabled={!isDirty || isSubmitting || !isValid}
-          >
-            {t('features.feed.components.addDiscordChannelConnectionDialog.saveButton')}
-          </Button>
+          <HStack>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              {t('common.buttons.cancel')}
+            </Button>
+            <Button
+              colorScheme="blue"
+              type="submit"
+              form="addfeed"
+              isLoading={isSubmitting}
+              isDisabled={isSubmitting || !isValid}
+            >
+              {t('features.feed.components.addDiscordChannelConnectionDialog.saveButton')}
+            </Button>
+          </HStack>
         </ModalFooter>
       </ModalContent>
     </Modal>
