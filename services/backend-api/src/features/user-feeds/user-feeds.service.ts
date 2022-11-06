@@ -19,6 +19,11 @@ interface GetFeedsCountInput {
   search?: string;
 }
 
+interface UpdateFeedInput {
+  title?: string;
+  url?: string;
+}
+
 @Injectable()
 export class UserFeedsService {
   constructor(
@@ -38,18 +43,7 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    await this.feedFetcherService.fetchFeed(url, {
-      fetchOptions: {
-        useServiceApi: true,
-        useServiceApiCache: false,
-      },
-    });
-
-    const bannedRecord = await this.feedsService.getBannedFeedDetails(url, "");
-
-    if (bannedRecord) {
-      throw new BannedFeedException();
-    }
+    await this.checkUrlIsValid(url);
 
     const user = await this.discordAuthService.getUser(userAccessToken);
 
@@ -127,7 +121,43 @@ export class UserFeedsService {
     return query.countDocuments();
   }
 
+  async updateFeedById(id: string, updates: UpdateFeedInput) {
+    const query = this.userFeedModel.findByIdAndUpdate(
+      id,
+      {},
+      {
+        new: true,
+      }
+    );
+
+    if (updates.title) {
+      query.set("title", updates.title);
+    }
+
+    if (updates.url) {
+      await this.checkUrlIsValid(updates.url);
+      query.set("url", updates.url);
+    }
+
+    return query.lean();
+  }
+
   async deleteFeedById(id: string) {
     await this.userFeedModel.findByIdAndDelete(id);
+  }
+
+  private async checkUrlIsValid(url: string) {
+    await this.feedFetcherService.fetchFeed(url, {
+      fetchOptions: {
+        useServiceApi: true,
+        useServiceApiCache: false,
+      },
+    });
+
+    const bannedRecord = await this.feedsService.getBannedFeedDetails(url, "");
+
+    if (bannedRecord) {
+      throw new BannedFeedException();
+    }
   }
 }

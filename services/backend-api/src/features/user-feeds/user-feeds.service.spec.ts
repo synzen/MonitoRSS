@@ -18,6 +18,7 @@ describe("UserFeedsService", () => {
   let feedFetcherService: FeedFetcherService;
   let discordAuthService: DiscordAuthService;
   let feedsService: FeedsService;
+  const discordUserId = "discordUserId";
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -154,7 +155,79 @@ describe("UserFeedsService", () => {
     });
   });
 
-  describe("deleteFeeById", () => {
+  describe("updateFeedById", () => {
+    let feed: UserFeed;
+    const updateBody = {
+      title: "url",
+      url: "url",
+    };
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "original title",
+        url: "original url",
+        user: {
+          discordUserId,
+        },
+      });
+
+      jest.spyOn(feedsService, "getBannedFeedDetails").mockResolvedValue(null);
+    });
+
+    it("throws if feed is baned", async () => {
+      jest
+        .spyOn(feedsService, "getBannedFeedDetails")
+        .mockResolvedValue({} as never);
+
+      await expect(
+        service.updateFeedById(feed._id.toHexString(), updateBody)
+      ).rejects.toThrow(BannedFeedException);
+    });
+
+    it("throws if fetch feed throws", async () => {
+      const err = new Error("fetch feed error");
+      jest.spyOn(feedFetcherService, "fetchFeed").mockRejectedValue(err);
+
+      await expect(
+        service.updateFeedById(feed._id.toHexString(), updateBody)
+      ).rejects.toThrow(err);
+    });
+
+    it("returns the updated entity", async () => {
+      jest
+        .spyOn(feedFetcherService, "fetchFeed")
+        .mockResolvedValue({} as never);
+
+      const entity = await service.updateFeedById(
+        feed._id.toHexString(),
+        updateBody
+      );
+
+      expect(entity).toMatchObject({
+        _id: feed._id,
+        title: updateBody.title,
+        url: updateBody.url,
+        user: {
+          discordUserId,
+        },
+      });
+    });
+
+    it("does not update anything if no updates are provided", async () => {
+      const entity = await service.updateFeedById(feed._id.toHexString(), {});
+
+      expect(entity).toMatchObject({
+        _id: feed._id,
+        title: feed.title,
+        url: feed.url,
+        user: {
+          discordUserId,
+        },
+      });
+    });
+  });
+
+  describe("deleteFeedById", () => {
     it("deletes the feed", async () => {
       const feed = await userFeedModel.create({
         title: "title",

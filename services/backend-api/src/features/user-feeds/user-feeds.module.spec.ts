@@ -33,6 +33,7 @@ describe("UserFeedsModule", () => {
   const standardRequestOptions = {
     headers: {
       cookie: "",
+      "content-type": "application/json",
     },
   };
   let discordAuthService: DiscordAuthService;
@@ -53,6 +54,9 @@ describe("UserFeedsModule", () => {
 
     standardRequestOptions.headers.cookie = await setAccessToken({
       access_token: "accessToken",
+      discord: {
+        id: mockDiscordUser.id,
+      },
     } as Session["accessToken"]);
 
     userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
@@ -146,6 +150,124 @@ describe("UserFeedsModule", () => {
         },
       });
       expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("PATCH /:feedId", () => {
+    let feed: UserFeed;
+    const validBody = {
+      title: "hello world",
+      url: "https://www.google.com/feed",
+    };
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/does-not-exist`,
+        ...standardRequestOptions,
+        payload: validBody,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 403 if feed does not belong to user", async () => {
+      const otherUserFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-user",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${otherUserFeed.id}`,
+        ...standardRequestOptions,
+        payload: validBody,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it("returns 400 if payload is not valid", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+        payload: {
+          title: "",
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 400 if feed request fails", async () => {
+      nock(feedFetcherApiHost)
+        .post("/requests")
+        .reply(200, {
+          requestStatus: "success",
+          response: {
+            statusCode: 429,
+          },
+        });
+
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 200 on success", async () => {
+      nock(feedFetcherApiHost)
+        .post("/requests")
+        .reply(200, {
+          requestStatus: "success",
+          response: {
+            statusCode: 200,
+            body: feedXml,
+          },
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          title: validBody.title,
+          url: validBody.url,
+          id: feed._id.toHexString(),
+        },
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
     });
   });
 

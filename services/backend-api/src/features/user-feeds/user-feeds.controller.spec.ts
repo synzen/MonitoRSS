@@ -5,6 +5,7 @@ describe("UserFeedsController", () => {
   let controller: UserFeedsController;
   const userFeedsService = {
     addFeed: jest.fn(),
+    updateFeedById: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -35,6 +36,44 @@ describe("UserFeedsController", () => {
           title: createdFeed.title,
           url: createdFeed.url,
           id: createdFeed._id.toHexString(),
+        },
+      });
+    });
+  });
+
+  describe("updateFeed", () => {
+    it("returns the updated feed", async () => {
+      const accessTokenInfo = {
+        discord: {
+          id: "discord-user-id",
+        },
+      };
+
+      const feed = {
+        title: "title",
+        url: "url",
+        _id: new Types.ObjectId(),
+      };
+
+      const updateBody = {
+        title: "updated title",
+      };
+
+      jest
+        .spyOn(userFeedsService, "updateFeedById")
+        .mockResolvedValue(feed as never);
+
+      const result = await controller.updateFeed(
+        accessTokenInfo as never,
+        feed as never,
+        updateBody
+      );
+
+      expect(result).toMatchObject({
+        result: {
+          title: feed.title,
+          url: feed.url,
+          id: feed._id.toHexString(),
         },
       });
     });

@@ -7,9 +7,11 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   UseFilters,
   UseGuards,
+  ValidationPipe,
 } from "@nestjs/common";
 import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
@@ -26,6 +28,8 @@ import {
   CreateUserFeedOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
+  UpdateUserFeedInputDto,
+  UpdateUserFeedOutputDto,
 } from "./dto";
 import { UserFeed } from "./entities";
 import { GetUserFeedPipe } from "./pipes";
@@ -39,7 +43,7 @@ export class UserFeedsController {
   @Post()
   @UseFilters(FeedExceptionFilter)
   async createFeed(
-    @Body() { title, url }: CreateUserFeedInputDto,
+    @Body(ValidationPipe) { title, url }: CreateUserFeedInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<CreateUserFeedOutputDto> {
     const result = await this.userFeedsService.addFeed(access_token, {
@@ -52,6 +56,35 @@ export class UserFeedsController {
         id: result._id.toHexString(),
         title: result.title,
         url: result.url,
+      },
+    };
+  }
+
+  @Patch("/:feedId")
+  @UseFilters(FeedExceptionFilter)
+  async updateFeed(
+    @DiscordAccessToken()
+    { discord }: SessionAccessToken,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed,
+    @Body(ValidationPipe) { title, url }: UpdateUserFeedInputDto
+  ): Promise<UpdateUserFeedOutputDto> {
+    if (feed.user.discordUserId !== discord.id) {
+      throw new ForbiddenException();
+    }
+
+    const updated = (await this.userFeedsService.updateFeedById(
+      feed._id.toHexString(),
+      {
+        title,
+        url,
+      }
+    )) as UserFeed;
+
+    return {
+      result: {
+        id: updated._id.toHexString(),
+        title: updated.title,
+        url: updated.url,
       },
     };
   }
