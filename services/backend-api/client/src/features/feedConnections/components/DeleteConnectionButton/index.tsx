@@ -21,12 +21,11 @@ import { useFeed } from '../../../feed/hooks';
 import { useDeleteConnection } from '../../hooks';
 
 interface Props {
-  serverId: string
   feedId: string;
   connectionId: string
 }
 
-export const DeleteConnectionButton = ({ serverId, feedId, connectionId }: Props) => {
+export const DeleteConnectionButton = ({ feedId, connectionId }: Props) => {
   const { t } = useTranslation();
   const { mutateAsync } = useDeleteConnection();
   const navigate = useNavigate();
@@ -45,7 +44,7 @@ export const DeleteConnectionButton = ({ serverId, feedId, connectionId }: Props
       });
       await refetch();
       notifySuccess(t('common.success.deleted'));
-      navigate(`/v2/servers/${serverId}/feeds/${feedId}`);
+      navigate(`/v2/feeds/${feedId}`);
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
     } finally {
