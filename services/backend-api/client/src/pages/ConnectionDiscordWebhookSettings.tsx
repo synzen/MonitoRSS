@@ -54,7 +54,6 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
   });
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateDiscordWebhookConnection();
-  const serverId = connection?.details.webhook.guildId;
 
   const onFiltersUpdated = async (filters: FilterExpression | null) => {
     if (!feedId || !connectionId) {
