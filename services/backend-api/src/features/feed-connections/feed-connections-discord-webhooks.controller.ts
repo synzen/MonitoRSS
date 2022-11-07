@@ -76,6 +76,7 @@ export class FeedConnectionsDiscordWebhooksController {
           id: createdConnection.details.webhook.id,
           iconUrl: createdConnection.details.webhook.iconUrl,
           name: createdConnection.details.webhook.name,
+          guildId: createdConnection.details.webhook.guildId,
         },
       },
     };
@@ -132,6 +133,7 @@ export class FeedConnectionsDiscordWebhooksController {
           id: updatedConnection.details.webhook.id,
           iconUrl: updatedConnection.details.webhook.iconUrl,
           name: updatedConnection.details.webhook.name,
+          guildId: updatedConnection.details.webhook.guildId,
         },
       },
     };

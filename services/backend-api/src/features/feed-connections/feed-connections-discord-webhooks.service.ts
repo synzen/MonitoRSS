@@ -83,6 +83,7 @@ export class FeedConnectionsDiscordWebhooksService {
                 id,
                 name: webhookName,
                 token: webhook.token,
+                guildId,
               },
             },
           },
@@ -130,6 +131,7 @@ export class FeedConnectionsDiscordWebhooksService {
           name: details.webhook.name,
           iconUrl: details.webhook.iconUrl,
           token: webhook.token as string,
+          guildId,
         },
         _.isUndefined
       ) as DiscordWebhookConnection["details"]["webhook"];

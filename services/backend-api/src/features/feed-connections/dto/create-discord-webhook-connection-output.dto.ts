@@ -26,6 +26,9 @@ class DetailsWebhookDto {
   @IsString()
   @IsOptional()
   iconUrl?: string;
+
+  @IsString()
+  guildId: string;
 }
 
 class DetailsDto {

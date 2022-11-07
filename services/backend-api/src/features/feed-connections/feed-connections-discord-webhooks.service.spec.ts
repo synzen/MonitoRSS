@@ -82,9 +82,10 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
     beforeEach(async () => {
       createdFeed = await userFeedModel.create({
         title: "my feed",
-        channel: "688445354513137784",
-        isFeedv2: true,
         url: "url",
+        user: {
+          discordUserId: "discord-user-id",
+        },
       });
 
       creationDetails = {
@@ -125,6 +126,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
             token: "token",
             name: creationDetails.webhook.name,
             iconUrl: creationDetails.webhook.iconUrl,
+            guildId,
           },
         },
       });
@@ -207,6 +209,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       createdFeed = await userFeedModel.create({
         title: "my feed",
         url: "url",
+        user: {
+          discordUserId: "discord-user-id",
+        },
         connections: {
           discordWebhooks: [
             {
@@ -226,6 +231,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
                   token: "old-token",
                   name: "old-webhook-name",
                   iconUrl: "old-icon-url",
+                  guildId,
                 },
                 content: "old-content",
               },
@@ -267,6 +273,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
             token: "token",
             name: updateDetails.details.webhook.name,
             iconUrl: updateDetails.details.webhook.iconUrl,
+            guildId,
           },
           content: updateDetails.details.content,
         },
@@ -350,6 +357,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       createdFeed = await userFeedModel.create({
         title: "my feed",
         url: "url",
+        user: {
+          discordUserId: "discord-user-id",
+        },
         connections: {
           discordWebhooks: [
             {
@@ -364,6 +374,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
                   token: "old-token",
                   name: "old-webhook-name",
                   iconUrl: "old-icon-url",
+                  guildId: "guild-id",
                 },
                 content: "old-content",
               },

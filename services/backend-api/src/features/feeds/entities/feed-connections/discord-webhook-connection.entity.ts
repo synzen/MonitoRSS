@@ -27,6 +27,11 @@ class Webhook {
     required: true,
   })
   token: string;
+
+  @Prop({
+    required: true,
+  })
+  guildId: string;
 }
 
 const WebhookSchema = SchemaFactory.createForClass(Webhook);
