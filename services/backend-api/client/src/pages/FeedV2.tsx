@@ -106,7 +106,7 @@ export const FeedV2: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/servers/${serverId}/feeds`}
+                        to="/v2/feeds"
                       >
                         Feeds
                       </BreadcrumbLink>
@@ -218,7 +218,7 @@ export const FeedV2: React.FC = () => {
                   <Link
                     key={connection.id}
                     as={RouterLink}
-                    to={`/v2/servers/${serverId}/feeds/${feedId}${
+                    to={`/v2/feeds/${feedId}${
                       getConnectionUrlByType(connection.key)
                     }/${connection.id}`}
                   >

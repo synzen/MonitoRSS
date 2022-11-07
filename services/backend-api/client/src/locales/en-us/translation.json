@@ -265,6 +265,7 @@
           "saveButton": "Add",
           "formNameLabel": "Connection name",
           "formServerLabel": "Server",
+          "formServerDescription": "The Discord server the webhook belong to",
           "formNameDescription": "This is only for your reference.",
           "webhookNameLabel": "Name",
           "webhookNameDescription": "This will override the webhook's name.",

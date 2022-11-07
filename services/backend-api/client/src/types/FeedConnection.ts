@@ -12,6 +12,7 @@ const DiscordChannelConnectionDetailsSchema = object({
   embeds: array(FeedEmbedSchema).required(),
   channel: object({
     id: string().required(),
+    guildId: string().required(),
   }).required(),
   content: string().optional(),
 });
@@ -22,6 +23,7 @@ const DiscordWebhookConnectionDetailsSchema = object({
     id: string().required(),
     name: string().optional(),
     iconUrl: string().optional(),
+    guildId: string().required(),
   }).required(),
   content: string().optional(),
 });

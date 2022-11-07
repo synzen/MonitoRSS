@@ -176,6 +176,8 @@ const handlers = [
       );
     }
 
+    console.log(feed);
+
     return res(
       ctx.delay(500),
       ctx.json<GetUserFeedOutput>({
@@ -220,13 +222,6 @@ const handlers = [
     }),
   )),
 
-  rest.get('/api/v1/feeds/:feedId/connections/discord-channels/:id', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.json<CreateDiscordChannelConnectionOutput>({
-      result: mockFeedChannelConnections[0],
-    }),
-  )),
-
   rest.post('/api/v1/feeds/:feedId/connections/discord-channels', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordChannelConnectionOutput>({
@@ -238,13 +233,6 @@ const handlers = [
     ctx.delay(500),
     ctx.json<UpdateDiscordChannelConnectionOutput>({
       result: mockFeedChannelConnections[0],
-    }),
-  )),
-
-  rest.get('/api/v1/feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.json<CreateDiscordWebhookConnectionOutput>({
-      result: mockFeedWebhookConnections[0],
     }),
   )),
 

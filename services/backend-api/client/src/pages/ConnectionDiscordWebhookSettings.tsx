@@ -32,16 +32,16 @@ import {
   useUpdateDiscordWebhookConnection,
   DeleteConnectionButton,
 } from '../features/feedConnections';
-import { useFeed } from '../features/feed';
+import { UserFeedHealthStatus, useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
-  const { feedId, serverId, connectionId } = useParams<RouteParams>();
+  const { feedId, connectionId } = useParams<RouteParams>();
   const {
     feed,
     status: feedStatus,
     error: feedError,
-  } = useFeed({
+  } = useUserFeed({
     feedId,
   });
   const {
@@ -54,6 +54,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
   });
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateDiscordWebhookConnection();
+  const serverId = connection?.details.webhook.guildId;
 
   const onFiltersUpdated = async (filters: FilterExpression | null) => {
     if (!feedId || !connectionId) {
@@ -140,7 +141,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/servers/${serverId}/feeds`}
+                        to="/v2/feeds"
                       >
                         Feeds
                       </BreadcrumbLink>
@@ -148,7 +149,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/servers/${serverId}/feeds/${feedId}`}
+                        to={`/v2/feeds/${feedId}`}
                       >
                         {feed?.title}
 
@@ -165,17 +166,18 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                       Stocks
                     </Heading>
                     <HStack>
+                      {connection && (
                       <EditConnectionWebhookDialog
                         feedId={feedId}
-                        serverId={serverId}
                         onUpdate={onWebhookUpdated}
                         defaultValues={{
-                          name: '1',
+                          name: connection.name,
                           webhook: {
-                            id: '1',
-                            iconUrl: 'icon-url',
-                            name: 'name',
+                            id: connection.details.webhook.id,
+                            iconUrl: connection.details.webhook.iconUrl,
+                            name: connection.details.webhook.name,
                           },
+                          serverId: connection.details.webhook.guildId,
                         }}
                         trigger={(
                           <Button
@@ -185,8 +187,9 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                           >
                             {t('common.buttons.configure')}
                           </Button>
-                    )}
+                        )}
                       />
+                      )}
                       <DeleteConnectionButton
                         serverId={serverId as string}
                         connectionId={connectionId as string}
@@ -195,14 +198,17 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     </HStack>
                   </HStack>
                 </Box>
-                <Alert status="error" hidden={feed?.status !== 'failed'}>
+                <Alert
+                  status="error"
+                  hidden={!feed || feed.healthStatus !== UserFeedHealthStatus.Failed}
+                >
                   <Box>
                     <AlertTitle>
                       {t('pages.feed.connectionFailureTitle')}
                     </AlertTitle>
                     <AlertDescription display="block">
                       {t('pages.feed.connectionFailureText', {
-                        reason: feed?.failReason || t('pages.feed.unknownReason'),
+                        reason: feed?.healthStatus || t('pages.feed.unknownReason'),
                       })}
                     </AlertDescription>
                   </Box>

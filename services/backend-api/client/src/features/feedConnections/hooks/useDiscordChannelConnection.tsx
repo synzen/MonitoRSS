@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from 'react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getDiscordChannelConnection, GetDiscordChannelConnectionOutput } from '../api';
+import { FeedConnectionType, FeedDiscordChannelConnection } from '../../../types';
+import { useUserFeed } from '../../feed/hooks';
 
 interface Props {
   feedId?: string
@@ -9,35 +7,18 @@ interface Props {
 }
 
 export const useDiscordChannelConnection = ({ feedId, connectionId }: Props) => {
-  const [hasErrored, setHasErrored] = useState(false);
+  const {
+    feed, status, error,
+  } = useUserFeed({
+    feedId,
+  });
 
-  const { data, status, error } = useQuery<
-  GetDiscordChannelConnectionOutput, ApiAdapterError | Error
-  >(
-    ['connections-discord-channel', {
-      feedId,
-      connectionId,
-    }],
-    async () => {
-      if (!feedId || !connectionId) {
-        throw new Error('Missing feed or connection ID selection');
-      }
-
-      return getDiscordChannelConnection({
-        feedId,
-        connectionId,
-      });
-    },
-    {
-      enabled: !!feedId && !!connectionId && !hasErrored,
-      onError: () => {
-        setHasErrored(true);
-      },
-    },
-  );
+  const connection = feed?.connections
+    .find((c) => c.id === connectionId
+      && c.key === FeedConnectionType.DiscordChannel) as FeedDiscordChannelConnection;
 
   return {
-    connection: data?.result,
+    connection,
     status,
     error,
   };

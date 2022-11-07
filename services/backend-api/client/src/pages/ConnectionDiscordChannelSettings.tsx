@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { CategoryText, DiscordMessageForm, DashboardContentV2 } from '../components';
 import { DiscordChannelName } from '../features/discordServers';
-import { useFeed } from '../features/feed';
+import { UserFeedHealthStatus, useUserFeed } from '../features/feed';
 import {
   DeleteConnectionButton,
   EditConnectionChannelDialog,
@@ -36,12 +36,12 @@ import { DiscordMessageFormData } from '../types/discord';
 import RouteParams from '../types/RouteParams';
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
-  const { feedId, serverId, connectionId } = useParams<RouteParams>();
+  const { feedId, connectionId } = useParams<RouteParams>();
   const {
     feed,
     status: feedStatus,
     error: feedError,
-  } = useFeed({
+  } = useUserFeed({
     feedId,
   });
   const {
@@ -56,6 +56,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const {
     mutateAsync,
   } = useUpdateDiscordChannelConnection();
+  const serverId = connection?.details.channel.guildId;
 
   const onFiltersUpdated = async (filters: FilterExpression | null) => {
     if (!feedId || !connectionId) {
@@ -135,7 +136,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/servers/${serverId}/feeds`}
+                        to="/v2/feeds"
                       >
                         Feeds
                       </BreadcrumbLink>
@@ -143,7 +144,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/servers/${serverId}/feeds/${feedId}`}
+                        to={`/v2/feeds/${feedId}`}
                       >
                         {feed?.title}
                       </BreadcrumbLink>
@@ -162,8 +163,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     <HStack>
                       <EditConnectionChannelDialog
                         defaultValues={{
-                          channelId: 'channel',
-                          name: 'hello',
+                          channelId: connection?.details.channel.id as string,
+                          name: connection?.name as string,
+                          serverId: serverId as string,
                         }}
                         onUpdate={onChannelUpdated}
                         trigger={(
@@ -174,8 +176,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                           >
                             {t('common.buttons.configure')}
                           </Button>
-                  )}
-                        serverId={serverId}
+                        )}
                       />
                       <DeleteConnectionButton
                         serverId={serverId as string}
@@ -185,14 +186,17 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     </HStack>
                   </HStack>
                 </Box>
-                <Alert status="error" hidden={feed?.status === 'failed'}>
+                <Alert
+                  status="error"
+                  hidden={!feed || feed.healthStatus === UserFeedHealthStatus.Failed}
+                >
                   <Box>
                     <AlertTitle>
                       {t('pages.feed.connectionFailureTitle')}
                     </AlertTitle>
                     <AlertDescription display="block">
                       {t('pages.feed.connectionFailureText', {
-                        reason: feed?.failReason || t('pages.feed.unknownReason'),
+                        reason: feed?.healthStatus || t('pages.feed.unknownReason'),
                       })}
                     </AlertDescription>
                   </Box>

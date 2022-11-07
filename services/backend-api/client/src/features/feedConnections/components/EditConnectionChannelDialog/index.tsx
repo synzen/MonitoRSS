@@ -20,25 +20,30 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { InferType, object, string } from 'yup';
 import React, { useEffect } from 'react';
-import { useDiscordServerChannels } from '@/features/discordServers';
+import { DiscordServerSearchSelectv2, useDiscordServerChannels } from '@/features/discordServers';
 import { ThemedSelect } from '@/components';
 
 const formSchema = object({
   name: string().optional(),
-  channelId: string().optional(),
+  serverId: string().optional(),
+  channelId: string().when('serverId', ([serverId], schema) => {
+    if (serverId) {
+      return schema.required();
+    }
+
+    return schema.optional();
+  }),
 });
 
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
-  serverId?: string
   onUpdate: (data: FormData) => Promise<void>
   trigger: React.ReactElement
   defaultValues: Required<FormData>
 }
 
 export const EditConnectionChannelDialog: React.FC<Props> = ({
-  serverId,
   onUpdate,
   trigger,
   defaultValues,
@@ -54,11 +59,13 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
       errors,
       isSubmitting,
     },
+    watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: 'all',
     defaultValues,
   });
+  const serverId = watch('serverId');
   const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
 
   const loadingChannels = status === 'loading' || status === 'idle';
@@ -107,6 +114,24 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                   + '.addDiscordChannelConnectionDialog.formNameDescription')}
                   </FormHelperText>
                 </FormControl>
+                <FormControl isInvalid={!!errors.serverId}>
+                  <FormLabel>
+                    {t('features.feed.components'
+                    + '.addDiscordChannelConnectionDialog.formServerLabel')}
+                  </FormLabel>
+                  <Controller
+                    name="serverId"
+                    control={control}
+                    render={({ field }) => (
+                      <DiscordServerSearchSelectv2
+                        {...field}
+                        onChange={(id) => field.onChange(id)}
+                        value={field.value || ''}
+                      />
+
+                    )}
+                  />
+                </FormControl>
                 <FormControl isInvalid={!!errors.channelId}>
                   <FormLabel>
                     {t('features.feed.components'
@@ -117,6 +142,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                     control={control}
                     render={({ field }) => (
                       <ThemedSelect
+                        {...field}
                         loading={loadingChannels}
                         isDisabled={isSubmitting || loadingChannels || !!channelsError}
                         options={data?.results.map((channel) => ({

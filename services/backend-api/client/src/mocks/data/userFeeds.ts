@@ -2,6 +2,7 @@ import { UserFeed } from '@/features/feed';
 import { UserFeedDisabledCode, UserFeedHealthStatus } from '../../features/feed/types';
 import { FeedConnectionType } from '../../types';
 import mockDiscordChannels from './discordChannels';
+import mockDiscordServers from './discordServers';
 import mockDiscordWebhooks from './discordWebhooks';
 
 const mockUserFeeds: UserFeed[] = [{
@@ -14,6 +15,7 @@ const mockUserFeeds: UserFeed[] = [{
     details: {
       channel: {
         id: mockDiscordChannels[0].id,
+        guildId: mockDiscordServers[0].id,
       },
       embeds: [],
     },
@@ -28,6 +30,7 @@ const mockUserFeeds: UserFeed[] = [{
         id: mockDiscordWebhooks[0].id,
         iconUrl: mockDiscordWebhooks[0].avatarUrl,
         name: mockDiscordWebhooks[0].name,
+        guildId: mockDiscordServers[0].id,
       },
     },
     filters: null,

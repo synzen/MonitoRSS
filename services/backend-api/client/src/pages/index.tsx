@@ -111,19 +111,17 @@ const Pages: React.FC = () => (
 
     />
     <Route
-      path="/v2/servers/:serverId/feeds/:feedId/discord-channel-connections/:connectionId"
+      path="/v2/feeds/:feedId/discord-channel-connections/:connectionId"
       element={(
         <RequireAuth>
-          <RequireDiscordServers>
-            <PageContentV2 requireFeed>
-              <ConnectionDiscordChannelSettings />
-            </PageContentV2>
-          </RequireDiscordServers>
+          <PageContentV2>
+            <ConnectionDiscordChannelSettings />
+          </PageContentV2>
         </RequireAuth>
     )}
     />
     <Route
-      path="/v2/servers/:serverId/feeds/:feedId/discord-webhook-connections/:connectionId"
+      path="/v2/feeds/:feedId/discord-webhook-connections/:connectionId"
       element={(
         <RequireAuth>
           <RequireDiscordServers>

@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from 'react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getDiscordWebhookConnection, GetDiscordWebhookConnectionOutput } from '../api';
+import { FeedConnectionType, FeedDiscordWebhookConnection } from '../../../types';
+import { useUserFeed } from '../../feed/hooks';
 
 interface Props {
   feedId?: string
@@ -9,35 +7,18 @@ interface Props {
 }
 
 export const useDiscordWebhookConnection = ({ feedId, connectionId }: Props) => {
-  const [hasErrored, setHasErrored] = useState(false);
+  const {
+    feed,
+    status,
+    error,
+  } = useUserFeed({ feedId });
 
-  const { data, status, error } = useQuery<
-  GetDiscordWebhookConnectionOutput, ApiAdapterError | Error
-  >(
-    ['connections-discord-webhook', {
-      feedId,
-      connectionId,
-    }],
-    async () => {
-      if (!feedId || !connectionId) {
-        throw new Error('Missing feed or connection ID selection');
-      }
-
-      return getDiscordWebhookConnection({
-        feedId,
-        connectionId,
-      });
-    },
-    {
-      enabled: !!feedId && !!connectionId && !hasErrored,
-      onError: () => {
-        setHasErrored(true);
-      },
-    },
-  );
+  const connection = feed?.connections
+    .find((c) => c.id === connectionId
+      && c.key === FeedConnectionType.DiscordWebhook) as FeedDiscordWebhookConnection | undefined;
 
   return {
-    connection: data?.result,
+    connection,
     status,
     error,
   };
