@@ -18,6 +18,9 @@ class FiltersDto {
 class DetailsChannelDto {
   @IsString()
   id: string;
+
+  @IsString()
+  guildId: string;
 }
 
 class DetailsDto {

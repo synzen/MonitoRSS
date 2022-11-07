@@ -69,6 +69,7 @@ export class FeedConnectionsDiscordChannelsController {
       details: {
         channel: {
           id: createdConnection.details.channel.id,
+          guildId: createdConnection.details.channel.guildId,
         },
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
@@ -121,6 +122,7 @@ export class FeedConnectionsDiscordChannelsController {
       details: {
         channel: {
           id: createdConnection.details.channel.id,
+          guildId: createdConnection.details.channel.guildId,
         },
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
