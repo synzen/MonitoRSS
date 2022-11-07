@@ -17,7 +17,13 @@ export interface UpdateDiscordChannelConnectionInput {
   updates: {
     filters?: DiscordChannelConnection["filters"];
     name?: string;
-    details?: Partial<DiscordChannelConnection["details"]>;
+    details?: {
+      embeds?: DiscordChannelConnection["details"]["embeds"];
+      channel?: {
+        id: string;
+      };
+      content?: string;
+    };
   };
   guildId: string;
 }
@@ -63,6 +69,7 @@ export class FeedConnectionsDiscordChannelsService {
               type: FeedConnectionType.DiscordChannel,
               channel: {
                 id: channelId,
+                guildId,
               },
               embeds: [],
             },
@@ -92,14 +99,6 @@ export class FeedConnectionsDiscordChannelsService {
     connectionId: string,
     { accessToken, updates, guildId }: UpdateDiscordChannelConnectionInput
   ): Promise<DiscordChannelConnection> {
-    if (updates.details?.channel) {
-      await this.assertDiscordChannelCanBeUsed(
-        accessToken,
-        updates.details.channel.id,
-        guildId
-      );
-    }
-
     const setRecordDetails: Partial<DiscordChannelConnection["details"]> =
       Object.entries(updates.details || {}).reduce(
         (acc, [key, value]) => ({
@@ -108,6 +107,20 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         {}
       );
+
+    if (updates.details?.channel?.id) {
+      await this.assertDiscordChannelCanBeUsed(
+        accessToken,
+        updates.details.channel.id,
+        guildId
+      );
+
+      // @ts-ignore
+      setRecordDetails["connections.discordChannels.$.details.channel"] = {
+        id: updates.details.channel.id,
+        guildId,
+      };
+    }
 
     const findQuery = {
       _id: feedId,

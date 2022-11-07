@@ -12,6 +12,11 @@ class Channel {
     required: true,
   })
   id: string;
+
+  @Prop({
+    required: true,
+  })
+  guildId: string;
 }
 
 const ChannelSchema = SchemaFactory.createForClass(Channel);

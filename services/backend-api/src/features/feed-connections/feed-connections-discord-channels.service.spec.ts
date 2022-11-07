@@ -62,9 +62,10 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     it("saves the new connection", async () => {
       const createdFeed = await userFeedsModel.create({
         title: "my feed",
-        guild: guildId,
-        isFeedv2: true,
         url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
       });
 
       feedsService.canUseChannel.mockResolvedValue({
@@ -92,6 +93,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           embeds: [],
           channel: {
             id: creationDetails.channelId,
+            guildId,
           },
         },
       });
@@ -133,6 +135,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       createdFeed = await userFeedsModel.create({
         title: "my feed",
         url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
         connections: {
           discordChannels: [
             {
@@ -141,6 +146,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
               details: {
                 channel: {
                   id: "channel-id",
+                  guildId,
                 },
                 embeds: [
                   {
@@ -178,6 +184,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           embeds: updateInput.updates.details?.embeds,
           channel: {
             id: updateInput.updates.details.channel.id,
+            guildId,
           },
           content: updateInput.updates.details?.content,
         },
@@ -233,6 +240,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       const createdFeed = await userFeedsModel.create({
         title: "my feed",
         url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
         connections: {
           discordChannels: [
             {
@@ -241,6 +251,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
               details: {
                 channel: {
                   id: "channel-id",
+                  guildId: "guild-id",
                 },
                 embeds: [],
               },

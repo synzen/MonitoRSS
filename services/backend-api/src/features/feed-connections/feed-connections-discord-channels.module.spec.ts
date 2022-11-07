@@ -194,6 +194,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
           type: FeedConnectionType.DiscordChannel,
           channel: {
             id: validBody.channelId,
+            guildId: "guild",
           },
           embeds: [],
           content: "content",
@@ -401,6 +402,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
         details: {
           channel: {
             id: "id",
+            guildId: "guild",
           },
           embeds: [],
           content: "content",
