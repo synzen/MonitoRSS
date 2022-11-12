@@ -32,12 +32,12 @@ import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { CategoryText } from '@/components';
 import {
+  RefreshUserFeedButton,
   useArticleDailyLimit,
   UserFeedHealthStatus,
   useUserFeed,
 } from '../features/feed';
 import RouteParams from '../types/RouteParams';
-import { RefreshButton } from '@/features/feed/components/RefreshButton';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { AddConnectionDialog } from '../features/feedConnections';
 import { FeedConnectionType } from '../types';
@@ -54,7 +54,7 @@ const getConnectionUrlByType = (type: FeedConnectionType) => {
 };
 
 export const FeedV2: React.FC = () => {
-  const { feedId, serverId } = useParams<RouteParams>();
+  const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
@@ -67,7 +67,7 @@ export const FeedV2: React.FC = () => {
   });
 
   const {
-    feed, status, error, refetch,
+    feed, status, error,
   } = useUserFeed({
     feedId,
   });
@@ -149,9 +149,8 @@ export const FeedV2: React.FC = () => {
                       })}
                       <Box marginTop="1rem">
                         {feedId && (
-                        <RefreshButton
+                        <RefreshUserFeedButton
                           feedId={feedId}
-                          onSuccess={() => refetch()}
                         />
                         )}
                       </Box>

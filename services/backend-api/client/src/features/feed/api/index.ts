@@ -15,3 +15,4 @@ export * from './deleteFeed';
 export * from './getArticleDailyLimit';
 export * from './getUserFeeds';
 export * from './getUserFeed';
+export * from './refreshUserFeed';

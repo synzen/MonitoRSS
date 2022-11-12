@@ -176,7 +176,26 @@ const handlers = [
       );
     }
 
-    console.log(feed);
+    return res(
+      ctx.delay(500),
+      ctx.json<GetUserFeedOutput>({
+        result: feed,
+      }),
+    );
+  }),
+
+  rest.get('/api/v1/user-feeds/:feedId/retry', (req, res, ctx) => {
+    const { feedId } = req.params;
+    const feed = mockUserFeeds.find((f) => f.id === feedId);
+
+    if (!feed) {
+      return res(
+        ctx.status(404),
+        ctx.json(generateMockApiErrorResponse({
+          code: 'FEED_NOT_FOUND',
+        })),
+      );
+    }
 
     return res(
       ctx.delay(500),
