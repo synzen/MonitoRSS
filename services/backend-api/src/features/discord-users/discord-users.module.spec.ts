@@ -4,9 +4,7 @@ import {
   teardownEndpointTests,
 } from "../../utils/endpoint-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import nock from "nock";
 import { HttpStatus } from "@nestjs/common";
-import { DISCORD_API_BASE_URL } from "../../constants/discord";
 import { Session } from "../../common";
 import { DiscordUserModule } from "./discord-users.module";
 import { DiscordUser } from "./types/DiscordUser.type";
@@ -62,28 +60,16 @@ describe("DiscordServersModule", () => {
   });
 
   afterEach(async () => {
-    nock.cleanAll();
     await supporterModel.deleteMany();
+    jest.resetAllMocks();
   });
 
   afterAll(async () => {
     await teardownEndpointTests();
   });
 
-  const mockGetMe = (user?: Partial<DiscordUser>) => {
-    nock(DISCORD_API_BASE_URL)
-      .get(`/users/@me`)
-      .reply(200, {
-        ...mockUser,
-        ...user,
-      })
-      .persist();
-  };
-
   describe("GET /discord-users/@me", () => {
     it("returns 401 if not logged in with discord", async () => {
-      mockGetMe();
-
       const { statusCode } = await app.inject({
         method: "GET",
         url: `/discord-users/@me`,
@@ -115,7 +101,7 @@ describe("DiscordServersModule", () => {
         id: mockUser.id,
         username: mockUser.username,
         maxFeeds: mockUser.maxFeeds,
-        avatarUrl: mockUser.avatarUrl,
+        iconUrl: mockUser.avatarUrl,
       });
     });
 
@@ -147,7 +133,7 @@ describe("DiscordServersModule", () => {
       expect(parsedBody).toEqual({
         id: mockUser.id,
         username: mockUser.username,
-        iconUrl: expect.any(String),
+        iconUrl: mockUser.avatarUrl,
         maxFeeds: mockUser.supporter.maxFeeds,
         supporter: {
           guilds: mockUser.supporter.guilds,
