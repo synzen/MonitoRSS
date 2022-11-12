@@ -1,10 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
-import { BannedFeedException } from "../feeds/exceptions";
+import {
+  BannedFeedException,
+  FeedLimitReachedException,
+} from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "./entities";
 import _ from "lodash";
+import { SupportersService } from "../supporters/supporters.service";
 
 interface GetFeedsInput {
   userId: string;
@@ -28,7 +32,8 @@ export class UserFeedsService {
   constructor(
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly feedsService: FeedsService,
-    private readonly feedFetcherService: FeedFetcherService
+    private readonly feedFetcherService: FeedFetcherService,
+    private readonly supportersService: SupportersService
   ) {}
 
   async addFeed(
@@ -45,6 +50,20 @@ export class UserFeedsService {
       url: string;
     }
   ) {
+    const { maxFeeds } = await this.supportersService.getBenefitsOfDiscordUser(
+      discordUserId
+    );
+
+    const feedCount = await this.userFeedModel
+      .where({
+        "user.discordUserId": discordUserId,
+      })
+      .countDocuments();
+
+    if (feedCount >= maxFeeds) {
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
+
     await this.checkUrlIsValid(url);
 
     const created = await this.userFeedModel.create({

@@ -12,6 +12,7 @@ import {
   FeedUnauthorizedException,
   InvalidFeedException,
 } from "../../../services/feed-fetcher/exceptions";
+import { FeedLimitReachedException } from "../exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   {
@@ -50,6 +51,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [FeedUnauthorizedException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_REQUEST_UNAUTHORIZED,
+    },
+    [FeedLimitReachedException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_LIMIT_REACHED,
     },
   };
 

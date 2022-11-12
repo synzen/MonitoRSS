@@ -6,8 +6,12 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { BannedFeedException } from "../feeds/exceptions";
+import {
+  BannedFeedException,
+  FeedLimitReachedException,
+} from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
+import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { UserFeedsService } from "./user-feeds.service";
 
@@ -16,11 +20,17 @@ describe("UserFeedsService", () => {
   let userFeedModel: UserFeedModel;
   let feedFetcherService: FeedFetcherService;
   let feedsService: FeedsService;
+  let supportersService: SupportersService;
   const discordUserId = "discordUserId";
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
-      providers: [FeedsService, FeedFetcherService, UserFeedsService],
+      providers: [
+        FeedsService,
+        FeedFetcherService,
+        UserFeedsService,
+        SupportersService,
+      ],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([UserFeedFeature]),
@@ -36,6 +46,10 @@ describe("UserFeedsService", () => {
       .useValue({
         canUseChannel: jest.fn(),
         getBannedFeedDetails: jest.fn(),
+      })
+      .overrideProvider(SupportersService)
+      .useValue({
+        getBenefitsOfDiscordUser: jest.fn(),
       });
 
     const { module } = await init();
@@ -44,9 +58,10 @@ describe("UserFeedsService", () => {
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     feedsService = module.get<FeedsService>(FeedsService);
+    supportersService = module.get<SupportersService>(SupportersService);
   });
 
-  beforeEach(() => {
+  afterEach(() => {
     jest.resetAllMocks();
   });
 
@@ -92,6 +107,32 @@ describe("UserFeedsService", () => {
           }
         )
       ).rejects.toThrow(err);
+    });
+
+    it("throws if user is at feed limit", async () => {
+      jest
+        .spyOn(supportersService, "getBenefitsOfDiscordUser")
+        .mockResolvedValue({ maxFeeds: 1 } as never);
+
+      await userFeedModel.create({
+        user: {
+          discordUserId,
+        },
+        title: "title",
+        url: "url",
+      });
+
+      await expect(
+        service.addFeed(
+          {
+            discordUserId,
+          },
+          {
+            title: "title",
+            url: "url",
+          }
+        )
+      ).rejects.toThrow(FeedLimitReachedException);
     });
 
     it("returns the created entity", async () => {
