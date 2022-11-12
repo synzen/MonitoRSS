@@ -4,6 +4,7 @@ const mockDiscordUser: DiscordUser = {
   id: '1',
   username: 'My name'.padEnd(1000, 'nasd'),
   iconUrl: undefined,
+  maxFeeds: 10,
   supporter: {
     expireAt: new Date().toISOString(),
     guilds: [],

@@ -50,7 +50,7 @@ const FeedsV2: React.FC = () => {
         >
           <Heading size="lg">{t('pages.feeds.title')}</Heading>
           <Box>
-            {discordUserMe?.supporter && userFeeds?.total !== undefined
+            {discordUserMe?.maxFeeds !== undefined && userFeeds?.total !== undefined
             && (
             <HStack>
               <Text fontSize="lg">
@@ -60,7 +60,7 @@ const FeedsV2: React.FC = () => {
                 /
               </Text>
               <Text fontSize="lg">
-                {discordUserMe.supporter.maxFeeds}
+                {discordUserMe.maxFeeds}
               </Text>
             </HStack>
             )}
