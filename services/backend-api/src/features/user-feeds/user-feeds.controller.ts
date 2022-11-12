@@ -84,43 +84,24 @@ export class UserFeedsController {
       throw new NotFoundException();
     }
 
-    const discordChannelConnections: CreateDiscordChannelConnectionOutputDto[] =
-      feed.connections.discordChannels.map((con) => ({
-        id: con.id.toHexString(),
-        name: con.name,
-        key: FeedConnectionType.DiscordChannel,
-        details: con.details,
-        filters: con.filters,
-      }));
+    return await this.formatFeedForResponse(feed, discordUserId);
+  }
 
-    const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
-      feed.connections.discordWebhooks.map((con) => ({
-        id: con.id.toHexString(),
-        name: con.name,
-        key: FeedConnectionType.DiscordWebhook,
-        details: con.details,
-        filters: con.filters,
-      }));
+  @Get("/:feedId/retry")
+  async retryFailedFeed(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+  ): Promise<GetUserFeedOutputDto> {
+    if (feed.user.discordUserId !== discordUserId) {
+      throw new NotFoundException();
+    }
 
-    const { refreshRateSeconds } =
-      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+    const updatedFeed = (await this.userFeedsService.retryFailedFeed(
+      feed._id.toHexString()
+    )) as UserFeed;
 
-    return {
-      result: {
-        id: feed._id.toHexString(),
-        title: feed.title,
-        url: feed.url,
-        connections: [
-          ...discordChannelConnections,
-          ...discordWebhookConnections,
-        ],
-        disabledCode: feed.disabledCode,
-        healthStatus: feed.healthStatus,
-        createdAt: feed.createdAt.toISOString(),
-        updatedAt: feed.updatedAt.toISOString(),
-        refreshRateSeconds,
-      },
-    };
+    return this.formatFeedForResponse(updatedFeed, discordUserId);
   }
 
   @Patch("/:feedId")
@@ -194,5 +175,48 @@ export class UserFeedsController {
     }
 
     await this.userFeedsService.deleteFeedById(feed._id.toHexString());
+  }
+
+  private async formatFeedForResponse(
+    feed: UserFeed,
+    discordUserId: string
+  ): Promise<GetUserFeedOutputDto> {
+    const discordChannelConnections: CreateDiscordChannelConnectionOutputDto[] =
+      feed.connections.discordChannels.map((con) => ({
+        id: con.id.toHexString(),
+        name: con.name,
+        key: FeedConnectionType.DiscordChannel,
+        details: con.details,
+        filters: con.filters,
+      }));
+
+    const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
+      feed.connections.discordWebhooks.map((con) => ({
+        id: con.id.toHexString(),
+        name: con.name,
+        key: FeedConnectionType.DiscordWebhook,
+        details: con.details,
+        filters: con.filters,
+      }));
+
+    const { refreshRateSeconds } =
+      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+
+    return {
+      result: {
+        id: feed._id.toHexString(),
+        title: feed.title,
+        url: feed.url,
+        connections: [
+          ...discordChannelConnections,
+          ...discordWebhookConnections,
+        ],
+        disabledCode: feed.disabledCode,
+        healthStatus: feed.healthStatus,
+        createdAt: feed.createdAt.toISOString(),
+        updatedAt: feed.updatedAt.toISOString(),
+        refreshRateSeconds,
+      },
+    };
   }
 }

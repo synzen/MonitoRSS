@@ -9,9 +9,53 @@ describe("UserFeedsController", () => {
   const userFeedsService = {
     addFeed: jest.fn(),
     updateFeedById: jest.fn(),
+    retryFailedFeed: jest.fn(),
   };
   const supportersService = {
     getBenefitsOfDiscordUser: jest.fn(),
+  };
+  const discordUserId = "discord-user-id";
+  const feed = {
+    title: "title",
+    url: "url",
+    _id: new Types.ObjectId(),
+    user: {
+      discordUserId,
+    },
+    disabledCode: UserFeedDisabledCode.Manual,
+    healthStatus: UserFeedHealthStatus.Failed,
+    connections: {
+      discordChannels: [
+        {
+          id: new Types.ObjectId(),
+          name: "discord channel con name",
+          filters: {
+            expression: {
+              foo: "discord channel filters",
+            },
+          },
+          details: {
+            hello: "discord channel details",
+          },
+        },
+      ],
+      discordWebhooks: [
+        {
+          id: new Types.ObjectId(),
+          name: "discord webhook con name",
+          filters: {
+            expression: {
+              foo: "discord webhook filters",
+            },
+          },
+          details: {
+            hello: "discord webhook details",
+          },
+        },
+      ],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -57,55 +101,84 @@ describe("UserFeedsController", () => {
 
   describe("getFeed", () => {
     it("returns the feed and refresh rate", async () => {
-      const discordUserId = "discord id";
-      const feed = {
-        title: "title",
-        url: "url",
-        _id: new Types.ObjectId(),
-        user: {
-          discordUserId,
-        },
-        disabledCode: UserFeedDisabledCode.Manual,
-        healthStatus: UserFeedHealthStatus.Failed,
-        connections: {
-          discordChannels: [
-            {
-              id: new Types.ObjectId(),
-              name: "discord channel con name",
-              filters: {
-                expression: {
-                  foo: "discord channel filters",
-                },
-              },
-              details: {
-                hello: "discord channel details",
-              },
-            },
-          ],
-          discordWebhooks: [
-            {
-              id: new Types.ObjectId(),
-              name: "discord webhook con name",
-              filters: {
-                expression: {
-                  foo: "discord webhook filters",
-                },
-              },
-              details: {
-                hello: "discord webhook details",
-              },
-            },
-          ],
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
       supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
         refreshRateSeconds: 123,
       } as never);
 
       const result = await controller.getFeed(
+        {
+          discord: {
+            id: discordUserId,
+          },
+        } as never,
+        feed as never
+      );
+
+      expect(result).toMatchObject({
+        result: {
+          id: feed._id.toHexString(),
+          title: feed.title,
+          url: feed.url,
+          healthStatus: feed.healthStatus,
+          disabledCode: feed.disabledCode,
+          refreshRateSeconds: 123,
+          connections: [
+            ...feed.connections.discordChannels.map((con) => ({
+              id: con.id.toHexString(),
+              name: con.name,
+              key: FeedConnectionType.DiscordChannel,
+              details: con.details,
+              filters: con.filters,
+            })),
+            ...feed.connections.discordWebhooks.map((con) => ({
+              id: con.id.toHexString(),
+              name: con.name,
+              key: FeedConnectionType.DiscordWebhook,
+              details: con.details,
+              filters: con.filters,
+            })),
+          ],
+        },
+      });
+    });
+
+    it("throws a not found exception if the feed does not belong to the user", async () => {
+      const feed = {
+        title: "title",
+        url: "url",
+        _id: new Types.ObjectId(),
+        user: {
+          discordUserId: "other discord id",
+        },
+        connections: {
+          discordChannels: [],
+          discordWebhooks: [],
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await expect(
+        controller.getFeed(
+          {
+            discord: {
+              id: discordUserId,
+            },
+          } as never,
+          feed as never
+        )
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("retryFailedFeed", () => {
+    it("returns the feed", async () => {
+      supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
+        refreshRateSeconds: 123,
+      } as never);
+      userFeedsService.retryFailedFeed.mockResolvedValue(feed as never);
+
+      const result = await controller.retryFailedFeed(
         {
           discord: {
             id: discordUserId,
@@ -160,7 +233,7 @@ describe("UserFeedsController", () => {
       };
 
       await expect(
-        controller.getFeed(
+        controller.retryFailedFeed(
           {
             discord: {
               id: discordUserId,

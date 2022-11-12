@@ -9,6 +9,8 @@ import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "./entities";
 import _ from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
+import { UserFeedHealthStatus } from "./types";
+import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 
 interface GetFeedsInput {
   userId: string;
@@ -163,6 +165,41 @@ export class UserFeedsService {
 
   async deleteFeedById(id: string) {
     await this.userFeedModel.findByIdAndDelete(id);
+  }
+
+  async retryFailedFeed(feedId: string) {
+    const feed = await this.userFeedModel.findById(feedId);
+
+    if (!feed) {
+      throw new Error(
+        `Feed ${feedId} not found while attempting to retry failed feed`
+      );
+    }
+
+    if (feed.healthStatus !== UserFeedHealthStatus.Failed) {
+      throw new FeedNotFailedException(
+        `Feed ${feedId} is not in a failed state, cannot retry it`
+      );
+    }
+
+    await this.feedFetcherService.fetchFeed(feed.url, {
+      fetchOptions: {
+        useServiceApi: true,
+        useServiceApiCache: false,
+      },
+    });
+
+    return this.userFeedModel
+      .findByIdAndUpdate(
+        feedId,
+        {
+          healthStatus: UserFeedHealthStatus.Ok,
+        },
+        {
+          new: true,
+        }
+      )
+      .lean();
   }
 
   private async checkUrlIsValid(url: string) {

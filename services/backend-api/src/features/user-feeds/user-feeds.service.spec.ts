@@ -13,6 +13,8 @@ import {
 import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
+import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
+import { UserFeedHealthStatus } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 
 describe("UserFeedsService", () => {
@@ -634,6 +636,66 @@ describe("UserFeedsService", () => {
       });
 
       expect(result).toEqual(0);
+    });
+  });
+
+  describe("retryFailedFeed", () => {
+    it("throws an error if the feed is not found", async () => {
+      await expect(
+        service.retryFailedFeed(new Types.ObjectId().toHexString())
+      ).rejects.toThrowError();
+    });
+
+    it("throws if the feed is not failed", async () => {
+      const feed = await userFeedModel.create({
+        title: "title",
+        url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
+        healthStatus: UserFeedHealthStatus.Ok,
+      });
+
+      await expect(
+        service.retryFailedFeed(feed._id.toHexString())
+      ).rejects.toThrowError(FeedNotFailedException);
+    });
+
+    it("sets the health status to ok if successful", async () => {
+      const feed = await userFeedModel.create({
+        title: "title",
+        url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
+        healthStatus: UserFeedHealthStatus.Failed,
+      });
+
+      await service.retryFailedFeed(feed._id.toHexString());
+
+      const updatedFeed = await userFeedModel.findById(feed._id);
+
+      expect(updatedFeed?.healthStatus).toEqual(UserFeedHealthStatus.Ok);
+    });
+
+    it("returns the updated feed", async () => {
+      const feed = await userFeedModel.create({
+        title: "title",
+        url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
+        healthStatus: UserFeedHealthStatus.Failed,
+      });
+
+      const result = await service.retryFailedFeed(feed._id.toHexString());
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          _id: feed._id,
+          healthStatus: UserFeedHealthStatus.Ok,
+        })
+      );
     });
   });
 });
