@@ -109,6 +109,7 @@ export class DiscordUsersService {
       discriminator: user.discriminator,
       username: user.username,
       avatar: user.avatar,
+      maxFeeds: benefits.maxFeeds,
     };
 
     if (benefits.isSupporter) {

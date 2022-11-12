@@ -42,6 +42,7 @@ export class DiscordUsersController {
       username: user.username,
       iconUrl: user.avatarUrl,
       supporter: user.supporter,
+      maxFeeds: user.maxFeeds,
     };
   }
 

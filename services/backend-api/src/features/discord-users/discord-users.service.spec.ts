@@ -253,6 +253,7 @@ describe("DiscordUsersService", () => {
         username: user.username,
         avatar: user.avatar,
         avatarUrl: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
+        maxFeeds: supporterBenefits.maxFeeds,
         supporter: {
           guilds: supporterBenefits.guilds,
           maxFeeds: supporterBenefits.maxFeeds,
@@ -286,6 +287,7 @@ describe("DiscordUsersService", () => {
         username: user.username,
         avatar: user.avatar,
         avatarUrl: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
+        maxFeeds: supporterBenefits.maxFeeds,
       });
     });
   });

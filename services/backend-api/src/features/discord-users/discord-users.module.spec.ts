@@ -10,7 +10,6 @@ import { DISCORD_API_BASE_URL } from "../../constants/discord";
 import { Session } from "../../common";
 import { DiscordUserModule } from "./discord-users.module";
 import { DiscordUser } from "./types/DiscordUser.type";
-import { PartialUserGuild } from "./types/PartialUserGuild.type";
 import { createTestSupporter } from "../../test/data/supporters.test-data";
 import dayjs from "dayjs";
 import {
@@ -18,6 +17,8 @@ import {
   SupporterModel,
 } from "../supporters/entities/supporter.entity";
 import { getModelToken } from "@nestjs/mongoose";
+import { DiscordUsersService } from "./discord-users.service";
+import { SupportersService } from "../supporters/supporters.service";
 
 jest.mock("../../utils/logger");
 
@@ -36,6 +37,8 @@ describe("DiscordServersModule", () => {
     discriminator: "1234",
     avatar: "avatar-hash",
   };
+  let discordUsersService: DiscordUsersService;
+  let supportersService: SupportersService;
 
   beforeAll(async () => {
     const { init } = setupEndpointTests({
@@ -54,6 +57,8 @@ describe("DiscordServersModule", () => {
     } as Session["accessToken"]);
 
     supporterModel = app.get<SupporterModel>(getModelToken(Supporter.name));
+    discordUsersService = app.get(DiscordUsersService);
+    supportersService = app.get(SupportersService);
   });
 
   afterEach(async () => {
@@ -88,14 +93,15 @@ describe("DiscordServersModule", () => {
     });
 
     it("returns user with no supporter details", async () => {
-      const mockUser: DiscordUser = {
+      const mockUser = {
         id: "1",
         username: "username",
-        discriminator: "1234",
-        avatar: "123345",
+        discriminator: "discriminator",
+        avatarUrl: "str",
+        avatar: null,
+        maxFeeds: 12,
       };
-
-      mockGetMe(mockUser);
+      jest.spyOn(discordUsersService, "getUser").mockResolvedValue(mockUser);
 
       const { statusCode, body } = await app.inject({
         method: "GET",
@@ -105,32 +111,30 @@ describe("DiscordServersModule", () => {
 
       const parsedBody = JSON.parse(body);
       expect(statusCode).toEqual(200);
-      expect(parsedBody).toEqual({
+      expect(parsedBody).toMatchObject({
         id: mockUser.id,
         username: mockUser.username,
-        iconUrl: expect.any(String),
+        maxFeeds: mockUser.maxFeeds,
+        avatarUrl: mockUser.avatarUrl,
       });
     });
 
     it("returns user with supporter details", async () => {
-      const mockUser: DiscordUser = {
+      const mockUser = {
         id: "1",
         username: "username",
-        discriminator: "1234",
-        avatar: "123345",
+        discriminator: "discriminator",
+        avatar: null,
+        avatarUrl: "avatar",
+        maxFeeds: 12,
+        supporter: {
+          maxFeeds: 12,
+          guilds: ["1", "2"],
+          maxGuilds: 3,
+          expireAt: new Date(2020),
+        },
       };
-
-      mockGetMe(mockUser);
-
-      const supporter = createTestSupporter({
-        _id: mockUser.id,
-        expireAt: dayjs().add(2, "day").toDate(),
-        maxGuilds: 10,
-        maxFeeds: 11,
-        guilds: ["1", "2"],
-      });
-
-      await supporterModel.create(supporter);
+      jest.spyOn(discordUsersService, "getUser").mockResolvedValue(mockUser);
 
       const { statusCode, body } = await app.inject({
         method: "GET",
@@ -144,20 +148,45 @@ describe("DiscordServersModule", () => {
         id: mockUser.id,
         username: mockUser.username,
         iconUrl: expect.any(String),
+        maxFeeds: mockUser.supporter.maxFeeds,
         supporter: {
-          guilds: supporter.guilds,
-          maxFeeds: supporter.maxFeeds,
-          maxGuilds: supporter.maxGuilds,
-          expireAt: supporter.expireAt?.toISOString(),
+          guilds: mockUser.supporter.guilds,
+          maxFeeds: mockUser.supporter.maxFeeds,
+          maxGuilds: mockUser.supporter.maxGuilds,
+          expireAt: mockUser.supporter.expireAt?.toISOString(),
         },
       });
     });
   });
 
   describe("PATCH /discord-users/@me/supporter", () => {
-    it("returns 401 if not logged in with discord", async () => {
-      mockGetMe();
+    const mockDiscordUser = {
+      id: mockUser.id,
+      username: "username",
+      discriminator: "discriminator",
+      avatar: null,
+      avatarUrl: "avatar",
+      maxFeeds: 12,
+      supporter: {
+        maxFeeds: 12,
+        guilds: ["1", "2"],
+        maxGuilds: 3,
+        expireAt: new Date(2020),
+      },
+    };
+    beforeEach(() => {
+      jest
+        .spyOn(discordUsersService, "getUser")
+        .mockResolvedValue(mockDiscordUser);
 
+      jest
+        .spyOn(supportersService, "getBenefitsOfDiscordUser")
+        .mockResolvedValue({
+          isSupporter: true,
+        } as never);
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
       const { statusCode } = await app.inject({
         method: "PATCH",
         url: `/discord-users/@me/supporter`,
@@ -167,7 +196,12 @@ describe("DiscordServersModule", () => {
     });
 
     it("returns 403 if user is not a supporter", async () => {
-      mockGetMe();
+      jest
+        .spyOn(supportersService, "getBenefitsOfDiscordUser")
+        .mockResolvedValue({
+          isSupporter: false,
+        } as never);
+
       // User has no "supporter" document
       const payload = {
         guildIds: ["1", "2", "3"],
@@ -184,8 +218,6 @@ describe("DiscordServersModule", () => {
     });
 
     it("returns 204 if valid supporter", async () => {
-      mockGetMe(mockUser);
-
       const supporter = createTestSupporter({
         _id: mockUser.id,
         expireAt: dayjs().add(2, "day").toDate(),
@@ -211,8 +243,6 @@ describe("DiscordServersModule", () => {
     });
 
     it("ignores empty strings in guild ids", async () => {
-      mockGetMe(mockUser);
-
       const supporter = createTestSupporter({
         _id: mockUser.id,
         expireAt: dayjs().add(2, "day").toDate(),
@@ -250,30 +280,38 @@ describe("DiscordServersModule", () => {
   });
 
   describe("GET /users/@me/servers", () => {
-    const mockServers: PartialUserGuild[] = [
+    const mockServers = [
       {
         id: "123",
         name: "Test Guild",
         owner: true,
         permissions: "0",
+        iconUrl: "icon-url",
+        benefits: {
+          maxFeeds: 10,
+          webhooks: false,
+        },
       },
       {
         id: "456",
         name: "Test Guild 2",
         owner: true,
         permissions: "0",
+        iconUrl: "icon-url",
+        benefits: {
+          maxFeeds: 10,
+          webhooks: false,
+        },
       },
     ];
 
-    const mockGetMeServers = (overrideServers?: PartialUserGuild[]) => {
-      nock(DISCORD_API_BASE_URL)
-        .get(`/users/@me/guilds`)
-        .reply(200, overrideServers || mockServers);
-    };
+    beforeEach(() => {
+      jest
+        .spyOn(discordUsersService, "getGuilds")
+        .mockResolvedValue(mockServers);
+    });
 
     it("returns 401 if not logged in with discord", async () => {
-      mockGetMeServers();
-
       const { statusCode } = await app.inject({
         method: "GET",
         url: `/discord-users/@me/servers`,
@@ -283,8 +321,6 @@ describe("DiscordServersModule", () => {
     });
 
     it("returns the user's servers", async () => {
-      mockGetMeServers();
-
       const { statusCode, body } = await app.inject({
         method: "GET",
         url: `/discord-users/@me/servers`,
@@ -308,14 +344,7 @@ describe("DiscordServersModule", () => {
     });
 
     it("does not return servers the user does not have permission in", async () => {
-      mockGetMeServers([
-        {
-          id: "789",
-          name: "Test Guild 3",
-          owner: false,
-          permissions: "0",
-        },
-      ]);
+      jest.spyOn(discordUsersService, "getGuilds").mockResolvedValue([]);
 
       const { statusCode, body } = await app.inject({
         method: "GET",

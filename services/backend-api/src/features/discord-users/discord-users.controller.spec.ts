@@ -32,6 +32,7 @@ describe("DiscordUsersController", () => {
         id: "id",
         username: "username",
         avatarUrl: "avatarUrl",
+        maxFeeds: 10,
         supporter: {
           guilds: ["1"],
           maxFeeds: 10,
@@ -45,6 +46,7 @@ describe("DiscordUsersController", () => {
         id: discordUser.id,
         username: discordUser.username,
         iconUrl: discordUser.avatarUrl,
+        maxFeeds: discordUser.supporter.maxFeeds,
         supporter: {
           guilds: discordUser.supporter.guilds,
           maxFeeds: discordUser.supporter.maxFeeds,
@@ -62,6 +64,7 @@ describe("DiscordUsersController", () => {
         id: "id",
         username: "username",
         avatarUrl: "avatarUrl",
+        maxFeeds: 11,
       };
       discordUsersService.getUser.mockResolvedValue(discordUser);
 
@@ -69,6 +72,7 @@ describe("DiscordUsersController", () => {
         id: discordUser.id,
         username: discordUser.username,
         iconUrl: discordUser.avatarUrl,
+        maxFeeds: discordUser.maxFeeds,
       };
 
       await expect(controller.getMe(discordAccessToken)).resolves.toEqual(
