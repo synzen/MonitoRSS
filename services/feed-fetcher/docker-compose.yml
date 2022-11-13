@@ -63,6 +63,7 @@ services:
       - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
       - FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/feedfetcher
       - PORT=5000
+      - SKIP_POLLING_SQS_REQUEST_QUEUE=false
 
 volumes:
   db-mongodb-data:
