@@ -28,10 +28,16 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.getOrThrow<number>('API_PORT');
+  const skipPollRequestQueue = configService.getOrThrow<boolean>(
+    'SKIP_POLLING_SQS_REQUEST_QUEUE',
+  );
 
   await app.listen(port, '0.0.0.0');
   logger.info(`Application is running`);
-  await setupQueuePoll(app);
+
+  if (!skipPollRequestQueue) {
+    await setupQueuePoll(app);
+  }
 }
 
 async function setupQueuePoll(app: INestApplication) {

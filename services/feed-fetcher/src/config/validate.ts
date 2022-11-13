@@ -65,6 +65,10 @@ export class EnvironmentVariables {
 
   @IsNumber()
   API_PORT!: number;
+
+  @IsBoolean()
+  @IsOptional()
+  SKIP_POLLING_SQS_REQUEST_QUEUE?: boolean;
 }
 
 export function validateConfig(

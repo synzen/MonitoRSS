@@ -38,6 +38,8 @@ export default function config(): EnvironmentVariables {
       process.env.FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
     ),
     API_PORT: Number(process.env.API_PORT),
+    SKIP_POLLING_SQS_REQUEST_QUEUE:
+      process.env.SKIP_POLLING_SQS_REQUEST_QUEUE === 'true',
   };
 
   validateConfig(values);
