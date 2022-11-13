@@ -14,7 +14,7 @@ export async function setupFeedListener() {
 
   const queueUrl = config.getOrThrow<string>("FEED_EVENT_QUEUE_URL");
 
-  const consumer = Consumer.create({
+  consumer = Consumer.create({
     queueUrl,
     handleMessage: async (message) => {
       if (!message.Body) {
