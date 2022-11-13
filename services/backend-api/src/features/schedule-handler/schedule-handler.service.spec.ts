@@ -677,6 +677,45 @@ describe("handle-schedule", () => {
 
         expect(result).toHaveLength(0);
       });
+
+      it("does not return if they are failed", async () => {
+        const created = await userFeedModel.insertMany(
+          [
+            {
+              title: "feed-title",
+              url: "new-york-times.com",
+              user: {
+                discordUserId: "user-id-1",
+              },
+            },
+            {
+              title: "feed-title",
+              url: "yahoo-news.com",
+              user: {
+                discordUserId: "user-id-1",
+              },
+              healthStatus: UserFeedHealthStatus.Failed,
+            },
+          ],
+          {
+            ordered: true,
+          }
+        );
+
+        const result = await service.getScheduleFeedQueryExcluding(
+          [
+            {
+              name: "new york times",
+              keywords: [],
+              feeds: [created[0]._id],
+              refreshRateMinutes: 10,
+            },
+          ],
+          []
+        );
+
+        expect(result).toHaveLength(0);
+      });
     });
 
     describe("user ids", () => {
@@ -723,6 +762,40 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-1",
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+          },
+          {
+            title: "feed-title",
+            url: "yahoo-news.com",
+            user: {
+              discordUserId: "user-id-2",
+            },
+          },
+        ]);
+
+        const result = await service.getScheduleFeedQueryExcluding(
+          [
+            {
+              name: "new york times",
+              keywords: [],
+              feeds: [],
+              refreshRateMinutes: 10,
+            },
+          ],
+          [created[1].user.discordUserId]
+        );
+
+        expect(result).toHaveLength(0);
+      });
+
+      it("does not return if they are failed", async () => {
+        const created = await userFeedModel.create([
+          {
+            title: "feed-title",
+            url: "new-york-times.com",
+            user: {
+              discordUserId: "user-id-1",
+            },
+            healthStatus: UserFeedHealthStatus.Failed,
           },
           {
             title: "feed-title",
