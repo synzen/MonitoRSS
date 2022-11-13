@@ -11,11 +11,13 @@ interface FeedFetchOptions {
 @Injectable()
 export class FeedFetcherApiService {
   host: string;
+  apiKey: string;
 
   constructor(private readonly configService: ConfigService) {
     this.host = this.configService.get<string>(
       "FEED_FETCHER_API_HOST"
     ) as string;
+    this.apiKey = this.configService.getOrThrow<string>("FEED_FETCHER_API_KEY");
   }
 
   async fetchAndSave(
@@ -37,6 +39,7 @@ export class FeedFetcherApiService {
         }),
         headers: {
           "Content-Type": "application/json",
+          "api-key": this.apiKey,
         },
       });
 

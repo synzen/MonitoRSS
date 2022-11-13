@@ -10,13 +10,16 @@ describe("FeedFetcherApiService", () => {
   let service: FeedFetcherApiService;
   const configService: ConfigService = {
     get: jest.fn(),
+    getOrThrow: jest.fn(),
   } as never;
   const host = "http://localhost:1234";
+  const apiKey = "apiKey";
 
   beforeEach(() => {
     jest.resetAllMocks();
     service = new FeedFetcherApiService(configService);
     service.host = host;
+    service.apiKey = apiKey;
   });
 
   describe("fetchAndSave", () => {
@@ -43,6 +46,7 @@ describe("FeedFetcherApiService", () => {
       nock(host)
         .post("/requests", expectedRequestBody)
         .matchHeader("Content-Type", "application/json")
+        .matchHeader("api-key", apiKey)
         .reply(200, mockResponse);
 
       const response = await service.fetchAndSave(expectedRequestBody.url, {
