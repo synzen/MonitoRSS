@@ -9,6 +9,7 @@ import { Request, Response } from './entities';
 import { FeedFetcherService } from './feed-fetcher.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { testConfig } from '../config/test.config';
+import { FeedsService } from '../feeds/feeds.service';
 
 jest.mock('../utils/logger');
 
@@ -25,7 +26,12 @@ describe('FeedFetcherService (Integration)', () => {
     const setupData = await setupPostgresTests({
       databaseName,
       moduleMetadata: {
-        providers: [FeedFetcherService, ConfigService, SqsPollingService],
+        providers: [
+          FeedFetcherService,
+          ConfigService,
+          SqsPollingService,
+          FeedsService,
+        ],
         imports: [
           TypeOrmModule.forFeature([Request, Response]),
           EventEmitterModule.forRoot(),
@@ -41,9 +47,15 @@ describe('FeedFetcherService (Integration)', () => {
     teardownDatabase = setupData.teardownDatabase;
     resetDatabase = setupData.resetDatabase;
 
-    setupData.uncompiledModule.overrideProvider(ConfigService).useValue({
-      get: jest.fn(),
-    });
+    setupData.uncompiledModule
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: jest.fn(),
+      })
+      .overrideProvider(FeedsService)
+      .useValue({
+        disableFeedsByUrl: jest.fn(),
+      });
 
     const { module } = await setupData.setupDatabase();
 
@@ -56,6 +68,7 @@ describe('FeedFetcherService (Integration)', () => {
 
   beforeEach(async () => {
     await resetDatabase();
+    await requestRepo.delete({});
   });
 
   describe('requestExistsAfterTime', () => {

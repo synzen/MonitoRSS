@@ -7,6 +7,7 @@ import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SqsPollingService } from './shared/services/sqs-polling.service';
 import { FeedsModule } from './feeds/feeds.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [FeedFetcherModule, FeedsModule],
@@ -32,6 +33,9 @@ export class AppModule {
           entities: [],
           synchronize: configVals.SYNC_DB,
           autoLoadEntities: true,
+        }),
+        MongooseModule.forRoot(configVals.FEEDS_MONGODB_URI, {
+          autoIndex: false,
         }),
       ],
     };

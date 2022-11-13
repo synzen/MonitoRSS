@@ -5,11 +5,16 @@ import {
   teardownIntegrationTests,
 } from '../utils/setup-integration-tests';
 import { FeedsService } from './feeds.service';
-import { Feed, FeedFeature } from './schemas/feed.schema';
+import {
+  UserFeed,
+  UserFeedDisabledCode,
+  UserFeedFeature,
+  UserFeedHealthStatus,
+} from './schemas/user-feed.schema';
 
 describe('FeedsService', () => {
   let service: FeedsService;
-  let feedModel: Model<Feed>;
+  let userFeedModel: Model<UserFeed>;
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests(
@@ -17,18 +22,18 @@ describe('FeedsService', () => {
         providers: [FeedsService],
       },
       {
-        feedMongoModels: [FeedFeature],
+        feedMongoModels: [UserFeedFeature],
       },
     );
 
     const { module } = await init();
 
     service = module.get<FeedsService>(FeedsService);
-    feedModel = module.get<Model<Feed>>(getModelToken(Feed.name));
+    userFeedModel = module.get<Model<UserFeed>>(getModelToken(UserFeed.name));
   });
 
   afterEach(async () => {
-    await feedModel.deleteMany({});
+    await userFeedModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -43,24 +48,24 @@ describe('FeedsService', () => {
     const url = 'https://example.com';
 
     it('should disable feeds by url', async () => {
-      await feedModel.insertMany([
+      await userFeedModel.insertMany([
         {
           url: 'https://example.com',
+          healthStatus: UserFeedHealthStatus.Ok,
         },
         {
           url: 'https://example.com',
+          healthStatus: UserFeedHealthStatus.Ok,
         },
       ]);
 
       await service.disableFeedsByUrl('https://example.com');
 
-      const feeds = await feedModel.find({ url }).lean();
+      const feeds = await userFeedModel.find({ url }).lean();
 
       expect(feeds).toHaveLength(2);
-      expect(feeds[0].disabled).toBe(expect.any(String));
-      expect(feeds[0].disabledCode).toBe('FAILED_CONNECTION');
-      expect(feeds[1].disabled).toBe(expect.any(String));
-      expect(feeds[1].disabledCode).toBe('FAILED_CONNECTION');
+      expect(feeds[0].disabledCode).toBe(UserFeedDisabledCode.FailedRequests);
+      expect(feeds[1].disabledCode).toBe(UserFeedDisabledCode.FailedRequests);
     });
   });
 
@@ -68,28 +73,24 @@ describe('FeedsService', () => {
     const url = 'https://example.com';
 
     it('should enable failed feeds by url', async () => {
-      await feedModel.insertMany([
+      await userFeedModel.insertMany([
         {
           url: 'https://example.com',
-          disabled:
-            'Failed to establish a successful connection for an extended duration of time',
-          disabledCode: 'FAILED_CONNECTION',
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Ok,
         },
         {
           url: 'https://example.com',
-          disabled:
-            'Failed to establish a successful connection for an extended duration of time',
-          disabledCode: 'FAILED_CONNECTION',
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Ok,
         },
       ]);
 
       await service.enableFailedFeedsByUrl('https://example.com');
 
-      const feeds = await feedModel.find({ url }).lean();
+      const feeds = await userFeedModel.find({ url }).lean();
 
       expect(feeds).toHaveLength(2);
-      expect(feeds[0].disabled).toEqual(undefined);
-      expect(feeds[1].disabled).toEqual(undefined);
       expect(feeds[0].disabledCode).toEqual(undefined);
       expect(feeds[1].disabledCode).toEqual(undefined);
     });

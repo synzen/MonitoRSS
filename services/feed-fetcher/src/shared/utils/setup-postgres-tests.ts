@@ -1,12 +1,7 @@
 import { ModuleMetadata } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  Connection,
-  createConnection,
-  getConnection,
-  QueryRunner,
-} from 'typeorm';
+import { createConnection, DataSource, QueryRunner } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 export interface PostgresTestOptions {
@@ -28,6 +23,7 @@ export const postgresTestConfig = (
     name: 'default',
     logging: true,
     logger: 'debug',
+    synchronize: true,
     ...override,
   };
 };
@@ -76,7 +72,7 @@ async function setupPostgresTests({
     ],
   });
 
-  let connection: Connection;
+  let dataSource: DataSource;
   let queryRunner: QueryRunner;
   let module: TestingModule;
 
@@ -84,8 +80,8 @@ async function setupPostgresTests({
     await setupPostgresDatabase(databaseName);
     module = await uncompiledModule.compile();
     await module.init();
-    connection = await getConnection();
-    queryRunner = connection.createQueryRunner();
+    const dataSource = module.get(DataSource);
+    queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     databaseIsSetup = true;
 
@@ -96,7 +92,8 @@ async function setupPostgresTests({
   };
 
   const resetDatabase = async () => {
-    await connection?.synchronize(true);
+    // TODO: synchronize doesn not work.
+    // await dataSource?.synchronize(true);
   };
 
   const teardownDatabase = async () => {

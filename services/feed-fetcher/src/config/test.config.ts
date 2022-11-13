@@ -10,6 +10,7 @@ export function testConfig(): EnvironmentVariables {
     AWS_SECRET_ACCESS_KEY: '123456789012',
     FAILED_REQUEST_DURATION_THRESHOLD_HOURS: 36,
     API_KEY: '123456789',
+    FEEDS_MONGODB_URI: 'mongodb://localhost:27017/test',
   };
 
   validateConfig(vals);

@@ -32,6 +32,10 @@ export class EnvironmentVariables {
   @MinLength(1)
   POSTGRES_URI!: string;
 
+  @IsString()
+  @MinLength(1)
+  FEEDS_MONGODB_URI!: string;
+
   @IsBoolean()
   @IsOptional()
   SYNC_DB?: boolean;
