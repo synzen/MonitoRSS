@@ -7,8 +7,6 @@ import { readFileSync } from 'fs';
 import { Repository } from 'typeorm';
 import { Request, Response } from './entities';
 import { RequestStatus } from './constants';
-import { SQSClient } from '@aws-sdk/client-sqs';
-import { mockClient } from 'aws-sdk-client-mock';
 import dayjs from 'dayjs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FeedsService } from '../feeds/feeds.service';
@@ -18,7 +16,6 @@ jest.mock('../utils/logger');
 describe('FeedFetcherService', () => {
   let service: FeedFetcherService;
   let configService: ConfigService;
-  const sqsClient = mockClient(SQSClient);
   const feedUrl = 'https://rss-feed.com/feed.xml';
   const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
@@ -49,7 +46,6 @@ describe('FeedFetcherService', () => {
       eventEmitter,
       feedsService,
     );
-    sqsClient.reset();
   });
 
   afterEach(() => {

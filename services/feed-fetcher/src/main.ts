@@ -4,14 +4,17 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { FeedFetcherService } from './feed-fetcher/feed-fetcher.service';
-import { SqsPollingService } from './shared/services/sqs-polling.service';
 import logger from './utils/logger';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import dayjs from 'dayjs';
-import { SQSClient } from '@aws-sdk/client-sqs';
+import { Consumer } from 'sqs-consumer';
+import { SQS } from 'aws-sdk';
+import https from 'https';
+
+let consumer: Consumer | undefined;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -33,21 +36,27 @@ async function bootstrap() {
 
 async function setupQueuePoll(app: INestApplication) {
   const configService = app.get(ConfigService);
+  const feedFetcherService = app.get(FeedFetcherService);
+
   const queueUrl = configService.get('AWS_SQS_REQUEST_QUEUE_URL') as string;
   const region = configService.get('AWS_SQS_REQUEST_QUEUE_REGION') as string;
   const awsEndpoint = configService.get('AWS_SQS_REQUEST_QUEUE_ENDPOINT');
 
-  const feedFetcherService = app.get(FeedFetcherService);
-  const sqsPollingService = app.get(SqsPollingService);
-
-  const client = new SQSClient({
-    endpoint: awsEndpoint,
-    region: region,
-  });
-
-  await sqsPollingService.pollQueue(client, {
+  consumer = Consumer.create({
     queueUrl,
-    onMessageReceived: async (message) => {
+    region,
+    sqs: new SQS({
+      endpoint: awsEndpoint,
+      ...(queueUrl.startsWith('https') && {
+        httpOptions: {
+          agent: new https.Agent({
+            keepAlive: true,
+          }),
+        },
+      }),
+    }),
+    batchSize: 10,
+    handleMessage: async (message) => {
       if (!message.Body) {
         logger.error(
           `Queue ${queueUrl} message ${message.MessageId} has no body, skipping`,
@@ -91,6 +100,24 @@ async function setupQueuePoll(app: INestApplication) {
       logger.debug(`Queue ${queueUrl} message processed ${message.MessageId}`);
     },
   });
+
+  consumer.on('error', (error, message) => {
+    console.log('Cosnsumer encountered error', { error, message });
+  });
+
+  consumer.on('processing_error', (error, message) => {
+    console.log('Cosnsumer encountered processing error', { error, message });
+  });
+
+  consumer.on('timeout_error', (error, message) => {
+    console.log('Consumer encountered timeout error', { error, message });
+  });
+
+  consumer.on('stopped', () => {
+    console.log('Consumer stopped');
+  });
+
+  consumer.start();
 }
 
 async function requestHasBeenRecentlyProcessed(
@@ -112,5 +139,10 @@ async function requestHasBeenRecentlyProcessed(
 
   return requestExistsAfterTime;
 }
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, stopping feed event consumer');
+  consumer?.stop();
+});
 
 bootstrap();

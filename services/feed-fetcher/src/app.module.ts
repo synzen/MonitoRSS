@@ -5,14 +5,13 @@ import { AppService } from './app.service';
 import config from './config';
 import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SqsPollingService } from './shared/services/sqs-polling.service';
 import { FeedsModule } from './feeds/feeds.module';
 import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [FeedFetcherModule, FeedsModule],
   controllers: [AppController],
-  providers: [AppService, SqsPollingService],
+  providers: [AppService],
 })
 export class AppModule {
   static forRoot(): DynamicModule {
