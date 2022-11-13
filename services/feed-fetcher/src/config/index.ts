@@ -37,6 +37,7 @@ export default function config(): EnvironmentVariables {
     FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
       process.env.FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
     ),
+    API_PORT: Number(process.env.API_PORT),
   };
 
   validateConfig(values);

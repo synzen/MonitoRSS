@@ -62,6 +62,9 @@ export class EnvironmentVariables {
 
   @IsNumber()
   FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
+
+  @IsNumber()
+  API_PORT!: number;
 }
 
 export function validateConfig(

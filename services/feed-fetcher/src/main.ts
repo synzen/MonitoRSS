@@ -23,7 +23,10 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
 
-  await app.listen(5000, '0.0.0.0');
+  const configService = app.get(ConfigService);
+  const port = configService.getOrThrow<number>('API_PORT');
+
+  await app.listen(port, '0.0.0.0');
   logger.info(`Application is running`);
   await setupQueuePoll(app);
 }

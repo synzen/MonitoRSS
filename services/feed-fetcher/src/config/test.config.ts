@@ -11,6 +11,7 @@ export function testConfig(): EnvironmentVariables {
     FAILED_REQUEST_DURATION_THRESHOLD_HOURS: 36,
     API_KEY: '123456789',
     FEEDS_MONGODB_URI: 'mongodb://localhost:27017/test',
+    API_PORT: 3000,
   };
 
   validateConfig(vals);
