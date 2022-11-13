@@ -7,6 +7,16 @@ services:
     ports:
       - '9324:9324'
       - '9325:9325'
+  mrss-mongo:
+    restart: on-failure:5
+    command: mongod --port 27017
+    logging:
+      driver: none
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - "db-mongodb-data:/data/db"
   mrss-postgres:
     container_name: mrss-postgres-container
     restart: always
@@ -51,7 +61,9 @@ services:
       - AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
       - AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://localhost:9324
       - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
+      - FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/feedfetcher
 
 volumes:
+  db-mongodb-data:
   db:
     driver: local
