@@ -63,6 +63,7 @@ export default function config(options?: {
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     FEED_FETCHER_API_HOST: process.env.FEED_FETCHER_API_HOST,
+    FEED_FETCHER_API_KEY: process.env.FEED_FETCHER_API_KEY,
   } as const;
 
   if (!options?.skipValidation) {

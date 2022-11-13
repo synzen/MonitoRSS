@@ -19,6 +19,7 @@ export default (): ReturnType<typeof config> => {
     SESSION_SALT: "salt",
     FEED_USER_AGENT: "feed-user-agent",
     FEED_FETCHER_API_HOST: "http://feed-fetcher-api-host.com:3000",
+    FEED_FETCHER_API_KEY: "feed-fetcher-api-key",
   };
 
   validateConfig(configVals);

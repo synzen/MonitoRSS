@@ -110,6 +110,9 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   DEFAULT_DATE_LANGUAGE?: string;
+
+  @IsString()
+  FEED_FETCHER_API_KEY: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {
