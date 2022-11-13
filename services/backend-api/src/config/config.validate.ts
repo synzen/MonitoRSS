@@ -113,6 +113,15 @@ export class EnvironmentVariables {
 
   @IsString()
   FEED_FETCHER_API_KEY: string;
+
+  @IsString()
+  FEED_FETCHER_API_HOST: string;
+
+  @IsString()
+  FEED_HANDLER_API_HOST: string;
+
+  @IsString()
+  FEED_HANDLER_API_KEY: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

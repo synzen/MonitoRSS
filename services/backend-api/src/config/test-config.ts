@@ -20,6 +20,8 @@ export default (): ReturnType<typeof config> => {
     FEED_USER_AGENT: "feed-user-agent",
     FEED_FETCHER_API_HOST: "http://feed-fetcher-api-host.com:3000",
     FEED_FETCHER_API_KEY: "feed-fetcher-api-key",
+    FEED_HANDLER_API_HOST: "http://feed-handler-api-host.com:3000",
+    FEED_HANDLER_API_KEY: "feed-handler-api-key",
   };
 
   validateConfig(configVals);

@@ -62,8 +62,10 @@ export default function config(options?: {
     AWS_URL_REQUEST_QUEUE_URL: process.env.AWS_URL_REQUEST_QUEUE_URL as string,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
-    FEED_FETCHER_API_HOST: process.env.FEED_FETCHER_API_HOST,
+    FEED_FETCHER_API_HOST: process.env.FEED_FETCHER_API_HOST as string,
     FEED_FETCHER_API_KEY: process.env.FEED_FETCHER_API_KEY as string,
+    FEED_HANDLER_API_HOST: process.env.FEED_HANDLER_API_HOST as string,
+    FEED_HANDLER_API_KEY: process.env.FEED_HANDLER_API_KEY as string,
   } as const;
 
   if (!options?.skipValidation) {
