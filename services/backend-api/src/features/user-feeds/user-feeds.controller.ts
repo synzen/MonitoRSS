@@ -37,6 +37,7 @@ import {
   UpdateUserFeedOutputDto,
 } from "./dto";
 import { UserFeed } from "./entities";
+import { RetryUserFeedFilter } from "./filters";
 import { GetUserFeedPipe } from "./pipes";
 import { UserFeedsService } from "./user-feeds.service";
 
@@ -88,6 +89,7 @@ export class UserFeedsController {
   }
 
   @Get("/:feedId/retry")
+  @UseFilters(RetryUserFeedFilter, FeedExceptionFilter)
   async retryFailedFeed(
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,

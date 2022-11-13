@@ -18,6 +18,7 @@ export enum ApiErrorCode {
   FEED_MISSING_CHANNEL = "FEED_MISSING_CHANNEL",
   FEED_USER_MISSING_MANAGE_GUILD = "FEED_USER_MISSING_MANAGE_GUILD",
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
+  FEED_NOT_FAILED = "FEED_NOT_FAILED",
   BANNED_FEED = "BANNED_FEED",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
 }
@@ -50,4 +51,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   BANNED_FEED: "Feed is banned",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD:
     "Channel is not owned by the current guild",
+  FEED_NOT_FAILED:
+    "The feed is not in a failed state. It must be in a failed state for it to be retried.",
 };

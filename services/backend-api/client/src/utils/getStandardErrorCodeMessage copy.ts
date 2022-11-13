@@ -20,6 +20,7 @@ enum ApiErrorCode {
   FEED_USER_MISSING_MANAGE_GUILD = 'FEED_USER_MISSING_MANAGE_GUILD',
   FEED_LIMIT_REACHED = 'FEED_LIMIT_REACHED',
   BANNED_FEED = 'BANNED_FEED',
+  FEED_NOT_FAILED = 'FEED_NOT_FAILED',
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -40,6 +41,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_MISSING_CHANNEL: t('common.apiErrors.feedMissingChannel'),
   FEED_USER_MISSING_MANAGE_GUILD: t('common.apiErrors.feedUserMissingManageGuild'),
   INTERNAL_ERROR: t('common.errors.somethingWentWrong'),
+  FEED_NOT_FAILED: t('common.apiErrors.feedNotFailed'),
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

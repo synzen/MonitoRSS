@@ -17,6 +17,7 @@ import { UserFeed, UserFeedModel } from "./entities";
 import { CreateUserFeedInputDto } from "./dto";
 import { ConfigService } from "@nestjs/config";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
+import { UserFeedHealthStatus } from "./types";
 
 const feedXml = readFileSync(
   path.join(__dirname, "../../test/data/feed.xml"),
@@ -391,6 +392,122 @@ describe("UserFeedsModule", () => {
         ],
       });
       expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
+  describe("GET /:feedId/retry", () => {
+    let feed: UserFeed;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+        healthStatus: UserFeedHealthStatus.Failed,
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/retry`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/123/retry`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed does not belong to user", async () => {
+      const otherUserFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-user",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${otherUserFeed._id}/retry`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 200 on success", async () => {
+      nock(feedFetcherApiHost)
+        .post("/requests")
+        .reply(200, {
+          requestStatus: "success",
+          response: {
+            statusCode: 200,
+            body: feedXml,
+          },
+        });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/retry`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+
+    it("returns 400 if feed is not failed", async () => {
+      await userFeedModel.updateOne(
+        { _id: feed._id },
+        {
+          $set: {
+            healthStatus: UserFeedHealthStatus.Ok,
+          },
+        }
+      );
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/retry`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        code: ApiErrorCode.FEED_NOT_FAILED,
+      });
+      expect(statusCode).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    });
+
+    it("returns the correct status for request-related errors", async () => {
+      nock(feedFetcherApiHost)
+        .post("/requests")
+        .reply(200, {
+          requestStatus: "success",
+          response: {
+            statusCode: 429,
+          },
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/retry`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        code: ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+      });
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
   });
 

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types, Schema as MongooseSchema } from "mongoose";
+import { FEED_CONNECTION_DISABLED_CODES } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
 
 @Schema({
@@ -78,6 +79,12 @@ export class DiscordChannelConnection {
     required: true,
   })
   name: string;
+
+  @Prop({
+    enum: Object.values(FEED_CONNECTION_DISABLED_CODES),
+    required: false,
+  })
+  disabled?: string;
 
   @Prop({
     type: FiltersSchema,
