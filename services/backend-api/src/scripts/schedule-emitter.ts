@@ -2,10 +2,10 @@ import "../utils/dd-tracer";
 import { INestApplicationContext } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "../app.module";
-import { Feed } from "../features/feeds/entities/feed.entity";
 import { ScheduleEmitterService } from "../features/schedule-emitter/schedule-emitter.service";
 import { ScheduleHandlerService } from "../features/schedule-handler/schedule-handler.service";
 import logger from "../utils/logger";
+import { UserFeed } from "../features/user-feeds/entities";
 
 bootstrap();
 
@@ -83,7 +83,7 @@ async function urlEventHandler(
 async function feedEventHandler(
   app: INestApplicationContext,
   data: {
-    feed: Feed;
+    feed: UserFeed;
   }
 ) {
   try {

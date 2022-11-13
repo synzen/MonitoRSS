@@ -44,6 +44,16 @@ export class FeedSchedulingService {
       .lean();
   }
 
+  async findSchedulesNotMatchingRefreshRate(
+    refreshRateSeconds: number
+  ): Promise<FeedSchedule[]> {
+    return this.feedScheduleModel.find({
+      refreshRateMinutes: {
+        $ne: Math.round(refreshRateSeconds / 60),
+      },
+    });
+  }
+
   /**
    * Determine the refresh rate of the given feeds.
    *

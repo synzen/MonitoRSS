@@ -3,11 +3,16 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { FeedSchedule } from "../feeds/entities/feed-schedule.entity";
-import { Feed, FeedDocument, FeedModel } from "../feeds/entities/feed.entity";
 import { FeedSchedulingService } from "../feeds/feed-scheduling.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { FilterQuery, Types } from "mongoose";
 import logger from "../../utils/logger";
+import { UserFeedHealthStatus } from "../user-feeds/types";
+import {
+  UserFeed,
+  UserFeedDocument,
+  UserFeedModel,
+} from "../user-feeds/entities";
 
 @Injectable()
 export class ScheduleHandlerService {
@@ -19,7 +24,7 @@ export class ScheduleHandlerService {
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
     private readonly feedSchedulingService: FeedSchedulingService,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
   ) {
     this.awsUrlRequestQueueUrl = configService.get(
       "AWS_URL_REQUEST_QUEUE_URL"
@@ -61,7 +66,7 @@ export class ScheduleHandlerService {
       feedHandler,
     }: {
       urlHandler: (url: string) => Promise<void>;
-      feedHandler: (feed: Feed) => Promise<void>;
+      feedHandler: (feed: UserFeed) => Promise<void>;
     }
   ) {
     const urls = await this.getUrlsMatchingRefreshRate(refreshRateSeconds);
@@ -90,22 +95,35 @@ export class ScheduleHandlerService {
     const isDefaultRefreshRate =
       refreshRateSeconds === this.defaultRefreshRateSeconds;
 
-    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
-    const serverIds = await this.getServerIdsWithRefreshRate(
-      refreshRateSeconds
-    );
+    const discordSupporters = await this.getValidDiscordUserSupporters();
 
     if (isDefaultRefreshRate) {
       logger.debug(`${refreshRateSeconds}s is default refresh rate`);
 
-      return this.getDefaultScheduleFeedQuery(schedules, serverIds).distinct(
-        "url"
-      );
+      const discordUserIdsToExclude = discordSupporters
+        .filter(({ refreshRateSeconds: rate }) => rate !== refreshRateSeconds)
+        .map(({ discordUserId }) => discordUserId);
+
+      const excludeSchedules =
+        await this.feedSchedulingService.findSchedulesNotMatchingRefreshRate(
+          refreshRateSeconds
+        );
+
+      return this.getScheduleFeedQueryExcluding(
+        excludeSchedules,
+        discordUserIdsToExclude
+      ).distinct("url");
     }
 
-    return this.getFeedsQueryWithScheduleAndServers(
+    const discordUserIdsToInclude = discordSupporters
+      .filter(({ refreshRateSeconds: rate }) => rate === refreshRateSeconds)
+      .map(({ discordUserId }) => discordUserId);
+
+    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
+
+    return this.getFeedsQueryWithScheduleAndUsers(
       schedules,
-      serverIds
+      discordUserIdsToInclude
     ).distinct("url");
   }
 
@@ -113,28 +131,41 @@ export class ScheduleHandlerService {
     const isDefaultRefreshRate =
       refreshRateSeconds === this.defaultRefreshRateSeconds;
 
-    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
-    const serverIds = await this.getServerIdsWithRefreshRate(
-      refreshRateSeconds
-    );
+    const discordSupporters = await this.getValidDiscordUserSupporters();
 
     if (isDefaultRefreshRate) {
-      return this.getDefaultScheduleFeedQuery(schedules, serverIds).cursor();
+      const discordUserIdsToExclude = discordSupporters
+        .filter(({ refreshRateSeconds: rate }) => rate !== refreshRateSeconds)
+        .map(({ discordUserId }) => discordUserId);
+
+      const excludeSchedules =
+        await this.feedSchedulingService.findSchedulesNotMatchingRefreshRate(
+          refreshRateSeconds
+        );
+
+      return this.getScheduleFeedQueryExcluding(
+        excludeSchedules,
+        discordUserIdsToExclude
+      ).cursor();
     }
 
-    return this.getFeedsQueryWithScheduleAndServers(
+    const discordUserIdsToInclude = discordSupporters
+      .filter(({ refreshRateSeconds: rate }) => rate === refreshRateSeconds)
+      .map(({ discordUserId }) => discordUserId);
+
+    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
+
+    return this.getFeedsQueryWithScheduleAndUsers(
       schedules,
-      serverIds
+      discordUserIdsToInclude
     ).cursor();
   }
 
-  async getServerIdsWithRefreshRate(refreshRateSeconds: number) {
-    const allBenefits = await this.supportersService.getBenefitsOfAllServers();
-    const benefitsWithMatchedRefreshRate = allBenefits.filter(
-      (benefit) => benefit.refreshRateSeconds === refreshRateSeconds
-    );
+  async getValidDiscordUserSupporters() {
+    const allBenefits =
+      await this.supportersService.getBenefitsOfAllDiscordUsers();
 
-    return benefitsWithMatchedRefreshRate.map((benefit) => benefit.serverId);
+    return allBenefits.filter(({ isSupporter }) => isSupporter);
   }
 
   getSchedulesOfRefreshRate(refreshRateSeconds: number) {
@@ -143,30 +174,36 @@ export class ScheduleHandlerService {
     );
   }
 
-  getFeedsQueryWithScheduleAndServers(
+  getFeedsQueryWithScheduleAndUsers(
     schedules: FeedSchedule[],
-    serverIds: string[]
+    discordUserIdsToInclude: string[]
   ) {
     const keywordConditions = schedules
       .map((schedule) => schedule.keywords)
       .flat()
       .map((keyword) => ({
         url: new RegExp(keyword, "i"),
-        disabled: {
+        disabledCode: {
           $exists: false,
         },
-        isFeedv2: true,
+        healthStatus: {
+          $ne: UserFeedHealthStatus.Failed,
+        },
       }));
 
-    const query: FilterQuery<FeedDocument> = {
+    const query: FilterQuery<UserFeedDocument> = {
       $or: [
         ...keywordConditions,
         {
-          guild: { $in: serverIds },
-          disabled: {
+          "user.discordUserId": {
+            $in: discordUserIdsToInclude,
+          },
+          disabledCode: {
             $exists: false,
           },
-          isFeedv2: true,
+          healthStatus: {
+            $ne: UserFeedHealthStatus.Failed,
+          },
         },
         {
           _id: {
@@ -176,57 +213,60 @@ export class ScheduleHandlerService {
               )
               .flat(),
           },
-          disabled: {
+          disabledCode: {
             $exists: false,
           },
-          isFeedv2: true,
+          healthStatus: {
+            $ne: UserFeedHealthStatus.Failed,
+          },
         },
       ],
     };
 
-    return this.feedModel.find(query);
+    return this.userFeedModel.find(query);
   }
 
-  getDefaultScheduleFeedQuery(schedules: FeedSchedule[], serverIds: string[]) {
-    const keywordConditions = schedules
+  getScheduleFeedQueryExcluding(
+    schedulesToExclude: FeedSchedule[],
+    discordUserIdsToExclude: string[]
+  ) {
+    const keywordConditions = schedulesToExclude
       .map((schedule) => schedule.keywords)
       .flat()
       .map((keyword) => ({
         url: {
           $not: new RegExp(keyword, "i"),
         },
-        disabled: {
-          $exists: false,
-        },
-        isFeedv2: true,
       }));
 
-    const query: FilterQuery<FeedDocument> = {
+    const feedIdConditions = schedulesToExclude
+      .map((schedule) => schedule.feeds.map((id) => new Types.ObjectId(id)))
+      .flat();
+
+    const query: FilterQuery<UserFeedDocument> = {
       $and: [
-        ...keywordConditions,
         {
-          guild: { $nin: serverIds },
-          disabled: {
+          disabledCode: {
             $exists: false,
           },
-          isFeedv2: true,
+          healthStatus: {
+            $ne: UserFeedHealthStatus.Failed,
+          },
         },
         {
+          "user.discordUserId": {
+            $nin: discordUserIdsToExclude,
+          },
+        },
+        ...keywordConditions,
+        {
           _id: {
-            $nin: schedules
-              .map((schedule) =>
-                schedule.feeds.map((id) => new Types.ObjectId(id))
-              )
-              .flat(),
+            $nin: feedIdConditions,
           },
-          disabled: {
-            $exists: false,
-          },
-          isFeedv2: true,
         },
       ],
     };
 
-    return this.feedModel.find(query);
+    return this.userFeedModel.find(query);
   }
 }

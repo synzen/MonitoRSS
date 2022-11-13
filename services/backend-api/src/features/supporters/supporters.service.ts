@@ -108,6 +108,31 @@ export class SupportersService {
     };
   }
 
+  async getBenefitsOfAllDiscordUsers(): Promise<
+    Array<{
+      discordUserId: string;
+      refreshRateSeconds: number;
+      isSupporter: boolean;
+    }>
+  > {
+    // TODO: Must implement user-level subscriptions on the payments api and include them here
+    const aggregate: Array<
+      Supporter & {
+        patrons: Patron[];
+      }
+    > = await this.supporterModel.aggregate([
+      ...SupportersService.SUPPORTER_PATRON_PIPELINE,
+    ]);
+
+    const benefits = aggregate.map((agg) => this.getBenefitsFromSupporter(agg));
+
+    return benefits.map((b, i) => ({
+      discordUserId: aggregate[i]._id,
+      refreshRateSeconds: b.refreshRateSeconds,
+      isSupporter: b.isSupporter,
+    }));
+  }
+
   async getBenefitsOfAllServers() {
     const subscriptions =
       await this.guildSubscriptionsService.getAllSubscriptions();
