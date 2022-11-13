@@ -36,7 +36,7 @@ describe('FeedFetcherController', () => {
 
       jest
         .spyOn(feedFetcherService, 'getLatestRequest')
-        .mockResolvedValue(undefined);
+        .mockResolvedValue(null);
 
       const result = await controller.fetchFeed(data);
 

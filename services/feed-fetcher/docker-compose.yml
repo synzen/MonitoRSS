@@ -39,7 +39,7 @@ services:
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules/
-    command: npm run start:dev
+    command: npm run start
     depends_on:
       - mrss-postgres
       - request-queue
@@ -48,11 +48,8 @@ services:
     environment:
       - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
       - AWS_SQS_REQUEST_QUEUE_URL=http://localhost:9324/queue/request-queue
-      - AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://localhost:9324
       - AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
-      - AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://localhost:9324
-      - AWS_SQS_FAILED_URL_QUEUE_URL=http://localhost:9324/queue/failed-requests-queue
-      - AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
+      - AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://localhost:9324
       - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
 
 volumes:

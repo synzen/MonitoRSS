@@ -1,4 +1,11 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  ValidationPipe,
+} from '@nestjs/common';
+import { ApiGuard } from '../shared/guards';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { FetchFeedDto, FetchFeedDetailsDto } from './dto';
@@ -11,6 +18,7 @@ export class FeedFetcherController {
   constructor(private readonly feedFetcherService: FeedFetcherService) {}
 
   @Post('requests')
+  @UseGuards(ApiGuard)
   async fetchFeed(
     @Body(ValidationPipe) data: FetchFeedDto,
   ): Promise<FetchFeedDetailsDto> {
