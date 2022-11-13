@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import { testConfig } from "./test.config";
 import { Environment, EnvironmentVariables, validateConfig } from "./validate";
 
 const envFiles: Record<string, string> = {
@@ -23,6 +24,10 @@ dotenv.config({
 export function config(options?: {
   skipValidation?: boolean;
 }): EnvironmentVariables {
+  if (process.env.NODE_ENV === "test") {
+    return testConfig();
+  }
+
   const configVals = {
     NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
     FEED_REQUEST_SERVICE_URL: process.env.FEED_REQUEST_SERVICE_URL as string,
@@ -36,6 +41,7 @@ export function config(options?: {
     AWS_REGION: process.env.AWS_REGION as string,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
+    API_KEY: process.env.API_KEY as string,
   } as const;
 
   if (!options?.skipValidation) {

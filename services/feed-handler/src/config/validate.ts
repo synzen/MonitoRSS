@@ -49,9 +49,14 @@ export class EnvironmentVariables {
 
   @IsString()
   AWS_ACCESS_KEY_ID: string;
+
+  @IsString()
+  API_KEY: string;
 }
 
-export function validateConfig(config: Record<string, unknown>) {
+export function validateConfig(
+  config: Record<string, unknown> | EnvironmentVariables
+) {
   const validatedConfig = plainToClass(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });

@@ -80,6 +80,8 @@ export async function teardownIntegrationTests() {
         `DROP SCHEMA IF EXISTS "${postgresSchema}" CASCADE`
       );
     });
+
+    await orm.close();
   }
 
   await testingModule?.close();

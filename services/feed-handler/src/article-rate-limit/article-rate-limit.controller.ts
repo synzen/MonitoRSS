@@ -1,4 +1,5 @@
-import { Controller, Get, Param } from "@nestjs/common";
+import { Controller, Get, Param, UseGuards } from "@nestjs/common";
+import { ApiGuard } from "../shared/guards";
 import { ArticleRateLimitService } from "./article-rate-limit.service";
 
 @Controller("feeds/:feedId/rate-limits")
@@ -8,6 +9,7 @@ export class ArticleRateLimitController {
   ) {}
 
   @Get()
+  @UseGuards(ApiGuard)
   async getFeedRateLimitInformation(@Param("feedId") feedId: string) {
     const limits = await this.articleRateLimitService.getFeedLimitInformation(
       feedId
