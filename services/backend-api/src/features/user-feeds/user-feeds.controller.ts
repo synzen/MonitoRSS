@@ -30,6 +30,7 @@ import { SupportersService } from "../supporters/supporters.service";
 import {
   CreateUserFeedInputDto,
   CreateUserFeedOutputDto,
+  GetUserFeedDailyLimitOutputDto,
   GetUserFeedOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
@@ -104,6 +105,32 @@ export class UserFeedsController {
     )) as UserFeed;
 
     return this.formatFeedForResponse(updatedFeed, discordUserId);
+  }
+
+  @Get("/:feedId/daily-limit")
+  async getDailyLimit(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+  ): Promise<GetUserFeedDailyLimitOutputDto> {
+    if (feed.user.discordUserId !== discordUserId) {
+      throw new NotFoundException();
+    }
+
+    const limit = await this.userFeedsService.getFeedDailyLimit(
+      feed._id.toHexString()
+    );
+
+    if (!limit) {
+      throw new NotFoundException();
+    }
+
+    return {
+      result: {
+        current: limit.progress,
+        max: limit.max,
+      },
+    };
   }
 
   @Patch("/:feedId")

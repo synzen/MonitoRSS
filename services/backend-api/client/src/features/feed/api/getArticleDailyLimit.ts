@@ -20,7 +20,7 @@ export const getArticleDailyLimit = async (
   options: GetArticleDailyLimitInput,
 ): Promise<GetArticleDailyLimitOutput> => {
   const res = await fetchRest(
-    `/api/v1/feeds/${options.feedId}/daily-limits`,
+    `/api/v1/user-feeds/${options.feedId}/daily-limit`,
     {
       validateSchema: GetArticleDailyLimitSchema,
     },

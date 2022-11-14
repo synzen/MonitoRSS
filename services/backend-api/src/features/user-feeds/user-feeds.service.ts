@@ -11,6 +11,7 @@ import _ from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeedHealthStatus } from "./types";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
+import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 
 interface GetFeedsInput {
   userId: string;
@@ -35,7 +36,8 @@ export class UserFeedsService {
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
-    private readonly supportersService: SupportersService
+    private readonly supportersService: SupportersService,
+    private readonly feedHandlerService: FeedHandlerService
   ) {}
 
   async addFeed(
@@ -200,6 +202,14 @@ export class UserFeedsService {
         }
       )
       .lean();
+  }
+
+  async getFeedDailyLimit(feedId: string) {
+    const {
+      results: { limits },
+    } = await this.feedHandlerService.getRateLimits(feedId);
+
+    return limits.find((limit) => limit.windowSeconds === 86400);
   }
 
   private async checkUrlIsValid(url: string) {

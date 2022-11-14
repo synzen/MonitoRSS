@@ -1,6 +1,7 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
+import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
@@ -23,6 +24,7 @@ describe("UserFeedsService", () => {
   let feedFetcherService: FeedFetcherService;
   let feedsService: FeedsService;
   let supportersService: SupportersService;
+  let feedHandlerService: FeedHandlerService;
   const discordUserId = "discordUserId";
 
   beforeAll(async () => {
@@ -32,6 +34,7 @@ describe("UserFeedsService", () => {
         FeedFetcherService,
         UserFeedsService,
         SupportersService,
+        FeedHandlerService,
       ],
       imports: [
         MongooseTestModule.forRoot(),
@@ -52,6 +55,10 @@ describe("UserFeedsService", () => {
       .overrideProvider(SupportersService)
       .useValue({
         getBenefitsOfDiscordUser: jest.fn(),
+      })
+      .overrideProvider(FeedHandlerService)
+      .useValue({
+        getRateLimits: jest.fn(),
       });
 
     const { module } = await init();
@@ -61,6 +68,7 @@ describe("UserFeedsService", () => {
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     feedsService = module.get<FeedsService>(FeedsService);
     supportersService = module.get<SupportersService>(SupportersService);
+    feedHandlerService = module.get<FeedHandlerService>(FeedHandlerService);
   });
 
   afterEach(() => {
@@ -696,6 +704,38 @@ describe("UserFeedsService", () => {
           healthStatus: UserFeedHealthStatus.Ok,
         })
       );
+    });
+  });
+
+  describe("getFeedDailyLimit", () => {
+    it("returns only the daily rate limits", async () => {
+      jest.spyOn(feedHandlerService, "getRateLimits").mockResolvedValue({
+        results: {
+          limits: [
+            {
+              max: 100,
+              progress: 10,
+              remaining: 90,
+              windowSeconds: 60,
+            },
+            {
+              max: 10,
+              progress: 1,
+              remaining: 9,
+              windowSeconds: 86400,
+            },
+          ],
+        },
+      });
+
+      const result = await service.getFeedDailyLimit("url");
+
+      expect(result).toEqual({
+        max: 10,
+        progress: 1,
+        remaining: 9,
+        windowSeconds: 86400,
+      });
     });
   });
 });

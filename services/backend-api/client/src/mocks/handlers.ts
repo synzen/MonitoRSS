@@ -184,6 +184,16 @@ const handlers = [
     );
   }),
 
+  rest.get('/api/v1/user-feeds/:feedId/daily-limit', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json({
+      result: {
+        current: 100,
+        max: 500,
+      },
+    }),
+  )),
+
   rest.get('/api/v1/user-feeds/:feedId/retry', (req, res, ctx) => {
     const { feedId } = req.params;
     const feed = mockUserFeeds.find((f) => f.id === feedId);
@@ -216,16 +226,6 @@ const handlers = [
     ctx.delay(500),
     ctx.json<GetFeedOutput>({
       result: mockFeeds[0],
-    }),
-  )),
-
-  rest.get('/api/v1/feeds/:feedId/daily-limits', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.json({
-      result: {
-        current: 100,
-        max: 500,
-      },
     }),
   )),
 

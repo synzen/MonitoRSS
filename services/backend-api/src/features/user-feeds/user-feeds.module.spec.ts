@@ -30,6 +30,7 @@ describe("UserFeedsModule", () => {
   let app: NestFastifyApplication;
   let userFeedModel: UserFeedModel;
   let feedFetcherApiHost: string;
+  let feedHandlerApiHost: string;
   let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
@@ -65,6 +66,10 @@ describe("UserFeedsModule", () => {
     feedFetcherApiHost = app
       .get(ConfigService)
       .getOrThrow<string>("FEED_FETCHER_API_HOST");
+
+    feedHandlerApiHost = app
+      .get(ConfigService)
+      .getOrThrow<string>("FEED_HANDLER_API_HOST");
   });
 
   beforeEach(() => {
@@ -508,6 +513,119 @@ describe("UserFeedsModule", () => {
         code: ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
       });
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+  });
+
+  describe("GET /:feedId/daily-limit", () => {
+    let feed: UserFeed;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/daily-limit`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/123/daily-limit`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed does not belong to user", async () => {
+      const otherUserFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-user",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${otherUserFeed._id}/daily-limit`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns the correct daily limit", async () => {
+      nock(feedHandlerApiHost)
+        .get(`/feeds/${feed._id}/rate-limits`)
+        .reply(200, {
+          results: {
+            limits: [
+              {
+                progress: 0,
+                max: 1000,
+                remaining: 100,
+                windowSeconds: 60,
+              },
+              {
+                progress: 0,
+                max: 100,
+                remaining: 100,
+                windowSeconds: 86400,
+              },
+            ],
+          },
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/daily-limit`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          current: 0,
+          max: 100,
+        },
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+
+    it("returns 404 if no daily limit is found", async () => {
+      nock(feedHandlerApiHost)
+        .get(`/feeds/${feed._id}/rate-limits`)
+        .reply(200, {
+          results: {
+            limits: [
+              {
+                progress: 0,
+                limit: 1000,
+                remaining: 100,
+                windowSeconds: 60,
+              },
+            ],
+          },
+        });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/daily-limit`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
   });
 

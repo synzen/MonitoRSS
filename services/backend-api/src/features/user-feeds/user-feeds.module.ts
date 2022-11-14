@@ -9,6 +9,7 @@ import { UserFeedFeature } from "./entities";
 import { UserFeedsService } from "./user-feeds.service";
 import { FeedsModule } from "../feeds/feeds.module";
 import { UserFeedsController } from "./user-feeds.controller";
+import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
 
 @Module({
   controllers: [UserFeedsController],
@@ -22,6 +23,7 @@ import { UserFeedsController } from "./user-feeds.controller";
     DiscordApiModule,
     FeedsModule,
     SupportersModule,
+    FeedHandlerModule,
   ],
   exports: [MongooseModule.forFeature([UserFeedFeature])],
 })

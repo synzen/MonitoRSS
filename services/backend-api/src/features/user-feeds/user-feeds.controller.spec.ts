@@ -10,6 +10,7 @@ describe("UserFeedsController", () => {
     addFeed: jest.fn(),
     updateFeedById: jest.fn(),
     retryFailedFeed: jest.fn(),
+    getFeedDailyLimit: jest.fn(),
   };
   const supportersService = {
     getBenefitsOfDiscordUser: jest.fn(),
@@ -234,6 +235,46 @@ describe("UserFeedsController", () => {
 
       await expect(
         controller.retryFailedFeed(
+          {
+            discord: {
+              id: discordUserId,
+            },
+          } as never,
+          feed as never
+        )
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("getDailyLimits", () => {
+    it("returns the daily limits", async () => {
+      userFeedsService.getFeedDailyLimit.mockResolvedValue({
+        progress: 100,
+        max: 1000,
+      });
+
+      const result = await controller.getDailyLimit(
+        {
+          discord: {
+            id: discordUserId,
+          },
+        } as never,
+        feed as never
+      );
+
+      expect(result).toMatchObject({
+        result: {
+          current: 100,
+          max: 1000,
+        },
+      });
+    });
+
+    it("throws not found if daily limit is not found", async () => {
+      userFeedsService.getFeedDailyLimit.mockResolvedValue(undefined);
+
+      await expect(
+        controller.getDailyLimit(
           {
             discord: {
               id: discordUserId,
