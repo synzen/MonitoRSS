@@ -27,9 +27,9 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  const port = configService.getOrThrow<number>('API_PORT');
+  const port = configService.getOrThrow<number>('FEED_FETCHER_API_PORT');
   const skipPollRequestQueue = configService.getOrThrow<boolean>(
-    'SKIP_POLLING_SQS_REQUEST_QUEUE',
+    'FEED_FETCHER_SKIP_POLLING_SQS_REQUEST_QUEUE',
   );
 
   await app.listen(port, '0.0.0.0');
@@ -44,9 +44,15 @@ async function setupQueuePoll(app: INestApplication) {
   const configService = app.get(ConfigService);
   const feedFetcherService = app.get(FeedFetcherService);
 
-  const queueUrl = configService.get('AWS_SQS_REQUEST_QUEUE_URL') as string;
-  const region = configService.get('AWS_SQS_REQUEST_QUEUE_REGION') as string;
-  const awsEndpoint = configService.get('AWS_SQS_REQUEST_QUEUE_ENDPOINT');
+  const queueUrl = configService.get(
+    'FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL',
+  ) as string;
+  const region = configService.get(
+    'FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION',
+  ) as string;
+  const awsEndpoint = configService.get(
+    'FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT',
+  );
 
   consumer = Consumer.create({
     queueUrl,

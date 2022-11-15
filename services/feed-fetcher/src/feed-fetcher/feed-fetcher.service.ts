@@ -28,7 +28,7 @@ export class FeedFetcherService {
     private readonly feedsService: FeedsService,
   ) {
     this.failedDurationThresholdHours = this.configService.get(
-      'FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
+      'FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
     ) as number;
   }
 

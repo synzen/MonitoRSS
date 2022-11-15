@@ -80,19 +80,19 @@ services:
   #   env_file:
   #     - services/feed-fetcher/.env.local
   #   environment:
-  #     - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedfetcher:5432/feedfetcher
-  #     - FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-  #     - AWS_SQS_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
-  #     - AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
-  #     - AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
-  #     - AWS_ACCESS_KEY_ID=key
-  #     - AWS_SECRET_ACCESS_KEY=secret
-  #     - API_KEY=feed-fetcher-api-key
-  #     # - AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://request-queue:9324
-  #     # - AWS_SQS_FAILED_URL_QUEUE_URL=http://request-queue:9324/queue/failed-requests-queue
-  #     # - AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
-  #     - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
-  #     - API_PORT=5000
+  #     - FEED_FETCHER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedfetcher:5432/feedfetcher
+  #     - FEED_FETCHER_FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+  #     - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
+  #     - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
+  #     - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
+  #     - FEED_FETCHER_AWS_ACCESS_KEY_ID=key
+  #     - FEED_FETCHER_AWS_SECRET_ACCESS_KEY=secret
+  #     - FEED_FETCHER_API_KEY=feed-fetcher-api-key
+  #     # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://request-queue:9324
+  #     # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_URL=http://request-queue:9324/queue/failed-requests-queue
+  #     # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
+  #     - FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
+  #     - FEED_FETCHER_API_PORT=5000
 
   # mrss-feedhandler:
   #   restart: on-failure:3
@@ -140,10 +140,10 @@ services:
     env_file: services/backend-api/.env.local
     environment:
       - NODE_ENV=local
-      - MONGODB_URI=mongodb://mrss-mongo:27017/rss
-      - AWS_URL_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
-      - AWS_URL_REQUEST_QUEUE_REGION=us-east-1
-      - AWS_URL_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
+      - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION=us-east-1
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
     command: npm run start:schedule-emitter:local
 
   # Web

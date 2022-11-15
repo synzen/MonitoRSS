@@ -27,13 +27,13 @@ export class AppModule {
         }),
         TypeOrmModule.forRoot({
           type: 'postgres',
-          url: configVals.POSTGRES_URI,
+          url: configVals.FEED_FETCHER_POSTGRES_URI,
           // database: 'feedfetcher',
           entities: [],
-          synchronize: configVals.SYNC_DB,
+          synchronize: configVals.FEED_FETCHER_SYNC_DB,
           autoLoadEntities: true,
         }),
-        MongooseModule.forRoot(configVals.FEEDS_MONGODB_URI, {
+        MongooseModule.forRoot(configVals.FEED_FETCHER_FEEDS_MONGODB_URI, {
           autoIndex: false,
         }),
       ],

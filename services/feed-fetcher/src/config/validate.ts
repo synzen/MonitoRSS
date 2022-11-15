@@ -22,53 +22,53 @@ export class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
-  API_KEY!: string;
+  FEED_FETCHER_API_KEY!: string;
 
   @IsString()
   @IsOptional()
-  DATADOG_API_KEY?: string;
+  FEED_FETCHER_DATADOG_API_KEY?: string;
 
   @IsString()
   @MinLength(1)
-  POSTGRES_URI!: string;
+  FEED_FETCHER_POSTGRES_URI!: string;
 
   @IsString()
   @MinLength(1)
-  FEEDS_MONGODB_URI!: string;
+  FEED_FETCHER_FEEDS_MONGODB_URI!: string;
 
   @IsBoolean()
   @IsOptional()
-  SYNC_DB?: boolean;
+  FEED_FETCHER_SYNC_DB?: boolean;
 
   @IsString()
   @MinLength(1)
-  AWS_SQS_REQUEST_QUEUE_URL!: string;
+  FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL!: string;
 
   @IsString()
   @MinLength(1)
-  AWS_SQS_REQUEST_QUEUE_REGION!: string;
+  FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION!: string;
 
   @IsString()
   @IsOptional()
-  AWS_SQS_REQUEST_QUEUE_ENDPOINT?: string;
+  FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT?: string;
 
   @IsString()
   @MinLength(1)
-  AWS_ACCESS_KEY_ID!: string;
+  FEED_FETCHER_AWS_ACCESS_KEY_ID!: string;
 
   @IsString()
   @MinLength(1)
-  AWS_SECRET_ACCESS_KEY!: string;
+  FEED_FETCHER_AWS_SECRET_ACCESS_KEY!: string;
 
   @IsNumber()
-  FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
+  FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
 
   @IsNumber()
-  API_PORT!: number;
+  FEED_FETCHER_API_PORT!: number;
 
   @IsBoolean()
   @IsOptional()
-  SKIP_POLLING_SQS_REQUEST_QUEUE?: boolean;
+  FEED_FETCHER_SKIP_POLLING_SQS_REQUEST_QUEUE?: boolean;
 }
 
 export function validateConfig(

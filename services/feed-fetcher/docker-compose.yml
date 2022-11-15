@@ -56,14 +56,14 @@ services:
     env_file:
       - .env.local
     environment:
-      - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
-      - AWS_SQS_REQUEST_QUEUE_URL=http://localhost:9324/queue/request-queue
-      - AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
-      - AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://localhost:9324
-      - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
-      - FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/feedfetcher
-      - PORT=5000
-      - SKIP_POLLING_SQS_REQUEST_QUEUE=false
+      - FEED_FETCHER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
+      - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL=http://localhost:9324/queue/request-queue
+      - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
+      - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://localhost:9324
+      - FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
+      - FEED_FETCHER_FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/feedfetcher
+      - FEED_FETCHER_API_PORT=5000
+      - FEED_FETCHER_SKIP_POLLING_SQS_REQUEST_QUEUE=false
 
 volumes:
   db-mongodb-data:
