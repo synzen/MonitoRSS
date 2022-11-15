@@ -18,16 +18,12 @@ import {
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
 import { InferType, object, string } from 'yup';
 import { useEffect } from 'react';
-import RouteParams from '../../../../types/RouteParams';
-import { useFeeds } from '../../hooks/useFeeds';
-import { useCreateFeed } from '../../hooks';
+import { useCreateUserFeed, useUserFeeds } from '../../hooks';
 import { notifyError } from '@/utils/notifyError';
 
 const formSchema = object({
-  channelId: string().required(),
   title: string().required(),
   url: string().url().required(),
 });
@@ -35,7 +31,6 @@ const formSchema = object({
 type FormData = InferType<typeof formSchema>;
 
 export const AddFeedDialogV2: React.FC = () => {
-  const { serverId } = useParams<RouteParams>();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
   const {
@@ -49,20 +44,16 @@ export const AddFeedDialogV2: React.FC = () => {
     },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    mode: 'all',
   });
-  const { refetch: refetchFeeds } = useFeeds({ serverId });
-  const { mutateAsync } = useCreateFeed();
+  const { refetch: refetchFeeds } = useUserFeeds();
+  const { mutateAsync } = useCreateUserFeed();
 
-  const onSubmit = async ({ channelId, title, url }: FormData) => {
+  const onSubmit = async ({ title, url }: FormData) => {
     try {
       await mutateAsync({
         details: {
-          channelId,
-          feeds: [{
-            title,
-            url,
-          }],
+          title,
+          url,
         },
       });
 
@@ -89,10 +80,10 @@ export const AddFeedDialogV2: React.FC = () => {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{t('features.feed.components.addFeedDialog.title')}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <ModalHeader>{t('features.feed.components.addFeedDialog.title')}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.title}>
                   <FormLabel>
@@ -139,27 +130,28 @@ export const AddFeedDialogV2: React.FC = () => {
                   </FormErrorMessage>
                 </FormControl>
               </Stack>
-            </form>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="ghost"
-              mr={3}
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              {t('features.feed.components.addFeedDialog.cancelButton')}
-            </Button>
-            <Button
-              colorScheme="blue"
-              type="submit"
-              form="addfeed"
-              isLoading={isSubmitting}
-              isDisabled={!isDirty || isSubmitting}
-            >
-              {t('features.feed.components.addFeedDialog.saveButton')}
-            </Button>
-          </ModalFooter>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                variant="ghost"
+                mr={3}
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                {t('features.feed.components.addFeedDialog.cancelButton')}
+              </Button>
+              <Button
+                colorScheme="blue"
+                type="submit"
+                // form="addfeed"
+                isLoading={isSubmitting}
+                isDisabled={!isDirty || isSubmitting}
+                onClick={() => console.log('c')}
+              >
+                {t('features.feed.components.addFeedDialog.saveButton')}
+              </Button>
+            </ModalFooter>
+          </form>
         </ModalContent>
       </Modal>
     </>

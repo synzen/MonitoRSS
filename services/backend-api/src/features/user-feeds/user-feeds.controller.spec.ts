@@ -69,37 +69,6 @@ describe("UserFeedsController", () => {
     );
   });
 
-  describe("createFeed", () => {
-    it("returns the created feed", async () => {
-      const createdFeed = {
-        title: "title",
-        url: "url",
-        _id: new Types.ObjectId(),
-      };
-      userFeedsService.addFeed.mockResolvedValue(createdFeed as never);
-
-      const result = await controller.createFeed(
-        {
-          title: createdFeed.title,
-          url: createdFeed.url,
-        },
-        {
-          discord: {
-            id: "discord id",
-          },
-        } as never
-      );
-
-      expect(result).toMatchObject({
-        result: {
-          title: createdFeed.title,
-          url: createdFeed.url,
-          id: createdFeed._id.toHexString(),
-        },
-      });
-    });
-  });
-
   describe("getFeed", () => {
     it("returns the feed and refresh rate", async () => {
       supportersService.getBenefitsOfDiscordUser.mockResolvedValue({

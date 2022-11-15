@@ -5,6 +5,7 @@ import { GetServersOutput } from '../features/discordServers/api/getServer';
 import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
+  CreateUserFeedOutput,
   FeedSummary,
   GetFeedArticlesOutput,
   GetFeedOutput,
@@ -160,6 +161,13 @@ const handlers = [
     ctx.json<GetUserFeedsOutput>({
       results: mockUserFeeds,
       total: mockUserFeeds.length,
+    }),
+  )),
+
+  rest.post('/api/v1/user-feeds', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<CreateUserFeedOutput>({
+      result: mockUserFeeds[0],
     }),
   )),
 

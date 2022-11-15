@@ -23,7 +23,7 @@ class GetUserFeedsOutputResultDto {
 
 export class GetUserFeedsOutputDto {
   @IsInt()
-  count: number;
+  total: number;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -9,8 +9,10 @@ interface Props {
   initialLimit?: number
 }
 
-export const useUserFeeds = ({ initialLimit }: Props) => {
-  const [limit, setLimit] = useState(initialLimit || 10);
+export const useUserFeeds = ({ initialLimit }: Props = {
+  initialLimit: 10,
+}) => {
+  const [limit, setLimit] = useState(initialLimit);
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState('');
   const [hasErrored, setHasErrored] = useState(false);

@@ -379,7 +379,7 @@ describe("UserFeedsModule", () => {
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
-    it("returns the count and feeds", async () => {
+    it("returns the total count and feeds", async () => {
       const { statusCode, body } = await app.inject({
         method: "GET",
         url: `/user-feeds?limit=10&offset=0`,
@@ -387,7 +387,7 @@ describe("UserFeedsModule", () => {
       });
 
       expect(JSON.parse(body)).toMatchObject({
-        count: 1,
+        total: 1,
         results: [
           {
             id: feed._id.toHexString(),

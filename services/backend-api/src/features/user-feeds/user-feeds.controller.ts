@@ -29,7 +29,6 @@ import { FeedExceptionFilter } from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   CreateUserFeedInputDto,
-  CreateUserFeedOutputDto,
   GetUserFeedDailyLimitOutputDto,
   GetUserFeedOutputDto,
   GetUserFeedsInputDto,
@@ -56,7 +55,7 @@ export class UserFeedsController {
     @Body(ValidationPipe) { title, url }: CreateUserFeedInputDto,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
-  ): Promise<CreateUserFeedOutputDto> {
+  ): Promise<GetUserFeedOutputDto> {
     const result = await this.userFeedsService.addFeed(
       {
         discordUserId,
@@ -67,13 +66,7 @@ export class UserFeedsController {
       }
     );
 
-    return {
-      result: {
-        id: result._id.toHexString(),
-        title: result.title,
-        url: result.url,
-      },
-    };
+    return this.formatFeedForResponse(result, discordUserId);
   }
 
   @Get("/:feedId")
@@ -188,7 +181,7 @@ export class UserFeedsController {
         title: feed.title,
         url: feed.url,
       })),
-      count,
+      total: count,
     };
   }
 
