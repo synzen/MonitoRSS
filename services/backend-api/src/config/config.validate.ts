@@ -21,7 +21,7 @@ export class EnvironmentVariables {
   NODE_ENV: Environment;
 
   @IsNumber()
-  PORT: number;
+  BACKEND_API_PORT: number;
 
   @IsString()
   @MinLength(1)

@@ -51,16 +51,17 @@ async function setupQueuePoll(app: INestApplication) {
   consumer = Consumer.create({
     queueUrl,
     region,
-    sqs: new SQS({
-      endpoint: awsEndpoint,
-      ...(queueUrl.startsWith('https') && {
-        httpOptions: {
-          agent: new https.Agent({
-            keepAlive: true,
-          }),
-        },
-      }),
-    }),
+    sqs: queueUrl.startsWith('https')
+      ? new SQS({
+          region,
+          endpoint: awsEndpoint,
+          httpOptions: {
+            agent: new https.Agent({
+              keepAlive: true,
+            }),
+          },
+        })
+      : undefined,
     batchSize: 10,
     handleMessage: async (message) => {
       if (!message.Body) {

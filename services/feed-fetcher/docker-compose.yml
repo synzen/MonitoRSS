@@ -49,7 +49,7 @@ services:
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules/
-    command: npm run start
+    command: npm run start:local
     depends_on:
       - mrss-postgres
       - request-queue
