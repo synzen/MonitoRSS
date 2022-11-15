@@ -393,6 +393,7 @@ describe("UserFeedsModule", () => {
             id: feed._id.toHexString(),
             title: feed.title,
             url: feed.url,
+            healthStatus: feed.healthStatus,
           },
         ],
       });

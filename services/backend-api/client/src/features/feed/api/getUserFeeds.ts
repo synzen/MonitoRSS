@@ -1,8 +1,8 @@
 import {
-  array, InferType, number, object,
+  array, InferType, number, object, string,
 } from 'yup';
-import { UserFeedSchema } from '../types';
 import fetchRest from '../../../utils/fetchRest';
+import { UserFeedHealthStatus } from '../types';
 
 export interface GetUserFeedsInput {
   limit?: number;
@@ -11,7 +11,12 @@ export interface GetUserFeedsInput {
 }
 
 const GetUserFeedsOutputSchema = object({
-  results: array(UserFeedSchema).required(),
+  results: array(object({
+    id: string().required(),
+    title: string().required(),
+    url: string().required(),
+    healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
+  })).required(),
   total: number().required(),
 }).required();
 

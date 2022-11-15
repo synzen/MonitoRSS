@@ -1,11 +1,13 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsString,
   ValidateNested,
 } from "class-validator";
+import { UserFeedHealthStatus } from "../types";
 
 class GetUserFeedsOutputResultDto {
   @IsString()
@@ -19,6 +21,10 @@ class GetUserFeedsOutputResultDto {
   @IsString()
   @IsNotEmpty()
   url: string;
+
+  @IsString()
+  @IsIn(Object.values(UserFeedHealthStatus))
+  healthStatus: UserFeedHealthStatus;
 }
 
 export class GetUserFeedsOutputDto {

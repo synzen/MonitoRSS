@@ -180,6 +180,7 @@ export class UserFeedsController {
         id: feed._id.toHexString(),
         title: feed.title,
         url: feed.url,
+        healthStatus: feed.healthStatus,
       })),
       total: count,
     };
