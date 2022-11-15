@@ -43,11 +43,11 @@ describe("SupportersService Integration", () => {
     });
 
     const configGetter = (key: string) => {
-      if (key === "DEFAULT_MAX_FEEDS") {
+      if (key === "BACKEND_API_DEFAULT_MAX_FEEDS") {
         return defaultMaxFeeds;
       }
 
-      if (key === "DEFAULT_REFRESH_RATE_MINUTES") {
+      if (key === "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES") {
         return defaultRefreshRateSeconds / 60;
       }
 

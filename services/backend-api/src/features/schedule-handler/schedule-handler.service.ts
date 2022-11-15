@@ -27,13 +27,13 @@ export class ScheduleHandlerService {
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
   ) {
     this.awsUrlRequestQueueUrl = configService.get(
-      "AWS_URL_REQUEST_QUEUE_URL"
+      "BACKEND_API_AWS_URL_REQUEST_QUEUE_URL"
     ) as string;
     const awsUrlRequestQueueRegion = configService.get(
-      "AWS_URL_REQUEST_QUEUE_REGION"
+      "BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION"
     ) as string;
     const awsUrlRequestQueueEndpoint = configService.get(
-      "AWS_URL_REQUEST_QUEUE_ENDPOINT"
+      "BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT"
     );
     this.awsUrlRequestSqsClient = new SQSClient({
       region: awsUrlRequestQueueRegion,
@@ -42,7 +42,7 @@ export class ScheduleHandlerService {
 
     this.defaultRefreshRateSeconds =
       (this.configService.get<number>(
-        "DEFAULT_REFRESH_RATE_MINUTES"
+        "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
       ) as number) * 60;
   }
 

@@ -38,8 +38,8 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
-  const sessionSecret = config.get("SESSION_SECRET");
-  const sessionSalt = config.get("SESSION_SALT");
+  const sessionSecret = config.get("BACKEND_API_SESSION_SECRET");
+  const sessionSalt = config.get("BACKEND_API_SESSION_SALT");
 
   await app.register(fastifySession, {
     secret: sessionSecret,

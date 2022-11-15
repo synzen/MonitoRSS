@@ -23,7 +23,7 @@ export class PatronsService {
 
   constructor(private readonly configsService: ConfigService) {
     this.defaultMaxFeeds = this.configsService.get<number>(
-      "DEFAULT_MAX_FEEDS"
+      "BACKEND_API_DEFAULT_MAX_FEEDS"
     ) as number;
   }
 

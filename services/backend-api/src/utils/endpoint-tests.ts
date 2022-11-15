@@ -11,8 +11,8 @@ import crypto from "crypto";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { equal } from "assert";
 import { Session, SessionKey } from "../common";
-import testConfig from "../config/test-config";
 import session from "@fastify/secure-session";
+import testConfig from "../config/test-config";
 
 let testingModule: TestingModule;
 let app: NestFastifyApplication;
@@ -21,9 +21,7 @@ export function setupEndpointTests(metadata: ModuleMetadata) {
   const uncompiledModule = Test.createTestingModule({
     ...metadata,
     imports: [
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      ...metadata.imports,
+      ...(metadata.imports || []),
       ConfigModule.forRoot({
         ignoreEnvFile: true,
         isGlobal: true,

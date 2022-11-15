@@ -23,9 +23,9 @@ import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-forma
 import config from "../../config/config";
 
 const configValues: Partial<ReturnType<typeof config>> = {
-  DEFAULT_DATE_FORMAT: "YYYY-MM-DD",
-  DEFAULT_TIMEZONE: "UTC",
-  DEFAULT_DATE_LANGUAGE: "en",
+  BACKEND_API_DEFAULT_DATE_FORMAT: "YYYY-MM-DD",
+  BACKEND_API_DEFAULT_TIMEZONE: "UTC",
+  BACKEND_API_DEFAULT_DATE_LANGUAGE: "en",
 };
 
 describe("DiscordServersService", () => {
@@ -216,9 +216,9 @@ describe("DiscordServersService", () => {
       const profile = await service.getServerProfile(serverId);
 
       expect(profile).toEqual({
-        dateFormat: configValues.DEFAULT_DATE_FORMAT,
-        timezone: configValues.DEFAULT_TIMEZONE,
-        dateLanguage: configValues.DEFAULT_DATE_LANGUAGE,
+        dateFormat: configValues.BACKEND_API_DEFAULT_DATE_FORMAT,
+        timezone: configValues.BACKEND_API_DEFAULT_TIMEZONE,
+        dateLanguage: configValues.BACKEND_API_DEFAULT_DATE_LANGUAGE,
       });
     });
 
@@ -232,7 +232,7 @@ describe("DiscordServersService", () => {
 
       expect(returned).toEqual({
         dateFormat: profile.dateFormat,
-        timezone: configValues.DEFAULT_TIMEZONE,
+        timezone: configValues.BACKEND_API_DEFAULT_TIMEZONE,
         dateLanguage: profile.dateLanguage,
       });
     });

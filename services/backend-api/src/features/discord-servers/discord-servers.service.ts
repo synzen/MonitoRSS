@@ -45,13 +45,13 @@ export class DiscordServersService {
     private readonly feedsService: FeedsService
   ) {
     this.defaultDateFormat = this.configService.get<string>(
-      "DEFAULT_DATE_FORMAT"
+      "BACKEND_API_DEFAULT_DATE_FORMAT"
     ) as string;
     this.defaultTimezone = this.configService.get<string>(
-      "DEFAULT_TIMEZONE"
+      "BACKEND_API_DEFAULT_TIMEZONE"
     ) as string;
     this.defaultDateLanguage = this.configService.get<string>(
-      "DEFAULT_DATE_LANGUAGE"
+      "BACKEND_API_DEFAULT_DATE_LANGUAGE"
     ) as string;
   }
 

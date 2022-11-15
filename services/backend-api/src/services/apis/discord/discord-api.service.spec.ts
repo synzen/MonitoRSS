@@ -93,7 +93,7 @@ describe("DiscordAPIService", () => {
       const botClientId = "123456789";
 
       jest.spyOn(configService, "get").mockImplementation((key) => {
-        if (key === "DISCORD_CLIENT_ID") {
+        if (key === "BACKEND_API_DISCORD_CLIENT_ID") {
           return botClientId;
         }
 

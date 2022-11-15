@@ -20,7 +20,7 @@ services:
     env_file: .env.local
     environment:
       - NODE_ENV=local
-      - MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
 
 volumes:
   db-data:

@@ -24,11 +24,13 @@ export class FailedUrlHandlerService {
     @InjectModel(Feed.name) private readonly feedModel: FeedModel
   ) {
     this.queueRegion = configService.get(
-      "AWS_FAILED_URL_QUEUE_REGION"
+      "BACKEND_API_AWS_FAILED_URL_QUEUE_REGION"
     ) as string;
-    this.queueUrl = configService.get("AWS_FAILED_URL_QUEUE_URL") as string;
+    this.queueUrl = configService.get(
+      "BACKEND_API_AWS_FAILED_URL_QUEUE_URL"
+    ) as string;
     this.queueEndpoint = configService.get(
-      "AWS_FAILED_URL_QUEUE_ENDPOINT"
+      "BACKEND_API_AWS_FAILED_URL_QUEUE_ENDPOINT"
     ) as string;
 
     this.sqsClient = new SQSClient({

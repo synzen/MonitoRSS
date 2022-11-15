@@ -25,7 +25,7 @@ COPY --from=build /usr/src/app/package*.json ./
 COPY --from=build /usr/src/app/node_modules node_modules
 COPY --from=build /usr/src/app/dist dist
 
-ENV PORT=8000
+ENV BACKEND_API_PORT=8000
 HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD wget http://localhost:8000/api/v1/health -q -O - > /dev/null 2>&1
 
 CMD [ "node", "./dist/main" ]

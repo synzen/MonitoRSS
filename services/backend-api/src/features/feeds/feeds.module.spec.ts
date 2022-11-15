@@ -202,7 +202,7 @@ describe("FeedsModule", () => {
 
     it("returns created feed details on success", async () => {
       mockGetMeServers();
-      const botClientId = configService.get("DISCORD_CLIENT_ID");
+      const botClientId = configService.get("BACKEND_API_DISCORD_CLIENT_ID");
 
       nock(DISCORD_API_BASE_URL)
         .get(`/channels/${validBody.channelId}`)
@@ -614,7 +614,9 @@ describe("FeedsModule", () => {
         .reply(404, { message: "mock GET channel failure" });
       nock(DISCORD_API_BASE_URL)
         .get(
-          `/guilds/${guildId}/members/${configService.get("DISCORD_CLIENT_ID")}`
+          `/guilds/${guildId}/members/${configService.get(
+            "BACKEND_API_DISCORD_CLIENT_ID"
+          )}`
         )
         .reply(200, { id: "member-id" });
 

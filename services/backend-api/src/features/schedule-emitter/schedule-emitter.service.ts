@@ -59,12 +59,12 @@ export class ScheduleEmitterService {
 
   getDefaultRefreshRate() {
     const refreshRateMinutes = this.configService.get<number>(
-      "DEFAULT_REFRESH_RATE_MINUTES"
+      "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
     );
 
     if (refreshRateMinutes === undefined) {
       throw new Error(
-        "DEFAULT_REFRESH_RATE_MINUTES is not defined in the config"
+        "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES is not defined in the config"
       );
     }
 

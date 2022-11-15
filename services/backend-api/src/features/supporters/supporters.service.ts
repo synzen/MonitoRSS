@@ -52,11 +52,14 @@ export class SupportersService {
   ) {
     // Conversions should be done at the config level, but this is just a hack for now
     this.defaultMaxFeeds = Number(
-      this.configService.getOrThrow<number>("DEFAULT_MAX_FEEDS") as number
+      this.configService.getOrThrow<number>(
+        "BACKEND_API_DEFAULT_MAX_FEEDS"
+      ) as number
     );
     this.defaultRefreshRateSeconds =
-      this.configService.getOrThrow<number>("DEFAULT_REFRESH_RATE_MINUTES") *
-      60;
+      this.configService.getOrThrow<number>(
+        "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
+      ) * 60;
   }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [

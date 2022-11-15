@@ -15,9 +15,11 @@ export class FeedFetcherApiService {
 
   constructor(private readonly configService: ConfigService) {
     this.host = this.configService.get<string>(
-      "FEED_FETCHER_API_HOST"
+      "BACKEND_API_FEED_FETCHER_API_HOST"
     ) as string;
-    this.apiKey = this.configService.getOrThrow<string>("FEED_FETCHER_API_KEY");
+    this.apiKey = this.configService.getOrThrow<string>(
+      "BACKEND_API_FEED_FETCHER_API_KEY"
+    );
   }
 
   async fetchAndSave(
@@ -26,7 +28,8 @@ export class FeedFetcherApiService {
   ): Promise<FeedFetcherFetchFeedResponse> {
     if (!this.host) {
       throw new Error(
-        "FEED_FETCHER_API_HOST config variable must be defined for use before executing a request"
+        "BACKEND_API_FEED_FETCHER_API_HOST config variable must be defined" +
+          " for use before executing a request"
       );
     }
 

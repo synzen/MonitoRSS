@@ -42,15 +42,15 @@ describe("GuildSubscriptionsService", () => {
 
   it("sets the enabled to true if required credentials exist", () => {
     jest.spyOn(configService, "get").mockImplementation((key) => {
-      if (key === "API_SUBSCRIPTIONS_HOST") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_HOST") {
         return "host";
       }
 
-      if (key === "API_SUBSCRIPTIONS_ACCESS_TOKEN") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_ACCESS_TOKEN") {
         return "token";
       }
 
-      if (key === "API_SUBSCRIPTIONS_ENABLED") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_ENABLED") {
         return true;
       }
     });
@@ -61,11 +61,11 @@ describe("GuildSubscriptionsService", () => {
 
   it("sets enabled to false if some required credentials are missing", () => {
     jest.spyOn(configService, "get").mockImplementation((key) => {
-      if (key === "API_SUBSCRIPTIONS_HOST") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_HOST") {
         return "host";
       }
 
-      if (key === "API_SUBSCRIPTIONS_ACCESS_TOKEN") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_ACCESS_TOKEN") {
         return undefined;
       }
     });
@@ -76,15 +76,15 @@ describe("GuildSubscriptionsService", () => {
 
   it("sets enabled to false if config env enabled is false", () => {
     jest.spyOn(configService, "get").mockImplementation((key) => {
-      if (key === "API_SUBSCRIPTIONS_HOST") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_HOST") {
         return "host";
       }
 
-      if (key === "API_SUBSCRIPTIONS_ACCESS_TOKEN") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_ACCESS_TOKEN") {
         return "token";
       }
 
-      if (key === "API_SUBSCRIPTIONS_ENABLED") {
+      if (key === "BACKEND_API_SUBSCRIPTIONS_ENABLED") {
         return false;
       }
     });

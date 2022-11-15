@@ -16,7 +16,9 @@ export class DiscordWebhooksService {
     private readonly discordApiService: DiscordAPIService,
     private readonly configService: ConfigService
   ) {
-    this.clientId = configService.get<string>("DISCORD_CLIENT_ID") as string;
+    this.clientId = configService.get<string>(
+      "BACKEND_API_DISCORD_CLIENT_ID"
+    ) as string;
   }
 
   async getWebhooksOfServer(serverId: string): Promise<DiscordWebhook[]> {

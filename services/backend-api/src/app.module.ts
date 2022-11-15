@@ -49,7 +49,7 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [
-        MongooseModule.forRoot(configValues.MONGODB_URI),
+        MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI),
         ConfigModule.forRoot({
           isGlobal: true,
           ignoreEnvFile: true,

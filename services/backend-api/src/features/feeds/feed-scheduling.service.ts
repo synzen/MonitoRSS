@@ -25,7 +25,9 @@ export class FeedSchedulingService {
     private readonly feedScheduleModel: FeedScheduleModel
   ) {
     this.defaultRefreshRateSeconds =
-      (this.configService.get("DEFAULT_REFRESH_RATE_MINUTES") as number) * 60;
+      (this.configService.get(
+        "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
+      ) as number) * 60;
     this.vipRefreshRateSeconds =
       (this.configService.get("VIP_REFRESH_RATE_MINUTES") as number) * 60;
   }

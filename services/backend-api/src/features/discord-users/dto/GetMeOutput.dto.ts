@@ -2,7 +2,7 @@ export interface GetMeOutputDto {
   id: string;
   username: string;
   iconUrl?: string;
-  maxFeeds: number
+  maxFeeds: number;
   supporter?: {
     guilds: string[];
     maxFeeds: number;

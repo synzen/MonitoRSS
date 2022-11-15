@@ -21,9 +21,11 @@ export class FeedHandlerService {
 
   constructor(private readonly configService: ConfigService) {
     this.host = this.configService.getOrThrow<string>(
-      "FEED_HANDLER_API_HOST"
+      "BACKEND_API_FEED_HANDLER_API_HOST"
     ) as string;
-    this.apiKey = this.configService.getOrThrow<string>("FEED_HANDLER_API_KEY");
+    this.apiKey = this.configService.getOrThrow<string>(
+      "BACKEND_API_FEED_HANDLER_API_KEY"
+    );
   }
 
   async getRateLimits(feedId: string): Promise<FeedHandlerRateLimitsResponse> {

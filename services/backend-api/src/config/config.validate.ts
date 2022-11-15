@@ -25,106 +25,108 @@ export class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
-  DISCORD_BOT_TOKEN: string;
+  BACKEND_API_DISCORD_BOT_TOKEN: string;
 
   @IsString()
   @MinLength(1)
-  DISCORD_CLIENT_ID: string;
+  BACKEND_API_DISCORD_CLIENT_ID: string;
 
   @IsString()
   @MinLength(1)
-  DISCORD_CLIENT_SECRET: string;
+  BACKEND_API_DISCORD_CLIENT_SECRET: string;
 
   @IsString()
   @MinLength(1)
-  DISCORD_REDIRECT_URI: string;
+  BACKEND_API_DISCORD_REDIRECT_URI: string;
 
   @IsString()
   @MinLength(1)
-  LOGIN_REDIRECT_URI: string;
+  BACKEND_API_LOGIN_REDIRECT_URI: string;
 
   @IsString()
   @MinLength(1)
-  MONGODB_URI: string;
+  BACKEND_API_MONGODB_URI: string;
 
   @IsNumber()
-  DEFAULT_REFRESH_RATE_MINUTES: number;
+  BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: number;
 
   @IsNumber()
-  DEFAULT_MAX_FEEDS: number;
+  BACKEND_API_DEFAULT_MAX_FEEDS: number;
 
   @IsBoolean()
-  API_SUBSCRIPTIONS_ENABLED: boolean;
+  BACKEND_API_SUBSCRIPTIONS_ENABLED: boolean;
 
   @IsString()
   @IsOptional()
-  API_SUBSCRIPTIONS_HOST?: string;
+  BACKEND_API_SUBSCRIPTIONS_HOST?: string;
 
   @IsString()
   @IsOptional()
-  API_SUBSCRIPTIONS_ACCESS_TOKEN?: string;
+  BACKEND_API_SUBSCRIPTIONS_ACCESS_TOKEN?: string;
 
   @IsString()
-  SESSION_SECRET: string;
+  BACKEND_API_SESSION_SECRET: string;
 
   @IsString()
-  SESSION_SALT: string;
+  BACKEND_API_SESSION_SALT: string;
 
   @IsString()
-  FEED_USER_AGENT: string;
-
-  @IsString()
-  @IsOptional()
-  DATADOG_API_KEY?: string;
+  BACKEND_API_FEED_USER_AGENT: string;
 
   @IsString()
   @IsOptional()
-  AWS_URL_REQUEST_QUEUE_ENDPOINT?: string;
-
-  @IsString()
-  AWS_URL_REQUEST_QUEUE_REGION: string;
-
-  @IsString()
-  AWS_URL_REQUEST_QUEUE_URL: string;
+  BACKEND_API_DATADOG_API_KEY?: string;
 
   @IsString()
   @IsOptional()
-  FEED_FETCHER_GRPC_URL?: string;
+  BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT?: string;
+
+  @IsString()
+  BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION: string;
+
+  @IsString()
+  BACKEND_API_AWS_URL_REQUEST_QUEUE_URL: string;
 
   @IsString()
   @IsOptional()
-  AWS_ACCESS_KEY_ID?: string;
+  BACKEND_API_FEED_FETCHER_GRPC_URL?: string;
 
   @IsString()
   @IsOptional()
-  AWS_SECRET_ACCESS_KEY?: string;
+  BACKEND_API_AWS_ACCESS_KEY_ID?: string;
 
   @IsString()
   @IsOptional()
-  DEFAULT_DATE_FORMAT?: string;
+  BACKEND_API_AWS_SECRET_ACCESS_KEY?: string;
 
   @IsString()
   @IsOptional()
-  DEFAULT_TIMEZONE?: string;
+  BACKEND_API_DEFAULT_DATE_FORMAT?: string;
 
   @IsString()
   @IsOptional()
-  DEFAULT_DATE_LANGUAGE?: string;
+  BACKEND_API_DEFAULT_TIMEZONE?: string;
 
   @IsString()
-  FEED_FETCHER_API_KEY: string;
+  @IsOptional()
+  BACKEND_API_DEFAULT_DATE_LANGUAGE?: string;
 
   @IsString()
-  FEED_FETCHER_API_HOST: string;
+  BACKEND_API_FEED_FETCHER_API_KEY: string;
 
   @IsString()
-  FEED_HANDLER_API_HOST: string;
+  BACKEND_API_FEED_FETCHER_API_HOST: string;
 
   @IsString()
-  FEED_HANDLER_API_KEY: string;
+  BACKEND_API_FEED_HANDLER_API_HOST: string;
+
+  @IsString()
+  BACKEND_API_FEED_HANDLER_API_KEY: string;
 }
 
-export function validateConfig(config: Record<string, unknown>) {
+export function validateConfig(
+  config: Record<string, unknown> | EnvironmentVariables
+) {
   const validatedConfig = plainToClass(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });

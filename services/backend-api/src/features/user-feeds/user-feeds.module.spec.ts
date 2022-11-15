@@ -65,11 +65,11 @@ describe("UserFeedsModule", () => {
     discordAuthService = app.get<DiscordAuthService>(DiscordAuthService);
     feedFetcherApiHost = app
       .get(ConfigService)
-      .getOrThrow<string>("FEED_FETCHER_API_HOST");
+      .getOrThrow<string>("BACKEND_API_FEED_FETCHER_API_HOST");
 
     feedHandlerApiHost = app
       .get(ConfigService)
-      .getOrThrow<string>("FEED_HANDLER_API_HOST");
+      .getOrThrow<string>("BACKEND_API_FEED_HANDLER_API_HOST");
   });
 
   beforeEach(() => {
