@@ -30,18 +30,26 @@ export function config(options?: {
 
   const configVals = {
     NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
-    FEED_REQUEST_SERVICE_URL: process.env.FEED_REQUEST_SERVICE_URL as string,
-    POSTGRES_URI: process.env.POSTGRES_URI as string,
-    FEED_MONGODB_URI: process.env.FEED_MONGODB_URI as string,
-    POSTGRES_DATABASE: process.env.POSTGRES_DATABASE as string,
-    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID as string,
-    DISCORD_RABBITMQ_URI: process.env.DISCORD_RABBITMQ_URI as string,
-    PORT: process.env.PORT as string,
-    FEED_EVENT_QUEUE_URL: process.env.FEED_EVENT_QUEUE_URL as string,
-    AWS_REGION: process.env.AWS_REGION as string,
-    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
-    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
-    API_KEY: process.env.API_KEY as string,
+    FEED_HANDLER_FEED_REQUEST_SERVICE_URL: process.env
+      .FEED_HANDLER_FEED_REQUEST_SERVICE_URL as string,
+    FEED_HANDLER_POSTGRES_URI: process.env.FEED_HANDLER_POSTGRES_URI as string,
+    FEED_HANDLER_FEED_MONGODB_URI: process.env
+      .FEED_HANDLER_FEED_MONGODB_URI as string,
+    FEED_HANDLER_POSTGRES_DATABASE: process.env
+      .FEED_HANDLER_POSTGRES_DATABASE as string,
+    FEED_HANDLER_DISCORD_CLIENT_ID: process.env
+      .FEED_HANDLER_DISCORD_CLIENT_ID as string,
+    FEED_HANDLER_DISCORD_RABBITMQ_URI: process.env
+      .FEED_HANDLER_DISCORD_RABBITMQ_URI as string,
+    FEED_HANDLER_API_PORT: process.env.FEED_HANDLER_API_PORT as string,
+    FEED_HANDLER_FEED_EVENT_QUEUE_URL: process.env
+      .FEED_HANDLER_FEED_EVENT_QUEUE_URL as string,
+    FEED_HANDLER_AWS_REGION: process.env.FEED_HANDLER_AWS_REGION as string,
+    FEED_HANDLER_AWS_SECRET_ACCESS_KEY: process.env
+      .FEED_HANDLER_AWS_SECRET_ACCESS_KEY as string,
+    FEED_HANDLER_AWS_ACCESS_KEY_ID: process.env
+      .FEED_HANDLER_AWS_ACCESS_KEY_ID as string,
+    FEED_HANDLER_API_KEY: process.env.FEED_HANDLER_API_KEY as string,
   } as const;
 
   if (!options?.skipValidation) {

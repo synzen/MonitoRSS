@@ -13,7 +13,9 @@ export class FeedFetcherService {
   SERVICE_HOST: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.SERVICE_HOST = configService.getOrThrow("FEED_REQUEST_SERVICE_URL");
+    this.SERVICE_HOST = configService.getOrThrow(
+      "FEED_HANDLER_FEED_REQUEST_SERVICE_URL"
+    );
   }
 
   async fetch(url: string) {

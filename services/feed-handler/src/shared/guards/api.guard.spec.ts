@@ -1,3 +1,4 @@
+import { UnauthorizedException } from "@nestjs/common";
 import { ApiGuard } from "./api.guard";
 
 describe("ApiGuard", () => {
@@ -10,7 +11,7 @@ describe("ApiGuard", () => {
   beforeEach(() => {
     guard = new ApiGuard(configService as never);
     configService.getOrThrow.mockImplementation((key) => {
-      if (key === "API_KEY") {
+      if (key === "FEED_HANDLER_API_KEY") {
         return apiKey;
       }
 
@@ -18,21 +19,7 @@ describe("ApiGuard", () => {
     });
   });
 
-  it("returns false if there is no api key header", () => {
-    const context = {
-      switchToHttp: jest.fn().mockReturnValue({
-        getRequest: jest.fn().mockReturnValue({
-          headers: {
-            "api-key": undefined,
-          },
-        }),
-      }),
-    };
-
-    expect(guard.canActivate(context as any)).toEqual(false);
-  });
-
-  it("returns false if the api key header does not match the config", () => {
+  it("throws if the api key header does not match the config", () => {
     const context = {
       switchToHttp: jest.fn().mockReturnValue({
         getRequest: jest.fn().mockReturnValue({
@@ -43,7 +30,9 @@ describe("ApiGuard", () => {
       }),
     };
 
-    expect(guard.canActivate(context as any)).toEqual(false);
+    expect(() => guard.canActivate(context as never)).toThrow(
+      UnauthorizedException
+    );
   });
 
   it("returns true if the api key header matches the config", () => {
@@ -57,6 +46,6 @@ describe("ApiGuard", () => {
       }),
     };
 
-    expect(guard.canActivate(context as any)).toEqual(true);
+    expect(guard.canActivate(context as never)).toEqual(true);
   });
 });

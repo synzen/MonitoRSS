@@ -112,18 +112,18 @@ services:
   #   env_file:
   #     - services/feed-handler/.env.local
   #   environment:
-  #     - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedhandler:5432
-  #     - POSTGRES_DATABASE=feedhandler
-  #     - FEED_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-  #     - FEED_REQUEST_SERVICE_URL=http://mrss-feedfetcher:5000
-  #     - DISCORD_CLIENT_ID=123
-  #     - DISCORD_RABBITMQ_URI=123
-  #     - PORT=3001
+  #     - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedhandler:5432
+  #     - FEED_HANDLER_POSTGRES_DATABASE=feedhandler
+  #     - FEED_HANDLER_FEED_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+  #     - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://mrss-feedfetcher:5000
+  #     - FEED_HANDLER_DISCORD_CLIENT_ID=123
+  #     - FEED_HANDLER_DISCORD_RABBITMQ_URI=123
+  #     - FEED_HANDLER_PORT=3001
   #     # Queue name is referenced in the elasticmq.conf file
-  #     - FEED_EVENT_QUEUE_URL=http://request-queue:9324/queue/feed-handler-feed-queue
-  #     - AWS_REGION=us-east-1
-  #     - AWS_SECRET_ACCESS_KEY=123
-  #     - AWS_ACCESS_KEY_ID=123
+  #     - FEED_HANDLER_FEED_EVENT_QUEUE_URL=http://request-queue:9324/queue/feed-handler-feed-queue
+  #     - FEED_HANDLER_AWS_REGION=us-east-1
+  #     - FEED_HANDLER_AWS_SECRET_ACCESS_KEY=123
+  #     - FEED_HANDLER_AWS_ACCESS_KEY_ID=123
 
   # Schedule emitter
   mrss-schedule-emitter-service:

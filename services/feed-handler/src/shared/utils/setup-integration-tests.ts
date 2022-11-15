@@ -35,8 +35,8 @@ export async function setupIntegrationTests(
       MikroOrmModule.forRoot({
         entities: ["dist/**/*.entity.js"],
         entitiesTs: ["src/**/*.entity.ts"],
-        clientUrl: configVals.POSTGRES_URI,
-        dbName: configVals.POSTGRES_DATABASE,
+        clientUrl: configVals.FEED_HANDLER_POSTGRES_URI,
+        dbName: configVals.FEED_HANDLER_POSTGRES_DATABASE,
         type: "postgresql",
         forceUtcTimezone: true,
         timezone: "UTC",

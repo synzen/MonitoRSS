@@ -13,7 +13,7 @@ export async function setupHttpApi() {
     new FastifyAdapter()
   );
   const configService = app.get(ConfigService);
-  const port = configService.getOrThrow("PORT");
+  const port = configService.getOrThrow("FEED_HANDLER_API_PORT");
 
   await app.listen(port);
 

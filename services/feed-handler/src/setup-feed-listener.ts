@@ -12,7 +12,9 @@ export async function setupFeedListener() {
   const app = await NestFactory.createApplicationContext(AppModule.forRoot());
   const config = app.get(ConfigService);
 
-  const queueUrl = config.getOrThrow<string>("FEED_EVENT_QUEUE_URL");
+  const queueUrl = config.getOrThrow<string>(
+    "FEED_HANDLER_FEED_EVENT_QUEUE_URL"
+  );
 
   consumer = Consumer.create({
     queueUrl,
@@ -38,7 +40,7 @@ export async function setupFeedListener() {
         })
       : undefined,
     batchSize: 10,
-    region: config.getOrThrow("AWS_REGION"),
+    region: config.getOrThrow("FEED_HANDLER_AWS_REGION"),
   });
 
   consumer.on("error", (error, message) => {

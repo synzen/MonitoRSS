@@ -18,40 +18,40 @@ export class EnvironmentVariables {
   NODE_ENV: Environment;
 
   @IsString()
-  FEED_REQUEST_SERVICE_URL: string;
+  FEED_HANDLER_FEED_REQUEST_SERVICE_URL: string;
 
   @IsString()
-  POSTGRES_URI: string;
+  FEED_HANDLER_POSTGRES_URI: string;
 
   @IsString()
-  FEED_MONGODB_URI: string;
+  FEED_HANDLER_FEED_MONGODB_URI: string;
 
   @IsString()
-  POSTGRES_DATABASE: string;
+  FEED_HANDLER_POSTGRES_DATABASE: string;
 
   @IsString()
-  DISCORD_CLIENT_ID: string;
+  FEED_HANDLER_DISCORD_CLIENT_ID: string;
 
   @IsString()
-  DISCORD_RABBITMQ_URI: string;
+  FEED_HANDLER_DISCORD_RABBITMQ_URI: string;
 
   @IsNumberString()
-  PORT: string;
+  FEED_HANDLER_API_PORT: string;
 
   @IsString()
-  FEED_EVENT_QUEUE_URL: string;
+  FEED_HANDLER_FEED_EVENT_QUEUE_URL: string;
 
   @IsString()
-  AWS_REGION: string;
+  FEED_HANDLER_AWS_REGION: string;
 
   @IsString()
-  AWS_SECRET_ACCESS_KEY: string;
+  FEED_HANDLER_AWS_SECRET_ACCESS_KEY: string;
 
   @IsString()
-  AWS_ACCESS_KEY_ID: string;
+  FEED_HANDLER_AWS_ACCESS_KEY_ID: string;
 
   @IsString()
-  API_KEY: string;
+  FEED_HANDLER_API_KEY: string;
 }
 
 export function validateConfig(

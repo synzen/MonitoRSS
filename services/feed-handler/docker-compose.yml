@@ -45,18 +45,18 @@ services:
     env_file:
       - .env.local
     environment:
-      - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432
-      - POSTGRES_DATABASE=feed-handler
-      - FEED_REQUEST_SERVICE_URL=http://localhost:5000
-      - FEED_MONGODB_URI=abc
-      - DISCORD_CLIENT_ID=123
-      - DISCORD_RABBITMQ_URI=123
-      - PORT=3001
+      - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432
+      - FEED_HANDLER_POSTGRES_DATABASE=feed-handler
+      - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://localhost:5000
+      - FEED_HANDLER_FEED_MONGODB_URI=abc
+      - FEED_HANDLER_DISCORD_CLIENT_ID=123
+      - FEED_HANDLER_DISCORD_RABBITMQ_URI=123
+      - FEED_HANDLER_API_PORT=3001
       # Queue name is referenced in the elasticmq.conf file
-      - FEED_EVENT_QUEUE_URL=http://mrss-feed-handler-feed-queue:9324/queue/feed-handler-feed-queue
-      - AWS_REGION=us-east-1
-      - AWS_SECRET_ACCESS_KEY=123
-      - AWS_ACCESS_KEY_ID=123
+      - FEED_HANDLER_FEED_EVENT_QUEUE_URL=http://mrss-feed-handler-feed-queue:9324/queue/feed-handler-feed-queue
+      - FEED_HANDLER_AWS_REGION=us-east-1
+      - FEED_HANDLER_AWS_SECRET_ACCESS_KEY=123
+      - FEED_HANDLER_AWS_ACCESS_KEY_ID=123
 
 volumes:
   db:

@@ -25,8 +25,12 @@ export class DiscordMediumService implements DeliveryMedium {
   static BASE_API_URL = "https://discord.com/api/v10";
 
   constructor(private readonly configService: ConfigService) {
-    this.rabbitMqUri = this.configService.getOrThrow("DISCORD_RABBITMQ_URI");
-    this.clientId = this.configService.getOrThrow("DISCORD_CLIENT_ID");
+    this.rabbitMqUri = this.configService.getOrThrow(
+      "FEED_HANDLER_DISCORD_RABBITMQ_URI"
+    );
+    this.clientId = this.configService.getOrThrow(
+      "FEED_HANDLER_DISCORD_CLIENT_ID"
+    );
     this.producer = new RESTProducer(this.rabbitMqUri, {
       clientId: this.clientId,
     });
