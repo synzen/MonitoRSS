@@ -1,7 +1,6 @@
 version: "3.8"
 services:
-  # Feed-fetcher
-  request-queue:
+  queue-server:
     image: s12v/elasticmq
     volumes:
       - ./elasticmq.conf:/etc/elasticmq/elasticmq.conf
@@ -20,110 +19,108 @@ services:
     volumes:
       - "db-mongodb-data:/data/db"
 
-  # mrss-postgres-feedfetcher:
-  #   container_name: mrss-postgres-feedfetcher
-  #   restart: always
-  #   healthcheck:
-  #     test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
-  #     timeout: 45s
-  #     interval: 10s
-  #     retries: 10
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   # Comment below to show mongo logs
-  #   # logging:
-  #   #   driver: none
-  #   image: postgres:14.1-alpine
-  #   ports:
-  #     - "5444:5432"
-  #   volumes:
-  #     - db-feedfetcher-postgres-data:/var/lib/postgresql/data
-  #     - ./services/feed-fetcher/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+  mrss-postgres-feedfetcher:
+    container_name: mrss-postgres-feedfetcher
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    # Comment below to show mongo logs
+    # logging:
+    #   driver: none
+    image: postgres:14.1-alpine
+    ports:
+      - "5431:5432"
+    volumes:
+      - db-feedfetcher-postgres-data:/var/lib/postgresql/data
+      - ./services/feed-fetcher/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
       
-  # mrss-postgres-feedhandler:
-  #   container_name: mrss-postgres-feedhandler
-  #   restart: always
-  #   healthcheck:
-  #     test: ['CMD', 'pg_isready', '-q', '-d', 'postgres', '-U', 'postgres']
-  #     timeout: 45s
-  #     interval: 10s
-  #     retries: 10
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   # Comment below to show mongo logs
-  #   logging:
-  #     driver: none
-  #   image: postgres:14.1-alpine
-  #   ports:
-  #     - '5431:5432'
-  #   volumes:
-  #     - db-feedhandler-postgres-data:/var/lib/postgresql/data
-  #     - ./services/feed-handler/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+  mrss-postgres-feedhandler:
+    container_name: mrss-postgres-feedhandler
+    restart: always
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', 'postgres', '-U', 'postgres']
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    # Comment below to show mongo logs
+    logging:
+      driver: none
+    image: postgres:14.1-alpine
+    ports:
+      - '5430:5432'
+    volumes:
+      - db-feedhandler-postgres-data:/var/lib/postgresql/data
+      - ./services/feed-handler/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
 
-  # mrss-feedfetcher:
-  #   restart: on-failure:3
-  #   build:
-  #     context: services/feed-fetcher
-  #     dockerfile: Dockerfile
-  #     target: build
-  #   ports:
-  #     - "5000:5000"
-  #   volumes:
-  #     - ./services/feed-fetcher:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   command: npm run start:local
-  #   depends_on:
-  #     - mrss-postgres-feedfetcher
-  #     - request-queue
-  #   env_file:
-  #     - services/feed-fetcher/.env.local
-  #   environment:
-  #     - FEED_FETCHER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedfetcher:5432/feedfetcher
-  #     - FEED_FETCHER_FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-  #     - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
-  #     - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
-  #     - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
-  #     - FEED_FETCHER_AWS_ACCESS_KEY_ID=key
-  #     - FEED_FETCHER_AWS_SECRET_ACCESS_KEY=secret
-  #     - FEED_FETCHER_API_KEY=feed-fetcher-api-key
-  #     # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://request-queue:9324
-  #     # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_URL=http://request-queue:9324/queue/failed-requests-queue
-  #     # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
-  #     - FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
-  #     - FEED_FETCHER_API_PORT=5000
+  mrss-feedfetcher:
+    restart: on-failure:3
+    build:
+      context: services/feed-fetcher
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./services/feed-fetcher:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npm run start:local
+    depends_on:
+      - mrss-postgres-feedfetcher
+      - queue-server
+    env_file:
+      - ./.env.local
+    environment:
+      - FEED_FETCHER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedfetcher:5432/feedfetcher
+      - FEED_FETCHER_FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL=http://queue-server:9324/queue/request-queue
+      - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT=http://queue-server:9324
+      - FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION=us-east-1
+      - FEED_FETCHER_AWS_ACCESS_KEY_ID=key
+      - FEED_FETCHER_AWS_SECRET_ACCESS_KEY=secret
+      - FEED_FETCHER_API_KEY=feed-fetcher-api-key
+      # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://queue-server:9324
+      # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_URL=http://queue-server:9324/queue/failed-requests-queue
+      # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
+      - FEED_FETCHER_API_PORT=5000
+      - AWS_ACCESS_KEY_ID=1
+      - AWS_SECRET_ACCESS_KEY=1
 
-  # mrss-feedhandler:
-  #   restart: on-failure:3
-  #   build:
-  #     context: services/feed-handler
-  #     dockerfile: Dockerfile
-  #     target: build
-  #   ports:
-  #     - "5000:5000"
-  #   volumes:
-  #     - ./services/feed-handler:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   command: npm run start:local
-  #   depends_on:
-  #     - mrss-postgres-feedhandler
-  #     - request-queue
-  #   env_file:
-  #     - services/feed-handler/.env.local
-  #   environment:
-  #     - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedhandler:5432
-  #     - FEED_HANDLER_POSTGRES_DATABASE=feedhandler
-  #     - FEED_HANDLER_FEED_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-  #     - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://mrss-feedfetcher:5000
-  #     - FEED_HANDLER_DISCORD_CLIENT_ID=123
-  #     - FEED_HANDLER_DISCORD_RABBITMQ_URI=123
-  #     - FEED_HANDLER_PORT=3001
-  #     # Queue name is referenced in the elasticmq.conf file
-  #     - FEED_HANDLER_FEED_EVENT_QUEUE_URL=http://request-queue:9324/queue/feed-handler-feed-queue
-  #     - FEED_HANDLER_AWS_REGION=us-east-1
-  #     - FEED_HANDLER_AWS_SECRET_ACCESS_KEY=123
-  #     - FEED_HANDLER_AWS_ACCESS_KEY_ID=123
+  mrss-feedhandler:
+    restart: on-failure:3
+    build:
+      context: services/feed-handler
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./services/feed-handler:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npm run start:local
+    depends_on:
+      - mrss-postgres-feedhandler
+      - queue-server
+    env_file:
+      - ./.env.local
+    environment:
+      - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedhandler:5432
+      - FEED_HANDLER_POSTGRES_DATABASE=feedhandler
+      - FEED_HANDLER_FEED_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://mrss-feedfetcher:5000
+      - FEED_HANDLER_DISCORD_RABBITMQ_URI=123
+      - FEED_HANDLER_API_PORT=5000
+      - FEED_HANDLER_FEED_EVENT_QUEUE_URL=http://queue-server:9324/queue/feed-handler-feed-queue
+      - AWS_ACCESS_KEY_ID=1
+      - AWS_SECRET_ACCESS_KEY=1
 
   # Schedule emitter
   mrss-schedule-emitter-service:
@@ -137,58 +134,79 @@ services:
       - /usr/src/app/node_modules/
     depends_on:
       - mrss-mongo
-    env_file: services/backend-api/.env.local
+    env_file:
+      - ./.env.local
     environment:
       - NODE_ENV=local
       - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-      - BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT=http://request-queue:9324
+      - BACKEND_API_FEED_HANDLER_API_HOST=----IRRELEVANT----
+      - BACKEND_API_FEED_HANDLER_API_KEY=----IRRELEVANT----
+      - BACKEND_API_FEED_FETCHER_API_HOST=----IRRELEVANT----
+      - BACKEND_API_FEED_FETCHER_API_KEY=----IRRELEVANT----
+      - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=10
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT=http://queue-server:9324
       - BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION=us-east-1
-      - BACKEND_API_AWS_URL_REQUEST_QUEUE_URL=http://request-queue:9324/queue/request-queue
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_URL=http://queue-server:9324/queue/request-queue
     command: npm run start:schedule-emitter:local
 
-  # Web
-  # mrss-web-api:
-  #   build:
-  #     context: services/backend-api
-  #     dockerfile: dockerfiles/web/api.Dockerfile
-  #     target: build
-  #   restart: on-failure:3
-  #   volumes:
-  #     - ./services/backend-api:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   depends_on:
-  #     - mrss-mongo
-  #   ports:
-  #     - "8000:8000"
-  #   env_file: services/backend-api/.env.local
-  #   environment:
-  #     - NODE_ENV=local
-  #     - MONGODB_URI=mongodb://mrss-mongo:27017/rss
-  #     - FEED_FETCHER_API_HOST=http://mrss-feedfetcher:5000
-  #     - FEED_FETCHER_API_KEY=feed-fetcher-api-key
-  #   command: npm run start:local
+  # Web - Backend api
+  mrss-web-api:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/api.Dockerfile
+      target: build
+    restart: on-failure:3
+    volumes:
+      - ./services/backend-api:/usr/src/app
+      - /usr/src/app/node_modules/
+    depends_on:
+      - mrss-mongo
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env.local
+    environment:
+      - BACKEND_API_NODE_ENV=local
+      - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - BACKEND_API_FEED_HANDLER_API_HOST=http://mrss-feedhandler:5000
+      - BACKEND_API_FEED_HANDLER_API_KEY=feed-handler-api-key
+      - BACKEND_API_FEED_FETCHER_API_HOST=http://mrss-feedfetcher:5000
+      - BACKEND_API_FEED_FETCHER_API_KEY=feed-fetcher-api-key
+      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:8000
+      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8000/api/v1/discord/callback
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=10
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT=----IRRELEVANT----
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION=----IRRELEVANT----
+      - BACKEND_API_AWS_URL_REQUEST_QUEUE_URL=----IRRELEVANT----
+    command: npm run start:local
 
-  # mrss-web-client:
-  #   build:
-  #     context: services/backend-api/client
-  #     dockerfile: ../dockerfiles/web/client.Dockerfile
-  #     target: build
-  #   restart: on-failure:3
-  #   ports:
-  #     - "3000:3000"
-  #   expose:
-  #     - "3000"
-  #   environment:
-  #     - NODE_ENV=local
-  #     - HOST=0.0.0.0
-  #     - API_PROXY_URL=http://mrss-web-api:8000
-  #     - VITE_USE_POLLING=true
-  #   depends_on:
-  #     - mrss-web-api
-  #   volumes:
-  #     - ./services/backend-api/client:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   command: npx vite --host
+  mrss-web-client:
+    build:
+      context: services/backend-api/client
+      dockerfile: ../dockerfiles/web/client.Dockerfile
+      target: build
+    restart: on-failure:3
+    ports:
+      - "3000:3000"
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=local
+      - HOST=0.0.0.0
+      - API_PROXY_URL=http://mrss-web-api:8000
+      - VITE_USE_POLLING=true
+    depends_on:
+      - mrss-web-api
+    volumes:
+      - ./services/backend-api/client:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npx vite --host
 
 volumes:
   db-mongodb-data:
