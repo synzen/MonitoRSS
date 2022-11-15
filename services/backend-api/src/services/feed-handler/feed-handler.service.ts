@@ -30,13 +30,16 @@ export class FeedHandlerService {
 
   async getRateLimits(feedId: string): Promise<FeedHandlerRateLimitsResponse> {
     try {
-      const response = await fetch(`${this.host}/feeds/${feedId}/rate-limits`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": this.apiKey,
-        },
-      });
+      const response = await fetch(
+        `${this.host}/v1/feeds/${feedId}/rate-limits`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": this.apiKey,
+          },
+        }
+      );
 
       if (response.status >= 500) {
         throw new Error(

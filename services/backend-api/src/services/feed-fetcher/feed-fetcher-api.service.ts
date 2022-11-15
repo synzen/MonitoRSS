@@ -34,7 +34,7 @@ export class FeedFetcherApiService {
     }
 
     try {
-      const response = await fetch(`${this.host}/requests`, {
+      const response = await fetch(`${this.host}/v1/requests`, {
         method: "POST",
         body: JSON.stringify({
           url,
