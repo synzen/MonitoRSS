@@ -1,5 +1,6 @@
 import { FeedConnection, FeedConnectionType } from '@/types';
 import mockDiscordChannels from './discordChannels';
+import mockDiscordServers from './discordServers';
 
 export const mockFeedChannelConnections: FeedConnection[] = [{
   id: '1',
@@ -9,6 +10,7 @@ export const mockFeedChannelConnections: FeedConnection[] = [{
     embeds: [],
     channel: {
       id: mockDiscordChannels[0].id,
+      guildId: mockDiscordServers[0].id,
     },
     content: 'test',
   },
@@ -23,6 +25,7 @@ export const mockFeedWebhookConnections: FeedConnection[] = [{
     webhook: {
       id: '1',
       name: 'test',
+      guildId: mockDiscordServers[0].id,
     },
     content: 'test',
     embeds: [],

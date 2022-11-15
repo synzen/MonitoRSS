@@ -179,7 +179,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                         )}
                       />
                       <DeleteConnectionButton
-                        serverId={serverId as string}
                         connectionId={connectionId as string}
                         feedId={feedId as string}
                       />
