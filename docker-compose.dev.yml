@@ -30,9 +30,9 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    # Comment below to show mongo logs
-    # logging:
-    #   driver: none
+    # Comment below to show logs
+    logging:
+      driver: none
     image: postgres:14.1-alpine
     ports:
       - "5431:5432"
@@ -51,7 +51,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    # Comment below to show mongo logs
+    # Comment below to show logs
     logging:
       driver: none
     image: postgres:14.1-alpine
@@ -91,6 +91,7 @@ services:
       # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_URL=http://queue-server:9324/queue/failed-requests-queue
       # - FEED_FETCHER_AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
       - FEED_FETCHER_API_PORT=5000
+      - FEED_FETCHER_SYNC_DB=true
       - AWS_ACCESS_KEY_ID=1
       - AWS_SECRET_ACCESS_KEY=1
 
@@ -109,6 +110,7 @@ services:
     depends_on:
       - mrss-postgres-feedhandler
       - queue-server
+      - mrss-feedfetcher
     env_file:
       - ./.env.local
     environment:
@@ -165,6 +167,8 @@ services:
       - /usr/src/app/node_modules/
     depends_on:
       - mrss-mongo
+      - mrss-feedhandler
+      - mrss-feedfetcher
     ports:
       - "8000:8000"
     env_file:
