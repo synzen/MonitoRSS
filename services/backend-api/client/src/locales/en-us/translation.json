@@ -99,6 +99,11 @@
       "discordWebhookMenuItem": "Discord Webhook",
       "articleDailyLimit": "Article Daily Limit"
     },
+    "userFeed": {
+      "deleteConfirmTitle": "Delete feed",
+      "deleteConfirmDescription": "Are you sure you want to delete this feed?",
+      "deleteConfirmOk": "Delete"
+    },
     "message": {
       "title": "Message",
       "placeholdersSectionTitle": "Placeholders",

@@ -26,14 +26,15 @@ import {
   Text,
   useDisclosure,
 } from '@chakra-ui/react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
-import { CategoryText } from '@/components';
+import { CategoryText, ConfirmModal } from '@/components';
 import {
   RefreshUserFeedButton,
   useArticleDailyLimit,
+  useDeleteUserFeed,
   UserFeedHealthStatus,
   useUserFeed,
 } from '../features/feed';
@@ -41,6 +42,8 @@ import RouteParams from '../types/RouteParams';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { AddConnectionDialog } from '../features/feedConnections';
 import { FeedConnectionType } from '../types';
+import { notifySuccess } from '../utils/notifySuccess';
+import { notifyError } from '../utils/notifyError';
 
 const getConnectionUrlByType = (type: FeedConnectionType) => {
   switch (type) {
@@ -56,6 +59,7 @@ const getConnectionUrlByType = (type: FeedConnectionType) => {
 export const FeedV2: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
     undefined,
@@ -72,9 +76,30 @@ export const FeedV2: React.FC = () => {
     feedId,
   });
 
+  const {
+    mutateAsync,
+    status: deleteingStatus,
+  } = useDeleteUserFeed();
+
   const onAddConnection = (type: FeedConnectionType) => {
     setAddConnectionType(type);
     onOpen();
+  };
+
+  const onDeleteFeed = async () => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+      });
+      notifySuccess(t('common.success.deleted'));
+      navigate('/v2/feeds');
+    } catch (err) {
+      notifyError(t('common.error.somethingWentWrong'), err as Error);
+    }
   };
 
   return (
@@ -101,40 +126,65 @@ export const FeedV2: React.FC = () => {
               <Stack
                 spacing={4}
               >
-                <Box>
-                  <Breadcrumb>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        as={RouterLink}
-                        to="/v2/feeds"
+                <HStack justifyContent="space-between">
+                  <Box>
+                    <Breadcrumb>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink
+                          as={RouterLink}
+                          to="/v2/feeds"
+                        >
+                          Feeds
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbItem isCurrentPage>
+                        <BreadcrumbLink href="#">
+                          {feed?.title}
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                    </Breadcrumb>
+                    <HStack alignItems="center">
+                      <Heading
+                        size="lg"
+                        marginRight={4}
                       >
-                        Feeds
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbItem isCurrentPage>
-                      <BreadcrumbLink href="#">{feed?.title}</BreadcrumbLink>
-                    </BreadcrumbItem>
-                  </Breadcrumb>
-                  <HStack alignItems="center">
-                    <Heading
-                      size="lg"
-                      marginRight={4}
+                        {feed?.title}
+                      </Heading>
+                    </HStack>
+                    <Link
+                      color="gray.400"
+                      _hover={{
+                        color: 'gray.200',
+                      }}
+                      href={feed?.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      {feed?.title}
-                    </Heading>
-                  </HStack>
-                  <Link
-                    color="gray.400"
-                    _hover={{
-                      color: 'gray.200',
-                    }}
-                    href={feed?.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {feed?.url}
-                  </Link>
-                </Box>
+                      {feed?.url}
+                    </Link>
+                  </Box>
+                  {
+                    feedId && (
+                    <ConfirmModal
+                      title={t('pages.userFeed.deleteConfirmTitle')}
+                      description={t('pages.userFeed.deleteConfirmDescription')}
+                      trigger={(
+                        <Button
+                          variant="outline"
+                          colorScheme="red"
+                          disabled={deleteingStatus === 'loading'}
+                        >
+                          {t('common.buttons.delete')}
+                        </Button>
+                      )}
+                      okText={t('pages.userFeed.deleteConfirmOk')}
+                      okLoading={deleteingStatus === 'loading'}
+                      colorScheme="red"
+                      onConfirm={onDeleteFeed}
+                    />
+                    )
+                  }
+                </HStack>
                 <Alert
                   status="error"
                   hidden={!feed || feed.healthStatus !== UserFeedHealthStatus.Ok}

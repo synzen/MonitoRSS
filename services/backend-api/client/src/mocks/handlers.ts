@@ -171,6 +171,11 @@ const handlers = [
     }),
   )),
 
+  rest.delete('/api/v1/user-feeds/:feedId', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.status(204),
+  )),
+
   rest.get('/api/v1/user-feeds/:feedId', (req, res, ctx) => {
     const { feedId } = req.params;
     const feed = mockUserFeeds.find((f) => f.id === feedId);
