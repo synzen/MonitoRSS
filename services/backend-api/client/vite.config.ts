@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig, ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
@@ -37,7 +38,8 @@ export default defineConfig({
     proxy: proxyOptionsByEnv[VITE_ENV] || {},
     watch: {
       usePolling: VITE_USE_POLLING,
-    }
+    },
+    port: 3000
   },
   build: {
     sourcemap: true,
