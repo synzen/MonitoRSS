@@ -19,7 +19,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "sync-db": "mikro-orm schema:update --run",
+    "migration:create": "mikro-orm migration:create",
+    "migration:up": "mikro-orm migration:up"
   },
   "dependencies": {
     "@mikro-orm/core": "^5.2.3",
@@ -46,6 +49,8 @@
     "yup": "^1.0.0-beta.7"
   },
   "devDependencies": {
+    "@mikro-orm/cli": "^5.2.3",
+    "@mikro-orm/migrations": "^5.2.3",
     "@nestjs/cli": "^9.0.0",
     "@nestjs/schematics": "^9.0.0",
     "@nestjs/testing": "^9.0.0",
@@ -69,6 +74,12 @@
     "ts-node": "^10.0.0",
     "tsconfig-paths": "4.1.0",
     "typescript": "^4.7.4"
+  },
+  "mikro-orm": {
+    "useTsNode": true,
+    "configPaths": [
+      "./src/mikro-orm.config.ts"
+    ]
   },
   "jest": {
     "moduleFileExtensions": [

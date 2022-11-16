@@ -33,7 +33,7 @@ async function bootstrap() {
   );
 
   await app.listen(port, '0.0.0.0');
-  logger.info(`Application is running`);
+  logger.info(`Application is running on port ${port}`);
 
   if (!skipPollRequestQueue) {
     await setupQueuePoll(app);
