@@ -5,6 +5,7 @@ import { deleteConnection, DeleteConnectionInput } from '../api';
 export const useDeleteConnection = () => {
   const {
     mutateAsync,
+    status,
   } = useMutation<
   void,
   ApiAdapterError,
@@ -15,5 +16,6 @@ export const useDeleteConnection = () => {
 
   return {
     mutateAsync,
+    status,
   };
 };

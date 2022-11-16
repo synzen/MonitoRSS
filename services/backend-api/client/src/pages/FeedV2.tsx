@@ -28,7 +28,7 @@ import {
 } from '@chakra-ui/react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { CategoryText, ConfirmModal } from '@/components';
 import {
@@ -171,8 +171,8 @@ export const FeedV2: React.FC = () => {
                       trigger={(
                         <Button
                           variant="outline"
-                          colorScheme="red"
                           disabled={deleteingStatus === 'loading'}
+                          leftIcon={<DeleteIcon />}
                         >
                           {t('common.buttons.delete')}
                         </Button>
