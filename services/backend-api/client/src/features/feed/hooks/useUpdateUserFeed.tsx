@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ApiAdapterError from '@/utils/ApiAdapterError';
-import { updateUserFeed, UpdateUserFeedInput, UpdateUserFeedOutput } from '../api';
+import {
+  GetUserFeedOutput, updateUserFeed, UpdateUserFeedInput, UpdateUserFeedOutput,
+} from '../api';
 
 export const useUpdateUserFeed = () => {
   const queryClient = useQueryClient();
@@ -12,7 +14,7 @@ export const useUpdateUserFeed = () => {
     (details) => updateUserFeed(details),
     {
       onSuccess: (data, inputData) => {
-        queryClient.setQueryData(['user-feed', {
+        queryClient.setQueryData<GetUserFeedOutput>(['user-feed', {
           feedId: inputData.feedId,
         }], data);
       },
