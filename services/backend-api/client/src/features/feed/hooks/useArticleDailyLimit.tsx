@@ -1,4 +1,4 @@
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import {
   getArticleDailyLimit, GetArticleDailyLimitOutput,
@@ -14,7 +14,7 @@ export const useArticleDailyLimit = ({ feedId }: Props) => {
   }];
 
   const {
-    data, status, error,
+    data, error,
   } = useQuery<GetArticleDailyLimitOutput, ApiAdapterError | Error>(
     queryKey,
     async () => {
@@ -33,7 +33,6 @@ export const useArticleDailyLimit = ({ feedId }: Props) => {
 
   return {
     data: data?.result,
-    status,
     error,
   };
 };

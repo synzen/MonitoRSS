@@ -132,7 +132,7 @@ export const FeedV2: React.FC = () => {
   return (
     <DashboardContentV2
       error={error}
-      loading={status === 'loading' || status === 'idle'}
+      loading={status === 'loading'}
     >
       <AddConnectionDialog isOpen={isOpen} type={addConnectionType} onClose={onClose} />
       <Tabs isFitted>

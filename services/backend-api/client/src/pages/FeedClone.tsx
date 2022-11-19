@@ -32,13 +32,15 @@ const FeedClone: React.FC = () => {
   } = useFeeds({
     serverId,
   });
-  const { feed, status: feedStatus, error: feedError } = useFeed({
+  const {
+    feed, status: feedStatus, error: feedError,
+  } = useFeed({
     feedId,
   });
   const { refetch: refetchFeedSubscribers } = useFeedSubscribers({
     feedId,
   });
-  const loadingFeeds = status === 'idle' || status === 'loading';
+  const loadingFeeds = status === 'loading';
 
   const onInputChange = (newVal: string) => {
     setSearch(newVal);
@@ -112,7 +114,7 @@ const FeedClone: React.FC = () => {
 
   return (
     <DashboardContent
-      loading={feedStatus === 'loading' || feedStatus === 'idle'}
+      loading={feedStatus === 'loading'}
       error={feedError}
     >
       <Stack spacing={12}>

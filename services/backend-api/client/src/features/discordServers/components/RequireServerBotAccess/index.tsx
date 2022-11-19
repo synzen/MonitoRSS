@@ -16,7 +16,7 @@ export const RequireServerBotAccess = ({ serverId, children }: Props) => {
   const { t } = useTranslation();
   const { data, error, status } = useDiscordServerAccessStatus({ serverId });
 
-  if (status === 'loading' || status === 'idle') {
+  if (status === 'loading') {
     return (
       <Center width="100%" paddingY="32" paddingX="8">
         <Loading size="lg" />

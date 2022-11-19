@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getFeed, GetFeedOutput } from '../api';
 import { Feed } from '@/types';
@@ -14,7 +14,7 @@ export const useFeed = ({ feedId }: Props) => {
   }];
 
   const {
-    data, status, error, refetch,
+    data, error, refetch, status,
   } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
     queryKey,
     async () => {

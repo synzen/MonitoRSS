@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getUserFeed, GetUserFeedOutput } from '../api';
 import { Feed } from '@/types';
@@ -14,7 +14,7 @@ export const useUserFeed = ({ feedId }: Props) => {
   }];
 
   const {
-    data, status, error, refetch,
+    data, status, error, refetch, fetchStatus,
   } = useQuery<GetUserFeedOutput, ApiAdapterError | Error>(
     queryKey,
     async () => {
@@ -50,5 +50,6 @@ export const useUserFeed = ({ feedId }: Props) => {
     error,
     refetch,
     updateCache,
+    fetchStatus,
   };
 };

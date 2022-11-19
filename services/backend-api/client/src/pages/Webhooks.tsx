@@ -29,7 +29,7 @@ const Webhooks: React.FC<Props> = () => {
 
   if (!serverData?.benefits.webhooks) {
     return (
-      <DashboardContent loading={serverStatus === 'loading' || serverStatus === 'idle'}>
+      <DashboardContent loading={serverStatus === 'loading'}>
         <Alert
           status="warning"
           variant="subtle"
@@ -54,7 +54,7 @@ const Webhooks: React.FC<Props> = () => {
 
   return (
     <DashboardContent
-      loading={status === 'loading' || status === 'idle'}
+      loading={status === 'loading'}
       error={error}
     >
       <Stack spacing="8">

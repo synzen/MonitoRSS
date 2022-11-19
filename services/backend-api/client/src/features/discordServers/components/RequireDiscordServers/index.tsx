@@ -14,7 +14,7 @@ export const RequireDiscordServers = ({ children }: Props) => {
   const { status, error } = useDiscordServers();
   const { t } = useTranslation();
 
-  if (status === 'loading' || status === 'idle') {
+  if (status === 'loading') {
     return (
       <Stack
         alignItems="center"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getServerRoles, GetServerRolesOutput } from '../api';
 

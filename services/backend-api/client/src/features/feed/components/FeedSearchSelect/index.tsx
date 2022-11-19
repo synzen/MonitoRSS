@@ -18,7 +18,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
     status, data, setSearch, search, isFetching,
   } = useFeeds({ serverId });
 
-  const isInitiallyLoading = status === 'idle' || status === 'loading';
+  const isInitiallyLoading = status === 'loading';
   const isSearching = !!search && isFetching;
 
   const onChangedValue = (newFeedId: string) => {

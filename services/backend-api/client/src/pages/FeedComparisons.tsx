@@ -113,7 +113,7 @@ const FeedComparisons: React.FC = () => {
 
   return (
     <DashboardContent
-      loading={status === 'loading' || status === 'idle'}
+      loading={status === 'loading'}
     >
       <Stack spacing={8}>
         <Stack>

@@ -12,7 +12,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
 }) => {
   const { status, data } = useDiscordServers();
 
-  const loading = status === 'idle' || status === 'loading';
+  const loading = status === 'loading';
 
   const onChangedValue = (newServerId: string) => {
     onChange(newServerId);

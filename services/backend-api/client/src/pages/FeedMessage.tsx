@@ -38,7 +38,7 @@ const FeedMessage: React.FC = () => {
     <Stack>
       <DashboardContent
         error={feedError}
-        loading={feedStatus === 'loading' || feedStatus === 'idle'}
+        loading={feedStatus === 'loading'}
       >
         <Stack spacing="8">
           <Heading size="lg">{t('pages.message.title')}</Heading>

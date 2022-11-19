@@ -64,7 +64,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
   const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
   const { mutateAsync } = useCreateDiscordChannelConnection();
 
-  const loadingChannels = status === 'loading' || status === 'idle';
+  const loadingChannels = status === 'loading';
 
   const onSubmit = async ({ channelId, name }: FormData) => {
     if (!feedId) {

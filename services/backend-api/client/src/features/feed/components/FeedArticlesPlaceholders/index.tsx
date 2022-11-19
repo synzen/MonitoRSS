@@ -16,9 +16,11 @@ interface Props {
 export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
   const [articleIndex, setArticleIndex] = useState(0);
   const { t } = useTranslation();
-  const { articles, status, error } = useFeedArticles({ feedId });
+  const {
+    articles, status, error,
+  } = useFeedArticles({ feedId });
 
-  if (status === 'loading' || status === 'idle') {
+  if (status === 'loading') {
     return <Loading />;
   }
 

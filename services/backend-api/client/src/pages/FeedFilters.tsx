@@ -61,7 +61,7 @@ const FeedFilters: React.FC = () => {
   return (
     <DashboardContent
       error={error}
-      loading={status === 'loading' || status === 'idle'}
+      loading={status === 'loading'}
     >
       <Stack spacing={9}>
         <Stack>
@@ -145,7 +145,7 @@ const FeedFilters: React.FC = () => {
             data={tableData}
             onFiltersChanged={onFiltersChanged}
             isUpdating={updatingStatus === 'loading'}
-            isLoading={status === 'loading' || status === 'idle'}
+            isLoading={status === 'loading'}
           />
         </Stack>
       </Stack>

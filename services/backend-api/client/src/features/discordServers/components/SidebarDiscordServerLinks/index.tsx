@@ -1,7 +1,7 @@
 import { Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import {
-  FiRss, FiSettings, FiShare2,
+  FiRss, FiSettings,
 } from 'react-icons/fi';
 import { SidebarLink } from '../../../../components/SidebarLink';
 import { DiscordServerSearchSelect } from '../DiscordServerSearchSelect';

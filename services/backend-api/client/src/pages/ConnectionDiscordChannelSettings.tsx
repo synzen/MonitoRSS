@@ -107,9 +107,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       error={feedError || connectionError}
       loading={
         feedStatus === 'loading'
-         || feedStatus === 'idle'
           || connectionStatus === 'loading'
-           || connectionStatus === 'idle'
       }
     >
       <Tabs isFitted>

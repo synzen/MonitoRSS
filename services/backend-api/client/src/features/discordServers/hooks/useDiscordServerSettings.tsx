@@ -1,4 +1,4 @@
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import { getServerSettings } from '../api';

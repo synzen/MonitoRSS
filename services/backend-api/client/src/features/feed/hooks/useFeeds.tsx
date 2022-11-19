@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { pick } from 'lodash';
 import { getFeeds, GetFeedsOutput } from '../api';

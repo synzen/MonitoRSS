@@ -112,9 +112,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
     <DashboardContentV2
       error={feedError || connectionError}
       loading={feedStatus === 'loading'
-      || feedStatus === 'idle'
-      || connectionStatus === 'loading'
-      || connectionStatus === 'idle'}
+      || connectionStatus === 'loading'}
     >
       <Tabs isFitted>
         <Stack

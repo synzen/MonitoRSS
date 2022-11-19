@@ -133,7 +133,7 @@ const FeedMiscOptions: React.FC = () => {
 
   return (
     <DashboardContent
-      loading={status === 'loading' || status === 'idle'}
+      loading={status === 'loading'}
     >
       <Stack spacing={6}>
         <Heading>{t('pages.miscOptions.title')}</Heading>

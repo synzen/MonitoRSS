@@ -25,7 +25,7 @@ const Feed: React.FC = () => {
     <Stack>
       <DashboardContent
         error={error}
-        loading={status === 'loading' || status === 'idle'}
+        loading={status === 'loading'}
       >
         <Stack spacing={12}>
           <Stack spacing={6}>

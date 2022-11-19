@@ -57,7 +57,7 @@ export const AddFeedDialog: React.FC = () => {
   const { refetch: refetchFeeds } = useFeeds({ serverId });
   const { mutateAsync } = useCreateFeed();
 
-  const loadingChannels = status === 'loading' || status === 'idle';
+  const loadingChannels = status === 'loading';
 
   const onSubmit = async ({ channelId, title, url }: FormData) => {
     try {

@@ -68,7 +68,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
   const serverId = watch('serverId');
   const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
 
-  const loadingChannels = status === 'loading' || status === 'idle';
+  const loadingChannels = status === 'loading';
 
   const onSubmit = async ({ channelId, name }: FormData) => {
     await onUpdate({ channelId, name });

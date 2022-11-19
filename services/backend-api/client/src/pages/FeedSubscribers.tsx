@@ -65,8 +65,7 @@ const FeedSubscribers: React.FC = () => {
   return (
     <Flex height="100%">
       <DashboardContent
-        loading={feedSubscribersStatus === 'loading'
-          || feedSubscribersStatus === 'idle'}
+        loading={feedSubscribersStatus === 'loading'}
         error={rolesError}
       >
         <Stack spacing="9">
@@ -75,7 +74,7 @@ const FeedSubscribers: React.FC = () => {
             <AddSubscriberControls
               roles={addableRoles}
               feedId={feedId as string}
-              loading={rolesStatus === 'loading' || rolesStatus === 'idle'}
+              loading={rolesStatus === 'loading'}
             />
           </Stack>
           <Stack spacing="4" overflow="auto">

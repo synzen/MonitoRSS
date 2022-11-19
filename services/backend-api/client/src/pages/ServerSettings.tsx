@@ -121,7 +121,7 @@ export const ServerSettings: React.FC<Props> = () => {
     >
       <DashboardContent
         error={error}
-        loading={status === 'loading' || status === 'idle'}
+        loading={status === 'loading'}
       >
         <Stack spacing={6}>
           <Heading as="h1">{t('pages.serverSettings.title')}</Heading>

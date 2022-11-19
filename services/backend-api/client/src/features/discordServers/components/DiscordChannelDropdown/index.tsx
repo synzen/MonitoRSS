@@ -16,7 +16,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
 }) => {
   const { data, error, status } = useDiscordServerChannels({ serverId });
 
-  const loading = status === 'idle' || status === 'loading';
+  const loading = status === 'loading';
 
   return (
     <ThemedSelect

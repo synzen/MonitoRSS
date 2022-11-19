@@ -26,7 +26,7 @@ export const DiscordChannelName: React.FC<Props> = ({
     return map;
   }, [data]);
 
-  if (status === 'loading' || status === 'idle') {
+  if (status === 'loading') {
     return <Loading size="sm" />;
   }
 
