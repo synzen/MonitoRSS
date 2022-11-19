@@ -102,7 +102,7 @@ export const FeedV2: React.FC = () => {
       notifySuccess(t('common.success.deleted'));
       navigate('/v2/feeds');
     } catch (err) {
-      notifyError(t('common.error.somethingWentWrong'), err as Error);
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
   };
 
