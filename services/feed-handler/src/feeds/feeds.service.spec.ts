@@ -6,6 +6,7 @@ describe("FeedsService", () => {
   let service: FeedsService;
   const articleRateLimitService = {
     getFeedLimitInformation: jest.fn(),
+    addOrUpdateFeedLimit: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -39,6 +40,24 @@ describe("FeedsService", () => {
 
       const result = await service.getRateLimitInformation("feed-id");
       expect(result).toEqual(returnedInfo);
+    });
+  });
+
+  describe("initializeFeed", () => {
+    it("adds a feed limit", async () => {
+      const addOrUpdateFeedLimit = jest.fn();
+      articleRateLimitService.addOrUpdateFeedLimit = addOrUpdateFeedLimit;
+
+      await service.initializeFeed("feed-id", {
+        rateLimit: {
+          limit: 1,
+          timeWindowSec: 86400,
+        },
+      });
+      expect(addOrUpdateFeedLimit).toHaveBeenCalledWith("feed-id", {
+        limit: 1,
+        timeWindowSec: 86400,
+      });
     });
   });
 });
