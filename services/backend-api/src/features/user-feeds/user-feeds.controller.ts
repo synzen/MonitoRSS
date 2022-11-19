@@ -115,7 +115,7 @@ export class UserFeedsController {
     );
 
     if (!limit) {
-      throw new NotFoundException();
+      throw new NotFoundException("No limits found for feed");
     }
 
     return {
@@ -146,13 +146,7 @@ export class UserFeedsController {
       }
     )) as UserFeed;
 
-    return {
-      result: {
-        id: updated._id.toHexString(),
-        title: updated.title,
-        url: updated.url,
-      },
-    };
+    return this.formatFeedForResponse(updated, discordUserId);
   }
 
   @Get()

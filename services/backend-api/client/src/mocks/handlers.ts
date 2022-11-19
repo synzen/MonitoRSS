@@ -14,6 +14,7 @@ import {
   GetUserFeedOutput,
   GetUserFeedsOutput,
   UpdateFeedSubscriberOutput,
+  UpdateUserFeedOutput,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
 import mockFeeds from './data/feed';
@@ -174,6 +175,13 @@ const handlers = [
   rest.delete('/api/v1/user-feeds/:feedId', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.status(204),
+  )),
+
+  rest.patch('/api/v1/user-feeds/:feedId', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<UpdateUserFeedOutput>({
+      result: mockUserFeeds[0],
+    }),
   )),
 
   rest.get('/api/v1/user-feeds/:feedId', (req, res, ctx) => {

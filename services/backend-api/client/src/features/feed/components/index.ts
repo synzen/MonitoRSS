@@ -5,3 +5,4 @@ export * from './FiltersTable';
 export * from './FeedDumpButton';
 export * from './FeedRawDumpButton';
 export * from './RefreshUserFeedButton';
+export * from './EditUserFeedDialog';

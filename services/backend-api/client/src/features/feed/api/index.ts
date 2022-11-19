@@ -18,3 +18,4 @@ export * from './getUserFeed';
 export * from './refreshUserFeed';
 export * from './createUserFeed';
 export * from './deleteUserFeed';
+export * from './updateUserFeed';

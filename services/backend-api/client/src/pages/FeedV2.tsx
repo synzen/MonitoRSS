@@ -28,14 +28,16 @@ import {
 } from '@chakra-ui/react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon, DeleteIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { CategoryText, ConfirmModal } from '@/components';
 import {
+  EditUserFeedDialog,
   RefreshUserFeedButton,
   useArticleDailyLimit,
   useDeleteUserFeed,
   UserFeedHealthStatus,
+  useUpdateUserFeed,
   useUserFeed,
 } from '../features/feed';
 import RouteParams from '../types/RouteParams';
@@ -69,12 +71,14 @@ export const FeedV2: React.FC = () => {
   } = useArticleDailyLimit({
     feedId,
   });
-
   const {
     feed, status, error,
   } = useUserFeed({
     feedId,
   });
+  const {
+    mutateAsync: mutateAsyncUserFeed,
+  } = useUpdateUserFeed();
 
   const {
     mutateAsync,
@@ -99,6 +103,29 @@ export const FeedV2: React.FC = () => {
       navigate('/v2/feeds');
     } catch (err) {
       notifyError(t('common.error.somethingWentWrong'), err as Error);
+    }
+  };
+
+  const onUpdateFeed = async ({
+    title,
+    url,
+  }: { title?: string, url?: string }) => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      await mutateAsyncUserFeed({
+        feedId,
+        data: {
+          title,
+          url: url === feed?.url ? undefined : url,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      throw err;
     }
   };
 
@@ -163,7 +190,24 @@ export const FeedV2: React.FC = () => {
                       {feed?.url}
                     </Link>
                   </Box>
-                  {
+                  <HStack>
+                    <EditUserFeedDialog
+                      trigger={(
+                        <Button
+                          aria-label="Edit"
+                          variant="outline"
+                          leftIcon={<EditIcon />}
+                        >
+                          {t('common.buttons.configure')}
+                        </Button>
+                      )}
+                      defaultValues={{
+                        title: feed?.title as string,
+                        url: feed?.url as string,
+                      }}
+                      onUpdate={onUpdateFeed}
+                    />
+                    {
                     feedId && (
                     <ConfirmModal
                       title={t('pages.userFeed.deleteConfirmTitle')}
@@ -184,6 +228,7 @@ export const FeedV2: React.FC = () => {
                     />
                     )
                   }
+                  </HStack>
                 </HStack>
                 <Alert
                   status="error"

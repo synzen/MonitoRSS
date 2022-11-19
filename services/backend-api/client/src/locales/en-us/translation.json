@@ -255,6 +255,9 @@
           "formLinkDescription": "Must be a link to a valid RSS XML feed.",
           "failedToAdd": "Failed to add feed"
         },
+        "updateUserFeedDialog": {
+          "title": "Update feed"
+        },
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
           "saveButton": "Add",
