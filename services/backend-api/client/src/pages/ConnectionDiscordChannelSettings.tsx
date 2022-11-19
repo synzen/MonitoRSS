@@ -160,7 +160,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbItem isCurrentPage>
-                      <BreadcrumbLink href="#">Channel</BreadcrumbLink>
+                      <BreadcrumbLink href="#">{connection.name}</BreadcrumbLink>
                     </BreadcrumbItem>
                   </Breadcrumb>
                   <HStack alignItems="center" justifyContent="space-between">
@@ -168,7 +168,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       size="lg"
                       marginRight={4}
                     >
-                      Stocks
+                      {connection.name}
                     </Heading>
                     <HStack>
                       <EditConnectionChannelDialog
