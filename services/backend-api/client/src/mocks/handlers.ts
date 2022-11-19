@@ -172,10 +172,27 @@ const handlers = [
     }),
   )),
 
-  rest.delete('/api/v1/user-feeds/:feedId', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.status(204),
-  )),
+  rest.delete('/api/v1/user-feeds/:feedId', (req, res, ctx) => {
+    const { feedId } = req.params;
+
+    const index = mockUserFeeds.findIndex((feed) => feed.id === feedId);
+
+    if (index === -1) {
+      return res(
+        ctx.status(404),
+        ctx.json(generateMockApiErrorResponse({
+          code: 'FEED_NOT_FOUND',
+        })),
+      );
+    }
+
+    mockUserFeeds.splice(index, 1);
+
+    return res(
+      ctx.delay(500),
+      ctx.status(204),
+    );
+  }),
 
   rest.patch('/api/v1/user-feeds/:feedId', (req, res, ctx) => res(
     ctx.delay(500),
