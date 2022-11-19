@@ -24,6 +24,7 @@ describe("FeedConnectionsDiscordChannelsController", () => {
   describe("createDiscordChannelConnection", () => {
     it("returns the discord channel connection", async () => {
       const channelId = "channelId";
+      const guildId = "guildId";
       const name = "name";
       const accessToken = "accessToken";
       const connection = {
@@ -36,6 +37,7 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           type: FeedConnectionType.DiscordChannel,
           channel: {
             id: channelId,
+            guildId,
           },
           embeds: [],
           content: "content",
@@ -74,6 +76,7 @@ describe("FeedConnectionsDiscordChannelsController", () => {
         details: {
           channel: {
             id: connection.details.channel.id,
+            guildId: connection.details.channel.guildId,
           },
           embeds: connection.details.embeds,
           content: connection.details.content,
@@ -99,6 +102,7 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           type: FeedConnectionType.DiscordChannel,
           channel: {
             id: channelId,
+            guildId,
           },
           embeds: [],
           content: "content",
@@ -189,7 +193,6 @@ describe("FeedConnectionsDiscordChannelsController", () => {
         connectionId.toHexString(),
         {
           accessToken: "accessToken",
-          guildId,
           updates: {
             name: undefined,
             filters: undefined,

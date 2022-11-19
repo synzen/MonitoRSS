@@ -2,7 +2,6 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
-import { DiscordChannelNotOwnedException } from "../../common/exceptions";
 import { FeedConnectionType } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedsService } from "../feeds/feeds.service";
@@ -25,7 +24,6 @@ export interface UpdateDiscordChannelConnectionInput {
       content?: string;
     };
   };
-  guildId: string;
 }
 
 @Injectable()
@@ -40,18 +38,15 @@ export class FeedConnectionsDiscordChannelsService {
     name,
     channelId,
     userAccessToken,
-    guildId,
   }: {
     feedId: string;
     name: string;
     channelId: string;
     userAccessToken: string;
-    guildId: string;
   }): Promise<DiscordChannelConnection> {
-    await this.assertDiscordChannelCanBeUsed(
+    const channel = await this.assertDiscordChannelCanBeUsed(
       userAccessToken,
-      channelId,
-      guildId
+      channelId
     );
 
     const connectionId = new Types.ObjectId();
@@ -69,7 +64,7 @@ export class FeedConnectionsDiscordChannelsService {
               type: FeedConnectionType.DiscordChannel,
               channel: {
                 id: channelId,
-                guildId,
+                guildId: channel.guild_id,
               },
               embeds: [],
             },
@@ -97,7 +92,7 @@ export class FeedConnectionsDiscordChannelsService {
   async updateDiscordChannelConnection(
     feedId: string,
     connectionId: string,
-    { accessToken, updates, guildId }: UpdateDiscordChannelConnectionInput
+    { accessToken, updates }: UpdateDiscordChannelConnectionInput
   ): Promise<DiscordChannelConnection> {
     const setRecordDetails: Partial<DiscordChannelConnection["details"]> =
       Object.entries(updates.details || {}).reduce(
@@ -109,16 +104,15 @@ export class FeedConnectionsDiscordChannelsService {
       );
 
     if (updates.details?.channel?.id) {
-      await this.assertDiscordChannelCanBeUsed(
+      const channel = await this.assertDiscordChannelCanBeUsed(
         accessToken,
-        updates.details.channel.id,
-        guildId
+        updates.details.channel.id
       );
 
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.channel"] = {
         id: updates.details.channel.id,
-        guildId,
+        guildId: channel.guild_id,
       };
     }
 
@@ -177,20 +171,13 @@ export class FeedConnectionsDiscordChannelsService {
 
   private async assertDiscordChannelCanBeUsed(
     accessToken: string,
-    channelId: string,
-    guildId: string
+    channelId: string
   ) {
     try {
       const channel = await this.feedsService.canUseChannel({
         channelId,
         userAccessToken: accessToken,
       });
-
-      if (channel.guild_id !== guildId) {
-        throw new DiscordChannelNotOwnedException(
-          `Discord channel ${channelId} is not owned by guild ${guildId}`
-        );
-      }
 
       return channel;
     } catch (err) {

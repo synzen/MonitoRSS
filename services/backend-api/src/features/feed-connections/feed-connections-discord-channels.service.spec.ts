@@ -1,7 +1,6 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
-import { DiscordChannelNotOwnedException } from "../../common/exceptions";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
@@ -217,20 +216,6 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           updateInput
         )
       ).rejects.toThrow(DiscordChannelPermissionsException);
-    });
-
-    it("throws if channel guild does not match input guild", async () => {
-      feedsService.canUseChannel.mockResolvedValue({
-        guild_id: guildId + "-other",
-      });
-
-      await expect(
-        service.updateDiscordChannelConnection(
-          createdFeed._id.toHexString(),
-          connectionIdToUse.toHexString(),
-          updateInput
-        )
-      ).rejects.toThrow(DiscordChannelNotOwnedException);
     });
   });
 

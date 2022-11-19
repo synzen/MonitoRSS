@@ -16,8 +16,8 @@ import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToke
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { FeedConnectionType } from "../feeds/constants";
-import { GetFeedPipe } from "../feeds/pipes/GetFeed.pipe";
-import { DetailedFeed } from "../feeds/types/detailed-feed.type";
+import { UserFeed } from "../user-feeds/entities";
+import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
@@ -35,7 +35,7 @@ import {
   GetFeedDiscordChannelConnectionPipeOutput,
 } from "./pipes";
 
-@Controller("feeds/:feedId/connections")
+@Controller("user-feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
 export class FeedConnectionsDiscordChannelsController {
   constructor(
@@ -46,7 +46,7 @@ export class FeedConnectionsDiscordChannelsController {
   @Post("/discord-channels")
   @UseFilters(AddDiscordChannelConnectionFilter)
   async createDiscordChannelConnection(
-    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed,
     @Body(ValidationPipe)
     { channelId, name }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
@@ -57,7 +57,6 @@ export class FeedConnectionsDiscordChannelsController {
         name,
         channelId,
         userAccessToken: access_token,
-        guildId: feed.guild,
       }
     );
 
@@ -80,7 +79,7 @@ export class FeedConnectionsDiscordChannelsController {
   @Patch("/discord-channels/:connectionId")
   @UseFilters(UpdateDiscordChannelConnectionFilter)
   async updateDiscordChannelConnection(
-    @Param("feedId", GetFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
     { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
     @Body(ValidationPipe)
     {
@@ -97,7 +96,6 @@ export class FeedConnectionsDiscordChannelsController {
       connection.id.toHexString(),
       {
         accessToken: access_token,
-        guildId: feed.guild,
         updates: {
           filters,
           name,
@@ -134,7 +132,7 @@ export class FeedConnectionsDiscordChannelsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseFilters(DeleteDiscordChannelConnectionFilter)
   async deleteDiscordChannelConnection(
-    @Param("feedId", GetFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
     { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput
   ): Promise<void> {
     await this.service.deleteConnection(

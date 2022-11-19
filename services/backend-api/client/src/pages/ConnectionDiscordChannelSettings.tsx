@@ -34,6 +34,8 @@ import {
 } from '../features/feedConnections';
 import { DiscordMessageFormData } from '../types/discord';
 import RouteParams from '../types/RouteParams';
+import { notifyError } from '../utils/notifyError';
+import { notifySuccess } from '../utils/notifySuccess';
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -63,13 +65,18 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       return;
     }
 
-    await mutateAsync({
-      feedId,
-      connectionId,
-      details: {
-        filters,
-      },
-    });
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          filters,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
   };
 
   const onMessageUpdated = async (data: DiscordMessageFormData) => {
@@ -77,14 +84,19 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       return;
     }
 
-    await mutateAsync({
-      feedId,
-      connectionId,
-      details: {
-        content: data.content,
-        embeds: data.embeds,
-      },
-    });
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          content: data.content,
+          embeds: data.embeds,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
   };
 
   const onChannelUpdated = async (data: { channelId?: string, name?: string }) => {

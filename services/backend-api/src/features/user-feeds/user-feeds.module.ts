@@ -25,6 +25,6 @@ import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.modu
     SupportersModule,
     FeedHandlerModule,
   ],
-  exports: [MongooseModule.forFeature([UserFeedFeature])],
+  exports: [UserFeedsService, MongooseModule.forFeature([UserFeedFeature])],
 })
 export class UserFeedsModule {}

@@ -5,7 +5,6 @@ import {
   teardownEndpointTests,
 } from "../../utils/endpoint-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { getModelToken } from "@nestjs/mongoose";
 import { ApiErrorCode } from "../../common/constants/api-errors";
 import { HttpStatus } from "@nestjs/common";
@@ -16,37 +15,37 @@ import {
 } from "./exceptions";
 import { FeedConnectionType } from "../feeds/constants";
 import { Types } from "mongoose";
-import { DiscordChannelNotOwnedException } from "../../common/exceptions";
 import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 import { FeedConnectionsDiscordChannelsModule } from "./feed-connections-discord-channels.module";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 
 jest.mock("../../utils/logger");
 
 describe("FeedConnectionsDiscordChannelsModule", () => {
   let app: NestFastifyApplication;
-  let feedModel: FeedModel;
+  let userFeedModel: UserFeedModel;
   let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
       cookie: "",
     },
   };
-  let createdFeed: Feed;
+  let createdFeed: UserFeed;
   let baseApiUrl: string;
   let feedConnectionsService: FeedConnectionsDiscordChannelsService;
 
   beforeEach(async () => {
-    [createdFeed] = await feedModel.create([
+    [createdFeed] = await userFeedModel.create([
       {
         title: "my feed",
-        channel: "688445354513137784",
-        guild: "guild",
-        isFeedv2: true,
         url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
       },
     ]);
 
-    baseApiUrl = `/feeds/${createdFeed._id}/connections`;
+    baseApiUrl = `/user-feeds/${createdFeed._id}/connections`;
   });
 
   beforeAll(async () => {
@@ -71,12 +70,12 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       access_token: "accessToken",
     } as Session["accessToken"]);
 
-    feedModel = app.get<FeedModel>(getModelToken(Feed.name));
+    userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
     feedConnectionsService = app.get(FeedConnectionsDiscordChannelsService);
   });
 
   afterEach(async () => {
-    await feedModel.deleteMany({});
+    await userFeedModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -222,6 +221,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
           details: {
             channel: {
               id: connection.details.channel.id,
+              guildId: connection.details.channel.guildId,
             },
             embeds: connection.details.embeds,
             content: connection.details.content,
@@ -240,7 +240,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
     const connectionIdToUse = new Types.ObjectId();
 
     beforeEach(async () => {
-      await feedModel.updateOne(
+      await userFeedModel.updateOne(
         {
           _id: createdFeed._id,
         },
@@ -254,6 +254,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
                   details: {
                     channel: {
                       id: "channel-id",
+                      guildId: "guild-id",
                     },
                     embeds: [],
                   },
@@ -310,26 +311,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       expect(JSON.parse(body)).toEqual(
         expect.objectContaining({
           code: ApiErrorCode.FEED_MISSING_CHANNEL,
-        })
-      );
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 400 if input channel id does not match guild of feed", async () => {
-      jest
-        .spyOn(feedConnectionsService, "updateDiscordChannelConnection")
-        .mockRejectedValue(new DiscordChannelNotOwnedException());
-
-      const { statusCode, body } = await app.inject({
-        method: "PATCH",
-        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.DISCORD_CHANNEL_NOT_OWNED_BY_GUILD,
         })
       );
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
@@ -443,7 +424,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
     const connectionIdToUse = new Types.ObjectId();
 
     beforeEach(async () => {
-      await feedModel.updateOne(
+      await userFeedModel.updateOne(
         {
           _id: createdFeed._id,
         },
@@ -457,6 +438,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
                   details: {
                     channel: {
                       id: "channel-id",
+                      guildId: "guild-id",
                     },
                     embeds: [],
                   },

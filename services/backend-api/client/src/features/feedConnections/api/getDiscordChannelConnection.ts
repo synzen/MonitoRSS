@@ -19,7 +19,7 @@ export const getDiscordChannelConnection = async (
   options: GetDiscordChannelConnectionInput,
 ): Promise<GetDiscordChannelConnectionOutput> => {
   const res = await fetchRest(
-    `/api/v1/feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
+    `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
     {
       validateSchema: GetFeedConnectionOutputSchema,
     },

@@ -279,14 +279,14 @@ const handlers = [
     }),
   )),
 
-  rest.post('/api/v1/feeds/:feedId/connections/discord-channels', (req, res, ctx) => res(
+  rest.post('/api/v1/user-feeds/:feedId/connections/discord-channels', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordChannelConnectionOutput>({
       result: mockFeedChannelConnections[0],
     }),
   )),
 
-  rest.put('/api/v1/feeds/:feedId/connections/discord-channels/:id', (req, res, ctx) => res(
+  rest.patch('/api/v1/user-feeds/:feedId/connections/discord-channels/:id', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<UpdateDiscordChannelConnectionOutput>({
       result: mockFeedChannelConnections[0],

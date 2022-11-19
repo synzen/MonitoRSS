@@ -81,8 +81,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({
       });
       onClose();
     } catch (err) {
-      notifyError(t('features.feed.components.addDiscordChannelConnectionDialog'
-      + '.failedToAdd'), err as Error);
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
   };
 

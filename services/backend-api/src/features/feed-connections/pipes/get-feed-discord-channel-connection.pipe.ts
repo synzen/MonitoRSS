@@ -2,11 +2,11 @@ import { PipeTransform, Injectable, Inject, Scope } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
 import { FastifyRequest } from "fastify";
 import { DiscordChannelConnection } from "../../feeds/entities/feed-connections";
-import { DetailedFeed } from "../../feeds/types/detailed-feed.type";
+import { UserFeed } from "../../user-feeds/entities";
 import { FeedConnectionNotFoundException } from "../exceptions";
 
 export interface GetFeedDiscordChannelConnectionPipeOutput {
-  feed: DetailedFeed;
+  feed: UserFeed;
   connection: DiscordChannelConnection;
 }
 
@@ -16,7 +16,7 @@ export interface GetFeedDiscordChannelConnectionPipeOutput {
 export class GetFeedDiscordChannelConnectionPipe implements PipeTransform {
   constructor(@Inject(REQUEST) private readonly request: FastifyRequest) {}
 
-  transform(feed: DetailedFeed): GetFeedDiscordChannelConnectionPipeOutput {
+  transform(feed: UserFeed): GetFeedDiscordChannelConnectionPipeOutput {
     const { connectionId } = this.request.params as Record<string, string>;
 
     if (!connectionId) {

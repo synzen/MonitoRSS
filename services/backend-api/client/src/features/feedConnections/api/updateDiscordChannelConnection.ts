@@ -38,11 +38,11 @@ export const updateDiscordChannelConnection = async (
   options: UpdateDiscordChannelConnectionInput,
 ): Promise<UpdateDiscordChannelConnectionOutput> => {
   const res = await fetchRest(
-    `/api/v1/feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
+    `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
     {
       validateSchema: UpdateDiscordChannelConnectionOutputSchema,
       requestOptions: {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(options.details),
       },
     },
