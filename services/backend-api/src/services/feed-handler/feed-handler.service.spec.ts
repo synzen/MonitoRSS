@@ -5,8 +5,11 @@ import {
 import nock from "nock";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
+import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
 
 jest.mock("../../utils/logger");
+
+nock.disableNetConnect();
 
 describe("FeedHandlerService", () => {
   let service: FeedHandlerService;
@@ -18,6 +21,7 @@ describe("FeedHandlerService", () => {
   const apiKey = "apiKey";
 
   beforeEach(() => {
+    nock.cleanAll();
     jest.resetAllMocks();
     service = new FeedHandlerService(configService);
     service.host = host;
@@ -26,7 +30,7 @@ describe("FeedHandlerService", () => {
 
   describe("getRateLimits", () => {
     const feedId = "feed-id";
-    const endpoint = `/feeds/${feedId}/rate-limits`;
+    const endpoint = `/v1/feeds/${feedId}/rate-limits`;
 
     it("returns the response", async () => {
       const mockResponse: FeedHandlerRateLimitsResponse = {
@@ -49,7 +53,7 @@ describe("FeedHandlerService", () => {
         },
       };
       nock(host)
-        .get(`/feeds/${feedId}/rate-limits`)
+        .get(endpoint)
         .matchHeader("Content-Type", "application/json")
         .matchHeader("api-key", apiKey)
         .reply(200, mockResponse);
@@ -74,6 +78,44 @@ describe("FeedHandlerService", () => {
       expect(loggerErrorSpy.mock.calls[0][0]).toEqual(
         expect.stringContaining(JSON.stringify(mockResponse))
       );
+    });
+  });
+
+  describe("initializeFeed", () => {
+    const feedId = "feed-id";
+    const endpoint = `/v1/feeds`;
+
+    it("resolves on success", async () => {
+      nock(host)
+        .post(endpoint)
+        .matchHeader("Content-Type", "application/json")
+        .matchHeader("api-key", apiKey)
+        .reply(200, {});
+
+      await service.initializeFeed(feedId, {
+        dailyArticleRateLimit: 100,
+      });
+    });
+
+    it("throws if the status code is >= 500", async () => {
+      nock(host).post(endpoint).reply(500, {});
+
+      await expect(
+        service.initializeFeed(feedId, {
+          dailyArticleRateLimit: 100,
+        })
+      ).rejects.toThrow(FeedFetcherStatusException);
+    });
+
+    it("throws if the status code is not ok, and logs the response json", async () => {
+      const mockResponse = { message: "An error occurred!" };
+      nock(host).post(endpoint).reply(400, mockResponse);
+
+      await expect(
+        service.initializeFeed(feedId, {
+          dailyArticleRateLimit: 100,
+        })
+      ).rejects.toThrow(FeedFetcherStatusException);
     });
   });
 });

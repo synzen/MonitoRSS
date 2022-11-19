@@ -16,6 +16,7 @@ interface SupporterBenefits {
   maxGuilds: number;
   expireAt?: Date;
   refreshRateSeconds: number;
+  maxDailyArticles: number;
 }
 
 interface ServerBenefits {
@@ -96,6 +97,7 @@ export class SupportersService {
         guilds: [],
         maxGuilds: 0,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
+        maxDailyArticles: 100, // hardcode for now
       };
     }
 
@@ -108,6 +110,7 @@ export class SupportersService {
       maxGuilds: benefits.maxGuilds,
       expireAt: aggregate[0].expireAt,
       refreshRateSeconds: benefits.refreshRateSeconds,
+      maxDailyArticles: benefits.isSupporter ? 300 : 100,
     };
   }
 

@@ -59,6 +59,7 @@ describe("UserFeedsService", () => {
       .overrideProvider(FeedHandlerService)
       .useValue({
         getRateLimits: jest.fn(),
+        initializeFeed: jest.fn(),
       });
 
     const { module } = await init();
@@ -84,6 +85,15 @@ describe("UserFeedsService", () => {
   });
 
   describe("addFeed", () => {
+    beforeEach(() => {
+      jest
+        .spyOn(supportersService, "getBenefitsOfDiscordUser")
+        .mockResolvedValue({
+          maxFeeds: 1,
+          maxDailyArticles: 1,
+        } as never);
+    });
+
     it("throws if feed is baned", async () => {
       jest
         .spyOn(feedsService, "getBannedFeedDetails")
@@ -168,6 +178,34 @@ describe("UserFeedsService", () => {
           discordUserId,
         },
       });
+    });
+
+    it("initializes the feed with the feed handler service", async () => {
+      jest
+        .spyOn(feedFetcherService, "fetchFeed")
+        .mockResolvedValue({} as never);
+
+      jest
+        .spyOn(supportersService, "getBenefitsOfDiscordUser")
+        .mockResolvedValue({ maxFeeds: 1, maxDailyArticles: 105 } as never);
+
+      const createDetails = {
+        title: "title",
+        url: "url",
+      };
+      await service.addFeed(
+        {
+          discordUserId,
+        },
+        createDetails
+      );
+
+      expect(feedHandlerService.initializeFeed).toHaveBeenCalledWith(
+        expect.any(String),
+        {
+          maxDailyArticles: 105,
+        }
+      );
     });
   });
 

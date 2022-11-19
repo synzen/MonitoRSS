@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import fetch from "node-fetch";
 import logger from "../../utils/logger";
+import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -12,6 +13,10 @@ export interface FeedHandlerRateLimitsResponse {
       windowSeconds: number;
     }>;
   };
+}
+
+interface InitializeFeedInput {
+  maxDailyArticles: number;
 }
 
 @Injectable()
@@ -26,6 +31,41 @@ export class FeedHandlerService {
     this.apiKey = this.configService.getOrThrow<string>(
       "BACKEND_API_FEED_HANDLER_API_KEY"
     );
+  }
+
+  async initializeFeed(
+    feedId: string,
+    { maxDailyArticles }: InitializeFeedInput
+  ) {
+    const res = await fetch(`${this.host}/v1/feeds`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": this.apiKey,
+      },
+      body: JSON.stringify({
+        feed: {
+          id: feedId,
+        },
+        articleDailyLimit: maxDailyArticles,
+      }),
+    });
+
+    if (res.status >= 500) {
+      throw new FeedFetcherStatusException(
+        `Failed to initialize feed: >= 500 status code (${res.status}) from feed handler api`
+      );
+    }
+
+    if (!res.ok) {
+      const body = await res.json();
+
+      throw new FeedFetcherStatusException(
+        `Failed to initialize feed: non-ok status code (${
+          res.status
+        }) from feed handler api, response: ${JSON.stringify(body)}`
+      );
+    }
   }
 
   async getRateLimits(feedId: string): Promise<FeedHandlerRateLimitsResponse> {

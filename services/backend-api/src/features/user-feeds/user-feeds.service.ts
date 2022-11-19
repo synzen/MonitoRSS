@@ -54,9 +54,8 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    const { maxFeeds } = await this.supportersService.getBenefitsOfDiscordUser(
-      discordUserId
-    );
+    const { maxFeeds, maxDailyArticles } =
+      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
     const feedCount = await this.userFeedModel
       .where({
@@ -76,6 +75,11 @@ export class UserFeedsService {
       user: {
         discordUserId,
       },
+    });
+
+    // Primarily used to set up the daily article limit for it to be fetched
+    await this.feedHandlerService.initializeFeed(created._id.toHexString(), {
+      maxDailyArticles,
     });
 
     return created;

@@ -2,7 +2,10 @@ import { Body, Controller, Post, ValidationPipe } from "@nestjs/common";
 import { CreateFeedInputDto } from "./dto";
 import { FeedsService } from "./feeds.service";
 
-@Controller("feeds")
+@Controller({
+  version: "1",
+  path: "/feeds",
+})
 export class FeedsController {
   constructor(private readonly feedsService: FeedsService) {}
 
