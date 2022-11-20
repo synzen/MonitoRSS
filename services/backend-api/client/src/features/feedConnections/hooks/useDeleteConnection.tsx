@@ -1,8 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { FeedConnectionType } from '../../../types';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { deleteConnection, DeleteConnectionInput } from '../api';
+import { deleteDiscordChannelConnection, deleteDiscordWebhookConnection } from '../api';
 
-export const useDeleteConnection = () => {
+interface DeleteConnectionInput {
+  feedId: string;
+  connectionId: string;
+}
+
+const methodsByType: Record<FeedConnectionType, (input: DeleteConnectionInput) => Promise<void>> = {
+  [FeedConnectionType.DiscordWebhook]: deleteDiscordWebhookConnection,
+  [FeedConnectionType.DiscordChannel]: deleteDiscordChannelConnection,
+};
+
+export const useDeleteConnection = (type: FeedConnectionType) => {
   const queryClient = useQueryClient();
   const {
     mutateAsync,
@@ -12,7 +23,11 @@ export const useDeleteConnection = () => {
   ApiAdapterError,
   DeleteConnectionInput
   >(
-    (details) => deleteConnection(details),
+    (details) => {
+      const method = methodsByType[type];
+
+      return method(details);
+    },
     {
       onSuccess: (data, inputData) => queryClient.invalidateQueries({
         queryKey: ['user-feed', {

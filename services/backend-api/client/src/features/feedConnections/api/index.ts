@@ -4,4 +4,5 @@ export * from './updateDiscordChannelConnection';
 export * from './updateDiscordWebhookConnection';
 export * from './getDiscordChannelConnection';
 export * from './getDiscordWebhookConnection';
-export * from './deleteConnection';
+export * from './deleteDiscordChannelConnection';
+export * from './deleteDiscordWebhookConnection';

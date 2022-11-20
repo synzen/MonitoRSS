@@ -32,6 +32,7 @@ import {
   useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
 } from '../features/feedConnections';
+import { FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
 import RouteParams from '../types/RouteParams';
 import { notifyError } from '../utils/notifyError';
@@ -191,6 +192,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       <DeleteConnectionButton
                         connectionId={connectionId as string}
                         feedId={feedId as string}
+                        type={FeedConnectionType.DiscordChannel}
                       />
                     </HStack>
                   </HStack>

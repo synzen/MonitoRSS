@@ -29,7 +29,7 @@ import { useEffect } from 'react';
 import RouteParams from '../../../../types/RouteParams';
 import { ThemedSelect } from '@/components';
 import { useDiscordWebhooks } from '../../../discordWebhooks';
-import { useFeed } from '../../../feed/hooks';
+import { useUserFeed } from '../../../feed/hooks';
 import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
 import { notifyError } from '../../../../utils/notifyError';
 import { useCreateDiscordWebhookConnection } from '../../hooks';
@@ -76,7 +76,7 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({
   const serverId = watch('serverId');
   const {
     status: feedStatus,
-  } = useFeed({
+  } = useUserFeed({
     feedId,
   });
   const {

@@ -36,6 +36,7 @@ import { UserFeedHealthStatus, useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { notifySuccess } from '../utils/notifySuccess';
 import { notifyError } from '../utils/notifyError';
+import { FeedConnectionType } from '../types';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -202,6 +203,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                       <DeleteConnectionButton
                         connectionId={connectionId as string}
                         feedId={feedId as string}
+                        type={FeedConnectionType.DiscordWebhook}
                       />
                     </HStack>
                   </HStack>

@@ -293,6 +293,11 @@ const handlers = [
     }),
   )),
 
+  rest.delete('/api/v1/user-feeds/:feedId/connections/discord-channels/:id', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.status(204),
+  )),
+
   rest.post('/api/v1/user-feeds/:feedId/connections/discord-webhooks', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<CreateDiscordWebhookConnectionOutput>({
@@ -307,7 +312,7 @@ const handlers = [
     }),
   )),
 
-  rest.delete('/api/v1/feeds/:feedId/connections/:id', (req, res, ctx) => res(
+  rest.delete('/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.status(204),
   )),

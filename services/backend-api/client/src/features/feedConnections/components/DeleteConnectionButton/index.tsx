@@ -5,23 +5,21 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../../../../components';
+import { FeedConnectionType } from '../../../../types';
 import { notifyError } from '../../../../utils/notifyError';
 import { notifySuccess } from '../../../../utils/notifySuccess';
-import { useFeed } from '../../../feed/hooks';
 import { useDeleteConnection } from '../../hooks';
 
 interface Props {
   feedId: string;
   connectionId: string
+  type: FeedConnectionType
 }
 
-export const DeleteConnectionButton = ({ feedId, connectionId }: Props) => {
+export const DeleteConnectionButton = ({ feedId, connectionId, type }: Props) => {
   const { t } = useTranslation();
-  const { mutateAsync, status } = useDeleteConnection();
+  const { mutateAsync, status } = useDeleteConnection(type);
   const navigate = useNavigate();
-  const {
-    refetch,
-  } = useFeed({ feedId });
 
   const onDelete = async () => {
     try {
@@ -31,7 +29,6 @@ export const DeleteConnectionButton = ({ feedId, connectionId }: Props) => {
       });
       navigate(`/v2/feeds/${feedId}`);
       notifySuccess(t('common.success.deleted'));
-      await refetch();
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
