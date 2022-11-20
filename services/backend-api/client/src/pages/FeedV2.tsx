@@ -2,7 +2,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Avatar,
   Box,
   Breadcrumb,
   BreadcrumbItem,
@@ -46,6 +45,11 @@ import { AddConnectionDialog } from '../features/feedConnections';
 import { FeedConnectionType } from '../types';
 import { notifySuccess } from '../utils/notifySuccess';
 import { notifyError } from '../utils/notifyError';
+
+const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
+  [FeedConnectionType.DiscordChannel]: 'Discord Channel',
+  [FeedConnectionType.DiscordWebhook]: 'Discord Webhook',
+};
 
 const getConnectionUrlByType = (type: FeedConnectionType) => {
   switch (type) {
@@ -320,17 +324,24 @@ export const FeedV2: React.FC = () => {
                       background="gray.700"
                       paddingX={8}
                       paddingY={4}
-                      alignItems="center"
                       borderRadius="md"
+                      flexDirection="column"
                     >
-                      <Avatar name="Go" />
-                      <Stack marginLeft={4}>
+                      <Stack spacing="1">
                         <Text
-                          fontWeight={600}
+                          color="gray.500"
+                          fontSize="sm"
                         >
-                          {connection.name}
+                          {PRETTY_CONNECTION_NAMES[connection.key]}
+
                         </Text>
-                        <Text>Delivers to #hello world</Text>
+                        <Stack spacing="0">
+                          <Text
+                            fontWeight={600}
+                          >
+                            {connection.name}
+                          </Text>
+                        </Stack>
                       </Stack>
                     </Flex>
                   </Link>
