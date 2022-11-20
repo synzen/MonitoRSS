@@ -90,7 +90,7 @@
       "unknownReason": "unknown reason",
       "channelLabel": "Channel",
       "refreshRateLabel": "Refresh Rate",
-      "refreshRateValue": "{{minutes}} minutes",
+      "refreshRateValue": "{{seconds}} seconds",
       "createdAtLabel": "Since",
       "connectionsTab": "Connections",
       "comparisonsTab": "Comparisons",
