@@ -5,7 +5,6 @@ import {
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
-  DiscordWebhookNotOwnedException,
 } from "../../common/exceptions";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
@@ -31,7 +30,6 @@ export interface UpdateDiscordWebhookConnectionInput {
       };
     };
   };
-  guildId: string;
 }
 
 @Injectable()
@@ -45,13 +43,11 @@ export class FeedConnectionsDiscordWebhooksService {
   async createDiscordWebhookConnection({
     accessToken,
     feedId,
-    guildId,
     name,
     webhook: { id, name: webhookName, iconUrl },
   }: {
     accessToken: string;
     feedId: string;
-    guildId: string;
     name: string;
     webhook: {
       id: string;
@@ -59,11 +55,7 @@ export class FeedConnectionsDiscordWebhooksService {
       iconUrl?: string;
     };
   }): Promise<DiscordWebhookConnection> {
-    const webhook = await this.assertDiscordWebhookCanBeUsed(
-      id,
-      guildId,
-      accessToken
-    );
+    const webhook = await this.assertDiscordWebhookCanBeUsed(id, accessToken);
 
     const connectionId = new Types.ObjectId();
 
@@ -83,7 +75,7 @@ export class FeedConnectionsDiscordWebhooksService {
                 id,
                 name: webhookName,
                 token: webhook.token,
-                guildId,
+                guildId: webhook.guild_id,
               },
             },
           },
@@ -111,7 +103,6 @@ export class FeedConnectionsDiscordWebhooksService {
     feedId,
     connectionId,
     updates: { details, filters, name },
-    guildId,
     accessToken,
   }: UpdateDiscordWebhookConnectionInput) {
     let webhookUpdates:
@@ -121,7 +112,6 @@ export class FeedConnectionsDiscordWebhooksService {
     if (details?.webhook?.id) {
       const webhook = await this.assertDiscordWebhookCanBeUsed(
         details.webhook.id,
-        guildId,
         accessToken
       );
 
@@ -131,7 +121,7 @@ export class FeedConnectionsDiscordWebhooksService {
           name: details.webhook.name,
           iconUrl: details.webhook.iconUrl,
           token: webhook.token as string,
-          guildId,
+          guildId: webhook.guild_id,
         },
         _.isUndefined
       ) as DiscordWebhookConnection["details"]["webhook"];
@@ -214,7 +204,6 @@ export class FeedConnectionsDiscordWebhooksService {
 
   private async assertDiscordWebhookCanBeUsed(
     id: string,
-    guildId: string,
     accessToken: string
   ): Promise<DiscordWebhook> {
     const webhook = await this.discordWebhooksService.getWebhook(id);
@@ -231,14 +220,12 @@ export class FeedConnectionsDiscordWebhooksService {
       );
     }
 
-    if (webhook.guild_id !== guildId) {
-      throw new DiscordWebhookNotOwnedException(
-        `Discord webhook ${id} is not owned by guild ${guildId}`
-      );
-    }
-
     if (
-      !(await this.discordAuthService.userManagesGuild(accessToken, guildId))
+      !webhook.guild_id ||
+      !(await this.discordAuthService.userManagesGuild(
+        accessToken,
+        webhook.guild_id
+      ))
     ) {
       throw new DiscordWebhookMissingUserPermException(
         `User does not manage guild of webhook webhook ${id}`

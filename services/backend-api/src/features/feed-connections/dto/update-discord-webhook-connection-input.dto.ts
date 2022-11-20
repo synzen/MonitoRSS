@@ -28,6 +28,7 @@ class FiltersDto {
 
 export class UpdateDiscordWebhookConnectionInputDto {
   @IsString()
+  @IsOptional()
   name?: string;
 
   @IsObject()

@@ -26,7 +26,7 @@ export const createDiscordWebhookConnection = async (
   options: CreateDiscordWebhookConnectionInput,
 ): Promise<CreateDiscordWebhookConnectionOutput> => {
   const res = await fetchRest(
-    `/api/v1/feeds/${options.feedId}/connections/discord-webhooks`,
+    `/api/v1/user-feeds/${options.feedId}/connections/discord-webhooks`,
     {
       validateSchema: CreateFeedConnectionOutputSchema,
       requestOptions: {

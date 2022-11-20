@@ -16,8 +16,8 @@ import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToke
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { FeedConnectionType } from "../feeds/constants";
-import { GetFeedPipe } from "../feeds/pipes/GetFeed.pipe";
-import { DetailedFeed } from "../feeds/types/detailed-feed.type";
+import { UserFeed } from "../user-feeds/entities";
+import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
@@ -35,7 +35,7 @@ import {
   GetFeedDiscordWebhookConnectionPipeOutput,
 } from "./pipes";
 
-@Controller("feeds/:feedId/connections")
+@Controller("user-feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
 export class FeedConnectionsDiscordWebhooksController {
   constructor(
@@ -45,7 +45,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @Post("/discord-webhooks")
   @UseFilters(AddDiscordWebhookConnectionFilter)
   async createDiscordWebhookConnection(
-    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed,
     @Body(ValidationPipe)
     { name, webhook }: CreateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
@@ -60,7 +60,6 @@ export class FeedConnectionsDiscordWebhooksController {
           iconUrl: webhook.iconUrl,
           name: webhook.name,
         },
-        guildId: feed.guild,
       }
     );
 
@@ -85,7 +84,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @Patch("/discord-webhooks/:connectionId")
   @UseFilters(UpdateDiscordWebhookConnectionFilter)
   async updateDiscordWebhookConnection(
-    @Param("feedId", GetFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
     {
@@ -102,7 +101,6 @@ export class FeedConnectionsDiscordWebhooksController {
         accessToken: access_token,
         connectionId: connection.id.toHexString(),
         feedId: feed._id.toHexString(),
-        guildId: feed.guild,
         updates: {
           name,
           filters,
@@ -143,7 +141,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseFilters(DeleteDiscordWebhookConnectionFilter)
   async deleteDiscordWebhookConnection(
-    @Param("feedId", GetFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput
   ): Promise<void> {
     await this.service.deleteDiscordWebhookConnection({

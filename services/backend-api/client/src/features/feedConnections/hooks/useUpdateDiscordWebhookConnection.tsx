@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ApiAdapterError from '@/utils/ApiAdapterError';
 import {
   updateDiscordWebhookConnection,
@@ -7,6 +7,7 @@ import {
 } from '../api';
 
 export const useUpdateDiscordWebhookConnection = () => {
+  const queryClient = useQueryClient();
   const {
     mutateAsync,
     status,
@@ -18,6 +19,14 @@ export const useUpdateDiscordWebhookConnection = () => {
   UpdateDiscordWebhookConnectionInput
   >(
     (details) => updateDiscordWebhookConnection(details),
+    {
+      onSuccess: (data, inputData) => queryClient.invalidateQueries({
+        queryKey: ['user-feed', {
+          feedId: inputData.feedId,
+        }],
+        refetchType: 'all',
+      }),
+    },
   );
 
   return {

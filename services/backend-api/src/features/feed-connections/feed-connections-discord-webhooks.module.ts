@@ -5,10 +5,16 @@ import { DiscordWebhooksModule } from "../discord-webhooks/discord-webhooks.modu
 import { FeedsModule } from "../feeds/feeds.module";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 import { FeedConnectionsDiscordWebhooksController } from "./feed-connections-discord-webhooks.controller";
+import { UserFeedsModule } from "../user-feeds/user-feeds.module";
 
 @Module({
   controllers: [FeedConnectionsDiscordWebhooksController],
   providers: [FeedConnectionsDiscordWebhooksService],
-  imports: [FeedsModule, DiscordWebhooksModule, DiscordAuthModule],
+  imports: [
+    UserFeedsModule,
+    FeedsModule,
+    DiscordWebhooksModule,
+    DiscordAuthModule,
+  ],
 })
 export class FeedConnectionsDiscordWebhooksModule {}

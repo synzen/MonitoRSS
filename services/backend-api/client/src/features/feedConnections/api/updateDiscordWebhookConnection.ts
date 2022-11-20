@@ -50,11 +50,11 @@ export const updateDiscordWebhookConnection = async (
   options: UpdateDiscordWebhookConnectionInput,
 ): Promise<UpdateDiscordWebhookConnectionOutput> => {
   const res = await fetchRest(
-    `/api/v1/feeds/${options.feedId}/connections/discord-webhooks/${options.connectionId}`,
+    `/api/v1/user-feeds/${options.feedId}/connections/discord-webhooks/${options.connectionId}`,
     {
       validateSchema: UpdateDiscordWebhookConnectionOutputSchema,
       requestOptions: {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(options.details),
       },
     },

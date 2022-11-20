@@ -4,7 +4,6 @@ import {
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
-  DiscordWebhookNotOwnedException,
 } from "../../common/exceptions";
 import {
   setupIntegrationTests,
@@ -151,16 +150,15 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       ).rejects.toThrowError(DiscordWebhookInvalidTypeException);
     });
 
-    it("throws an error if webhook guild does not equal input", async () => {
+    it("throws an error if webhook guild does not exist", async () => {
       discordWebhooksService.getWebhook.mockResolvedValue({
         token: "token",
-        guild_id: creationDetails.guildId + "-other",
       });
       discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
 
       await expect(
         service.createDiscordWebhookConnection(creationDetails)
-      ).rejects.toThrowError(DiscordWebhookNotOwnedException);
+      ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
     });
 
     it("throws an error if the user does not manage the guild", async () => {
@@ -253,7 +251,6 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         feedId: createdFeed._id.toHexString(),
         connectionId: connectionIdToUse,
         updates: updateDetails,
-        guildId,
         accessToken,
       });
 
@@ -288,7 +285,6 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           feedId: createdFeed._id.toHexString(),
           connectionId: connectionIdToUse,
           updates: updateDetails,
-          guildId,
           accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookNonexistentException);
@@ -305,16 +301,14 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           feedId: createdFeed._id.toHexString(),
           connectionId: connectionIdToUse,
           updates: updateDetails,
-          guildId,
           accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookInvalidTypeException);
     });
 
-    it("throws an error if webhook guild does not equal input", async () => {
+    it("throws an error if there is no webhook guild", async () => {
       discordWebhooksService.getWebhook.mockResolvedValue({
         token: "token",
-        guild_id: guildId + "-other",
       });
       discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
 
@@ -323,10 +317,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           feedId: createdFeed._id.toHexString(),
           connectionId: connectionIdToUse,
           updates: updateDetails,
-          guildId,
           accessToken,
         })
-      ).rejects.toThrowError(DiscordWebhookNotOwnedException);
+      ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
     });
 
     it("throws an error if the user does not manage the guild", async () => {
@@ -342,7 +335,6 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           feedId: createdFeed._id.toHexString(),
           connectionId: connectionIdToUse,
           updates: updateDetails,
-          guildId,
           accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookMissingUserPermException);

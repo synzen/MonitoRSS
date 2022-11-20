@@ -34,6 +34,8 @@ import {
 } from '../features/feedConnections';
 import { UserFeedHealthStatus, useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
+import { notifySuccess } from '../utils/notifySuccess';
+import { notifyError } from '../utils/notifyError';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -74,14 +76,19 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       return;
     }
 
-    await mutateAsync({
-      feedId,
-      connectionId,
-      details: {
-        content: data.content,
-        embeds: data.embeds,
-      },
-    });
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          content: data.content,
+          embeds: data.embeds,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
   };
 
   const onWebhookUpdated = async ({
@@ -98,14 +105,19 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       return;
     }
 
-    await mutateAsync({
-      feedId,
-      connectionId,
-      details: {
-        webhook,
-        name,
-      },
-    });
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          webhook,
+          name,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
   };
 
   return (
@@ -153,14 +165,14 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbItem isCurrentPage>
-                      <BreadcrumbLink href="#">Webhook</BreadcrumbLink>
+                      <BreadcrumbLink href="#">{connection?.name}</BreadcrumbLink>
                     </BreadcrumbItem>
                   </Breadcrumb>
                   <HStack alignItems="center" justifyContent="space-between">
                     <Heading
                       size="lg"
                     >
-                      Stocks
+                      {connection?.name}
                     </Heading>
                     <HStack>
                       {connection && (

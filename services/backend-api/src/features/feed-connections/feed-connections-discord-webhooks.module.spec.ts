@@ -5,7 +5,6 @@ import {
   teardownEndpointTests,
 } from "../../utils/endpoint-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { getModelToken } from "@nestjs/mongoose";
 import { ApiErrorCode } from "../../common/constants/api-errors";
 import { HttpStatus } from "@nestjs/common";
@@ -16,38 +15,38 @@ import {
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
-  DiscordWebhookNotOwnedException,
 } from "../../common/exceptions";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 import { FeedConnectionsDiscordWebhooksModule } from "./feed-connections-discord-webhooks.module";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 
 jest.mock("../../utils/logger");
 
 describe("FeedConnectionsDiscordWebhooksModule", () => {
   let app: NestFastifyApplication;
-  let feedModel: FeedModel;
+  let userFeedModel: UserFeedModel;
   let setAccessToken: (accessToken: Session["accessToken"]) => Promise<string>;
   const standardRequestOptions = {
     headers: {
       cookie: "",
     },
   };
-  let createdFeed: Feed;
+  let createdFeed: UserFeed;
   let baseApiUrl: string;
   let feedConnectionsService: FeedConnectionsDiscordWebhooksService;
 
   beforeEach(async () => {
-    [createdFeed] = await feedModel.create([
+    [createdFeed] = await userFeedModel.create([
       {
         title: "my feed",
-        channel: "688445354513137784",
-        guild: "guild",
-        isFeedv2: true,
         url: "url",
+        user: {
+          discordUserId: "discord-user-id",
+        },
       },
     ]);
 
-    baseApiUrl = `/feeds/${createdFeed._id}/connections`;
+    baseApiUrl = `/user-feeds/${createdFeed._id}/connections`;
   });
 
   beforeAll(async () => {
@@ -72,12 +71,12 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
       access_token: "accessToken",
     } as Session["accessToken"]);
 
-    feedModel = app.get<FeedModel>(getModelToken(Feed.name));
+    userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
     feedConnectionsService = app.get(FeedConnectionsDiscordWebhooksService);
   });
 
   afterEach(async () => {
-    await feedModel.deleteMany({});
+    await userFeedModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -139,26 +138,6 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
       expect(JSON.parse(body)).toEqual(
         expect.objectContaining({
           code: ApiErrorCode.WEBHOOK_INVALID,
-        })
-      );
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 400 with the right error code if webhook is not owned by guild", async () => {
-      jest
-        .spyOn(feedConnectionsService, "createDiscordWebhookConnection")
-        .mockRejectedValue(new DiscordWebhookNotOwnedException());
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `${baseApiUrl}/discord-webhooks`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.WEBHOOK_MISSING,
         })
       );
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
@@ -264,6 +243,7 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
               id: connection.details.webhook.id,
               iconUrl: connection.details.webhook.iconUrl,
               name: connection.details.webhook.name,
+              guildId: connection.details.webhook.guildId,
             },
           },
         })
@@ -285,7 +265,7 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
     const connectionIdToUse = new Types.ObjectId();
 
     beforeEach(async () => {
-      await feedModel.updateOne(
+      await userFeedModel.updateOne(
         {
           _id: createdFeed._id,
         },
@@ -355,26 +335,6 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
       expect(JSON.parse(body)).toEqual(
         expect.objectContaining({
           code: ApiErrorCode.WEBHOOK_INVALID,
-        })
-      );
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 400 with the right error code if webhook is not owned by guild", async () => {
-      jest
-        .spyOn(feedConnectionsService, "updateDiscordWebhookConnection")
-        .mockRejectedValue(new DiscordWebhookNotOwnedException());
-
-      const { statusCode, body } = await app.inject({
-        method: "PATCH",
-        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}`,
-        payload: validBody,
-        ...standardRequestOptions,
-      });
-
-      expect(JSON.parse(body)).toEqual(
-        expect.objectContaining({
-          code: ApiErrorCode.WEBHOOK_MISSING,
         })
       );
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
@@ -459,6 +419,7 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
               id: connection.details.webhook.id,
               iconUrl: connection.details.webhook.iconUrl,
               name: connection.details.webhook.name,
+              guildId: connection.details.webhook.guildId,
             },
           },
         })
@@ -472,7 +433,7 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
     const connectionIdToUse = new Types.ObjectId();
 
     beforeEach(async () => {
-      await feedModel.updateOne(
+      await userFeedModel.updateOne(
         {
           _id: createdFeed._id,
         },

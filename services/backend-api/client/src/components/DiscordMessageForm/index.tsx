@@ -92,11 +92,13 @@ export const DiscordMessageForm = ({
         return newEmbed;
       });
 
-      await onClickSave({
-        content: formData.content,
+      const toSubmit = {
+        content: formData.content?.trim(),
         embeds: embedsWithoutEmptyObjects,
-      });
-      reset(formData);
+      };
+
+      await onClickSave(toSubmit);
+      reset(toSubmit);
     } catch (err) {
       notifyError(t('common.errors.failedToSave'), err as Error);
     }

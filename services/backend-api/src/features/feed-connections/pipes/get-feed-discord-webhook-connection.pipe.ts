@@ -2,11 +2,11 @@ import { PipeTransform, Injectable, Inject, Scope } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
 import { FastifyRequest } from "fastify";
 import { DiscordWebhookConnection } from "../../feeds/entities/feed-connections";
-import { DetailedFeed } from "../../feeds/types/detailed-feed.type";
+import { UserFeed } from "../../user-feeds/entities";
 import { FeedConnectionNotFoundException } from "../exceptions";
 
 export interface GetFeedDiscordWebhookConnectionPipeOutput {
-  feed: DetailedFeed;
+  feed: UserFeed;
   connection: DiscordWebhookConnection;
 }
 
@@ -16,7 +16,7 @@ export interface GetFeedDiscordWebhookConnectionPipeOutput {
 export class GetFeedDiscordWebhookConnectionPipe implements PipeTransform {
   constructor(@Inject(REQUEST) private readonly request: FastifyRequest) {}
 
-  transform(feed: DetailedFeed): GetFeedDiscordWebhookConnectionPipeOutput {
+  transform(feed: UserFeed): GetFeedDiscordWebhookConnectionPipeOutput {
     const { connectionId } = this.request.params as Record<string, string>;
 
     if (!connectionId) {
