@@ -8,8 +8,7 @@ import { Repository } from 'typeorm';
 import { Request, Response } from './entities';
 import { RequestStatus } from './constants';
 import dayjs from 'dayjs';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FeedsService } from '../feeds/feeds.service';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 jest.mock('../utils/logger');
 
@@ -27,12 +26,8 @@ describe('FeedFetcherService', () => {
   const responseRepo: Repository<Response> = {
     insert: jest.fn(),
   } as never;
-  const eventEmitter: EventEmitter2 = {
-    emit: jest.fn(),
-  } as never;
-  const feedsService: FeedsService = {
-    disableFeedsByUrl: jest.fn(),
-    enableFailedFeedsByUrl: jest.fn(),
+  const amqpConnection: AmqpConnection = {
+    publish: jest.fn(),
   } as never;
 
   beforeEach(() => {
@@ -43,8 +38,7 @@ describe('FeedFetcherService', () => {
       requestRepo,
       responseRepo,
       configService,
-      eventEmitter,
-      feedsService,
+      amqpConnection,
     );
   });
 
@@ -185,15 +179,16 @@ describe('FeedFetcherService', () => {
         });
       });
 
-      it('emits a url failed event', async () => {
+      it('calles onFailed if bad status', async () => {
         nock(url.origin).get(url.pathname).reply(404, feedResponseBody, {
           'Content-Type': 'application/xml',
         });
 
+        const onFailed = jest.spyOn(service, 'onFailedUrl');
+
         await service.fetchAndSaveResponse(feedUrl);
-        expect(eventEmitter.emit).toHaveBeenCalledWith('failed.url', {
-          url: feedUrl,
-        });
+
+        expect(onFailed).toHaveBeenCalledWith({ url: feedUrl });
       });
     });
 
@@ -215,28 +210,20 @@ describe('FeedFetcherService', () => {
   });
 
   describe('onFailedUrl', () => {
-    it('fails the url to sqs if past failure threshold', async () => {
+    it('publishes the url event if past failure threshold', async () => {
       jest.spyOn(service, 'isPastFailureThreshold').mockResolvedValue(true);
-
-      const sendFailedUrlToSqs = jest
-        .spyOn(feedsService, 'disableFeedsByUrl')
-        .mockImplementation();
 
       await service.onFailedUrl({ url: feedUrl });
 
-      expect(sendFailedUrlToSqs).toHaveBeenCalledWith(feedUrl);
+      expect(amqpConnection.publish).toHaveBeenCalled();
     });
 
     it('does not fail url if not past failure threshold', async () => {
       jest.spyOn(service, 'isPastFailureThreshold').mockResolvedValue(false);
 
-      const sendFailedUrlToSqs = jest
-        .spyOn(feedsService, 'disableFeedsByUrl')
-        .mockImplementation();
-
       await service.onFailedUrl({ url: feedUrl });
 
-      expect(sendFailedUrlToSqs).not.toHaveBeenCalled();
+      expect(amqpConnection.publish).not.toHaveBeenCalled();
     });
 
     it('does not reject if an unexpected error occurs', async () => {

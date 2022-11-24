@@ -2,14 +2,12 @@ import { INestApplication } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SqsPollingService } from '../shared/services/sqs-polling.service';
 import setupPostgresTests from '../shared/utils/setup-postgres-tests';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import { FeedFetcherService } from './feed-fetcher.service';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { testConfig } from '../config/test.config';
-import { FeedsService } from '../feeds/feeds.service';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 jest.mock('../utils/logger');
 
@@ -29,12 +27,15 @@ describe('FeedFetcherService (Integration)', () => {
         providers: [
           FeedFetcherService,
           ConfigService,
-          SqsPollingService,
-          FeedsService,
+          {
+            provide: AmqpConnection,
+            useValue: {
+              publish: jest.fn(),
+            },
+          },
         ],
         imports: [
           TypeOrmModule.forFeature([Request, Response]),
-          EventEmitterModule.forRoot(),
           ConfigModule.forRoot({
             isGlobal: true,
             load: [testConfig],
@@ -47,15 +48,9 @@ describe('FeedFetcherService (Integration)', () => {
     teardownDatabase = setupData.teardownDatabase;
     resetDatabase = setupData.resetDatabase;
 
-    setupData.uncompiledModule
-      .overrideProvider(ConfigService)
-      .useValue({
-        get: jest.fn(),
-      })
-      .overrideProvider(FeedsService)
-      .useValue({
-        disableFeedsByUrl: jest.fn(),
-      });
+    setupData.uncompiledModule.overrideProvider(ConfigService).useValue({
+      get: jest.fn(),
+    });
 
     const { module } = await setupData.setupDatabase();
 

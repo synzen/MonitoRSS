@@ -7,9 +7,7 @@ import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import dayjs from 'dayjs';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { FeedsService } from '../feeds/feeds.service';
-import { defaultNackErrorHandler, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 interface FetchOptions {
   userAgent?: string;
@@ -25,8 +23,7 @@ export class FeedFetcherService {
     @InjectRepository(Response)
     private readonly responseRepo: Repository<Response>,
     private readonly configService: ConfigService,
-    private eventEmitter: EventEmitter2,
-    private readonly feedsService: FeedsService,
+    private readonly amqpConnection: AmqpConnection,
   ) {
     this.failedDurationThresholdHours = this.configService.get(
       'FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
@@ -121,9 +118,7 @@ export class FeedFetcherService {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.FAILED;
-        this.eventEmitter.emit('failed.url', {
-          url,
-        });
+        await this.onFailedUrl({ url });
       }
 
       const response = new Response();
@@ -148,9 +143,7 @@ export class FeedFetcherService {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.FAILED;
-        this.eventEmitter.emit('failed.url', {
-          url,
-        });
+        await this.onFailedUrl({ url });
       }
 
       await this.responseRepo.insert(response);
@@ -168,7 +161,6 @@ export class FeedFetcherService {
     }
   }
 
-  @OnEvent('failed.url')
   async onFailedUrl({ url }: { url: string }) {
     try {
       if (await this.isPastFailureThreshold(url)) {
@@ -179,7 +171,16 @@ export class FeedFetcherService {
             url,
           },
         );
-        await this.feedsService.disableFeedsByUrl(url);
+
+        await this.amqpConnection.publish<{ data: { url: string } }>(
+          '',
+          'url.failed.disable-feeds',
+          {
+            data: {
+              url,
+            },
+          },
+        );
       }
     } catch (err) {
       logger.error(`Failed to check failed status of url ${url}`, {
