@@ -867,6 +867,31 @@ describe("handle-schedule", () => {
     });
   });
 
+  describe("handleUrlRequestFailureEvent", () => {
+    it("disables feeds", async () => {
+      const feed = await userFeedModel.create({
+        title: "feed-title",
+        url: "new-york-times.com",
+        user: {
+          discordUserId: "user-id-1",
+        },
+      });
+
+      await service.handleUrlRequestFailureEvent({
+        data: {
+          url: feed.url,
+        },
+      });
+
+      const updatedFeed = await userFeedModel.findById(feed._id);
+
+      expect(updatedFeed?.disabledCode).toEqual(
+        UserFeedDisabledCode.FailedRequests
+      );
+      expect(updatedFeed?.healthStatus).toEqual(UserFeedHealthStatus.Failed);
+    });
+  });
+
   describe("emitDeliverFeedArticlesEvent", () => {
     it("emits the correct event for discord channel mediums", async () => {
       const feed = await userFeedModel.create({

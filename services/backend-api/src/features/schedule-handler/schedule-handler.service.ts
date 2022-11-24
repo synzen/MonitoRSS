@@ -6,13 +6,16 @@ import { FeedSchedulingService } from "../feeds/feed-scheduling.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { FilterQuery, Types } from "mongoose";
 import logger from "../../utils/logger";
-import { UserFeedHealthStatus } from "../user-feeds/types";
+import {
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../user-feeds/types";
 import {
   UserFeed,
   UserFeedDocument,
   UserFeedModel,
 } from "../user-feeds/entities";
-import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { AmqpConnection, RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
 import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
 
 interface DiscordMedium {
@@ -87,6 +90,30 @@ export class ScheduleHandlerService {
       (this.configService.get<number>(
         "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
       ) as number) * 60;
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: "url.failed.disable-feeds",
+  })
+  async handleUrlRequestFailureEvent({
+    data: { url },
+  }: {
+    data: { url: string };
+  }) {
+    logger.debug(`handling url request failure event for url ${url}`);
+
+    await this.userFeedModel.updateMany(
+      {
+        url,
+      },
+      {
+        $set: {
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Failed,
+        },
+      }
+    );
   }
 
   async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
