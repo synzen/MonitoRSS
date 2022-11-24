@@ -58,7 +58,7 @@ export const FeedsTableV2: React.FC<Props> = ({
   const tableData = useMemo(
     () => (data?.results || []).map((feed) => ({
       id: feed.id,
-      healthStatus: feed.healthStatus,
+      disabledCode: feed.disabledCode,
       title: feed.title,
       url: feed.url,
     })),
@@ -67,16 +67,18 @@ export const FeedsTableV2: React.FC<Props> = ({
 
   const total = data?.total || 0;
 
-  const columns = useMemo<Column<Pick<UserFeed, 'healthStatus' | 'title' | 'url' | 'id'>>[]>(
+  const columns = useMemo<Column<Pick<
+  UserFeed, 'title' | 'url' | 'id' | 'disabledCode'
+  >>[]>(
     () => [
       {
         Header: t('pages.feeds.tableStatus') as string,
-        accessor: 'healthStatus', // accessor is the "key" in the data
+        accessor: 'disabledCode', // accessor is the "key" in the data
         Cell: ({
           cell: {
             value,
           },
-        }) => <FeedStatusTag status={value} />,
+        }) => <FeedStatusTag disabledCode={value} />,
       },
       {
         Header: t('pages.feeds.tableTitle') as string,

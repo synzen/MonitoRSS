@@ -2,7 +2,7 @@ import {
   array, InferType, number, object, string,
 } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { UserFeedHealthStatus } from '../types';
+import { UserFeedDisabledCode, UserFeedHealthStatus } from '../types';
 
 export interface GetUserFeedsInput {
   limit?: number;
@@ -16,6 +16,7 @@ const GetUserFeedsOutputSchema = object({
     title: string().required(),
     url: string().required(),
     healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
+    disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
   })).required(),
   total: number().required(),
 }).required();
