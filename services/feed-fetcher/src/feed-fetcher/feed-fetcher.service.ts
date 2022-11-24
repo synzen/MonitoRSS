@@ -9,6 +9,7 @@ import { Request, Response } from './entities';
 import dayjs from 'dayjs';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { FeedsService } from '../feeds/feeds.service';
+import { defaultNackErrorHandler, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 interface FetchOptions {
   userAgent?: string;
@@ -30,6 +31,51 @@ export class FeedFetcherService {
     this.failedDurationThresholdHours = this.configService.get(
       'FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
     ) as number;
+  }
+
+  @RabbitSubscribe({
+    exchange: '',
+    queue: 'url.fetch',
+  })
+  async handleFetchRequest(message: {
+    data: { url: string; rateSeconds: number };
+  }) {
+    const url = message?.data?.url;
+    const rateSeconds = message?.data?.rateSeconds;
+
+    if (!url || rateSeconds == null) {
+      logger.error(
+        `Received fetch request message has no url and/or rateSeconds, skipping`,
+        {
+          message,
+        },
+      );
+
+      return;
+    }
+
+    logger.debug(`Fetch request message received for url ${url}`, {
+      message,
+    });
+
+    const dateToCheck = dayjs().subtract(rateSeconds, 'seconds').toDate();
+
+    const requestExistsAfterTime = await this.requestExistsAfterTime(
+      { url },
+      dateToCheck,
+    );
+
+    if (requestExistsAfterTime) {
+      logger.debug(
+        `Request ${url} with rate ${rateSeconds} has been recently processed, skipping`,
+      );
+
+      return;
+    }
+
+    await this.fetchAndSaveResponse(url);
+
+    logger.debug(`Fetch request message processed for url ${url}`);
   }
 
   async requestExistsAfterTime(

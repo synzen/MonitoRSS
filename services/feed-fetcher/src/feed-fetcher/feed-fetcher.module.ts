@@ -1,10 +1,12 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Request, Response } from './entities';
 import { FeedFetcherController } from './feed-fetcher.controller';
 import { FeedFetcherService } from './feed-fetcher.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { FeedsModule } from '../feeds/feeds.module';
+import { MessageHandlerErrorBehavior, RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import config from '../config';
 
 @Module({
   controllers: [FeedFetcherController],
@@ -16,4 +18,26 @@ import { FeedsModule } from '../feeds/feeds.module';
     FeedsModule,
   ],
 })
-export class FeedFetcherModule {}
+export class FeedFetcherModule {
+  static forRoot(): DynamicModule {
+    const configValues = config();
+
+    return {
+      module: FeedFetcherModule,
+      imports: [
+        RabbitMQModule.forRoot(RabbitMQModule, {
+          uri: configValues.FEED_FETCHER_RABBITMQ_BROKER_URL,
+          defaultExchangeType: 'direct',
+          defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
+          exchanges: [
+            {
+              name: 'url.fetch.dlx',
+              type: 'direct',
+            },
+          ],
+        }),
+      ],
+      exports: [RabbitMQModule],
+    };
+  }
+}

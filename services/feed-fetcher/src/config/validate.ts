@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsBoolean,
   IsNumber,
+  IsNotEmpty,
 } from 'class-validator';
 
 export enum Environment {
@@ -40,35 +41,15 @@ export class EnvironmentVariables {
   @IsOptional()
   FEED_FETCHER_SYNC_DB?: boolean;
 
-  @IsString()
-  @MinLength(1)
-  FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_URL!: string;
-
-  @IsString()
-  @MinLength(1)
-  FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_REGION!: string;
-
-  @IsString()
-  @IsOptional()
-  FEED_FETCHER_AWS_SQS_REQUEST_QUEUE_ENDPOINT?: string;
-
-  @IsString()
-  @MinLength(1)
-  FEED_FETCHER_AWS_ACCESS_KEY_ID!: string;
-
-  @IsString()
-  @MinLength(1)
-  FEED_FETCHER_AWS_SECRET_ACCESS_KEY!: string;
-
   @IsNumber()
   FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
 
   @IsNumber()
   FEED_FETCHER_API_PORT!: number;
 
-  @IsBoolean()
-  @IsOptional()
-  FEED_FETCHER_SKIP_POLLING_SQS_REQUEST_QUEUE?: boolean;
+  @IsString()
+  @IsNotEmpty()
+  FEED_FETCHER_RABBITMQ_BROKER_URL!: string;
 }
 
 export function validateConfig(

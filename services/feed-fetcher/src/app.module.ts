@@ -9,7 +9,7 @@ import { FeedsModule } from './feeds/feeds.module';
 import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
-  imports: [FeedFetcherModule, FeedsModule],
+  imports: [FeedsModule],
   controllers: [AppController],
   providers: [AppService],
 })
@@ -25,6 +25,7 @@ export class AppModule {
           ignoreEnvFile: true,
           load: [config],
         }),
+        FeedFetcherModule.forRoot(),
         TypeOrmModule.forRoot({
           type: 'postgres',
           url: configVals.FEED_FETCHER_POSTGRES_URI,
