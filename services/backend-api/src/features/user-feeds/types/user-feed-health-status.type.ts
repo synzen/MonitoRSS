@@ -1,5 +1,5 @@
 export enum UserFeedHealthStatus {
-  Ok = "ok",
-  Failed = "failed",
-  Failing = "failing",
+  Ok = "OK",
+  Failed = "FAILED",
+  Failing = "FAILING",
 }
