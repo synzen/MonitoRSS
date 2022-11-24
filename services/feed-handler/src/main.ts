@@ -4,8 +4,8 @@ import { setupHttpApi } from "./setup-http-api";
 
 async function bootstrap() {
   try {
-    await setupHttpApi();
     await setupFeedListener();
+    await setupHttpApi();
   } catch (err) {
     console.error(`Failed to start service`, {
       error: (err as Error).stack,

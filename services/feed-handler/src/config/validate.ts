@@ -1,6 +1,7 @@
 import { plainToClass } from "class-transformer";
 import {
   IsEnum,
+  IsNotEmpty,
   IsNumberString,
   IsString,
   validateSync,
@@ -39,19 +40,11 @@ export class EnvironmentVariables {
   FEED_HANDLER_API_PORT: string;
 
   @IsString()
-  FEED_HANDLER_FEED_EVENT_QUEUE_URL: string;
-
-  @IsString()
-  FEED_HANDLER_AWS_REGION: string;
-
-  @IsString()
-  FEED_HANDLER_AWS_SECRET_ACCESS_KEY: string;
-
-  @IsString()
-  FEED_HANDLER_AWS_ACCESS_KEY_ID: string;
-
-  @IsString()
   FEED_HANDLER_API_KEY: string;
+
+  @IsString()
+  @IsNotEmpty()
+  FEED_HANDLER_RABBITMQ_BROKER_URL: string;
 }
 
 export function validateConfig(

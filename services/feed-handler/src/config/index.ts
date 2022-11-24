@@ -42,14 +42,9 @@ export function config(options?: {
     FEED_HANDLER_DISCORD_RABBITMQ_URI: process.env
       .FEED_HANDLER_DISCORD_RABBITMQ_URI as string,
     FEED_HANDLER_API_PORT: process.env.FEED_HANDLER_API_PORT as string,
-    FEED_HANDLER_FEED_EVENT_QUEUE_URL: process.env
-      .FEED_HANDLER_FEED_EVENT_QUEUE_URL as string,
-    FEED_HANDLER_AWS_REGION: process.env.FEED_HANDLER_AWS_REGION as string,
-    FEED_HANDLER_AWS_SECRET_ACCESS_KEY: process.env
-      .FEED_HANDLER_AWS_SECRET_ACCESS_KEY as string,
-    FEED_HANDLER_AWS_ACCESS_KEY_ID: process.env
-      .FEED_HANDLER_AWS_ACCESS_KEY_ID as string,
     FEED_HANDLER_API_KEY: process.env.FEED_HANDLER_API_KEY as string,
+    FEED_HANDLER_RABBITMQ_BROKER_URL: process.env
+      .FEED_HANDLER_RABBITMQ_BROKER_URL as string,
   } as const;
 
   if (!options?.skipValidation) {
