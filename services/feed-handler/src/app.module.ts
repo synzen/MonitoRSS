@@ -12,12 +12,15 @@ import { ArticleFiltersModule } from "./article-filters/article-filters.module";
 import { DeliveryRecordModule } from "./delivery-record/delivery-record.module";
 import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.module";
 import { FeedsModule } from "./feeds/feeds.module";
+import {
+  RabbitMQModule,
+  MessageHandlerErrorBehavior,
+} from "@golevelup/nestjs-rabbitmq";
 
 @Module({
   imports: [
     FeedFetcherModule,
     ArticlesModule,
-    FeedEventHandlerModule,
     DeliveryModule,
     ArticleFiltersModule,
     DeliveryRecordModule,
@@ -34,6 +37,7 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [
+        FeedEventHandlerModule.forRoot(),
         MikroOrmModule.forRoot({
           entities: ["dist/**/*.entity.js"],
           entitiesTs: ["src/**/*.entity.ts"],
@@ -48,6 +52,18 @@ export class AppModule {
           ignoreEnvFile: true,
           load: [config],
         }),
+      ],
+    };
+  }
+
+  static forFeedListenerService(): DynamicModule {
+    const original = this.forRoot();
+
+    return {
+      ...original,
+      imports: [
+        ...(original.imports || []),
+        FeedEventHandlerModule.forFeedListenerService(),
       ],
     };
   }

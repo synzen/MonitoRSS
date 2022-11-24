@@ -6,6 +6,7 @@ import { DeliveryRecordService } from "../delivery-record/delivery-record.servic
 import { DeliveryService } from "../delivery/delivery.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
+import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -17,6 +18,10 @@ export class FeedEventHandlerService {
     private readonly deliveryRecordService: DeliveryRecordService
   ) {}
 
+  @RabbitSubscribe({
+    exchange: "",
+    queue: "feed.deliver-articles",
+  })
   async handleV2Event(event: FeedV2Event): Promise<Article[]> {
     try {
       await feedV2EventSchema.validate(event, {
