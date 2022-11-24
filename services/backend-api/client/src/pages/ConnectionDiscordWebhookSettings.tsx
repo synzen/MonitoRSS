@@ -32,11 +32,11 @@ import {
   useUpdateDiscordWebhookConnection,
   DeleteConnectionButton,
 } from '../features/feedConnections';
-import { UserFeedHealthStatus, useUserFeed } from '../features/feed';
+import { useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { notifySuccess } from '../utils/notifySuccess';
 import { notifyError } from '../utils/notifyError';
-import { FeedConnectionType } from '../types';
+import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -212,16 +212,15 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                 </Box>
                 <Alert
                   status="error"
-                  hidden={!feed || feed.healthStatus !== UserFeedHealthStatus.Failed}
+                  hidden={!connection
+                    || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat}
                 >
                   <Box>
                     <AlertTitle>
-                      {t('pages.feed.connectionFailureTitle')}
+                      {t('pages.discordWebhookConnection.disabledAlertBadFormatTitle')}
                     </AlertTitle>
                     <AlertDescription display="block">
-                      {t('pages.feed.connectionFailureText', {
-                        reason: feed?.healthStatus || t('pages.feed.unknownReason'),
-                      })}
+                      {t('pages.discordWebhookConnection.disabledAlertBadFormatDescription')}
                     </AlertDescription>
                   </Box>
                 </Alert>
@@ -251,7 +250,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
             <TabList>
               <Tab>Message</Tab>
               <Tab>Filters</Tab>
-              <Tab>Settings</Tab>
+              {/* <Tab>Settings</Tab> */}
             </TabList>
           </Stack>
 

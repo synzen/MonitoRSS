@@ -1,3 +1,4 @@
-export const FEED_CONNECTION_DISABLED_CODES = {
-  MANUAL: "MANUAL",
-};
+export enum FeedConnectionDisabledCode {
+  Manual = "MANUAL",
+  BadFormat = "BAD_FORMAT",
+}

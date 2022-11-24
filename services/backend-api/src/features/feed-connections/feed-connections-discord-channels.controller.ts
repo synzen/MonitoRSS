@@ -15,7 +15,10 @@ import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
@@ -91,6 +94,15 @@ export class FeedConnectionsDiscordChannelsController {
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
+    let enableFeedWithBadFormat = false;
+
+    if (
+      connection.disabledCode === FeedConnectionDisabledCode.BadFormat &&
+      (content || embeds)
+    ) {
+      enableFeedWithBadFormat = true;
+    }
+
     const createdConnection = await this.service.updateDiscordChannelConnection(
       feed._id.toHexString(),
       connection.id.toHexString(),
@@ -99,6 +111,7 @@ export class FeedConnectionsDiscordChannelsController {
         updates: {
           filters,
           name,
+          disabledCode: enableFeedWithBadFormat ? null : undefined,
           details: {
             channel: channelId
               ? {

@@ -12,6 +12,7 @@ import {
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
+import { FeedConnectionDisabledCode } from "../feeds/constants";
 import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 
@@ -215,6 +216,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
             {
               id: connectionIdToUse,
               name: "name",
+              disabledCode: FeedConnectionDisabledCode.BadFormat,
               filters: {
                 expression: {
                   foo: "bar",
@@ -277,7 +279,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       });
     });
 
-    it("allows filters to be null", async () => {
+    it("allows properties to be cleared with null", async () => {
       discordWebhooksService.getWebhook.mockResolvedValue({
         token: "token",
         guild_id: guildId,
@@ -290,7 +292,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         connectionId: connectionIdToUse,
         updates: {
           filters: null,
-          details: {},
+          disabledCode: null,
         },
         accessToken,
       });
@@ -300,6 +302,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       expect(updatedFeed?.connections.discordWebhooks).toHaveLength(1);
       expect(updatedFeed?.connections.discordWebhooks[0]).not.toHaveProperty(
         "filters"
+      );
+      expect(updatedFeed?.connections.discordWebhooks[0]).not.toHaveProperty(
+        "disabledCode"
       );
     });
 

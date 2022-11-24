@@ -2,7 +2,10 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
@@ -16,6 +19,7 @@ export interface UpdateDiscordChannelConnectionInput {
   updates: {
     filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
+    disabledCode?: FeedConnectionDisabledCode | null;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       channel?: {
@@ -130,10 +134,16 @@ export class FeedConnectionsDiscordChannelsService {
         ...(updates.name && {
           [`connections.discordChannels.$.name`]: updates.name,
         }),
+        ...(updates.disabledCode && {
+          [`connections.discordChannels.$.disabledCode`]: updates.disabledCode,
+        }),
       },
       $unset: {
         ...(updates.filters === null && {
           [`connections.discordChannels.$.filters`]: "",
+        }),
+        ...(updates.disabledCode === null && {
+          [`connections.discordChannels.$.disabledCode`]: "",
         }),
       },
     };

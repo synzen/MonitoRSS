@@ -296,12 +296,10 @@ export const FeedV2: React.FC = () => {
                 >
                   <Box>
                     <AlertTitle>
-                      {t('pages.feed.connectionFailureTitle')}
+                      {t('pages.userFeed.connectionFailureTitle')}
                     </AlertTitle>
                     <AlertDescription display="block">
-                      {t('pages.feed.connectionFailureText', {
-                        reason: feed?.healthStatus,
-                      })}
+                      {t('pages.userFeed.connectionFailureText')}
                       <Box marginTop="1rem">
                         {feedId && (
                         <RefreshUserFeedButton

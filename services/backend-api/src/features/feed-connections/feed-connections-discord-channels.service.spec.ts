@@ -6,6 +6,7 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import { FeedConnectionDisabledCode } from "../feeds/constants";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import {
@@ -142,6 +143,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             {
               id: connectionIdToUse,
               name: "name",
+              disabledCode: FeedConnectionDisabledCode.BadFormat,
               filters: {
                 expression: {
                   foo: "bar",
@@ -195,7 +197,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       });
     });
 
-    it("allows filters to be cleared", async () => {
+    it("allows nullable properties to be cleared", async () => {
       await service.updateDiscordChannelConnection(
         createdFeed._id.toHexString(),
         connectionIdToUse.toHexString(),
@@ -203,6 +205,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           accessToken: updateInput.accessToken,
           updates: {
             filters: null,
+            disabledCode: null,
           },
         }
       );
@@ -212,6 +215,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       expect(updatedFeed?.connections.discordChannels).toHaveLength(1);
       expect(updatedFeed?.connections.discordChannels[0]).not.toHaveProperty(
         "filters"
+      );
+      expect(updatedFeed?.connections.discordChannels[0]).not.toHaveProperty(
+        "disabledCode"
       );
     });
 

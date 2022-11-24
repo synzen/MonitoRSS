@@ -12,6 +12,7 @@ import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { DiscordWebhookConnection } from "../feeds/entities/feed-connections";
 import _ from "lodash";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
+import { FeedConnectionDisabledCode } from "../feeds/constants";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -20,6 +21,7 @@ export interface UpdateDiscordWebhookConnectionInput {
   updates: {
     filters?: DiscordWebhookConnection["filters"] | null;
     name?: string;
+    disabledCode?: FeedConnectionDisabledCode | null;
     details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
@@ -102,7 +104,7 @@ export class FeedConnectionsDiscordWebhooksService {
   async updateDiscordWebhookConnection({
     feedId,
     connectionId,
-    updates: { details, filters, name },
+    updates: { details, filters, name, disabledCode },
     accessToken,
   }: UpdateDiscordWebhookConnectionInput) {
     let webhookUpdates:
@@ -157,10 +159,16 @@ export class FeedConnectionsDiscordWebhooksService {
         ...(name && {
           "connections.discordWebhooks.$.name": name,
         }),
+        ...(disabledCode && {
+          "connections.discordWebhooks.$.disabledCode": disabledCode,
+        }),
       },
       $unset: {
         ...(filters === null && {
           "connections.discordWebhooks.$.filters": "",
+        }),
+        ...(disabledCode === null && {
+          "connections.discordWebhooks.$.disabledCode": "",
         }),
       },
     };

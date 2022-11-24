@@ -8,6 +8,11 @@ export enum FeedConnectionType {
   DiscordWebhook = 'DISCORD_WEBHOOK',
 }
 
+export enum FeedConnectionDisabledCode {
+  Manual = 'MANUAL',
+  BadFormat = 'BAD_FORMAT',
+}
+
 const DiscordChannelConnectionDetailsSchema = object({
   embeds: array(FeedEmbedSchema).required(),
   channel: object({
@@ -32,6 +37,7 @@ export const FeedConnectionSchema = object({
   id: string().required(),
   name: string().required(),
   key: string().oneOf(Object.values(FeedConnectionType)).required(),
+  disabledCode: string().oneOf(Object.values(FeedConnectionDisabledCode)).optional(),
   filters: object({
     expression: object(),
   }).optional().default(undefined).nullable(),

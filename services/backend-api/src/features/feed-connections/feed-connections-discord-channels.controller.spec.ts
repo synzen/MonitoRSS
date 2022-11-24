@@ -1,5 +1,8 @@
 import { Types } from "mongoose";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 // eslint-disable-next-line max-len
 import { FeedConnectionsDiscordChannelsController } from "./feed-connections-discord-channels.controller";
@@ -86,38 +89,41 @@ describe("FeedConnectionsDiscordChannelsController", () => {
   });
 
   describe("updateDiscordChannelConnection", () => {
-    it("flattens the input embed before passing it to the service", async () => {
-      const name = "name";
-      const feedId = new Types.ObjectId();
-      const connectionId = new Types.ObjectId();
-      const guildId = "guildId";
-      const channelId = "channelId";
-      const connection = {
-        id: new Types.ObjectId(),
-        name,
-        filters: {
-          expression: {},
+    const name = "name";
+    const feedId = new Types.ObjectId();
+    const connectionId = new Types.ObjectId();
+    const guildId = "guildId";
+    const channelId = "channelId";
+    const connection = {
+      id: new Types.ObjectId(),
+      name,
+      filters: {
+        expression: {},
+      },
+      details: {
+        type: FeedConnectionType.DiscordChannel,
+        channel: {
+          id: channelId,
+          guildId,
         },
-        details: {
-          type: FeedConnectionType.DiscordChannel,
-          channel: {
-            id: channelId,
-            guildId,
-          },
-          embeds: [],
-          content: "content",
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        embeds: [],
+        content: "content",
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateSpy: jest.SpyInstance;
 
-      const updateSpy = jest
+    beforeEach(() => {
+      updateSpy = jest
         .spyOn(
           feedConnectionsDiscordChannelsService,
           "updateDiscordChannelConnection"
         )
         .mockResolvedValue(connection);
+    });
 
+    it("flattens the input embed before passing it to the service", async () => {
       await controller.updateDiscordChannelConnection(
         {
           feed: {
@@ -199,6 +205,84 @@ describe("FeedConnectionsDiscordChannelsController", () => {
             details: {
               content: undefined,
               embeds: [expectedEmbed],
+              channel: undefined,
+            },
+          },
+        }
+      );
+    });
+
+    it("clears disabled code if content is updated", async () => {
+      await controller.updateDiscordChannelConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+            disabledCode: FeedConnectionDisabledCode.BadFormat,
+          },
+        } as never,
+        {
+          content: "hello world",
+        },
+        {
+          access_token: "accessToken",
+        } as never
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        feedId.toHexString(),
+        connectionId.toHexString(),
+        {
+          accessToken: "accessToken",
+          updates: {
+            name: undefined,
+            filters: undefined,
+            disabledCode: null,
+            details: {
+              content: "hello world",
+              embeds: undefined,
+              channel: undefined,
+            },
+          },
+        }
+      );
+    });
+
+    it("clears disabled code if embeds are updated", async () => {
+      await controller.updateDiscordChannelConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+            disabledCode: FeedConnectionDisabledCode.BadFormat,
+          },
+        } as never,
+        {
+          embeds: [],
+        },
+        {
+          access_token: "accessToken",
+        } as never
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        feedId.toHexString(),
+        connectionId.toHexString(),
+        {
+          accessToken: "accessToken",
+          updates: {
+            name: undefined,
+            filters: undefined,
+            disabledCode: null,
+            details: {
+              content: undefined,
+              embeds: [],
               channel: undefined,
             },
           },

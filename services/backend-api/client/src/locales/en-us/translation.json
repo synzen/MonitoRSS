@@ -110,7 +110,9 @@
       "manuallyDisabledEnableButtonText": "Re-enable",
       "disableFeedButtonText": "Disable",
       "disableFeedConfirmTitle": "Are you sure?",
-      "disableFeedConfirmDescription": "Articles will not be delivered until it is re-enabled."
+      "disableFeedConfirmDescription": "Articles will not be delivered until it is re-enabled.",
+      "connectionFailureTitle": "Disabled due to too many connection failures",
+      "connectionFailureText": "There has been too many connection failures within a short period of time. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled."
     },
     "message": {
       "title": "Message",
@@ -198,6 +200,10 @@
       "splitMessageDescription": "If enabled, messages will be split into multiple messages if they are too long. Otherwise, it will attempt to be sent as one message with truncated text.",
       "resetButton": "Reset",
       "saveButton": "Save"
+    },
+    "discordWebhookConnection": {
+      "disabledAlertBadFormatTitle": "Disabled due to invalid message format",
+      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format."
     }
   },
   "components": {

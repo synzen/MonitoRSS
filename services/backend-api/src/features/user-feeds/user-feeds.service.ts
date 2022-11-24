@@ -150,7 +150,6 @@ export class UserFeedsService {
   }
 
   async updateFeedById(id: string, updates: UpdateFeedInput) {
-    console.log(updates);
     const query = this.userFeedModel.findByIdAndUpdate(
       id,
       {

@@ -1,5 +1,8 @@
 import { Types } from "mongoose";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 // eslint-disable-next-line max-len
 import { FeedConnectionsDiscordWebhooksController } from "./feed-connections-discord-webhooks.controller";
@@ -93,44 +96,48 @@ describe("FeedConnectionsController", () => {
   });
 
   describe("updateDiscordWebhookConnection", () => {
+    const name = "name";
+    const guildId = "guildId";
+    const feedId = new Types.ObjectId();
+    const connectionId = new Types.ObjectId();
     const accessToken = "access-token";
-
-    it("returns the updated discord webhook connection", async () => {
-      const name = "name";
-      const connectionId = new Types.ObjectId();
-      const connection = {
-        id: connectionId,
-        name,
-        filters: {
-          expression: {},
+    const mockConnection = {
+      id: connectionId,
+      name,
+      filters: {
+        expression: {},
+      },
+      details: {
+        type: FeedConnectionType.DiscordWebhook,
+        webhook: {
+          id: "id",
+          name: "name",
+          iconUrl: "iconurl",
+          token: "token",
+          guildId: "guild",
         },
-        details: {
-          type: FeedConnectionType.DiscordWebhook,
-          webhook: {
-            id: "id",
-            name: "name",
-            iconUrl: "iconurl",
-            token: "token",
-            guildId: "guild",
-          },
-          embeds: [],
-          content: "content",
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        embeds: [],
+        content: "content",
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateSpy: jest.SpyInstance;
 
-      jest
+    beforeEach(() => {
+      updateSpy = jest
         .spyOn(
           feedConnectionsDiscordWebhooksService,
           "updateDiscordWebhookConnection"
         )
-        .mockResolvedValue(connection);
+        .mockResolvedValue(mockConnection);
+    });
 
+    it("returns the updated discord webhook connection", async () => {
       const result = await controller.updateDiscordWebhookConnection(
         {
           feed: {
-            _id: new Types.ObjectId(),
+            _id: feedId,
           },
           connection: {
             id: connectionId,
@@ -151,58 +158,25 @@ describe("FeedConnectionsController", () => {
 
       expect(result).toEqual({
         id: connectionId.toHexString(),
-        name: connection.name,
+        name: mockConnection.name,
         key: FeedConnectionType.DiscordWebhook,
         filters: {
           expression: {},
         },
         details: {
           webhook: {
-            id: connection.details.webhook.id,
-            name: connection.details.webhook.name,
-            iconUrl: connection.details.webhook.iconUrl,
-            guildId: connection.details.webhook.guildId,
+            id: mockConnection.details.webhook.id,
+            name: mockConnection.details.webhook.name,
+            iconUrl: mockConnection.details.webhook.iconUrl,
+            guildId: mockConnection.details.webhook.guildId,
           },
-          embeds: connection.details.embeds,
-          content: connection.details.content,
+          embeds: mockConnection.details.embeds,
+          content: mockConnection.details.content,
         },
       });
     });
 
     it("does not pass webhook if there is no webhook object", async () => {
-      const name = "name";
-      const feedId = new Types.ObjectId();
-      const connectionId = new Types.ObjectId();
-      const guildId = "guildId";
-      const connection = {
-        id: connectionId,
-        name,
-        filters: {
-          expression: {},
-        },
-        details: {
-          type: FeedConnectionType.DiscordWebhook,
-          webhook: {
-            id: "id",
-            name: "name",
-            iconUrl: "iconurl",
-            token: "token",
-            guildId: "guild",
-          },
-          embeds: [],
-          content: "content",
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      const updateSpy = jest
-        .spyOn(
-          feedConnectionsDiscordWebhooksService,
-          "updateDiscordWebhookConnection"
-        )
-        .mockResolvedValue(connection);
-
       await controller.updateDiscordWebhookConnection(
         {
           feed: {
@@ -237,40 +211,80 @@ describe("FeedConnectionsController", () => {
       });
     });
 
-    it("flattens the input embed before passing it to the service", async () => {
-      const name = "name";
-      const feedId = new Types.ObjectId();
-      const connectionId = new Types.ObjectId();
-      const guildId = "guildId";
-      const connection = {
-        id: connectionId,
-        name,
-        filters: {
-          expression: {},
-        },
-        details: {
-          type: FeedConnectionType.DiscordWebhook,
-          webhook: {
-            id: "id",
-            name: "name",
-            iconUrl: "iconurl",
-            token: "token",
-            guildId: "guild",
+    it("sets disabledCode to null if content is updated", async () => {
+      await controller.updateDiscordWebhookConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
           },
-          embeds: [],
-          content: "content",
+          connection: {
+            id: connectionId,
+            disabledCode: FeedConnectionDisabledCode.BadFormat,
+          },
+        } as never,
+        {
+          content: "hello world",
         },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        {
+          access_token: accessToken,
+        } as never
+      );
 
-      const updateSpy = jest
-        .spyOn(
-          feedConnectionsDiscordWebhooksService,
-          "updateDiscordWebhookConnection"
-        )
-        .mockResolvedValue(connection);
+      expect(updateSpy).toHaveBeenCalledWith({
+        accessToken,
+        feedId: feedId.toHexString(),
+        connectionId: connectionId.toHexString(),
+        updates: {
+          name: undefined,
+          disabledCode: null,
+          filters: undefined,
+          details: {
+            content: "hello world",
+            embeds: undefined,
+            webhook: undefined,
+          },
+        },
+      });
+    });
+    it("sets disabledCode to null if embed is updated", async () => {
+      await controller.updateDiscordWebhookConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+            disabledCode: FeedConnectionDisabledCode.BadFormat,
+          },
+        } as never,
+        {
+          embeds: [],
+        },
+        {
+          access_token: accessToken,
+        } as never
+      );
 
+      expect(updateSpy).toHaveBeenCalledWith({
+        accessToken,
+        feedId: feedId.toHexString(),
+        connectionId: connectionId.toHexString(),
+        updates: {
+          name: undefined,
+          disabledCode: null,
+          filters: undefined,
+          details: {
+            content: undefined,
+            embeds: [],
+            webhook: undefined,
+          },
+        },
+      });
+    });
+
+    it("flattens the input embed before passing it to the service", async () => {
       await controller.updateDiscordWebhookConnection(
         {
           feed: {

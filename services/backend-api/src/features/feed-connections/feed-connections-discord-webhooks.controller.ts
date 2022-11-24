@@ -15,7 +15,10 @@ import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
@@ -96,6 +99,15 @@ export class FeedConnectionsDiscordWebhooksController {
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
+    let enableFeedWithBadFormat = false;
+
+    if (
+      connection.disabledCode === FeedConnectionDisabledCode.BadFormat &&
+      (content || embeds)
+    ) {
+      enableFeedWithBadFormat = true;
+    }
+
     const updatedConnection = await this.service.updateDiscordWebhookConnection(
       {
         accessToken: access_token,
@@ -104,6 +116,7 @@ export class FeedConnectionsDiscordWebhooksController {
         updates: {
           name,
           filters,
+          disabledCode: enableFeedWithBadFormat ? null : undefined,
           details: {
             content,
             embeds: convertToFlatDiscordEmbeds(embeds),
