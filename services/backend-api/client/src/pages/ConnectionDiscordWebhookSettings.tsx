@@ -67,7 +67,9 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       feedId,
       connectionId,
       details: {
-        filters,
+        filters: filters ? {
+          expression: filters,
+        } : null,
       },
     });
   };
