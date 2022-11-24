@@ -7,7 +7,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   Button,
-  Divider,
   Flex,
   Grid,
   Heading,
@@ -20,6 +19,8 @@ import {
   MenuList,
   Spinner,
   Stack,
+  Tab,
+  TabList,
   TabPanel,
   TabPanels,
   Tabs,
@@ -28,12 +29,13 @@ import {
 } from '@chakra-ui/react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { CategoryText, ConfirmModal } from '@/components';
 import {
   EditUserFeedDialog,
   RefreshUserFeedButton,
+  RequestHistory,
   useArticleDailyLimit,
   useDeleteUserFeed,
   UserFeedDisabledCode,
@@ -148,7 +150,7 @@ export const FeedV2: React.FC = () => {
           width="100%"
           minWidth="100%"
           paddingTop={12}
-          background="gray.800"
+          background="gray.700"
           paddingX={{ base: 4, lg: 12 }}
           alignItems="center"
         >
@@ -336,7 +338,18 @@ export const FeedV2: React.FC = () => {
                 </CategoryText>
               </Grid>
             </Stack>
-            <Divider />
+            <TabList>
+              <Tab>
+                Connections
+              </Tab>
+              {/* <Tab disabled>
+                Request History
+              </Tab> */}
+            </TabList>
+          </Stack>
+        </Stack>
+        <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
+          <TabPanel maxWidth="1200px" width="100%">
             <Stack spacing={6}>
               <Stack>
                 <Flex justifyContent="space-between" alignItems="center">
@@ -402,15 +415,9 @@ export const FeedV2: React.FC = () => {
                 ))}
               </Stack>
             </Stack>
-            <Stack spacing={6}>
-              Hello world
-            </Stack>
-          </Stack>
-        </Stack>
-        <TabPanels>
-          <TabPanel />
-          <TabPanel>
-            Hello world
+          </TabPanel>
+          <TabPanel maxWidth="1200px" width="100%">
+            <RequestHistory />
           </TabPanel>
         </TabPanels>
       </Tabs>
