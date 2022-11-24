@@ -132,10 +132,14 @@ export class UserFeedsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed,
-    @Body(ValidationPipe) { title, url }: UpdateUserFeedInputDto
+    @Body(ValidationPipe) { title, url, disabledCode }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
     if (feed.user.discordUserId !== discordUserId) {
       throw new ForbiddenException();
+    }
+
+    if (disabledCode && feed.disabledCode) {
+      throw new ForbiddenException("Feed is already disabled");
     }
 
     const updated = (await this.userFeedsService.updateFeedById(
@@ -143,6 +147,7 @@ export class UserFeedsController {
       {
         title,
         url,
+        disabledCode,
       }
     )) as UserFeed;
 

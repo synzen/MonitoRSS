@@ -10,7 +10,7 @@ export const FeedStatusTag: React.FC<Props> = ({ disabledCode }) => {
     disabledCode === UserFeedDisabledCode.FailedRequests
     || disabledCode === UserFeedDisabledCode.BadFormat
   ) {
-    return <WarningIcon boxSize={5} color="red.500" />;
+    return <WarningIcon boxSize={5} color="red.300" />;
   }
 
   if (disabledCode === UserFeedDisabledCode.Manual) {

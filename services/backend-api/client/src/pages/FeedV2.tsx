@@ -35,7 +35,7 @@ import {
   RefreshUserFeedButton,
   useArticleDailyLimit,
   useDeleteUserFeed,
-  UserFeedHealthStatus,
+  UserFeedDisabledCode,
   useUpdateUserFeed,
   useUserFeed,
 } from '../features/feed';
@@ -82,6 +82,7 @@ export const FeedV2: React.FC = () => {
   });
   const {
     mutateAsync: mutateAsyncUserFeed,
+    status: updatingStatus,
   } = useUpdateUserFeed();
 
   const {
@@ -113,7 +114,8 @@ export const FeedV2: React.FC = () => {
   const onUpdateFeed = async ({
     title,
     url,
-  }: { title?: string, url?: string }) => {
+    disabledCode,
+  }: { title?: string, url?: string, disabledCode?: UserFeedDisabledCode.Manual | null }) => {
     if (!feedId) {
       return;
     }
@@ -124,6 +126,7 @@ export const FeedV2: React.FC = () => {
         data: {
           title,
           url: url === feed?.url ? undefined : url,
+          disabledCode,
         },
       });
       notifySuccess(t('common.success.savedChanges'));
@@ -195,6 +198,26 @@ export const FeedV2: React.FC = () => {
                     </Link>
                   </Box>
                   <HStack>
+                    { feed && !feed.disabledCode && (
+                    <ConfirmModal
+                      title={t('pages.userFeed.disableFeedConfirmTitle')}
+                      description={t('pages.userFeed.disableFeedConfirmDescription')}
+                      trigger={(
+                        <Button
+                          variant="outline"
+                          disabled={updatingStatus === 'loading'}
+                        >
+                          {t('pages.userFeed.disableFeedButtonText')}
+                        </Button>
+                      )}
+                      okText={t('common.buttons.yes')}
+                      okLoading={updatingStatus === 'loading'}
+                      colorScheme="blue"
+                      onConfirm={() => onUpdateFeed({
+                        disabledCode: UserFeedDisabledCode.Manual,
+                      })}
+                    />
+                    )}
                     <EditUserFeedDialog
                       trigger={(
                         <Button
@@ -235,8 +258,31 @@ export const FeedV2: React.FC = () => {
                   </HStack>
                 </HStack>
                 <Alert
+                  status="info"
+                  hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.Manual}
+                >
+                  <Box>
+                    <AlertTitle>
+                      {t('pages.userFeed.manuallyDisabledTitle')}
+                    </AlertTitle>
+                    <AlertDescription display="block">
+                      {t('pages.userFeed.manuallyDisabledDescription')}
+                      <Box marginTop="1rem">
+                        <Button
+                          isLoading={updatingStatus === 'loading'}
+                          onClick={() => onUpdateFeed({
+                            disabledCode: null,
+                          })}
+                        >
+                          {t('pages.userFeed.manuallyDisabledEnableButtonText')}
+                        </Button>
+                      </Box>
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+                <Alert
                   status="error"
-                  hidden={!feed || feed.healthStatus !== UserFeedHealthStatus.Ok}
+                  hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.FailedRequests}
                 >
                   <Box>
                     <AlertTitle>

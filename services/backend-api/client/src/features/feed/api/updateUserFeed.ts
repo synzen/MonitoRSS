@@ -1,12 +1,13 @@
 import { InferType, object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { UserFeedSchema } from '../types';
+import { UserFeedDisabledCode, UserFeedSchema } from '../types';
 
 export interface UpdateUserFeedInput {
   feedId: string
   data: {
     title?: string;
     url?: string
+    disabledCode?: UserFeedDisabledCode.Manual | null
   }
 }
 

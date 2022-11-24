@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
+import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
+import { UserFeedDisabledCode } from "../types";
 
 export class UpdateUserFeedInputDto {
   @IsString()
@@ -11,4 +12,8 @@ export class UpdateUserFeedInputDto {
   @IsUrl()
   @IsOptional()
   url?: string;
+
+  @IsIn([UserFeedDisabledCode.Manual, null])
+  @IsOptional()
+  disabledCode?: UserFeedDisabledCode | null;
 }

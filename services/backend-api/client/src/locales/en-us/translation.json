@@ -5,7 +5,8 @@
       "reset": "Reset",
       "save": "Save",
       "configure": "Configure",
-      "delete": "Delete"
+      "delete": "Delete",
+      "yes": "Yes"
     },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
@@ -102,7 +103,13 @@
     "userFeed": {
       "deleteConfirmTitle": "Delete feed",
       "deleteConfirmDescription": "Are you sure you want to delete this feed?",
-      "deleteConfirmOk": "Delete"
+      "deleteConfirmOk": "Delete",
+      "manuallyDisabledTitle": "This feed has been manually disabled",
+      "manuallyDisabledDescription": "Article delivery is paused until it is re-enabled.",
+      "manuallyDisabledEnableButtonText": "Re-enable",
+      "disableFeedButtonText": "Disable",
+      "disableFeedConfirmTitle": "Are you sure?",
+      "disableFeedConfirmDescription": "Articles will not be delivered until it is re-enabled."
     },
     "message": {
       "title": "Message",

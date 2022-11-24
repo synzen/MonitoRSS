@@ -38,8 +38,8 @@ const mockUserFeeds: UserFeed[] = [{
     key: FeedConnectionType.DiscordWebhook,
     name: 'Discord Webhook 1',
   }],
-  healthStatus: UserFeedHealthStatus.Ok,
-  disabledCode: undefined,
+  healthStatus: UserFeedHealthStatus.Failed,
+  disabledCode: UserFeedDisabledCode.FailedRequests,
   refreshRateSeconds: 60,
 }, {
   id: '2',

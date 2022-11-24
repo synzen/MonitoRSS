@@ -9,7 +9,7 @@ import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "./entities";
 import _ from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
-import { UserFeedHealthStatus } from "./types";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 
@@ -28,6 +28,7 @@ interface GetFeedsCountInput {
 interface UpdateFeedInput {
   title?: string;
   url?: string;
+  disabledCode?: UserFeedDisabledCode | null;
 }
 
 @Injectable()
@@ -149,9 +150,16 @@ export class UserFeedsService {
   }
 
   async updateFeedById(id: string, updates: UpdateFeedInput) {
+    console.log(updates);
     const query = this.userFeedModel.findByIdAndUpdate(
       id,
-      {},
+      {
+        $unset: {
+          ...(updates.disabledCode === null && {
+            disabledCode: "",
+          }),
+        },
+      },
       {
         new: true,
       }
@@ -164,6 +172,10 @@ export class UserFeedsService {
     if (updates.url) {
       await this.checkUrlIsValid(updates.url);
       query.set("url", updates.url);
+    }
+
+    if (updates.disabledCode) {
+      query.set("disabledCode", updates.disabledCode);
     }
 
     return query.lean();

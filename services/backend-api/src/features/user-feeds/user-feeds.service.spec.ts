@@ -298,6 +298,17 @@ describe("UserFeedsService", () => {
       });
     });
 
+    it("sets null disabled code correctly", async () => {
+      await service.updateFeedById(feed._id.toHexString(), {
+        disabledCode: null,
+      });
+
+      const found = await userFeedModel.findById(feed._id).lean();
+
+      expect(found).toBeTruthy();
+      expect(found).not.toHaveProperty("disabledCode");
+    });
+
     it("does not update anything if no updates are provided", async () => {
       const entity = await service.updateFeedById(feed._id.toHexString(), {});
 
