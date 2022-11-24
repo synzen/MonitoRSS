@@ -15,6 +15,7 @@ import {
   Link,
   Menu,
   MenuButton,
+  MenuDivider,
   MenuItem,
   MenuList,
   Spinner,
@@ -197,65 +198,72 @@ export const FeedV2: React.FC = () => {
                       {feed?.url}
                     </Link>
                   </Box>
-                  <HStack>
-                    { feed && !feed.disabledCode && (
-                    <ConfirmModal
-                      title={t('pages.userFeed.disableFeedConfirmTitle')}
-                      description={t('pages.userFeed.disableFeedConfirmDescription')}
-                      trigger={(
-                        <Button
-                          variant="outline"
-                          disabled={updatingStatus === 'loading'}
-                        >
-                          {t('pages.userFeed.disableFeedButtonText')}
-                        </Button>
+                  <Menu>
+                    <MenuButton
+                      as={Button}
+                      variant="outline"
+                      rightIcon={<ChevronDownIcon />}
+                    >
+                      {t('pages.userFeed.actionsButtonText')}
+                    </MenuButton>
+                    <MenuList>
+                      <EditUserFeedDialog
+                        trigger={(
+                          <MenuItem
+                            aria-label="Edit"
+                          >
+                            {t('common.buttons.configure')}
+                          </MenuItem>
+                        )}
+                        defaultValues={{
+                          title: feed?.title as string,
+                          url: feed?.url as string,
+                        }}
+                        onUpdate={onUpdateFeed}
+                      />
+                      {
+                      feed && !feed.disabledCode && (
+                      <ConfirmModal
+                        title={t('pages.userFeed.disableFeedConfirmTitle')}
+                        description={t('pages.userFeed.disableFeedConfirmDescription')}
+                        trigger={(
+                          <MenuItem
+                            disabled={updatingStatus === 'loading'}
+                          >
+                            {t('pages.userFeed.disableFeedButtonText')}
+                          </MenuItem>
                       )}
-                      okText={t('common.buttons.yes')}
-                      okLoading={updatingStatus === 'loading'}
-                      colorScheme="blue"
-                      onConfirm={() => onUpdateFeed({
-                        disabledCode: UserFeedDisabledCode.Manual,
-                      })}
-                    />
-                    )}
-                    <EditUserFeedDialog
-                      trigger={(
-                        <Button
-                          aria-label="Edit"
-                          variant="outline"
-                          leftIcon={<EditIcon />}
-                        >
-                          {t('common.buttons.configure')}
-                        </Button>
-                      )}
-                      defaultValues={{
-                        title: feed?.title as string,
-                        url: feed?.url as string,
-                      }}
-                      onUpdate={onUpdateFeed}
-                    />
-                    {
-                    feedId && (
-                    <ConfirmModal
-                      title={t('pages.userFeed.deleteConfirmTitle')}
-                      description={t('pages.userFeed.deleteConfirmDescription')}
-                      trigger={(
-                        <Button
-                          variant="outline"
-                          disabled={deleteingStatus === 'loading'}
-                          leftIcon={<DeleteIcon />}
-                        >
-                          {t('common.buttons.delete')}
-                        </Button>
-                      )}
-                      okText={t('pages.userFeed.deleteConfirmOk')}
-                      okLoading={deleteingStatus === 'loading'}
-                      colorScheme="red"
-                      onConfirm={onDeleteFeed}
-                    />
-                    )
-                  }
-                  </HStack>
+                        okText={t('common.buttons.yes')}
+                        okLoading={updatingStatus === 'loading'}
+                        colorScheme="blue"
+                        onConfirm={() => onUpdateFeed({
+                          disabledCode: UserFeedDisabledCode.Manual,
+                        })}
+                      />
+                      )
+                      }
+                      <MenuDivider />
+                      {
+                      feedId && (
+                      <ConfirmModal
+                        title={t('pages.userFeed.deleteConfirmTitle')}
+                        description={t('pages.userFeed.deleteConfirmDescription')}
+                        trigger={(
+                          <MenuItem
+                            disabled={deleteingStatus === 'loading'}
+                          >
+                            {t('common.buttons.delete')}
+                          </MenuItem>
+                        )}
+                        okText={t('pages.userFeed.deleteConfirmOk')}
+                        okLoading={deleteingStatus === 'loading'}
+                        colorScheme="red"
+                        onConfirm={onDeleteFeed}
+                      />
+                      )
+                    }
+                    </MenuList>
+                  </Menu>
                 </HStack>
                 <Alert
                   status="info"
