@@ -1,5 +1,5 @@
 export enum UserFeedDisabledCode {
-  BadFormat = "bad-format",
-  FailedRequests = "failed-requests",
-  Manual = "manual",
+  BadFormat = "BAD_FORMAT",
+  FailedRequests = "FAILED_REQUESTS",
+  Manual = "MANUAL",
 }
