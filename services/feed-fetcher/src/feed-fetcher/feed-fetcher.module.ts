@@ -26,12 +26,6 @@ export class FeedFetcherModule {
           uri: configValues.FEED_FETCHER_RABBITMQ_BROKER_URL,
           defaultExchangeType: 'direct',
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
-          exchanges: [
-            {
-              name: 'url.fetch.dlx',
-              type: 'direct',
-            },
-          ],
         }),
       ],
       exports: [RabbitMQModule],
