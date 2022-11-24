@@ -10,10 +10,11 @@ import {
   FilterExpressionType,
   LogicalExpressionOperator,
   LogicalFilterExpression,
+  RelationalExpressionLeftOperandType,
   RelationalExpressionOperator,
+  RelationalExpressionRightOperandType,
 } from '../../types';
 import { LogicalExpressionForm } from './LogicalExpressionForm';
-import { notifyError } from '../../../../utils/notifyError';
 
 interface FormData {
   expression: LogicalFilterExpression | null
@@ -64,17 +65,10 @@ export const FiltersForm = ({
   };
 
   const onSaveExpression = async ({ expression: finalExpression }: FormData) => {
-    try {
-      await onSave(finalExpression);
-      reset({
-        expression: finalExpression,
-      });
-    } catch (err) {
-      notifyError(
-        t('common.errors.failedToSave'),
-        err as Error,
-      );
-    }
+    await onSave(finalExpression);
+    reset({
+      expression: finalExpression,
+    });
   };
 
   const addInitialExpression = () => {
@@ -84,8 +78,14 @@ export const FiltersForm = ({
       children: [{
         type: FilterExpressionType.Relational,
         op: RelationalExpressionOperator.Equals,
-        left: '',
-        right: '',
+        left: {
+          type: RelationalExpressionLeftOperandType.Article,
+          value: '',
+        },
+        right: {
+          type: RelationalExpressionRightOperandType.String,
+          value: '',
+        },
       }],
     }, {
       shouldDirty: true,

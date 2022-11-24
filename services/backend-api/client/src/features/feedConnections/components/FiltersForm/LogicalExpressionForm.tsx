@@ -9,7 +9,10 @@ import {
   FilterExpressionType,
   LogicalExpressionOperator,
   LogicalFilterExpression,
+  RelationalExpressionLeftOperandType,
   RelationalExpressionOperator,
+  RelationalExpressionRightOperandType,
+  RelationalFilterExpression,
 } from '../../types';
 import { AnyAllSelector } from './AnyAllSelector';
 import { Condition } from './Condition';
@@ -58,25 +61,41 @@ export const LogicalExpressionForm = ({
       id: string
     })>)?.findIndex((child) => child?.type === FilterExpressionType.Relational) || -1;
 
-    insert(indexOfLastRelational + 1, {
+    const toInsert: RelationalFilterExpression = {
       type: FilterExpressionType.Relational,
       op: RelationalExpressionOperator.Equals,
-      left: '',
-      right: '',
-    });
+      left: {
+        type: RelationalExpressionLeftOperandType.Article,
+        value: '',
+      },
+      right: {
+        type: RelationalExpressionRightOperandType.String,
+        value: '',
+      },
+    };
+
+    insert(indexOfLastRelational + 1, toInsert);
   };
 
   const onAddLogical = () => {
-    append({
+    const toInsert: LogicalFilterExpression = {
       type: FilterExpressionType.Logical,
       op: LogicalExpressionOperator.And,
       children: [{
         type: FilterExpressionType.Relational,
         op: RelationalExpressionOperator.Equals,
-        left: '',
-        right: '',
+        left: {
+          type: RelationalExpressionLeftOperandType.Article,
+          value: '',
+        },
+        right: {
+          type: RelationalExpressionRightOperandType.String,
+          value: '',
+        },
       }],
-    });
+    };
+
+    append(toInsert);
   };
 
   const numberOfRelational = (fields as Array<(FilterExpression & {

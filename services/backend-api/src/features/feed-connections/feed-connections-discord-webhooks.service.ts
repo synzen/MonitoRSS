@@ -18,9 +18,9 @@ export interface UpdateDiscordWebhookConnectionInput {
   feedId: string;
   connectionId: string;
   updates: {
-    filters?: DiscordWebhookConnection["filters"];
+    filters?: DiscordWebhookConnection["filters"] | null;
     name?: string;
-    details: {
+    details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
       webhook?: {
@@ -156,6 +156,11 @@ export class FeedConnectionsDiscordWebhooksService {
         }),
         ...(name && {
           "connections.discordWebhooks.$.name": name,
+        }),
+      },
+      $unset: {
+        ...(filters === null && {
+          "connections.discordWebhooks.$.filters": "",
         }),
       },
     };

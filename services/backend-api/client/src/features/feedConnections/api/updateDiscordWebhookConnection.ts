@@ -13,7 +13,9 @@ export interface UpdateDiscordWebhookConnectionInput {
       iconUrl?: string
     }
     content?: string | null
-    filters?: Record<string, any> | null
+    filters?: {
+      expression: Record<string, any>
+    } | null
     embeds?: Array<{
       color?: string
       author?: {

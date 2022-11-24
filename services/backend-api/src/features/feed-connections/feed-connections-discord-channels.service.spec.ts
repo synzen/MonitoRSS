@@ -142,6 +142,11 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             {
               id: connectionIdToUse,
               name: "name",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
               details: {
                 channel: {
                   id: "channel-id",
@@ -188,6 +193,26 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           content: updateInput.updates.details?.content,
         },
       });
+    });
+
+    it("allows filters to be cleared", async () => {
+      await service.updateDiscordChannelConnection(
+        createdFeed._id.toHexString(),
+        connectionIdToUse.toHexString(),
+        {
+          accessToken: updateInput.accessToken,
+          updates: {
+            filters: null,
+          },
+        }
+      );
+
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordChannels).toHaveLength(1);
+      expect(updatedFeed?.connections.discordChannels[0]).not.toHaveProperty(
+        "filters"
+      );
     });
 
     it("throws if channel does not exist", async () => {

@@ -14,7 +14,7 @@ import {
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
   updates: {
-    filters?: DiscordChannelConnection["filters"];
+    filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
@@ -129,6 +129,11 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.name && {
           [`connections.discordChannels.$.name`]: updates.name,
+        }),
+      },
+      $unset: {
+        ...(updates.filters === null && {
+          [`connections.discordChannels.$.filters`]: "",
         }),
       },
     };

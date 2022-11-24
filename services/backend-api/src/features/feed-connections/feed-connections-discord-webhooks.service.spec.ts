@@ -277,6 +277,32 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       });
     });
 
+    it("allows filters to be null", async () => {
+      discordWebhooksService.getWebhook.mockResolvedValue({
+        token: "token",
+        guild_id: guildId,
+      });
+      discordWebhooksService.canBeUsedByBot.mockReturnValue(true);
+      discordAuthService.userManagesGuild.mockResolvedValue(true);
+
+      await service.updateDiscordWebhookConnection({
+        feedId: createdFeed._id.toHexString(),
+        connectionId: connectionIdToUse,
+        updates: {
+          filters: null,
+          details: {},
+        },
+        accessToken,
+      });
+
+      const updatedFeed = await userFeedModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordWebhooks).toHaveLength(1);
+      expect(updatedFeed?.connections.discordWebhooks[0]).not.toHaveProperty(
+        "filters"
+      );
+    });
+
     it("throws an error if the webhook is not found", async () => {
       discordWebhooksService.getWebhook.mockResolvedValue(null);
 

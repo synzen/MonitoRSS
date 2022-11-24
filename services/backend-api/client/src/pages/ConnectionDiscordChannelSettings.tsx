@@ -71,12 +71,15 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
         feedId,
         connectionId,
         details: {
-          filters,
+          filters: filters ? {
+            expression: filters,
+          } : null,
         },
       });
       notifySuccess(t('common.success.savedChanges'));
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t('common.errors.failedToSave'), err as Error);
+      throw err;
     }
   };
 

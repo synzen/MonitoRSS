@@ -1,15 +1,26 @@
-import { LogicalExpressionOperator, RelationalExpressionOperator } from './ExpressionOperator';
+import {
+  LogicalExpressionOperator,
+  RelationalExpressionLeftOperandType,
+  RelationalExpressionOperator,
+  RelationalExpressionRightOperandType,
+} from './ExpressionOperator';
 
 export enum FilterExpressionType {
-  Logical = 'Logical',
-  Relational = 'Relational',
+  Logical = 'logical',
+  Relational = 'relational',
 }
 
 export interface RelationalFilterExpression {
   type: FilterExpressionType.Relational;
-  left: string;
+  left: {
+    type: RelationalExpressionLeftOperandType,
+    value: string,
+  };
   op: RelationalExpressionOperator;
-  right: string;
+  right: {
+    type: RelationalExpressionRightOperandType
+    value: string
+  };
 }
 
 export interface LogicalFilterExpression {

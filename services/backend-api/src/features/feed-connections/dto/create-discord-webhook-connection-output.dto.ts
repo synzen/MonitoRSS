@@ -62,7 +62,7 @@ export class CreateDiscordWebhookConnectionOutputDto {
   @Type(() => FiltersDto)
   @ValidateNested()
   @IsOptional()
-  filters?: FiltersDto;
+  filters?: FiltersDto | null;
 
   @IsObject()
   @Type(() => DetailsDto)

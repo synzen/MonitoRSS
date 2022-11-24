@@ -9,7 +9,9 @@ export interface UpdateDiscordChannelConnectionInput {
     name?: string
     channelId?: string
     content?: string | null;
-    filters?: Record<string, any> | null
+    filters?: {
+      expression: Record<string, any>
+    } | null
     embeds?: Array<{
       color?: string
       authorTitle?: string | null

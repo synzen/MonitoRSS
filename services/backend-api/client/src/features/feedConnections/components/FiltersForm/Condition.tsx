@@ -33,7 +33,7 @@ export const Condition = ({
     <HStack width="100%" alignItems="flex-start">
       <HStack width="100%" spacing={8} alignItems="flex-start">
         <ConditionInput
-          controllerName={`${prefix}left`}
+          controllerName={`${prefix}left.value`}
         />
         <FormControl>
           <Controller
@@ -67,7 +67,7 @@ export const Condition = ({
           />
         </FormControl>
         <ConditionInput
-          controllerName={`${prefix}right`}
+          controllerName={`${prefix}right.value`}
         />
       </HStack>
       {deletable && (

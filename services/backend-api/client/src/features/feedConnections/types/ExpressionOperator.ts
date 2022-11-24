@@ -4,6 +4,15 @@ export enum RelationalExpressionOperator {
   Matches = 'matches',
 }
 
+export enum RelationalExpressionLeftOperandType {
+  Article = 'article',
+}
+
+export enum RelationalExpressionRightOperandType {
+  String = 'string',
+  RegExp = 'regexp',
+}
+
 export enum LogicalExpressionOperator {
   And = 'and',
   Or = 'or',
