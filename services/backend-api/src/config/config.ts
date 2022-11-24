@@ -72,15 +72,6 @@ export default function config(options?: {
       .BACKEND_API_AWS_FAILED_URL_QUEUE_REGION as string,
     BACKEND_API_AWS_FAILED_URL_QUEUE_URL: process.env
       .BACKEND_API_AWS_FAILED_URL_QUEUE_URL as string,
-    BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT:
-      process.env.BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT,
-    BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION: process.env
-      .BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION as string,
-    BACKEND_API_AWS_URL_REQUEST_QUEUE_URL: process.env
-      .BACKEND_API_AWS_URL_REQUEST_QUEUE_URL as string,
-    BACKEND_API_AWS_ACCESS_KEY_ID: process.env.BACKEND_API_AWS_ACCESS_KEY_ID,
-    BACKEND_API_AWS_SECRET_ACCESS_KEY:
-      process.env.BACKEND_API_AWS_SECRET_ACCESS_KEY,
     BACKEND_API_FEED_FETCHER_API_HOST: process.env
       .BACKEND_API_FEED_FETCHER_API_HOST as string,
     BACKEND_API_FEED_FETCHER_API_KEY: process.env
@@ -89,6 +80,8 @@ export default function config(options?: {
       .BACKEND_API_FEED_HANDLER_API_HOST as string,
     BACKEND_API_FEED_HANDLER_API_KEY: process.env
       .BACKEND_API_FEED_HANDLER_API_KEY as string,
+    BACKEND_API_RABBITMQ_BROKER_URL: process.env
+      .BACKEND_API_RABBITMQ_BROKER_URL as string,
   } as const;
 
   if (!options?.skipValidation) {

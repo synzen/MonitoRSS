@@ -1,4 +1,3 @@
-import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
@@ -13,33 +12,77 @@ import {
   UserFeedDocument,
   UserFeedModel,
 } from "../user-feeds/entities";
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
+
+interface DiscordMedium {
+  key: "discord";
+  filters: {
+    expression: Record<string, unknown>;
+  } | null;
+  details: {
+    guildId: string;
+    channel?: {
+      id: string;
+    };
+    webhook?: {
+      id: string;
+      token: string;
+    };
+    content?: string;
+    embeds?: Array<{
+      title?: string;
+      description?: string;
+      url?: string;
+      color?: number;
+      footer?: {
+        text: string;
+        iconUrl?: string;
+      };
+      image?: {
+        url: string;
+      };
+      thumbnail?: {
+        url: string;
+      };
+      author?: {
+        name: string;
+        url?: string;
+        iconUrl?: string;
+      };
+      fields?: Array<{
+        name: string;
+        value: string;
+        inline?: boolean;
+      }>;
+    }>;
+  };
+}
+
+interface PublishFeedDeliveryArticlesData {
+  data: {
+    feed: {
+      id: string;
+      url: string;
+      passingComparisons: string[];
+      blockingComparisons: string[];
+    };
+    articleDayLimit: number;
+    mediums: Array<DiscordMedium>;
+  };
+}
 
 @Injectable()
 export class ScheduleHandlerService {
-  awsUrlRequestQueueUrl: string;
-  awsUrlRequestSqsClient: SQSClient;
   defaultRefreshRateSeconds: number;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
     private readonly feedSchedulingService: FeedSchedulingService,
-    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    private readonly amqpConnection: AmqpConnection
   ) {
-    this.awsUrlRequestQueueUrl = configService.get(
-      "BACKEND_API_AWS_URL_REQUEST_QUEUE_URL"
-    ) as string;
-    const awsUrlRequestQueueRegion = configService.get(
-      "BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION"
-    ) as string;
-    const awsUrlRequestQueueEndpoint = configService.get(
-      "BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT"
-    );
-    this.awsUrlRequestSqsClient = new SQSClient({
-      region: awsUrlRequestQueueRegion,
-      endpoint: awsUrlRequestQueueEndpoint,
-    });
-
     this.defaultRefreshRateSeconds =
       (this.configService.get<number>(
         "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
@@ -47,16 +90,67 @@ export class ScheduleHandlerService {
   }
 
   async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
-    const res = await this.awsUrlRequestSqsClient.send(
-      new SendMessageCommand({
-        MessageBody: JSON.stringify(data),
-        QueueUrl: this.awsUrlRequestQueueUrl,
-      })
+    this.amqpConnection.publish<{ data: { url: string; rateSeconds: number } }>(
+      "",
+      "url.fetch",
+      { data }
     );
 
-    logger.debug("success", {
-      res,
-    });
+    logger.debug("successfully emitted url request event");
+  }
+
+  emitDeliverFeedArticlesEvent({ userFeed }: { userFeed: UserFeed }) {
+    const discordChannelMediums =
+      userFeed.connections.discordChannels.map<DiscordMedium>((con) => ({
+        key: "discord",
+        filters: con.filters?.expression
+          ? { expression: con.filters.expression }
+          : null,
+        details: {
+          guildId: con.details.channel.guildId,
+          channel: {
+            id: con.details.channel.id,
+          },
+          content: con.details.content,
+          embeds: this.castDiscordEmbedsForMedium(con.details.embeds),
+        },
+      }));
+
+    const discordWebhookMediums =
+      userFeed.connections.discordWebhooks.map<DiscordMedium>((con) => ({
+        key: "discord",
+        filters: con.filters?.expression
+          ? { expression: con.filters.expression }
+          : null,
+        details: {
+          guildId: con.details.webhook.guildId,
+          webhook: {
+            id: con.details.webhook.id,
+            token: con.details.webhook.token,
+          },
+          content: con.details.content,
+          embeds: this.castDiscordEmbedsForMedium(con.details.embeds),
+        },
+      }));
+
+    this.amqpConnection.publish<PublishFeedDeliveryArticlesData>(
+      "",
+      "feed.deliver-articles",
+      {
+        data: {
+          articleDayLimit: 1,
+          feed: {
+            id: userFeed._id.toHexString(),
+            url: userFeed.url,
+            passingComparisons: [],
+            blockingComparisons: [],
+          },
+          mediums: discordChannelMediums.concat(discordWebhookMediums),
+        },
+      }
+    );
+
+    logger.debug("successfully emitted deliver feed articles event");
   }
 
   async handleRefreshRate(
@@ -268,5 +362,55 @@ export class ScheduleHandlerService {
     };
 
     return this.userFeedModel.find(query);
+  }
+
+  private castDiscordEmbedsForMedium(
+    embeds?: FeedEmbed[]
+  ): DiscordMedium["details"]["embeds"] {
+    if (!embeds) {
+      return [];
+    }
+
+    return embeds.map((embed) => ({
+      ...(embed.color && { color: Number(embed.color) }),
+      ...(embed.authorName && {
+        author: {
+          name: embed.authorName,
+          iconUrl: embed.authorIconURL,
+          url: embed.authorURL,
+        },
+      }),
+      ...(embed.footerText && {
+        footer: {
+          text: embed.footerText,
+          iconUrl: embed.footerIconURL,
+        },
+      }),
+      ...(embed.imageURL && {
+        image: {
+          url: embed.imageURL,
+        },
+      }),
+      ...(embed.thumbnailURL && {
+        thumbnail: {
+          url: embed.thumbnailURL,
+        },
+      }),
+      ...(embed.title && {
+        title: embed.title,
+      }),
+      ...(embed.url && {
+        url: embed.url,
+      }),
+      ...(embed.description && {
+        description: embed.description,
+      }),
+      fields:
+        embed.fields?.map((field) => ({
+          name: field.name,
+          value: field.value,
+          inline: field.inline,
+        })) || [],
+    }));
   }
 }

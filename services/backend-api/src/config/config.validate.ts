@@ -2,6 +2,7 @@ import { plainToClass } from "class-transformer";
 import {
   IsBoolean,
   IsEnum,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -79,16 +80,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT?: string;
-
-  @IsString()
-  BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION: string;
-
-  @IsString()
-  BACKEND_API_AWS_URL_REQUEST_QUEUE_URL: string;
-
-  @IsString()
-  @IsOptional()
   BACKEND_API_FEED_FETCHER_GRPC_URL?: string;
 
   @IsString()
@@ -122,6 +113,10 @@ export class EnvironmentVariables {
 
   @IsString()
   BACKEND_API_FEED_HANDLER_API_KEY: string;
+
+  @IsString()
+  @IsNotEmpty()
+  BACKEND_API_RABBITMQ_BROKER_URL: string;
 }
 
 export function validateConfig(

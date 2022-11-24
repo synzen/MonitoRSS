@@ -14,12 +14,12 @@ import { DiscordWebhooksModule } from "./features/discord-webhooks/discord-webho
 import { FeedsModule } from "./features/feeds/feeds.module";
 import { SupportersModule } from "./features/supporters/supporters.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
-import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emitter.module";
 import { FailedUrlHandlerModule } from "./features/failed-url-handler/failed-url-handler.module";
 import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connections/feed-connections-discord-channels.module";
 import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
 import { UserFeedsModule } from "./features/user-feeds/user-feeds.module";
+import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 
 @Module({
   imports: [
@@ -29,7 +29,6 @@ import { UserFeedsModule } from "./features/user-feeds/user-feeds.module";
     FeedsModule,
     DiscordWebhooksModule,
     SupportersModule,
-    ScheduleHandlerModule,
     ScheduleEmitterModule,
     FailedUrlHandlerModule,
     FeedConnectionsDiscordChannelsModule,
@@ -56,6 +55,15 @@ export class AppModule {
           load: [process.env.NODE_ENV === "test" ? testConfig : config],
         }),
       ],
+    };
+  }
+
+  static forScheduleEmitter(): DynamicModule {
+    const original = this.forRoot();
+
+    return {
+      ...original,
+      imports: [...(original.imports || []), ScheduleHandlerModule.forRoot()],
     };
   }
 

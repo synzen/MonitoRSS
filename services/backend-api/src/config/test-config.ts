@@ -20,6 +20,7 @@ export default (): ReturnType<typeof config> => {
     BACKEND_API_FEED_FETCHER_API_KEY: "feed-fetcher-api-key",
     BACKEND_API_FEED_HANDLER_API_HOST: "http://feed-handler-api-host.com:3000",
     BACKEND_API_FEED_HANDLER_API_KEY: "feed-handler-api-key",
+    BACKEND_API_RABBITMQ_BROKER_URL: "amqp://rabbitmq-broker-url.com:5672",
   };
 
   validateConfig(configVals);

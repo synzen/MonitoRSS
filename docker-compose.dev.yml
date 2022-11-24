@@ -154,9 +154,7 @@ services:
       - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=10
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
-      - BACKEND_API_AWS_URL_REQUEST_QUEUE_ENDPOINT=http://queue-server:9324
-      - BACKEND_API_AWS_URL_REQUEST_QUEUE_REGION=us-east-1
-      - BACKEND_API_AWS_URL_REQUEST_QUEUE_URL=http://queue-server:9324/queue/request-queue
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@localhost:5672/
     command: npm run start:schedule-emitter:local
 
   # Web - Backend api

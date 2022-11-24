@@ -22,6 +22,7 @@ import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../user-feeds/types";
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 
 jest.mock("../../utils/logger");
 
@@ -30,16 +31,21 @@ describe("handle-schedule", () => {
   let userFeedModel: UserFeedModel;
   let feedScheduleModel: FeedScheduleModel;
   let service: ScheduleHandlerService;
+  const amqpConnection = {
+    publish: jest.fn(),
+  };
 
   beforeAll(async () => {
-    const { init } = await setupIntegrationTests({
+    const { init, uncompiledModule } = await setupIntegrationTests({
       providers: [],
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([UserFeedFeature]),
-        ScheduleHandlerModule,
+        ScheduleHandlerModule.forRoot(),
       ],
     });
+
+    uncompiledModule.overrideProvider(AmqpConnection).useValue(amqpConnection);
 
     ({ module } = await init());
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
@@ -857,6 +863,238 @@ describe("handle-schedule", () => {
       expect(resultUrls).toHaveLength(2);
       expect(resultUrls).toEqual(
         expect.arrayContaining([created[0].url, created[1].url])
+      );
+    });
+  });
+
+  describe("emitDeliverFeedArticlesEvent", () => {
+    it("emits the correct event for discord channel mediums", async () => {
+      const feed = await userFeedModel.create({
+        title: "feed-title",
+        url: "new-york-times.com",
+        user: {
+          discordUserId: "user-id-1",
+        },
+        connections: {
+          discordChannels: [
+            {
+              id: new Types.ObjectId(),
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              details: {
+                channel: {
+                  id: "channel-id",
+                  guildId: "guild-id",
+                },
+                content: "content",
+                embeds: [
+                  {
+                    title: "embed-title",
+                    description: "embed-description",
+                    url: "embed-url",
+                    color: "123",
+                    fields: [
+                      {
+                        name: "field-name",
+                        value: "field-value",
+                        inline: true,
+                      },
+                    ],
+                    footerText: "footer-text",
+                    footerIconURL: "footer-icon-url",
+                    thumbnailURL: "thumbnail-url",
+                    imageURL: "image-url",
+                  },
+                ],
+              },
+              name: "connection-name",
+            },
+          ],
+        },
+      });
+
+      const foundLean = await userFeedModel.findById(feed._id).lean();
+
+      await service.emitDeliverFeedArticlesEvent({
+        userFeed: foundLean as UserFeed,
+      });
+
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        "",
+        "feed.deliver-articles",
+        {
+          data: {
+            articleDayLimit: 1,
+            feed: {
+              id: feed._id.toHexString(),
+              url: feed.url,
+              passingComparisons: [],
+              blockingComparisons: [],
+            },
+            mediums: [
+              {
+                key: "discord",
+                filters: {
+                  expression: {
+                    foo: "bar",
+                  },
+                },
+                details: {
+                  channel: {
+                    id: "channel-id",
+                  },
+                  content: "content",
+                  guildId: "guild-id",
+                  embeds: [
+                    {
+                      title: "embed-title",
+                      description: "embed-description",
+                      url: "embed-url",
+                      color: 123,
+                      fields: [
+                        {
+                          name: "field-name",
+                          value: "field-value",
+                          inline: true,
+                        },
+                      ],
+                      footer: {
+                        text: "footer-text",
+                        iconUrl: "footer-icon-url",
+                      },
+                      thumbnail: {
+                        url: "thumbnail-url",
+                      },
+                      image: {
+                        url: "image-url",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        }
+      );
+    });
+
+    it("emits the correct event for discord webhook mediums", async () => {
+      const feed = await userFeedModel.create({
+        title: "feed-title",
+        url: "new-york-times.com",
+        user: {
+          discordUserId: "user-id-1",
+        },
+        connections: {
+          discordWebhooks: [
+            {
+              id: new Types.ObjectId(),
+              name: "webhook-connection-name",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              details: {
+                webhook: {
+                  id: "webhook-id",
+                  token: "webhook token",
+                  guildId: "guild-id",
+                  iconUrl: "icon-url",
+                  name: "webhook-name",
+                },
+                content: "content",
+                embeds: [
+                  {
+                    title: "embed-title",
+                    description: "embed-description",
+                    url: "embed-url",
+                    color: "123",
+                    fields: [
+                      {
+                        name: "field-name",
+                        value: "field-value",
+                        inline: true,
+                      },
+                    ],
+                    footerText: "footer-text",
+                    footerIconURL: "footer-icon-url",
+                    thumbnailURL: "thumbnail-url",
+                    imageURL: "image-url",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+
+      const foundLean = await userFeedModel.findById(feed._id).lean();
+
+      await service.emitDeliverFeedArticlesEvent({
+        userFeed: foundLean as UserFeed,
+      });
+
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        "",
+        "feed.deliver-articles",
+        {
+          data: {
+            articleDayLimit: 1,
+            feed: {
+              id: feed._id.toHexString(),
+              url: feed.url,
+              passingComparisons: [],
+              blockingComparisons: [],
+            },
+            mediums: [
+              {
+                key: "discord",
+                filters: {
+                  expression: {
+                    foo: "bar",
+                  },
+                },
+                details: {
+                  webhook: {
+                    id: "webhook-id",
+                    token: "webhook token",
+                  },
+                  content: "content",
+                  guildId: "guild-id",
+                  embeds: [
+                    {
+                      title: "embed-title",
+                      description: "embed-description",
+                      url: "embed-url",
+                      color: 123,
+                      fields: [
+                        {
+                          name: "field-name",
+                          value: "field-value",
+                          inline: true,
+                        },
+                      ],
+                      footer: {
+                        text: "footer-text",
+                        iconUrl: "footer-icon-url",
+                      },
+                      thumbnail: {
+                        url: "thumbnail-url",
+                      },
+                      image: {
+                        url: "image-url",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        }
       );
     });
   });

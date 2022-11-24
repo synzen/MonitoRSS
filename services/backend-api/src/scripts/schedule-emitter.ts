@@ -12,7 +12,9 @@ bootstrap();
 async function bootstrap() {
   try {
     logger.info("Starting schedule emitter service...");
-    const app = await NestFactory.createApplicationContext(AppModule.forRoot());
+    const app = await NestFactory.createApplicationContext(
+      AppModule.forScheduleEmitter()
+    );
     await app.init();
 
     setInterval(() => {
@@ -86,9 +88,14 @@ async function feedEventHandler(
     feed: UserFeed;
   }
 ) {
+  const scheduleHandlerService = app.get(ScheduleHandlerService);
+
   try {
     logger.debug(`Handling feed event`, {
       data,
+    });
+    await scheduleHandlerService.emitDeliverFeedArticlesEvent({
+      userFeed: data.feed,
     });
   } catch (err) {
     logger.error(`Failed to handle feed event`, {
