@@ -26,9 +26,9 @@ import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons'
 import { debounce } from 'lodash';
 import { useUserFeeds } from '../../hooks';
 import { Loading } from '@/components';
-import { FeedStatusTag } from '../FeedsTable/FeedStatusTag';
 import { AddFeedDialogV2 } from '../AddFeedDialogV2';
 import { UserFeed } from '../../types';
+import { UserFeedStatusTag } from './UserFeedStatusTag';
 
 interface Props {
   onSelectedFeedId?: (feedId: string) => void
@@ -78,7 +78,7 @@ export const FeedsTableV2: React.FC<Props> = ({
           cell: {
             value,
           },
-        }) => <FeedStatusTag disabledCode={value} />,
+        }) => <UserFeedStatusTag disabledCode={value} />,
       },
       {
         Header: t('pages.feeds.tableTitle') as string,
