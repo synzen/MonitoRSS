@@ -13,7 +13,7 @@ import {
 
 @Module({
   controllers: [],
-  providers: [FeedEventHandlerService],
+  providers: [],
   imports: [
     ArticlesModule,
     FeedFetcherModule,
@@ -34,12 +34,14 @@ export class FeedEventHandlerModule {
 
     return {
       module: FeedEventHandlerModule,
+      providers: [FeedEventHandlerService],
       imports: [
         RabbitMQModule.forRoot(RabbitMQModule, {
           uri: configVals.FEED_HANDLER_RABBITMQ_BROKER_URL,
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
         }),
       ],
+      exports: [RabbitMQModule],
     };
   }
 }

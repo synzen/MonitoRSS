@@ -97,6 +97,7 @@ describe("DiscordMediumService", () => {
     };
 
     const deliveryDetails: DeliveryDetails = {
+      mediumId: "medium-id",
       deliverySettings: {
         guildId: "guild-id",
         channel: { id: "channel-1" },
@@ -123,6 +124,7 @@ describe("DiscordMediumService", () => {
       producer.fetch.mockReturnValue(producerFetchResponse);
       const result = await service.deliverArticle(article, deliveryDetails);
       expect(result).toEqual({
+        mediumId: deliveryDetails.mediumId,
         status: ArticleDeliveryStatus.Sent,
       });
     });
@@ -133,6 +135,7 @@ describe("DiscordMediumService", () => {
       const result = await service.deliverArticle(article, deliveryDetails);
 
       expect(result).toEqual({
+        mediumId: deliveryDetails.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
         internalMessage: mockError.message,

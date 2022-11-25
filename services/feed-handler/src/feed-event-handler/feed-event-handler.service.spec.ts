@@ -1,8 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   Article,
+  ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
+  BrokerEvent,
   FeedV2Event,
   MediumKey,
 } from "../shared";
@@ -12,6 +14,7 @@ import { FeedEventHandlerService } from "./feed-event-handler.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { DeliveryService } from "../delivery/delivery.service";
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
@@ -29,6 +32,9 @@ describe("FeedEventHandlerService", () => {
   };
   const deliveryRecordService = {
     store: jest.fn(),
+  };
+  const amqpConnection = {
+    publish: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -57,6 +63,10 @@ describe("FeedEventHandlerService", () => {
           provide: DeliveryRecordService,
           useValue: deliveryRecordService,
         },
+        {
+          provide: AmqpConnection,
+          useValue: amqpConnection,
+        },
       ],
     }).compile();
 
@@ -77,6 +87,7 @@ describe("FeedEventHandlerService", () => {
       },
       mediums: [
         {
+          id: "1",
           key: MediumKey.Discord,
           details: {
             guildId: "1",
@@ -104,6 +115,7 @@ describe("FeedEventHandlerService", () => {
             ...v2Event,
             mediums: [
               {
+                id: "1",
                 key: "invalid medium key" as MediumKey,
                 details: {} as never,
               },
@@ -166,9 +178,11 @@ describe("FeedEventHandlerService", () => {
       it("stores the article delivery states", async () => {
         const deliveryStates: ArticleDeliveryState[] = [
           {
+            mediumId: "1",
             status: ArticleDeliveryStatus.Sent,
           },
           {
+            mediumId: "1",
             status: ArticleDeliveryStatus.FilteredOut,
           },
         ];
@@ -191,6 +205,64 @@ describe("FeedEventHandlerService", () => {
           .mockRejectedValue(new Error("error"));
 
         await expect(service.handleV2Event(v2Event)).resolves.not.toThrow();
+      });
+    });
+
+    describe("when articles get rejectd with bad requests", () => {
+      const articles: Article[] = [
+        {
+          id: "1",
+        },
+        {
+          id: "2",
+        },
+      ];
+
+      beforeEach(() => {
+        feedFetcherService.fetch.mockResolvedValue("feed xml");
+        articlesService.getArticlesToDeliverFromXml.mockResolvedValue(articles);
+      });
+
+      it("emits disabled events", async () => {
+        const deliveryStates: ArticleDeliveryState[] = [
+          {
+            mediumId: "1",
+            status: ArticleDeliveryStatus.Rejected,
+            errorCode: ArticleDeliveryRejectedCode.BadRequest,
+            internalMessage: "",
+          },
+          {
+            mediumId: "1",
+            status: ArticleDeliveryStatus.FilteredOut,
+          },
+          {
+            mediumId: "2",
+            status: ArticleDeliveryStatus.Rejected,
+            errorCode: ArticleDeliveryRejectedCode.BadRequest,
+            internalMessage: "",
+          },
+        ];
+
+        jest
+          .spyOn(deliveryService, "deliver")
+          .mockResolvedValue(deliveryStates);
+
+        await service.handleV2Event(v2Event);
+
+        expect(amqpConnection.publish).toHaveBeenCalledWith(
+          "",
+          BrokerEvent.FeedRejectedArticleDisable,
+          {
+            data: {
+              medium: {
+                id: "1",
+              },
+              feed: {
+                id: v2Event.feed.id,
+              },
+            },
+          }
+        );
       });
     });
   });

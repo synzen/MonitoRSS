@@ -95,6 +95,7 @@ export class DeliveryService {
     try {
       if (limitState.remaining <= 0) {
         return {
+          mediumId: medium.id,
           status: ArticleDeliveryStatus.RateLimited,
         };
       }
@@ -112,6 +113,7 @@ export class DeliveryService {
 
       if (!passesFilters) {
         return {
+          mediumId: medium.id,
           status: ArticleDeliveryStatus.FilteredOut,
         };
       }
@@ -119,6 +121,7 @@ export class DeliveryService {
       const articleState = await this.mediumServices[medium.key].deliverArticle(
         article,
         {
+          mediumId: medium.id,
           deliverySettings: medium.details,
           feedDetails: event.feed,
         }
@@ -135,6 +138,7 @@ export class DeliveryService {
       );
 
       return {
+        mediumId: medium.id,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
         internalMessage: (err as Error).message,

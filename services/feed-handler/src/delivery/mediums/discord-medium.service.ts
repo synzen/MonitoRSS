@@ -52,6 +52,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (!channel && !webhook) {
       return {
+        mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
         internalMessage: "No channel or webhook specified",
@@ -84,6 +85,7 @@ export class DiscordMediumService implements DeliveryMedium {
       );
 
       return {
+        mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
         internalMessage: (err as Error).message,
@@ -117,7 +119,7 @@ export class DiscordMediumService implements DeliveryMedium {
       }
     );
 
-    return this.extractDeliveryStatusFromProducerResult(result);
+    return this.extractDeliveryStatusFromProducerResult(details, result);
   }
 
   private async deliverArticleToWebhook(
@@ -148,7 +150,7 @@ export class DiscordMediumService implements DeliveryMedium {
       }
     );
 
-    return this.extractDeliveryStatusFromProducerResult(result);
+    return this.extractDeliveryStatusFromProducerResult(details, result);
   }
 
   private generateApiPayload(
@@ -201,10 +203,12 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   private extractDeliveryStatusFromProducerResult(
+    details: DeliveryDetails,
     result: JobResponse<unknown> | JobResponseError
   ): ArticleDeliveryState {
     if (result.state === "error") {
       return {
+        mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
         internalMessage: result.message,
@@ -213,6 +217,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (result.status === 400) {
       return {
+        mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Rejected,
         errorCode: ArticleDeliveryRejectedCode.BadRequest,
         internalMessage: `Discord rejected the request with status code ${
@@ -223,6 +228,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (result.status >= 500) {
       return {
+        mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
         internalMessage: `Status code from Discord ${
@@ -233,6 +239,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (result.status < 200 || result.status > 400) {
       return {
+        mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
         internalMessage: `Unhandled status code from Discord ${
@@ -242,6 +249,7 @@ export class DiscordMediumService implements DeliveryMedium {
     }
 
     return {
+      mediumId: details.mediumId,
       status: ArticleDeliveryStatus.Sent,
     };
   }

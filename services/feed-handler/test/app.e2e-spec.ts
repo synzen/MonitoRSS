@@ -29,7 +29,7 @@ describe("App (e2e)", () => {
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests({
-      imports: [AppModule],
+      imports: [AppModule.forFeedListenerService()],
     });
 
     const { module } = await init();
@@ -65,6 +65,7 @@ describe("App (e2e)", () => {
       },
       mediums: [
         {
+          id: 'medium-id',
           key: MediumKey.Discord,
           details: {
             guildId: "1",

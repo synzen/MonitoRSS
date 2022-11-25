@@ -70,6 +70,7 @@ describe("DeliveryService", () => {
       },
       mediums: [
         {
+          id: "1",
           key: MediumKey.Discord,
           details: {
             guildId: "1",
@@ -78,6 +79,7 @@ describe("DeliveryService", () => {
           },
         },
         {
+          id: "2",
           key: MediumKey.Discord,
           details: {
             guildId: "2",
@@ -103,6 +105,7 @@ describe("DeliveryService", () => {
       expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
         articles[0],
         {
+          mediumId: event.mediums[0].id,
           deliverySettings: event.mediums[0].details,
           feedDetails: event.feed,
         }
@@ -110,6 +113,7 @@ describe("DeliveryService", () => {
       expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
         articles[0],
         {
+          mediumId: event.mediums[1].id,
           deliverySettings: event.mediums[1].details,
           feedDetails: event.feed,
         }
@@ -117,6 +121,7 @@ describe("DeliveryService", () => {
       expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
         articles[1],
         {
+          mediumId: event.mediums[0].id,
           deliverySettings: event.mediums[0].details,
           feedDetails: event.feed,
         }
@@ -124,6 +129,7 @@ describe("DeliveryService", () => {
       expect(discordMediumService.deliverArticle).toHaveBeenCalledWith(
         articles[1],
         {
+          mediumId: event.mediums[1].id,
           deliverySettings: event.mediums[1].details,
           feedDetails: event.feed,
         }
@@ -152,6 +158,7 @@ describe("DeliveryService", () => {
         ...event,
         mediums: [
           {
+            id: "1",
             key: MediumKey.Discord,
             filters: {
               expression: {} as never,
@@ -183,6 +190,7 @@ describe("DeliveryService", () => {
           },
           mediums: [
             {
+              id: "1",
               key: MediumKey.Discord,
               details: {
                 guildId: "1",
@@ -199,6 +207,7 @@ describe("DeliveryService", () => {
         ];
 
         const resolvedState: ArticleDeliveryState = {
+          mediumId: "1",
           status: ArticleDeliveryStatus.Sent,
         };
 
@@ -219,6 +228,7 @@ describe("DeliveryService", () => {
           },
           mediums: [
             {
+              id: "1",
               key: MediumKey.Discord,
               filters: {
                 expression: {} as never,
@@ -247,6 +257,7 @@ describe("DeliveryService", () => {
 
         expect(result).toEqual([
           {
+            mediumId: "1",
             status: ArticleDeliveryStatus.Failed,
             errorCode: ArticleDeliveryErrorCode.Internal,
             internalMessage: mockError.message,
@@ -265,6 +276,7 @@ describe("DeliveryService", () => {
           },
           mediums: [
             {
+              id: "1",
               key: MediumKey.Discord,
               filters: {
                 expression: {} as never,
@@ -289,6 +301,7 @@ describe("DeliveryService", () => {
 
         expect(result).toEqual([
           {
+            mediumId: "1",
             status: ArticleDeliveryStatus.FilteredOut,
           },
         ]);

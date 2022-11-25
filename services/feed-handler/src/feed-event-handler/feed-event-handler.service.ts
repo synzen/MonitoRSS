@@ -5,8 +5,16 @@ import { ArticlesService } from "../articles/articles.service";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { DeliveryService } from "../delivery/delivery.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
-import { Article, FeedV2Event, feedV2EventSchema } from "../shared";
-import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
+import {
+  Article,
+  ArticleDeliveryRejectedCode,
+  ArticleDeliveryState,
+  ArticleDeliveryStatus,
+  BrokerQueue,
+  FeedV2Event,
+  feedV2EventSchema,
+} from "../shared";
+import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -15,12 +23,13 @@ export class FeedEventHandlerService {
     private readonly articleRateLimitService: ArticleRateLimitService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly deliveryService: DeliveryService,
-    private readonly deliveryRecordService: DeliveryRecordService
+    private readonly deliveryRecordService: DeliveryRecordService,
+    private readonly amqpConnection: AmqpConnection
   ) {}
 
   @RabbitSubscribe({
     exchange: "",
-    queue: "feed.deliver-articles",
+    queue: BrokerQueue.FeedDeliverArticles,
   })
   async handleV2Event(event: FeedV2Event): Promise<Article[]> {
     try {
@@ -81,6 +90,44 @@ export class FeedEventHandlerService {
       });
     }
 
+    try {
+      // this.emitDisableEvents(event, deliveryStates);
+    } catch (err) {
+      console.error(`Failed to emit disable event after processing feed`, {
+        event,
+        deliveryStates,
+        error: (err as Error).stack,
+      });
+    }
+
     return articles;
+  }
+
+  emitDisableEvents(
+    { feed }: FeedV2Event,
+    deliveryStates: ArticleDeliveryState[]
+  ) {
+    deliveryStates.forEach((state) => {
+      if (state.status !== ArticleDeliveryStatus.Rejected) {
+        return;
+      }
+
+      if (state.errorCode === ArticleDeliveryRejectedCode.BadRequest) {
+        this.amqpConnection.publish(
+          "",
+          BrokerQueue.FeedRejectedArticleDisable,
+          {
+            data: {
+              medium: {
+                id: state.mediumId,
+              },
+              feed: {
+                id: feed.id,
+              },
+            },
+          }
+        );
+      }
+    });
   }
 }
