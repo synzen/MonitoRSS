@@ -61,9 +61,13 @@ export class DiscordMediumService implements DeliveryMedium {
 
     try {
       if (webhook) {
-        const { id, token } = webhook;
+        const { id, token, name, iconUrl } = webhook;
 
-        return await this.deliverArticleToWebhook(article, id, token, details);
+        return await this.deliverArticleToWebhook(
+          article,
+          { id, token, name, iconUrl },
+          details
+        );
       } else if (channel) {
         const channelId = channel.id;
 
@@ -124,8 +128,17 @@ export class DiscordMediumService implements DeliveryMedium {
 
   private async deliverArticleToWebhook(
     article: Article,
-    webhookId: string,
-    webhookToken: string,
+    {
+      id: webhookId,
+      token: webhookToken,
+      name: webhookUsername,
+      iconUrl: webhookIconUrl,
+    }: {
+      id: string;
+      token: string;
+      name?: string;
+      iconUrl?: string;
+    },
     details: DeliveryDetails
   ): Promise<ArticleDeliveryState> {
     const {
@@ -139,7 +152,11 @@ export class DiscordMediumService implements DeliveryMedium {
       apiUrl,
       {
         method: "POST",
-        body: JSON.stringify(this.generateApiPayload(article, details)),
+        body: JSON.stringify({
+          ...this.generateApiPayload(article, details),
+          username: webhookUsername,
+          avatar_url: webhookIconUrl,
+        }),
       },
       {
         articleID: article.id,

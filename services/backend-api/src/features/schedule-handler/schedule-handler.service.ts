@@ -220,6 +220,8 @@ export class ScheduleHandlerService {
           webhook: {
             id: con.details.webhook.id,
             token: con.details.webhook.token,
+            name: con.details.webhook.name,
+            iconUrl: con.details.webhook.iconUrl,
           },
           content: con.details.content,
           embeds: this.castDiscordEmbedsForMedium(con.details.embeds),

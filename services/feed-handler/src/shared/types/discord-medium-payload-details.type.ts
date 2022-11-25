@@ -11,6 +11,8 @@ export const discordMediumPayloadDetailsSchema = object({
   webhook: object({
     id: string().required(),
     token: string().required(),
+    name: string().optional(),
+    iconUrl: string().optional(),
   })
     .optional()
     .nullable()

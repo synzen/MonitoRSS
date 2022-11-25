@@ -1138,6 +1138,8 @@ describe("handle-schedule", () => {
                   webhook: {
                     id: "webhook-id",
                     token: "webhook token",
+                    name: "webhook-name",
+                    iconUrl: "icon-url",
                   },
                   content: "content",
                   guildId: "guild-id",
