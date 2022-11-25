@@ -75,6 +75,12 @@ interface PublishFeedDeliveryArticlesData {
   };
 }
 
+enum BrokerQueue {
+  UrlFailedDisableFeeds = "url.failed.disable-feeds",
+  FeedRejectedArticleDisable = "feed.rejected-article.disable-connection",
+  FeedDeliverArticles = "feed.deliver-articles",
+}
+
 @Injectable()
 export class ScheduleHandlerService {
   defaultRefreshRateSeconds: number;
@@ -94,7 +100,7 @@ export class ScheduleHandlerService {
 
   @RabbitSubscribe({
     exchange: "",
-    queue: "url.failed.disable-feeds",
+    queue: BrokerQueue.UrlFailedDisableFeeds,
   })
   async handleUrlRequestFailureEvent({
     data: { url },
@@ -114,6 +120,66 @@ export class ScheduleHandlerService {
         },
       }
     );
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: BrokerQueue.FeedRejectedArticleDisable,
+  })
+  async handleRejectedArticleDisableFeed({
+    data: {
+      medium: { id: mediumId },
+      feed: { id: feedId },
+    },
+  }: {
+    data: {
+      medium: {
+        id: string;
+      };
+      feed: {
+        id: string;
+      };
+    };
+  }) {
+    const foundFeed = await this.userFeedModel.findById(feedId).lean();
+
+    if (!foundFeed) {
+      logger.warn(
+        `No feed with ID ${feedId} was found when attempting to` +
+          ` handle message from ${BrokerQueue.FeedRejectedArticleDisable}`
+      );
+
+      return;
+    }
+
+    const connectionEntries = Object.entries(foundFeed.connections) as Array<
+      [
+        keyof UserFeed["connections"],
+        UserFeed["connections"][keyof UserFeed["connections"]]
+      ]
+    >;
+
+    for (const [connectionKey, connections] of connectionEntries) {
+      for (let conIdx = 0; conIdx < connections.length; ++conIdx) {
+        const connection = connections[conIdx];
+
+        if (connection.id.toHexString() !== mediumId) {
+          continue;
+        }
+
+        await this.userFeedModel.updateOne(
+          {
+            _id: feedId,
+          },
+          {
+            $set: {
+              [`connections.${connectionKey}.${conIdx}.disabledCode`]:
+                UserFeedDisabledCode.BadFormat,
+            },
+          }
+        );
+      }
+    }
   }
 
   async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
@@ -162,7 +228,7 @@ export class ScheduleHandlerService {
 
     this.amqpConnection.publish<PublishFeedDeliveryArticlesData>(
       "",
-      "feed.deliver-articles",
+      BrokerQueue.FeedDeliverArticles,
       {
         data: {
           articleDayLimit: 1,

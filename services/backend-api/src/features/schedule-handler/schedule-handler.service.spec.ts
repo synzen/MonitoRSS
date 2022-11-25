@@ -892,6 +892,57 @@ describe("handle-schedule", () => {
     });
   });
 
+  describe("handleRejectedArticleDisableFeed", () => {
+    it("disables the connection", async () => {
+      const connectionId = new Types.ObjectId();
+      const feed = await userFeedModel.create({
+        title: "feed-title",
+        url: "new-york-times.com",
+        user: {
+          discordUserId: "user-id-1",
+        },
+        connections: {
+          discordChannels: [
+            {
+              id: connectionId,
+              name: "connection-name",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              details: {
+                channel: {
+                  id: "channel-id",
+                  guildId: "guild-id",
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      const payload = {
+        data: {
+          medium: {
+            id: connectionId.toHexString(),
+          },
+          feed: {
+            id: feed._id.toHexString(),
+          },
+        },
+      };
+
+      await service.handleRejectedArticleDisableFeed(payload);
+
+      const foundUserFeed = await userFeedModel.findById(feed._id).lean();
+
+      expect(
+        foundUserFeed?.connections.discordChannels[0].disabledCode
+      ).toEqual(UserFeedDisabledCode.BadFormat);
+    });
+  });
+
   describe("emitDeliverFeedArticlesEvent", () => {
     it("emits the correct event for discord channel mediums", async () => {
       const feed = await userFeedModel.create({
