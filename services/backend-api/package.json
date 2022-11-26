@@ -46,7 +46,7 @@
     "dayjs": "1.10.8",
     "dd-trace": "^2.4.0",
     "dotenv": "10.0.0",
-    "fastify": "^4.6.0",
+    "fastify": "^4.10.2",
     "feedparser": "2.2.10",
     "html-to-text": "5.1.1",
     "lodash": "4.17.21",
