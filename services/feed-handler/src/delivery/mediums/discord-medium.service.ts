@@ -1,11 +1,10 @@
 import { DeliveryMedium } from "./delivery-medium.interface";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
 import {
   Article,
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
 } from "../../shared";
-import { ConfigService } from "@nestjs/config";
 import { JobResponse, RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
@@ -18,23 +17,11 @@ import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
-  rabbitMqUri: string;
-  clientId: string;
-  producer: RESTProducer;
-
   static BASE_API_URL = "https://discord.com/api/v10";
 
-  constructor(private readonly configService: ConfigService) {
-    this.rabbitMqUri = this.configService.getOrThrow(
-      "FEED_HANDLER_DISCORD_RABBITMQ_URI"
-    );
-    this.clientId = this.configService.getOrThrow(
-      "FEED_HANDLER_DISCORD_CLIENT_ID"
-    );
-    this.producer = new RESTProducer(this.rabbitMqUri, {
-      clientId: this.clientId,
-    });
-  }
+  constructor(
+    @Inject("DISCORD_REST_PRODUCER") private readonly producer: RESTProducer
+  ) {}
 
   private getChannelApiUrl(channelId: string) {
     return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/messages`;

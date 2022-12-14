@@ -1,4 +1,3 @@
-import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { JobResponse } from "@synzen/discord-rest";
 import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
@@ -17,8 +16,6 @@ jest.mock("@synzen/discord-rest", () => ({
   RESTProducer: jest.fn(),
 }));
 
-const clientId = "client-id";
-const rabbitMqUri = "rabbit-mq-uri";
 const producer = {
   fetch: jest.fn(),
 };
@@ -72,18 +69,13 @@ describe("DiscordMediumService", () => {
       providers: [
         DiscordMediumService,
         {
-          provide: ConfigService,
-          useValue: {
-            getOrThrow: jest.fn(),
-          },
+          provide: "DISCORD_REST_PRODUCER",
+          useValue: producer,
         },
       ],
     }).compile();
 
     service = module.get<DiscordMediumService>(DiscordMediumService);
-    service.clientId = clientId;
-    service.rabbitMqUri = rabbitMqUri;
-    service.producer = producer as never;
   });
 
   beforeEach(() => {
