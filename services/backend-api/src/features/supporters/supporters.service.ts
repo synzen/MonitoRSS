@@ -39,6 +39,9 @@ interface SupportPatronAggregateResult {
   }>;
 }
 
+const MAX_DAILY_ARTICLES_SUPPORTER = 300;
+const MAX_DAILY_ARTICLES_DEFAULT = 100;
+
 @Injectable()
 export class SupportersService {
   defaultMaxFeeds: number;
@@ -62,6 +65,9 @@ export class SupportersService {
         "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
       ) * 60;
   }
+
+  static MAX_DAILY_ARTICLES_SUPPORTER = MAX_DAILY_ARTICLES_SUPPORTER;
+  static MAX_DAILY_ARTICLES_DEFAULT = MAX_DAILY_ARTICLES_DEFAULT;
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
@@ -97,7 +103,7 @@ export class SupportersService {
         guilds: [],
         maxGuilds: 0,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
-        maxDailyArticles: 100, // hardcode for now
+        maxDailyArticles: MAX_DAILY_ARTICLES_DEFAULT, // hardcode for now
       };
     }
 
@@ -110,7 +116,9 @@ export class SupportersService {
       maxGuilds: benefits.maxGuilds,
       expireAt: aggregate[0].expireAt,
       refreshRateSeconds: benefits.refreshRateSeconds,
-      maxDailyArticles: benefits.isSupporter ? 300 : 100,
+      maxDailyArticles: benefits.isSupporter
+        ? MAX_DAILY_ARTICLES_SUPPORTER
+        : MAX_DAILY_ARTICLES_DEFAULT,
     };
   }
 
@@ -119,6 +127,7 @@ export class SupportersService {
       discordUserId: string;
       refreshRateSeconds: number;
       isSupporter: boolean;
+      maxDailyArticles: number;
     }>
   > {
     // TODO: Must implement user-level subscriptions on the payments api and include them here
@@ -136,6 +145,9 @@ export class SupportersService {
       discordUserId: aggregate[i]._id,
       refreshRateSeconds: b.refreshRateSeconds,
       isSupporter: b.isSupporter,
+      maxDailyArticles: b.isSupporter
+        ? MAX_DAILY_ARTICLES_SUPPORTER
+        : MAX_DAILY_ARTICLES_DEFAULT,
     }));
   }
 

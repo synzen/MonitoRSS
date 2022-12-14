@@ -192,7 +192,13 @@ export class ScheduleHandlerService {
     logger.debug("successfully emitted url request event");
   }
 
-  emitDeliverFeedArticlesEvent({ userFeed }: { userFeed: UserFeed }) {
+  emitDeliverFeedArticlesEvent({
+    userFeed,
+    maxDailyArticles,
+  }: {
+    userFeed: UserFeed;
+    maxDailyArticles: number;
+  }) {
     const discordChannelMediums =
       userFeed.connections.discordChannels.map<DiscordMedium>((con) => ({
         key: "discord",
@@ -233,7 +239,7 @@ export class ScheduleHandlerService {
       BrokerQueue.FeedDeliverArticles,
       {
         data: {
-          articleDayLimit: 1,
+          articleDayLimit: maxDailyArticles,
           feed: {
             id: userFeed._id.toHexString(),
             url: userFeed.url,
@@ -255,9 +261,26 @@ export class ScheduleHandlerService {
       feedHandler,
     }: {
       urlHandler: (url: string) => Promise<void>;
-      feedHandler: (feed: UserFeed) => Promise<void>;
+      feedHandler: (
+        feed: UserFeed,
+        {
+          maxDailyArticles,
+        }: {
+          maxDailyArticles: number;
+        }
+      ) => Promise<void>;
     }
   ) {
+    const allBenefits =
+      await this.supportersService.getBenefitsOfAllDiscordUsers();
+
+    const dailyLimitsByDiscordUserId = new Map<string, number>(
+      allBenefits.map<[string, number]>((benefit) => [
+        benefit.discordUserId,
+        benefit.maxDailyArticles,
+      ])
+    );
+
     const urls = await this.getUrlsMatchingRefreshRate(refreshRateSeconds);
 
     logger.debug(
@@ -274,7 +297,14 @@ export class ScheduleHandlerService {
     );
 
     for await (const feed of feedCursor) {
-      await feedHandler(feed);
+      const discordUserId = feed.user.discordUserId;
+      const maxDailyArticles =
+        dailyLimitsByDiscordUserId.get(discordUserId) ||
+        SupportersService.MAX_DAILY_ARTICLES_DEFAULT;
+
+      await feedHandler(feed, {
+        maxDailyArticles,
+      });
     }
   }
 

@@ -46,7 +46,8 @@ async function runTimerSync(app: INestApplicationContext) {
               url,
               rateSeconds: refreshRateSeconds,
             }),
-          feedHandler: async (feed) => feedEventHandler(app, { feed }),
+          feedHandler: async (feed, { maxDailyArticles }) =>
+            feedEventHandler(app, { feed, maxDailyArticles }),
         });
       } catch (err) {
         logger.error(`Failed to handle schedule event`, {
@@ -86,6 +87,7 @@ async function feedEventHandler(
   app: INestApplicationContext,
   data: {
     feed: UserFeed;
+    maxDailyArticles: number;
   }
 ) {
   const scheduleHandlerService = app.get(ScheduleHandlerService);
@@ -96,6 +98,7 @@ async function feedEventHandler(
     });
     await scheduleHandlerService.emitDeliverFeedArticlesEvent({
       userFeed: data.feed,
+      maxDailyArticles: data.maxDailyArticles,
     });
   } catch (err) {
     logger.error(`Failed to handle feed event`, {

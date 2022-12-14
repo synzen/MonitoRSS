@@ -23,6 +23,7 @@ import {
   UserFeedHealthStatus,
 } from "../user-feeds/types";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { SupportersService } from "../supporters/supporters.service";
 
 jest.mock("../../utils/logger");
 
@@ -31,6 +32,7 @@ describe("handle-schedule", () => {
   let userFeedModel: UserFeedModel;
   let feedScheduleModel: FeedScheduleModel;
   let service: ScheduleHandlerService;
+  let supportersService: SupportersService;
   const amqpConnection = {
     publish: jest.fn(),
   };
@@ -53,6 +55,7 @@ describe("handle-schedule", () => {
       getModelToken(FeedSchedule.name)
     );
     service = module.get<ScheduleHandlerService>(ScheduleHandlerService);
+    supportersService = module.get<SupportersService>(SupportersService);
     service.defaultRefreshRateSeconds = 600;
   });
 
@@ -88,6 +91,10 @@ describe("handle-schedule", () => {
       const urlHandler = jest.fn();
       const feedHandler = jest.fn();
 
+      jest
+        .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
+        .mockResolvedValue([]);
+
       await service.handleRefreshRate(service.defaultRefreshRateSeconds, {
         urlHandler,
         feedHandler,
@@ -97,12 +104,15 @@ describe("handle-schedule", () => {
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
-        })
+        }),
+
+        expect.anything()
       );
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[1].title,
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -132,6 +142,10 @@ describe("handle-schedule", () => {
       const urlHandler = jest.fn();
       const feedHandler = jest.fn();
 
+      jest
+        .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
+        .mockResolvedValue([]);
+
       await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
         urlHandler,
         feedHandler,
@@ -141,12 +155,92 @@ describe("handle-schedule", () => {
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
-        })
+        }),
+        expect.anything()
       );
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[1].title,
-        })
+        }),
+        expect.anything()
+      );
+    });
+
+    it("calls the handlers for feeds with the correct max daily articles", async () => {
+      const createdSchedule = await feedScheduleModel.create({
+        name: "something",
+        keywords: ["york"],
+        refreshRateMinutes: 4,
+      });
+      const createdFeeds = await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+        },
+        {
+          title: "feed-title-2",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-2",
+          },
+        },
+        {
+          title: "feed-title-3",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-3",
+          },
+        },
+      ]);
+
+      const urlHandler = jest.fn();
+      const feedHandler = jest.fn();
+
+      jest
+        .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
+        .mockResolvedValue([
+          {
+            discordUserId: "user-id",
+            maxDailyArticles: 101,
+          },
+          {
+            discordUserId: "user-id-2",
+            maxDailyArticles: 102,
+          },
+        ] as never);
+
+      await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
+        urlHandler,
+        feedHandler,
+      });
+
+      expect(urlHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(feedHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: createdFeeds[0].title,
+        }),
+        {
+          maxDailyArticles: 101,
+        }
+      );
+      expect(feedHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: createdFeeds[1].title,
+        }),
+        {
+          maxDailyArticles: 102,
+        }
+      );
+      expect(feedHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: createdFeeds[2].title,
+        }),
+        {
+          maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+        }
       );
     });
   });
@@ -996,6 +1090,7 @@ describe("handle-schedule", () => {
 
       await service.emitDeliverFeedArticlesEvent({
         userFeed: foundLean as UserFeed,
+        maxDailyArticles: 100,
       });
 
       expect(amqpConnection.publish).toHaveBeenCalledWith(
@@ -1003,7 +1098,7 @@ describe("handle-schedule", () => {
         "feed.deliver-articles",
         {
           data: {
-            articleDayLimit: 1,
+            articleDayLimit: 100,
             feed: {
               id: feed._id.toHexString(),
               url: feed.url,
@@ -1112,6 +1207,7 @@ describe("handle-schedule", () => {
 
       await service.emitDeliverFeedArticlesEvent({
         userFeed: foundLean as UserFeed,
+        maxDailyArticles: 102,
       });
 
       expect(amqpConnection.publish).toHaveBeenCalledWith(
@@ -1119,7 +1215,7 @@ describe("handle-schedule", () => {
         "feed.deliver-articles",
         {
           data: {
-            articleDayLimit: 1,
+            articleDayLimit: 102,
             feed: {
               id: feed._id.toHexString(),
               url: feed.url,
