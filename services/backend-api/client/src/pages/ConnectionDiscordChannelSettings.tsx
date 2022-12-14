@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { CategoryText, DiscordMessageForm, DashboardContentV2 } from '../components';
 import { DiscordChannelName } from '../features/discordServers';
-import { UserFeedHealthStatus, useUserFeed } from '../features/feed';
+import { useUserFeed } from '../features/feed';
 import {
   DeleteConnectionButton,
   EditConnectionChannelDialog,
@@ -32,7 +32,7 @@ import {
   useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
 } from '../features/feedConnections';
-import { FeedConnectionType } from '../types';
+import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
 import RouteParams from '../types/RouteParams';
 import { notifyError } from '../utils/notifyError';
@@ -164,7 +164,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbItem isCurrentPage>
-                      <BreadcrumbLink href="#">{connection.name}</BreadcrumbLink>
+                      <BreadcrumbLink href="#">{connection?.name}</BreadcrumbLink>
                     </BreadcrumbItem>
                   </Breadcrumb>
                   <HStack alignItems="center" justifyContent="space-between">
@@ -172,7 +172,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       size="lg"
                       marginRight={4}
                     >
-                      {connection.name}
+                      {connection?.name}
                     </Heading>
                     <HStack>
                       <EditConnectionChannelDialog
@@ -202,16 +202,15 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 </Box>
                 <Alert
                   status="error"
-                  hidden={!feed || feed.healthStatus === UserFeedHealthStatus.Failed}
+                  hidden={!connection
+                    || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat}
                 >
                   <Box>
                     <AlertTitle>
-                      {t('pages.feed.connectionFailureTitle')}
+                      {t('pages.discordChannelConnection.disabledAlertBadFormatTitle')}
                     </AlertTitle>
                     <AlertDescription display="block">
-                      {t('pages.feed.connectionFailureText', {
-                        reason: feed?.healthStatus || t('pages.feed.unknownReason'),
-                      })}
+                      {t('pages.discordChannelConnection.disabledAlertBadFormatDescription')}
                     </AlertDescription>
                   </Box>
                 </Alert>
