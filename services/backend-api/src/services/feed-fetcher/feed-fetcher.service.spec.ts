@@ -4,7 +4,7 @@ import nock from "nock";
 import path from "path";
 import { URL } from "url";
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
-import { FeedParseException } from "./exceptions";
+import { FeedParseException, FeedUnauthorizedException } from "./exceptions";
 import { Readable } from "stream";
 import { readFileSync } from "fs";
 
@@ -120,6 +120,21 @@ describe("FeedFetcherService", () => {
           getCachedResponse: false,
         })
       ).rejects.toThrow(Error);
+    });
+
+    it("throws a specific error based on the status code if request status is error", async () => {
+      jest.spyOn(feedFetcherApiService, "fetchAndSave").mockResolvedValue({
+        requestStatus: "error",
+        response: {
+          statusCode: 401,
+        },
+      });
+
+      await expect(
+        service.fetchFeedStreamFromApiService(feedUrl, {
+          getCachedResponse: false,
+        })
+      ).rejects.toThrow(FeedUnauthorizedException);
     });
 
     it("throws an feed parse exception if request status has parse error", async () => {

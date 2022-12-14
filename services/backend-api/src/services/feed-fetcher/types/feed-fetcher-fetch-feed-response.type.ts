@@ -12,6 +12,9 @@ interface FetchFeedResponsePending {
 
 interface FetchFeedResponseError {
   requestStatus: "error";
+  response?: {
+    statusCode: number;
+  };
 }
 
 interface FeedFetchResponseParseError {

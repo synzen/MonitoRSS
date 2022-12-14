@@ -124,6 +124,28 @@ describe('FeedFetcherController', () => {
       });
     });
 
+    it('returns request status error with response status code if request is failed', async () => {
+      const data = {
+        url: 'https://www.example.com',
+      };
+
+      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
+        status: RequestStatus.FAILED,
+        response: {
+          statusCode: 404,
+        },
+      } as never);
+
+      const result = await controller.fetchFeed(data);
+
+      expect(result).toEqual({
+        requestStatus: 'error',
+        response: {
+          statusCode: 404,
+        },
+      });
+    });
+
     it('throws the error if there is an unhandled status', async () => {
       const data = {
         url: 'https://www.example.com',

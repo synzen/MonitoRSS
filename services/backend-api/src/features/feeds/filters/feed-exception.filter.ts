@@ -5,6 +5,7 @@ import {
   FeedException,
   FeedForbiddenException,
   FeedInternalErrorException,
+  FeedNotFoundException,
   FeedParseException,
   FeedParseTimeoutException,
   FeedRequestException,
@@ -55,6 +56,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [FeedLimitReachedException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_LIMIT_REACHED,
+    },
+    [FeedNotFoundException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_NOT_FOUND,
     },
   };
 

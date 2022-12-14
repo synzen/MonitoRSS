@@ -16,6 +16,7 @@ import {
   FeedUnauthorizedException,
   FeedForbiddenException,
   FeedInternalErrorException,
+  FeedNotFoundException,
 } from "./exceptions";
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import { Readable } from "stream";
@@ -93,6 +94,10 @@ export class FeedFetcherService {
     const result = await this.feedFetcherApiService.fetchAndSave(url, options);
 
     if (result.requestStatus === "error") {
+      if (result.response?.statusCode) {
+        this.handleStatusCode(result.response.statusCode);
+      }
+
       throw new Error("Prior feed requests have failed");
     }
 
@@ -196,6 +201,8 @@ export class FeedFetcherService {
       throw new FeedUnauthorizedException();
     } else if (code === HttpStatus.FORBIDDEN) {
       throw new FeedForbiddenException();
+    } else if (code === HttpStatus.NOT_FOUND) {
+      throw new FeedNotFoundException();
     } else if (code >= HttpStatus.INTERNAL_SERVER_ERROR) {
       throw new FeedInternalErrorException();
     } else {

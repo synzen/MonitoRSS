@@ -65,6 +65,15 @@ export class FeedFetcherController {
         };
       }
 
+      if (latestRequest.status === RequestStatus.FAILED) {
+        return {
+          requestStatus: 'error',
+          response: {
+            statusCode: latestRequest.response.statusCode,
+          },
+        };
+      }
+
       throw new Error(`Unhandled request status: ${latestRequest.status}`);
     } catch (err) {
       logger.error(`Failed to fetch and save response of feed ${data.url}`, {
