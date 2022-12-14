@@ -6,7 +6,7 @@ export interface DeliveryMedium {
     article: Article,
     details: {
       mediumId: string;
-      feedDetails: FeedV2Event["feed"];
+      feedDetails: FeedV2Event["data"]["feed"];
       deliverySettings: MediumPayload["details"];
     }
   ): Promise<ArticleDeliveryState>;

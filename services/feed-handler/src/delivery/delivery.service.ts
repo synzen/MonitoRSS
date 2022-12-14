@@ -34,7 +34,7 @@ export class DeliveryService {
   ): Promise<ArticleDeliveryState[]> {
     let articleStates: ArticleDeliveryState[] = [];
     const underLimitInfo =
-      await this.articleRateLimitService.getUnderLimitCheck(event.feed.id);
+      await this.articleRateLimitService.getUnderLimitCheck(event.data.feed.id);
 
     /**
      * Rate limit handling in memory is not the best, especially since articles get dropped and
@@ -45,8 +45,8 @@ export class DeliveryService {
     };
 
     // Explicitly use for loop for track limit state
-    for (let i = 0; i < event.mediums.length; ++i) {
-      const medium = event.mediums[i];
+    for (let i = 0; i < event.data.mediums.length; ++i) {
+      const medium = event.data.mediums[i];
 
       const mediumStates = await this.deliverArticlesToMedium(
         event,
@@ -123,7 +123,7 @@ export class DeliveryService {
         {
           mediumId: medium.id,
           deliverySettings: medium.details,
-          feedDetails: event.feed,
+          feedDetails: event.data.feed,
         }
       );
 

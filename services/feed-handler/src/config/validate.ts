@@ -22,6 +22,9 @@ export class EnvironmentVariables {
   FEED_HANDLER_FEED_REQUEST_SERVICE_URL: string;
 
   @IsString()
+  FEED_HANDLER_FEED_FETCHER_API_KEY: string;
+
+  @IsString()
   FEED_HANDLER_POSTGRES_URI: string;
 
   @IsString()

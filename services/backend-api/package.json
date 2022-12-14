@@ -10,7 +10,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:schedule-emitter:local": "cross-env NODE_ENV=local LOG_LEVEL=debug nest start --config schedule-emitter.nest-cli.json --watch",
+    "start:schedule-emitter:local": "cross-env NODE_ENV=local nest start --config schedule-emitter.nest-cli.json --watch",
     "start:schedule-emitter:production": "cross-env NODE_ENV=production nest start --config schedule-emitter.nest-cli.json --watch",
     "start:local": "cross-env NODE_ENV=local nest start --watch",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",

@@ -201,6 +201,7 @@ export class ScheduleHandlerService {
   }) {
     const discordChannelMediums =
       userFeed.connections.discordChannels.map<DiscordMedium>((con) => ({
+        id: con.id,
         key: "discord",
         filters: con.filters?.expression
           ? { expression: con.filters.expression }
@@ -217,6 +218,7 @@ export class ScheduleHandlerService {
 
     const discordWebhookMediums =
       userFeed.connections.discordWebhooks.map<DiscordMedium>((con) => ({
+        id: con.id,
         key: "discord",
         filters: con.filters?.expression
           ? { expression: con.filters.expression }

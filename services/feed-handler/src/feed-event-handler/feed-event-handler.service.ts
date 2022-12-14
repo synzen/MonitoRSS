@@ -6,7 +6,6 @@ import { DeliveryRecordService } from "../delivery-record/delivery-record.servic
 import { DeliveryService } from "../delivery/delivery.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
-  Article,
   ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -15,6 +14,7 @@ import {
   feedV2EventSchema,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -24,18 +24,21 @@ export class FeedEventHandlerService {
     private readonly feedFetcherService: FeedFetcherService,
     private readonly deliveryService: DeliveryService,
     private readonly deliveryRecordService: DeliveryRecordService,
-    private readonly amqpConnection: AmqpConnection
+    private readonly amqpConnection: AmqpConnection,
+    private readonly orm: MikroORM
   ) {}
 
   @RabbitSubscribe({
     exchange: "",
     queue: BrokerQueue.FeedDeliverArticles,
   })
-  async handleV2Event(event: FeedV2Event): Promise<Article[]> {
+  async handleV2Event(event: FeedV2Event): Promise<void> {
     try {
       await feedV2EventSchema.validate(event, {
         abortEarly: false,
       });
+
+      await this.handleV2EventWithDb(event);
     } catch (err) {
       const validationErrr = err as ValidationError;
 
@@ -43,16 +46,24 @@ export class FeedEventHandlerService {
         `Validation failed on incoming Feed V2 event: ${validationErrr.errors}`
       );
     }
+  }
 
+  @UseRequestContext()
+  private async handleV2EventWithDb(event: FeedV2Event) {
     // Used for displaying in UIs
-    await this.articleRateLimitService.addOrUpdateFeedLimit(event.feed.id, {
-      // hardcode seconds in a day for now
-      timeWindowSec: 86400,
-      limit: event.articleDayLimit,
-    });
+    await this.articleRateLimitService.addOrUpdateFeedLimit(
+      event.data.feed.id,
+      {
+        // hardcode seconds in a day for now
+        timeWindowSec: 86400,
+        limit: event.data.articleDayLimit,
+      }
+    );
 
     const {
-      feed: { url, blockingComparisons, passingComparisons },
+      data: {
+        feed: { url, blockingComparisons, passingComparisons },
+      },
     } = event;
 
     const feedXml = await this.feedFetcherService.fetch(url);
@@ -60,13 +71,13 @@ export class FeedEventHandlerService {
     if (!feedXml) {
       console.log("no feed xml returned, skipping");
 
-      return [];
+      return;
     }
 
     const articles = await this.articlesService.getArticlesToDeliverFromXml(
       feedXml,
       {
-        id: event.feed.id,
+        id: event.data.feed.id,
         blockingComparisons,
         passingComparisons,
       }
@@ -75,13 +86,16 @@ export class FeedEventHandlerService {
     if (!articles.length) {
       console.log("no articles found");
 
-      return [];
+      return;
     }
 
     const deliveryStates = await this.deliveryService.deliver(event, articles);
 
     try {
-      await this.deliveryRecordService.store(event.feed.id, deliveryStates);
+      await this.deliveryRecordService.store(
+        event.data.feed.id,
+        deliveryStates
+      );
     } catch (err) {
       console.log(`Failed to store delivery states`, {
         event,
@@ -100,11 +114,11 @@ export class FeedEventHandlerService {
       });
     }
 
-    return articles;
+    console.log(`Total new articles:`, articles.length);
   }
 
   emitDisableEvents(
-    { feed }: FeedV2Event,
+    { data: { feed } }: FeedV2Event,
     deliveryStates: ArticleDeliveryState[]
   ) {
     deliveryStates.forEach((state) => {

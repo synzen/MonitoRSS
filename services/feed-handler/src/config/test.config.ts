@@ -7,6 +7,7 @@ export function testConfig(): EnvironmentVariables {
     FEED_HANDLER_API_KEY: "123456789",
     FEED_HANDLER_API_PORT: "3000",
     FEED_HANDLER_FEED_REQUEST_SERVICE_URL: "feed-request-service",
+    FEED_HANDLER_FEED_FETCHER_API_KEY: "feed-fetcher-api-key",
     FEED_HANDLER_FEED_MONGODB_URI: "mongodb://localhost:27017",
     FEED_HANDLER_POSTGRES_DATABASE: "test",
     FEED_HANDLER_DISCORD_CLIENT_ID: "discord-client-id",

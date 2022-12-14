@@ -134,7 +134,7 @@ services:
       - BACKEND_API_FEED_FETCHER_API_KEY=----IRRELEVANT----
       - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
       - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
-      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=10
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=0.5
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
@@ -167,12 +167,12 @@ services:
       - BACKEND_API_FEED_FETCHER_API_KEY=feed-fetcher-api-key
       - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:8000
       - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8000/api/v1/discord/callback
-      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=10
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=0.5
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=MonitoRSS
     command: npm run start:local
 
-  mrss-web-client:
+  # mrss-web-client:
     build:
       context: services/backend-api/client
       dockerfile: ../dockerfiles/web/client.Dockerfile

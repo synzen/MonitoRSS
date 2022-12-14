@@ -7,7 +7,7 @@ import { MediumKey, mediumKeySchema } from "./medium-key.type";
 export const mediumPayloadSchema = baseMediumpayloadSchema.shape({
   id: string().required(),
   key: mediumKeySchema.required(),
-  filters: mediumFiltersSchema,
+  filters: mediumFiltersSchema.optional().nullable(),
   details: object()
     .oneOf(Object.values(MediumKey))
     .when("key", {
@@ -19,6 +19,6 @@ export const mediumPayloadSchema = baseMediumpayloadSchema.shape({
 export type MediumPayload = {
   id: string;
   key: MediumKey.Discord;
-  filters?: MediumFilters;
+  filters?: MediumFilters | null;
   details: InferType<typeof discordMediumPayloadDetailsSchema>;
 };
