@@ -18,7 +18,6 @@ import {
     ArticlesModule,
     FeedFetcherModule,
     ArticleRateLimitModule,
-    DeliveryModule,
     DeliveryRecordModule,
   ],
 })
@@ -36,6 +35,7 @@ export class FeedEventHandlerModule {
       module: FeedEventHandlerModule,
       providers: [FeedEventHandlerService],
       imports: [
+        DeliveryModule,
         RabbitMQModule.forRoot(RabbitMQModule, {
           uri: configVals.FEED_HANDLER_RABBITMQ_BROKER_URL,
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
