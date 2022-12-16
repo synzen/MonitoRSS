@@ -34,7 +34,7 @@
     "@nestjs/core": "^9.0.0",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-fastify": "^9.1.1",
-    "@synzen/discord-rest": "^0.7.0-beta.5",
+    "@synzen/discord-rest": "^0.7.0-beta.6",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "dayjs": "^1.11.5",
