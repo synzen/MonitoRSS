@@ -1,10 +1,4 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { JobResponse } from "@synzen/discord-rest";
-import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
-import {
-  ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
-} from "../../shared";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -17,49 +11,8 @@ jest.mock("@synzen/discord-rest", () => ({
 }));
 
 const producer = {
-  fetch: jest.fn(),
+  enqueue: jest.fn(),
 };
-
-const jobResponseToDeliveryStatusCases: Array<
-  [JobResponse<unknown> | JobResponseError, Partial<ArticleDeliveryState>]
-> = [
-  [
-    { state: "error", message: "some error message" },
-    {
-      status: ArticleDeliveryStatus.Failed,
-      errorCode: ArticleDeliveryErrorCode.Internal,
-      internalMessage: "some error message",
-    },
-  ],
-  [
-    { state: "success", status: 200, body: {} },
-    {
-      status: ArticleDeliveryStatus.Sent,
-    },
-  ],
-  [
-    {
-      state: "success",
-      status: 400,
-      body: {},
-    },
-    {
-      status: ArticleDeliveryStatus.Rejected,
-      errorCode: ArticleDeliveryRejectedCode.BadRequest,
-    },
-  ],
-  [
-    {
-      state: "success",
-      status: 401,
-      body: {},
-    },
-    {
-      status: ArticleDeliveryStatus.Failed,
-      errorCode: ArticleDeliveryErrorCode.Internal,
-    },
-  ],
-];
 
 describe("DiscordMediumService", () => {
   let service: DiscordMediumService;
@@ -108,29 +61,10 @@ describe("DiscordMediumService", () => {
     };
 
     it("returns the status of the result", async () => {
-      const producerFetchResponse: JobResponse<unknown> = {
-        status: 200,
-        body: {},
-        state: "success",
-      };
-      producer.fetch.mockReturnValue(producerFetchResponse);
       const result = await service.deliverArticle(article, deliveryDetails);
       expect(result).toEqual({
         mediumId: deliveryDetails.mediumId,
-        status: ArticleDeliveryStatus.Sent,
-      });
-    });
-
-    it("returns failed status on error", async () => {
-      const mockError = new Error("mock error");
-      producer.fetch.mockRejectedValue(mockError);
-      const result = await service.deliverArticle(article, deliveryDetails);
-
-      expect(result).toEqual({
-        mediumId: deliveryDetails.mediumId,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.Internal,
-        internalMessage: mockError.message,
+        status: ArticleDeliveryStatus.PendingDelivery,
       });
     });
 
@@ -172,7 +106,7 @@ describe("DiscordMediumService", () => {
       };
 
       await service.deliverArticle(article, detailsWithEmbeds);
-      const callBody = JSON.parse(producer.fetch.mock.calls[0][1].body);
+      const callBody = JSON.parse(producer.enqueue.mock.calls[0][1].body);
       expect(callBody).toMatchObject({
         embeds: [
           {
@@ -216,7 +150,7 @@ describe("DiscordMediumService", () => {
           },
         });
 
-        expect(producer.fetch).toHaveBeenCalledWith(
+        expect(producer.enqueue).toHaveBeenCalledWith(
           `${DiscordMediumService.BASE_API_URL}/channels/channel-1/messages`,
           {
             method: "POST",
@@ -249,7 +183,7 @@ describe("DiscordMediumService", () => {
         };
         await service.deliverArticle(article, details);
 
-        expect(producer.fetch).toHaveBeenCalledWith(
+        expect(producer.enqueue).toHaveBeenCalledWith(
           expect.anything(),
           expect.objectContaining({
             body: JSON.stringify({
@@ -259,17 +193,6 @@ describe("DiscordMediumService", () => {
           expect.anything()
         );
       });
-
-      it.each(jobResponseToDeliveryStatusCases)(
-        "returns the correct result for job response %o",
-        (jobResponse, expectedDeliveryState) => {
-          producer.fetch.mockReturnValue(jobResponse);
-
-          return expect(
-            service.deliverArticle(article, deliveryDetails)
-          ).resolves.toEqual(expect.objectContaining(expectedDeliveryState));
-        }
-      );
     });
 
     describe("webhook", () => {
@@ -279,7 +202,7 @@ describe("DiscordMediumService", () => {
         const webhook1Id = deliveryDetails.deliverySettings.webhook?.id;
         const webhook1Token = deliveryDetails.deliverySettings.webhook?.token;
         deliveryDetails.deliverySettings.webhook?.token;
-        expect(producer.fetch).toHaveBeenCalledWith(
+        expect(producer.enqueue).toHaveBeenCalledWith(
           `${DiscordMediumService.BASE_API_URL}/webhooks/${webhook1Id}/${webhook1Token}`,
           {
             method: "POST",
@@ -311,7 +234,7 @@ describe("DiscordMediumService", () => {
         };
         await service.deliverArticle(article, details);
 
-        expect(producer.fetch).toHaveBeenCalledWith(
+        expect(producer.enqueue).toHaveBeenCalledWith(
           expect.anything(),
           expect.objectContaining({
             body: JSON.stringify({
@@ -322,16 +245,14 @@ describe("DiscordMediumService", () => {
         );
       });
 
-      it.each(jobResponseToDeliveryStatusCases)(
-        "returns the correct result for job response %o",
-        (jobResponse, expectedDeliveryState) => {
-          producer.fetch.mockReturnValue(jobResponse);
-
-          return expect(
-            service.deliverArticle(article, deliveryDetails)
-          ).resolves.toEqual(expect.objectContaining(expectedDeliveryState));
-        }
-      );
+      it("returns the correct result for job response %o", () => {
+        return expect(
+          service.deliverArticle(article, deliveryDetails)
+        ).resolves.toEqual({
+          status: ArticleDeliveryStatus.PendingDelivery,
+          mediumId: deliveryDetails.mediumId,
+        } as ArticleDeliveryState);
+      });
     });
   });
 });

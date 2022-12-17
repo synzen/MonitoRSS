@@ -4,6 +4,8 @@ import {
 } from "../constants";
 
 export enum ArticleDeliveryStatus {
+  // The article is being delivered
+  PendingDelivery = "pending-delivery",
   Sent = "sent",
   // An error happened within this service
   Failed = "failed",
@@ -13,6 +15,11 @@ export enum ArticleDeliveryStatus {
   FilteredOut = "filtered-out",
   // Rate limit enforced by this service
   RateLimited = "rate-limited",
+}
+
+interface ArticleDeliveryPendingDeliveryState {
+  mediumId: string;
+  status: ArticleDeliveryStatus.PendingDelivery;
 }
 
 interface ArticleDeliverySentState {
@@ -51,6 +58,7 @@ interface ArticleDeliveryFilteredOutState {
 }
 
 export type ArticleDeliveryState =
+  | ArticleDeliveryPendingDeliveryState
   | ArticleDeliverySentState
   | ArticleDeliveryFailureState
   | ArticleDeliveryFilteredOutState

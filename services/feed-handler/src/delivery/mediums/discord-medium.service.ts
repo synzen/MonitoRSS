@@ -95,7 +95,7 @@ export class DiscordMediumService implements DeliveryMedium {
     } = details;
     const apiUrl = this.getChannelApiUrl(channelId);
 
-    const result = await this.producer.fetch(
+    await this.producer.enqueue(
       apiUrl,
       {
         method: "POST",
@@ -110,7 +110,10 @@ export class DiscordMediumService implements DeliveryMedium {
       }
     );
 
-    return this.extractDeliveryStatusFromProducerResult(details, result);
+    return {
+      status: ArticleDeliveryStatus.PendingDelivery,
+      mediumId: details.mediumId,
+    };
   }
 
   private async deliverArticleToWebhook(
@@ -135,7 +138,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
 
-    const result = await this.producer.fetch(
+    await this.producer.enqueue(
       apiUrl,
       {
         method: "POST",
@@ -154,7 +157,10 @@ export class DiscordMediumService implements DeliveryMedium {
       }
     );
 
-    return this.extractDeliveryStatusFromProducerResult(details, result);
+    return {
+      status: ArticleDeliveryStatus.PendingDelivery,
+      mediumId: details.mediumId,
+    };
   }
 
   private generateApiPayload(
@@ -206,6 +212,7 @@ export class DiscordMediumService implements DeliveryMedium {
     return payload;
   }
 
+  // TODO: Handle events from the broker to update delivery status
   private extractDeliveryStatusFromProducerResult(
     details: DeliveryDetails,
     result: JobResponse<unknown> | JobResponseError
