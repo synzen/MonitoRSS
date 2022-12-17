@@ -67,7 +67,9 @@ export async function setupIntegrationTests(
 
 export async function clearDatabase() {
   const generator = orm?.getSchemaGenerator();
-  await generator?.refreshDatabase();
+  await generator.ensureDatabase();
+  await generator.dropSchema();
+  await generator.createSchema();
 }
 
 export async function teardownIntegrationTests() {
