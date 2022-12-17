@@ -201,7 +201,7 @@ export class ScheduleHandlerService {
   }) {
     const discordChannelMediums =
       userFeed.connections.discordChannels.map<DiscordMedium>((con) => ({
-        id: con.id,
+        id: con.id.toHexString(),
         key: "discord",
         filters: con.filters?.expression
           ? { expression: con.filters.expression }
@@ -218,7 +218,7 @@ export class ScheduleHandlerService {
 
     const discordWebhookMediums =
       userFeed.connections.discordWebhooks.map<DiscordMedium>((con) => ({
-        id: con.id,
+        id: con.id.toHexString(),
         key: "discord",
         filters: con.filters?.expression
           ? { expression: con.filters.expression }
@@ -236,6 +236,8 @@ export class ScheduleHandlerService {
         },
       }));
 
+    const allMediums = discordChannelMediums.concat(discordWebhookMediums);
+
     this.amqpConnection.publish<PublishFeedDeliveryArticlesData>(
       "",
       BrokerQueue.FeedDeliverArticles,
@@ -248,7 +250,7 @@ export class ScheduleHandlerService {
             passingComparisons: [],
             blockingComparisons: [],
           },
-          mediums: discordChannelMediums.concat(discordWebhookMediums),
+          mediums: allMediums,
         },
       }
     );
@@ -399,6 +401,20 @@ export class ScheduleHandlerService {
     schedules: FeedSchedule[],
     discordUserIdsToInclude: string[]
   ) {
+    const withConnectionsQuery = {
+      $or: [
+        {
+          "connections.discordChannels.0": {
+            $exists: true,
+          },
+        },
+        {
+          "connections.discordWebhooks.0": {
+            $exists: true,
+          },
+        },
+      ],
+    };
     const keywordConditions = schedules
       .map((schedule) => schedule.keywords)
       .flat()
@@ -410,6 +426,7 @@ export class ScheduleHandlerService {
         healthStatus: {
           $ne: UserFeedHealthStatus.Failed,
         },
+        ...withConnectionsQuery,
       }));
 
     const query: FilterQuery<UserFeedDocument> = {
@@ -425,6 +442,7 @@ export class ScheduleHandlerService {
           healthStatus: {
             $ne: UserFeedHealthStatus.Failed,
           },
+          ...withConnectionsQuery,
         },
         {
           _id: {
@@ -440,6 +458,7 @@ export class ScheduleHandlerService {
           healthStatus: {
             $ne: UserFeedHealthStatus.Failed,
           },
+          ...withConnectionsQuery,
         },
       ],
     };
@@ -484,6 +503,20 @@ export class ScheduleHandlerService {
           _id: {
             $nin: feedIdConditions,
           },
+        },
+        {
+          $or: [
+            {
+              "connections.discordChannels.0": {
+                $exists: true,
+              },
+            },
+            {
+              "connections.discordWebhooks.0": {
+                $exists: true,
+              },
+            },
+          ],
         },
       ],
     };

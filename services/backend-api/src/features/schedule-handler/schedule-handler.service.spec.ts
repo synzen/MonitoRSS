@@ -27,6 +27,30 @@ import { SupportersService } from "../supporters/supporters.service";
 
 jest.mock("../../utils/logger");
 
+const sampleConnections: UserFeed["connections"] = {
+  discordWebhooks: [],
+  discordChannels: [
+    {
+      id: new Types.ObjectId(),
+      name: "connection-name",
+      filters: {
+        expression: {
+          foo: "bar",
+        },
+      },
+      details: {
+        embeds: [],
+        channel: {
+          id: "channel-id",
+          guildId: "guild-id",
+        },
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ],
+};
+
 describe("handle-schedule", () => {
   let module: TestingModule;
   let userFeedModel: UserFeedModel;
@@ -78,6 +102,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title-2",
@@ -85,6 +110,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
       ]);
 
@@ -129,6 +155,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title-2",
@@ -136,6 +163,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
       ]);
 
@@ -179,6 +207,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title-2",
@@ -186,6 +215,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id-2",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title-3",
@@ -193,6 +223,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id-3",
           },
+          connections: sampleConnections,
         },
       ]);
 
@@ -254,6 +285,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title-2",
@@ -261,6 +293,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
       ]);
 
@@ -284,6 +317,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title-2",
@@ -291,6 +325,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id",
           },
+          connections: sampleConnections,
         },
       ]);
 
@@ -303,6 +338,67 @@ describe("handle-schedule", () => {
   });
 
   describe("getFeedsQueryWithScheduleAndUsers", () => {
+    it("returns nothing if no results are found", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: sampleConnections,
+        },
+        {
+          title: "feed-title",
+          url: "yahoo-news.com",
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: sampleConnections,
+        },
+      ]);
+
+      const result = await service.getFeedsQueryWithScheduleAndUsers(
+        [
+          {
+            name: "bloomberg news",
+            keywords: ["bloomberg"],
+            feeds: [new Types.ObjectId().toString()],
+            refreshRateMinutes: 10,
+          },
+        ],
+        ["irrelevant-guild-id"]
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns nothing if no connections are found", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+        },
+      ]);
+
+      const result = await service.getFeedsQueryWithScheduleAndUsers(
+        [
+          {
+            name: "bloomberg news",
+            keywords: ["york"],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        ["irrelevant-guild-id"]
+      );
+
+      expect(result).toEqual([]);
+    });
+
     describe("schedule keywords", () => {
       it("returns matches", async () => {
         const created = await userFeedModel.create([
@@ -312,6 +408,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id",
             },
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -319,6 +416,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id",
             },
+            connections: sampleConnections,
           },
         ]);
 
@@ -349,6 +447,7 @@ describe("handle-schedule", () => {
               discordUserId: "user-id",
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+            connections: sampleConnections,
           },
         ]);
 
@@ -378,6 +477,7 @@ describe("handle-schedule", () => {
               user: {
                 discordUserId: "user-id",
               },
+              connections: sampleConnections,
             },
             {
               title: "feed-title",
@@ -385,6 +485,7 @@ describe("handle-schedule", () => {
               user: {
                 discordUserId: "user-id",
               },
+              connections: sampleConnections,
             },
           ],
           {
@@ -417,6 +518,7 @@ describe("handle-schedule", () => {
                 discordUserId: "user-id",
               },
               disabledCode: UserFeedDisabledCode.BadFormat,
+              connections: sampleConnections,
             },
           ],
           {
@@ -449,6 +551,7 @@ describe("handle-schedule", () => {
                 discordUserId: "user-id",
               },
               healthStatus: UserFeedHealthStatus.Failed,
+              connections: sampleConnections,
             },
           ],
           {
@@ -481,6 +584,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-1",
             },
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -488,6 +592,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-2",
             },
+            connections: sampleConnections,
           },
         ]);
 
@@ -514,6 +619,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-1",
             },
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -522,6 +628,7 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-2",
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+            connections: sampleConnections,
           },
         ]);
 
@@ -549,6 +656,7 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-1",
             },
             healthStatus: UserFeedHealthStatus.Failed,
+            connections: sampleConnections,
           },
         ]);
 
@@ -567,26 +675,30 @@ describe("handle-schedule", () => {
         expect(result).toEqual([]);
       });
     });
+  });
 
-    it("returns nothing if no results are found", async () => {
-      await userFeedModel.create([
+  describe("getScheduleFeedQueryExcluding", () => {
+    it("returns correctly if no results are found", async () => {
+      const created = await userFeedModel.create([
         {
           title: "feed-title",
           url: "new-york-times.com",
           user: {
-            discordUserId: "user-id",
+            discordUserId: "user-id-1",
           },
+          connections: sampleConnections,
         },
         {
           title: "feed-title",
           url: "yahoo-news.com",
           user: {
-            discordUserId: "user-id",
+            discordUserId: "user-id-2",
           },
+          connections: sampleConnections,
         },
       ]);
 
-      const result = await service.getFeedsQueryWithScheduleAndUsers(
+      const result = await service.getScheduleFeedQueryExcluding(
         [
           {
             name: "bloomberg news",
@@ -595,14 +707,45 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-guild-id"]
+        ["irrelevant-user-id-to-exclude"]
       );
 
-      expect(result).toEqual([]);
-    });
-  });
+      const resultUrls = result.map((feed) => feed.url);
 
-  describe("getScheduleFeedQueryExcluding", () => {
+      expect(resultUrls).toHaveLength(2);
+      expect(resultUrls).toEqual(
+        expect.arrayContaining([created[0].url, created[1].url])
+      );
+    });
+
+    it("returns nothing if no connections are found", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-1",
+          },
+        },
+      ]);
+
+      const result = await service.getScheduleFeedQueryExcluding(
+        [
+          {
+            name: "bloomberg news",
+            keywords: ["bloomberg"],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        ["irrelevant-user-id-to-exclude"]
+      );
+
+      const resultUrls = result.map((feed) => feed.url);
+
+      expect(resultUrls).toHaveLength(0);
+    });
+
     describe("schedule keywords", () => {
       it("returns the correct matches", async () => {
         const created = await userFeedModel.create([
@@ -612,6 +755,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-1",
             },
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -619,6 +763,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-1",
             },
+            connections: sampleConnections,
           },
         ]);
 
@@ -647,6 +792,7 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-1",
             },
             healthStatus: UserFeedHealthStatus.Failed,
+            connections: sampleConnections,
           },
         ]);
 
@@ -673,6 +819,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "discord-user",
             },
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -681,6 +828,7 @@ describe("handle-schedule", () => {
               discordUserId: "discord-user",
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+            connections: sampleConnections,
           },
         ]);
 
@@ -710,6 +858,7 @@ describe("handle-schedule", () => {
               user: {
                 discordUserId: "user-id-1",
               },
+              connections: sampleConnections,
             },
             {
               title: "feed-title",
@@ -717,6 +866,7 @@ describe("handle-schedule", () => {
               user: {
                 discordUserId: "user-id-1",
               },
+              connections: sampleConnections,
             },
           ],
           {
@@ -748,6 +898,7 @@ describe("handle-schedule", () => {
               user: {
                 discordUserId: "user-id-1",
               },
+              connections: sampleConnections,
             },
             {
               title: "feed-title",
@@ -756,6 +907,7 @@ describe("handle-schedule", () => {
                 discordUserId: "user-id-1",
               },
               disabledCode: UserFeedDisabledCode.BadFormat,
+              connections: sampleConnections,
             },
           ],
           {
@@ -787,6 +939,7 @@ describe("handle-schedule", () => {
               user: {
                 discordUserId: "user-id-1",
               },
+              connections: sampleConnections,
             },
             {
               title: "feed-title",
@@ -795,6 +948,7 @@ describe("handle-schedule", () => {
                 discordUserId: "user-id-1",
               },
               healthStatus: UserFeedHealthStatus.Failed,
+              connections: sampleConnections,
             },
           ],
           {
@@ -827,6 +981,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-1",
             },
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -834,6 +989,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-2",
             },
+            connections: sampleConnections,
           },
         ]);
 
@@ -862,6 +1018,7 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-1",
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -869,6 +1026,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-2",
             },
+            connections: sampleConnections,
           },
         ]);
 
@@ -896,6 +1054,7 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-1",
             },
             healthStatus: UserFeedHealthStatus.Failed,
+            connections: sampleConnections,
           },
           {
             title: "feed-title",
@@ -903,6 +1062,7 @@ describe("handle-schedule", () => {
             user: {
               discordUserId: "user-id-2",
             },
+            connections: sampleConnections,
           },
         ]);
 
@@ -921,44 +1081,6 @@ describe("handle-schedule", () => {
         expect(result).toHaveLength(0);
       });
     });
-
-    it("returns nothing if no results are found", async () => {
-      const created = await userFeedModel.create([
-        {
-          title: "feed-title",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id-1",
-          },
-        },
-        {
-          title: "feed-title",
-          url: "yahoo-news.com",
-          user: {
-            discordUserId: "user-id-2",
-          },
-        },
-      ]);
-
-      const result = await service.getScheduleFeedQueryExcluding(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["bloomberg"],
-            feeds: [new Types.ObjectId().toString()],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-user-id-to-exclude"]
-      );
-
-      const resultUrls = result.map((feed) => feed.url);
-
-      expect(resultUrls).toHaveLength(2);
-      expect(resultUrls).toEqual(
-        expect.arrayContaining([created[0].url, created[1].url])
-      );
-    });
   });
 
   describe("handleUrlRequestFailureEvent", () => {
@@ -969,6 +1091,7 @@ describe("handle-schedule", () => {
         user: {
           discordUserId: "user-id-1",
         },
+        connections: sampleConnections,
       });
 
       await service.handleUrlRequestFailureEvent({
@@ -1107,6 +1230,7 @@ describe("handle-schedule", () => {
             },
             mediums: [
               {
+                id: feed.connections.discordChannels[0].id.toHexString(),
                 key: "discord",
                 filters: {
                   expression: {
@@ -1224,6 +1348,7 @@ describe("handle-schedule", () => {
             },
             mediums: [
               {
+                id: feed.connections.discordWebhooks[0].id.toHexString(),
                 key: "discord",
                 filters: {
                   expression: {
