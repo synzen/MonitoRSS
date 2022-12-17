@@ -61,7 +61,7 @@ describe("FeedsModule", () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
 
-    it("returns 200", async () => {
+    it("returns 201", async () => {
       const { statusCode, body } = await app.inject({
         method: "POST",
         url: `/feeds`,
@@ -79,7 +79,7 @@ describe("FeedsModule", () => {
           }),
         ]),
       });
-      expect(statusCode).toBe(HttpStatus.OK);
+      expect(statusCode).toBe(HttpStatus.CREATED);
     });
   });
 });

@@ -1,4 +1,11 @@
-import { Body, Controller, Post, ValidationPipe } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Post,
+  ValidationPipe,
+  UseGuards,
+} from "@nestjs/common";
+import { ApiGuard } from "../shared/guards";
 import { CreateFeedInputDto } from "./dto";
 import { FeedsService } from "./feeds.service";
 
@@ -10,6 +17,7 @@ export class FeedsController {
   constructor(private readonly feedsService: FeedsService) {}
 
   @Post()
+  @UseGuards(ApiGuard)
   async initializeFeed(
     @Body(ValidationPipe) { feed, articleDailyLimit }: CreateFeedInputDto
   ) {
