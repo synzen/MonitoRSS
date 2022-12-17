@@ -1,11 +1,7 @@
 import { DeliveryMedium } from "./delivery-medium.interface";
 import { Injectable, Inject } from "@nestjs/common";
-import {
-  Article,
-  ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
-} from "../../shared";
-import { JobResponse, RESTProducer } from "@synzen/discord-rest";
+import { Article, ArticleDeliveryErrorCode } from "../../shared";
+import { RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -13,7 +9,6 @@ import {
   DiscordMessageApiPayload,
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
-import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -39,6 +34,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (!channel && !webhook) {
       return {
+        id: details.deliveryId,
         mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
@@ -76,6 +72,7 @@ export class DiscordMediumService implements DeliveryMedium {
       );
 
       return {
+        id: details.deliveryId,
         mediumId: details.mediumId,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
@@ -102,6 +99,7 @@ export class DiscordMediumService implements DeliveryMedium {
         body: JSON.stringify(this.generateApiPayload(article, details)),
       },
       {
+        id: details.deliveryId,
         articleID: article.id,
         feedURL: url,
         channel: channelId,
@@ -111,6 +109,7 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     return {
+      id: details.deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
     };
@@ -149,6 +148,7 @@ export class DiscordMediumService implements DeliveryMedium {
         }),
       },
       {
+        id: details.deliveryId,
         articleID: article.id,
         feedURL: url,
         webhookId,
@@ -158,6 +158,7 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     return {
+      id: details.deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
     };
@@ -213,55 +214,55 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   // TODO: Handle events from the broker to update delivery status
-  private extractDeliveryStatusFromProducerResult(
-    details: DeliveryDetails,
-    result: JobResponse<unknown> | JobResponseError
-  ): ArticleDeliveryState {
-    if (result.state === "error") {
-      return {
-        mediumId: details.mediumId,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.Internal,
-        internalMessage: result.message,
-      };
-    }
+  // private extractDeliveryStatusFromProducerResult(
+  //   details: DeliveryDetails,
+  //   result: JobResponse<unknown> | JobResponseError
+  // ): ArticleDeliveryState {
+  //   if (result.state === "error") {
+  //     return {
+  //       mediumId: details.mediumId,
+  //       status: ArticleDeliveryStatus.Failed,
+  //       errorCode: ArticleDeliveryErrorCode.Internal,
+  //       internalMessage: result.message,
+  //     };
+  //   }
 
-    if (result.status === 400) {
-      return {
-        mediumId: details.mediumId,
-        status: ArticleDeliveryStatus.Rejected,
-        errorCode: ArticleDeliveryRejectedCode.BadRequest,
-        internalMessage: `Discord rejected the request with status code ${
-          result.status
-        } Body: ${JSON.stringify(result.body)}`,
-      };
-    }
+  //   if (result.status === 400) {
+  //     return {
+  //       mediumId: details.mediumId,
+  //       status: ArticleDeliveryStatus.Rejected,
+  //       errorCode: ArticleDeliveryRejectedCode.BadRequest,
+  //       internalMessage: `Discord rejected the request with status code ${
+  //         result.status
+  //       } Body: ${JSON.stringify(result.body)}`,
+  //     };
+  //   }
 
-    if (result.status >= 500) {
-      return {
-        mediumId: details.mediumId,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
-        internalMessage: `Status code from Discord ${
-          result.status
-        } received. Body: ${JSON.stringify(result.body)}`,
-      };
-    }
+  //   if (result.status >= 500) {
+  //     return {
+  //       mediumId: details.mediumId,
+  //       status: ArticleDeliveryStatus.Failed,
+  //       errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
+  //       internalMessage: `Status code from Discord ${
+  //         result.status
+  //       } received. Body: ${JSON.stringify(result.body)}`,
+  //     };
+  //   }
 
-    if (result.status < 200 || result.status > 400) {
-      return {
-        mediumId: details.mediumId,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.Internal,
-        internalMessage: `Unhandled status code from Discord ${
-          result.status
-        } received. Body: ${JSON.stringify(result.body)}`,
-      };
-    }
+  //   if (result.status < 200 || result.status > 400) {
+  //     return {
+  //       mediumId: details.mediumId,
+  //       status: ArticleDeliveryStatus.Failed,
+  //       errorCode: ArticleDeliveryErrorCode.Internal,
+  //       internalMessage: `Unhandled status code from Discord ${
+  //         result.status
+  //       } received. Body: ${JSON.stringify(result.body)}`,
+  //     };
+  //   }
 
-    return {
-      mediumId: details.mediumId,
-      status: ArticleDeliveryStatus.Sent,
-    };
-  }
+  //   return {
+  //     mediumId: details.mediumId,
+  //     status: ArticleDeliveryStatus.Sent,
+  //   };
+  // }
 }

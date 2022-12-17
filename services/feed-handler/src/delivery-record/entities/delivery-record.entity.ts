@@ -4,7 +4,7 @@ import { ArticleDeliveryStatus } from "../../shared";
 @Entity()
 export class DeliveryRecord {
   @PrimaryKey()
-  id: number;
+  id: string;
 
   @Property()
   feed_id: string;
@@ -25,10 +25,20 @@ export class DeliveryRecord {
   })
   error_code?: string;
 
-  constructor(data: Omit<DeliveryRecord, "id" | "created_at">) {
+  constructor(
+    data: Omit<DeliveryRecord, "created_at">,
+    overrides?: {
+      created_at?: Date;
+    }
+  ) {
+    this.id = data.id;
     this.feed_id = data.feed_id;
     this.status = data.status;
     this.error_code = data.error_code;
     this.internal_message = data.internal_message;
+
+    if (overrides?.created_at) {
+      this.created_at = overrides.created_at;
+    }
   }
 }

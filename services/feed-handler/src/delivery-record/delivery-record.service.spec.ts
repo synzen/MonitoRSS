@@ -52,9 +52,13 @@ describe("DeliveryRecordService", () => {
       const feedId = "feed-id";
       const articleStates: ArticleDeliveryState[] = [
         {
+          id: "1",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.Sent,
         },
         {
+          id: "2",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.Sent,
         },
       ];
@@ -63,6 +67,8 @@ describe("DeliveryRecordService", () => {
       const records = await deliveryRecordRepo.findAll();
 
       expect(records).toHaveLength(2);
+      const ids = records.map((record) => record.id);
+      expect(ids).toEqual(["1", "2"]);
       const feedIds = records.map((record) => record.feed_id);
       expect(feedIds).toEqual([feedId, feedId]);
       const statuses = records.map((record) => record.status);
@@ -76,11 +82,15 @@ describe("DeliveryRecordService", () => {
       const feedId = "feed-id";
       const articleStates: ArticleDeliveryState[] = [
         {
+          id: "1",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "internal-message",
         },
         {
+          id: "2",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: "internal-message-2",
@@ -113,11 +123,15 @@ describe("DeliveryRecordService", () => {
       const feedId = "feed-id";
       const articleStates: ArticleDeliveryState[] = [
         {
+          id: "1",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.Rejected,
           errorCode: ArticleDeliveryRejectedCode.BadRequest,
           internalMessage: "internal-message",
         },
         {
+          id: "2",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.Rejected,
           errorCode: ArticleDeliveryRejectedCode.BadRequest,
           internalMessage: "internal-message-2",
@@ -150,9 +164,13 @@ describe("DeliveryRecordService", () => {
       const feedId = "feed-id";
       const articleStates: ArticleDeliveryState[] = [
         {
+          id: "id-1",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
         },
         {
+          id: "id-2",
+          mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
         },
       ];
@@ -181,21 +199,37 @@ describe("DeliveryRecordService", () => {
       const feedId = "feed-id";
 
       const [record1, record2, record3] = [
-        deliveryRecordRepo.create({
-          created_at: dayjs().subtract(1, "hour").toDate(),
-          feed_id: feedId,
-          status: ArticleDeliveryStatus.Sent,
-        }),
-        await deliveryRecordRepo.create({
-          created_at: dayjs().subtract(1, "hour").toDate(),
-          feed_id: feedId,
-          status: ArticleDeliveryStatus.Rejected,
-        }),
-        await deliveryRecordRepo.create({
-          created_at: dayjs().subtract(1, "day").toDate(),
-          feed_id: feedId,
-          status: ArticleDeliveryStatus.Sent,
-        }),
+        new DeliveryRecord(
+          {
+            id: "1",
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Sent,
+          },
+          {
+            created_at: dayjs().subtract(1, "hour").toDate(),
+          }
+        ),
+        new DeliveryRecord(
+          {
+            id: "2",
+
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Rejected,
+          },
+          {
+            created_at: dayjs().subtract(1, "hour").toDate(),
+          }
+        ),
+        new DeliveryRecord(
+          {
+            id: "3",
+            feed_id: feedId,
+            status: ArticleDeliveryStatus.Sent,
+          },
+          {
+            created_at: dayjs().subtract(1, "day").toDate(),
+          }
+        ),
       ];
 
       await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);

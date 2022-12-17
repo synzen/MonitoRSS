@@ -18,21 +18,25 @@ export enum ArticleDeliveryStatus {
 }
 
 interface ArticleDeliveryPendingDeliveryState {
+  id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.PendingDelivery;
 }
 
 interface ArticleDeliverySentState {
+  id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.Sent;
 }
 
 interface ArticleDeliveryRateLimitState {
+  id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.RateLimited;
 }
 
 interface ArticleDeliveryRejectedState {
+  id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.Rejected;
   errorCode: ArticleDeliveryRejectedCode;
@@ -40,6 +44,7 @@ interface ArticleDeliveryRejectedState {
 }
 
 interface ArticleDeliveryFailureState {
+  id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.Failed;
   /**
@@ -53,6 +58,7 @@ interface ArticleDeliveryFailureState {
 }
 
 interface ArticleDeliveryFilteredOutState {
+  id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.FilteredOut;
 }

@@ -25,7 +25,7 @@ export class FeedEventHandlerService {
     private readonly deliveryService: DeliveryService,
     private readonly deliveryRecordService: DeliveryRecordService,
     private readonly amqpConnection: AmqpConnection,
-    private readonly orm: MikroORM
+    private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
   @RabbitSubscribe({
@@ -37,8 +37,6 @@ export class FeedEventHandlerService {
       await feedV2EventSchema.validate(event, {
         abortEarly: false,
       });
-
-      await this.handleV2EventWithDb(event);
     } catch (err) {
       const validationErrr = err as ValidationError;
 
@@ -46,75 +44,83 @@ export class FeedEventHandlerService {
         `Validation failed on incoming Feed V2 event: ${validationErrr.errors}`
       );
     }
+
+    // Require to be separated to use with MikroORM's decorator @UseRequestContext()
+    await this.handleV2EventWithDb(event);
   }
 
   @UseRequestContext()
   private async handleV2EventWithDb(event: FeedV2Event) {
-    // Used for displaying in UIs
-    await this.articleRateLimitService.addOrUpdateFeedLimit(
-      event.data.feed.id,
-      {
-        // hardcode seconds in a day for now
-        timeWindowSec: 86400,
-        limit: event.data.articleDayLimit,
-      }
-    );
-
-    const {
-      data: {
-        feed: { url, blockingComparisons, passingComparisons },
-      },
-    } = event;
-
-    const feedXml = await this.feedFetcherService.fetch(url);
-
-    if (!feedXml) {
-      console.log("no feed xml returned, skipping");
-
-      return;
-    }
-
-    const articles = await this.articlesService.getArticlesToDeliverFromXml(
-      feedXml,
-      {
-        id: event.data.feed.id,
-        blockingComparisons,
-        passingComparisons,
-      }
-    );
-
-    if (!articles.length) {
-      console.log("no articles found");
-
-      return;
-    }
-
-    const deliveryStates = await this.deliveryService.deliver(event, articles);
-
     try {
-      await this.deliveryRecordService.store(
+      // Used for displaying in UIs
+      await this.articleRateLimitService.addOrUpdateFeedLimit(
         event.data.feed.id,
-        deliveryStates
+        {
+          // hardcode seconds in a day for now
+          timeWindowSec: 86400,
+          limit: event.data.articleDayLimit,
+        }
       );
-    } catch (err) {
-      console.log(`Failed to store delivery states`, {
+
+      const {
+        data: {
+          feed: { url, blockingComparisons, passingComparisons },
+        },
+      } = event;
+
+      const feedXml = await this.feedFetcherService.fetch(url);
+
+      if (!feedXml) {
+        return;
+      }
+
+      const articles = await this.articlesService.getArticlesToDeliverFromXml(
+        feedXml,
+        {
+          id: event.data.feed.id,
+          blockingComparisons,
+          passingComparisons,
+        }
+      );
+
+      if (!articles.length) {
+        return;
+      }
+
+      const deliveryStates = await this.deliveryService.deliver(
         event,
-        deliveryStates,
-        error: (err as Error).stack,
+        articles
+      );
+
+      try {
+        await this.deliveryRecordService.store(
+          event.data.feed.id,
+          deliveryStates
+        );
+      } catch (err) {
+        console.log(`Failed to store delivery states`, {
+          event,
+          deliveryStates,
+          error: (err as Error).stack,
+        });
+      }
+
+      try {
+        this.emitDisableEvents(event, deliveryStates);
+      } catch (err) {
+        console.error(`Failed to emit disable event after processing feed`, {
+          event,
+          deliveryStates,
+          error: (err as Error).stack,
+        });
+      }
+
+      console.log(`Total new articles:`, articles.length);
+    } catch (err) {
+      console.error(`Error while handling feed event`, {
+        stack: (err as Error).stack,
       });
     }
-
-    try {
-      // this.emitDisableEvents(event, deliveryStates);
-    } catch (err) {
-      console.error(`Failed to emit disable event after processing feed`, {
-        event,
-        deliveryStates,
-        error: (err as Error).stack,
-      });
-    }
-
-    console.log(`Total new articles:`, articles.length);
   }
 
   emitDisableEvents(

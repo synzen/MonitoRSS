@@ -1,10 +1,12 @@
+process.env.MIKRO_ORM_ALLOW_GLOBAL_CONTEXT = "true";
+
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   Article,
   ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
-  BrokerEvent,
+  BrokerQueue,
   FeedV2Event,
   MediumKey,
 } from "../shared";
@@ -15,6 +17,7 @@ import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limi
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { DeliveryService } from "../delivery/delivery.service";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { MikroORM } from "@mikro-orm/core";
 
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
@@ -40,6 +43,7 @@ describe("FeedEventHandlerService", () => {
   beforeEach(async () => {
     jest.resetAllMocks();
     jest.spyOn(console, "log").mockImplementation();
+    jest.spyOn(console, "error").mockImplementation();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FeedEventHandlerService,
@@ -67,6 +71,21 @@ describe("FeedEventHandlerService", () => {
           provide: AmqpConnection,
           useValue: amqpConnection,
         },
+        {
+          provide: MikroORM,
+          useValue: await MikroORM.init(
+            {
+              // Get past errors related to @UseRequestContext() decorator from MikroORM
+              type: "postgresql",
+              dbName: "test",
+              entities: [],
+              discovery: {
+                warnWhenNoEntities: false,
+              },
+            },
+            false
+          ),
+        },
       ],
     }).compile();
 
@@ -79,24 +98,27 @@ describe("FeedEventHandlerService", () => {
 
   describe("handleV2Event", () => {
     const v2Event: FeedV2Event = {
-      feed: {
-        id: "1",
-        blockingComparisons: ["title"],
-        passingComparisons: ["description"],
-        url: "url",
-      },
-      mediums: [
-        {
+      data: {
+        feed: {
           id: "1",
-          key: MediumKey.Discord,
-          details: {
-            guildId: "1",
-            channel: { id: "channel 1" },
-            webhook: null,
-          },
+          blockingComparisons: ["title"],
+          passingComparisons: ["description"],
+          url: "url",
         },
-      ],
-      articleDayLimit: 100,
+        mediums: [
+          {
+            id: "1",
+            key: MediumKey.Discord,
+            filters: null,
+            details: {
+              guildId: "1",
+              channel: { id: "channel 1" },
+              webhook: null,
+            },
+          },
+        ],
+        articleDayLimit: 100,
+      },
     };
 
     describe("schema validation", () => {
@@ -104,7 +126,10 @@ describe("FeedEventHandlerService", () => {
         await expect(
           service.handleV2Event({
             ...v2Event,
-            mediums: [],
+            data: {
+              ...v2Event.data,
+              mediums: [],
+            },
           })
         ).rejects.toThrow();
       });
@@ -113,13 +138,16 @@ describe("FeedEventHandlerService", () => {
         await expect(
           service.handleV2Event({
             ...v2Event,
-            mediums: [
-              {
-                id: "1",
-                key: "invalid medium key" as MediumKey,
-                details: {} as never,
-              },
-            ],
+            data: {
+              ...v2Event.data,
+              mediums: [
+                {
+                  id: "1",
+                  key: "invalid medium key" as MediumKey,
+                  details: {} as never,
+                },
+              ],
+            },
           })
         ).rejects.toThrow();
       });
@@ -128,30 +156,35 @@ describe("FeedEventHandlerService", () => {
         await expect(
           service.handleV2Event({
             ...v2Event,
-            feed: {
-              url: "url",
-            } as never,
+            data: {
+              ...v2Event.data,
+              feed: {
+                url: "url",
+              } as never,
+            },
           })
         ).rejects.toThrow();
       });
     });
 
     describe("when no feed request is pending", () => {
-      it("returns no articles", async () => {
+      it("does not deliver anything", async () => {
         feedFetcherService.fetch.mockResolvedValue(null);
 
-        const returned = await service.handleV2Event(v2Event);
-        expect(returned).toEqual([]);
+        await service.handleV2Event(v2Event);
+
+        expect(deliveryService.deliver).not.toHaveBeenCalled();
       });
     });
 
     describe("when feed request succeeded but there are no articles", () => {
-      it("returns no articles", async () => {
+      it("does not deliver anything", async () => {
         feedFetcherService.fetch.mockResolvedValue("feed text");
         articlesService.getArticlesToDeliverFromXml.mockResolvedValue([]);
 
-        const returned = await service.handleV2Event(v2Event);
-        expect(returned).toEqual([]);
+        await service.handleV2Event(v2Event);
+
+        expect(deliveryService.deliver).not.toHaveBeenCalled();
       });
     });
 
@@ -170,18 +203,21 @@ describe("FeedEventHandlerService", () => {
         articlesService.getArticlesToDeliverFromXml.mockResolvedValue(articles);
       });
 
-      it("returns the articles to deliver", async () => {
-        const returned = await service.handleV2Event(v2Event);
-        expect(returned).toEqual(articles);
+      it("calls delivery on the the articles", async () => {
+        await service.handleV2Event(v2Event);
+
+        expect(deliveryService.deliver).toHaveBeenCalledWith(v2Event, articles);
       });
 
       it("stores the article delivery states", async () => {
         const deliveryStates: ArticleDeliveryState[] = [
           {
+            id: "1",
             mediumId: "1",
             status: ArticleDeliveryStatus.Sent,
           },
           {
+            id: "2",
             mediumId: "1",
             status: ArticleDeliveryStatus.FilteredOut,
           },
@@ -194,7 +230,7 @@ describe("FeedEventHandlerService", () => {
         await service.handleV2Event(v2Event);
 
         expect(deliveryRecordService.store).toHaveBeenCalledWith(
-          v2Event.feed.id,
+          v2Event.data.feed.id,
           deliveryStates
         );
       });
@@ -226,16 +262,19 @@ describe("FeedEventHandlerService", () => {
       it("emits disabled events", async () => {
         const deliveryStates: ArticleDeliveryState[] = [
           {
+            id: "1",
             mediumId: "1",
             status: ArticleDeliveryStatus.Rejected,
             errorCode: ArticleDeliveryRejectedCode.BadRequest,
             internalMessage: "",
           },
           {
+            id: "2",
             mediumId: "1",
             status: ArticleDeliveryStatus.FilteredOut,
           },
           {
+            id: "3",
             mediumId: "2",
             status: ArticleDeliveryStatus.Rejected,
             errorCode: ArticleDeliveryRejectedCode.BadRequest,
@@ -251,14 +290,14 @@ describe("FeedEventHandlerService", () => {
 
         expect(amqpConnection.publish).toHaveBeenCalledWith(
           "",
-          BrokerEvent.FeedRejectedArticleDisable,
+          BrokerQueue.FeedRejectedArticleDisable,
           {
             data: {
               medium: {
                 id: "1",
               },
               feed: {
-                id: v2Event.feed.id,
+                id: v2Event.data.feed.id,
               },
             },
           }

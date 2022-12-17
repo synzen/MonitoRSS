@@ -42,6 +42,7 @@ describe("DiscordMediumService", () => {
     };
 
     const deliveryDetails: DeliveryDetails = {
+      deliveryId: "delivery-id",
       mediumId: "medium-id",
       deliverySettings: {
         guildId: "guild-id",
@@ -63,6 +64,7 @@ describe("DiscordMediumService", () => {
     it("returns the status of the result", async () => {
       const result = await service.deliverArticle(article, deliveryDetails);
       expect(result).toEqual({
+        id: deliveryDetails.deliveryId,
         mediumId: deliveryDetails.mediumId,
         status: ArticleDeliveryStatus.PendingDelivery,
       });
@@ -159,6 +161,7 @@ describe("DiscordMediumService", () => {
             }),
           },
           {
+            id: deliveryDetails.deliveryId,
             articleID: "1",
             feedURL: deliveryDetails.feedDetails.url,
             channel: "channel-1",
@@ -211,6 +214,7 @@ describe("DiscordMediumService", () => {
             }),
           },
           {
+            id: deliveryDetails.deliveryId,
             articleID: "1",
             feedURL: deliveryDetails.feedDetails.url,
             webhookId: webhook1Id,
@@ -249,6 +253,7 @@ describe("DiscordMediumService", () => {
         return expect(
           service.deliverArticle(article, deliveryDetails)
         ).resolves.toEqual({
+          id: deliveryDetails.deliveryId,
           status: ArticleDeliveryStatus.PendingDelivery,
           mediumId: deliveryDetails.mediumId,
         } as ArticleDeliveryState);

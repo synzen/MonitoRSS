@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import {
@@ -77,7 +78,8 @@ export class DeliveryService {
         event,
         article,
         medium,
-        limitState
+        limitState,
+        randomUUID()
       );
 
       results.push(articleState);
@@ -90,11 +92,13 @@ export class DeliveryService {
     event: FeedV2Event,
     article: Article,
     medium: MediumPayload,
-    limitState: LimitState
+    limitState: LimitState,
+    deliveryId: string
   ): Promise<ArticleDeliveryState> {
     try {
       if (limitState.remaining <= 0) {
         return {
+          id: deliveryId,
           mediumId: medium.id,
           status: ArticleDeliveryStatus.RateLimited,
         };
@@ -113,6 +117,7 @@ export class DeliveryService {
 
       if (!passesFilters) {
         return {
+          id: deliveryId,
           mediumId: medium.id,
           status: ArticleDeliveryStatus.FilteredOut,
         };
@@ -121,6 +126,7 @@ export class DeliveryService {
       const articleState = await this.mediumServices[medium.key].deliverArticle(
         article,
         {
+          deliveryId,
           mediumId: medium.id,
           deliverySettings: medium.details,
           feedDetails: event.data.feed,
@@ -138,6 +144,7 @@ export class DeliveryService {
       );
 
       return {
+        id: deliveryId,
         mediumId: medium.id,
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,

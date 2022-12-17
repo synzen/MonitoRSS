@@ -22,11 +22,13 @@ export class DeliveryRecordService {
 
       if (articleStatus === Sent) {
         record = new DeliveryRecord({
+          id: articleState.id,
           feed_id: feedId,
           status: articleStatus,
         });
       } else if (articleStatus === Failed || articleStatus === Rejected) {
         record = new DeliveryRecord({
+          id: articleState.id,
           feed_id: feedId,
           status: articleStatus,
           error_code: articleState.errorCode,
@@ -34,6 +36,7 @@ export class DeliveryRecordService {
         });
       } else {
         record = new DeliveryRecord({
+          id: articleState.id,
           feed_id: feedId,
           status: articleStatus,
         });

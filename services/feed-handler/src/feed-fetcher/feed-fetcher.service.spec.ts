@@ -13,7 +13,7 @@ const serviceHost = "https://request-service.com";
 describe("FeedFetcherService", () => {
   let service: FeedFetcherService;
   let client: Interceptable;
-  const interceptPath = "/requests";
+  const interceptPath = "/v1/requests";
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
