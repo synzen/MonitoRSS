@@ -211,7 +211,7 @@ export class ScheduleHandlerService {
           channel: {
             id: con.details.channel.id,
           },
-          content: con.details.content,
+          content: this.castDiscordContentForMedium(con.details.content),
           embeds: this.castDiscordEmbedsForMedium(con.details.embeds),
         },
       }));
@@ -231,7 +231,7 @@ export class ScheduleHandlerService {
             name: con.details.webhook.name,
             iconUrl: con.details.webhook.iconUrl,
           },
-          content: con.details.content,
+          content: this.castDiscordContentForMedium(con.details.content),
           embeds: this.castDiscordEmbedsForMedium(con.details.embeds),
         },
       }));
@@ -489,6 +489,10 @@ export class ScheduleHandlerService {
     };
 
     return this.userFeedModel.find(query);
+  }
+
+  private castDiscordContentForMedium(content?: string) {
+    return content || `📰 | {{title}}\n\n{{description}}\n\n{{link}}`;
   }
 
   private castDiscordEmbedsForMedium(
