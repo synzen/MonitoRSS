@@ -288,7 +288,7 @@ class Base {
    *
    * @param {number} npp Number (of docs) per page to fetch per query/page
    */
-  static async getAllByPagination (npp = 5000) {
+  static async getAllByPagination (npp = 7500) {
     if (!this.isMongoDatabase) {
       // Pagination is not supported for databaseless
       return this.getAll()
@@ -298,31 +298,45 @@ class Base {
      * @type {MongooseModel}
      */
     const DatabaseModel = this.Model
-    async function getPage (startId, numberPerPage) {
-      const results = await DatabaseModel.find({
-        _id: {
-          $lt: new mongoose.Types.ObjectId(startId)
-        }
-      }).sort({
-        _id: -1
-      }).limit(numberPerPage).exec()
-      // No more results since results has less than the limit per page
-      if (results.length < numberPerPage) {
-        return results
-      }
-      // Get the last ID of the last document as the start
-      const lastId = results[results.length - 1]._id
-      const nextResults = await getPage(lastId, numberPerPage)
-      results.push(...nextResults)
-      return results
-    }
+
     const largestIdDoc = (await DatabaseModel.find().sort({
       _id: -1
     }).limit(1).exec())[0]
     if (!largestIdDoc) {
       return []
     }
-    const documents = await getPage(largestIdDoc._id, npp)
+
+    let startId = largestIdDoc._id;
+    let allResults = []
+    let latestResults = await DatabaseModel.find({
+      _id: {
+        $lte: new mongoose.Types.ObjectId(startId)
+      }
+    }).sort({
+      _id: -1
+    }).limit(npp).exec()
+
+    startId = latestResults[latestResults.length - 1]._id
+
+
+    while (latestResults.length === npp) {
+      const results = await DatabaseModel.find({
+        _id: {
+          $lt: new mongoose.Types.ObjectId(startId)
+        }
+      }).sort({
+        _id: -1
+      }).limit(npp).exec()
+
+      startId = results[results.length - 1]._id
+      
+      latestResults = results
+      allResults.push(...results)
+    }
+
+    allResults.push(...latestResults)
+
+    const documents = allResults
     const documentsLength = documents.length
     /**
      * Add doc with the largest ID since getPage does not
