@@ -55,7 +55,9 @@ export class FeedFetcherService {
       message,
     });
 
-    const dateToCheck = dayjs().subtract(rateSeconds, 'seconds').toDate();
+    const dateToCheck = dayjs()
+      .subtract(Math.round(rateSeconds * 0.75), 'seconds')
+      .toDate();
 
     const requestExistsAfterTime = await this.requestExistsAfterTime(
       { url },
