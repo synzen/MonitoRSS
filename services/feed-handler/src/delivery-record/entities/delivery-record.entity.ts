@@ -10,6 +10,9 @@ export class DeliveryRecord {
   feed_id: string;
 
   @Property()
+  medium_id: string;
+
+  @Property()
   created_at: Date = new Date();
 
   @Enum(() => ArticleDeliveryStatus)
@@ -36,6 +39,7 @@ export class DeliveryRecord {
     this.status = data.status;
     this.error_code = data.error_code;
     this.internal_message = data.internal_message;
+    this.medium_id = data.medium_id;
 
     if (overrides?.created_at) {
       this.created_at = overrides.created_at;

@@ -195,11 +195,41 @@ describe("DeliveryRecordService", () => {
   });
 
   describe("updateDeliveryStatus", () => {
+    it("returns the updated record", async () => {
+      const existingRecord = new DeliveryRecord({
+        id: "id-1",
+        feed_id: "feed-id",
+        status: ArticleDeliveryStatus.PendingDelivery,
+        medium_id: "1",
+      });
+
+      await deliveryRecordRepo.persistAndFlush(existingRecord);
+
+      const updatedRecord = await service.updateDeliveryStatus(
+        existingRecord.id,
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          internalMessage: "internal-message",
+        }
+      );
+
+      expect(updatedRecord).toEqual(
+        expect.objectContaining({
+          id: existingRecord.id,
+          status: ArticleDeliveryStatus.Failed,
+          error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          internal_message: "internal-message",
+        })
+      );
+    });
+
     it("updates the status of a delivery record", async () => {
       const existingRecord = new DeliveryRecord({
         id: "id-1",
         feed_id: "feed-id",
         status: ArticleDeliveryStatus.PendingDelivery,
+        medium_id: "1",
       });
 
       await deliveryRecordRepo.persistAndFlush(existingRecord);
@@ -232,6 +262,7 @@ describe("DeliveryRecordService", () => {
             id: "1",
             feed_id: feedId,
             status: ArticleDeliveryStatus.Sent,
+            medium_id: "1",
           },
           {
             created_at: dayjs().subtract(1, "hour").toDate(),
@@ -240,9 +271,9 @@ describe("DeliveryRecordService", () => {
         new DeliveryRecord(
           {
             id: "2",
-
             feed_id: feedId,
             status: ArticleDeliveryStatus.Rejected,
+            medium_id: "1",
           },
           {
             created_at: dayjs().subtract(1, "hour").toDate(),
@@ -253,6 +284,7 @@ describe("DeliveryRecordService", () => {
             id: "3",
             feed_id: feedId,
             status: ArticleDeliveryStatus.Sent,
+            medium_id: "1",
           },
           {
             created_at: dayjs().subtract(1, "day").toDate(),

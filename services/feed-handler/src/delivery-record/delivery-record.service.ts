@@ -25,6 +25,7 @@ export class DeliveryRecordService {
           id: articleState.id,
           feed_id: feedId,
           status: articleStatus,
+          medium_id: articleState.mediumId,
         });
       } else if (articleStatus === Failed || articleStatus === Rejected) {
         record = new DeliveryRecord({
@@ -33,12 +34,14 @@ export class DeliveryRecordService {
           status: articleStatus,
           error_code: articleState.errorCode,
           internal_message: articleState.internalMessage,
+          medium_id: articleState.mediumId,
         });
       } else {
         record = new DeliveryRecord({
           id: articleState.id,
           feed_id: feedId,
           status: articleStatus,
+          medium_id: articleState.mediumId,
         });
       }
 
@@ -65,6 +68,8 @@ export class DeliveryRecordService {
     record.internal_message = internalMessage;
 
     await this.recordRepo.persistAndFlush(record);
+
+    return record;
   }
 
   countDeliveriesInPastTimeframe(
