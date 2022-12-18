@@ -48,6 +48,25 @@ export class DeliveryRecordService {
     await this.recordRepo.persistAndFlush(records);
   }
 
+  async updateDeliveryStatus(
+    id: string,
+    details: {
+      status: ArticleDeliveryStatus;
+      errorCode?: string;
+      internalMessage?: string;
+    }
+  ) {
+    const { status, errorCode, internalMessage } = details;
+
+    const record = await this.recordRepo.findOneOrFail(id);
+
+    record.status = status;
+    record.error_code = errorCode;
+    record.internal_message = internalMessage;
+
+    await this.recordRepo.persistAndFlush(record);
+  }
+
   countDeliveriesInPastTimeframe(
     { feedId }: { feedId: string },
     secondsInPast: number

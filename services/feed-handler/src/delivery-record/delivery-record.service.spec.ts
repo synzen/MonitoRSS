@@ -194,6 +194,34 @@ describe("DeliveryRecordService", () => {
     });
   });
 
+  describe("updateDeliveryStatus", () => {
+    it("updates the status of a delivery record", async () => {
+      const existingRecord = new DeliveryRecord({
+        id: "id-1",
+        feed_id: "feed-id",
+        status: ArticleDeliveryStatus.PendingDelivery,
+      });
+
+      await deliveryRecordRepo.persistAndFlush(existingRecord);
+
+      await service.updateDeliveryStatus(existingRecord.id, {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+        internalMessage: "internal-message",
+      });
+
+      const updatedRecord = await deliveryRecordRepo.findOneOrFail(
+        existingRecord.id
+      );
+
+      expect(updatedRecord.status).toEqual(ArticleDeliveryStatus.Failed);
+      expect(updatedRecord.error_code).toEqual(
+        ArticleDeliveryErrorCode.NoChannelOrWebhook
+      );
+      expect(updatedRecord.internal_message).toEqual("internal-message");
+    });
+  });
+
   describe("countDeliveriesInPastTimeframe", () => {
     it("returns the correct number of sent and rejected deliveries", async () => {
       const feedId = "feed-id";

@@ -3,6 +3,7 @@ process.env.MIKRO_ORM_ALLOW_GLOBAL_CONTEXT = "true";
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   Article,
+  ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -18,6 +19,7 @@ import { DeliveryRecordService } from "../delivery-record/delivery-record.servic
 import { DeliveryService } from "../delivery/delivery.service";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM } from "@mikro-orm/core";
+import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
@@ -35,6 +37,7 @@ describe("FeedEventHandlerService", () => {
   };
   const deliveryRecordService = {
     store: jest.fn(),
+    updateDeliveryStatus: jest.fn(),
   };
   const amqpConnection = {
     publish: jest.fn(),
@@ -303,6 +306,125 @@ describe("FeedEventHandlerService", () => {
           }
         );
       });
+    });
+  });
+
+  describe("onArticleDeliveryResult", () => {
+    it("handles error state correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "error",
+          message: "error message",
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.Internal,
+          internalMessage: "error message",
+        }
+      );
+    });
+
+    it("handles 400 status correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 400,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          internalMessage: expect.any(String),
+        }
+      );
+    });
+
+    it("handles 500 status correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 500,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
+          internalMessage: expect.any(String),
+        }
+      );
+    });
+
+    it("handles unhandled status codes correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 403,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.Internal,
+          internalMessage: expect.any(String),
+        }
+      );
+    });
+
+    it("handles a successful delivery correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 200,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Sent,
+        }
+      );
     });
   });
 });

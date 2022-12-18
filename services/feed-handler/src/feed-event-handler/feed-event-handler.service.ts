@@ -6,6 +6,7 @@ import { DeliveryRecordService } from "../delivery-record/delivery-record.servic
 import { DeliveryService } from "../delivery/delivery.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
+  ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -15,6 +16,7 @@ import {
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM, UseRequestContext } from "@mikro-orm/core";
+import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -47,6 +49,68 @@ export class FeedEventHandlerService {
 
     // Require to be separated to use with MikroORM's decorator @UseRequestContext()
     await this.handleV2EventWithDb(event);
+  }
+
+  @RabbitSubscribe({
+    queue: BrokerQueue.FeedArticleDeliveryResult,
+    createQueueIfNotExists: true,
+    queueOptions: {
+      durable: true,
+    },
+    allowNonJsonMessages: true,
+  })
+  async onArticleDeliveryResult(result: ArticleDeliveryResult): Promise<void> {
+    try {
+      await this.handleArticleDeliveryResult(result);
+    } catch (err) {
+      console.error(`Failed to handle article delivery result`, {
+        err: (err as Error).stack,
+      });
+    }
+  }
+
+  @UseRequestContext()
+  private async handleArticleDeliveryResult({
+    result,
+    job,
+  }: ArticleDeliveryResult) {
+    const deliveryRecordId = job.id;
+
+    if (result.state === "error") {
+      await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: result.message,
+      });
+    } else if (result.status === 400) {
+      await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
+        status: ArticleDeliveryStatus.Rejected,
+        errorCode: ArticleDeliveryRejectedCode.BadRequest,
+        internalMessage: `Discord rejected the request with status code ${
+          result.status
+        } Body: ${JSON.stringify(result.body)}`,
+      });
+    } else if (result.status >= 500) {
+      await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
+        internalMessage: `Discord rejected the request with status code ${
+          result.status
+        } Body: ${JSON.stringify(result.body)}`,
+      });
+    } else if (result.status < 200 || result.status > 400) {
+      await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: `Unhandled status code from Discord ${
+          result.status
+        } received. Body: ${JSON.stringify(result.body)}`,
+      });
+    } else {
+      await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
+        status: ArticleDeliveryStatus.Sent,
+      });
+    }
   }
 
   @UseRequestContext()
