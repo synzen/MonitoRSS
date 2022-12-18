@@ -302,42 +302,36 @@ class Base {
     const largestIdDoc = (await DatabaseModel.find().sort({
       _id: -1
     }).limit(1).exec())[0]
-    if (!largestIdDoc) {
+
+    let largestId = largestIdDoc ? largestIdDoc._id : null
+
+    if (!largestId) {
       return []
     }
 
-    let startId = largestIdDoc._id;
     let allResults = []
-    let latestResults = await DatabaseModel.find({
-      _id: {
-        $lte: new mongoose.Types.ObjectId(startId)
-      }
-    }).sort({
-      _id: -1
-    }).limit(npp).exec()
+    let latestResults = []
 
-    startId = latestResults[latestResults.length - 1]._id
-
-
-    while (latestResults.length === npp) {
+    do {
       const results = await DatabaseModel.find({
         _id: {
-          $lt: new mongoose.Types.ObjectId(startId)
+          $lt: largestId
         }
       }).sort({
         _id: -1
       }).limit(npp).exec()
-
-      startId = results[results.length - 1]._id
+  
+      if (results.length > 0) {
+        largestId = results[results.length - 1]._id
+      } else {
+        largestId = null
+      }
       
       latestResults = results
       allResults.push(...results)
-    }
+    } while (latestResults.length === npp && largestId)
 
-    allResults.push(...latestResults)
-
-    const documents = allResults
-    const documentsLength = documents.length
+    const allResultsLength = allResults.length
     /**
      * Add doc with the largest ID since getPage does not
      * include the doc with the largest id ($lt is less than)
@@ -346,8 +340,8 @@ class Base {
      * function is optimized for performance
      */
     const converted = [new this(largestIdDoc, true)]
-    for (var i = 0; i < documentsLength; ++i) {
-      converted.push(new this(documents[i], true))
+    for (var i = 0; i < allResultsLength; ++i) {
+      converted.push(new this(allResults[i], true))
     }
     return converted
   }
