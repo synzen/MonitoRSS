@@ -83,12 +83,26 @@ export class FeedEventHandlerService {
         internalMessage: result.message,
       });
     } else if (result.status === 400) {
-      await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
-        status: ArticleDeliveryStatus.Rejected,
-        errorCode: ArticleDeliveryRejectedCode.BadRequest,
-        internalMessage: `Discord rejected the request with status code ${
-          result.status
-        } Body: ${JSON.stringify(result.body)}`,
+      const record = await this.deliveryRecordService.updateDeliveryStatus(
+        deliveryRecordId,
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          internalMessage: `Discord rejected the request with status code ${
+            result.status
+          } Body: ${JSON.stringify(result.body)}`,
+        }
+      );
+
+      this.amqpConnection.publish("", BrokerQueue.FeedRejectedArticleDisable, {
+        data: {
+          medium: {
+            id: record.medium_id,
+          },
+          feed: {
+            id: record.feed_id,
+          },
+        },
       });
     } else if (result.status >= 500) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
@@ -169,49 +183,11 @@ export class FeedEventHandlerService {
         });
       }
 
-      try {
-        this.emitDisableEvents(event, deliveryStates);
-      } catch (err) {
-        console.error(`Failed to emit disable event after processing feed`, {
-          event,
-          deliveryStates,
-          error: (err as Error).stack,
-        });
-      }
-
       console.log(`Total new articles:`, articles.length);
     } catch (err) {
       console.error(`Error while handling feed event`, {
         stack: (err as Error).stack,
       });
     }
-  }
-
-  emitDisableEvents(
-    { data: { feed } }: FeedV2Event,
-    deliveryStates: ArticleDeliveryState[]
-  ) {
-    deliveryStates.forEach((state) => {
-      if (state.status !== ArticleDeliveryStatus.Rejected) {
-        return;
-      }
-
-      if (state.errorCode === ArticleDeliveryRejectedCode.BadRequest) {
-        this.amqpConnection.publish(
-          "",
-          BrokerQueue.FeedRejectedArticleDisable,
-          {
-            data: {
-              medium: {
-                id: state.mediumId,
-              },
-              feed: {
-                id: feed.id,
-              },
-            },
-          }
-        );
-      }
-    });
   }
 }

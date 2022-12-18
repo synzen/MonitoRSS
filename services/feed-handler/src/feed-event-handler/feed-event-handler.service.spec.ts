@@ -357,6 +357,43 @@ describe("FeedEventHandlerService", () => {
       );
     });
 
+    it("emits disable feed event for 400 status", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 400,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      jest
+        .spyOn(deliveryRecordService, "updateDeliveryStatus")
+        .mockResolvedValue({
+          medium_id: "medium-id",
+          feed_id: "feed-id",
+        });
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        "",
+        BrokerQueue.FeedRejectedArticleDisable,
+        {
+          data: {
+            medium: {
+              id: "medium-id",
+            },
+            feed: {
+              id: "feed-id",
+            },
+          },
+        }
+      );
+    });
+
     it("handles 500 status correctly", async () => {
       const articleDeliveryResult: ArticleDeliveryResult = {
         result: {
