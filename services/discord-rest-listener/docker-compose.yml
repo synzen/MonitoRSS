@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  discord-rest-listener:
+    restart: on-failure:3
+    build:
+      dockerfile: Dockerfile
+      target: build
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npm start
+    env_file:
+      - ./.env
