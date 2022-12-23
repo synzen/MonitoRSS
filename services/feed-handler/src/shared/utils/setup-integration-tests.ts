@@ -1,7 +1,7 @@
 import { EntityName, MikroOrmModule } from "@mikro-orm/nestjs";
 import { ModuleMetadata } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
 import { config } from "../../config";
 import { MikroORM } from "@mikro-orm/core";
 import { randomUUID } from "crypto";
@@ -21,6 +21,8 @@ export async function setupIntegrationTests(
   options?: Options
 ) {
   const configVals = config();
+
+  const { Test } = await import("@nestjs/testing");
 
   const uncompiledModule = Test.createTestingModule({
     ...metadata,
