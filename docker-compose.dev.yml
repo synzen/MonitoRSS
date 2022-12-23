@@ -6,6 +6,11 @@ services:
     ports:
         - 5672:5672
         - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 1s
+      retries: 20
 
   mrss-mongo:
     restart: on-failure:5
@@ -17,7 +22,7 @@ services:
       - "27018:27017"
     volumes:
       - "db-mongodb-data:/data/db"
-
+  
   mrss-postgres-feedfetcher:
     container_name: mrss-postgres-feedfetcher
     restart: always
@@ -69,9 +74,17 @@ services:
     volumes:
       - ./services/discord-rest-listener:/usr/src/app
       - /usr/src/app/node_modules/
+    depends_on:
+      mrss-rabbitmq-broker:
+        condition: service_healthy
+      mrss-mongo:
+        condition: service_started
     command: npm start
     env_file:
       - ./.env.local
+    environment:
+      - DISCORD_REST_LISTENER_RABBITMQ_URI=amqp://mrss-rabbitmq-broker:5672
+      - DISCORD_REST_LISTENER_MONGO_URI=mongodb://mrss-mongo:27017/rss
 
   mrss-feedfetcher:
     restart: on-failure:3
@@ -117,6 +130,7 @@ services:
       - ./.env.local
     environment:
       - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedhandler:5432
+      - FEED_HANDLER_DISCORD_RABBITMQ_URI=amqp://mrss-rabbitmq-broker:5672
       - FEED_HANDLER_POSTGRES_DATABASE=feedhandler
       - FEED_HANDLER_FEED_MONGODB_URI=mongodb://mrss-mongo:27017/rss
       - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://mrss-feedfetcher:5000
@@ -152,59 +166,59 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
     command: npm run start:schedule-emitter:local
 
-  # Web - Backend api
-  mrss-web-api:
-    build:
-      context: services/backend-api
-      dockerfile: dockerfiles/web/api.Dockerfile
-      target: build
-    restart: on-failure:3
-    volumes:
-      - ./services/backend-api:/usr/src/app
-      - /usr/src/app/node_modules/
-    depends_on:
-      - mrss-mongo
-      - mrss-feedhandler
-      - mrss-feedfetcher
-    ports:
-      - "8000:8000"
-    env_file:
-      - ./.env.local
-    environment:
-      - BACKEND_API_NODE_ENV=local
-      - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-      - BACKEND_API_FEED_HANDLER_API_HOST=http://mrss-feedhandler:5000
-      - BACKEND_API_FEED_HANDLER_API_KEY=feed-handler-api-key
-      - BACKEND_API_FEED_FETCHER_API_HOST=http://mrss-feedfetcher:5000
-      - BACKEND_API_FEED_FETCHER_API_KEY=feed-fetcher-api-key
-      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:8000
-      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8000/api/v1/discord/callback
-      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=0.1
-      - BACKEND_API_DEFAULT_MAX_FEEDS=10
-      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
-    command: npm run start:local
+  # # Web - Backend api
+  # mrss-web-api:
+  #   build:
+  #     context: services/backend-api
+  #     dockerfile: dockerfiles/web/api.Dockerfile
+  #     target: build
+  #   restart: on-failure:3
+  #   volumes:
+  #     - ./services/backend-api:/usr/src/app
+  #     - /usr/src/app/node_modules/
+  #   depends_on:
+  #     - mrss-mongo
+  #     - mrss-feedhandler
+  #     - mrss-feedfetcher
+  #   ports:
+  #     - "8000:8000"
+  #   env_file:
+  #     - ./.env.local
+  #   environment:
+  #     - BACKEND_API_NODE_ENV=local
+  #     - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+  #     - BACKEND_API_FEED_HANDLER_API_HOST=http://mrss-feedhandler:5000
+  #     - BACKEND_API_FEED_HANDLER_API_KEY=feed-handler-api-key
+  #     - BACKEND_API_FEED_FETCHER_API_HOST=http://mrss-feedfetcher:5000
+  #     - BACKEND_API_FEED_FETCHER_API_KEY=feed-fetcher-api-key
+  #     - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:8000
+  #     - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8000/api/v1/discord/callback
+  #     - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=0.1
+  #     - BACKEND_API_DEFAULT_MAX_FEEDS=10
+  #     - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+  #   command: npm run start:local
 
-  mrss-web-client:
-    build:
-      context: services/backend-api/client
-      dockerfile: ../dockerfiles/web/client.Dockerfile
-      target: build
-    restart: on-failure:3
-    ports:
-      - "3000:3000"
-    expose:
-      - "3000"
-    environment:
-      - NODE_ENV=local
-      - HOST=0.0.0.0
-      - API_PROXY_URL=http://mrss-web-api:8000
-      - VITE_USE_POLLING=true
-    depends_on:
-      - mrss-web-api
-    volumes:
-      - ./services/backend-api/client:/usr/src/app
-      - /usr/src/app/node_modules/
-    command: npx vite --host
+  # mrss-web-client:
+  #   build:
+  #     context: services/backend-api/client
+  #     dockerfile: ../dockerfiles/web/client.Dockerfile
+  #     target: build
+  #   restart: on-failure:3
+  #   ports:
+  #     - "3000:3000"
+  #   expose:
+  #     - "3000"
+  #   environment:
+  #     - NODE_ENV=local
+  #     - HOST=0.0.0.0
+  #     - API_PROXY_URL=http://mrss-web-api:8000
+  #     - VITE_USE_POLLING=true
+  #   depends_on:
+  #     - mrss-web-api
+  #   volumes:
+  #     - ./services/backend-api/client:/usr/src/app
+  #     - /usr/src/app/node_modules/
+  #   command: npx vite --host
 
 volumes:
   db-mongodb-data:
