@@ -134,12 +134,12 @@ setup().then(async (initializedData) => {
     }
 
     try {
-      await amqpChannelWrapper.sendToQueue(AmqpChannel.FeedArticleDeliveryResult, Buffer.from(JSON.stringify({
-        job,
-        result,
-      })), {
-        persistent: true,
-      })
+      // await amqpChannelWrapper.sendToQueue(AmqpChannel.FeedArticleDeliveryResult, Buffer.from(JSON.stringify({
+      //   job,
+      //   result,
+      // })), {
+      //   persistent: true,
+      // })
     } catch (err) {
       log.debug(`Failed to send feed delivery result to queue`, err)
       logDatadog('error', `Failed to send feed delivery result to queue`, {
