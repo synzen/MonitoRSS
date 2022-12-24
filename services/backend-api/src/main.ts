@@ -50,9 +50,11 @@ async function bootstrap() {
     },
   });
 
-  console.log(`NestJS is listening on port ${config.get("port")}`);
+  const port = config.getOrThrow("BACKEND_API_PORT");
 
-  await app.listen(config.get("port") || 8000, "0.0.0.0");
+  console.log(`NestJS is listening on port ${port}`);
+
+  await app.listen(port, "0.0.0.0");
 }
 
 bootstrap();

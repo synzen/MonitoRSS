@@ -186,6 +186,7 @@ services:
   #     - ./.env.local
   #   environment:
   #     - BACKEND_API_NODE_ENV=local
+  #     - BACKEND_API_PORT=8000
   #     - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
   #     - BACKEND_API_FEED_HANDLER_API_HOST=http://mrss-feedhandler:5000
   #     - BACKEND_API_FEED_HANDLER_API_KEY=feed-handler-api-key
