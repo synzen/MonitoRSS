@@ -24,7 +24,6 @@ describe("FeedSchedulingService", () => {
       feedScheduleModel as never
     );
     service.defaultRefreshRateSeconds = 600;
-    service.vipRefreshRateSeconds = 120;
   });
 
   describe("getRefreshRateOfFeeds", () => {

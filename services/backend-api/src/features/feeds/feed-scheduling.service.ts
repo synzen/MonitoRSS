@@ -16,7 +16,6 @@ interface FeedDetails {
 @Injectable()
 export class FeedSchedulingService {
   defaultRefreshRateSeconds: number;
-  vipRefreshRateSeconds: number;
 
   constructor(
     private readonly supportersService: SupportersService,
@@ -28,8 +27,6 @@ export class FeedSchedulingService {
       (this.configService.get(
         "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
       ) as number) * 60;
-    this.vipRefreshRateSeconds =
-      (this.configService.get("VIP_REFRESH_RATE_MINUTES") as number) * 60;
   }
 
   async getAllSchedules(): Promise<FeedSchedule[]> {
