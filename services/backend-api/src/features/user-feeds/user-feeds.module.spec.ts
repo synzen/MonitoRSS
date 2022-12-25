@@ -141,7 +141,7 @@ describe("UserFeedsModule", () => {
           },
         });
 
-      nock(feedFetcherApiHost).post("/v1/feeds").reply(204);
+      nock(feedFetcherApiHost).post("/api/v1/user-feeds/initialize").reply(204);
 
       const { statusCode, body } = await app.inject({
         method: "POST",
@@ -571,7 +571,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct daily limit", async () => {
       nock(feedHandlerApiHost)
-        .get(`/v1/feeds/${feed._id}/rate-limits`)
+        .get(`/api/v1/user-feeds/${feed._id}/rate-limits`)
         .reply(200, {
           results: {
             limits: [
@@ -608,7 +608,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 404 if no daily limit is found", async () => {
       nock(feedHandlerApiHost)
-        .get(`/v1/feeds/${feed._id}/rate-limits`)
+        .get(`/api/v1/user-feeds/${feed._id}/rate-limits`)
         .reply(200, {
           results: {
             limits: [

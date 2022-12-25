@@ -30,7 +30,7 @@ describe("FeedHandlerService", () => {
 
   describe("getRateLimits", () => {
     const feedId = "feed-id";
-    const endpoint = `/v1/feeds/${feedId}/rate-limits`;
+    const endpoint = `/api/v1/user-feeds/${feedId}/rate-limits`;
 
     it("returns the response", async () => {
       const mockResponse: FeedHandlerRateLimitsResponse = {
@@ -83,7 +83,7 @@ describe("FeedHandlerService", () => {
 
   describe("initializeFeed", () => {
     const feedId = "feed-id";
-    const endpoint = `/v1/feeds`;
+    const endpoint = `/api/v1/user-feeds/initialize`;
 
     it("resolves on success", async () => {
       nock(host)
@@ -93,7 +93,7 @@ describe("FeedHandlerService", () => {
         .reply(200, {});
 
       await service.initializeFeed(feedId, {
-        dailyArticleRateLimit: 100,
+        maxDailyArticles: 100,
       });
     });
 
@@ -102,7 +102,7 @@ describe("FeedHandlerService", () => {
 
       await expect(
         service.initializeFeed(feedId, {
-          dailyArticleRateLimit: 100,
+          maxDailyArticles: 100,
         })
       ).rejects.toThrow(FeedFetcherStatusException);
     });
@@ -113,7 +113,7 @@ describe("FeedHandlerService", () => {
 
       await expect(
         service.initializeFeed(feedId, {
-          dailyArticleRateLimit: 100,
+          maxDailyArticles: 100,
         })
       ).rejects.toThrow(FeedFetcherStatusException);
     });

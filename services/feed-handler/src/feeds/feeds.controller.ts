@@ -11,12 +11,12 @@ import { FeedsService } from "./feeds.service";
 
 @Controller({
   version: "1",
-  path: "/feeds",
+  path: "user-feeds",
 })
 export class FeedsController {
   constructor(private readonly feedsService: FeedsService) {}
 
-  @Post()
+  @Post("initialize")
   @UseGuards(ApiGuard)
   async initializeFeed(
     @Body(ValidationPipe) { feed, articleDailyLimit }: CreateFeedInputDto

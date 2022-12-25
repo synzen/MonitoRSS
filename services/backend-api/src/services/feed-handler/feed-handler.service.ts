@@ -37,7 +37,7 @@ export class FeedHandlerService {
     feedId: string,
     { maxDailyArticles }: InitializeFeedInput
   ) {
-    const res = await fetch(`${this.host}/v1/feeds`, {
+    const res = await fetch(`${this.host}/api/v1/user-feeds/initialize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export class FeedHandlerService {
   async getRateLimits(feedId: string): Promise<FeedHandlerRateLimitsResponse> {
     try {
       const response = await fetch(
-        `${this.host}/v1/feeds/${feedId}/rate-limits`,
+        `${this.host}/api/v1/user-feeds/${feedId}/rate-limits`,
         {
           method: "GET",
           headers: {

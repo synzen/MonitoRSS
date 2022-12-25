@@ -4,7 +4,7 @@ import { ArticleRateLimitService } from "./article-rate-limit.service";
 
 @Controller({
   version: "1",
-  path: "feeds/:feedId/rate-limits",
+  path: "user-feeds/:feedId/rate-limits",
 })
 export class ArticleRateLimitController {
   constructor(

@@ -54,7 +54,7 @@ describe("FeedsModule", () => {
     it("returns 401 if unauthorized", async () => {
       const { statusCode } = await app.inject({
         method: "POST",
-        url: `/feeds`,
+        url: `/user-feeds/initialize`,
         payload: validPayload,
       });
 
@@ -64,7 +64,7 @@ describe("FeedsModule", () => {
     it("returns 201", async () => {
       const { statusCode, body } = await app.inject({
         method: "POST",
-        url: `/feeds`,
+        url: `/user-feeds/initialize`,
         headers: standardHeaders,
         payload: validPayload,
       });
