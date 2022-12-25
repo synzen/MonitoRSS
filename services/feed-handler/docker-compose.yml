@@ -46,7 +46,7 @@ services:
     environment:
       - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432
       - FEED_HANDLER_POSTGRES_DATABASE=feed-handler
-      - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://localhost:5000
+      - FEED_HANDLER_FEED_REQUESTS_API_URL=http://localhost:5000
       - FEED_HANDLER_FEED_MONGODB_URI=abc
       - FEED_HANDLER_DISCORD_CLIENT_ID=123
       - FEED_HANDLER_DISCORD_RABBITMQ_URI=123

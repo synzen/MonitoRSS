@@ -19,10 +19,10 @@ export class EnvironmentVariables {
   NODE_ENV: Environment;
 
   @IsString()
-  FEED_HANDLER_FEED_REQUEST_SERVICE_URL: string;
+  FEED_HANDLER_FEED_REQUESTS_API_URL: string;
 
   @IsString()
-  FEED_HANDLER_FEED_FETCHER_API_KEY: string;
+  FEED_HANDLER_FEED_REQUESTS_API_KEY: string;
 
   @IsString()
   FEED_HANDLER_POSTGRES_URI: string;

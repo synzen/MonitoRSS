@@ -65,7 +65,7 @@ describe("UserFeedsModule", () => {
     discordAuthService = app.get<DiscordAuthService>(DiscordAuthService);
     feedFetcherApiHost = app
       .get(ConfigService)
-      .getOrThrow<string>("BACKEND_API_FEED_FETCHER_API_HOST");
+      .getOrThrow<string>("BACKEND_API_FEED_REQUESTS_API_HOST");
 
     feedHandlerApiHost = app
       .get(ConfigService)

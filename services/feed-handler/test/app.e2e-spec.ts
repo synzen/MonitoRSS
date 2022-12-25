@@ -43,7 +43,7 @@ describe("App (e2e)", () => {
     const agent = new MockAgent();
     agent.disableNetConnect();
     client = agent.get(
-      configService.getOrThrow("FEED_HANDLER_FEED_REQUEST_SERVICE_URL")
+      configService.getOrThrow("FEED_HANDLER_FEED_REQUESTS_API_URL")
     );
     setGlobalDispatcher(agent);
     jest.resetAllMocks();

@@ -80,10 +80,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  BACKEND_API_FEED_FETCHER_GRPC_URL?: string;
-
-  @IsString()
-  @IsOptional()
   BACKEND_API_AWS_ACCESS_KEY_ID?: string;
 
   @IsString()
@@ -103,10 +99,10 @@ export class EnvironmentVariables {
   BACKEND_API_DEFAULT_DATE_LANGUAGE?: string;
 
   @IsString()
-  BACKEND_API_FEED_FETCHER_API_KEY: string;
+  BACKEND_API_FEED_REQUESTS_API_KEY: string;
 
   @IsString()
-  BACKEND_API_FEED_FETCHER_API_HOST: string;
+  BACKEND_API_FEED_REQUESTS_API_HOST: string;
 
   @IsString()
   BACKEND_API_FEED_HANDLER_API_HOST: string;

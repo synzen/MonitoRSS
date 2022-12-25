@@ -15,10 +15,10 @@ export class FeedFetcherService {
 
   constructor(private readonly configService: ConfigService) {
     this.SERVICE_HOST = configService.getOrThrow(
-      "FEED_HANDLER_FEED_REQUEST_SERVICE_URL"
+      "FEED_HANDLER_FEED_REQUESTS_API_URL"
     );
     this.API_KEY = configService.getOrThrow(
-      "FEED_HANDLER_FEED_FETCHER_API_KEY"
+      "FEED_HANDLER_FEED_REQUESTS_API_KEY"
     );
   }
 
