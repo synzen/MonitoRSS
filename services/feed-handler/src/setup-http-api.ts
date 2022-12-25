@@ -18,7 +18,7 @@ export async function setupHttpApi() {
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: "1",
-    prefix: "api/v",
+    prefix: "v",
   });
   const port = configService.getOrThrow("FEED_HANDLER_API_PORT");
 

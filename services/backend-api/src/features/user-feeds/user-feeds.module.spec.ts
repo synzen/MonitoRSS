@@ -141,7 +141,7 @@ describe("UserFeedsModule", () => {
           },
         });
 
-      nock(feedFetcherApiHost).post("/api/v1/user-feeds/initialize").reply(204);
+      nock(feedFetcherApiHost).post("/v1/user-feeds/initialize").reply(204);
 
       const { statusCode, body } = await app.inject({
         method: "POST",

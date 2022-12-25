@@ -83,7 +83,7 @@ describe("FeedHandlerService", () => {
 
   describe("initializeFeed", () => {
     const feedId = "feed-id";
-    const endpoint = `/api/v1/user-feeds/initialize`;
+    const endpoint = `/v1/user-feeds/initialize`;
 
     it("resolves on success", async () => {
       nock(host)

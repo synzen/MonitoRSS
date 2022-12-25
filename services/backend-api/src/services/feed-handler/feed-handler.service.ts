@@ -37,7 +37,7 @@ export class FeedHandlerService {
     feedId: string,
     { maxDailyArticles }: InitializeFeedInput
   ) {
-    const res = await fetch(`${this.host}/api/v1/user-feeds/initialize`, {
+    const res = await fetch(`${this.host}/v1/user-feeds/initialize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
