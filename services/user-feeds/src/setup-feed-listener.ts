@@ -1,10 +1,11 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
+import logger from "./shared/utils/logger";
 
 export async function setupFeedListener() {
   await NestFactory.createApplicationContext(
     AppModule.forFeedListenerService()
   );
 
-  console.log("Feed handler service initialized");
+  logger.info("Feed handler service initialized");
 }

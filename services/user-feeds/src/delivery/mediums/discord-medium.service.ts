@@ -9,6 +9,7 @@ import {
   DiscordMessageApiPayload,
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
+import logger from "../../shared/utils/logger";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -59,7 +60,7 @@ export class DiscordMediumService implements DeliveryMedium {
         throw new Error("No channel or webhook specified for Discord medium");
       }
     } catch (err) {
-      console.error(
+      logger.error(
         `Failed to deliver article ${
           article.id
         } to Discord webook/channel. Webhook: ${JSON.stringify(

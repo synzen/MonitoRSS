@@ -37,8 +37,6 @@ export class ArticlesService {
     const { articles } = await this.getArticlesFromXml(feedXml);
 
     if (!articles.length) {
-      console.log("no articles found");
-
       return [];
     }
 
@@ -49,7 +47,6 @@ export class ArticlesService {
         comparisonFields: [...blockingComparisons, ...passingComparisons],
       });
 
-      console.log("no prior articles stored, initializing data");
 
       return [];
     }

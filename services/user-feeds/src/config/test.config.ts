@@ -3,6 +3,7 @@ import { Environment, EnvironmentVariables, validateConfig } from "./validate";
 export function testConfig(): EnvironmentVariables {
   const vals: EnvironmentVariables = {
     NODE_ENV: Environment.Test,
+    USER_FEEDS_DATADOG_API_KEY: "test",
     USER_FEEDS_POSTGRES_URI: "postgres://postgres:12345@localhost:5432/test",
     USER_FEEDS_API_KEY: "123456789",
     USER_FEEDS_API_PORT: "3000",

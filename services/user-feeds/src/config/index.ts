@@ -30,6 +30,8 @@ export function config(options?: {
 
   const configVals = {
     NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
+    USER_FEEDS_DATADOG_API_KEY: process.env
+      .USER_FEEDS_DATADOG_API_KEY as string,
     USER_FEEDS_FEED_REQUESTS_API_URL: process.env
       .USER_FEEDS_FEED_REQUESTS_API_URL as string,
     USER_FEEDS_FEED_REQUESTS_API_KEY: process.env

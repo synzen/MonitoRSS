@@ -9,6 +9,7 @@ import {
   MediumKey,
   MediumPayload,
 } from "../shared";
+import logger from "../shared/utils/logger";
 import { DeliveryMedium } from "./mediums/delivery-medium.interface";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
@@ -137,10 +138,13 @@ export class DeliveryService {
 
       return articleState;
     } catch (err) {
-      console.error(
+      logger.error(
         `Failed to deliver event ${JSON.stringify(event)} to medium ${
           medium.key
-        }`
+        }`,
+        {
+          error: (err as Error).stack,
+        }
       );
 
       return {

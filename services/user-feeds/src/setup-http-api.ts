@@ -7,6 +7,7 @@ import {
 } from "@nestjs/platform-fastify";
 import { ConfigService } from "@nestjs/config";
 import { VersioningType } from "@nestjs/common";
+import logger from "./shared/utils/logger";
 
 export async function setupHttpApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -24,5 +25,5 @@ export async function setupHttpApi() {
 
   await app.listen(port, "0.0.0.0");
 
-  console.log(`HTTP API listening on port ${port}`);
+  logger.info(`HTTP API listening on port ${port}`);
 }

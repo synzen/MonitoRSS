@@ -17,6 +17,7 @@ import {
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
+import logger from "../shared/utils/logger";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -63,7 +64,7 @@ export class FeedEventHandlerService {
     try {
       await this.handleArticleDeliveryResult(result);
     } catch (err) {
-      console.error(`Failed to handle article delivery result`, {
+      logger.error(`Failed to handle article delivery result`, {
         err: (err as Error).stack,
       });
     }
@@ -176,16 +177,15 @@ export class FeedEventHandlerService {
           deliveryStates
         );
       } catch (err) {
-        console.log(`Failed to store delivery states`, {
+        logger.error(`Failed to store delivery states`, {
           event,
           deliveryStates,
           error: (err as Error).stack,
         });
       }
-
-      console.log(`Total new articles:`, articles.length);
     } catch (err) {
-      console.error(`Error while handling feed event`, {
+      logger.error(`Error while handling feed event`, {
+        event,
         stack: (err as Error).stack,
       });
     }

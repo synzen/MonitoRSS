@@ -19,6 +19,9 @@ export class EnvironmentVariables {
   NODE_ENV: Environment;
 
   @IsString()
+  USER_FEEDS_DATADOG_API_KEY: string;
+
+  @IsString()
   USER_FEEDS_FEED_REQUESTS_API_URL: string;
 
   @IsString()
