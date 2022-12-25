@@ -17,9 +17,7 @@ export class FeedFetcherService {
     this.SERVICE_HOST = configService.getOrThrow(
       "USER_FEEDS_FEED_REQUESTS_API_URL"
     );
-    this.API_KEY = configService.getOrThrow(
-      "USER_FEEDS_FEED_REQUESTS_API_KEY"
-    );
+    this.API_KEY = configService.getOrThrow("USER_FEEDS_FEED_REQUESTS_API_KEY");
   }
 
   async fetch(url: string) {
