@@ -17,7 +17,7 @@ import { FeedFetcherService } from './feed-fetcher.service';
 export class FeedFetcherController {
   constructor(private readonly feedFetcherService: FeedFetcherService) {}
 
-  @Post('requests')
+  @Post('feed-requests')
   @UseGuards(ApiGuard)
   async fetchFeed(
     @Body(ValidationPipe) data: FetchFeedDto,

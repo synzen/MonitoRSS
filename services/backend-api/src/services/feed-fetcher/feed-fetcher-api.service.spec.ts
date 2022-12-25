@@ -44,7 +44,7 @@ describe("FeedFetcherApiService", () => {
         },
       };
       nock(host)
-        .post("/api/v1/requests", expectedRequestBody)
+        .post("/api/v1/feed-requests", expectedRequestBody)
         .matchHeader("Content-Type", "application/json")
         .matchHeader("api-key", apiKey)
         .reply(200, mockResponse);
@@ -56,7 +56,7 @@ describe("FeedFetcherApiService", () => {
     });
 
     it("throws if the status code is >= 500", async () => {
-      nock(host).post("/api/v1/requests").reply(500, {});
+      nock(host).post("/api/v1/feed-requests").reply(500, {});
 
       await expect(service.fetchAndSave("url")).rejects.toThrow();
     });
@@ -64,7 +64,7 @@ describe("FeedFetcherApiService", () => {
     it("throws if the status code is not ok, and logs the response json", async () => {
       const loggerErrorSpy = jest.spyOn(logger, "error");
       const mockResponse = { message: "An error occurred!" };
-      nock(host).post("/api/v1/requests").reply(400, mockResponse);
+      nock(host).post("/api/v1/feed-requests").reply(400, mockResponse);
 
       await expect(service.fetchAndSave("url")).rejects.toThrow();
 
