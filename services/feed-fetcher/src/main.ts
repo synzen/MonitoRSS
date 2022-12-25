@@ -17,6 +17,8 @@ async function bootstrap() {
 
   app.enableVersioning({
     type: VersioningType.URI,
+    defaultVersion: '1',
+    prefix: 'api/v',
   });
 
   const configService = app.get(ConfigService);

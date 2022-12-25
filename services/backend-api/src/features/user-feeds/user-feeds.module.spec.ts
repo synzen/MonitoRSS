@@ -109,7 +109,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct error codes for feed request-related errors", async () => {
       nock(feedFetcherApiHost)
-        .post("/requests")
+        .post("/api/v1/requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -132,7 +132,7 @@ describe("UserFeedsModule", () => {
 
     it("returns created feed details on success", async () => {
       nock(feedFetcherApiHost)
-        .post("/requests")
+        .post("/api/v1/requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -140,6 +140,8 @@ describe("UserFeedsModule", () => {
             body: feedXml,
           },
         });
+
+      nock(feedFetcherApiHost).post("/v1/feeds").reply(204);
 
       const { statusCode, body } = await app.inject({
         method: "POST",
@@ -300,7 +302,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 400 if feed request fails", async () => {
       nock(feedFetcherApiHost)
-        .post("/requests")
+        .post("/api/v1/requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -320,7 +322,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 200 on success", async () => {
       nock(feedFetcherApiHost)
-        .post("/requests")
+        .post("/api/v1/requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -454,7 +456,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 200 on success", async () => {
       nock(feedFetcherApiHost)
-        .post("/requests")
+        .post("/api/v1/requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -496,7 +498,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct status for request-related errors", async () => {
       nock(feedFetcherApiHost)
-        .post("/requests")
+        .post("/api/v1/requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -569,7 +571,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct daily limit", async () => {
       nock(feedHandlerApiHost)
-        .get(`/feeds/${feed._id}/rate-limits`)
+        .get(`/v1/feeds/${feed._id}/rate-limits`)
         .reply(200, {
           results: {
             limits: [
@@ -606,7 +608,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 404 if no daily limit is found", async () => {
       nock(feedHandlerApiHost)
-        .get(`/feeds/${feed._id}/rate-limits`)
+        .get(`/v1/feeds/${feed._id}/rate-limits`)
         .reply(200, {
           results: {
             limits: [
