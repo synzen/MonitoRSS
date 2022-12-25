@@ -23,7 +23,7 @@ export class FeedFetcherService {
   }
 
   async fetch(url: string) {
-    const serviceUrl = `${this.SERVICE_HOST}/api/v1/feed-requests`;
+    const serviceUrl = `${this.SERVICE_HOST}/v1/feed-requests`;
     const { statusCode, body } = await request(serviceUrl, {
       method: "POST",
       body: JSON.stringify({

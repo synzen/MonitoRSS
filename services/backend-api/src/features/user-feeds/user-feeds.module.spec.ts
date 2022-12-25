@@ -109,7 +109,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct error codes for feed request-related errors", async () => {
       nock(feedFetcherApiHost)
-        .post("/api/v1/feed-requests")
+        .post("/v1/feed-requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -132,7 +132,7 @@ describe("UserFeedsModule", () => {
 
     it("returns created feed details on success", async () => {
       nock(feedFetcherApiHost)
-        .post("/api/v1/feed-requests")
+        .post("/v1/feed-requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -302,7 +302,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 400 if feed request fails", async () => {
       nock(feedFetcherApiHost)
-        .post("/api/v1/feed-requests")
+        .post("/v1/feed-requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -322,7 +322,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 200 on success", async () => {
       nock(feedFetcherApiHost)
-        .post("/api/v1/feed-requests")
+        .post("/v1/feed-requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -456,7 +456,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 200 on success", async () => {
       nock(feedFetcherApiHost)
-        .post("/api/v1/feed-requests")
+        .post("/v1/feed-requests")
         .reply(200, {
           requestStatus: "success",
           response: {
@@ -498,7 +498,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct status for request-related errors", async () => {
       nock(feedFetcherApiHost)
-        .post("/api/v1/feed-requests")
+        .post("/v1/feed-requests")
         .reply(200, {
           requestStatus: "success",
           response: {
