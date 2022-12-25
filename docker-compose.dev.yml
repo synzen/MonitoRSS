@@ -44,8 +44,8 @@ services:
       - db-feedrequests-postgres-data:/var/lib/postgresql/data
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
       
-  mrss-postgres-feedhandler:
-    container_name: mrss-postgres-feedhandler
+  mrss-postgres-user-feeds:
+    container_name: mrss-postgres-user-feeds
     restart: always
     healthcheck:
       test: ['CMD', 'pg_isready', '-q', '-d', 'postgres', '-U', 'postgres']
@@ -62,8 +62,8 @@ services:
     ports:
       - '5430:5432'
     volumes:
-      - db-feedhandler-postgres-data:/var/lib/postgresql/data
-      - ./services/feed-handler/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+      - db-user-feeds-postgres-data:/var/lib/postgresql/data
+      - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
 
   mrss-discord-rest-listener:
     restart: on-failure:3
@@ -110,28 +110,28 @@ services:
       - FEED_REQUESTS_SYNC_DB=true
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://mrss-rabbitmq-broker:5672
 
-  mrss-feedhandler:
+  mrss-user-feeds-service:
     restart: on-failure:3
     build:
-      context: services/feed-handler
+      context: services/user-feeds
       dockerfile: Dockerfile
       target: build
     ports:
       - "5001:5000"
     volumes:
-      - ./services/feed-handler:/usr/src/app
+      - ./services/user-feeds:/usr/src/app
       - /usr/src/app/node_modules/
     command: npm run start:local
     depends_on:
-      - mrss-postgres-feedhandler
+      - mrss-postgres-user-feeds
       - mrss-feedrequests
       - mrss-rabbitmq-broker
     env_file:
       - ./.env.local
     environment:
-      - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feedhandler:5432
+      - FEED_HANDLER_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-user-feeds:5432
       - FEED_HANDLER_DISCORD_RABBITMQ_URI=amqp://mrss-rabbitmq-broker:5672
-      - FEED_HANDLER_POSTGRES_DATABASE=feedhandler
+      - FEED_HANDLER_POSTGRES_DATABASE=userfeeds
       - FEED_HANDLER_FEED_MONGODB_URI=mongodb://mrss-mongo:27017/rss
       - FEED_HANDLER_FEED_REQUEST_SERVICE_URL=http://mrss-feedrequests:5000
       - FEED_HANDLER_API_PORT=5000
@@ -178,7 +178,7 @@ services:
   #     - /usr/src/app/node_modules/
   #   depends_on:
   #     - mrss-mongo
-  #     - mrss-feedhandler
+  #     - mrss-user-feeds-service
   #     - mrss-feedrequests
   #   ports:
   #     - "8000:8000"
@@ -188,7 +188,7 @@ services:
   #     - BACKEND_API_NODE_ENV=local
   #     - BACKEND_API_PORT=8000
   #     - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
-  #     - BACKEND_API_FEED_HANDLER_API_HOST=http://mrss-feedhandler:5000
+  #     - BACKEND_API_FEED_HANDLER_API_HOST=http://mrss-user-feeds-service:5000
   #     - BACKEND_API_FEED_HANDLER_API_KEY=feed-handler-api-key
   #     - BACKEND_API_FEED_FETCHER_API_HOST=http://mrss-feedrequests:5000
   #     - BACKEND_API_FEED_FETCHER_API_KEY=feed-fetcher-api-key
@@ -224,5 +224,5 @@ services:
 volumes:
   db-mongodb-data:
   db-feedrequests-postgres-data:
-  db-feedhandler-postgres-data:
+  db-user-feeds-postgres-data:
     driver: local

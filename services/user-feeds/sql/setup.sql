@@ -1,0 +1,2 @@
+DROP DATABASE IF EXISTS userfeeds;
+CREATE DATABASE userfeeds;
