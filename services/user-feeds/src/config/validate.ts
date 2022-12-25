@@ -28,9 +28,6 @@ export class EnvironmentVariables {
   USER_FEEDS_POSTGRES_URI: string;
 
   @IsString()
-  USER_FEEDS_FEED_MONGODB_URI: string;
-
-  @IsString()
   USER_FEEDS_POSTGRES_DATABASE: string;
 
   @IsString()

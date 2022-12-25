@@ -8,7 +8,6 @@ export function testConfig(): EnvironmentVariables {
     USER_FEEDS_API_PORT: "3000",
     USER_FEEDS_FEED_REQUESTS_API_URL: "feed-request-service",
     USER_FEEDS_FEED_REQUESTS_API_KEY: "feed-fetcher-api-key",
-    USER_FEEDS_FEED_MONGODB_URI: "mongodb://localhost:27017",
     USER_FEEDS_POSTGRES_DATABASE: "test",
     USER_FEEDS_DISCORD_CLIENT_ID: "discord-client-id",
     USER_FEEDS_DISCORD_RABBITMQ_URI: "amqp://localhost:5672",

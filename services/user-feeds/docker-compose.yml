@@ -47,7 +47,6 @@ services:
       - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432
       - USER_FEEDS_POSTGRES_DATABASE=feed-handler
       - USER_FEEDS_FEED_REQUESTS_API_URL=http://localhost:5000
-      - USER_FEEDS_FEED_MONGODB_URI=abc
       - USER_FEEDS_DISCORD_CLIENT_ID=123
       - USER_FEEDS_DISCORD_RABBITMQ_URI=123
       - USER_FEEDS_API_PORT=3001
