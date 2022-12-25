@@ -105,10 +105,10 @@ export class EnvironmentVariables {
   BACKEND_API_FEED_REQUESTS_API_HOST: string;
 
   @IsString()
-  BACKEND_API_FEED_HANDLER_API_HOST: string;
+  BACKEND_API_USER_FEEDS_API_HOST: string;
 
   @IsString()
-  BACKEND_API_FEED_HANDLER_API_KEY: string;
+  BACKEND_API_USER_FEEDS_API_KEY: string;
 
   @IsString()
   @IsNotEmpty()

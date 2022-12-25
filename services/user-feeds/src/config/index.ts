@@ -30,23 +30,23 @@ export function config(options?: {
 
   const configVals = {
     NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
-    FEED_HANDLER_FEED_REQUESTS_API_URL: process.env
-      .FEED_HANDLER_FEED_REQUESTS_API_URL as string,
-    FEED_HANDLER_FEED_REQUESTS_API_KEY: process.env
-      .FEED_HANDLER_FEED_REQUESTS_API_KEY as string,
-    FEED_HANDLER_POSTGRES_URI: process.env.FEED_HANDLER_POSTGRES_URI as string,
-    FEED_HANDLER_FEED_MONGODB_URI: process.env
-      .FEED_HANDLER_FEED_MONGODB_URI as string,
-    FEED_HANDLER_POSTGRES_DATABASE: process.env
-      .FEED_HANDLER_POSTGRES_DATABASE as string,
-    FEED_HANDLER_DISCORD_CLIENT_ID: process.env
-      .FEED_HANDLER_DISCORD_CLIENT_ID as string,
-    FEED_HANDLER_DISCORD_RABBITMQ_URI: process.env
-      .FEED_HANDLER_DISCORD_RABBITMQ_URI as string,
-    FEED_HANDLER_API_PORT: process.env.FEED_HANDLER_API_PORT as string,
-    FEED_HANDLER_API_KEY: process.env.FEED_HANDLER_API_KEY as string,
-    FEED_HANDLER_RABBITMQ_BROKER_URL: process.env
-      .FEED_HANDLER_RABBITMQ_BROKER_URL as string,
+    USER_FEEDS_FEED_REQUESTS_API_URL: process.env
+      .USER_FEEDS_FEED_REQUESTS_API_URL as string,
+    USER_FEEDS_FEED_REQUESTS_API_KEY: process.env
+      .USER_FEEDS_FEED_REQUESTS_API_KEY as string,
+    USER_FEEDS_POSTGRES_URI: process.env.USER_FEEDS_POSTGRES_URI as string,
+    USER_FEEDS_FEED_MONGODB_URI: process.env
+      .USER_FEEDS_FEED_MONGODB_URI as string,
+    USER_FEEDS_POSTGRES_DATABASE: process.env
+      .USER_FEEDS_POSTGRES_DATABASE as string,
+    USER_FEEDS_DISCORD_CLIENT_ID: process.env
+      .USER_FEEDS_DISCORD_CLIENT_ID as string,
+    USER_FEEDS_DISCORD_RABBITMQ_URI: process.env
+      .USER_FEEDS_DISCORD_RABBITMQ_URI as string,
+    USER_FEEDS_API_PORT: process.env.USER_FEEDS_API_PORT as string,
+    USER_FEEDS_API_KEY: process.env.USER_FEEDS_API_KEY as string,
+    USER_FEEDS_RABBITMQ_BROKER_URL: process.env
+      .USER_FEEDS_RABBITMQ_BROKER_URL as string,
   } as const;
 
   if (!options?.skipValidation) {

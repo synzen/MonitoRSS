@@ -11,7 +11,7 @@ describe("ApiGuard", () => {
   beforeEach(() => {
     guard = new ApiGuard(configService as never);
     configService.getOrThrow.mockImplementation((key) => {
-      if (key === "FEED_HANDLER_API_KEY") {
+      if (key === "USER_FEEDS_API_KEY") {
         return apiKey;
       }
 

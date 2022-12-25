@@ -14,7 +14,7 @@ import { FeedsModule } from "./feeds.module";
 describe("FeedsModule", () => {
   let app: NestFastifyApplication;
   const standardHeaders = {
-    "api-key": testConfig().FEED_HANDLER_API_KEY,
+    "api-key": testConfig().USER_FEEDS_API_KEY,
   };
 
   beforeAll(async () => {

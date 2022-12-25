@@ -69,7 +69,7 @@ describe("UserFeedsModule", () => {
 
     feedHandlerApiHost = app
       .get(ConfigService)
-      .getOrThrow<string>("BACKEND_API_FEED_HANDLER_API_HOST");
+      .getOrThrow<string>("BACKEND_API_USER_FEEDS_API_HOST");
   });
 
   beforeEach(() => {

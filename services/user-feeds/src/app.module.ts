@@ -35,8 +35,8 @@ export class AppModule {
         MikroOrmModule.forRoot({
           entities: ["dist/**/*.entity.js"],
           entitiesTs: ["src/**/*.entity.ts"],
-          clientUrl: configVals.FEED_HANDLER_POSTGRES_URI,
-          dbName: configVals.FEED_HANDLER_POSTGRES_DATABASE,
+          clientUrl: configVals.USER_FEEDS_POSTGRES_URI,
+          dbName: configVals.USER_FEEDS_POSTGRES_DATABASE,
           type: "postgresql",
           forceUtcTimezone: true,
           timezone: "UTC",

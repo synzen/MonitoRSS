@@ -21,7 +21,7 @@ COPY --from=build /usr/src/app/dist dist
 
 RUN npm prune --production
 
-ENV FEED_HANDLER_API_PORT=3000
+ENV USER_FEEDS_API_PORT=3000
 HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD wget http://localhost:3000/cep/v0/health -q -O - > /dev/null 2>&1
 
 CMD [ "node", "./dist/main" ]

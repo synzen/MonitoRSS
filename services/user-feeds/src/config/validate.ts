@@ -19,35 +19,35 @@ export class EnvironmentVariables {
   NODE_ENV: Environment;
 
   @IsString()
-  FEED_HANDLER_FEED_REQUESTS_API_URL: string;
+  USER_FEEDS_FEED_REQUESTS_API_URL: string;
 
   @IsString()
-  FEED_HANDLER_FEED_REQUESTS_API_KEY: string;
+  USER_FEEDS_FEED_REQUESTS_API_KEY: string;
 
   @IsString()
-  FEED_HANDLER_POSTGRES_URI: string;
+  USER_FEEDS_POSTGRES_URI: string;
 
   @IsString()
-  FEED_HANDLER_FEED_MONGODB_URI: string;
+  USER_FEEDS_FEED_MONGODB_URI: string;
 
   @IsString()
-  FEED_HANDLER_POSTGRES_DATABASE: string;
+  USER_FEEDS_POSTGRES_DATABASE: string;
 
   @IsString()
-  FEED_HANDLER_DISCORD_CLIENT_ID: string;
+  USER_FEEDS_DISCORD_CLIENT_ID: string;
 
   @IsString()
-  FEED_HANDLER_DISCORD_RABBITMQ_URI: string;
+  USER_FEEDS_DISCORD_RABBITMQ_URI: string;
 
   @IsNumberString()
-  FEED_HANDLER_API_PORT: string;
+  USER_FEEDS_API_PORT: string;
 
   @IsString()
-  FEED_HANDLER_API_KEY: string;
+  USER_FEEDS_API_KEY: string;
 
   @IsString()
   @IsNotEmpty()
-  FEED_HANDLER_RABBITMQ_BROKER_URL: string;
+  USER_FEEDS_RABBITMQ_BROKER_URL: string;
 }
 
 export function validateConfig(

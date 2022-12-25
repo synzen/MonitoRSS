@@ -37,7 +37,7 @@ export class FeedEventHandlerModule {
       imports: [
         DeliveryModule,
         RabbitMQModule.forRoot(RabbitMQModule, {
-          uri: configVals.FEED_HANDLER_RABBITMQ_BROKER_URL,
+          uri: configVals.USER_FEEDS_RABBITMQ_BROKER_URL,
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
         }),
       ],

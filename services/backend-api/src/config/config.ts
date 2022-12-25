@@ -72,10 +72,10 @@ export default function config(options?: {
       .BACKEND_API_FEED_REQUESTS_API_HOST as string,
     BACKEND_API_FEED_REQUESTS_API_KEY: process.env
       .BACKEND_API_FEED_REQUESTS_API_KEY as string,
-    BACKEND_API_FEED_HANDLER_API_HOST: process.env
-      .BACKEND_API_FEED_HANDLER_API_HOST as string,
-    BACKEND_API_FEED_HANDLER_API_KEY: process.env
-      .BACKEND_API_FEED_HANDLER_API_KEY as string,
+    BACKEND_API_USER_FEEDS_API_HOST: process.env
+      .BACKEND_API_USER_FEEDS_API_HOST as string,
+    BACKEND_API_USER_FEEDS_API_KEY: process.env
+      .BACKEND_API_USER_FEEDS_API_KEY as string,
     BACKEND_API_RABBITMQ_BROKER_URL: process.env
       .BACKEND_API_RABBITMQ_BROKER_URL as string,
   } as const;

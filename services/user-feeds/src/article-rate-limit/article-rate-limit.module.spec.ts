@@ -18,7 +18,7 @@ describe("ArticleRateLimitModule", () => {
   let app: NestFastifyApplication;
   let deliveryLimitRepo: EntityRepository<FeedArticleDeliveryLimit>;
   const standardHeaders = {
-    "api-key": testConfig().FEED_HANDLER_API_KEY,
+    "api-key": testConfig().USER_FEEDS_API_KEY,
   };
 
   beforeAll(async () => {

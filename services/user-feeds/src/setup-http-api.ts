@@ -20,7 +20,7 @@ export async function setupHttpApi() {
     defaultVersion: "1",
     prefix: "v",
   });
-  const port = configService.getOrThrow("FEED_HANDLER_API_PORT");
+  const port = configService.getOrThrow("USER_FEEDS_API_PORT");
 
   await app.listen(port, "0.0.0.0");
 

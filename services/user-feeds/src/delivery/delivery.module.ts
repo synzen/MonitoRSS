@@ -14,10 +14,10 @@ import { DiscordMediumService } from "./mediums/discord-medium.service";
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const rabbitmqUri = configService.getOrThrow(
-          "FEED_HANDLER_DISCORD_RABBITMQ_URI"
+          "USER_FEEDS_DISCORD_RABBITMQ_URI"
         );
         const discordClientId = configService.getOrThrow(
-          "FEED_HANDLER_DISCORD_CLIENT_ID"
+          "USER_FEEDS_DISCORD_CLIENT_ID"
         );
 
         const producer = new RESTProducer(rabbitmqUri, {
