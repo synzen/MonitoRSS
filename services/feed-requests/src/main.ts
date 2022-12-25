@@ -1,20 +1,23 @@
 import './utils/dd-tracer';
 import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import logger from './utils/logger';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import { AllExceptionsFilter } from './shared/filters';
+import logger from './utils/logger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forRoot(),
     new FastifyAdapter(),
   );
+  const httpAdapterHost = app.get(HttpAdapterHost);
 
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',

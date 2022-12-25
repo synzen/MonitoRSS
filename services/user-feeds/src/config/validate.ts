@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumberString,
+  IsOptional,
   IsString,
   validateSync,
 } from "class-validator";
@@ -19,6 +20,7 @@ export class EnvironmentVariables {
   NODE_ENV: Environment;
 
   @IsString()
+  @IsOptional()
   USER_FEEDS_DATADOG_API_KEY: string;
 
   @IsString()

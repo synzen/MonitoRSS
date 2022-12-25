@@ -1,5 +1,5 @@
 import "source-map-support/register";
-import { NestFactory } from "@nestjs/core";
+import { HttpAdapterHost, NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import {
   FastifyAdapter,
@@ -8,6 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { VersioningType } from "@nestjs/common";
 import logger from "./shared/utils/logger";
+import { AllExceptionsFilter } from "./shared/filters";
 
 export async function setupHttpApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -15,6 +16,9 @@ export async function setupHttpApi() {
     new FastifyAdapter()
   );
   const configService = app.get(ConfigService);
+  const httpAdapterHost = app.get(HttpAdapterHost);
+
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
 
   app.enableVersioning({
     type: VersioningType.URI,
