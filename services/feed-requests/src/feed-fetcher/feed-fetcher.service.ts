@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
-import { MoreThan, Not, Repository } from 'typeorm';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import dayjs from 'dayjs';
 import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { EntityRepository } from '@mikro-orm/postgresql';
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { UseRequestContext } from '@mikro-orm/core';
+import { MikroORM } from '@mikro-orm/core';
 
 interface FetchOptions {
   userAgent?: string;
@@ -19,11 +21,12 @@ export class FeedFetcherService {
 
   constructor(
     @InjectRepository(Request)
-    private readonly requestRepo: Repository<Request>,
+    private readonly requestRepo: EntityRepository<Request>,
     @InjectRepository(Response)
-    private readonly responseRepo: Repository<Response>,
+    private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly amqpConnection: AmqpConnection,
+    private readonly orm: MikroORM, // For @UseRequestContext decorator
   ) {
     this.failedDurationThresholdHours = this.configService.get(
       'FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
@@ -34,47 +37,10 @@ export class FeedFetcherService {
     exchange: '',
     queue: 'url.fetch',
   })
-  async handleFetchRequest(message: {
+  async onBrokerFetchRequest(message: {
     data: { url: string; rateSeconds: number };
   }) {
-    const url = message?.data?.url;
-    const rateSeconds = message?.data?.rateSeconds;
-
-    if (!url || rateSeconds == null) {
-      logger.error(
-        `Received fetch request message has no url and/or rateSeconds, skipping`,
-        {
-          message,
-        },
-      );
-
-      return;
-    }
-
-    logger.debug(`Fetch request message received for url ${url}`, {
-      message,
-    });
-
-    const dateToCheck = dayjs()
-      .subtract(Math.round(rateSeconds * 0.75), 'seconds')
-      .toDate();
-
-    const requestExistsAfterTime = await this.requestExistsAfterTime(
-      { url },
-      dateToCheck,
-    );
-
-    if (requestExistsAfterTime) {
-      logger.debug(
-        `Request ${url} with rate ${rateSeconds} has been recently processed, skipping`,
-      );
-
-      return;
-    }
-
-    await this.fetchAndSaveResponse(url);
-
-    logger.debug(`Fetch request message processed for url ${url}`);
+    await this.handleBrokerFetchRequest(message);
   }
 
   async requestExistsAfterTime(
@@ -84,9 +50,9 @@ export class FeedFetcherService {
     time: Date,
   ) {
     const count = await this.requestRepo.count({
-      where: {
-        url: requestQuery.url,
-        createdAt: MoreThan(time),
+      url: requestQuery.url,
+      createdAt: {
+        $gt: time,
       },
     });
 
@@ -94,13 +60,17 @@ export class FeedFetcherService {
   }
 
   async getLatestRequest(url: string): Promise<Request | null> {
-    const response = await this.requestRepo.findOne({
-      where: { url },
-      order: {
-        createdAt: 'DESC',
+    const response = await this.requestRepo.findOne(
+      {
+        url,
       },
-      relations: ['response'],
-    });
+      {
+        orderBy: {
+          createdAt: 'DESC',
+        },
+        populate: ['response'],
+      },
+    );
 
     return response;
   }
@@ -148,10 +118,10 @@ export class FeedFetcherService {
         await this.onFailedUrl({ url });
       }
 
-      await this.responseRepo.insert(response);
+      await this.responseRepo.persistAndFlush(response);
       request.response = response;
 
-      return this.requestRepo.insert(request);
+      return this.requestRepo.persistAndFlush(request);
     } catch (err) {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
@@ -159,7 +129,7 @@ export class FeedFetcherService {
       request.status = RequestStatus.FETCH_ERROR;
       request.errorMessage = (err as Error).message;
 
-      return this.requestRepo.insert(request);
+      return this.requestRepo.persistAndFlush(request);
     }
   }
 
@@ -208,14 +178,16 @@ export class FeedFetcherService {
   }
 
   async isPastFailureThreshold(url: string) {
-    const latestRequest = await this.requestRepo.findOne({
-      where: {
+    const latestRequest = await this.requestRepo.findOne(
+      {
         url: url,
       },
-      order: {
-        createdAt: 'ASC',
+      {
+        orderBy: {
+          createdAt: 'ASC',
+        },
       },
-    });
+    );
 
     if (!latestRequest || latestRequest.status === RequestStatus.OK) {
       return false;
@@ -237,40 +209,50 @@ export class FeedFetcherService {
   }
 
   async getEarliestFailedAttempt(url: string) {
-    const latestOkRequest = await this.requestRepo.findOne({
-      where: {
+    const latestOkRequest = await this.requestRepo.findOne(
+      {
         status: RequestStatus.OK,
         url,
       },
-      order: {
-        createdAt: 'DESC',
+      {
+        orderBy: {
+          createdAt: 'DESC',
+        },
+        fields: ['createdAt'],
       },
-      select: ['createdAt'],
-    });
+    );
 
     if (latestOkRequest) {
-      const earliestFailedRequest = await this.requestRepo.findOne({
-        where: {
+      const earliestFailedRequest = await this.requestRepo.findOne(
+        {
           status: RequestStatus.FAILED,
           url,
-          createdAt: MoreThan(latestOkRequest.createdAt),
+          createdAt: {
+            $gt: latestOkRequest.createdAt,
+          },
         },
-        order: {
-          createdAt: 'ASC',
+        {
+          orderBy: {
+            createdAt: 'ASC',
+          },
         },
-      });
+      );
 
       return earliestFailedRequest;
     } else {
-      const earliestFailedRequest = await this.requestRepo.findOne({
-        where: {
-          status: Not(RequestStatus.OK),
+      const earliestFailedRequest = await this.requestRepo.findOne(
+        {
+          status: {
+            $ne: RequestStatus.OK,
+          },
           url,
         },
-        order: {
-          createdAt: 'ASC',
+        {
+          orderBy: {
+            createdAt: 'ASC',
+          },
         },
-      });
+      );
 
       return earliestFailedRequest;
     }
@@ -285,20 +267,47 @@ export class FeedFetcherService {
     return dayjs().isAfter(cutoffDate);
   }
 
-  // async sendFailedUrlToSqs(url: string) {
-  //   const failedUrl = {
-  //     url,
-  //   };
+  @UseRequestContext()
+  private async handleBrokerFetchRequest(message: {
+    data: { url: string; rateSeconds: number };
+  }): Promise<void> {
+    const url = message?.data?.url;
+    const rateSeconds = message?.data?.rateSeconds;
 
-  //   await this.failedUrlSqsClient.send(
-  //     new SendMessageCommand({
-  //       QueueUrl: this.failedUrlSqsQueueUrl,
-  //       MessageBody: JSON.stringify(failedUrl),
-  //     }),
-  //   );
+    if (!url || rateSeconds == null) {
+      logger.error(
+        `Received fetch request message has no url and/or rateSeconds, skipping`,
+        {
+          message,
+        },
+      );
 
-  //   logger.debug(`Failed url ${url} sent to SQS`, {
-  //     url,
-  //   });
-  // }
+      return;
+    }
+
+    logger.debug(`Fetch request message received for url ${url}`, {
+      message,
+    });
+
+    const dateToCheck = dayjs()
+      .subtract(Math.round(rateSeconds * 0.75), 'seconds')
+      .toDate();
+
+    const requestExistsAfterTime = await this.requestExistsAfterTime(
+      { url },
+      dateToCheck,
+    );
+
+    if (requestExistsAfterTime) {
+      logger.debug(
+        `Request ${url} with rate ${rateSeconds} has been recently processed, skipping`,
+      );
+
+      return;
+    }
+
+    await this.fetchAndSaveResponse(url);
+
+    logger.debug(`Fetch request message processed for url ${url}`);
+  }
 }

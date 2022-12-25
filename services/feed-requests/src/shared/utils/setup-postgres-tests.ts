@@ -1,116 +1,93 @@
+import 'reflect-metadata';
+import { EntityName, MikroOrmModule } from '@mikro-orm/nestjs';
 import { ModuleMetadata } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { createConnection, DataSource, QueryRunner } from 'typeorm';
-import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { ConfigModule } from '@nestjs/config';
+import type { TestingModule } from '@nestjs/testing';
+import { MikroORM } from '@mikro-orm/core';
+import { randomUUID } from 'crypto';
+import { SqlEntityManager } from '@mikro-orm/postgresql';
+import config from '../../config';
+import { testConfig } from '../../config/test.config';
 
-export interface PostgresTestOptions {
-  moduleMetadata?: ModuleMetadata;
-  databaseName: string;
+let testingModule: TestingModule;
+let orm: MikroORM;
+const postgresSchema = randomUUID().replace(/-/g, '');
+
+interface Options {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  models?: EntityName<Partial<any>>[];
 }
 
-/**
- * Used to instantiate a nest application for the TypeORM module.
- */
-export const postgresTestConfig = (
-  override?: Partial<PostgresConnectionOptions>,
-): PostgresConnectionOptions => {
-  return {
-    database: 'test',
-    username: 'postgres',
-    password: '12345',
-    type: 'postgres',
-    name: 'default',
-    logging: true,
-    logger: 'debug',
-    synchronize: true,
-    ...override,
-  };
-};
+export async function setupPostgresTests(
+  metadata: ModuleMetadata,
+  options?: Options,
+) {
+  const configVals = config();
 
-export const setupPostgresDatabase = async (databaseName: string) => {
-  const ormMaintenanceDatabaseConfig = postgresTestConfig({
-    name: 'maintenance',
-  });
-  const setupConnection = await createConnection(ormMaintenanceDatabaseConfig);
-  await setupConnection.query(`DROP DATABASE IF EXISTS ${databaseName}`);
-  await setupConnection.query(`CREATE DATABASE ${databaseName}`);
-  await setupConnection.query(
-    `ALTER DATABASE ${databaseName} SET timezone TO 'UTC'`,
-  );
-  await setupConnection.close();
-};
-
-export const teardownPostgresDatabase = async (databaseName: string) => {
-  const ormMaintenanceDatabaseConfig = postgresTestConfig({
-    name: 'maintenance',
-  });
-  const teardownConnection = await createConnection(
-    ormMaintenanceDatabaseConfig,
-  );
-  await teardownConnection.query(`DROP DATABASE ${databaseName}`);
-  await teardownConnection.close();
-};
-
-async function setupPostgresTests({
-  databaseName,
-  moduleMetadata,
-}: PostgresTestOptions) {
-  const config = postgresTestConfig({
-    database: databaseName,
-  });
-  let databaseIsSetup = false;
+  const { Test } = await import('@nestjs/testing');
 
   const uncompiledModule = Test.createTestingModule({
-    ...moduleMetadata,
+    ...metadata,
     imports: [
-      TypeOrmModule.forRoot({
-        ...config,
-        autoLoadEntities: true,
+      ...(metadata.imports || []),
+      ConfigModule.forRoot({
+        ignoreEnvFile: true,
+        load: [testConfig],
+        isGlobal: true,
       }),
-      ...(moduleMetadata?.imports || []),
+      MikroOrmModule.forFeature(options?.models || []),
+      MikroOrmModule.forRoot({
+        entities: ['dist/**/*.entity.js'],
+        entitiesTs: ['src/**/*.entity.ts'],
+        clientUrl: configVals.FEED_REQUESTS_POSTGRES_URI,
+        type: 'postgresql',
+        forceUtcTimezone: true,
+        timezone: 'UTC',
+        schema: postgresSchema,
+        allowGlobalContext: true,
+      }),
     ],
   });
 
-  let dataSource: DataSource;
-  let queryRunner: QueryRunner;
-  let module: TestingModule;
-
-  const setupDatabase = async () => {
-    await setupPostgresDatabase(databaseName);
-    module = await uncompiledModule.compile();
-    await module.init();
-    const dataSource = module.get(DataSource);
-    queryRunner = dataSource.createQueryRunner();
-    await queryRunner.connect();
-    databaseIsSetup = true;
+  const init = async () => {
+    testingModule = await uncompiledModule.compile();
+    orm = testingModule.get(MikroORM);
+    const generator = orm.getSchemaGenerator();
+    await generator.ensureDatabase();
+    await generator.dropSchema();
+    await generator.createSchema();
 
     return {
-      module,
-      queryRunner,
+      module: testingModule,
     };
-  };
-
-  const resetDatabase = async () => {
-    // TODO: synchronize doesn not work.
-    // await dataSource?.synchronize(true);
-  };
-
-  const teardownDatabase = async () => {
-    if (!databaseIsSetup) {
-      return;
-    }
-
-    await module?.close();
-    await teardownPostgresDatabase(databaseName);
   };
 
   return {
     uncompiledModule,
-    setupDatabase,
-    resetDatabase,
-    teardownDatabase,
+    init,
   };
 }
 
-export default setupPostgresTests;
+export async function clearDatabase() {
+  const generator = orm?.getSchemaGenerator();
+  await generator.ensureDatabase();
+  await generator.dropSchema();
+  await generator.createSchema();
+}
+
+export async function teardownPostgresTests() {
+  if (orm) {
+    const generator = orm.getSchemaGenerator();
+    await generator.dropSchema();
+    // const typedEm = orm.em as SqlEntityManager;
+    await orm.em.transactional(async (em) => {
+      await (em as SqlEntityManager).execute(
+        `DROP SCHEMA IF EXISTS "${postgresSchema}" CASCADE`,
+      );
+    });
+
+    await orm.close();
+  }
+
+  await testingModule?.close();
+}

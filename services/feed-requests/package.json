@@ -18,12 +18,17 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migration:create": "mikro-orm migration:create --initial --path=migrations",
+    "migration:up": "mikro-orm migration:up"
   },
   "dependencies": {
     "@golevelup/nestjs-rabbitmq": "^3.4.0",
     "@grpc/grpc-js": "^1.6.1",
     "@grpc/proto-loader": "^0.6.9",
+    "@mikro-orm/core": "^5.6.2",
+    "@mikro-orm/nestjs": "^5.1.5",
+    "@mikro-orm/postgresql": "^5.6.2",
     "@monitorss/logger": "^1.1.1",
     "@nestjs/common": "^9.0.11",
     "@nestjs/config": "^2.2.0",
@@ -32,7 +37,6 @@
     "@nestjs/microservices": "^9.0.11",
     "@nestjs/mongoose": "^9.2.0",
     "@nestjs/platform-fastify": "^9.0.11",
-    "@nestjs/typeorm": "^9.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "dayjs": "^1.11.1",
@@ -42,10 +46,11 @@
     "pg": "^8.7.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^7.2.0",
-    "typeorm": "^0.3.9"
+    "rxjs": "^7.2.0"
   },
   "devDependencies": {
+    "@mikro-orm/cli": "^5.6.2",
+    "@mikro-orm/migrations": "^5.6.2",
     "@nestjs/cli": "^9.1.2",
     "@nestjs/schematics": "^9.0.3",
     "@nestjs/testing": "^9.0.11",
@@ -71,6 +76,12 @@
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.5"
+  },
+  "mikro-orm": {
+    "useTsNode": true,
+    "configPaths": [
+      "./src/mikro-orm.config.ts"
+    ]
   },
   "jest": {
     "moduleFileExtensions": [

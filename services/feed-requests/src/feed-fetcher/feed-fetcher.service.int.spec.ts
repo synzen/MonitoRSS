@@ -1,29 +1,28 @@
 import { INestApplication } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import setupPostgresTests from '../shared/utils/setup-postgres-tests';
+import { ConfigService } from '@nestjs/config';
 import { RequestStatus } from './constants';
-import { Request, Response } from './entities';
 import { FeedFetcherService } from './feed-fetcher.service';
-import { testConfig } from '../config/test.config';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import {
+  clearDatabase,
+  setupPostgresTests,
+  teardownPostgresTests,
+} from '../shared/utils/setup-postgres-tests';
+import { Request, Response } from './entities';
+import { EntityRepository } from '@mikro-orm/postgresql';
+import { getRepositoryToken } from '@mikro-orm/nestjs';
 
 jest.mock('../utils/logger');
 
 describe('FeedFetcherService (Integration)', () => {
-  const databaseName = 'feedfetcherserviceintegrationtest';
-  let teardownDatabase: () => Promise<any>;
-  let resetDatabase: () => Promise<any>;
   let app: INestApplication;
   let service: FeedFetcherService;
   const url = 'https://rss-feed.com/feed.xml';
-  let requestRepo: Repository<Request>;
+  let requestRepo: EntityRepository<Request>;
 
   beforeAll(async () => {
-    const setupData = await setupPostgresTests({
-      databaseName,
-      moduleMetadata: {
+    const setupData = await setupPostgresTests(
+      {
         providers: [
           FeedFetcherService,
           ConfigService,
@@ -34,47 +33,43 @@ describe('FeedFetcherService (Integration)', () => {
             },
           },
         ],
-        imports: [
-          TypeOrmModule.forFeature([Request, Response]),
-          ConfigModule.forRoot({
-            isGlobal: true,
-            load: [testConfig],
-            ignoreEnvFile: true,
-          }),
-        ],
       },
-    });
-
-    teardownDatabase = setupData.teardownDatabase;
-    resetDatabase = setupData.resetDatabase;
+      {
+        models: [Request, Response],
+      },
+    );
 
     setupData.uncompiledModule.overrideProvider(ConfigService).useValue({
       get: jest.fn(),
     });
 
-    const { module } = await setupData.setupDatabase();
+    const { module } = await setupData.init();
 
     app = module.createNestApplication();
     await app.init();
 
     service = app.get(FeedFetcherService);
-    requestRepo = app.get<Repository<Request>>(getRepositoryToken(Request));
+    requestRepo = app.get<EntityRepository<Request>>(
+      getRepositoryToken(Request),
+    );
   });
 
-  beforeEach(async () => {
-    await resetDatabase();
-    await requestRepo.delete({});
+  afterEach(async () => {
+    await clearDatabase();
+  });
+
+  afterAll(async () => {
+    await teardownPostgresTests();
   });
 
   describe('requestExistsAfterTime', () => {
     it('should return true if a request exists after the given time', async () => {
-      await requestRepo.insert([
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 6),
-        },
-      ]);
+      const req = new Request();
+      req.status = RequestStatus.FAILED;
+      req.url = url;
+      req.createdAt = new Date(2020, 1, 6);
+
+      await requestRepo.persistAndFlush(req);
 
       await expect(
         service.requestExistsAfterTime(
@@ -87,13 +82,12 @@ describe('FeedFetcherService (Integration)', () => {
     });
 
     it('should return true if no request exists after the given time', async () => {
-      await requestRepo.insert([
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 6),
-        },
-      ]);
+      const req = new Request();
+      req.status = RequestStatus.FAILED;
+      req.url = url;
+      req.createdAt = new Date(2020, 1, 6);
+
+      await requestRepo.persistAndFlush(req);
 
       await expect(
         service.requestExistsAfterTime(
@@ -108,80 +102,94 @@ describe('FeedFetcherService (Integration)', () => {
 
   describe('getEarliestFailedAttempt', () => {
     it('returns the earliest failed attempt if there were no previous ok attempts', async () => {
-      const inserted = await requestRepo.insert([
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 6),
-        },
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 5),
-        },
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 4),
-        },
-        {
-          status: RequestStatus.FAILED,
-          url: 'fake-url',
-          createdAt: new Date(2020, 1, 1),
-        },
-      ]);
+      const req1 = new Request();
+      req1.status = RequestStatus.FAILED;
+      req1.url = url;
+      req1.createdAt = new Date(2020, 1, 6);
+      const req2 = new Request();
+      req2.status = RequestStatus.FAILED;
+      req2.url = url;
+      req2.createdAt = new Date(2020, 1, 5);
+      const req3 = new Request();
+      req3.status = RequestStatus.FAILED;
+      req3.url = url;
+      req3.createdAt = new Date(2020, 1, 4);
+      const req4 = new Request();
+      req4.status = RequestStatus.FAILED;
+      req4.url = 'fake-url';
+      req4.createdAt = new Date(2020, 1, 1);
+
+      await requestRepo.persistAndFlush([req1, req2, req3, req4]);
 
       const earliestFailedAttempt = await service.getEarliestFailedAttempt(url);
 
-      expect(earliestFailedAttempt?.id).toEqual(inserted.identifiers[2].id);
+      expect(earliestFailedAttempt?.id).toEqual(req3.id);
     });
     it('returns the first failed attempt after the latest success', async () => {
-      const requestRepo = app.get<Repository<Request>>(
-        getRepositoryToken(Request),
-      );
-
       const irrelevantUrl = 'https://irrelevant.com/feed.xml';
 
-      const inserted = await requestRepo.insert([
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 6),
-        },
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 5),
-        },
-        {
-          status: RequestStatus.FAILED,
-          url,
-          createdAt: new Date(2020, 1, 4),
-        },
-        {
-          status: RequestStatus.FAILED,
-          url: irrelevantUrl,
-          createdAt: new Date(2020, 1, 4),
-        },
-        {
-          status: RequestStatus.OK,
-          url,
-          createdAt: new Date(2020, 1, 3),
-        },
-        {
-          status: RequestStatus.OK,
-          url: irrelevantUrl,
-          createdAt: new Date(2020, 1, 5),
-        },
-      ]);
+      const req1 = new Request();
+      req1.status = RequestStatus.FAILED;
+      req1.url = url;
+      req1.createdAt = new Date(2020, 1, 6);
+
+      const req2 = new Request();
+      req2.status = RequestStatus.FAILED;
+      req2.url = url;
+      req2.createdAt = new Date(2020, 1, 5);
+
+      const req3 = new Request();
+      req3.status = RequestStatus.FAILED;
+      req3.url = url;
+      req3.createdAt = new Date(2020, 1, 4);
+
+      const req4 = new Request();
+      req4.status = RequestStatus.FAILED;
+      req4.url = irrelevantUrl;
+      req4.createdAt = new Date(2020, 1, 4);
+
+      const req5 = new Request();
+      req5.status = RequestStatus.OK;
+      req5.url = url;
+      req5.createdAt = new Date(2020, 1, 3);
+
+      const req6 = new Request();
+      req6.status = RequestStatus.OK;
+      req6.url = irrelevantUrl;
+      req6.createdAt = new Date(2020, 1, 5);
+
+      await requestRepo.persistAndFlush([req1, req2, req3, req4, req5, req6]);
 
       const foundAttempt = await service.getEarliestFailedAttempt(url);
 
-      expect(foundAttempt?.id).toEqual(inserted.identifiers[2].id);
+      expect(foundAttempt?.id).toEqual(req3.id);
     });
   });
 
-  afterAll(async () => {
-    await teardownDatabase();
+  describe('getLatestRequest', () => {
+    it('returns the request with the response', async () => {
+      const req1 = new Request();
+      req1.status = RequestStatus.FAILED;
+      req1.url = url;
+      req1.createdAt = new Date(2020, 1, 6);
+
+      const response = new Response();
+      response.statusCode = 200;
+      response.text = 'text';
+      response.isCloudflare = false;
+
+      req1.response = response;
+
+      await requestRepo.persistAndFlush([req1]);
+
+      const latestRequest = await service.getLatestRequest(url);
+
+      expect(latestRequest?.id).toEqual(req1.id);
+      expect(latestRequest?.response).toMatchObject({
+        statusCode: 200,
+        text: 'text',
+        isCloudflare: false,
+      });
+    });
   });
 });

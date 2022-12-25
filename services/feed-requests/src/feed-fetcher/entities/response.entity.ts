@@ -1,19 +1,21 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Property, PrimaryKey } from '@mikro-orm/core';
 
 @Entity()
 export class Response {
-  @PrimaryGeneratedColumn()
+  @PrimaryKey({
+    autoincrement: true,
+  })
   id!: number;
 
-  @Column()
+  @Property()
   statusCode!: number;
 
-  @Column({
+  @Property({
     nullable: true,
     type: 'text',
   })
   text?: string | null;
 
-  @Column()
+  @Property()
   isCloudflare!: boolean;
 }

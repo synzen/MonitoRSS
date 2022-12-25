@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import config from './config';
 import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MikroOrmModule } from '@mikro-orm/nestjs';
 
 @Module({
   imports: [],
@@ -24,13 +24,13 @@ export class AppModule {
           load: [config],
         }),
         FeedFetcherModule.forRoot(),
-        TypeOrmModule.forRoot({
-          type: 'postgres',
-          url: configVals.FEED_REQUESTS_POSTGRES_URI,
-          // database: 'feedfetcher',
-          entities: [],
-          synchronize: configVals.FEED_REQUESTS_SYNC_DB,
-          autoLoadEntities: true,
+        MikroOrmModule.forRoot({
+          entities: ['dist/**/*.entity.js'],
+          entitiesTs: ['src/**/*.entity.ts'],
+          clientUrl: configVals.FEED_REQUESTS_POSTGRES_URI,
+          type: 'postgresql',
+          forceUtcTimezone: true,
+          timezone: 'UTC',
         }),
       ],
     };

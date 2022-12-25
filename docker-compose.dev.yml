@@ -105,7 +105,7 @@ services:
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/rss
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
-      - FEED_REQUESTS_SYNC_DB=true
+      # - FEED_REQUESTS_SYNC_DB=true
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://mrss-rabbitmq-broker:5672
 
   mrss-user-feeds-service:

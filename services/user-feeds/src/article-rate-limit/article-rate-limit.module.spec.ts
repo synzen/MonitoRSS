@@ -56,7 +56,7 @@ describe("ArticleRateLimitModule", () => {
     await app?.close();
   });
 
-  describe(`GET /feeds/:feedId/rate-limits`, () => {
+  describe(`GET /user-feeds/:feedId/rate-limits`, () => {
     it("returns 401 if unauthorized", async () => {
       const feedId = "feed-id";
       const created = await deliveryLimitRepo.create({
@@ -71,7 +71,7 @@ describe("ArticleRateLimitModule", () => {
 
       const { statusCode } = await app.inject({
         method: "GET",
-        url: `/feeds/${feedId}/rate-limits`,
+        url: `/user-feeds/${feedId}/rate-limits`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
@@ -91,7 +91,7 @@ describe("ArticleRateLimitModule", () => {
 
       const { statusCode, body } = await app.inject({
         method: "GET",
-        url: `/feeds/${feedId}/rate-limits`,
+        url: `/user-feeds/${feedId}/rate-limits`,
         headers: standardHeaders,
       });
 
