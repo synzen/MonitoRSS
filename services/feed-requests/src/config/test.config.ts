@@ -8,6 +8,7 @@ export function testConfig(): EnvironmentVariables {
     FEED_REQUESTS_API_KEY: '123456789',
     FEED_REQUESTS_API_PORT: 3000,
     FEED_REQUESTS_RABBITMQ_BROKER_URL: 'amqp://localhost:5672',
+    FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: 'test',
   };
 
   validateConfig(vals);

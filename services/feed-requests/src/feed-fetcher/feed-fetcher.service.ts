@@ -18,6 +18,7 @@ interface FetchOptions {
 @Injectable()
 export class FeedFetcherService {
   failedDurationThresholdHours: number;
+  defaultUserAgent: string;
 
   constructor(
     @InjectRepository(Request)
@@ -31,6 +32,9 @@ export class FeedFetcherService {
     this.failedDurationThresholdHours = this.configService.get(
       'FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
     ) as number;
+    this.defaultUserAgent = this.configService.getOrThrow(
+      'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
+    );
   }
 
   @RabbitSubscribe({
@@ -170,7 +174,7 @@ export class FeedFetcherService {
       timeout: 15000,
       follow: 5,
       headers: {
-        'user-agent': options?.userAgent || '',
+        'user-agent': options?.userAgent || this.defaultUserAgent,
       },
     });
 

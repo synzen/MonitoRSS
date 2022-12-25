@@ -34,6 +34,8 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_API_PORT: Number(process.env.FEED_REQUESTS_API_PORT),
     FEED_REQUESTS_RABBITMQ_BROKER_URL: process.env
       .FEED_REQUESTS_RABBITMQ_BROKER_URL as string,
+    FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: process.env
+      .FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT as string,
   };
 
   validateConfig(values);

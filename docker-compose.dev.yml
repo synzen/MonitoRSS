@@ -107,6 +107,7 @@ services:
       - FEED_REQUESTS_API_PORT=5000
       # - FEED_REQUESTS_SYNC_DB=true
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://mrss-rabbitmq-broker:5672
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 MonitoRSS/1.0"
 
   mrss-user-feeds-service:
     restart: on-failure:3

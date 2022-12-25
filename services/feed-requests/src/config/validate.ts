@@ -46,6 +46,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   FEED_REQUESTS_RABBITMQ_BROKER_URL!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT!: string;
 }
 
 export function validateConfig(

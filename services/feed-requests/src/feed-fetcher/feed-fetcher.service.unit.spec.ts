@@ -17,6 +17,7 @@ describe('FeedFetcherService', () => {
   let service: FeedFetcherService;
   let configService: ConfigService;
   const feedUrl = 'https://rss-feed.com/feed.xml';
+  const defaultUserAgent = 'default-user-agent';
   const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
   const feedXml = readFileSync(feedFilePath, 'utf8');
@@ -34,6 +35,7 @@ describe('FeedFetcherService', () => {
   beforeEach(async () => {
     configService = {
       get: jest.fn(),
+      getOrThrow: jest.fn(),
     } as never;
     const mockMikroOrm = await MikroORM.init(
       {
@@ -55,6 +57,7 @@ describe('FeedFetcherService', () => {
       amqpConnection,
       mockMikroOrm,
     );
+    service.defaultUserAgent = defaultUserAgent;
   });
 
   afterEach(() => {
@@ -107,6 +110,17 @@ describe('FeedFetcherService', () => {
       nock(url.origin)
         .get(url.pathname)
         .matchHeader('user-agent', userAgent)
+        .replyWithFile(200, feedFilePath, {
+          'Content-Type': 'application/xml',
+        });
+
+      await service.fetchAndSaveResponse(feedUrl);
+    });
+
+    it('uses the default user agent if no custom user agent', async () => {
+      nock(url.origin)
+        .get(url.pathname)
+        .matchHeader('user-agent', defaultUserAgent)
         .replyWithFile(200, feedFilePath, {
           'Content-Type': 'application/xml',
         });
