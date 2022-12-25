@@ -8,7 +8,7 @@ const configValues =
 const logger = setupLogger({
   env: process.env.NODE_ENV as string,
   datadog: {
-    apiKey: configValues.FEED_FETCHER_DATADOG_API_KEY as string,
+    apiKey: configValues.FEED_REQUESTS_DATADOG_API_KEY as string,
     service: 'monitorss-feedfetcher',
   },
   enableDebugLogs: process.env.LOG_LEVEL === 'debug',

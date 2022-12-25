@@ -23,7 +23,7 @@ export class FeedFetcherModule {
       module: FeedFetcherModule,
       imports: [
         RabbitMQModule.forRoot(RabbitMQModule, {
-          uri: configValues.FEED_FETCHER_RABBITMQ_BROKER_URL,
+          uri: configValues.FEED_REQUESTS_RABBITMQ_BROKER_URL,
           defaultExchangeType: 'direct',
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
         }),

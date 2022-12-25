@@ -10,7 +10,7 @@ describe('ApiGuard', () => {
   beforeEach(() => {
     guard = new ApiGuard(configService as any);
     configService.getOrThrow.mockImplementation((key) => {
-      if (key === 'FEED_FETCHER_API_KEY') {
+      if (key === 'FEED_REQUESTS_API_KEY') {
         return apiKey;
       }
 

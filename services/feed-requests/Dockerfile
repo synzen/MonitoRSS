@@ -20,6 +20,6 @@ COPY --from=build /usr/src/app/dist dist
 
 RUN npm prune --production
 
-ENV FEED_FETCHER_API_PORT=3000
+ENV FEED_REQUESTS_API_PORT=3000
 
 CMD [ "node", "./dist/main" ]

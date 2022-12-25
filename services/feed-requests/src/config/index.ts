@@ -22,17 +22,18 @@ dotenv.config({
 export default function config(): EnvironmentVariables {
   const values: EnvironmentVariables = {
     NODE_ENV: process.env.NODE_ENV as Environment,
-    FEED_FETCHER_API_KEY: process.env.FEED_FETCHER_API_KEY as string,
-    FEED_FETCHER_POSTGRES_URI: process.env.FEED_FETCHER_POSTGRES_URI as string,
-    FEED_FETCHER_DATADOG_API_KEY: process.env
-      .FEED_FETCHER_DATADOG_API_KEY as string,
-    FEED_FETCHER_SYNC_DB: process.env.FEED_FETCHER_SYNC_DB === 'true',
-    FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
-      process.env.FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
+    FEED_REQUESTS_API_KEY: process.env.FEED_REQUESTS_API_KEY as string,
+    FEED_REQUESTS_POSTGRES_URI: process.env
+      .FEED_REQUESTS_POSTGRES_URI as string,
+    FEED_REQUESTS_DATADOG_API_KEY: process.env
+      .FEED_REQUESTS_DATADOG_API_KEY as string,
+    FEED_REQUESTS_SYNC_DB: process.env.FEED_REQUESTS_SYNC_DB === 'true',
+    FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
+      process.env.FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
     ),
-    FEED_FETCHER_API_PORT: Number(process.env.FEED_FETCHER_API_PORT),
-    FEED_FETCHER_RABBITMQ_BROKER_URL: process.env
-      .FEED_FETCHER_RABBITMQ_BROKER_URL as string,
+    FEED_REQUESTS_API_PORT: Number(process.env.FEED_REQUESTS_API_PORT),
+    FEED_REQUESTS_RABBITMQ_BROKER_URL: process.env
+      .FEED_REQUESTS_RABBITMQ_BROKER_URL as string,
   };
 
   validateConfig(values);

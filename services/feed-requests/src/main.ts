@@ -22,7 +22,7 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  const port = configService.getOrThrow<number>('FEED_FETCHER_API_PORT');
+  const port = configService.getOrThrow<number>('FEED_REQUESTS_API_PORT');
 
   await app.listen(port, '0.0.0.0');
   logger.info(`Application is running on port ${port}`);

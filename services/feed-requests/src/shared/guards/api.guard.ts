@@ -10,7 +10,7 @@ export class ApiGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const apiKey = this.configService.getOrThrow<string>(
-      'FEED_FETCHER_API_KEY',
+      'FEED_REQUESTS_API_KEY',
     );
 
     const request = context.switchToHttp().getRequest();

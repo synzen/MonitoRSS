@@ -26,10 +26,10 @@ export class AppModule {
         FeedFetcherModule.forRoot(),
         TypeOrmModule.forRoot({
           type: 'postgres',
-          url: configVals.FEED_FETCHER_POSTGRES_URI,
+          url: configVals.FEED_REQUESTS_POSTGRES_URI,
           // database: 'feedfetcher',
           entities: [],
-          synchronize: configVals.FEED_FETCHER_SYNC_DB,
+          synchronize: configVals.FEED_REQUESTS_SYNC_DB,
           autoLoadEntities: true,
         }),
       ],

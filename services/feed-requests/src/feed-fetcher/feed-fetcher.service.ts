@@ -26,7 +26,7 @@ export class FeedFetcherService {
     private readonly amqpConnection: AmqpConnection,
   ) {
     this.failedDurationThresholdHours = this.configService.get(
-      'FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
+      'FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
     ) as number;
   }
 

@@ -23,29 +23,29 @@ export class EnvironmentVariables {
 
   @IsString()
   @MinLength(1)
-  FEED_FETCHER_API_KEY!: string;
+  FEED_REQUESTS_API_KEY!: string;
 
   @IsString()
   @IsOptional()
-  FEED_FETCHER_DATADOG_API_KEY?: string;
+  FEED_REQUESTS_DATADOG_API_KEY?: string;
 
   @IsString()
   @MinLength(1)
-  FEED_FETCHER_POSTGRES_URI!: string;
+  FEED_REQUESTS_POSTGRES_URI!: string;
 
   @IsBoolean()
   @IsOptional()
-  FEED_FETCHER_SYNC_DB?: boolean;
+  FEED_REQUESTS_SYNC_DB?: boolean;
 
   @IsNumber()
-  FEED_FETCHER_FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
+  FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
 
   @IsNumber()
-  FEED_FETCHER_API_PORT!: number;
+  FEED_REQUESTS_API_PORT!: number;
 
   @IsString()
   @IsNotEmpty()
-  FEED_FETCHER_RABBITMQ_BROKER_URL!: string;
+  FEED_REQUESTS_RABBITMQ_BROKER_URL!: string;
 }
 
 export function validateConfig(
