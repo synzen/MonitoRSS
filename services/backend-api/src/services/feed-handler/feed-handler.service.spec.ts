@@ -30,7 +30,7 @@ describe("FeedHandlerService", () => {
 
   describe("getRateLimits", () => {
     const feedId = "feed-id";
-    const endpoint = `/api/v1/user-feeds/${feedId}/rate-limits`;
+    const endpoint = `/v1/user-feeds/${feedId}/rate-limits`;
 
     it("returns the response", async () => {
       const mockResponse: FeedHandlerRateLimitsResponse = {

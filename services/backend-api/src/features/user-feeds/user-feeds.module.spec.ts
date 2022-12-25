@@ -571,7 +571,7 @@ describe("UserFeedsModule", () => {
 
     it("returns the correct daily limit", async () => {
       nock(feedHandlerApiHost)
-        .get(`/api/v1/user-feeds/${feed._id}/rate-limits`)
+        .get(`/v1/user-feeds/${feed._id}/rate-limits`)
         .reply(200, {
           results: {
             limits: [
@@ -608,7 +608,7 @@ describe("UserFeedsModule", () => {
 
     it("returns 404 if no daily limit is found", async () => {
       nock(feedHandlerApiHost)
-        .get(`/api/v1/user-feeds/${feed._id}/rate-limits`)
+        .get(`/v1/user-feeds/${feed._id}/rate-limits`)
         .reply(200, {
           results: {
             limits: [

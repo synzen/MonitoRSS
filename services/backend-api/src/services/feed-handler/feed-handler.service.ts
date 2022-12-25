@@ -53,7 +53,7 @@ export class FeedHandlerService {
 
     if (res.status >= 500) {
       throw new FeedFetcherStatusException(
-        `Failed to initialize feed: >= 500 status code (${res.status}) from feed handler api`
+        `Failed to initialize feed: >= 500 status code (${res.status}) from User feeds api`
       );
     }
 
@@ -63,7 +63,7 @@ export class FeedHandlerService {
       throw new FeedFetcherStatusException(
         `Failed to initialize feed: non-ok status code (${
           res.status
-        }) from feed handler api, response: ${JSON.stringify(body)}`
+        }) from User feeds api, response: ${JSON.stringify(body)}`
       );
     }
   }
@@ -71,7 +71,7 @@ export class FeedHandlerService {
   async getRateLimits(feedId: string): Promise<FeedHandlerRateLimitsResponse> {
     try {
       const response = await fetch(
-        `${this.host}/api/v1/user-feeds/${feedId}/rate-limits`,
+        `${this.host}/v1/user-feeds/${feedId}/rate-limits`,
         {
           method: "GET",
           headers: {
@@ -83,7 +83,7 @@ export class FeedHandlerService {
 
       if (response.status >= 500) {
         throw new Error(
-          `Feed handler api responded with >= 500 status: ${response.status})`
+          `User feeds api responded with >= 500 status: ${response.status})`
         );
       }
 
@@ -91,7 +91,7 @@ export class FeedHandlerService {
 
       if (!response.ok) {
         throw new Error(
-          `Feed handler api responded with non-ok status: ${
+          `User feeds api responded with non-ok status: ${
             response.status
           }, response: ${JSON.stringify(responseBody)}`
         );
@@ -100,7 +100,7 @@ export class FeedHandlerService {
       return responseBody;
     } catch (error) {
       logger.error(
-        `Failed to execute fetch with feed handler api (${error.message})`,
+        `Failed to execute fetch with User feeds api (${error.message})`,
         {
           stack: error.stack,
         }
