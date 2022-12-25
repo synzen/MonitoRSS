@@ -33,10 +33,6 @@ export class EnvironmentVariables {
   @MinLength(1)
   FEED_FETCHER_POSTGRES_URI!: string;
 
-  @IsString()
-  @MinLength(1)
-  FEED_FETCHER_FEEDS_MONGODB_URI!: string;
-
   @IsBoolean()
   @IsOptional()
   FEED_FETCHER_SYNC_DB?: boolean;

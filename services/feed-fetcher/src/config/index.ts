@@ -24,8 +24,6 @@ export default function config(): EnvironmentVariables {
     NODE_ENV: process.env.NODE_ENV as Environment,
     FEED_FETCHER_API_KEY: process.env.FEED_FETCHER_API_KEY as string,
     FEED_FETCHER_POSTGRES_URI: process.env.FEED_FETCHER_POSTGRES_URI as string,
-    FEED_FETCHER_FEEDS_MONGODB_URI: process.env
-      .FEED_FETCHER_FEEDS_MONGODB_URI as string,
     FEED_FETCHER_DATADOG_API_KEY: process.env
       .FEED_FETCHER_DATADOG_API_KEY as string,
     FEED_FETCHER_SYNC_DB: process.env.FEED_FETCHER_SYNC_DB === 'true',
