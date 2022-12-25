@@ -86,10 +86,7 @@ interface Config {
 }
 
 const setupLogger = (config: Config) => {
-  // console.log('SETTING UP BOIII');
   const consoleLogger = new ConsolePrettyLogger({});  
-
-
 
   const debugTransports: LoggerType[] = config.enableDebugLogs
     ? [consoleLogger]
@@ -113,6 +110,7 @@ const setupLogger = (config: Config) => {
       source: config.datadog.source || 'nodejs',
       useInEnvs: ['production'],
     });
+    infoTransports.push(datadogLogger);
     warnTransports.push(datadogLogger);
     errorTransports.push(datadogLogger);
     datadogTransports.push(datadogLogger);
