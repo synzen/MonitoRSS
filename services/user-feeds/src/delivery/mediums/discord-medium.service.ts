@@ -106,6 +106,7 @@ export class DiscordMediumService implements DeliveryMedium {
         channel: channelId,
         feedId: id,
         guildId,
+        emitDeliveryResult: true,
       }
     );
 
@@ -155,6 +156,7 @@ export class DiscordMediumService implements DeliveryMedium {
         webhookId,
         feedId: id,
         guildId,
+        emitDeliveryResult: true,
       }
     );
 

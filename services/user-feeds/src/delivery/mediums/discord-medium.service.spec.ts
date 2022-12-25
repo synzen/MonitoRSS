@@ -167,6 +167,7 @@ describe("DiscordMediumService", () => {
             channel: "channel-1",
             feedId: deliveryDetails.feedDetails.id,
             guildId: deliveryDetails.deliverySettings.guildId,
+            emitDeliveryResult: true,
           }
         );
       });
@@ -220,6 +221,7 @@ describe("DiscordMediumService", () => {
             webhookId: webhook1Id,
             feedId: deliveryDetails.feedDetails.id,
             guildId: deliveryDetails.deliverySettings.guildId,
+            emitDeliveryResult: true,
           }
         );
       });
