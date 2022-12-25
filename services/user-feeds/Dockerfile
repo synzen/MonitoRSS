@@ -16,12 +16,11 @@ FROM node:16-alpine AS prod
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/package*.json ./
-COPY --from=build /usr/src/app/node_modules node_modules
-COPY --from=build /usr/src/app/dist dist
+COPY --from=build /usr/src/app/noddiste_modules node_modules
+COPY --from=build /usr/src/app/ dist
 
 RUN npm prune --production
 
 ENV USER_FEEDS_API_PORT=3000
-HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD wget http://localhost:3000/cep/v0/health -q -O - > /dev/null 2>&1
 
 CMD [ "node", "./dist/main" ]
