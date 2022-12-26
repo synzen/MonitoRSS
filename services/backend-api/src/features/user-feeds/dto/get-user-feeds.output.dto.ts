@@ -7,7 +7,7 @@ import {
   IsString,
   ValidateNested,
 } from "class-validator";
-import { UserFeedHealthStatus } from "../types";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 
 class GetUserFeedsOutputResultDto {
   @IsString()
@@ -25,6 +25,10 @@ class GetUserFeedsOutputResultDto {
   @IsString()
   @IsIn(Object.values(UserFeedHealthStatus))
   healthStatus: UserFeedHealthStatus;
+
+  @IsString()
+  @IsIn(Object.values(UserFeedDisabledCode))
+  disabledCode?: string;
 }
 
 export class GetUserFeedsOutputDto {

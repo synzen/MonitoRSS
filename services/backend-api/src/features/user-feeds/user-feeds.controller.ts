@@ -180,6 +180,7 @@ export class UserFeedsController {
         title: feed.title,
         url: feed.url,
         healthStatus: feed.healthStatus,
+        disabledCode: feed.disabledCode,
       })),
       total: count,
     };
