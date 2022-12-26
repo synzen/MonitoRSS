@@ -211,6 +211,9 @@ export class UserFeedsService {
         feedId,
         {
           healthStatus: UserFeedHealthStatus.Ok,
+          $unset: {
+            disabledCode: "",
+          },
         },
         {
           new: true,

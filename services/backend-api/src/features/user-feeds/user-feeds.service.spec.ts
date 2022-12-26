@@ -15,7 +15,7 @@ import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
-import { UserFeedHealthStatus } from "./types";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 
 describe("UserFeedsService", () => {
@@ -726,6 +726,7 @@ describe("UserFeedsService", () => {
           discordUserId: "user-id",
         },
         healthStatus: UserFeedHealthStatus.Failed,
+        disabledCode: UserFeedDisabledCode.FailedRequests,
       });
 
       await service.retryFailedFeed(feed._id.toHexString());
@@ -733,6 +734,7 @@ describe("UserFeedsService", () => {
       const updatedFeed = await userFeedModel.findById(feed._id);
 
       expect(updatedFeed?.healthStatus).toEqual(UserFeedHealthStatus.Ok);
+      expect(updatedFeed?.disabledCode).toBeUndefined();
     });
 
     it("returns the updated feed", async () => {
@@ -743,6 +745,7 @@ describe("UserFeedsService", () => {
           discordUserId: "user-id",
         },
         healthStatus: UserFeedHealthStatus.Failed,
+        disabledCode: UserFeedDisabledCode.FailedRequests,
       });
 
       const result = await service.retryFailedFeed(feed._id.toHexString());
