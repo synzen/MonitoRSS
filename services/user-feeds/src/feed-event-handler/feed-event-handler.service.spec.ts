@@ -20,6 +20,10 @@ import { DeliveryService } from "../delivery/delivery.service";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
+import {
+  FeedRequestInternalException,
+  FeedRequestParseException,
+} from "../feed-fetcher/exceptions";
 
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
@@ -170,9 +174,27 @@ describe("FeedEventHandlerService", () => {
       });
     });
 
-    describe("when no feed request is pending", () => {
-      it("does not deliver anything", async () => {
+    describe("feed request", () => {
+      it("does not deliver anything when request is pending", async () => {
         feedFetcherService.fetch.mockResolvedValue(null);
+
+        await service.handleV2Event(v2Event);
+
+        expect(deliveryService.deliver).not.toHaveBeenCalled();
+      });
+
+      it("does not deliver anything when the last request had an internal error", async () => {
+        const error = new FeedRequestInternalException("error");
+        feedFetcherService.fetch.mockRejectedValue(error);
+
+        await service.handleV2Event(v2Event);
+
+        expect(deliveryService.deliver).not.toHaveBeenCalled();
+      });
+
+      it("does not deliver anything when the last request had a feed parse exception", async () => {
+        const error = new FeedRequestParseException("error");
+        feedFetcherService.fetch.mockRejectedValue(error);
 
         await service.handleV2Event(v2Event);
 

@@ -8,7 +8,6 @@ import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
-  ArticleDeliveryState,
   ArticleDeliveryStatus,
   BrokerQueue,
   FeedV2Event,
@@ -18,6 +17,10 @@ import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
+import {
+  FeedRequestInternalException,
+  FeedRequestParseException,
+} from "../feed-fetcher/exceptions";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -147,9 +150,30 @@ export class FeedEventHandlerService {
         },
       } = event;
 
-      const feedXml = await this.feedFetcherService.fetch(url);
+      let feedXml: string | null;
+
+      try {
+        feedXml = await this.feedFetcherService.fetch(url);
+      } catch (err) {
+        if (
+          err instanceof FeedRequestInternalException ||
+          err instanceof FeedRequestParseException
+        ) {
+          logger.debug(`Ignoring feed event due to expected exception`, {
+            exceptionName: (err as Error).name,
+          });
+
+          return;
+        }
+
+        throw err;
+      }
 
       if (!feedXml) {
+        logger.debug(
+          `Ignoring feed event due to empty feed XML (likely pending request)`
+        );
+
         return;
       }
 
@@ -184,10 +208,14 @@ export class FeedEventHandlerService {
         });
       }
     } catch (err) {
-      logger.error(`Error while handling feed event`, {
-        event,
-        stack: (err as Error).stack,
-      });
+      logger.error(
+        `Error while handling feed event: ${(err as Error).message}`,
+        {
+          err,
+          event,
+          stack: (err as Error).stack,
+        }
+      );
     }
   }
 }
