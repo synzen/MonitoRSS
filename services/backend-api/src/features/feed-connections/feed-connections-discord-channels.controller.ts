@@ -23,6 +23,7 @@ import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionOutputDto,
+  CreateDiscordChannelConnectionTestArticleOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
   UpdateDiscordChannelConnectionInputDto,
   UpdateDiscordChannelConnectionOutputDto,
@@ -30,6 +31,7 @@ import {
 import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 import {
   AddDiscordChannelConnectionFilter,
+  CreateDiscordChannelTestArticleFilter,
   DeleteDiscordChannelConnectionFilter,
   UpdateDiscordChannelConnectionFilter,
 } from "./filters";
@@ -76,6 +78,15 @@ export class FeedConnectionsDiscordChannelsController {
         content: createdConnection.details.content,
       },
     };
+  }
+
+  @Post("/discord-channels/:connectionId/test")
+  @UseFilters(CreateDiscordChannelTestArticleFilter)
+  async testDiscordChannelConnection(
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput
+  ): Promise<CreateDiscordChannelConnectionTestArticleOutputDto> {
+    return this.service.sendTestArticle(feed, connection);
   }
 
   @Patch("/discord-channels/:connectionId")

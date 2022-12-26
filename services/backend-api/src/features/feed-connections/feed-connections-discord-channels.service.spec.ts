@@ -1,12 +1,15 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
+import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
+import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import {
@@ -21,6 +24,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   const feedsService = {
     canUseChannel: jest.fn(),
   };
+  const feedHandlerService = {
+    sendTestArticle: jest.fn(),
+  };
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests({
@@ -29,6 +35,10 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         {
           provide: FeedsService,
           useValue: feedsService,
+        },
+        {
+          provide: FeedHandlerService,
+          useValue: feedHandlerService,
         },
       ],
       imports: [
@@ -284,6 +294,72 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordChannels).toHaveLength(0);
+    });
+  });
+
+  describe("sendTestArticle", () => {
+    const userFeed: UserFeed = Object.freeze({
+      title: "my feed",
+      url: "url",
+      user: {
+        discordUserId: "user-id",
+      },
+      connections: {
+        discordChannels: [
+          {
+            id: new Types.ObjectId(),
+            name: "name",
+            details: {
+              channel: {
+                id: "channel-id",
+                guildId: "guild-id",
+              },
+              embeds: [],
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        discordWebhooks: [],
+      },
+    }) as never;
+    const targetConnection: DiscordChannelConnection = Object.freeze(
+      userFeed.connections.discordChannels[0]
+    );
+
+    it("calls sendTestArticle with the correct args", async () => {
+      const sendTestArticle = jest.spyOn(feedHandlerService, "sendTestArticle");
+
+      await service.sendTestArticle(userFeed, targetConnection);
+
+      expect(sendTestArticle).toHaveBeenCalledWith({
+        details: {
+          type: "discord",
+          feed: {
+            url: userFeed.url,
+          },
+          mediumDetails: {
+            channel: {
+              id: targetConnection.details.channel.id,
+            },
+            content: targetConnection.details.content,
+            embeds: targetConnection.details.embeds,
+          },
+        },
+      });
+    });
+
+    it("returns the result", async () => {
+      const testResult = {
+        status: TestDeliveryStatus.Success,
+      };
+      jest
+        .spyOn(feedHandlerService, "sendTestArticle")
+        .mockResolvedValue(testResult);
+
+      const result = await service.sendTestArticle(userFeed, targetConnection);
+
+      expect(result).toEqual(testResult);
     });
   });
 });

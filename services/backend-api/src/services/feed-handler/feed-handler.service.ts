@@ -1,8 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { validate } from "class-validator";
 import fetch from "node-fetch";
+import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
+import {
+  SendTestArticleResult,
+  SendTestDiscordChannelArticleInput,
+} from "./types";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -108,5 +114,46 @@ export class FeedHandlerService {
 
       throw error;
     }
+  }
+
+  async sendTestArticle({
+    details,
+  }: SendTestDiscordChannelArticleInput): Promise<SendTestArticleResult> {
+    let result: SendTestArticleResult;
+
+    try {
+      const res = await fetch(`${this.host}/v1/user-feeds/test`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+        body: JSON.stringify(details),
+      });
+
+      const json = await res.json();
+
+      result = new SendTestArticleResult();
+      result.status = json.status;
+      result.apiResponse = json.apiResponse;
+    } catch (err) {
+      throw new Error(
+        `Failed to send and/or parse test article response through user feeds API: ${
+          (err as Error).message
+        }`
+      );
+    }
+
+    const validationErrors = await validate(result);
+
+    if (validationErrors.length > 0) {
+      throw new UnexpectedApiResponseException(
+        `Unexpectd response from user feeds API: ${JSON.stringify(
+          validationErrors
+        )}`
+      );
+    }
+
+    return result;
   }
 }

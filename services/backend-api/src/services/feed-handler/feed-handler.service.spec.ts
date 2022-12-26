@@ -6,6 +6,8 @@ import nock from "nock";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
 import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
+import { TestDeliveryStatus } from "./constants";
+import { UnexpectedApiResponseException } from "../../common/exceptions";
 
 jest.mock("../../utils/logger");
 
@@ -116,6 +118,54 @@ describe("FeedHandlerService", () => {
           maxDailyArticles: 100,
         })
       ).rejects.toThrow(FeedFetcherStatusException);
+    });
+  });
+
+  describe("sendTestArticle", () => {
+    const endpoint = `/v1/user-feeds/test`;
+    const validPayload = {
+      details: {
+        type: "discord" as const,
+        feed: {
+          url: "url",
+        },
+        mediumDetails: {
+          channel: {
+            id: "channel-id",
+          },
+          content: "content",
+          embeds: [],
+        },
+      },
+    };
+
+    it("returns the result on success", async () => {
+      const mockResponse = { status: TestDeliveryStatus.Success };
+      nock(host)
+        .post(endpoint)
+        .matchHeader("Content-Type", "application/json")
+        .matchHeader("api-key", apiKey)
+        .reply(200, mockResponse);
+
+      const result = await service.sendTestArticle(validPayload);
+
+      expect(result).toEqual({
+        status: TestDeliveryStatus.Success,
+      });
+    });
+
+    it("throws if the status code is >= 500", async () => {
+      nock(host).post(endpoint).reply(500, {});
+
+      await expect(service.sendTestArticle(validPayload)).rejects.toThrow();
+    });
+
+    it("throws if the response payload is unexpected", async () => {
+      nock(host).post(endpoint).reply(200, { status: "unexpected" });
+
+      await expect(service.sendTestArticle(validPayload)).rejects.toThrow(
+        UnexpectedApiResponseException
+      );
     });
   });
 });

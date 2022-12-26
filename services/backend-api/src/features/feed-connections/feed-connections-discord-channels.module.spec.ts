@@ -18,6 +18,7 @@ import { Types } from "mongoose";
 import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 import { FeedConnectionsDiscordChannelsModule } from "./feed-connections-discord-channels.module";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 
 jest.mock("../../utils/logger");
 
@@ -63,6 +64,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
         createDiscordChannelConnection: jest.fn(),
         updateDiscordChannelConnection: jest.fn(),
         deleteConnection: jest.fn(),
+        sendTestArticle: jest.fn(),
       });
 
     ({ app, setAccessToken } = await init());
@@ -253,6 +255,119 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
           },
         })
       );
+
+      expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("POST /discord-channels/:id/test", () => {
+    const validBody = {
+      name: "connection-name",
+    };
+    const connectionIdToUse = new Types.ObjectId();
+
+    beforeEach(async () => {
+      await userFeedModel.updateOne(
+        {
+          _id: createdFeed._id,
+        },
+        {
+          $set: {
+            connections: {
+              discordChannels: [
+                {
+                  id: connectionIdToUse,
+                  name: "name",
+                  details: {
+                    channel: {
+                      id: "channel-id",
+                      guildId: "guild-id",
+                    },
+                    embeds: [],
+                  },
+                },
+              ],
+            },
+          },
+        }
+      );
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}/test`,
+        payload: validBody,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if user does not own feed", async () => {
+      const differentUserCookie = await setAccessToken({
+        access_token: "accessToken",
+        discord: {
+          id: "different-user",
+        },
+      } as Session["accessToken"]);
+
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}/test`,
+        payload: validBody,
+        headers: {
+          ...standardRequestOptions.headers,
+          cookie: differentUserCookie,
+        },
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl.replace(
+          createdFeed._id.toHexString(),
+          new Types.ObjectId().toHexString()
+        )}/discord-channels/${connectionIdToUse}/test`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed connection is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-channels/${new Types.ObjectId()}/test`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns the test result", async () => {
+      const testResult = {
+        status: TestDeliveryStatus.Success,
+      };
+
+      jest
+        .spyOn(feedConnectionsService, "sendTestArticle")
+        .mockResolvedValue(testResult);
+
+      const { statusCode, body } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}/test`,
+        payload: validBody,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        status: TestDeliveryStatus.Success,
+      });
 
       expect(statusCode).toBe(HttpStatus.CREATED);
     });

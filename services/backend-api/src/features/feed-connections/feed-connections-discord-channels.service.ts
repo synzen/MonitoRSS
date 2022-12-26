@@ -2,6 +2,8 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
+import { SendTestArticleResult } from "../../services/feed-handler/types";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
@@ -34,7 +36,8 @@ export interface UpdateDiscordChannelConnectionInput {
 export class FeedConnectionsDiscordChannelsService {
   constructor(
     private readonly feedsService: FeedsService,
-    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    private readonly feedHandlerService: FeedHandlerService
   ) {}
 
   async createDiscordChannelConnection({
@@ -182,6 +185,29 @@ export class FeedConnectionsDiscordChannelsService {
         },
       }
     );
+  }
+
+  async sendTestArticle(
+    userFeed: UserFeed,
+    connection: DiscordChannelConnection
+  ): Promise<SendTestArticleResult> {
+    const payload = {
+      type: "discord",
+      feed: {
+        url: userFeed.url,
+      },
+      mediumDetails: {
+        channel: {
+          id: connection.details.channel.id,
+        },
+        content: connection.details.content,
+        embeds: connection.details.embeds,
+      },
+    } as const;
+
+    return this.feedHandlerService.sendTestArticle({
+      details: payload,
+    });
   }
 
   private async assertDiscordChannelCanBeUsed(
