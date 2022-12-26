@@ -11,14 +11,25 @@ import {
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
 import logger from "../../shared/utils/logger";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
   static BASE_API_URL = "https://discord.com/api/v10";
+  producer: RESTProducer;
 
-  constructor(
-    @Inject("DISCORD_REST_PRODUCER") private readonly producer: RESTProducer
-  ) {}
+  constructor(private readonly configService: ConfigService) {
+    const rabbitmqUri = configService.getOrThrow(
+      "USER_FEEDS_DISCORD_RABBITMQ_URI"
+    );
+    const discordClientId = configService.getOrThrow(
+      "USER_FEEDS_DISCORD_CLIENT_ID"
+    );
+
+    this.producer = new RESTProducer(rabbitmqUri, {
+      clientId: discordClientId,
+    });
+  }
 
   private getChannelApiUrl(channelId: string) {
     return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/messages`;
@@ -29,10 +40,10 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   async deliverTestArticle(
-    article: Article,
+    article: Record<string, unknown>,
     details: TestDiscordDeliveryDetails
   ) {
-    const { channel, webhook, embeds, content } = details.deliverySettings;
+    const { channel, webhook, embeds, content } = details.mediumDetails;
     const channelId = channel?.id;
     const webhookId = webhook?.id;
 
@@ -41,7 +52,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
 
-      const jobResult = await this.producer.fetch(apiUrl, {
+      return this.producer.fetch(apiUrl, {
         method: "POST",
         body: JSON.stringify({
           ...this.generateApiPayload(article, {
@@ -52,17 +63,15 @@ export class DiscordMediumService implements DeliveryMedium {
           avatar_url: iconUrl,
         }),
       });
-
-      return jobResult;
     } else if (channelId) {
       const apiUrl = this.getChannelApiUrl(channelId);
 
-      await this.producer.fetch(apiUrl, {
+      return this.producer.fetch(apiUrl, {
         method: "POST",
         body: JSON.stringify(
           this.generateApiPayload(article, {
-            embeds: details.deliverySettings.embeds,
-            content: details.deliverySettings.content,
+            embeds: details.mediumDetails.embeds,
+            content: details.mediumDetails.content,
           })
         ),
       });
@@ -220,7 +229,7 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   private generateApiPayload(
-    article: Article,
+    article: Record<string, unknown>,
     {
       embeds,
       content,

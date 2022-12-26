@@ -5,3 +5,4 @@ export * from "./base-medium-payload.type";
 export * from "./discord-medium-payload-details.type";
 export * from "./medium-payload.type";
 export * from "./delivery-state.type";
+export * from "./discord-medium-test-payload-details.type";

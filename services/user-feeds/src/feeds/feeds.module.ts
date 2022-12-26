@@ -2,10 +2,11 @@ import { Module } from "@nestjs/common";
 import { FeedsService } from "./feeds.service";
 import { FeedsController } from "./feeds.controller";
 import { ArticleRateLimitModule } from "../article-rate-limit/article-rate-limit.module";
+import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 
 @Module({
   controllers: [FeedsController],
-  providers: [FeedsService],
+  providers: [FeedsService, DiscordMediumService],
   imports: [ArticleRateLimitModule],
 })
 export class FeedsModule {}
