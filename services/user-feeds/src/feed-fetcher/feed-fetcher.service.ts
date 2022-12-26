@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Dispatcher, request } from "undici";
 import BodyReadable from "undici/types/readable";
+import { ArticlesService } from "../articles/articles.service";
 import logger from "../shared/utils/logger";
 import {
   FeedRequestInternalException,
@@ -16,7 +17,10 @@ export class FeedFetcherService {
   SERVICE_HOST: string;
   API_KEY: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly articlesService: ArticlesService
+  ) {
     this.SERVICE_HOST = configService.getOrThrow(
       "USER_FEEDS_FEED_REQUESTS_API_URL"
     );
@@ -87,5 +91,31 @@ export class FeedFetcherService {
     throw new Error(
       `Unexpected feed request status in response: ${requestStatus}`
     );
+  }
+
+  async fetchFeedArticles(url: string) {
+    const feedXml = await this.fetch(url);
+
+    if (!feedXml) {
+      return null;
+    }
+
+    return this.articlesService.getArticlesFromXml(feedXml);
+  }
+
+  async fetchRandomFeedArticle(url: string) {
+    const result = await this.fetchFeedArticles(url);
+
+    if (!result) {
+      throw new Error(`Request for ${url} is still pending`);
+    }
+
+    if (!result.articles.length) {
+      return null;
+    }
+
+    const { articles } = result;
+
+    return articles[Math.floor(Math.random() * articles.length)];
   }
 }

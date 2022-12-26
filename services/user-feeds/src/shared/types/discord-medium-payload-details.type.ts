@@ -56,7 +56,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
           }).required()
         ).optional(),
       }).required()
-    ).default([]),
+    ),
   },
   [["channel", "webhook"]]
 );
