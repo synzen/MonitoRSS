@@ -33,6 +33,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
   let createdFeed: UserFeed;
   let baseApiUrl: string;
   let feedConnectionsService: FeedConnectionsDiscordChannelsService;
+  const discordUserId = "user-id";
 
   beforeEach(async () => {
     [createdFeed] = await userFeedModel.create([
@@ -40,7 +41,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
         title: "my feed",
         url: "url",
         user: {
-          discordUserId: "user-id",
+          discordUserId,
         },
       },
     ]);
@@ -68,6 +69,9 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
 
     standardRequestOptions.headers.cookie = await setAccessToken({
       access_token: "accessToken",
+      discord: {
+        id: discordUserId,
+      },
     } as Session["accessToken"]);
 
     userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
@@ -96,6 +100,27 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if user does not own feed", async () => {
+      const differentUserCookie = await setAccessToken({
+        access_token: "accessToken",
+        discord: {
+          id: "different-user",
+        },
+      } as Session["accessToken"]);
+
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-channels`,
+        payload: validBody,
+        headers: {
+          ...standardRequestOptions.headers,
+          cookie: differentUserCookie,
+        },
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it("returns 400 with the right error code if channel returns 403", async () => {
@@ -274,6 +299,27 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if user does not own feed", async () => {
+      const differentUserCookie = await setAccessToken({
+        access_token: "accessToken",
+        discord: {
+          id: "different-user",
+        },
+      } as Session["accessToken"]);
+
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        payload: validBody,
+        headers: {
+          ...standardRequestOptions.headers,
+          cookie: differentUserCookie,
+        },
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it("returns 400 with the right error code if channel returns 403", async () => {
@@ -457,6 +503,26 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if user does not own feed", async () => {
+      const differentUserCookie = await setAccessToken({
+        access_token: "accessToken",
+        discord: {
+          id: "different-user",
+        },
+      } as Session["accessToken"]);
+
+      const { statusCode } = await app.inject({
+        method: "DELETE",
+        url: `${baseApiUrl}/discord-channels/${connectionIdToUse}`,
+        headers: {
+          ...standardRequestOptions.headers,
+          cookie: differentUserCookie,
+        },
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it("returns 404 if the connection does not exist", async () => {

@@ -45,7 +45,6 @@ export class FeedConnectionsDiscordChannelsController {
     private readonly service: FeedConnectionsDiscordChannelsService
   ) {}
 
-  // TODO: Make sure user owns feed
   @Post("/discord-channels")
   @UseFilters(AddDiscordChannelConnectionFilter)
   async createDiscordChannelConnection(
