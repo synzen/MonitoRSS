@@ -71,15 +71,9 @@ export class UserFeedsController {
 
   @Get("/:feedId")
   async getFeed(
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
-    if (feed.user.discordUserId !== discordUserId) {
-      throw new NotFoundException();
-    }
-
-    return await this.formatFeedForResponse(feed, discordUserId);
+    return await this.formatFeedForResponse(feed, feed.user.discordUserId);
   }
 
   @Get("/:feedId/retry")
@@ -89,10 +83,6 @@ export class UserFeedsController {
     { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
-    if (feed.user.discordUserId !== discordUserId) {
-      throw new NotFoundException();
-    }
-
     const updatedFeed = (await this.userFeedsService.retryFailedFeed(
       feed._id.toHexString()
     )) as UserFeed;
@@ -102,14 +92,8 @@ export class UserFeedsController {
 
   @Get("/:feedId/daily-limit")
   async getDailyLimit(
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedDailyLimitOutputDto> {
-    if (feed.user.discordUserId !== discordUserId) {
-      throw new NotFoundException();
-    }
-
     const limit = await this.userFeedsService.getFeedDailyLimit(
       feed._id.toHexString()
     );
@@ -129,15 +113,9 @@ export class UserFeedsController {
   @Patch("/:feedId")
   @UseFilters(FeedExceptionFilter)
   async updateFeed(
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed,
     @Body(ValidationPipe) { title, url, disabledCode }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
-    if (feed.user.discordUserId !== discordUserId) {
-      throw new ForbiddenException();
-    }
-
     if (disabledCode && feed.disabledCode) {
       throw new ForbiddenException("Feed is already disabled");
     }
@@ -151,7 +129,7 @@ export class UserFeedsController {
       }
     )) as UserFeed;
 
-    return this.formatFeedForResponse(updated, discordUserId);
+    return this.formatFeedForResponse(updated, feed.user.discordUserId);
   }
 
   @Get()
@@ -188,15 +166,7 @@ export class UserFeedsController {
 
   @Delete("/:feedId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteFeed(
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken,
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed
-  ) {
-    if (feed.user.discordUserId !== discordUserId) {
-      throw new ForbiddenException();
-    }
-
+  async deleteFeed(@Param("feedId", GetUserFeedPipe) feed: UserFeed) {
     await this.userFeedsService.deleteFeedById(feed._id.toHexString());
   }
 

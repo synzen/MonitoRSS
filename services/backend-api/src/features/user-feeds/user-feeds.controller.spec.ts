@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from "@nestjs/common";
+import { NotFoundException } from "@nestjs/common";
 import { Types } from "mongoose";
 import { FeedConnectionType } from "../feeds/constants";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
@@ -75,14 +75,7 @@ describe("UserFeedsController", () => {
         refreshRateSeconds: 123,
       } as never);
 
-      const result = await controller.getFeed(
-        {
-          discord: {
-            id: discordUserId,
-          },
-        } as never,
-        feed as never
-      );
+      const result = await controller.getFeed(feed as never);
 
       expect(result).toMatchObject({
         result: {
@@ -110,34 +103,6 @@ describe("UserFeedsController", () => {
           ],
         },
       });
-    });
-
-    it("throws a not found exception if the feed does not belong to the user", async () => {
-      const feed = {
-        title: "title",
-        url: "url",
-        _id: new Types.ObjectId(),
-        user: {
-          discordUserId: "other discord id",
-        },
-        connections: {
-          discordChannels: [],
-          discordWebhooks: [],
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await expect(
-        controller.getFeed(
-          {
-            discord: {
-              id: discordUserId,
-            },
-          } as never,
-          feed as never
-        )
-      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -184,35 +149,6 @@ describe("UserFeedsController", () => {
         },
       });
     });
-
-    it("throws a not found exception if the feed does not belong to the user", async () => {
-      const discordUserId = "discord id";
-      const feed = {
-        title: "title",
-        url: "url",
-        _id: new Types.ObjectId(),
-        user: {
-          discordUserId: "other discord id",
-        },
-        connections: {
-          discordChannels: [],
-          discordWebhooks: [],
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await expect(
-        controller.retryFailedFeed(
-          {
-            discord: {
-              id: discordUserId,
-            },
-          } as never,
-          feed as never
-        )
-      ).rejects.toThrow(NotFoundException);
-    });
   });
 
   describe("getDailyLimits", () => {
@@ -222,14 +158,7 @@ describe("UserFeedsController", () => {
         max: 1000,
       });
 
-      const result = await controller.getDailyLimit(
-        {
-          discord: {
-            id: discordUserId,
-          },
-        } as never,
-        feed as never
-      );
+      const result = await controller.getDailyLimit(feed as never);
 
       expect(result).toMatchObject({
         result: {
@@ -242,58 +171,14 @@ describe("UserFeedsController", () => {
     it("throws not found if daily limit is not found", async () => {
       userFeedsService.getFeedDailyLimit.mockResolvedValue(undefined);
 
-      await expect(
-        controller.getDailyLimit(
-          {
-            discord: {
-              id: discordUserId,
-            },
-          } as never,
-          feed as never
-        )
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.getDailyLimit(feed as never)).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
   describe("updateFeed", () => {
-    it("throws forbidden exception if discord user id does not match feed", async () => {
-      const feed = {
-        user: {
-          discordUserId: "discord user id",
-        },
-      } as never;
-
-      await expect(
-        controller.updateFeed(
-          {
-            discord: {
-              id: "other discord user id",
-            },
-          } as never,
-          feed,
-          {
-            title: "title",
-            url: "url",
-          }
-        )
-      ).rejects.toThrow(ForbiddenException);
-    });
     it("returns the updated feed", async () => {
-      const accessTokenInfo = {
-        discord: {
-          id: "discord-user-id",
-        },
-      };
-
-      const feed = {
-        title: "title",
-        url: "url",
-        _id: new Types.ObjectId(),
-        user: {
-          discordUserId: accessTokenInfo.discord.id,
-        },
-      };
-
       const updateBody = {
         title: "updated title",
       };
@@ -302,17 +187,32 @@ describe("UserFeedsController", () => {
         .spyOn(userFeedsService, "updateFeedById")
         .mockResolvedValue(feed as never);
 
-      const result = await controller.updateFeed(
-        accessTokenInfo as never,
-        feed as never,
-        updateBody
-      );
+      const result = await controller.updateFeed(feed as never, updateBody);
 
       expect(result).toMatchObject({
         result: {
+          id: feed._id.toHexString(),
           title: feed.title,
           url: feed.url,
-          id: feed._id.toHexString(),
+          healthStatus: feed.healthStatus,
+          disabledCode: feed.disabledCode,
+          refreshRateSeconds: 60,
+          connections: [
+            ...feed.connections.discordChannels.map((con) => ({
+              id: con.id.toHexString(),
+              name: con.name,
+              key: FeedConnectionType.DiscordChannel,
+              details: con.details,
+              filters: con.filters,
+            })),
+            ...feed.connections.discordWebhooks.map((con) => ({
+              id: con.id.toHexString(),
+              name: con.name,
+              key: FeedConnectionType.DiscordWebhook,
+              details: con.details,
+              filters: con.filters,
+            })),
+          ],
         },
       });
     });
