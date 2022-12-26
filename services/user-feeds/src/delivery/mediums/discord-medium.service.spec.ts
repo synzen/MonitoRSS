@@ -3,6 +3,7 @@ import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
   DeliveryDetails,
+  TestDiscordDeliveryDetails,
 } from "../types";
 import { DiscordMediumService } from "./discord-medium.service";
 
@@ -12,6 +13,7 @@ jest.mock("@synzen/discord-rest", () => ({
 
 const producer = {
   enqueue: jest.fn(),
+  fetch: jest.fn(),
 };
 
 describe("DiscordMediumService", () => {
@@ -34,6 +36,114 @@ describe("DiscordMediumService", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     jest.spyOn(console, "error").mockImplementation();
+  });
+
+  describe("deliverTestArticle", () => {
+    const article = {
+      id: "1",
+    };
+
+    const deliveryDetails: TestDiscordDeliveryDetails = {
+      deliverySettings: {
+        guildId: "guild-id",
+        channel: { id: "channel-1" },
+        webhook: {
+          id: "webhook-id-1",
+          token: "webhook-token-1",
+        },
+        content: "content",
+      },
+    };
+
+    describe("channel", () => {
+      it("should call the producer for the channel", async () => {
+        await service.deliverTestArticle(article, {
+          ...deliveryDetails,
+          deliverySettings: {
+            ...deliveryDetails.deliverySettings,
+            webhook: null,
+          },
+        });
+
+        expect(producer.fetch).toHaveBeenCalledWith(
+          `${DiscordMediumService.BASE_API_URL}/channels/channel-1/messages`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              content: "content",
+            }),
+          }
+        );
+      });
+
+      it("sends messages with replaced template strings", async () => {
+        const article = {
+          id: "1",
+          title: "some-title-here",
+        };
+        const details: TestDiscordDeliveryDetails = {
+          ...deliveryDetails,
+          deliverySettings: {
+            ...deliveryDetails.deliverySettings,
+            content: "content {{title}}",
+            webhook: null,
+          },
+        };
+        await service.deliverTestArticle(article, details);
+
+        expect(producer.fetch).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            body: JSON.stringify({
+              content: "content some-title-here",
+            }),
+          })
+        );
+      });
+    });
+
+    describe("webhook", () => {
+      it("prioritizes webhook over channel, calls the producer for the webhook", async () => {
+        await service.deliverTestArticle(article, deliveryDetails);
+
+        const webhook1Id = deliveryDetails.deliverySettings.webhook?.id;
+        const webhook1Token = deliveryDetails.deliverySettings.webhook?.token;
+        deliveryDetails.deliverySettings.webhook?.token;
+        expect(producer.fetch).toHaveBeenCalledWith(
+          `${DiscordMediumService.BASE_API_URL}/webhooks/${webhook1Id}/${webhook1Token}`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              content: "content",
+            }),
+          }
+        );
+      });
+
+      it("sends messages with replaced template strings", async () => {
+        const article = {
+          id: "1",
+          title: "some-title-here",
+        };
+        const details: TestDiscordDeliveryDetails = {
+          ...deliveryDetails,
+          deliverySettings: {
+            ...deliveryDetails.deliverySettings,
+            content: "content {{title}}",
+          },
+        };
+        await service.deliverTestArticle(article, details);
+
+        expect(producer.fetch).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            body: JSON.stringify({
+              content: "content some-title-here",
+            }),
+          })
+        );
+      });
+    });
   });
 
   describe("deliverArticle", () => {

@@ -43,7 +43,7 @@ describe("FeedsModule", () => {
     await app?.close();
   });
 
-  describe(`POST /feeds`, () => {
+  describe(`POST /user-feeds`, () => {
     const validPayload = {
       feed: {
         id: "feed-id",

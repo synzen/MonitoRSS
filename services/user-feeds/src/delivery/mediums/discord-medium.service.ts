@@ -7,6 +7,7 @@ import {
   ArticleDeliveryStatus,
   DeliveryDetails,
   DiscordMessageApiPayload,
+  TestDiscordDeliveryDetails,
 } from "../types";
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
 import logger from "../../shared/utils/logger";
@@ -25,6 +26,49 @@ export class DiscordMediumService implements DeliveryMedium {
 
   private getWebhookApiUrl(webhookId: string, webhookToken: string) {
     return `${DiscordMediumService.BASE_API_URL}/webhooks/${webhookId}/${webhookToken}`;
+  }
+
+  async deliverTestArticle(
+    article: Article,
+    details: TestDiscordDeliveryDetails
+  ) {
+    const { channel, webhook, embeds, content } = details.deliverySettings;
+    const channelId = channel?.id;
+    const webhookId = webhook?.id;
+
+    if (webhookId) {
+      const { id: webhookId, token: webhookToken, name, iconUrl } = webhook;
+
+      const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
+
+      const jobResult = await this.producer.fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          ...this.generateApiPayload(article, {
+            embeds,
+            content,
+          }),
+          username: name,
+          avatar_url: iconUrl,
+        }),
+      });
+
+      return jobResult;
+    } else if (channelId) {
+      const apiUrl = this.getChannelApiUrl(channelId);
+
+      await this.producer.fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify(
+          this.generateApiPayload(article, {
+            embeds: details.deliverySettings.embeds,
+            content: details.deliverySettings.content,
+          })
+        ),
+      });
+    } else {
+      throw new Error("No channel or webhook specified for Discord medium");
+    }
   }
 
   async deliverArticle(
@@ -97,7 +141,12 @@ export class DiscordMediumService implements DeliveryMedium {
       apiUrl,
       {
         method: "POST",
-        body: JSON.stringify(this.generateApiPayload(article, details)),
+        body: JSON.stringify(
+          this.generateApiPayload(article, {
+            embeds: details.deliverySettings.embeds,
+            content: details.deliverySettings.content,
+          })
+        ),
       },
       {
         id: details.deliveryId,
@@ -144,7 +193,10 @@ export class DiscordMediumService implements DeliveryMedium {
       {
         method: "POST",
         body: JSON.stringify({
-          ...this.generateApiPayload(article, details),
+          ...this.generateApiPayload(article, {
+            embeds: details.deliverySettings.embeds,
+            content: details.deliverySettings.content,
+          }),
           username: webhookUsername,
           avatar_url: webhookIconUrl,
         }),
@@ -169,7 +221,13 @@ export class DiscordMediumService implements DeliveryMedium {
 
   private generateApiPayload(
     article: Article,
-    { deliverySettings: { embeds, content } }: DeliveryDetails
+    {
+      embeds,
+      content,
+    }: {
+      embeds: DeliveryDetails["deliverySettings"]["embeds"];
+      content?: string;
+    }
   ): DiscordMessageApiPayload {
     const payload: DiscordMessageApiPayload = {
       content: replaceTemplateString(article, content),
