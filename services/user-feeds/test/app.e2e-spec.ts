@@ -66,7 +66,7 @@ describe("App (e2e)", () => {
         },
         mediums: [
           {
-            id: 'medium-id',
+            id: "medium-id",
             key: MediumKey.Discord,
             filters: null,
             details: {
@@ -78,7 +78,7 @@ describe("App (e2e)", () => {
             },
           },
         ],
-      }
+      },
     };
 
     // Pre-initialize the database with articles of this feed

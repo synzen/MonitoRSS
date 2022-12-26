@@ -3,7 +3,6 @@ import { ConfigService } from "@nestjs/config";
 import { Dispatcher, request } from "undici";
 import BodyReadable from "undici/types/readable";
 import { ArticlesService } from "../articles/articles.service";
-import logger from "../shared/utils/logger";
 import {
   FeedRequestInternalException,
   FeedRequestNetworkException,

@@ -1,5 +1,5 @@
 import { DeliveryMedium } from "./delivery-medium.interface";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { Article, ArticleDeliveryErrorCode } from "../../shared";
 import { RESTProducer } from "@synzen/discord-rest";
 import {
