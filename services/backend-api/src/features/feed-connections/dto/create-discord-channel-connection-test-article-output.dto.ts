@@ -1,6 +1,10 @@
 import { TestDeliveryStatus } from "../../../services/feed-handler/constants";
 
-export class CreateDiscordChannelConnectionTestArticleOutputDto {
+class ResultDto {
   status: TestDeliveryStatus;
   apiResponse?: unknown;
+}
+
+export class CreateDiscordChannelConnectionTestArticleOutputDto {
+  result: ResultDto;
 }

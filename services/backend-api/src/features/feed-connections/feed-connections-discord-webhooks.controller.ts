@@ -88,11 +88,15 @@ export class FeedConnectionsDiscordWebhooksController {
 
   @Post("/discord-webhooks/:connectionId/test")
   @UseFilters(CreateDiscordWebhookTestArticleFilter)
-  async testDiscordChannelConnection(
+  async sendTestArticle(
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput
   ): Promise<CreateDiscordWebhookConnectionTestArticleOutputDto> {
-    return this.service.sendTestArticle(feed, connection);
+    const result = await this.service.sendTestArticle(feed, connection);
+
+    return {
+      result,
+    };
   }
 
   @Patch("/discord-webhooks/:connectionId")

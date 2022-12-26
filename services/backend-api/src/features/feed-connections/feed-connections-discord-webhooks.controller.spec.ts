@@ -7,6 +7,7 @@ import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discor
 // eslint-disable-next-line max-len
 import { FeedConnectionsDiscordWebhooksController } from "./feed-connections-discord-webhooks.controller";
 import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 
 describe("FeedConnectionsController", () => {
   let feedConnectionsDiscordWebhooksService: FeedConnectionsDiscordWebhooksService;
@@ -18,6 +19,7 @@ describe("FeedConnectionsController", () => {
       createDiscordWebhookConnection: jest.fn(),
       updateDiscordWebhookConnection: jest.fn(),
       deleteDiscordWebhookConnection: jest.fn(),
+      sendTestArticle: jest.fn(),
     } as never;
     controller = new FeedConnectionsDiscordWebhooksController(
       feedConnectionsDiscordWebhooksService
@@ -90,6 +92,27 @@ describe("FeedConnectionsController", () => {
           },
           embeds: connection.details.embeds,
           content: connection.details.content,
+        },
+      });
+    });
+  });
+
+  describe("sendTestArticle", () => {
+    it("returns correctly", async () => {
+      jest
+        .spyOn(feedConnectionsDiscordWebhooksService, "sendTestArticle")
+        .mockResolvedValue({
+          status: TestDeliveryStatus.Success,
+        });
+
+      const response = await controller.sendTestArticle({
+        feed: {} as never,
+        connection: {} as never,
+      });
+
+      expect(response).toEqual({
+        result: {
+          status: TestDeliveryStatus.Success,
         },
       });
     });

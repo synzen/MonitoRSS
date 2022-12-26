@@ -7,6 +7,7 @@ import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discor
 // eslint-disable-next-line max-len
 import { FeedConnectionsDiscordChannelsController } from "./feed-connections-discord-channels.controller";
 import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 
 describe("FeedConnectionsDiscordChannelsController", () => {
   let feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService;
@@ -18,6 +19,7 @@ describe("FeedConnectionsDiscordChannelsController", () => {
       createDiscordChannelConnection: jest.fn(),
       updateDiscordChannelConnection: jest.fn(),
       deleteConnection: jest.fn(),
+      sendTestArticle: jest.fn(),
     } as never;
     controller = new FeedConnectionsDiscordChannelsController(
       feedConnectionsDiscordChannelsService
@@ -83,6 +85,27 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           },
           embeds: connection.details.embeds,
           content: connection.details.content,
+        },
+      });
+    });
+  });
+
+  describe("sendTestArticle", () => {
+    it("returns correctly", async () => {
+      jest
+        .spyOn(feedConnectionsDiscordChannelsService, "sendTestArticle")
+        .mockResolvedValue({
+          status: TestDeliveryStatus.Success,
+        });
+
+      const response = await controller.sendTestArticle({
+        feed: {} as never,
+        connection: {} as never,
+      });
+
+      expect(response).toEqual({
+        result: {
+          status: TestDeliveryStatus.Success,
         },
       });
     });

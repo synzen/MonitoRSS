@@ -1,6 +1,10 @@
 import { TestDeliveryStatus } from "../../../services/feed-handler/constants";
 
-export class CreateDiscordWebhookConnectionTestArticleOutputDto {
+class ResultDto {
   status: TestDeliveryStatus;
   apiResponse?: unknown;
+}
+
+export class CreateDiscordWebhookConnectionTestArticleOutputDto {
+  result: ResultDto;
 }

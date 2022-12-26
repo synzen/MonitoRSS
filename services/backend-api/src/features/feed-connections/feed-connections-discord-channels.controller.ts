@@ -82,11 +82,15 @@ export class FeedConnectionsDiscordChannelsController {
 
   @Post("/discord-channels/:connectionId/test")
   @UseFilters(CreateDiscordChannelTestArticleFilter)
-  async testDiscordChannelConnection(
+  async sendTestArticle(
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
     { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput
   ): Promise<CreateDiscordChannelConnectionTestArticleOutputDto> {
-    return this.service.sendTestArticle(feed, connection);
+    const result = await this.service.sendTestArticle(feed, connection);
+
+    return {
+      result,
+    };
   }
 
   @Patch("/discord-channels/:connectionId")
