@@ -1,8 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { request } from "undici";
+import { Dispatcher, request } from "undici";
+import BodyReadable from "undici/types/readable";
+import logger from "../shared/utils/logger";
 import {
   FeedRequestInternalException,
+  FeedRequestNetworkException,
   FeedRequestParseException,
   FeedRequestServerStatusException,
 } from "./exceptions";
@@ -22,17 +25,28 @@ export class FeedFetcherService {
 
   async fetch(url: string) {
     const serviceUrl = `${this.SERVICE_HOST}/v1/feed-requests`;
-    const { statusCode, body } = await request(serviceUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        url,
-      }),
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json",
-        "api-key": this.API_KEY,
-      },
-    });
+    let statusCode: number;
+    let body: BodyReadable & Dispatcher.BodyMixin;
+
+    try {
+      ({ statusCode, body } = await request(serviceUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          url,
+        }),
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+          "api-key": this.API_KEY,
+        },
+      }));
+    } catch (err) {
+      throw new FeedRequestNetworkException(
+        `Failed to execute request to feed requests API: ${
+          (err as Error).message
+        }`
+      );
+    }
 
     if (statusCode < 200 || statusCode >= 300) {
       let bodyJson: Record<string, unknown> = {};

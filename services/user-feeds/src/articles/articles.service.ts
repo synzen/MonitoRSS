@@ -47,7 +47,6 @@ export class ArticlesService {
         comparisonFields: [...blockingComparisons, ...passingComparisons],
       });
 
-
       return [];
     }
 
@@ -275,9 +274,9 @@ export class ArticlesService {
 
       feedparser.on("error", (err: Error) => {
         if (err.message === "Not a feed") {
-          reject(new InvalidFeedException());
+          reject(new InvalidFeedException("Invalid feed"));
         } else {
-          reject(err);
+          reject(err.message);
         }
       });
 

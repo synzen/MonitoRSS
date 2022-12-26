@@ -4,6 +4,7 @@ import { Interceptable, MockAgent, setGlobalDispatcher } from "undici";
 import { ConfigService } from "@nestjs/config";
 import {
   FeedRequestInternalException,
+  FeedRequestNetworkException,
   FeedRequestParseException,
   FeedRequestServerStatusException,
 } from "./exceptions";
@@ -52,7 +53,9 @@ describe("FeedFetcherService", () => {
         })
         .replyWithError(thrownError);
 
-      await expect(service.fetch("url")).rejects.toThrowError(thrownError);
+      await expect(service.fetch("url")).rejects.toThrowError(
+        FeedRequestNetworkException
+      );
     });
 
     it("throws the correct error if status code is not ok", async () => {
