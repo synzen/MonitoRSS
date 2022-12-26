@@ -15,6 +15,7 @@ import {
   GetUserFeedsOutput,
   UpdateFeedSubscriberOutput,
   UpdateUserFeedOutput,
+  UserFeedHealthStatus,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
 import mockFeeds from './data/feed';
@@ -244,6 +245,9 @@ const handlers = [
         })),
       );
     }
+
+    feed.disabledCode = undefined;
+    feed.healthStatus = UserFeedHealthStatus.Ok;
 
     return res(
       ctx.delay(500),
