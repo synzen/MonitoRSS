@@ -161,4 +161,19 @@ describe('FeedFetcherController', () => {
       );
     });
   });
+
+  it('throws if execute fetch failed', async () => {
+    const data = {
+      url: 'https://example.com',
+      executeFetch: true,
+    };
+
+    const error = new Error('custom error');
+
+    jest
+      .spyOn(feedFetcherService, 'fetchAndSaveResponse')
+      .mockRejectedValue(error);
+
+    await expect(controller.fetchFeed(data)).rejects.toThrow(error);
+  });
 });

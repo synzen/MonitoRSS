@@ -54,7 +54,7 @@ export class FeedFetcherService {
 
     if (requestStatus === "error") {
       throw new FeedRequestInternalException(
-        `Feed fetcher service encountered error while fetching feed`
+        `Feed requests service encountered error while fetching feed`
       );
     }
 
