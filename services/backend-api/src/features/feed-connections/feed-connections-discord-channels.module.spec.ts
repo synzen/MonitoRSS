@@ -261,9 +261,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
   });
 
   describe("POST /discord-channels/:id/test", () => {
-    const validBody = {
-      name: "connection-name",
-    };
     const connectionIdToUse = new Types.ObjectId();
 
     beforeEach(async () => {
@@ -297,7 +294,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       const { statusCode } = await app.inject({
         method: "POST",
         url: `${baseApiUrl}/discord-channels/${connectionIdToUse}/test`,
-        payload: validBody,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
@@ -314,7 +310,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       const { statusCode } = await app.inject({
         method: "POST",
         url: `${baseApiUrl}/discord-channels/${connectionIdToUse}/test`,
-        payload: validBody,
         headers: {
           ...standardRequestOptions.headers,
           cookie: differentUserCookie,
@@ -331,7 +326,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
           createdFeed._id.toHexString(),
           new Types.ObjectId().toHexString()
         )}/discord-channels/${connectionIdToUse}/test`,
-        payload: validBody,
         ...standardRequestOptions,
       });
 
@@ -342,7 +336,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       const { statusCode } = await app.inject({
         method: "POST",
         url: `${baseApiUrl}/discord-channels/${new Types.ObjectId()}/test`,
-        payload: validBody,
         ...standardRequestOptions,
       });
 
@@ -361,7 +354,6 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
       const { statusCode, body } = await app.inject({
         method: "POST",
         url: `${baseApiUrl}/discord-channels/${connectionIdToUse}/test`,
-        payload: validBody,
         ...standardRequestOptions,
       });
 
