@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
+import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { discordMediumTestPayloadDetailsSchema } from "../shared";
 import { ApiGuard } from "../shared/guards";
 import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
@@ -21,7 +22,8 @@ import { FeedsService } from "./feeds.service";
 export class FeedsController {
   constructor(
     private readonly feedsService: FeedsService,
-    private readonly discordMediumService: DiscordMediumService
+    private readonly discordMediumService: DiscordMediumService,
+    private readonly feedFetcherService: FeedFetcherService
   ) {}
 
   @Post("initialize")
@@ -52,23 +54,36 @@ export class FeedsController {
       const withType = await object()
         .shape({
           type: string().oneOf(Object.values(TestDeliveryMedium)).required(),
+          feed: object()
+            .shape({
+              url: string().required(),
+            })
+            .required(),
         })
         .required()
         .validate(payload);
 
+      const randomArticle =
+        await this.feedFetcherService.fetchRandomFeedArticle(withType.feed.url);
+
+      if (!randomArticle) {
+        return {
+          status: TestDeliveryStatus.NoArticles,
+        };
+      }
+
       const type = withType.type;
 
       if (type === TestDeliveryMedium.Discord) {
-        const { article, mediumDetails } = await object()
+        const { mediumDetails } = await object()
           .shape({
-            article: object().required(),
             mediumDetails: discordMediumTestPayloadDetailsSchema.required(),
           })
           .required()
           .validate(payload);
 
         const result = await this.discordMediumService.deliverTestArticle(
-          article,
+          randomArticle,
           {
             mediumDetails,
           }

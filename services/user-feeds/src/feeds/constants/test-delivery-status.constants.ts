@@ -5,4 +5,5 @@ export enum TestDeliveryStatus {
   MissingApplicationPermission = "MISSING_APPLICATION_PERMISSION",
   MissingChannel = "MISSING_CHANNEL",
   TooManyRequests = "TOO_MANY_REQUESTS",
+  NoArticles = "NO_ARTICLES",
 }

@@ -11,12 +11,17 @@ describe("FeedController", () => {
   const discordMediumService = {
     deliverTestArticle: jest.fn(),
   };
+  const feedFetcherService = {
+    fetchRandomFeedArticle: jest.fn(),
+  };
   let controller: FeedsController;
 
   beforeEach(async () => {
+    jest.resetAllMocks();
     controller = new FeedsController(
       feedsService as never,
-      discordMediumService as never
+      discordMediumService as never,
+      feedFetcherService as never
     );
   });
 
@@ -56,6 +61,25 @@ describe("FeedController", () => {
   });
 
   describe("sendTestArticle", () => {
+    const validPayload = {
+      type: "discord",
+      feed: {
+        url: "url",
+      },
+      mediumDetails: {
+        channel: {
+          id: "channel-id",
+        },
+        webhook: null,
+      } as DiscordMediumTestPayloadDetails,
+    };
+
+    beforeEach(() => {
+      feedFetcherService.fetchRandomFeedArticle.mockResolvedValue({
+        id: "id",
+      });
+    });
+
     it("throws bad request if body type is unaccepted", async () => {
       const payload = {
         type: "invalid",
@@ -68,7 +92,9 @@ describe("FeedController", () => {
     it("throws bad request if medium details is malformed", async () => {
       const payload = {
         type: "discord",
-        article: {},
+        feed: {
+          url: "url",
+        },
         mediumDetails: {
           foo: "bar",
         },
@@ -79,24 +105,21 @@ describe("FeedController", () => {
       );
     });
 
-    it("returns the correct result for >= 500 status", async () => {
-      const payload = {
-        type: "discord",
-        article: {},
-        mediumDetails: {
-          channel: {
-            id: "channel-id",
-          },
-          webhook: null,
-        } as DiscordMediumTestPayloadDetails,
-      };
+    it("returns the correct result for no articles", async () => {
+      feedFetcherService.fetchRandomFeedArticle.mockResolvedValue(null);
 
+      expect(await controller.sendTestArticle(validPayload)).toEqual({
+        status: TestDeliveryStatus.NoArticles,
+      });
+    });
+
+    it("returns the correct result for >= 500 status", async () => {
       discordMediumService.deliverTestArticle.mockResolvedValue({
         state: "success",
         status: 500,
       });
 
-      expect(await controller.sendTestArticle(payload)).toEqual({
+      expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.ThirdPartyInternalError,
       });
     });
@@ -104,134 +127,70 @@ describe("FeedController", () => {
     it.each([401, 403])(
       "returns the correct result for missing permission %i status",
       async (status) => {
-        const payload = {
-          type: "discord",
-          article: {},
-          mediumDetails: {
-            channel: {
-              id: "channel-id",
-            },
-            webhook: null,
-          } as DiscordMediumTestPayloadDetails,
-        };
-
         discordMediumService.deliverTestArticle.mockResolvedValue({
           state: "success",
           status,
         });
 
-        expect(await controller.sendTestArticle(payload)).toEqual({
+        expect(await controller.sendTestArticle(validPayload)).toEqual({
           status: TestDeliveryStatus.MissingApplicationPermission,
         });
       }
     );
 
     it("returns the correct result for 404 status", async () => {
-      const payload = {
-        type: "discord",
-        article: {},
-        mediumDetails: {
-          channel: {
-            id: "channel-id",
-          },
-          webhook: null,
-        } as DiscordMediumTestPayloadDetails,
-      };
-
       discordMediumService.deliverTestArticle.mockResolvedValue({
         state: "success",
         status: 404,
       });
 
-      expect(await controller.sendTestArticle(payload)).toEqual({
+      expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.MissingChannel,
       });
     });
 
     it("returns the correct result for 429 status", async () => {
-      const payload = {
-        type: "discord",
-        article: {},
-        mediumDetails: {
-          channel: {
-            id: "channel-id",
-          },
-          webhook: null,
-        } as DiscordMediumTestPayloadDetails,
-      };
-
       discordMediumService.deliverTestArticle.mockResolvedValue({
         state: "success",
         status: 429,
       });
 
-      expect(await controller.sendTestArticle(payload)).toEqual({
+      expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.TooManyRequests,
       });
     });
 
     it("returns the correct result for 400 status", async () => {
-      const payload = {
-        type: "discord",
-        article: {},
-        mediumDetails: {
-          channel: {
-            id: "channel-id",
-          },
-          webhook: null,
-        } as DiscordMediumTestPayloadDetails,
-      };
-
       discordMediumService.deliverTestArticle.mockResolvedValue({
         state: "success",
         status: 400,
       });
 
-      expect(await controller.sendTestArticle(payload)).toEqual({
+      expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.BadPayload,
       });
     });
 
     it("returns the correct result for 200 status", async () => {
-      const payload = {
-        type: "discord",
-        article: {},
-        mediumDetails: {
-          channel: {
-            id: "channel-id",
-          },
-          webhook: null,
-        } as DiscordMediumTestPayloadDetails,
-      };
-
       discordMediumService.deliverTestArticle.mockResolvedValue({
         state: "success",
         status: 200,
       });
 
-      expect(await controller.sendTestArticle(payload)).toEqual({
+      expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.Success,
       });
     });
 
     it("throws an error if a status is unhandled", async () => {
-      const payload = {
-        type: "discord",
-        article: {},
-        mediumDetails: {
-          channel: {
-            id: "channel-id",
-          },
-          webhook: null,
-        } as DiscordMediumTestPayloadDetails,
-      };
-
       discordMediumService.deliverTestArticle.mockResolvedValue({
         state: "success",
         status: 418,
       });
 
-      await expect(controller.sendTestArticle(payload)).rejects.toThrowError();
+      await expect(
+        controller.sendTestArticle(validPayload)
+      ).rejects.toThrowError();
     });
   });
 });
