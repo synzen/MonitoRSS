@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { testConfig } from './test.config';
 import { Environment, EnvironmentVariables, validateConfig } from './validate';
 
 const envFiles: Record<string, string> = {
@@ -20,6 +21,10 @@ dotenv.config({
 });
 
 export default function config(): EnvironmentVariables {
+  if (process.env.NODE_ENV === 'test') {
+    return testConfig();
+  }
+
   const values: EnvironmentVariables = {
     NODE_ENV: process.env.NODE_ENV as Environment,
     FEED_REQUESTS_API_KEY: process.env.FEED_REQUESTS_API_KEY as string,

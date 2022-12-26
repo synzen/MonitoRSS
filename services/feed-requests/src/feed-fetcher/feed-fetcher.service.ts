@@ -139,7 +139,9 @@ export class FeedFetcherService {
 
   async onFailedUrl({ url }: { url: string }) {
     try {
-      if (await this.isPastFailureThreshold(url)) {
+      const pastFailureThreshold = await this.isPastFailureThreshold(url);
+
+      if (pastFailureThreshold) {
         logger.info(
           `Disabling feeds with url "${url}" due to failure threshold ` +
             `(${this.failedDurationThresholdHours}hrs)`,
@@ -188,7 +190,7 @@ export class FeedFetcherService {
       },
       {
         orderBy: {
-          createdAt: 'ASC',
+          createdAt: 'DESC',
         },
       },
     );
@@ -229,7 +231,9 @@ export class FeedFetcherService {
     if (latestOkRequest) {
       const earliestFailedRequest = await this.requestRepo.findOne(
         {
-          status: RequestStatus.FAILED,
+          status: {
+            $ne: RequestStatus.OK,
+          },
           url,
           createdAt: {
             $gt: latestOkRequest.createdAt,
