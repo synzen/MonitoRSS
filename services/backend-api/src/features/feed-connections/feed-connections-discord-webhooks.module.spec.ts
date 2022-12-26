@@ -19,6 +19,7 @@ import {
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 import { FeedConnectionsDiscordWebhooksModule } from "./feed-connections-discord-webhooks.module";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 
 jest.mock("../../utils/logger");
 
@@ -64,6 +65,7 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
         createDiscordWebhookConnection: jest.fn(),
         updateDiscordWebhookConnection: jest.fn(),
         deleteDiscordWebhookConnection: jest.fn(),
+        sendTestArticle: jest.fn(),
       });
 
     ({ app, setAccessToken } = await init());
@@ -273,6 +275,110 @@ describe("FeedConnectionsDiscordWebhooksModule", () => {
           },
         })
       );
+
+      expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("POST /discord-webhooks/:connectionId/test", () => {
+    const connectionIdToUse = new Types.ObjectId();
+
+    beforeEach(async () => {
+      await userFeedModel.updateOne(
+        {
+          _id: createdFeed._id,
+        },
+        {
+          $set: {
+            connections: {
+              discordWebhooks: [
+                {
+                  id: connectionIdToUse,
+                  name: "name",
+                  details: {
+                    webhook: {
+                      id: "webhook-id",
+                    },
+                    embeds: [],
+                  },
+                },
+              ],
+            },
+          },
+        }
+      );
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}/test`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if user does not own feed", async () => {
+      const differentUserCookie = await setAccessToken({
+        access_token: "accessToken",
+        discord: {
+          id: "different-user",
+        },
+      } as Session["accessToken"]);
+
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}/test`,
+        headers: {
+          ...standardRequestOptions.headers,
+          cookie: differentUserCookie,
+        },
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl.replace(
+          createdFeed._id.toHexString(),
+          new Types.ObjectId().toHexString()
+        )}/discord-webhooks/${connectionIdToUse}/test`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed connection is not found", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-webhooks/${new Types.ObjectId()}/test`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns the test result", async () => {
+      const testResult = {
+        status: TestDeliveryStatus.Success,
+      };
+
+      jest
+        .spyOn(feedConnectionsService, "sendTestArticle")
+        .mockResolvedValue(testResult);
+
+      const { statusCode, body } = await app.inject({
+        method: "POST",
+        url: `${baseApiUrl}/discord-webhooks/${connectionIdToUse}/test`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        status: TestDeliveryStatus.Success,
+      });
 
       expect(statusCode).toBe(HttpStatus.CREATED);
     });

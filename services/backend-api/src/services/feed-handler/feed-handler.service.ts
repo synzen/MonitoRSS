@@ -5,10 +5,7 @@ import fetch from "node-fetch";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
-import {
-  SendTestArticleResult,
-  SendTestDiscordChannelArticleInput,
-} from "./types";
+import { SendTestArticleInput, SendTestArticleResult } from "./types";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -118,7 +115,7 @@ export class FeedHandlerService {
 
   async sendTestArticle({
     details,
-  }: SendTestDiscordChannelArticleInput): Promise<SendTestArticleResult> {
+  }: SendTestArticleInput): Promise<SendTestArticleResult> {
     let result: SendTestArticleResult;
 
     try {

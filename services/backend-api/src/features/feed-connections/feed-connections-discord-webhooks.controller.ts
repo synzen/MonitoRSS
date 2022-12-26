@@ -24,12 +24,14 @@ import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
+  CreateDiscordWebhookConnectionTestArticleOutputDto,
   UpdateDiscordWebhookConnectionInputDto,
   UpdateDiscordWebhookConnectionOutputDto,
 } from "./dto";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 import {
   AddDiscordWebhookConnectionFilter,
+  CreateDiscordWebhookTestArticleFilter,
   DeleteDiscordWebhookConnectionFilter,
   UpdateDiscordWebhookConnectionFilter,
 } from "./filters";
@@ -82,6 +84,15 @@ export class FeedConnectionsDiscordWebhooksController {
         },
       },
     };
+  }
+
+  @Post("/discord-webhooks/:connectionId/test")
+  @UseFilters(CreateDiscordWebhookTestArticleFilter)
+  async testDiscordChannelConnection(
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput
+  ): Promise<CreateDiscordWebhookConnectionTestArticleOutputDto> {
+    return this.service.sendTestArticle(feed, connection);
   }
 
   @Patch("/discord-webhooks/:connectionId")

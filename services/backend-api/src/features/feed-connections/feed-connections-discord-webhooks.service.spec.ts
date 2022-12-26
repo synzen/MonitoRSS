@@ -5,6 +5,8 @@ import {
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
 } from "../../common/exceptions";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
+import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
@@ -13,6 +15,7 @@ import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
+import { DiscordWebhookConnection } from "../feeds/entities/feed-connections";
 import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 
@@ -26,6 +29,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
   const discordAuthService = {
     userManagesGuild: jest.fn(),
   };
+  const feedHandlerService = {
+    sendTestArticle: jest.fn(),
+  };
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests({
@@ -38,6 +44,10 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         {
           provide: DiscordAuthService,
           useValue: discordAuthService,
+        },
+        {
+          provide: FeedHandlerService,
+          useValue: feedHandlerService,
         },
       ],
       imports: [
@@ -416,6 +426,79 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       const updatedFeed = await userFeedModel.findById(createdFeed._id).lean();
 
       expect(updatedFeed?.connections.discordWebhooks).toHaveLength(0);
+    });
+  });
+
+  describe("sendTestArticle", () => {
+    const userFeed: UserFeed = Object.freeze({
+      title: "my feed",
+      url: "url",
+      user: {
+        discordUserId: "user-id",
+      },
+      connections: {
+        discordChannels: [],
+        discordWebhooks: [
+          {
+            id: new Types.ObjectId(),
+            name: "name",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: {
+              embeds: [],
+              webhook: {
+                id: "old-webhook-id",
+                token: "old-token",
+                name: "old-webhook-name",
+                iconUrl: "old-icon-url",
+                guildId: "guild-id",
+              },
+              content: "old-content",
+            },
+          },
+        ],
+      },
+    }) as never;
+    const targetConnection: DiscordWebhookConnection = Object.freeze(
+      userFeed.connections.discordWebhooks[0]
+    );
+
+    it("calls sendTestArticle with the correct args", async () => {
+      const sendTestArticle = jest.spyOn(feedHandlerService, "sendTestArticle");
+
+      await service.sendTestArticle(userFeed, targetConnection);
+
+      expect(sendTestArticle).toHaveBeenCalledWith({
+        details: {
+          type: "discord",
+          feed: {
+            url: userFeed.url,
+          },
+          mediumDetails: {
+            webhook: {
+              id: targetConnection.details.webhook.id,
+              token: targetConnection.details.webhook.token,
+              iconUrl: targetConnection.details.webhook.iconUrl,
+              name: targetConnection.details.webhook.name,
+            },
+            content: targetConnection.details.content,
+            embeds: targetConnection.details.embeds,
+          },
+        },
+      });
+    });
+
+    it("returns the result", async () => {
+      const testResult = {
+        status: TestDeliveryStatus.Success,
+      };
+      jest
+        .spyOn(feedHandlerService, "sendTestArticle")
+        .mockResolvedValue(testResult);
+
+      const result = await service.sendTestArticle(userFeed, targetConnection);
+
+      expect(result).toEqual(testResult);
     });
   });
 });

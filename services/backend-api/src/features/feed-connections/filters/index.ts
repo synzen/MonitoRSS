@@ -5,3 +5,4 @@ export * from "./delete-discord-channel-connection.filter";
 export * from "./update-discord-webhook-connection.filter";
 export * from "./delete-discord-webhook-connection.filter";
 export * from "./create-discord-channel-test-article.filter";
+export * from "./create-discord-webhook-test-article.filter";

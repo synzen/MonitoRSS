@@ -13,6 +13,8 @@ import { DiscordWebhookConnection } from "../feeds/entities/feed-connections";
 import _ from "lodash";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
+import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
+import { SendTestArticleResult } from "../../services/feed-handler/types";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -39,7 +41,8 @@ export class FeedConnectionsDiscordWebhooksService {
   constructor(
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly discordWebhooksService: DiscordWebhooksService,
-    private readonly discordAuthService: DiscordAuthService
+    private readonly discordAuthService: DiscordAuthService,
+    private readonly feedHandlerService: FeedHandlerService
   ) {}
 
   async createDiscordWebhookConnection({
@@ -213,6 +216,32 @@ export class FeedConnectionsDiscordWebhooksService {
         },
       }
     );
+  }
+
+  async sendTestArticle(
+    userFeed: UserFeed,
+    connection: DiscordWebhookConnection
+  ): Promise<SendTestArticleResult> {
+    const payload = {
+      type: "discord",
+      feed: {
+        url: userFeed.url,
+      },
+      mediumDetails: {
+        content: connection.details.content,
+        embeds: connection.details.embeds,
+        webhook: {
+          id: connection.details.webhook.id,
+          name: connection.details.webhook.name,
+          iconUrl: connection.details.webhook.iconUrl,
+          token: connection.details.webhook.token,
+        },
+      },
+    } as const;
+
+    return this.feedHandlerService.sendTestArticle({
+      details: payload,
+    });
   }
 
   private async assertDiscordWebhookCanBeUsed(
