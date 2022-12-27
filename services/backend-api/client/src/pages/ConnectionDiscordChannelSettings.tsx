@@ -264,7 +264,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             <TabList>
               <Tab>Message</Tab>
               <Tab>Filters</Tab>
-              <Tab>Settings</Tab>
             </TabList>
           </Stack>
         </Stack>
