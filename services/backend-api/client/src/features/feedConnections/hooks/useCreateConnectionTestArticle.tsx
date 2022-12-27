@@ -14,6 +14,7 @@ interface CreateConnectionTestArticleInput {
 interface CreateConnectionTestArticleOutput {
   result: {
     status: SendTestArticleDeliveryStatus
+    apiResponse?: Record<string, unknown>
   }
 }
 

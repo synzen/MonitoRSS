@@ -1,9 +1,22 @@
 import {
-  Button, Tooltip,
+  Button,
+  Divider,
+  Heading,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Tooltip,
+  useDisclosure,
 } from '@chakra-ui/react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FeedConnectionType, SendTestArticleDeliveryStatus } from '../../../../types';
+import getChakraColor from '../../../../utils/getChakraColor';
 import { notifyError } from '../../../../utils/notifyError';
+import { notifyInfo } from '../../../../utils/notifyInfo';
 import { notifySuccess } from '../../../../utils/notifySuccess';
 import { useCreateConnectionTestArticle } from '../../hooks';
 
@@ -13,11 +26,90 @@ interface Props {
   type: FeedConnectionType
 }
 
+const messagesByStatus: Record<SendTestArticleDeliveryStatus, {
+  title: string,
+  description?: string,
+  useNotify?: {
+    func: (title: string, description?: string) => void,
+  };
+  useModal?: {
+    headerBackgroundColor?: string,
+  }
+}> = {
+  [SendTestArticleDeliveryStatus.Success]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleSuccess',
+    useNotify: {
+      func: notifySuccess,
+    },
+  },
+  [SendTestArticleDeliveryStatus.ThirdPartyInternalError]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleFailure',
+    description: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertDescriptionThirdPartyInternalError',
+    useModal: {
+      headerBackgroundColor: getChakraColor('red.600'),
+    },
+  },
+  [SendTestArticleDeliveryStatus.BadPayload]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleFailure',
+    description: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertDescriptionBadPayload',
+    useModal: {
+      headerBackgroundColor: getChakraColor('red.600'),
+    },
+  },
+  [SendTestArticleDeliveryStatus.MissingApplicationPermission]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleFailure',
+    description: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertDescriptionMissingApplicationPermission',
+    useModal: {
+      headerBackgroundColor: getChakraColor('red.600'),
+    },
+  },
+  [SendTestArticleDeliveryStatus.MissingChannel]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleFailure',
+    description: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertDescriptionMissingChannel',
+    useModal: {
+      headerBackgroundColor: getChakraColor('red.600'),
+    },
+  },
+  [SendTestArticleDeliveryStatus.TooManyRequests]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleFailure',
+    description: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertDescriptionTooManyRequests',
+    useModal: {
+      headerBackgroundColor: getChakraColor('red.600'),
+    },
+  },
+  [SendTestArticleDeliveryStatus.NoArticles]: {
+    title: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertTitleFailure',
+    description: 'features.feedConnections.components.'
+    + 'sendTestArticleButton.alertDescriptionNoArticles',
+    useNotify: {
+      func: notifyInfo,
+    },
+  },
+};
+
 export const SendConnectionTestArticleButton = ({
   feedId, connectionId, type,
 }: Props) => {
   const { t } = useTranslation();
   const { mutateAsync, status } = useCreateConnectionTestArticle(type);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [sendResult, setSendResult] = useState({
+    title: '',
+    description: <div />,
+    headerBackgroundColor: '',
+  });
 
   const onClick = async () => {
     try {
@@ -26,30 +118,92 @@ export const SendConnectionTestArticleButton = ({
         connectionId,
       });
 
-      if (result.status === SendTestArticleDeliveryStatus.Success) {
-        notifySuccess(t('features.feedConnections.components.'
-        + 'sendTestArticleButton.successAlertDescription'));
-      } else {
-        notifySuccess(t('features.feedConnections.components.'
-        + 'sendTestArticleButton.failureAlertDescription'));
+      const {
+        title,
+        description,
+        useModal,
+        useNotify,
+      } = messagesByStatus[result.status];
+
+      if (useNotify) {
+        useNotify.func(t(title), description && t(description));
+
+        return;
       }
+
+      const descriptionNode = !description ? <div /> : (
+        <div>
+          {t(description)}
+          {result.apiResponse && (
+            <>
+              <br />
+              <br />
+              <br />
+              <div>
+                <Heading size="md">
+                  {t('features.feedConnections.components.'
+                      + 'sendTestArticleButton.apiResponse')}
+                </Heading>
+                <Divider marginY="1rem" />
+                <pre style={{
+                  backgroundColor: getChakraColor('gray.800'),
+                  overflow: 'auto',
+                }}
+                >
+                  {JSON.stringify(result.apiResponse, null, 2)}
+                </pre>
+              </div>
+            </>
+          )}
+        </div>
+      );
+
+      setSendResult({
+        title: t(title),
+        description: descriptionNode,
+        headerBackgroundColor: useModal?.headerBackgroundColor || '',
+      });
+      onOpen();
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
   };
 
   return (
-    <Tooltip label={t('features.feedConnections.components.'
+    <>
+      <Modal size="xl" isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader
+            backgroundColor={sendResult.headerBackgroundColor}
+            borderTopRightRadius="xl"
+            borderTopLeftRadius="xl"
+          >
+            {sendResult.title}
+
+          </ModalHeader>
+          <ModalBody>
+            {sendResult.description}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={onClose}>
+              {t('common.buttons.close')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Tooltip label={t('features.feedConnections.components.'
     + 'sendTestArticleButton.description')}
-    >
-      <Button
-        variant="solid"
-        colorScheme="blue"
-        isLoading={status === 'loading'}
-        onClick={onClick}
       >
-        {t('features.feedConnections.components.sendTestArticleButton.text')}
-      </Button>
-    </Tooltip>
+        <Button
+          variant="solid"
+          colorScheme="blue"
+          isLoading={status === 'loading'}
+          onClick={onClick}
+        >
+          {t('features.feedConnections.components.sendTestArticleButton.text')}
+        </Button>
+      </Tooltip>
+    </>
   );
 };

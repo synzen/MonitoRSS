@@ -7,7 +7,8 @@
       "configure": "Configure",
       "delete": "Delete",
       "yes": "Yes",
-      "actions": "Actions"
+      "actions": "Actions",
+      "close": "Close"
     },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
@@ -361,8 +362,15 @@
         "sendTestArticleButton": {
           "text": "Send Test Article",
           "description": "Send a random article to test the connection with your currently saved settings. Filters are not applied.",
-          "successAlertDescription": "Successfully sent!",
-          "failureAlertDescription": "Failed to send test article"
+          "alertTitleSuccess": "Successfully sent!",
+          "alertTitleFailure": "Failed to send article",
+          "alertDescriptionThirdPartyInternalError": "Internal error occurred at target channel. Try again later.",
+          "alertDescriptionMissingApplicationPermission": "Missing application permissions. Ensure the bot has the proper permissions.",
+          "alertDescriptionBadPayload": "Malformed payload detected. Update message setting and try again.",
+          "alertDescriptionMissingChannel": "Connection channel no longer exists. Update this connection to target a different channel.",
+          "alertDescriptionTooManyRequests": "Too many requests have been sent in a short period of time. Try again later.",
+          "alertDescriptionNoArticles": "There are no articles in the feed to deliver",
+          "apiResponse": "API Response"
         }
       }
     },

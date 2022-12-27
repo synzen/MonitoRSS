@@ -12,6 +12,7 @@ export enum SendTestArticleDeliveryStatus {
 
 export const SendTestArticleResultSchema = object({
   status: string().oneOf(Object.values(SendTestArticleDeliveryStatus)).required(),
+  apiResponse: object().optional().default(undefined),
 }).required();
 
 export type SendTestArticleResult = InferType<typeof SendTestArticleResultSchema>;

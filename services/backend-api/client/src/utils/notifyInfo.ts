@@ -9,7 +9,7 @@ interface Options {
   toastOptions?: UseToastOptions;
 }
 
-export const notifySuccess = (
+export const notifyInfo = (
   title: string,
   description?: string | React.ReactNode,
   options?: Options,
@@ -17,7 +17,7 @@ export const notifySuccess = (
   toast({
     title,
     description,
-    status: 'success',
+    status: 'info',
     position: 'top',
     isClosable: true,
     ...options,

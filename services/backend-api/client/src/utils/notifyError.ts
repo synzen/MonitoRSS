@@ -9,10 +9,24 @@ interface Options {
   toastOptions?: UseToastOptions;
 }
 
-export const notifyError = (title: string, error: Error | string, options?: Options) => {
+export const notifyError = (
+  title: string,
+  error: Error | string | React.ReactNode,
+  options?: Options,
+) => {
+  let description: string | React.ReactNode = '';
+
+  if (typeof error === 'string') {
+    description = error;
+  } else if (error instanceof Error) {
+    description = error.message;
+  } else {
+    description = error;
+  }
+
   toast({
     title,
-    description: typeof error === 'string' ? error : error.message,
+    description,
     status: 'error',
     position: 'top',
     ...options,
