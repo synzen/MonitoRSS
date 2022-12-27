@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { Dispatcher, request } from "undici";
 import BodyReadable from "undici/types/readable";
 import { ArticlesService } from "../articles/articles.service";
+import { FeedResponseRequestStatus } from "../shared";
 import {
   FeedRequestInternalException,
   FeedRequestNetworkException,
@@ -69,21 +70,21 @@ export class FeedFetcherService {
 
     const { requestStatus } = response;
 
-    if (requestStatus === "error") {
+    if (requestStatus === FeedResponseRequestStatus.Error) {
       throw new FeedRequestInternalException(
         `Feed requests service encountered error while fetching feed`
       );
     }
 
-    if (requestStatus === "parse_error") {
+    if (requestStatus === FeedResponseRequestStatus.ParseError) {
       throw new FeedRequestParseException(`Invalid feed`);
     }
 
-    if (requestStatus === "pending") {
+    if (requestStatus === FeedResponseRequestStatus.Pending) {
       return null;
     }
 
-    if (requestStatus === "success") {
+    if (requestStatus === FeedResponseRequestStatus.Success) {
       return response.response.body;
     }
 

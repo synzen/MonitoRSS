@@ -1,20 +1,22 @@
+import { FeedResponseRequestStatus } from "../../shared";
+
 interface FeedResponseError {
-  requestStatus: "error";
+  requestStatus: FeedResponseRequestStatus.Error;
 }
 
 interface FeedResponseParseError {
-  requestStatus: "parse_error";
+  requestStatus: FeedResponseRequestStatus.ParseError;
   response: {
     statusCode: number;
   };
 }
 
 interface FeedResponsePending {
-  requestStatus: "pending";
+  requestStatus: FeedResponseRequestStatus.Pending;
 }
 
 interface FeedResponseSuccess {
-  requestStatus: "success";
+  requestStatus: FeedResponseRequestStatus.Success;
   response: {
     body: string;
     statusCode: number;
