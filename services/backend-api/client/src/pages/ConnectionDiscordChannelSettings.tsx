@@ -25,7 +25,7 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { CategoryText, DiscordMessageForm, DashboardContentV2 } from '../components';
+import { CategoryText, DashboardContentV2 } from '../components';
 import { DiscordChannelName } from '../features/discordServers';
 import { useUserFeed } from '../features/feed';
 import {
@@ -37,6 +37,7 @@ import {
   useUpdateDiscordChannelConnection,
   SendConnectionTestArticleButton,
   FiltersTabSection,
+  MessageTabSection,
 } from '../features/feedConnections';
 import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
@@ -270,15 +271,14 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
           <TabPanel maxWidth="1200px" width="100%">
-            <Stack>
-              <DiscordMessageForm
-                defaultValues={{
-                  content: connection?.details.content,
-                  embeds: connection?.details.embeds,
-                }}
-                onClickSave={onMessageUpdated}
-              />
-            </Stack>
+            <MessageTabSection
+              feedId={feedId}
+              onMessageUpdated={onMessageUpdated}
+              defaultMessageValues={{
+                content: connection?.details.content,
+                embeds: connection?.details.embeds,
+              }}
+            />
           </TabPanel>
           <TabPanel maxWidth="1200px" width="100%">
             <FiltersTabSection

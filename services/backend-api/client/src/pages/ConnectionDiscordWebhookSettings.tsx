@@ -25,7 +25,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { CategoryText, DiscordMessageForm } from '@/components';
+import { CategoryText } from '@/components';
 import { DiscordMessageFormData } from '@/types/discord';
 import RouteParams from '@/types/RouteParams';
 import {
@@ -37,6 +37,7 @@ import {
   DeleteConnectionButton,
   SendConnectionTestArticleButton,
   FiltersTabSection,
+  MessageTabSection,
 } from '../features/feedConnections';
 import { useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
@@ -284,9 +285,10 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
           <TabPanel maxWidth="1200px" width="100%">
             <Stack>
-              <DiscordMessageForm
-                onClickSave={onMessageUpdated}
-                defaultValues={{
+              <MessageTabSection
+                feedId={feedId}
+                onMessageUpdated={onMessageUpdated}
+                defaultMessageValues={{
                   content: connection?.details.content,
                   embeds: connection?.details.embeds,
                 }}

@@ -11,19 +11,19 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { DiscordMessageForm } from '../../../../components';
+import { DiscordMessageFormData } from '../../../../types/discord';
 import { notifyError } from '../../../../utils/notifyError';
 import { useUserFeedArticles } from '../../../feed/hooks';
-import { LogicalFilterExpression } from '../../types';
 import { ArticlePlaceholderTable } from '../ArticlePlaceholderTable';
-import { FiltersForm } from '../FiltersForm';
 
 interface Props {
   feedId?: string
-  filters?: LogicalFilterExpression | null
-  onFiltersUpdated: (filters: LogicalFilterExpression | null) => Promise<void>
+  defaultMessageValues?: DiscordMessageFormData
+  onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>
 }
 
-export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) => {
+export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdated }: Props) => {
   const {
     data: userFeedArticles,
     refetch: refetchUserFeedArticle,
@@ -76,8 +76,8 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
       <Stack spacing={4}>
         <Flex justifyContent="space-between" alignItems="center">
           <Heading as="h2" size="md">
-            {t('features.feedConnections.components.articlePlaceholderTable'
-              + '.headingSamplePlaceholders')}
+            {t('features.feedConnections.components.'
+              + 'articlePlaceholderTable.headingSamplePlaceholders')}
 
           </Heading>
           {!hasAlert && (
@@ -107,15 +107,9 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
         </Box>
       </Stack>
       <Stack spacing={4}>
-        <Heading
-          as="h2"
-          size="md"
-        >
-          {t('features.feedConnections.components.articlePlaceholderTable.headingSettings')}
-        </Heading>
-        <FiltersForm
-          onSave={onFiltersUpdated}
-          expression={filters}
+        <DiscordMessageForm
+          onClickSave={onMessageUpdated}
+          defaultValues={defaultMessageValues}
         />
       </Stack>
     </Stack>

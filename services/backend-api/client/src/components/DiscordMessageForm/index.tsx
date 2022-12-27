@@ -124,7 +124,7 @@ export const DiscordMessageForm = ({
   return (
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={16}>
+        <Stack spacing={12}>
           <Stack spacing={4}>
             <Heading size="md">Text</Heading>
             <Text>
