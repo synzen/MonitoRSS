@@ -146,7 +146,10 @@ export class ScheduleHandlerService {
     this.amqpConnection.publish<{ data: { url: string; rateSeconds: number } }>(
       "",
       "url.fetch",
-      { data }
+      { data },
+      {
+        expiration: data.rateSeconds * 1000,
+      }
     );
 
     logger.debug("successfully emitted url request event");
@@ -212,6 +215,9 @@ export class ScheduleHandlerService {
           },
           mediums: allMediums,
         },
+      },
+      {
+        expiration: 1000 * 60 * 60, // 1 hour
       }
     );
 
