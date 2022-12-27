@@ -153,6 +153,66 @@ describe("ArticleParserService", () => {
       });
     });
 
+    it("omits null values", () => {
+      const article = {
+        id: "hello world",
+        a: null,
+        b: {
+          c: {
+            d: {
+              e: null,
+            },
+          },
+        },
+      };
+
+      const flattenedArticle = service.flatten(article);
+
+      expect(flattenedArticle).toEqual({
+        id: article.id,
+      });
+    });
+
+    it("removes empty objects", () => {
+      const article = {
+        id: "hello world",
+        a: {},
+        b: {
+          c: {
+            d: {
+              e: {},
+            },
+          },
+        },
+      };
+
+      const flattenedArticle = service.flatten(article);
+
+      expect(flattenedArticle).toEqual({
+        id: article.id,
+      });
+    });
+
+    it("removes empty arrays", () => {
+      const article = {
+        id: "hello world",
+        a: [],
+        b: {
+          c: {
+            d: {
+              e: [],
+            },
+          },
+        },
+      };
+
+      const flattenedArticle = service.flatten(article);
+
+      expect(flattenedArticle).toEqual({
+        id: article.id,
+      });
+    });
+
     it("converts numbers to strings", () => {
       const article = {
         id: "hello world",

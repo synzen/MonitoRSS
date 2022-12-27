@@ -27,7 +27,29 @@ export class ArticleParserService {
       }
 
       if (value instanceof Date) {
-        return null;
+        return;
+      }
+
+      if ({}.constructor === value.constructor) {
+        if (Object.keys(value).length) {
+          throw new Error(
+            "Non-empty object found in flattened record. " +
+              'Check that "flatten" is working as intended'
+          );
+        }
+
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        if (value.length) {
+          throw new Error(
+            "Non-empty array found in flattened record. " +
+              'Check that "flatten" is working as intended'
+          );
+        }
+
+        return;
       }
 
       newRecord[key] = String(value);
