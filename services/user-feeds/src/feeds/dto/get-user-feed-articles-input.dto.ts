@@ -1,7 +1,6 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
-  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -16,7 +15,6 @@ export class GetUserFeedArticlesInputDto {
 
   @IsInt()
   @IsPositive()
-  @IsIn([1]) // Until more than 1 is supported
   @Type(() => Number)
   limit: number;
 
