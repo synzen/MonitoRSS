@@ -1,5 +1,9 @@
 import { string, object, InferType, array, number, boolean } from "yup";
 
+/**
+ * .default(undefined) is NECESSARY when using .optional(), otherwise optional objects with
+ * required fields will throw, saying the nested field is required
+ */
 export const discordMediumPayloadDetailsSchema = object().shape(
   {
     guildId: string().required(),
@@ -36,18 +40,26 @@ export const discordMediumPayloadDetailsSchema = object().shape(
         footer: object({
           text: string().required(),
           iconUrl: string().optional(),
-        }).optional(),
+        })
+          .optional()
+          .default(undefined),
         image: object({
           url: string().required(),
-        }).optional(),
+        })
+          .optional()
+          .default(undefined),
         thumbnail: object({
           url: string().required(),
-        }).optional(),
+        })
+          .optional()
+          .default(undefined),
         author: object({
           name: string().required(),
           url: string().optional(),
           iconUrl: string().optional(),
-        }).optional(),
+        })
+          .optional()
+          .default(undefined),
         fields: array(
           object({
             name: string().required(),
