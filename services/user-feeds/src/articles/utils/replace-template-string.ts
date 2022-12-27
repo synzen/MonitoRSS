@@ -1,7 +1,5 @@
-import { getNestedPrimitiveValue } from "./get-nested-primitive-value";
-
 export function replaceTemplateString(
-  object: Record<string, unknown>,
+  object: Record<string, string>,
   str?: string
 ) {
   if (!str) {
@@ -14,8 +12,17 @@ export function replaceTemplateString(
   let outputStr = str;
 
   while ((result = regex.exec(str)) !== null) {
-    const value = getNestedPrimitiveValue(object, result[1]);
-    outputStr = outputStr.replaceAll(result[0], value || "");
+    const accessor = result[1];
+    const value = object[accessor] || "";
+
+    if (typeof value !== "string") {
+      throw new Error(
+        `Value for ${accessor} is not a string. Value: ${value}. Input values when replacing` +
+          ` template strings must be strings. Object: ${JSON.stringify(object)}`
+      );
+    }
+
+    outputStr = outputStr.replaceAll(result[0], value);
   }
 
   return outputStr;

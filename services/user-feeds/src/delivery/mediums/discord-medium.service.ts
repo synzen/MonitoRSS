@@ -40,7 +40,7 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   async deliverTestArticle(
-    article: Record<string, unknown>,
+    article: Article,
     details: TestDiscordDeliveryDetails
   ) {
     const { channel, webhook, embeds, content } = details.mediumDetails;
@@ -229,7 +229,7 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   private generateApiPayload(
-    article: Record<string, unknown>,
+    article: Article,
     {
       embeds,
       content,

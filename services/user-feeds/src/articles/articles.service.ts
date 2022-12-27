@@ -8,6 +8,7 @@ import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
 import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
 import { EntityManager, MikroORM } from "@mikro-orm/core";
 import { Article } from "../shared/types";
+import { ArticleParserService } from "../article-parser/article-parser.service";
 
 @Injectable()
 export class ArticlesService {
@@ -16,6 +17,7 @@ export class ArticlesService {
     private readonly articleFieldRepo: EntityRepository<FeedArticleField>,
     @InjectRepository(FeedArticleCustomComparison)
     private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
+    private readonly articleParserService: ArticleParserService,
     private readonly orm: MikroORM
   ) {}
 
@@ -305,7 +307,7 @@ export class ArticlesService {
 
         resolve({
           articles: rawArticles.map((rawArticle) => ({
-            ...rawArticle,
+            ...this.articleParserService.flatten(rawArticle as never),
             id: ArticleIDResolver.getIDTypeValue(rawArticle as never, idType),
           })),
         });
