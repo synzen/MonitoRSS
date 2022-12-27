@@ -1,7 +1,7 @@
-import { FeedResponseRequestStatus } from "../../shared";
+import { GetFeedArticlesRequestStatus } from "../../shared";
 
 class ResultDto {
-  requestStatus: FeedResponseRequestStatus;
+  requestStatus: GetFeedArticlesRequestStatus;
   articles: Array<Record<string, string>>;
 }
 

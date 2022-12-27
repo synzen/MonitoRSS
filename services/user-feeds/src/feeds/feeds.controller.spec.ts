@@ -2,7 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { FeedRequestParseException } from "../feed-fetcher/exceptions";
 import {
   DiscordMediumTestPayloadDetails,
-  FeedResponseRequestStatus,
+  GetFeedArticlesRequestStatus,
 } from "../shared";
 import { TestDeliveryStatus } from "./constants";
 import { FeedsController } from "./feeds.controller";
@@ -91,7 +91,7 @@ describe("FeedController", () => {
       const result = await controller.getFeedArticles(input);
 
       expect(result.result.requestStatus).toEqual(
-        FeedResponseRequestStatus.Pending
+        GetFeedArticlesRequestStatus.Pending
       );
       expect(result.result.articles).toEqual([]);
     });
@@ -110,7 +110,7 @@ describe("FeedController", () => {
       const result = await controller.getFeedArticles(input);
 
       expect(result.result.requestStatus).toEqual(
-        FeedResponseRequestStatus.Success
+        GetFeedArticlesRequestStatus.Success
       );
       expect(result.result.articles).toEqual([]);
     });
@@ -135,7 +135,7 @@ describe("FeedController", () => {
       const result = await controller.getFeedArticles(input);
 
       expect(result.result.requestStatus).toEqual(
-        FeedResponseRequestStatus.Success
+        GetFeedArticlesRequestStatus.Success
       );
       expect(result.result.articles).toEqual(fetchedArticles);
     });
@@ -166,7 +166,7 @@ describe("FeedController", () => {
       const result = await controller.getFeedArticles(input);
 
       expect(result.result.requestStatus).toEqual(
-        FeedResponseRequestStatus.Success
+        GetFeedArticlesRequestStatus.Success
       );
       expect(result.result.articles).toHaveLength(2);
     });
@@ -185,7 +185,7 @@ describe("FeedController", () => {
       const result = await controller.getFeedArticles(input);
 
       expect(result.result.requestStatus).toEqual(
-        FeedResponseRequestStatus.ParseError
+        GetFeedArticlesRequestStatus.ParseError
       );
       expect(result.result.articles).toEqual([]);
     });

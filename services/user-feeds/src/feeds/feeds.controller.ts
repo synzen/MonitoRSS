@@ -13,7 +13,7 @@ import { FeedRequestParseException } from "../feed-fetcher/exceptions";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
   discordMediumTestPayloadDetailsSchema,
-  FeedResponseRequestStatus,
+  GetFeedArticlesRequestStatus,
   NestedQuery,
   TransformValidationPipe,
 } from "../shared";
@@ -74,7 +74,7 @@ export class FeedsController {
       if (!fetchResult) {
         return {
           result: {
-            requestStatus: FeedResponseRequestStatus.Pending,
+            requestStatus: GetFeedArticlesRequestStatus.Pending,
             articles: [],
           },
         };
@@ -83,7 +83,7 @@ export class FeedsController {
       if (fetchResult.articles.length === 0) {
         return {
           result: {
-            requestStatus: FeedResponseRequestStatus.Success,
+            requestStatus: GetFeedArticlesRequestStatus.Success,
             articles: [],
           },
         };
@@ -98,7 +98,7 @@ export class FeedsController {
 
       return {
         result: {
-          requestStatus: FeedResponseRequestStatus.Success,
+          requestStatus: GetFeedArticlesRequestStatus.Success,
           articles,
         },
       };
@@ -106,7 +106,7 @@ export class FeedsController {
       if (err instanceof FeedRequestParseException) {
         return {
           result: {
-            requestStatus: FeedResponseRequestStatus.ParseError,
+            requestStatus: GetFeedArticlesRequestStatus.ParseError,
             articles: [],
           },
         };

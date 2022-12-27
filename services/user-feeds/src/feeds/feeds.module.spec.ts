@@ -6,6 +6,7 @@ import {
   clearDatabase,
   DiscordMediumTestPayloadDetails,
   FeedResponseRequestStatus,
+  GetFeedArticlesRequestStatus,
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "../shared";
@@ -127,7 +128,7 @@ describe("FeedsModule", () => {
 
       expect(JSON.parse(body)).toMatchObject({
         result: {
-          requestStatus: FeedResponseRequestStatus.Success,
+          requestStatus: GetFeedArticlesRequestStatus.Success,
           articles: [],
         },
       });

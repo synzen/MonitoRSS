@@ -1,7 +1,6 @@
 import { IsArray, IsIn, IsObject, ValidateNested } from "class-validator";
 
 export enum GetArticlesResponseRequestStatus {
-  Error = "error",
   ParseError = "parse_error",
   Pending = "pending",
   Success = "success",
