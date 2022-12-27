@@ -126,7 +126,9 @@ export const DiscordMessageForm = ({
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={12}>
           <Stack spacing={4}>
-            <Heading size="md">Text</Heading>
+            <Heading size="md">
+              {t('components.discordMessageForm.textSectionTitle')}
+            </Heading>
             <Text>
               {t('components.discordMessageForm.textSectionDescription')}
             </Text>
@@ -136,7 +138,9 @@ export const DiscordMessageForm = ({
             />
           </Stack>
           <Stack spacing={4}>
-            <Heading size="md">Embeds</Heading>
+            <Heading size="md">
+              {t('components.discordMessageForm.embedSectionTitle')}
+            </Heading>
             <Text>
               {t('components.discordMessageForm.embedSectionDescription')}
             </Text>

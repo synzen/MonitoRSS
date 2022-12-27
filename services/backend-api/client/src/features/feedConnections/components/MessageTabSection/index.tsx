@@ -103,7 +103,12 @@ export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdat
             </Stack>
             )}
           {!hasAlert && firstArticle
-            && <ArticlePlaceholderTable article={userFeedArticles.result.articles[0]} />}
+            && (
+            <ArticlePlaceholderTable
+              asPlaceholders
+              article={userFeedArticles.result.articles[0]}
+            />
+            )}
         </Box>
       </Stack>
       <Stack spacing={4}>

@@ -1,5 +1,6 @@
 import {
   Box,
+  Code,
   Table,
   TableContainer,
   Tbody,
@@ -12,9 +13,10 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
   article: Record<string, string>
+  asPlaceholders?: boolean
 }
 
-export const ArticlePlaceholderTable = ({ article }: Props) => {
+export const ArticlePlaceholderTable = ({ article, asPlaceholders }: Props) => {
   const { t } = useTranslation();
 
   return (
@@ -35,8 +37,10 @@ export const ArticlePlaceholderTable = ({ article }: Props) => {
               <Thead>
                 <Tr>
                   <Th>
-                    {t('features.feedConnections.components'
-                    + '.articlePlaceholderTable.columnHeaderPlaceholder')}
+                    {asPlaceholders ? t('features.feedConnections.components'
+                    + '.articlePlaceholderTable.columnHeaderPlaceholder')
+                      : t('features.feedConnections.components'
+                    + '.articlePlaceholderTable.columnHeaderProperty')}
                   </Th>
                   <Th>
                     {t('features.feedConnections.components'
@@ -47,7 +51,7 @@ export const ArticlePlaceholderTable = ({ article }: Props) => {
               <Tbody>
                 {Object.entries(article).map(([key, value]) => (
                   <Tr key={key}>
-                    <Td>{key}</Td>
+                    <Td>{asPlaceholders ? <Code>{`{{${key}}}`}</Code> : key}</Td>
                     <Td>{value}</Td>
                   </Tr>
                 ))}

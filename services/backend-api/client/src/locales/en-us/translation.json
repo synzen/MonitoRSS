@@ -226,8 +226,10 @@
       "formValueDescription": "Each new line indicates a new and separate filter. Modifiers would apply to the beginning to each line."
     },
     "discordMessageForm": {
-        "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
-        "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field)."
+      "textSectionTitle": "Text",
+      "embedSectionTitle": "Embeds",
+      "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {{empty}}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
+      "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field)."
     },
     "sidebar": {
       "supporterUserTag": "Supporter",
@@ -374,6 +376,7 @@
         },
         "articlePlaceholderTable": {
           "columnHeaderPlaceholder": "Placeholder",
+          "columnHeaderProperty": "Property",
           "columnHeaderValue": "Value",
           "loadingArticle": "Loading article...",
           "headingSamplePlaceholders": "Sample Article Placeholders",
