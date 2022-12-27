@@ -2,6 +2,7 @@ import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
+import { GetArticlesResponseRequestStatus } from "../../services/feed-handler/types";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
@@ -60,6 +61,7 @@ describe("UserFeedsService", () => {
       .useValue({
         getRateLimits: jest.fn(),
         initializeFeed: jest.fn(),
+        getArticles: jest.fn(),
       });
 
     const { module } = await init();
@@ -788,6 +790,27 @@ describe("UserFeedsService", () => {
         remaining: 9,
         windowSeconds: 86400,
       });
+    });
+  });
+
+  describe("getFeedArticles", () => {
+    const validInput = {
+      limit: 1,
+      random: true,
+      url: "random-url",
+    };
+
+    it("returns correctly", async () => {
+      const returned = {
+        requestStatus: GetArticlesResponseRequestStatus.Success,
+        articles: [],
+      };
+
+      jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue(returned);
+
+      const result = await service.getFeedArticles(validInput);
+
+      expect(result).toEqual(returned);
     });
   });
 });

@@ -9,7 +9,12 @@ import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "./entities";
 import _ from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
-import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
+import {
+  GetFeedArticlesInput,
+  GetFeedArticlesOutput,
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "./types";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 
@@ -228,6 +233,18 @@ export class UserFeedsService {
     } = await this.feedHandlerService.getRateLimits(feedId);
 
     return limits.find((limit) => limit.windowSeconds === 86400);
+  }
+
+  async getFeedArticles({
+    limit,
+    url,
+    random,
+  }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
+    return this.feedHandlerService.getArticles({
+      url,
+      limit,
+      random,
+    });
   }
 
   private async checkUrlIsValid(url: string) {

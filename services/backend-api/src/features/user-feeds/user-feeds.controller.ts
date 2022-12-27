@@ -29,6 +29,7 @@ import { FeedExceptionFilter } from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   CreateUserFeedInputDto,
+  GetUserFeedArticlesInputDto,
   GetUserFeedDailyLimitOutputDto,
   GetUserFeedOutputDto,
   GetUserFeedsInputDto,
@@ -36,6 +37,7 @@ import {
   UpdateUserFeedInputDto,
   UpdateUserFeedOutputDto,
 } from "./dto";
+import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-output.dto";
 import { UserFeed } from "./entities";
 import { RetryUserFeedFilter } from "./filters";
 import { GetUserFeedPipe } from "./pipes";
@@ -74,6 +76,27 @@ export class UserFeedsController {
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
     return await this.formatFeedForResponse(feed, feed.user.discordUserId);
+  }
+
+  @Get("/:feedId/articles")
+  async getFeedArticles(
+    @NestedQuery(TransformValidationPipe)
+    { limit, random }: GetUserFeedArticlesInputDto,
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+  ): Promise<GetUserFeedArticlesOutputDto> {
+    const { articles, requestStatus } =
+      await this.userFeedsService.getFeedArticles({
+        limit,
+        url: feed.url,
+        random,
+      });
+
+    return {
+      result: {
+        articles,
+        requestStatus,
+      },
+    };
   }
 
   @Get("/:feedId/retry")

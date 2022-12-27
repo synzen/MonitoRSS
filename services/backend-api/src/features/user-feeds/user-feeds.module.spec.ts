@@ -18,6 +18,8 @@ import { CreateUserFeedInputDto } from "./dto";
 import { ConfigService } from "@nestjs/config";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { UserFeedHealthStatus } from "./types";
+import { URLSearchParams } from "url";
+import { GetArticlesResponseRequestStatus } from "../../services/feed-handler/types";
 
 const feedXml = readFileSync(
   path.join(__dirname, "../../test/data/feed.xml"),
@@ -398,6 +400,107 @@ describe("UserFeedsModule", () => {
             healthStatus: feed.healthStatus,
           },
         ],
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
+  describe("GET /:feedId/articles", () => {
+    let feed: UserFeed;
+    const validQuery = `?${new URLSearchParams({
+      limit: "1",
+      random: "true",
+    }).toString()}`;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: `https://www.feed.com`,
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/articles${validQuery}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/123/articles${validQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed does not belong to user", async () => {
+      const otherUserFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-user",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${otherUserFeed._id}/articles${validQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 400 on bad query", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/articles?limit=abc`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it("returns 200 on success", async () => {
+      const retrievedArticles = [
+        {
+          foo: "bar",
+        },
+      ];
+
+      nock(feedHandlerApiHost)
+        .get("/v1/user-feeds/articles")
+        .query(true)
+        .reply(200, {
+          result: {
+            requestStatus: GetArticlesResponseRequestStatus.Success,
+            articles: [
+              {
+                foo: "bar",
+              },
+            ],
+          },
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id}/articles${validQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          requestStatus: GetArticlesResponseRequestStatus.Success,
+          articles: retrievedArticles,
+        },
       });
       expect(statusCode).toBe(HttpStatus.OK);
     });
