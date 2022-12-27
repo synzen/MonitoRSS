@@ -1,4 +1,4 @@
-import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
+import { DiscordMediumEvent } from "../../../common";
 
 export interface SendTestDiscordWebhookArticleInput {
   details: {
@@ -14,7 +14,7 @@ export interface SendTestDiscordWebhookArticleInput {
         iconUrl?: string;
       };
       content?: string;
-      embeds: DiscordChannelConnection["details"]["embeds"];
+      embeds: DiscordMediumEvent["details"]["embeds"];
     };
   };
 }

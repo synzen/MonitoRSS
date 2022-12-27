@@ -25,6 +25,7 @@ export const createDiscordWebhookConnectionTestArticle = async (
       validateSchema: CreateDiscordWebhookConnectionTestArticleOutputSchema,
       requestOptions: {
         method: 'POST',
+        body: JSON.stringify({}),
       },
     },
   );

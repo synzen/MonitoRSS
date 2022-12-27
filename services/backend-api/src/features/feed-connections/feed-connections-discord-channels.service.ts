@@ -2,6 +2,10 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import {
+  castDiscordContentForMedium,
+  castDiscordEmbedsForMedium,
+} from "../../common/utils";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import { SendTestArticleResult } from "../../services/feed-handler/types";
 import {
@@ -200,8 +204,8 @@ export class FeedConnectionsDiscordChannelsService {
         channel: {
           id: connection.details.channel.id,
         },
-        content: connection.details.content,
-        embeds: connection.details.embeds,
+        content: castDiscordContentForMedium(connection.details.content),
+        embeds: castDiscordEmbedsForMedium(connection.details.embeds),
       },
     } as const;
 

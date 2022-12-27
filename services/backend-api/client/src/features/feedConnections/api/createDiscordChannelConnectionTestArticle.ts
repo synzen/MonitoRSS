@@ -25,6 +25,7 @@ export const createDiscordChannelConnectionTestArticle = async (
       validateSchema: CreateDiscordChannelConnectionTestArticleOutputSchema,
       requestOptions: {
         method: 'POST',
+        body: JSON.stringify({}),
       },
     },
   );

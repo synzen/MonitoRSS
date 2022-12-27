@@ -16,51 +16,11 @@ import {
   UserFeedModel,
 } from "../user-feeds/entities";
 import { AmqpConnection, RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
-import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
-
-interface DiscordMedium {
-  key: "discord";
-  filters: {
-    expression: Record<string, unknown>;
-  } | null;
-  details: {
-    guildId: string;
-    channel?: {
-      id: string;
-    };
-    webhook?: {
-      id: string;
-      token: string;
-    };
-    content?: string;
-    embeds?: Array<{
-      title?: string;
-      description?: string;
-      url?: string;
-      color?: number;
-      footer?: {
-        text: string;
-        iconUrl?: string;
-      };
-      image?: {
-        url: string;
-      };
-      thumbnail?: {
-        url: string;
-      };
-      author?: {
-        name: string;
-        url?: string;
-        iconUrl?: string;
-      };
-      fields?: Array<{
-        name: string;
-        value: string;
-        inline?: boolean;
-      }>;
-    }>;
-  };
-}
+import { DiscordMediumEvent } from "../../common";
+import {
+  castDiscordContentForMedium,
+  castDiscordEmbedsForMedium,
+} from "../../common/utils";
 
 interface PublishFeedDeliveryArticlesData {
   data: {
@@ -71,7 +31,7 @@ interface PublishFeedDeliveryArticlesData {
       blockingComparisons: string[];
     };
     articleDayLimit: number;
-    mediums: Array<DiscordMedium>;
+    mediums: Array<DiscordMediumEvent>;
   };
 }
 
@@ -200,7 +160,7 @@ export class ScheduleHandlerService {
     maxDailyArticles: number;
   }) {
     const discordChannelMediums =
-      userFeed.connections.discordChannels.map<DiscordMedium>((con) => ({
+      userFeed.connections.discordChannels.map<DiscordMediumEvent>((con) => ({
         id: con.id.toHexString(),
         key: "discord",
         filters: con.filters?.expression
@@ -211,13 +171,13 @@ export class ScheduleHandlerService {
           channel: {
             id: con.details.channel.id,
           },
-          content: this.castDiscordContentForMedium(con.details.content),
-          embeds: this.castDiscordEmbedsForMedium(con.details.embeds),
+          content: castDiscordContentForMedium(con.details.content),
+          embeds: castDiscordEmbedsForMedium(con.details.embeds),
         },
       }));
 
     const discordWebhookMediums =
-      userFeed.connections.discordWebhooks.map<DiscordMedium>((con) => ({
+      userFeed.connections.discordWebhooks.map<DiscordMediumEvent>((con) => ({
         id: con.id.toHexString(),
         key: "discord",
         filters: con.filters?.expression
@@ -231,8 +191,8 @@ export class ScheduleHandlerService {
             name: con.details.webhook.name,
             iconUrl: con.details.webhook.iconUrl,
           },
-          content: this.castDiscordContentForMedium(con.details.content),
-          embeds: this.castDiscordEmbedsForMedium(con.details.embeds),
+          content: castDiscordContentForMedium(con.details.content),
+          embeds: castDiscordEmbedsForMedium(con.details.embeds),
         },
       }));
 
@@ -522,59 +482,5 @@ export class ScheduleHandlerService {
     };
 
     return this.userFeedModel.find(query);
-  }
-
-  private castDiscordContentForMedium(content?: string) {
-    return content || `📰 | {{title}}\n\n{{description}}\n\n{{link}}`;
-  }
-
-  private castDiscordEmbedsForMedium(
-    embeds?: FeedEmbed[]
-  ): DiscordMedium["details"]["embeds"] {
-    if (!embeds) {
-      return [];
-    }
-
-    return embeds.map((embed) => ({
-      ...(embed.color && { color: Number(embed.color) }),
-      ...(embed.authorName && {
-        author: {
-          name: embed.authorName,
-          iconUrl: embed.authorIconURL,
-          url: embed.authorURL,
-        },
-      }),
-      ...(embed.footerText && {
-        footer: {
-          text: embed.footerText,
-          iconUrl: embed.footerIconURL,
-        },
-      }),
-      ...(embed.imageURL && {
-        image: {
-          url: embed.imageURL,
-        },
-      }),
-      ...(embed.thumbnailURL && {
-        thumbnail: {
-          url: embed.thumbnailURL,
-        },
-      }),
-      ...(embed.title && {
-        title: embed.title,
-      }),
-      ...(embed.url && {
-        url: embed.url,
-      }),
-      ...(embed.description && {
-        description: embed.description,
-      }),
-      fields:
-        embed.fields?.map((field) => ({
-          name: field.name,
-          value: field.value,
-          inline: field.inline,
-        })) || [],
-    }));
   }
 }

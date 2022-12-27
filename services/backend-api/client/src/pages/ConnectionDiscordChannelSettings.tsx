@@ -180,6 +180,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     >
                       {connection?.name}
                     </Heading>
+                    {connection && (
                     <HStack>
                       <SendConnectionTestArticleButton
                         connectionId={connectionId as string}
@@ -197,9 +198,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                         <MenuList>
                           <EditConnectionChannelDialog
                             defaultValues={{
-                              channelId: connection?.details.channel.id as string,
-                              name: connection?.name as string,
-                              serverId: serverId as string,
+                              channelId: connection.details.channel.id,
+                              name: connection.name,
+                              serverId,
                             }}
                             onUpdate={onChannelUpdated}
                             trigger={(
@@ -224,6 +225,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                         </MenuList>
                       </Menu>
                     </HStack>
+                    )}
                   </HStack>
                 </Box>
                 <Alert

@@ -15,6 +15,10 @@ import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import { SendTestArticleResult } from "../../services/feed-handler/types";
+import {
+  castDiscordContentForMedium,
+  castDiscordEmbedsForMedium,
+} from "../../common/utils";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -228,8 +232,8 @@ export class FeedConnectionsDiscordWebhooksService {
         url: userFeed.url,
       },
       mediumDetails: {
-        content: connection.details.content,
-        embeds: connection.details.embeds,
+        content: castDiscordContentForMedium(connection.details.content),
+        embeds: castDiscordEmbedsForMedium(connection.details.embeds),
         webhook: {
           id: connection.details.webhook.id,
           name: connection.details.webhook.name,
