@@ -98,6 +98,8 @@ export const FeedV2: React.FC = () => {
     onOpen();
   };
 
+  const isAtLimit = dailyLimit ? dailyLimit.current >= dailyLimit.max : false;
+
   const onDeleteFeed = async () => {
     if (!feedId) {
       return;
@@ -331,7 +333,9 @@ export const FeedV2: React.FC = () => {
                   {feed?.createdAt}
                 </CategoryText>
                 <CategoryText title={t('pages.feed.articleDailyLimit')}>
-                  {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                  <Text color={isAtLimit ? 'red.300' : ''}>
+                    {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                  </Text>
                   {!dailyLimit && <Spinner size="sm" />}
                 </CategoryText>
               </Grid>
