@@ -154,6 +154,14 @@ describe("FeedHandlerService", () => {
       });
     });
 
+    it("throws if status code is 400", async () => {
+      nock(host).post(endpoint).reply(400, {});
+
+      await expect(service.sendTestArticle(validPayload)).rejects.toThrow(
+        FeedFetcherStatusException
+      );
+    });
+
     it("throws if the status code is >= 500", async () => {
       nock(host).post(endpoint).reply(500, {});
 

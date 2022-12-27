@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { validate } from "class-validator";
-import fetch from "node-fetch";
+import fetch, { Response } from "node-fetch";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
@@ -116,10 +116,10 @@ export class FeedHandlerService {
   async sendTestArticle({
     details,
   }: SendTestArticleInput): Promise<SendTestArticleResult> {
-    let result: SendTestArticleResult;
+    let res: Response;
 
     try {
-      const res = await fetch(`${this.host}/v1/user-feeds/test`, {
+      res = await fetch(`${this.host}/v1/user-feeds/test`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,27 +127,42 @@ export class FeedHandlerService {
         },
         body: JSON.stringify(details),
       });
-
-      const json = await res.json();
-
-      result = new SendTestArticleResult();
-      result.status = json.status;
-      result.apiResponse = json.apiResponse;
     } catch (err) {
+      // Fetch may have some obscure errors
       throw new Error(
-        `Failed to send and/or parse test article response through user feeds API: ${
-          (err as Error).message
-        }`
+        `Failed to send test article request through user feeds API: ${
+          err.constructor.name
+        }: ${(err as Error).message}`
       );
     }
+
+    if (!res.ok) {
+      let json: Record<string, unknown> | null = null;
+
+      try {
+        json = await res.json();
+      } catch (err) {}
+
+      throw new FeedFetcherStatusException(
+        `Non-ok status code from user feeds API: ${
+          res.status
+        }. Response: ${JSON.stringify(json, null, 2)}`
+      );
+    }
+
+    const json = await res.json();
+
+    const result = new SendTestArticleResult();
+    result.status = json.status;
+    result.apiResponse = json.apiResponse;
 
     const validationErrors = await validate(result);
 
     if (validationErrors.length > 0) {
       throw new UnexpectedApiResponseException(
-        `Unexpectd response from user feeds API: ${JSON.stringify(
+        `Unexpected response from user feeds API: ${JSON.stringify(
           validationErrors
-        )}`
+        )} Received body: ${JSON.stringify(result, null, 2)}`
       );
     }
 
