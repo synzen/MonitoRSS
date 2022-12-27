@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Post,
+  Get,
   ValidationPipe,
   UseGuards,
   BadRequestException,
@@ -9,10 +10,20 @@ import {
 import { object, string, ValidationError } from "yup";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
-import { discordMediumTestPayloadDetailsSchema } from "../shared";
+import {
+  discordMediumTestPayloadDetailsSchema,
+  NestedQuery,
+  TransformValidationPipe,
+} from "../shared";
 import { ApiGuard } from "../shared/guards";
+import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
 import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
-import { CreateFeedInputDto, CreateTestArticleOutputDto } from "./dto";
+import {
+  CreateFeedInputDto,
+  CreateTestArticleOutputDto,
+  GetUserFeedArticlesInputDto,
+  GetUserFeedArticlesOutputDto,
+} from "./dto";
 import { FeedsService } from "./feeds.service";
 
 @Controller({
@@ -42,6 +53,35 @@ export class FeedsController {
       articleRateLimits: await this.feedsService.getRateLimitInformation(
         feed.id
       ),
+    };
+  }
+
+  @Get("articles")
+  @UseGuards(ApiGuard)
+  async getFeedArticles(
+    @NestedQuery(TransformValidationPipe)
+    { limit, random, url }: GetUserFeedArticlesInputDto
+  ): Promise<GetUserFeedArticlesOutputDto> {
+    const decodedUrl = decodeURIComponent(url);
+    const fetchResult = await this.feedFetcherService.fetchFeedArticles(
+      decodedUrl
+    );
+
+    if (!fetchResult || !fetchResult.articles.length) {
+      return {
+        results: [],
+      };
+    }
+
+    const results = getNumbersInRange({
+      min: 0,
+      max: fetchResult.articles.length - 1,
+      countToGet: limit,
+      random,
+    }).map((index) => fetchResult.articles[index]);
+
+    return {
+      results,
     };
   }
 

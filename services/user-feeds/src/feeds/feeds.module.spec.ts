@@ -13,6 +13,7 @@ import { testConfig } from "../config/test.config";
 import { FeedsModule } from "./feeds.module";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { TestDeliveryMedium } from "./constants";
+import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 
 describe("FeedsModule", () => {
   let app: NestFastifyApplication;
@@ -21,6 +22,9 @@ describe("FeedsModule", () => {
   };
   const discordMediumService = {
     deliverTestArticle: jest.fn(),
+  };
+  const feedFetcherService = {
+    fetchFeedArticles: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -32,6 +36,8 @@ describe("FeedsModule", () => {
     const moduleRef = await uncompiledModule
       .overrideProvider(DiscordMediumService)
       .useValue(discordMediumService)
+      .overrideProvider(FeedFetcherService)
+      .useValue(feedFetcherService)
       .compile();
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(
@@ -90,6 +96,38 @@ describe("FeedsModule", () => {
         ]),
       });
       expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe(`GET /user-feeds/articles`, () => {
+    const validQuery = `?limit=1&random=true&url=${encodeURIComponent(
+      "https://www.google.com"
+    )}`;
+
+    it("returns 401 if unauthorized", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/articles${validQuery}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 200", async () => {
+      jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
+        articles: [],
+      });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/articles${validQuery}`,
+        headers: standardHeaders,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        results: [],
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
     });
   });
 

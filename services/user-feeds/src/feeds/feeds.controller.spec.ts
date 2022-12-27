@@ -13,6 +13,7 @@ describe("FeedController", () => {
   };
   const feedFetcherService = {
     fetchRandomFeedArticle: jest.fn(),
+    fetchFeedArticles: jest.fn(),
   };
   let controller: FeedsController;
 
@@ -57,6 +58,101 @@ describe("FeedController", () => {
         articleDailyLimit,
       });
       expect(result).toEqual({ articleRateLimits: rateLimitInfo });
+    });
+  });
+
+  describe("getFeedArticles", () => {
+    it("calls fetch with the decoded url", async () => {
+      const url = "https://www.google.com?query=1&query=2";
+      const input = {
+        limit: 1,
+        random: false,
+        url: encodeURIComponent(url),
+      };
+      await controller.getFeedArticles(input);
+      expect(feedFetcherService.fetchFeedArticles).toHaveBeenCalledWith(url);
+    });
+
+    it("returns an empty array of results if request is pending", async () => {
+      const input = {
+        limit: 1,
+        random: false,
+        url: "url",
+      };
+
+      jest
+        .spyOn(feedFetcherService, "fetchFeedArticles")
+        .mockResolvedValue(null);
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result).toEqual({ results: [] });
+    });
+
+    it("returns an empty array of results if there are no articles", async () => {
+      const input = {
+        limit: 1,
+        random: false,
+        url: "url",
+      };
+
+      jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
+        articles: [],
+      });
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result).toEqual({ results: [] });
+    });
+
+    it("returns an array of results if request is not pending", async () => {
+      const input = {
+        limit: 1,
+        random: false,
+        url: "url",
+      };
+
+      const fetchedArticles = [
+        {
+          id: "1",
+        },
+      ];
+
+      jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
+        articles: fetchedArticles,
+      });
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result).toEqual({ results: fetchedArticles });
+    });
+
+    it("respects count", async () => {
+      const input = {
+        limit: 2,
+        random: false,
+        url: "url",
+      };
+
+      const fetchedArticles = [
+        {
+          id: "1",
+        },
+        {
+          id: "2",
+        },
+        {
+          id: "3",
+        },
+      ];
+
+      jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
+        articles: fetchedArticles,
+      });
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result.results).toHaveLength(2);
     });
   });
 

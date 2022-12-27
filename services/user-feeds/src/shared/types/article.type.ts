@@ -1,4 +1,4 @@
 export interface Article {
   id: string;
-  [key: string]: unknown;
+  [key: string]: string;
 }
