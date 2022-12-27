@@ -51,29 +51,29 @@ export class DiscordMediumService implements DeliveryMedium {
       const { id: webhookId, token: webhookToken, name, iconUrl } = webhook;
 
       const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
+      const apiBody = {
+        ...this.generateApiPayload(article, {
+          embeds,
+          content,
+        }),
+        username: name,
+        avatar_url: iconUrl,
+      };
 
       return this.producer.fetch(apiUrl, {
         method: "POST",
-        body: JSON.stringify({
-          ...this.generateApiPayload(article, {
-            embeds,
-            content,
-          }),
-          username: name,
-          avatar_url: iconUrl,
-        }),
+        body: JSON.stringify(apiBody),
       });
     } else if (channelId) {
       const apiUrl = this.getChannelApiUrl(channelId);
+      const apiBody = this.generateApiPayload(article, {
+        embeds: details.mediumDetails.embeds,
+        content: details.mediumDetails.content,
+      });
 
       return this.producer.fetch(apiUrl, {
         method: "POST",
-        body: JSON.stringify(
-          this.generateApiPayload(article, {
-            embeds: details.mediumDetails.embeds,
-            content: details.mediumDetails.content,
-          })
-        ),
+        body: JSON.stringify(apiBody),
       });
     } else {
       throw new Error("No channel or webhook specified for Discord medium");
