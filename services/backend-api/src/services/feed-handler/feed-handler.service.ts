@@ -1,11 +1,19 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import fetch, { Response } from "node-fetch";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
-import { SendTestArticleInput, SendTestArticleResult } from "./types";
+import {
+  GetArticlesInput,
+  GetArticlesOutput,
+  GetArticlesResponse,
+  SendTestArticleInput,
+  SendTestArticleResult,
+} from "./types";
+import { URLSearchParams } from "url";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -136,36 +144,83 @@ export class FeedHandlerService {
       );
     }
 
-    if (!res.ok) {
-      let json: Record<string, unknown> | null = null;
-
-      try {
-        json = await res.json();
-      } catch (err) {}
-
-      throw new FeedFetcherStatusException(
-        `Non-ok status code from user feeds API: ${
-          res.status
-        }. Response: ${JSON.stringify(json, null, 2)}`
-      );
-    }
+    await this.validateResponseStatus(res);
 
     const json = await res.json();
 
-    const result = new SendTestArticleResult();
-    result.status = json.status;
-    result.apiResponse = json.apiResponse;
+    const result = await this.validateResponseJson(SendTestArticleResult, json);
 
-    const validationErrors = await validate(result);
+    return result;
+  }
+
+  async getArticles({
+    url,
+    limit,
+    random,
+  }: GetArticlesInput): Promise<GetArticlesOutput> {
+    const queryParameters = new URLSearchParams({
+      url,
+      limit: limit.toString(),
+      random: String(random),
+    });
+
+    const res = await fetch(
+      `${this.host}/v1/user-feeds/articles?${queryParameters.toString()}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+      }
+    );
+
+    await this.validateResponseStatus(res);
+
+    const json = await res.json();
+
+    const result = await this.validateResponseJson(GetArticlesResponse, json);
+
+    return result.result;
+  }
+
+  private async validateResponseStatus(res: Response) {
+    if (res.status >= 500) {
+      throw new FeedFetcherStatusException(
+        `Failed to get articles: >= 500 status code (${res.status}) from User feeds api`
+      );
+    }
+
+    if (!res.ok) {
+      let body: Record<string, unknown> | null = null;
+
+      try {
+        body = await res.json();
+      } catch (err) {}
+
+      throw new FeedFetcherStatusException(
+        `Failed to get articles: non-ok status code (${
+          res.status
+        }) from User feeds api, response: ${JSON.stringify(body)}`
+      );
+    }
+  }
+
+  private async validateResponseJson<T>(
+    classConstructor: ClassConstructor<T>,
+    json: Record<string, unknown>
+  ) {
+    const instance = plainToInstance(classConstructor, json);
+
+    const validationErrors = await validate(instance as object);
 
     if (validationErrors.length > 0) {
       throw new UnexpectedApiResponseException(
         `Unexpected response from user feeds API: ${JSON.stringify(
           validationErrors
-        )} Received body: ${JSON.stringify(result, null, 2)}`
+        )} Received body: ${JSON.stringify(json, null, 2)}`
       );
     }
 
-    return result;
+    return instance;
   }
 }
