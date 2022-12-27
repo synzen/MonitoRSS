@@ -9,9 +9,11 @@ import {
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
+import { FeedRequestParseException } from "../feed-fetcher/exceptions";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
   discordMediumTestPayloadDetailsSchema,
+  FeedResponseRequestStatus,
   NestedQuery,
   TransformValidationPipe,
 } from "../shared";
@@ -63,26 +65,55 @@ export class FeedsController {
     { limit, random, url }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     const decodedUrl = decodeURIComponent(url);
-    const fetchResult = await this.feedFetcherService.fetchFeedArticles(
-      decodedUrl
-    );
 
-    if (!fetchResult || !fetchResult.articles.length) {
+    try {
+      const fetchResult = await this.feedFetcherService.fetchFeedArticles(
+        decodedUrl
+      );
+
+      if (!fetchResult) {
+        return {
+          result: {
+            requestStatus: FeedResponseRequestStatus.Pending,
+            articles: [],
+          },
+        };
+      }
+
+      if (fetchResult.articles.length === 0) {
+        return {
+          result: {
+            requestStatus: FeedResponseRequestStatus.Success,
+            articles: [],
+          },
+        };
+      }
+
+      const articles = getNumbersInRange({
+        min: 0,
+        max: fetchResult.articles.length - 1,
+        countToGet: limit,
+        random,
+      }).map((index) => fetchResult.articles[index]);
+
       return {
-        results: [],
+        result: {
+          requestStatus: FeedResponseRequestStatus.Success,
+          articles,
+        },
       };
+    } catch (err) {
+      if (err instanceof FeedRequestParseException) {
+        return {
+          result: {
+            requestStatus: FeedResponseRequestStatus.ParseError,
+            articles: [],
+          },
+        };
+      }
+
+      throw err;
     }
-
-    const results = getNumbersInRange({
-      min: 0,
-      max: fetchResult.articles.length - 1,
-      countToGet: limit,
-      random,
-    }).map((index) => fetchResult.articles[index]);
-
-    return {
-      results,
-    };
   }
 
   @Post("test")

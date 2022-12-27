@@ -1,5 +1,9 @@
 import { BadRequestException } from "@nestjs/common";
-import { DiscordMediumTestPayloadDetails } from "../shared";
+import { FeedRequestParseException } from "../feed-fetcher/exceptions";
+import {
+  DiscordMediumTestPayloadDetails,
+  FeedResponseRequestStatus,
+} from "../shared";
 import { TestDeliveryStatus } from "./constants";
 import { FeedsController } from "./feeds.controller";
 
@@ -86,7 +90,10 @@ describe("FeedController", () => {
 
       const result = await controller.getFeedArticles(input);
 
-      expect(result).toEqual({ results: [] });
+      expect(result.result.requestStatus).toEqual(
+        FeedResponseRequestStatus.Pending
+      );
+      expect(result.result.articles).toEqual([]);
     });
 
     it("returns an empty array of results if there are no articles", async () => {
@@ -102,7 +109,10 @@ describe("FeedController", () => {
 
       const result = await controller.getFeedArticles(input);
 
-      expect(result).toEqual({ results: [] });
+      expect(result.result.requestStatus).toEqual(
+        FeedResponseRequestStatus.Success
+      );
+      expect(result.result.articles).toEqual([]);
     });
 
     it("returns an array of results if request is not pending", async () => {
@@ -124,7 +134,10 @@ describe("FeedController", () => {
 
       const result = await controller.getFeedArticles(input);
 
-      expect(result).toEqual({ results: fetchedArticles });
+      expect(result.result.requestStatus).toEqual(
+        FeedResponseRequestStatus.Success
+      );
+      expect(result.result.articles).toEqual(fetchedArticles);
     });
 
     it("respects count", async () => {
@@ -152,7 +165,29 @@ describe("FeedController", () => {
 
       const result = await controller.getFeedArticles(input);
 
-      expect(result.results).toHaveLength(2);
+      expect(result.result.requestStatus).toEqual(
+        FeedResponseRequestStatus.Success
+      );
+      expect(result.result.articles).toHaveLength(2);
+    });
+
+    it("handles parse error with no articles correctly", async () => {
+      const input = {
+        limit: 1,
+        random: false,
+        url: "url",
+      };
+
+      jest
+        .spyOn(feedFetcherService, "fetchFeedArticles")
+        .mockRejectedValue(new FeedRequestParseException("random parse error"));
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result.result.requestStatus).toEqual(
+        FeedResponseRequestStatus.ParseError
+      );
+      expect(result.result.articles).toEqual([]);
     });
   });
 

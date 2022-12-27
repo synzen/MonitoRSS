@@ -5,6 +5,7 @@ import {
 import {
   clearDatabase,
   DiscordMediumTestPayloadDetails,
+  FeedResponseRequestStatus,
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "../shared";
@@ -125,7 +126,10 @@ describe("FeedsModule", () => {
       });
 
       expect(JSON.parse(body)).toMatchObject({
-        results: [],
+        result: {
+          requestStatus: FeedResponseRequestStatus.Success,
+          articles: [],
+        },
       });
       expect(statusCode).toBe(HttpStatus.OK);
     });
