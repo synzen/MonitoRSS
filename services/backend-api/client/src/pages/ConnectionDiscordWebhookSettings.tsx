@@ -10,6 +10,11 @@ import {
   Grid,
   Heading,
   HStack,
+  Menu,
+  MenuButton,
+  MenuDivider,
+  MenuItem,
+  MenuList,
   Stack,
   Tab,
   TabList,
@@ -19,7 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { EditIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import { CategoryText, DiscordMessageForm } from '@/components';
 import { DiscordMessageFormData } from '@/types/discord';
 import RouteParams from '@/types/RouteParams';
@@ -31,6 +36,7 @@ import {
   useDiscordWebhookConnection,
   useUpdateDiscordWebhookConnection,
   DeleteConnectionButton,
+  SendConnectionTestArticleButton,
 } from '../features/feedConnections';
 import { useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
@@ -177,37 +183,57 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     >
                       {connection?.name}
                     </Heading>
+                    {connection && (
                     <HStack>
-                      {connection && (
-                      <EditConnectionWebhookDialog
-                        feedId={feedId}
-                        onUpdate={onWebhookUpdated}
-                        defaultValues={{
-                          name: connection.name,
-                          webhook: {
-                            id: connection.details.webhook.id,
-                            iconUrl: connection.details.webhook.iconUrl,
-                            name: connection.details.webhook.name,
-                          },
-                          serverId: connection.details.webhook.guildId,
-                        }}
-                        trigger={(
-                          <Button
-                            aria-label="Edit"
-                            variant="outline"
-                            leftIcon={<EditIcon />}
-                          >
-                            {t('common.buttons.configure')}
-                          </Button>
-                        )}
-                      />
-                      )}
-                      <DeleteConnectionButton
-                        connectionId={connectionId as string}
+                      <SendConnectionTestArticleButton
+                        connectionId={connection.id}
                         feedId={feedId as string}
                         type={FeedConnectionType.DiscordWebhook}
                       />
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          variant="outline"
+                          rightIcon={<ChevronDownIcon />}
+                        >
+                          {t('common.buttons.actions')}
+                        </MenuButton>
+                        <MenuList>
+                          <EditConnectionWebhookDialog
+                            feedId={feedId}
+                            onUpdate={onWebhookUpdated}
+                            defaultValues={{
+                              name: connection.name,
+                              webhook: {
+                                id: connection.details.webhook.id,
+                                iconUrl: connection.details.webhook.iconUrl,
+                                name: connection.details.webhook.name,
+                              },
+                              serverId: connection.details.webhook.guildId,
+                            }}
+                            trigger={(
+                              <MenuItem
+                                aria-label="Edit"
+                              >
+                                {t('common.buttons.configure')}
+                              </MenuItem>
+                        )}
+                          />
+                          <MenuDivider />
+                          <DeleteConnectionButton
+                            connectionId={connectionId as string}
+                            feedId={feedId as string}
+                            type={FeedConnectionType.DiscordWebhook}
+                            trigger={(
+                              <MenuItem>
+                                {t('common.buttons.delete')}
+                              </MenuItem>
+                          )}
+                          />
+                        </MenuList>
+                      </Menu>
                     </HStack>
+                    )}
                   </HStack>
                 </Box>
                 <Alert

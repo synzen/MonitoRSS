@@ -39,6 +39,7 @@ import {
   CreateDiscordChannelConnectionOutput,
   CreateDiscordChannelConnectionTestArticleOutput,
   CreateDiscordWebhookConnectionOutput,
+  CreateDiscordWebhookConnectionTestArticleOutput,
   UpdateDiscordChannelConnectionOutput,
   UpdateDiscordWebhookConnectionOutput,
 } from '../features/feedConnections';
@@ -236,7 +237,7 @@ const handlers = [
   )),
 
   rest.get('/api/v1/user-feeds/:feedId/retry', (req, res, ctx) => {
-    const { feedId } = req.params;
+    const { feedId } = req.params as Record<string, unknown>;
     const feed = mockUserFeeds.find((f) => f.id === feedId);
 
     if (!feed) {
@@ -316,6 +317,14 @@ const handlers = [
     ctx.delay(500),
     ctx.json<CreateDiscordWebhookConnectionOutput>({
       result: mockFeedWebhookConnections[0],
+    }),
+  )),
+
+  rest.post('/api/v1/user-feeds/:feedId/'
+    + 'connections/discord-webhooks/:id/test', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<CreateDiscordWebhookConnectionTestArticleOutput>({
+      result: mockSendTestArticleResult,
     }),
   )),
 

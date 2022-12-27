@@ -361,7 +361,7 @@
         "sendTestArticleButton": {
           "text": "Send Test Article",
           "description": "Send a random article to test the connection with your currently saved settings. Filters are not applied.",
-          "successAlertDescription": "Successfully sent test article",
+          "successAlertDescription": "Successfully sent!",
           "failureAlertDescription": "Failed to send test article"
         }
       }

@@ -1,7 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { FeedConnectionType, SendTestArticleDeliveryStatus } from '../../../types';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { createDiscordChannelConnectionTestArticle } from '../api';
+import {
+  createDiscordChannelConnectionTestArticle,
+  createDiscordWebhookConnectionTestArticle,
+} from '../api';
 
 interface CreateConnectionTestArticleInput {
   feedId: string;
@@ -18,7 +21,7 @@ const methodsByType: Record<FeedConnectionType, (
   input: CreateConnectionTestArticleInput
 ) => Promise<CreateConnectionTestArticleOutput>> = {
   [FeedConnectionType.DiscordChannel]: createDiscordChannelConnectionTestArticle,
-  [FeedConnectionType.DiscordWebhook]: createDiscordChannelConnectionTestArticle, // TODO: replace
+  [FeedConnectionType.DiscordWebhook]: createDiscordWebhookConnectionTestArticle,
 };
 
 export const useCreateConnectionTestArticle = (type: FeedConnectionType) => {
