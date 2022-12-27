@@ -37,6 +37,7 @@ import { generateMockApiErrorResponse } from './generateMockApiErrorResponse';
 import mockDiscordBot from './data/discordBot';
 import {
   CreateDiscordChannelConnectionOutput,
+  CreateDiscordChannelConnectionTestArticleOutput,
   CreateDiscordWebhookConnectionOutput,
   UpdateDiscordChannelConnectionOutput,
   UpdateDiscordWebhookConnectionOutput,
@@ -44,6 +45,7 @@ import {
 import { mockFeedChannelConnections, mockFeedWebhookConnections } from './data/feedConnection';
 import mockUserFeeds from './data/userFeeds';
 import mockFeedSummaries from './data/feeds';
+import { mockSendTestArticleResult } from './data/testArticleResult';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
@@ -287,6 +289,14 @@ const handlers = [
     ctx.delay(500),
     ctx.json<CreateDiscordChannelConnectionOutput>({
       result: mockFeedChannelConnections[0],
+    }),
+  )),
+
+  rest.post('/api/v1/user-feeds/:feedId/'
+    + 'connections/discord-channels/:id/test', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<CreateDiscordChannelConnectionTestArticleOutput>({
+      result: mockSendTestArticleResult,
     }),
   )),
 

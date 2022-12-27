@@ -1,4 +1,4 @@
-import { EditIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -11,6 +11,11 @@ import {
   Grid,
   Heading,
   HStack,
+  Menu,
+  MenuButton,
+  MenuDivider,
+  MenuItem,
+  MenuList,
   Stack,
   Tab,
   TabList,
@@ -31,6 +36,7 @@ import {
   LogicalFilterExpression,
   useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
+  SendConnectionTestArticleButton,
 } from '../features/feedConnections';
 import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
@@ -175,28 +181,48 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       {connection?.name}
                     </Heading>
                     <HStack>
-                      <EditConnectionChannelDialog
-                        defaultValues={{
-                          channelId: connection?.details.channel.id as string,
-                          name: connection?.name as string,
-                          serverId: serverId as string,
-                        }}
-                        onUpdate={onChannelUpdated}
-                        trigger={(
-                          <Button
-                            aria-label="Edit"
-                            variant="outline"
-                            leftIcon={<EditIcon />}
-                          >
-                            {t('common.buttons.configure')}
-                          </Button>
-                        )}
-                      />
-                      <DeleteConnectionButton
+                      <SendConnectionTestArticleButton
                         connectionId={connectionId as string}
                         feedId={feedId as string}
                         type={FeedConnectionType.DiscordChannel}
                       />
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          variant="outline"
+                          rightIcon={<ChevronDownIcon />}
+                        >
+                          {t('common.buttons.actions')}
+                        </MenuButton>
+                        <MenuList>
+                          <EditConnectionChannelDialog
+                            defaultValues={{
+                              channelId: connection?.details.channel.id as string,
+                              name: connection?.name as string,
+                              serverId: serverId as string,
+                            }}
+                            onUpdate={onChannelUpdated}
+                            trigger={(
+                              <MenuItem
+                                aria-label="Edit"
+                              >
+                                {t('common.buttons.configure')}
+                              </MenuItem>
+                        )}
+                          />
+                          <MenuDivider />
+                          <DeleteConnectionButton
+                            connectionId={connectionId as string}
+                            feedId={feedId as string}
+                            type={FeedConnectionType.DiscordChannel}
+                            trigger={(
+                              <MenuItem>
+                                {t('common.buttons.delete')}
+                              </MenuItem>
+                          )}
+                          />
+                        </MenuList>
+                      </Menu>
                     </HStack>
                   </HStack>
                 </Box>

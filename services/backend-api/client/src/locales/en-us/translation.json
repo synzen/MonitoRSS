@@ -6,7 +6,8 @@
       "save": "Save",
       "configure": "Configure",
       "delete": "Delete",
-      "yes": "Yes"
+      "yes": "Yes",
+      "actions": "Actions"
     },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
@@ -356,6 +357,12 @@
         "deleteButton": {
           "confirmTitle": "Confirmation",
           "confirmDescription": "Are you sure you want to delete this connection? This cannot be undone."
+        },
+        "sendTestArticleButton": {
+          "text": "Send Test Article",
+          "description": "Send a random article to test the connection with your currently saved settings. Filters are not applied.",
+          "successAlertDescription": "Successfully sent test article",
+          "failureAlertDescription": "Failed to send test article"
         }
       }
     },

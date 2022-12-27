@@ -2,6 +2,7 @@ import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Button,
 } from '@chakra-ui/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../../../../components';
@@ -14,9 +15,12 @@ interface Props {
   feedId: string;
   connectionId: string
   type: FeedConnectionType
+  trigger?: React.ReactElement
 }
 
-export const DeleteConnectionButton = ({ feedId, connectionId, type }: Props) => {
+export const DeleteConnectionButton = ({
+  feedId, connectionId, type, trigger,
+}: Props) => {
   const { t } = useTranslation();
   const { mutateAsync, status } = useDeleteConnection(type);
   const navigate = useNavigate();
@@ -39,13 +43,17 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type }: Props) =>
       title={t('features.feedConnections.components.deleteButton.confirmTitle')}
       description={t('features.feedConnections.components.deleteButton.confirmDescription')}
       trigger={(
-        <Button
-          variant="outline"
-          disabled={status === 'loading'}
-          leftIcon={<DeleteIcon />}
-        >
-          {t('common.buttons.delete')}
-        </Button>
+        trigger ? React.cloneElement(trigger, {
+          disabled: status === 'loading',
+        }) : (
+          <Button
+            variant="outline"
+            disabled={status === 'loading'}
+            leftIcon={<DeleteIcon />}
+          >
+            {t('common.buttons.delete')}
+          </Button>
+        )
       )}
       okText={t('pages.userFeed.deleteConfirmOk')}
       okLoading={status === 'loading'}
