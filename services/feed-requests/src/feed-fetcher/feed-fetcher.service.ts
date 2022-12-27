@@ -134,6 +134,8 @@ export class FeedFetcherService {
       request.errorMessage = (err as Error).message;
 
       return this.requestRepo.persistAndFlush(request);
+    } finally {
+      await this.deleteStaleRequests(url);
     }
   }
 
@@ -273,6 +275,39 @@ export class FeedFetcherService {
     );
 
     return dayjs().isAfter(cutoffDate);
+  }
+
+  async deleteStaleRequests(url: string) {
+    const cutoff = dayjs().subtract(14, 'days').toDate();
+
+    try {
+      const oldResponseIds = this.requestRepo
+        .createQueryBuilder('a')
+        .select('response')
+        .where({ url, createdAt: { $lt: cutoff } })
+        .getKnexQuery();
+
+      await this.responseRepo
+        .createQueryBuilder()
+        .delete()
+        .where({
+          id: {
+            $in: oldResponseIds,
+          },
+        });
+
+      await this.requestRepo.nativeDelete({
+        url,
+        createdAt: {
+          $lt: cutoff,
+        },
+      });
+    } catch (err) {
+      logger.error(`Failed to delete stale requests for url ${url}`, {
+        stack: (err as Error).stack,
+        url,
+      });
+    }
   }
 
   @UseRequestContext()

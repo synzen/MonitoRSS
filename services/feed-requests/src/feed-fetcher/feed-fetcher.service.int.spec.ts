@@ -20,6 +20,7 @@ describe('FeedFetcherService (Integration)', () => {
   let service: FeedFetcherService;
   const url = 'https://rss-feed.com/feed.xml';
   let requestRepo: EntityRepository<Request>;
+  let responseRepo: EntityRepository<Response>;
   const failedDurationThresholdHours = 36;
 
   beforeAll(async () => {
@@ -49,6 +50,9 @@ describe('FeedFetcherService (Integration)', () => {
     service.failedDurationThresholdHours = failedDurationThresholdHours;
     requestRepo = app.get<EntityRepository<Request>>(
       getRepositoryToken(Request),
+    );
+    responseRepo = app.get<EntityRepository<Response>>(
+      getRepositoryToken(Response),
     );
   });
 
@@ -311,6 +315,39 @@ describe('FeedFetcherService (Integration)', () => {
       const isPastFailureThreshold = await service.isPastFailureThreshold(url);
 
       expect(isPastFailureThreshold).toEqual(true);
+    });
+  });
+
+  describe('deleteStaleRequests', () => {
+    it('deletes requests and their responses that are older than the threshold', async () => {
+      const response = new Response();
+      response.statusCode = 200;
+      response.text = 'text';
+      response.isCloudflare = false;
+
+      const req1 = new Request();
+      req1.status = RequestStatus.OK;
+      req1.url = url;
+      req1.createdAt = dayjs().subtract(15, 'day').toDate();
+      req1.response = response;
+
+      const req2 = new Request();
+      req2.status = RequestStatus.OK;
+      req2.url = url;
+      req2.createdAt = dayjs().subtract(13, 'day').toDate();
+
+      await requestRepo.persistAndFlush([req1, req2]);
+
+      await service.deleteStaleRequests(url);
+
+      const requests = await requestRepo.findAll();
+
+      expect(requests).toHaveLength(1);
+      expect(requests[0].id).toEqual(req2.id);
+
+      const responses = await responseRepo.findAll();
+
+      expect(responses).toHaveLength(0);
     });
   });
 });
