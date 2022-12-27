@@ -355,6 +355,13 @@
           "relationalOpContains": "contains",
           "relationalOpMatches": "matches"
         },
+        "filtersSection": {
+          "loadingArticle": "Loading article...",
+          "headingSamplePlaceholders": "Sample Placeholders",
+          "headingSettings": "Settings",
+          "randomButton": "Random",
+          "noArticles": "The feed currently does not have any articles to preview."
+        },
         "deleteButton": {
           "confirmTitle": "Confirmation",
           "confirmDescription": "Are you sure you want to delete this connection? This cannot be undone."
@@ -371,6 +378,10 @@
           "alertDescriptionTooManyRequests": "Too many requests have been sent in a short period of time. Try again later.",
           "alertDescriptionNoArticles": "There are no articles in the feed to deliver",
           "apiResponse": "API Response"
+        },
+        "articlePlaceholderTable": {
+          "columnHeaderPlaceholder": "Placeholder",
+          "columnHeaderValue": "Value"
         }
       }
     },

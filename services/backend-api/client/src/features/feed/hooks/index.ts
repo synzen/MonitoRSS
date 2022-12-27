@@ -16,3 +16,4 @@ export * from './useRefreshUserFeed';
 export * from './useCreateUserFeed';
 export * from './useDeleteUserFeed';
 export * from './useUpdateUserFeed';
+export * from './useUserFeedArticles';

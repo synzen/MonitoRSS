@@ -11,6 +11,7 @@ import {
   GetFeedOutput,
   GetFeedsOutput,
   GetFeedSubscribersOutput,
+  GetUserFeedArticlesOutput,
   GetUserFeedOutput,
   GetUserFeedsOutput,
   UpdateFeedSubscriberOutput,
@@ -47,6 +48,7 @@ import { mockFeedChannelConnections, mockFeedWebhookConnections } from './data/f
 import mockUserFeeds from './data/userFeeds';
 import mockFeedSummaries from './data/feeds';
 import { mockSendTestArticleResult } from './data/testArticleResult';
+import { mockUserFeedArticles } from './data/userFeedArticles';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
@@ -225,6 +227,16 @@ const handlers = [
       }),
     );
   }),
+
+  rest.get('/api/v1/user-feeds/:feedId/articles', (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<GetUserFeedArticlesOutput>({
+      result: {
+        articles: mockUserFeedArticles,
+        requestStatus: 'success',
+      },
+    }),
+  )),
 
   rest.get('/api/v1/user-feeds/:feedId/daily-limit', (req, res, ctx) => res(
     ctx.delay(500),

@@ -6,7 +6,6 @@ import Select, {
   GroupBase, StylesConfig, components,
 } from 'react-select';
 import { REACT_SELECT_STYLES } from '@/constants/reactSelectStyles';
-// import Option from 'react-select/dist/declarations/src/components/Option';
 
 const { Option } = components;
 

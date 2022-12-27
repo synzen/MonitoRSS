@@ -31,12 +31,12 @@ import RouteParams from '@/types/RouteParams';
 import {
   EditConnectionWebhookDialog,
   FilterExpression,
-  FiltersForm,
   LogicalFilterExpression,
   useDiscordWebhookConnection,
   useUpdateDiscordWebhookConnection,
   DeleteConnectionButton,
   SendConnectionTestArticleButton,
+  FiltersTabSection,
 } from '../features/feedConnections';
 import { useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
@@ -135,7 +135,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       loading={feedStatus === 'loading'
       || connectionStatus === 'loading'}
     >
-      <Tabs isFitted>
+      <Tabs isLazy isFitted>
         <Stack
           width="100%"
           minWidth="100%"
@@ -294,9 +294,10 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
             </Stack>
           </TabPanel>
           <TabPanel maxWidth="1200px" width="100%">
-            <FiltersForm
-              onSave={onFiltersUpdated}
-              expression={connection?.filters?.expression as LogicalFilterExpression}
+            <FiltersTabSection
+              onFiltersUpdated={onFiltersUpdated}
+              feedId={feedId}
+              filters={connection?.filters?.expression as LogicalFilterExpression}
             />
           </TabPanel>
         </TabPanels>

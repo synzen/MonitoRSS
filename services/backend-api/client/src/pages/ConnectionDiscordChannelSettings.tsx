@@ -32,11 +32,11 @@ import {
   DeleteConnectionButton,
   EditConnectionChannelDialog,
   FilterExpression,
-  FiltersForm,
   LogicalFilterExpression,
   useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
   SendConnectionTestArticleButton,
+  FiltersTabSection,
 } from '../features/feedConnections';
 import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
@@ -65,6 +65,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const {
     mutateAsync,
   } = useUpdateDiscordChannelConnection();
+
   const serverId = connection?.details.channel.guildId;
 
   const onFiltersUpdated = async (filters: FilterExpression | null) => {
@@ -132,7 +133,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           || connectionStatus === 'loading'
       }
     >
-      <Tabs isFitted>
+      <Tabs isLazy isFitted>
         <Stack
           width="100%"
           minWidth="100%"
@@ -280,9 +281,10 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             </Stack>
           </TabPanel>
           <TabPanel maxWidth="1200px" width="100%">
-            <FiltersForm
-              onSave={onFiltersUpdated}
-              expression={connection?.filters?.expression as LogicalFilterExpression}
+            <FiltersTabSection
+              onFiltersUpdated={onFiltersUpdated}
+              feedId={feedId}
+              filters={connection?.filters?.expression as LogicalFilterExpression}
             />
           </TabPanel>
         </TabPanels>
