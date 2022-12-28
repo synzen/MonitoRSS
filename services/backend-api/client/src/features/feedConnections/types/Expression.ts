@@ -6,8 +6,8 @@ import {
 } from './ExpressionOperator';
 
 export enum FilterExpressionType {
-  Logical = 'logical',
-  Relational = 'relational',
+  Logical = 'LOGICAL',
+  Relational = 'RELATIONAL',
 }
 
 export interface RelationalFilterExpression {
