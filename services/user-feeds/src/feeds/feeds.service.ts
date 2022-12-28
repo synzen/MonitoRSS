@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 
 interface InitializeFeedInputDto {
@@ -11,7 +12,8 @@ interface InitializeFeedInputDto {
 @Injectable()
 export class FeedsService {
   constructor(
-    private readonly articleRateLimitsService: ArticleRateLimitService
+    private readonly articleRateLimitsService: ArticleRateLimitService,
+    private readonly articleFiltersService: ArticleFiltersService
   ) {}
 
   getRateLimitInformation(feedId: string) {
@@ -27,5 +29,9 @@ export class FeedsService {
       timeWindowSec,
       limit,
     });
+  }
+
+  getFilterExpressionErrors(expression: Record<string, unknown>) {
+    return this.articleFiltersService.getFilterExpressionErrors(expression);
   }
 }

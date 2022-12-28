@@ -6,6 +6,8 @@ import {
   ValidationPipe,
   UseGuards,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
@@ -21,6 +23,8 @@ import { ApiGuard } from "../shared/guards";
 import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
 import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
 import {
+  CreateFeedFilterValidationInputDto,
+  CreateFeedFilterValidationOutputDto,
   CreateFeedInputDto,
   CreateTestArticleOutputDto,
   GetUserFeedArticlesInputDto,
@@ -55,6 +59,21 @@ export class FeedsController {
       articleRateLimits: await this.feedsService.getRateLimitInformation(
         feed.id
       ),
+    };
+  }
+
+  @Post("filter-validation")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ApiGuard)
+  createFeedFilterValidation(
+    @Body(ValidationPipe) { filters }: CreateFeedFilterValidationInputDto
+  ): CreateFeedFilterValidationOutputDto {
+    const errors = this.feedsService.getFilterExpressionErrors(filters);
+
+    return {
+      result: {
+        errors,
+      },
     };
   }
 

@@ -22,7 +22,7 @@ export class ArticleFiltersService {
     expression: LogicalExpression,
     references: Record<string, unknown>
   ) {
-    const errors = this.validateExpression(expression as never);
+    const errors = this.getFilterExpressionErrors(expression as never);
 
     if (errors.length > 0) {
       throw new InvalidExpressionException(
@@ -33,7 +33,7 @@ export class ArticleFiltersService {
     return this.evaluateExpression(expression, references);
   }
 
-  validateExpression(expression: Record<string, unknown>): string[] {
+  getFilterExpressionErrors(expression: Record<string, unknown>): string[] {
     return validateLogicalExpression(expression);
   }
 

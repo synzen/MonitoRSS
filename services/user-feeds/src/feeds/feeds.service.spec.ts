@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { FeedsService } from "./feeds.service";
 
@@ -8,6 +9,9 @@ describe("FeedsService", () => {
     getFeedLimitInformation: jest.fn(),
     addOrUpdateFeedLimit: jest.fn(),
   };
+  const articleFiltersService = {
+    getFilterExpressionErrors: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -16,6 +20,10 @@ describe("FeedsService", () => {
         {
           provide: ArticleRateLimitService,
           useValue: articleRateLimitService,
+        },
+        {
+          provide: ArticleFiltersService,
+          useValue: articleFiltersService,
         },
       ],
     }).compile();
@@ -58,6 +66,16 @@ describe("FeedsService", () => {
         limit: 1,
         timeWindowSec: 86400,
       });
+    });
+  });
+
+  describe("getFilterExpressionErrors", () => {
+    it("returns errors", async () => {
+      const errors = ["error"];
+      articleFiltersService.getFilterExpressionErrors.mockResolvedValue(errors);
+
+      const result = await service.getFilterExpressionErrors({});
+      expect(result).toEqual(errors);
     });
   });
 });

@@ -11,6 +11,7 @@ describe("FeedController", () => {
   const feedsService = {
     initializeFeed: jest.fn(),
     getRateLimitInformation: jest.fn(),
+    getFilterExpressionErrors: jest.fn(),
   };
   const discordMediumService = {
     deliverTestArticle: jest.fn(),
@@ -62,6 +63,28 @@ describe("FeedController", () => {
         articleDailyLimit,
       });
       expect(result).toEqual({ articleRateLimits: rateLimitInfo });
+    });
+  });
+
+  describe("createFeedFilterValidation", () => {
+    it("returns the filter validation result", () => {
+      const filters = {
+        foo: "bar",
+      };
+      const errors = ["error"];
+      jest
+        .spyOn(feedsService, "getFilterExpressionErrors")
+        .mockReturnValue(errors);
+
+      const result = controller.createFeedFilterValidation({
+        filters,
+      });
+
+      expect(result).toEqual({
+        result: {
+          errors,
+        },
+      });
     });
   });
 

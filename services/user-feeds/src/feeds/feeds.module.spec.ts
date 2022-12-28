@@ -5,7 +5,6 @@ import {
 import {
   clearDatabase,
   DiscordMediumTestPayloadDetails,
-  FeedResponseRequestStatus,
   GetFeedArticlesRequestStatus,
   setupIntegrationTests,
   teardownIntegrationTests,
@@ -98,6 +97,41 @@ describe("FeedsModule", () => {
         ]),
       });
       expect(statusCode).toBe(HttpStatus.CREATED);
+    });
+  });
+
+  describe("POST /user-feeds/filter-validation", () => {
+    const validPayload = {
+      filters: {
+        type: "article",
+        value: "test",
+      },
+    };
+
+    it("returns 401 if unauthorized", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `/user-feeds/filter-validation`,
+        payload: validPayload,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 200", async () => {
+      const { statusCode, body } = await app.inject({
+        method: "POST",
+        url: `/user-feeds/filter-validation`,
+        headers: standardHeaders,
+        payload: validPayload,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          errors: expect.any(Array),
+        },
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
     });
   });
 
