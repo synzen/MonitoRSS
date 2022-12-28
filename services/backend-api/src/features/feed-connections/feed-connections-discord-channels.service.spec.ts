@@ -1,6 +1,7 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { InvalidFilterExpressionException } from "../../common/exceptions";
 import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
@@ -26,6 +27,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   };
   const feedHandlerService = {
     sendTestArticle: jest.fn(),
+    validateFilters: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -257,6 +259,30 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           updateInput
         )
       ).rejects.toThrow(DiscordChannelPermissionsException);
+    });
+
+    it("throws on invalid filters", async () => {
+      feedHandlerService.validateFilters.mockResolvedValue({
+        errors: ["1", "2"],
+      });
+
+      await expect(
+        service.updateDiscordChannelConnection(
+          createdFeed._id.toHexString(),
+          connectionIdToUse.toHexString(),
+          {
+            accessToken: updateInput.accessToken,
+            updates: {
+              filters: {
+                expression: {
+                  foo: "bar",
+                  baz: "qux",
+                },
+              },
+            },
+          }
+        )
+      ).rejects.toThrow(InvalidFilterExpressionException);
     });
   });
 

@@ -4,6 +4,7 @@ import {
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
+  InvalidFilterExpressionException,
 } from "../../common/exceptions";
 import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
@@ -31,6 +32,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
   };
   const feedHandlerService = {
     sendTestArticle: jest.fn(),
+    validateFilters: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -379,6 +381,25 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
           accessToken,
         })
       ).rejects.toThrowError(DiscordWebhookMissingUserPermException);
+    });
+
+    it("throws an error on invalid filters", async () => {
+      feedHandlerService.validateFilters.mockResolvedValue({
+        errors: ["1", "2"],
+      });
+
+      await expect(
+        service.updateDiscordWebhookConnection({
+          feedId: createdFeed._id.toHexString(),
+          connectionId: connectionIdToUse,
+          updates: {
+            filters: {
+              expression: {},
+            },
+          },
+          accessToken,
+        })
+      ).rejects.toThrowError(InvalidFilterExpressionException);
     });
   });
 

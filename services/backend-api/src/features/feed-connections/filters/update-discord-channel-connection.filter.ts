@@ -1,5 +1,6 @@
 import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
+import { InvalidFilterExpressionException } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import { UserMissingManageGuildException } from "../../feeds/exceptions";
@@ -26,6 +27,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [UserMissingManageGuildException.name]: {
       status: HttpStatus.FORBIDDEN,
       code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+    },
+    [InvalidFilterExpressionException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_INVALID_FILTER_EXPRESSION,
     },
   };
 

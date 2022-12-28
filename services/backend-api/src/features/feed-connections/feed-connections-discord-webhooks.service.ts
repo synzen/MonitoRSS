@@ -5,6 +5,7 @@ import {
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
+  InvalidFilterExpressionException,
 } from "../../common/exceptions";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
@@ -150,6 +151,18 @@ export class FeedConnectionsDiscordWebhooksService {
     if (webhookUpdates) {
       setRecordDetails["connections.discordWebhooks.$.details.webhook"] =
         webhookUpdates;
+    }
+
+    if (filters) {
+      const { errors } = await this.feedHandlerService.validateFilters({
+        expression: filters.expression,
+      });
+
+      if (errors.length) {
+        throw new InvalidFilterExpressionException(
+          errors.map((message) => new InvalidFilterExpressionException(message))
+        );
+      }
     }
 
     const findQuery = {

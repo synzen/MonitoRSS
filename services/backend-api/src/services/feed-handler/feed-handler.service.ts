@@ -187,7 +187,7 @@ export class FeedHandlerService {
   }
 
   async validateFilters({
-    filters,
+    expression,
   }: CreateFilterValidationInput): Promise<CreateFilterValidationOutput> {
     const res = await fetch(`${this.host}/v1/user-feeds/filter-validation`, {
       method: "POST",
@@ -195,7 +195,9 @@ export class FeedHandlerService {
         "Content-Type": "application/json",
         "api-key": this.apiKey,
       },
-      body: JSON.stringify(filters),
+      body: JSON.stringify({
+        expression,
+      }),
     });
 
     await this.validateResponseStatus(res);

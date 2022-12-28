@@ -253,7 +253,7 @@ describe("FeedHandlerService", () => {
 
   describe("validateFilters", () => {
     const validPayload: CreateFilterValidationInput = {
-      filters: {
+      expression: {
         foo: "bar",
       },
     };

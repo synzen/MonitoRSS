@@ -1,3 +1,3 @@
 export interface CreateFilterValidationInput {
-  filters: Record<string, unknown>;
+  expression: Record<string, unknown>;
 }

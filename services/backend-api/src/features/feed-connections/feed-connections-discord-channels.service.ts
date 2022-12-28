@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
+import { InvalidFilterExpressionException } from "../../common/exceptions";
 import {
   castDiscordContentForMedium,
   castDiscordEmbedsForMedium,
@@ -125,6 +126,18 @@ export class FeedConnectionsDiscordChannelsService {
         id: updates.details.channel.id,
         guildId: channel.guild_id,
       };
+    }
+
+    if (updates.filters) {
+      const { errors } = await this.feedHandlerService.validateFilters({
+        expression: updates.filters.expression,
+      });
+
+      if (errors.length) {
+        throw new InvalidFilterExpressionException(
+          errors.map((message) => new InvalidFilterExpressionException(message))
+        );
+      }
     }
 
     const findQuery = {
