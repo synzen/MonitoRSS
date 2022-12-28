@@ -19,7 +19,9 @@ export class Request {
   })
   fetchOptions?: RequestFetchOptions | null;
 
-  @Property()
+  @Property({
+    type: 'varchar(2048)',
+  })
   url!: string;
 
   @Property({
@@ -29,6 +31,7 @@ export class Request {
 
   @Property({
     nullable: true,
+    type: 'text',
   })
   errorMessage?: string;
 
