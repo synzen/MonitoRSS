@@ -12,6 +12,7 @@ import {
   RelationalExpressionRight,
 } from "./types";
 import vm from "node:vm";
+import { validateLogicalExpression } from "./utils";
 
 const REGEX_TIMEOUT_MS = 5000;
 
@@ -21,7 +22,19 @@ export class ArticleFiltersService {
     expression: LogicalExpression,
     references: Record<string, unknown>
   ) {
+    const errors = this.validateExpression(expression as never);
+
+    if (errors.length > 0) {
+      throw new InvalidExpressionException(
+        `Invalid filter expression: ${errors.join(",")}`
+      );
+    }
+
     return this.evaluateExpression(expression, references);
+  }
+
+  validateExpression(expression: Record<string, unknown>): string[] {
+    return validateLogicalExpression(expression);
   }
 
   async evaluateExpression(

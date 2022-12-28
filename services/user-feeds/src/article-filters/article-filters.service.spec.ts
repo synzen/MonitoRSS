@@ -25,6 +25,18 @@ describe("ArticleFiltersService", () => {
     expect(service).toBeDefined();
   });
 
+  describe("getArticleFilterResults", () => {
+    it("throws if expression is invalid", async () => {
+      const expression = {
+        type: "invalid",
+      } as never;
+
+      await expect(
+        service.getArticleFilterResults(expression, {} as never)
+      ).rejects.toThrow(InvalidExpressionException);
+    });
+  });
+
   describe("evaluateExpression", () => {
     it("throws if expression type is invalid", async () => {
       const expression = {
