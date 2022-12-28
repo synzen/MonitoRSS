@@ -5,10 +5,6 @@ export interface ApiError {
    * High-level human-readable error message targeted at developers.
    */
   message: string;
-  /**
-   * Unique error code, language specific
-   */
-  code: ApiErrorCode;
 }
 
 export interface ApiErrorResponse {

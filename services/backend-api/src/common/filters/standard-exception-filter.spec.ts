@@ -76,8 +76,8 @@ describe("StandardExceptionFilter", () => {
 
     it("returns suberrors for a standard exception if they exist", () => {
       const exception = new MockException([
-        new MockException(),
-        new MockException(),
+        new MockException("message1"),
+        new MockException("message2"),
       ]);
 
       filter.catch(exception, host);
@@ -89,12 +89,10 @@ describe("StandardExceptionFilter", () => {
         timestamp: expect.any(Number),
         errors: [
           {
-            code: ApiErrorCode.FEED_INVALID,
-            message: API_ERROR_MESSAGES.FEED_INVALID,
+            message: "message1",
           },
           {
-            code: ApiErrorCode.FEED_INVALID,
-            message: API_ERROR_MESSAGES.FEED_INVALID,
+            message: "message2",
           },
         ],
         isStandardized: true,

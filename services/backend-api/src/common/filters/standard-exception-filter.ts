@@ -31,11 +31,8 @@ export abstract class StandardBaseExceptionFilter implements ExceptionFilter {
     const errorDetails =
       exception instanceof StandardException
         ? exception.subErrors.map((err) => {
-            const subErrDetails = this.getExceptionDetails(err);
-
             return {
-              code: subErrDetails.code,
-              message: subErrDetails.message,
+              message: err.message,
             };
           })
         : [];
