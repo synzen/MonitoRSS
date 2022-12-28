@@ -1,15 +1,11 @@
 import { DynamicModule, Module } from "@nestjs/common";
 import { ArticleRateLimitModule } from "../article-rate-limit/article-rate-limit.module";
 import { ArticlesModule } from "../articles/articles.module";
-import { config } from "../config";
 import { DeliveryRecordModule } from "../delivery-record/delivery-record.module";
 import { DeliveryModule } from "../delivery/delivery.module";
 import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { FeedEventHandlerService } from "./feed-event-handler.service";
-import {
-  RabbitMQModule,
-  MessageHandlerErrorBehavior,
-} from "@golevelup/nestjs-rabbitmq";
+import { MessageBrokerModule } from "../message-broker/message-broker.module";
 
 @Module({
   controllers: [],
@@ -29,19 +25,10 @@ export class FeedEventHandlerModule {
   }
 
   static forFeedListenerService(): DynamicModule {
-    const configVals = config();
-
     return {
       module: FeedEventHandlerModule,
       providers: [FeedEventHandlerService],
-      imports: [
-        DeliveryModule,
-        RabbitMQModule.forRoot(RabbitMQModule, {
-          uri: configVals.USER_FEEDS_RABBITMQ_BROKER_URL,
-          defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
-        }),
-      ],
-      exports: [RabbitMQModule],
+      imports: [DeliveryModule, MessageBrokerModule.forRoot()],
     };
   }
 }
