@@ -1,4 +1,3 @@
-import { SQSClient } from "@aws-sdk/client-sqs";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
@@ -7,7 +6,6 @@ import { SupportersService } from "../supporters/supporters.service";
 
 @Injectable()
 export class ScheduleEmitterService {
-  sqsClient: SQSClient;
   timers = new Map<number, NodeJS.Timer>();
 
   constructor(

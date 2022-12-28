@@ -1,5 +1,4 @@
 import { Module, DynamicModule } from "@nestjs/common";
-import { SqsPollingService } from "../../common/services/sqs-polling.service";
 import config from "../../config/config";
 import { FeedsModule } from "../feeds/feeds.module";
 import { SupportersModule } from "../supporters/supporters.module";
@@ -10,7 +9,7 @@ import {
 } from "@golevelup/nestjs-rabbitmq";
 
 @Module({
-  providers: [ScheduleHandlerService, SqsPollingService],
+  providers: [ScheduleHandlerService],
   imports: [SupportersModule, FeedsModule],
 })
 export class ScheduleHandlerModule {

@@ -15,7 +15,6 @@ import { FeedsModule } from "./features/feeds/feeds.module";
 import { SupportersModule } from "./features/supporters/supporters.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emitter.module";
-import { FailedUrlHandlerModule } from "./features/failed-url-handler/failed-url-handler.module";
 import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connections/feed-connections-discord-channels.module";
 import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
 import { UserFeedsModule } from "./features/user-feeds/user-feeds.module";
@@ -30,7 +29,6 @@ import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-hand
     DiscordWebhooksModule,
     SupportersModule,
     ScheduleEmitterModule,
-    FailedUrlHandlerModule,
     FeedConnectionsDiscordChannelsModule,
     FeedConnectionsDiscordWebhooksModule,
     UserFeedsModule,

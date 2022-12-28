@@ -24,13 +24,10 @@
     "test:e2e": "jest --config ./src/test/jest-e2e.json"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.75.0",
     "@fastify/cookie": "8.3.0",
     "@fastify/secure-session": "5.2.0",
     "@fastify/static": "^6.5.0",
     "@golevelup/nestjs-rabbitmq": "^3.4.0",
-    "@grpc/grpc-js": "^1.6.7",
-    "@grpc/proto-loader": "^0.6.9",
     "@monitorss/logger": "^1.1.1",
     "@nestjs/common": "^9.1.2",
     "@nestjs/config": "^2.2.0",
@@ -76,7 +73,6 @@
     "@types/supertest": "2.0.11",
     "@typescript-eslint/eslint-plugin": "^5.42.0",
     "@typescript-eslint/parser": "^5.42.0",
-    "aws-sdk-client-mock": "^0.6.2",
     "cross-env": "7.0.3",
     "eslint": "^8.26.0",
     "eslint-config-prettier": "^8.5.0",
