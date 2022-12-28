@@ -9,7 +9,7 @@ import {
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
   ArticleDeliveryStatus,
-  BrokerQueue,
+  MessageBrokerQueue,
   FeedV2Event,
   feedV2EventSchema,
 } from "../shared";
@@ -21,6 +21,8 @@ import {
   FeedRequestInternalException,
   FeedRequestParseException,
 } from "../feed-fetcher/exceptions";
+import { FeedDeletedEvent } from "./types";
+import { feedDeletedEventSchema } from "./schemas";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -36,7 +38,7 @@ export class FeedEventHandlerService {
 
   @RabbitSubscribe({
     exchange: "",
-    queue: BrokerQueue.FeedDeliverArticles,
+    queue: MessageBrokerQueue.FeedDeliverArticles,
   })
   async handleV2Event(event: FeedV2Event): Promise<void> {
     try {
@@ -56,7 +58,7 @@ export class FeedEventHandlerService {
   }
 
   @RabbitSubscribe({
-    queue: BrokerQueue.FeedArticleDeliveryResult,
+    queue: MessageBrokerQueue.FeedArticleDeliveryResult,
     createQueueIfNotExists: true,
     queueOptions: {
       durable: true,
@@ -69,6 +71,28 @@ export class FeedEventHandlerService {
     } catch (err) {
       logger.error(`Failed to handle article delivery result`, {
         err: (err as Error).stack,
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    queue: MessageBrokerQueue.FeedDeleted,
+    createQueueIfNotExists: true,
+    queueOptions: {
+      durable: true,
+    },
+    allowNonJsonMessages: true,
+  })
+  async onFeedDeleted(event: FeedDeletedEvent): Promise<void> {
+    try {
+      logger.debug(`Received feed deleted event`, { event });
+      const data = await feedDeletedEventSchema.validate(event);
+
+      await this.handleFeedDeletedEvent(data);
+    } catch (err) {
+      logger.error(`Failed to handle feed deleted event`, {
+        err: (err as Error).stack,
+        event,
       });
     }
   }
@@ -98,16 +122,20 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish("", BrokerQueue.FeedRejectedArticleDisable, {
-        data: {
-          medium: {
-            id: record.medium_id,
+      this.amqpConnection.publish(
+        "",
+        MessageBrokerQueue.FeedRejectedArticleDisable,
+        {
+          data: {
+            medium: {
+              id: record.medium_id,
+            },
+            feed: {
+              id: record.feed_id,
+            },
           },
-          feed: {
-            id: record.feed_id,
-          },
-        },
-      });
+        }
+      );
     } else if (result.status >= 500) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
@@ -217,5 +245,18 @@ export class FeedEventHandlerService {
         }
       );
     }
+  }
+
+  @UseRequestContext()
+  async handleFeedDeletedEvent(data: FeedDeletedEvent) {
+    const {
+      data: {
+        feed: { id },
+      },
+    } = data;
+
+    await this.articlesService.deleteInfoForFeed(id);
+
+    logger.debug(`Deleted feed info for feed ${id}`);
   }
 }

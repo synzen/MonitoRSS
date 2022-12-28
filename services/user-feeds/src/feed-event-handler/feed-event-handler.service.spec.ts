@@ -7,7 +7,7 @@ import {
   ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
-  BrokerQueue,
+  MessageBrokerQueue,
   FeedV2Event,
   MediumKey,
 } from "../shared";
@@ -25,10 +25,13 @@ import {
   FeedRequestParseException,
 } from "../feed-fetcher/exceptions";
 
+jest.mock("../shared/utils/logger");
+
 describe("FeedEventHandlerService", () => {
   let service: FeedEventHandlerService;
   const articlesService = {
     getArticlesToDeliverFromXml: jest.fn(),
+    deleteInfoForFeed: jest.fn(),
   };
   const feedFetcherService = {
     fetch: jest.fn(),
@@ -315,7 +318,7 @@ describe("FeedEventHandlerService", () => {
 
         expect(amqpConnection.publish).toHaveBeenCalledWith(
           "",
-          BrokerQueue.FeedRejectedArticleDisable,
+          MessageBrokerQueue.FeedRejectedArticleDisable,
           {
             data: {
               medium: {
@@ -402,7 +405,7 @@ describe("FeedEventHandlerService", () => {
 
       expect(amqpConnection.publish).toHaveBeenCalledWith(
         "",
-        BrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisable,
         {
           data: {
             medium: {
@@ -484,6 +487,30 @@ describe("FeedEventHandlerService", () => {
           status: ArticleDeliveryStatus.Sent,
         }
       );
+    });
+  });
+
+  describe("onFeedDeleted", () => {
+    it("does not delete info if event validation failed", async () => {
+      const event = {
+        invalid: "data",
+      };
+
+      await service.onFeedDeleted(event as never);
+
+      expect(articlesService.deleteInfoForFeed).not.toHaveBeenCalled();
+    });
+
+    it("deletes info for feed on a valid event", async () => {
+      const event = {
+        data: {
+          id: "feed-id",
+        },
+      };
+
+      await service.onFeedDeleted(event as never);
+
+      expect(articlesService.deleteInfoForFeed).toHaveBeenCalledWith("feed-id");
     });
   });
 });

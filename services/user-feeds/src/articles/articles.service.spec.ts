@@ -11,6 +11,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { InvalidFeedException } from "./exceptions";
 import { Article } from "../shared/types";
+import { ArticleParserService } from "../article-parser/article-parser.service";
 
 const feedId = "feed-id";
 
@@ -33,11 +34,20 @@ describe("ArticlesService", () => {
   let service: ArticlesService;
   let articleFieldRepo: EntityRepository<FeedArticleField>;
   let storedCustomComparisonsRepo: EntityRepository<FeedArticleCustomComparison>;
+  const articleParserService = {
+    flatten: jest.fn(),
+  };
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests(
       {
-        providers: [ArticlesService],
+        providers: [
+          ArticlesService,
+          {
+            provide: ArticleParserService,
+            useValue: articleParserService,
+          },
+        ],
       },
       {
         models: [FeedArticleField, FeedArticleCustomComparison],
@@ -451,6 +461,48 @@ describe("ArticlesService", () => {
         "title",
       ]);
       expect(result).toEqual(false);
+    });
+  });
+
+  describe("deleteInfoForFeed", () => {
+    it("deletes article field entities", async () => {
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "title",
+        field_value: "foobar",
+      });
+      await articleFieldRepo.nativeInsert({
+        feed_id: feedId,
+        created_at: new Date(),
+        field_name: "description",
+        field_value: "foobaz",
+      });
+
+      await service.deleteInfoForFeed(feedId);
+
+      const fields = await articleFieldRepo.findAll();
+      expect(fields).toHaveLength(0);
+    });
+
+    it("deletes article custom comparison entities", async () => {
+      await storedCustomComparisonsRepo.nativeInsert({
+        feed_id: feedId,
+        field_name: "title",
+        id: 1,
+        created_at: new Date(),
+      });
+      await storedCustomComparisonsRepo.nativeInsert({
+        feed_id: feedId,
+        field_name: "description",
+        id: 2,
+        created_at: new Date(),
+      });
+
+      await service.deleteInfoForFeed(feedId);
+
+      const fields = await storedCustomComparisonsRepo.findAll();
+      expect(fields).toHaveLength(0);
     });
   });
 });

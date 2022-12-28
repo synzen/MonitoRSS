@@ -190,10 +190,10 @@ export class UserFeedsService {
 
   async deleteFeedById(id: string) {
     await this.userFeedModel.findByIdAndDelete(id);
-    this.amqpConnection.publish<{ data: { id: string } }>(
+    this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
       "",
       MessageBrokerQueue.FeedDeleted,
-      { data: { id } }
+      { data: { feed: { id } } }
     );
   }
 

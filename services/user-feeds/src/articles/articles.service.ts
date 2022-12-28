@@ -395,4 +395,14 @@ export class ArticlesService {
 
     return articlesToSend.filter((article) => !!article) as Article[];
   }
+
+  async deleteInfoForFeed(feedId: string) {
+    await this.articleFieldRepo.nativeDelete({
+      feed_id: feedId,
+    });
+
+    await this.articleCustomComparisonRepo.nativeDelete({
+      feed_id: feedId,
+    });
+  }
 }
