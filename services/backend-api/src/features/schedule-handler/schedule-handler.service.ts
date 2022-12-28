@@ -21,6 +21,7 @@ import {
   castDiscordContentForMedium,
   castDiscordEmbedsForMedium,
 } from "../../common/utils";
+import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 
 interface PublishFeedDeliveryArticlesData {
   data: {
@@ -33,12 +34,6 @@ interface PublishFeedDeliveryArticlesData {
     articleDayLimit: number;
     mediums: Array<DiscordMediumEvent>;
   };
-}
-
-enum BrokerQueue {
-  UrlFailedDisableFeeds = "url.failed.disable-feeds",
-  FeedRejectedArticleDisable = "feed.rejected-article.disable-connection",
-  FeedDeliverArticles = "feed.deliver-articles",
 }
 
 @Injectable()
@@ -60,7 +55,7 @@ export class ScheduleHandlerService {
 
   @RabbitSubscribe({
     exchange: "",
-    queue: BrokerQueue.UrlFailedDisableFeeds,
+    queue: MessageBrokerQueue.UrlFailedDisableFeeds,
   })
   async handleUrlRequestFailureEvent({
     data: { url },
@@ -84,7 +79,7 @@ export class ScheduleHandlerService {
 
   @RabbitSubscribe({
     exchange: "",
-    queue: BrokerQueue.FeedRejectedArticleDisable,
+    queue: MessageBrokerQueue.FeedRejectedArticleDisable,
   })
   async handleRejectedArticleDisableFeed({
     data: {
@@ -106,7 +101,7 @@ export class ScheduleHandlerService {
     if (!foundFeed) {
       logger.warn(
         `No feed with ID ${feedId} was found when attempting to` +
-          ` handle message from ${BrokerQueue.FeedRejectedArticleDisable}`
+          ` handle message from ${MessageBrokerQueue.FeedRejectedArticleDisable}`
       );
 
       return;
@@ -145,7 +140,7 @@ export class ScheduleHandlerService {
   async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
     this.amqpConnection.publish<{ data: { url: string; rateSeconds: number } }>(
       "",
-      "url.fetch",
+      MessageBrokerQueue.UrlFetch,
       { data },
       {
         expiration: data.rateSeconds * 1000,
@@ -203,7 +198,7 @@ export class ScheduleHandlerService {
 
     this.amqpConnection.publish<PublishFeedDeliveryArticlesData>(
       "",
-      BrokerQueue.FeedDeliverArticles,
+      MessageBrokerQueue.FeedDeliverArticles,
       {
         data: {
           articleDayLimit: maxDailyArticles,

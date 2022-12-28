@@ -17,7 +17,6 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emitter.module";
 import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connections/feed-connections-discord-channels.module";
 import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
-import { UserFeedsModule } from "./features/user-feeds/user-feeds.module";
 import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 
 @Module({
@@ -29,9 +28,6 @@ import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-hand
     DiscordWebhooksModule,
     SupportersModule,
     ScheduleEmitterModule,
-    FeedConnectionsDiscordChannelsModule,
-    FeedConnectionsDiscordWebhooksModule,
-    UserFeedsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
     }),
@@ -47,6 +43,8 @@ export class AppModule {
       module: AppModule,
       imports: [
         MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI),
+        FeedConnectionsDiscordWebhooksModule.forRoot(),
+        FeedConnectionsDiscordChannelsModule.forRoot(),
         ConfigModule.forRoot({
           isGlobal: true,
           ignoreEnvFile: true,

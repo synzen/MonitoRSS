@@ -17,6 +17,8 @@ import {
 } from "./types";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 
 interface GetFeedsInput {
   userId: string;
@@ -43,7 +45,8 @@ export class UserFeedsService {
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
-    private readonly feedHandlerService: FeedHandlerService
+    private readonly feedHandlerService: FeedHandlerService,
+    private readonly amqpConnection: AmqpConnection
   ) {}
 
   async addFeed(
@@ -187,6 +190,11 @@ export class UserFeedsService {
 
   async deleteFeedById(id: string) {
     await this.userFeedModel.findByIdAndDelete(id);
+    this.amqpConnection.publish<{ data: { id: string } }>(
+      "",
+      MessageBrokerQueue.FeedDeleted,
+      { data: { id } }
+    );
   }
 
   async retryFailedFeed(feedId: string) {

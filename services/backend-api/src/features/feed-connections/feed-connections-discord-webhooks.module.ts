@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { Module } from "@nestjs/common";
+import { DynamicModule, Module } from "@nestjs/common";
 import { DiscordAuthModule } from "../discord-auth/discord-auth.module";
 import { DiscordWebhooksModule } from "../discord-webhooks/discord-webhooks.module";
 import { FeedsModule } from "../feeds/feeds.module";
@@ -12,11 +12,17 @@ import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.modu
   controllers: [FeedConnectionsDiscordWebhooksController],
   providers: [FeedConnectionsDiscordWebhooksService],
   imports: [
-    UserFeedsModule,
     FeedsModule,
     DiscordWebhooksModule,
     DiscordAuthModule,
     FeedHandlerModule,
   ],
 })
-export class FeedConnectionsDiscordWebhooksModule {}
+export class FeedConnectionsDiscordWebhooksModule {
+  static forRoot(): DynamicModule {
+    return {
+      module: FeedConnectionsDiscordWebhooksModule,
+      imports: [UserFeedsModule.forRoot()],
+    };
+  }
+}

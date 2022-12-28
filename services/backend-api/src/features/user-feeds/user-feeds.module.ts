@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { DynamicModule, Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { DiscordAuthModule } from "../discord-auth/discord-auth.module";
 import { FeedFetcherModule } from "../../services/feed-fetcher/feed-fetcher.module";
@@ -10,6 +10,7 @@ import { UserFeedsService } from "./user-feeds.service";
 import { FeedsModule } from "../feeds/feeds.module";
 import { UserFeedsController } from "./user-feeds.controller";
 import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
+import { MessageBrokerModule } from "../message-broker/message-broker.module";
 
 @Module({
   controllers: [UserFeedsController],
@@ -27,4 +28,11 @@ import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.modu
   ],
   exports: [UserFeedsService, MongooseModule.forFeature([UserFeedFeature])],
 })
-export class UserFeedsModule {}
+export class UserFeedsModule {
+  static forRoot(): DynamicModule {
+    return {
+      module: UserFeedsModule,
+      imports: [MessageBrokerModule.forRoot()],
+    };
+  }
+}
