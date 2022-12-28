@@ -9,6 +9,9 @@ import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
 import { TestDeliveryStatus } from "./constants";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import {
+  CreateFilterValidationInput,
+  CreateFilterValidationOutput,
+  CreateFilterValidationResponse,
   GetArticlesInput,
   GetArticlesOutput,
   GetArticlesResponse,
@@ -243,6 +246,53 @@ describe("FeedHandlerService", () => {
         .reply(200, { status: "unexpected" });
 
       await expect(service.getArticles(validPayload)).rejects.toThrow(
+        UnexpectedApiResponseException
+      );
+    });
+  });
+
+  describe("validateFilters", () => {
+    const validPayload: CreateFilterValidationInput = {
+      filters: {
+        foo: "bar",
+      },
+    };
+    const endpoint = `/v1/user-feeds/filter-validation`;
+
+    it("returns the result on success", async () => {
+      const mockResponse: CreateFilterValidationResponse = {
+        result: {
+          errors: ["foo", "bar"],
+        },
+      };
+
+      nock(host)
+        .post(endpoint)
+        .matchHeader("Content-Type", "application/json")
+        .matchHeader("api-key", apiKey)
+        .reply(200, mockResponse);
+
+      const result = await service.validateFilters(validPayload);
+
+      const expectedResult: CreateFilterValidationOutput = {
+        errors: ["foo", "bar"],
+      };
+
+      expect(result).toEqual(expectedResult);
+    });
+
+    it("throws if status code is not ok", async () => {
+      nock(host).post(endpoint).reply(400, {});
+
+      await expect(service.validateFilters(validPayload)).rejects.toThrow(
+        FeedFetcherStatusException
+      );
+    });
+
+    it("throws if the response payload is unexpected", async () => {
+      nock(host).post(endpoint).reply(200, { status: "unexpected" });
+
+      await expect(service.validateFilters(validPayload)).rejects.toThrow(
         UnexpectedApiResponseException
       );
     });

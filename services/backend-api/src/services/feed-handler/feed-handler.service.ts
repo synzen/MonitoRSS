@@ -7,6 +7,9 @@ import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
 import {
+  CreateFilterValidationInput,
+  CreateFilterValidationOutput,
+  CreateFilterValidationResponse,
   GetArticlesInput,
   GetArticlesOutput,
   GetArticlesResponse,
@@ -181,6 +184,32 @@ export class FeedHandlerService {
     const result = await this.validateResponseJson(GetArticlesResponse, json);
 
     return result.result;
+  }
+
+  async validateFilters({
+    filters,
+  }: CreateFilterValidationInput): Promise<CreateFilterValidationOutput> {
+    const res = await fetch(`${this.host}/v1/user-feeds/filter-validation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": this.apiKey,
+      },
+      body: JSON.stringify(filters),
+    });
+
+    await this.validateResponseStatus(res);
+
+    const json = await res.json();
+
+    const result = await this.validateResponseJson(
+      CreateFilterValidationResponse,
+      json
+    );
+
+    return {
+      errors: result.result.errors,
+    };
   }
 
   private async validateResponseStatus(res: Response) {
