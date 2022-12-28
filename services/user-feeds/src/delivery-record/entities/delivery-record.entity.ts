@@ -20,6 +20,7 @@ export class DeliveryRecord {
 
   @Property({
     nullable: true,
+    type: "text",
   })
   internal_message?: string;
 
