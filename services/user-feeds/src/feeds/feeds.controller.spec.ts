@@ -68,7 +68,7 @@ describe("FeedController", () => {
 
   describe("createFeedFilterValidation", () => {
     it("returns the filter validation result", () => {
-      const filters = {
+      const expression = {
         foo: "bar",
       };
       const errors = ["error"];
@@ -77,7 +77,7 @@ describe("FeedController", () => {
         .mockReturnValue(errors);
 
       const result = controller.createFeedFilterValidation({
-        filters,
+        expression,
       });
 
       expect(result).toEqual({

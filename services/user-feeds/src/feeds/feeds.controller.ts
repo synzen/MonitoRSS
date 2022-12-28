@@ -66,9 +66,9 @@ export class FeedsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(ApiGuard)
   createFeedFilterValidation(
-    @Body(ValidationPipe) { filters }: CreateFeedFilterValidationInputDto
+    @Body(ValidationPipe) { expression }: CreateFeedFilterValidationInputDto
   ): CreateFeedFilterValidationOutputDto {
-    const errors = this.feedsService.getFilterExpressionErrors(filters);
+    const errors = this.feedsService.getFilterExpressionErrors(expression);
 
     return {
       result: {

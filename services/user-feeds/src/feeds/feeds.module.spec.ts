@@ -102,7 +102,7 @@ describe("FeedsModule", () => {
 
   describe("POST /user-feeds/filter-validation", () => {
     const validPayload = {
-      filters: {
+      expression: {
         type: "article",
         value: "test",
       },
