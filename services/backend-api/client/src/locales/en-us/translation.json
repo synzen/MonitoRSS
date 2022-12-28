@@ -45,7 +45,8 @@
       "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server.",
       "webhookInvalid": "Webhook is invalid. Webhooks must be integration that are not owned by other bots.",
       "feedNotFailed": "Unable to retry feed. The feed is still active, and there is no need to retry unless the feed has failed.",
-      "feedNotFound": "Feed does not exist"
+      "feedNotFound": "Feed does not exist",
+      "feedFilterInvalidExpression": "Invalid filter expression"
     }
   },
   "pages": {
