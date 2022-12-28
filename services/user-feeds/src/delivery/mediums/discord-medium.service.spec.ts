@@ -44,8 +44,7 @@ describe("DiscordMediumService", () => {
     };
 
     const deliveryDetails: TestDiscordDeliveryDetails = {
-      deliverySettings: {
-        guildId: "guild-id",
+      mediumDetails: {
         channel: { id: "channel-1" },
         webhook: {
           id: "webhook-id-1",
@@ -59,8 +58,8 @@ describe("DiscordMediumService", () => {
       it("should call the producer for the channel", async () => {
         await service.deliverTestArticle(article, {
           ...deliveryDetails,
-          deliverySettings: {
-            ...deliveryDetails.deliverySettings,
+          mediumDetails: {
+            ...deliveryDetails.mediumDetails,
             webhook: null,
           },
         });
@@ -83,8 +82,8 @@ describe("DiscordMediumService", () => {
         };
         const details: TestDiscordDeliveryDetails = {
           ...deliveryDetails,
-          deliverySettings: {
-            ...deliveryDetails.deliverySettings,
+          mediumDetails: {
+            ...deliveryDetails.mediumDetails,
             content: "content {{title}}",
             webhook: null,
           },
@@ -106,9 +105,9 @@ describe("DiscordMediumService", () => {
       it("prioritizes webhook over channel, calls the producer for the webhook", async () => {
         await service.deliverTestArticle(article, deliveryDetails);
 
-        const webhook1Id = deliveryDetails.deliverySettings.webhook?.id;
-        const webhook1Token = deliveryDetails.deliverySettings.webhook?.token;
-        deliveryDetails.deliverySettings.webhook?.token;
+        const webhook1Id = deliveryDetails.mediumDetails.webhook?.id;
+        const webhook1Token = deliveryDetails.mediumDetails.webhook?.token;
+        deliveryDetails.mediumDetails.webhook?.token;
         expect(producer.fetch).toHaveBeenCalledWith(
           `${DiscordMediumService.BASE_API_URL}/webhooks/${webhook1Id}/${webhook1Token}`,
           {
@@ -127,8 +126,8 @@ describe("DiscordMediumService", () => {
         };
         const details: TestDiscordDeliveryDetails = {
           ...deliveryDetails,
-          deliverySettings: {
-            ...deliveryDetails.deliverySettings,
+          mediumDetails: {
+            ...deliveryDetails.mediumDetails,
             content: "content {{title}}",
           },
         };

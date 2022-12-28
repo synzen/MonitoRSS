@@ -268,78 +268,126 @@ describe("FeedController", () => {
     });
 
     it("returns the correct result for >= 500 status", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 500,
+        result: {
+          state: "success",
+          status: 500,
+        },
+        apiPayload,
       });
 
       expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.ThirdPartyInternalError,
+        apiPayload,
       });
     });
 
     it.each([401, 403])(
       "returns the correct result for missing permission %i status",
       async (status) => {
+        const apiPayload = {
+          foo: "bar",
+        };
         discordMediumService.deliverTestArticle.mockResolvedValue({
-          state: "success",
-          status,
+          result: {
+            state: "success",
+            status,
+          },
+          apiPayload,
         });
 
         expect(await controller.sendTestArticle(validPayload)).toEqual({
           status: TestDeliveryStatus.MissingApplicationPermission,
+          apiPayload,
         });
       }
     );
 
     it("returns the correct result for 404 status", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 404,
+        result: {
+          state: "success",
+          status: 404,
+        },
+        apiPayload,
       });
 
       expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.MissingChannel,
+        apiPayload,
       });
     });
 
     it("returns the correct result for 429 status", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 429,
+        result: {
+          state: "success",
+          status: 429,
+        },
+        apiPayload,
       });
 
       expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.TooManyRequests,
+        apiPayload,
       });
     });
 
     it("returns the correct result for 400 status", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 400,
+        result: {
+          state: "success",
+          status: 400,
+        },
+        apiPayload,
       });
 
       expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.BadPayload,
+        apiPayload,
       });
     });
 
     it("returns the correct result for 200 status", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 200,
+        result: {
+          state: "success",
+          status: 200,
+        },
+        apiPayload,
       });
 
       expect(await controller.sendTestArticle(validPayload)).toEqual({
         status: TestDeliveryStatus.Success,
+        apiPayload,
       });
     });
 
     it("throws an error if a status is unhandled", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 418,
+        result: {
+          state: "success",
+          status: 418,
+        },
+        apiPayload,
       });
 
       await expect(

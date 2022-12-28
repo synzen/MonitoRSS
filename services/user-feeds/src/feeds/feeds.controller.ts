@@ -172,12 +172,10 @@ export class FeedsController {
           .required()
           .validate(payload);
 
-        const result = await this.discordMediumService.deliverTestArticle(
-          randomArticle,
-          {
+        const { result, apiPayload } =
+          await this.discordMediumService.deliverTestArticle(randomArticle, {
             mediumDetails,
-          }
-        );
+          });
 
         if (result.state !== "success") {
           throw new Error(
@@ -189,28 +187,34 @@ export class FeedsController {
         if (result.status >= 500) {
           return {
             status: TestDeliveryStatus.ThirdPartyInternalError,
+            apiPayload,
           };
         } else if (result.status === 401 || result.status === 403) {
           return {
             status: TestDeliveryStatus.MissingApplicationPermission,
+            apiPayload,
           };
         } else if (result.status === 400) {
           return {
             status: TestDeliveryStatus.BadPayload,
             apiResponse: result.body,
+            apiPayload,
           };
         } else if (result.status === 404) {
           return {
             status: TestDeliveryStatus.MissingChannel,
             apiResponse: result.body,
+            apiPayload,
           };
         } else if (result.status === 429) {
           return {
             status: TestDeliveryStatus.TooManyRequests,
+            apiPayload,
           };
         } else if (result.status >= 200 && result.status < 300) {
           return {
             status: TestDeliveryStatus.Success,
+            apiPayload,
           };
         } else {
           throw new Error(

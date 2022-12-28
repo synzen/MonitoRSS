@@ -89,7 +89,11 @@ export class FeedConnectionsDiscordChannelsController {
     const result = await this.service.sendTestArticle(feed, connection);
 
     return {
-      result,
+      result: {
+        status: result.status,
+        apiPayload: result.apiPayload,
+        apiResponse: result.apiResponse,
+      },
     };
   }
 

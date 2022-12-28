@@ -96,6 +96,12 @@ describe("FeedConnectionsDiscordChannelsController", () => {
         .spyOn(feedConnectionsDiscordChannelsService, "sendTestArticle")
         .mockResolvedValue({
           status: TestDeliveryStatus.Success,
+          apiPayload: {
+            foo: "bar",
+          },
+          apiResponse: {
+            baz: "qux",
+          },
         });
 
       const response = await controller.sendTestArticle({
@@ -106,6 +112,12 @@ describe("FeedConnectionsDiscordChannelsController", () => {
       expect(response).toEqual({
         result: {
           status: TestDeliveryStatus.Success,
+          apiPayload: {
+            foo: "bar",
+          },
+          apiResponse: {
+            baz: "qux",
+          },
         },
       });
     });

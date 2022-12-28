@@ -15,6 +15,7 @@ interface CreateConnectionTestArticleOutput {
   result: {
     status: SendTestArticleDeliveryStatus
     apiResponse?: Record<string, unknown>
+    apiPayload?: Record<string, unknown>
   }
 }
 

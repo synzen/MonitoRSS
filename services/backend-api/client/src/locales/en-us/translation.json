@@ -373,6 +373,7 @@
           "alertDescriptionMissingChannel": "Connection channel no longer exists. Update this connection to target a different channel.",
           "alertDescriptionTooManyRequests": "Too many requests have been sent in a short period of time. Try again later.",
           "alertDescriptionNoArticles": "There are no articles in the feed to deliver",
+          "apiPayload": "API Payload",
           "apiResponse": "API Response"
         },
         "articlePlaceholderTable": {

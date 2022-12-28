@@ -1,6 +1,5 @@
 import {
   Button,
-  Divider,
   Heading,
   Modal,
   ModalBody,
@@ -8,6 +7,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Stack,
+  Text,
   Tooltip,
   useDisclosure,
 } from '@chakra-ui/react';
@@ -132,30 +133,46 @@ export const SendConnectionTestArticleButton = ({
       }
 
       const descriptionNode = !description ? <div /> : (
-        <div>
-          {t(description)}
-          {result.apiResponse && (
-            <>
-              <br />
-              <br />
-              <br />
-              <div>
+        <Stack spacing={8}>
+          <Text>
+            {t(description)}
+          </Text>
+          <Stack spacing={12}>
+            {result.apiPayload && (
+              <Stack spacing={6}>
+                <Heading size="md">
+                  {t('features.feedConnections.components.'
+                      + 'sendTestArticleButton.apiPayload')}
+                </Heading>
+                <pre style={{
+                  backgroundColor: getChakraColor('gray.800'),
+                  overflow: 'auto',
+                  padding: '1rem',
+                }}
+                >
+                  {JSON.stringify(result.apiPayload, null, 2)}
+                </pre>
+              </Stack>
+
+            )}
+            {result.apiResponse && (
+              <Stack spacing={6}>
                 <Heading size="md">
                   {t('features.feedConnections.components.'
                       + 'sendTestArticleButton.apiResponse')}
                 </Heading>
-                <Divider marginY="1rem" />
                 <pre style={{
                   backgroundColor: getChakraColor('gray.800'),
                   overflow: 'auto',
+                  padding: '1rem',
                 }}
                 >
                   {JSON.stringify(result.apiResponse, null, 2)}
                 </pre>
-              </div>
-            </>
-          )}
-        </div>
+              </Stack>
+            )}
+          </Stack>
+        </Stack>
       );
 
       setSendResult({

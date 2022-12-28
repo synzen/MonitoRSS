@@ -1,7 +1,7 @@
 import { DeliveryMedium } from "./delivery-medium.interface";
 import { Injectable } from "@nestjs/common";
 import { Article, ArticleDeliveryErrorCode } from "../../shared";
-import { RESTProducer } from "@synzen/discord-rest";
+import { JobResponse, RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -12,6 +12,7 @@ import {
 import { replaceTemplateString } from "../../articles/utils/replace-template-string";
 import logger from "../../shared/utils/logger";
 import { ConfigService } from "@nestjs/config";
+import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -42,7 +43,10 @@ export class DiscordMediumService implements DeliveryMedium {
   async deliverTestArticle(
     article: Article,
     details: TestDiscordDeliveryDetails
-  ) {
+  ): Promise<{
+    apiPayload: Record<string, unknown>;
+    result: JobResponse<unknown> | JobResponseError;
+  }> {
     const { channel, webhook, embeds, content } = details.mediumDetails;
     const channelId = channel?.id;
     const webhookId = webhook?.id;
@@ -51,7 +55,7 @@ export class DiscordMediumService implements DeliveryMedium {
       const { id: webhookId, token: webhookToken, name, iconUrl } = webhook;
 
       const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
-      const apiBody = {
+      const apiPayload = {
         ...this.generateApiPayload(article, {
           embeds,
           content,
@@ -60,21 +64,31 @@ export class DiscordMediumService implements DeliveryMedium {
         avatar_url: iconUrl,
       };
 
-      return this.producer.fetch(apiUrl, {
+      const result = await this.producer.fetch(apiUrl, {
         method: "POST",
-        body: JSON.stringify(apiBody),
+        body: JSON.stringify(apiPayload),
       });
+
+      return {
+        apiPayload,
+        result,
+      };
     } else if (channelId) {
       const apiUrl = this.getChannelApiUrl(channelId);
-      const apiBody = this.generateApiPayload(article, {
+      const apiPayload = this.generateApiPayload(article, {
         embeds: details.mediumDetails.embeds,
         content: details.mediumDetails.content,
       });
 
-      return this.producer.fetch(apiUrl, {
+      const result = await this.producer.fetch(apiUrl, {
         method: "POST",
-        body: JSON.stringify(apiBody),
+        body: JSON.stringify(apiPayload),
       });
+
+      return {
+        apiPayload: apiPayload as Record<string, unknown>,
+        result,
+      };
     } else {
       throw new Error("No channel or webhook specified for Discord medium");
     }
