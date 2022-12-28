@@ -1,4 +1,4 @@
 export enum RelationalExpressionRight {
-  String = "string",
-  RegExp = "regexp",
+  String = "STRING",
+  RegExp = "REGEXP",
 }

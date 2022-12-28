@@ -1,5 +1,5 @@
 export enum RelationalExpressionOperator {
-  Eq = "eq",
-  Contains = "contains",
-  Matches = "matches",
+  Eq = "EQ",
+  Contains = "CONTAINS",
+  Matches = "MATCHES",
 }

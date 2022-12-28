@@ -1,3 +1,3 @@
 export enum RelationalExpressionLeft {
-  Article = "article",
+  Article = "ARTICLE",
 }

@@ -1,4 +1,4 @@
 export enum ExpressionType {
-  Relational = "relational",
-  Logical = "logical",
+  Relational = "RELATIONAL",
+  Logical = "LOGICAL",
 }

@@ -1,19 +1,19 @@
 export enum RelationalExpressionOperator {
-  Equals = 'eq',
-  Contains = 'contains',
-  Matches = 'matches',
+  Equals = 'EQ',
+  Contains = 'CONTAINS',
+  Matches = 'MATCHES',
 }
 
 export enum RelationalExpressionLeftOperandType {
-  Article = 'article',
+  Article = 'ARTICLE',
 }
 
 export enum RelationalExpressionRightOperandType {
-  String = 'string',
-  RegExp = 'regexp',
+  String = 'STRING',
+  RegExp = 'REGEXP',
 }
 
 export enum LogicalExpressionOperator {
-  And = 'and',
-  Or = 'or',
+  And = 'AND',
+  Or = 'OR',
 }

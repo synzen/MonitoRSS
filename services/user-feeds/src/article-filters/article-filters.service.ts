@@ -186,7 +186,7 @@ export class ArticleFiltersService {
     article: Article;
   }): Record<RelationalExpressionLeft, unknown> {
     return {
-      article: data.article,
+      ARTICLE: data.article,
     };
   }
 }

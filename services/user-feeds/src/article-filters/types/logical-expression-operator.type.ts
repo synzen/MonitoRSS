@@ -1,5 +1,5 @@
 export enum LogicalExpressionOperator {
-  And = "and",
-  Or = "or",
-  Not = "not",
+  And = "AND",
+  Or = "OR",
+  Not = "NOT",
 }
