@@ -76,7 +76,7 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/v2/feeds"
+      path="/feeds"
       element={(
         <RequireAuth>
           <PageContentV2>
@@ -98,7 +98,7 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/v2/feeds/:feedId"
+      path="/feeds/:feedId"
       element={(
         <RequireAuth>
           <RequireDiscordServers>
@@ -111,7 +111,7 @@ const Pages: React.FC = () => (
 
     />
     <Route
-      path="/v2/feeds/:feedId/discord-channel-connections/:connectionId"
+      path="/feeds/:feedId/discord-channel-connections/:connectionId"
       element={(
         <RequireAuth>
           <PageContentV2>
@@ -121,7 +121,7 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/v2/feeds/:feedId/discord-webhook-connections/:connectionId"
+      path="/feeds/:feedId/discord-webhook-connections/:connectionId"
       element={(
         <RequireAuth>
           <RequireDiscordServers>
