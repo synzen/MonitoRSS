@@ -20,6 +20,12 @@ export class MessageBrokerModule {
           uri: configValues.USER_FEEDS_RABBITMQ_BROKER_URL,
           defaultExchangeType: "direct",
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
+          channels: {
+            default: {
+              prefetchCount: 100,
+              default: true,
+            },
+          },
         }),
       ],
       exports: [RabbitMQModule],
