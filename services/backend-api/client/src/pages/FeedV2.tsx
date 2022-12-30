@@ -35,7 +35,6 @@ import { CategoryText, ConfirmModal } from '@/components';
 import {
   EditUserFeedDialog,
   RefreshUserFeedButton,
-  RequestHistory,
   useArticleDailyLimit,
   useDeleteUserFeed,
   UserFeedDisabledCode,
@@ -322,11 +321,18 @@ export const FeedV2: React.FC = () => {
                 >
                   {feed?.createdAt}
                 </CategoryText>
-                <CategoryText title={t('pages.feed.articleDailyLimit')}>
-                  <Text color={isAtLimit ? 'red.300' : ''}>
-                    {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
-                  </Text>
-                  {!dailyLimit && <Spinner size="sm" />}
+                <CategoryText
+                  title={t('pages.feed.articleDailyLimit')}
+                  helpTooltip={{
+                    description: t('pages.feed.articleDailyLimitHint'),
+                  }}
+                >
+                  <Box>
+                    <Text color={isAtLimit ? 'red.300' : ''}>
+                      {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                    </Text>
+                    {!dailyLimit && <Spinner size="sm" />}
+                  </Box>
                 </CategoryText>
               </Grid>
             </Stack>
@@ -338,11 +344,13 @@ export const FeedV2: React.FC = () => {
           </Stack>
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
-          <TabPanel maxWidth="1200px" width="100%">
+          <TabPanel maxWidth="1200px" width="100%" tabIndex={-1}>
             <Stack spacing={6}>
               <Stack>
                 <Flex justifyContent="space-between" alignItems="center">
-                  <Heading size="md">Connections</Heading>
+                  <Heading size="md">
+                    {t('pages.feed.connectionSectionTitle')}
+                  </Heading>
                   <Menu>
                     <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
                       {t('pages.feed.addConnectionButtonText')}
@@ -375,6 +383,11 @@ export const FeedV2: React.FC = () => {
                       connectionType: connection.key,
                       connectionId: connection.id,
                     })}
+                    textDecoration="none"
+                    _hover={{
+                      textDecoration: 'none',
+                      color: 'blue.300',
+                    }}
                   >
                     <Flex
                       background="gray.700"
@@ -389,7 +402,6 @@ export const FeedV2: React.FC = () => {
                           fontSize="sm"
                         >
                           {PRETTY_CONNECTION_NAMES[connection.key]}
-
                         </Text>
                         <Stack spacing="0">
                           <Text
@@ -404,9 +416,6 @@ export const FeedV2: React.FC = () => {
                 ))}
               </Stack>
             </Stack>
-          </TabPanel>
-          <TabPanel maxWidth="1200px" width="100%">
-            <RequestHistory />
           </TabPanel>
         </TabPanels>
       </Tabs>

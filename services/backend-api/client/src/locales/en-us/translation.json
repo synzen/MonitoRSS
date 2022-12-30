@@ -104,7 +104,8 @@
       "discordWebhookMenuItem": "Discord Webhook",
       "articleDailyLimit": "Article Daily Limit",
       "connectionSectionTitle": "Connections",
-      "connectionSectionDescription": "Each connection is a channel to deliver your feed articles to. You may add as many connections as you want, but every article that is delivered to a channel counts towards the article limit."
+      "connectionSectionDescription": "Each connection is a channel to deliver your feed articles to. You may add as many connections as you want, but every article that is delivered to a channel counts towards the article limit.",
+      "articleDailyLimitHint": "Maximum number of articles within the past 24 hour timeframe, calculated from the time of every article delivery attempt."
     },
     "userFeed": {
       "deleteConfirmTitle": "Delete feed",
@@ -227,6 +228,9 @@
       "formCategoryDescription": "You may also use unlisted properties by typing. If it comes from the placeholder dump, prepend them with \"raw:\".",
       "formValueLabel": "Value",
       "formValueDescription": "Each new line indicates a new and separate filter. Modifiers would apply to the beginning to each line."
+    },
+    "categoryText": {
+      "defaullTooltipLabel": "What is this?"
     },
     "discordMessageForm": {
       "textSectionTitle": "Text",
