@@ -86,6 +86,7 @@ describe("DiscordServersModule", () => {
         avatarUrl: "str",
         avatar: null,
         maxFeeds: 12,
+        maxUserFeeds: 13,
       };
       jest.spyOn(discordUsersService, "getUser").mockResolvedValue(mockUser);
 
@@ -102,6 +103,7 @@ describe("DiscordServersModule", () => {
         username: mockUser.username,
         maxFeeds: mockUser.maxFeeds,
         iconUrl: mockUser.avatarUrl,
+        maxUserFeeds: mockUser.maxUserFeeds,
       });
     });
 
@@ -113,6 +115,7 @@ describe("DiscordServersModule", () => {
         avatar: null,
         avatarUrl: "avatar",
         maxFeeds: 12,
+        maxUserFeeds: 13,
         supporter: {
           maxFeeds: 12,
           guilds: ["1", "2"],
@@ -135,6 +138,7 @@ describe("DiscordServersModule", () => {
         username: mockUser.username,
         iconUrl: mockUser.avatarUrl,
         maxFeeds: mockUser.supporter.maxFeeds,
+        maxUserFeeds: mockUser.maxUserFeeds,
         supporter: {
           guilds: mockUser.supporter.guilds,
           maxFeeds: mockUser.supporter.maxFeeds,
@@ -153,6 +157,7 @@ describe("DiscordServersModule", () => {
       avatar: null,
       avatarUrl: "avatar",
       maxFeeds: 12,
+      maxUserFeeds: 13,
       supporter: {
         maxFeeds: 12,
         guilds: ["1", "2"],

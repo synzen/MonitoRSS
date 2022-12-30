@@ -10,6 +10,7 @@ export type DiscordUserFormatted = DiscordUser & {
   // "avar" field on DiscordUser formatted into a url
   avatarUrl?: string;
   maxFeeds: number;
+  maxUserFeeds: number;
   supporter?: {
     maxFeeds: number;
     guilds: string[];

@@ -103,6 +103,8 @@ describe("SupportersService Integration", () => {
         maxGuilds: 0,
         expireAt: undefined,
         refreshRateSeconds: defaultRefreshRateSeconds,
+        maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+        maxUserFeeds: SupportersService.MAX_USER_FEEDS_DEFAULT,
       });
     });
     it("returns the correct benefits", async () => {
@@ -127,6 +129,8 @@ describe("SupportersService Integration", () => {
         maxGuilds: supporter.maxGuilds,
         expireAt: supporter.expireAt,
         refreshRateSeconds: 120,
+        maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_SUPPORTER,
+        maxUserFeeds: SupportersService.MAX_USER_FEEDS_SUPPORTER,
       });
     });
   });

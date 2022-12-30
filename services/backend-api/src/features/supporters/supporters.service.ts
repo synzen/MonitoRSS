@@ -17,6 +17,7 @@ interface SupporterBenefits {
   expireAt?: Date;
   refreshRateSeconds: number;
   maxDailyArticles: number;
+  maxUserFeeds: number;
 }
 
 interface ServerBenefits {
@@ -38,9 +39,6 @@ interface SupportPatronAggregateResult {
     pledgeOverride?: number;
   }>;
 }
-
-const MAX_DAILY_ARTICLES_SUPPORTER = 300;
-const MAX_DAILY_ARTICLES_DEFAULT = 100;
 
 @Injectable()
 export class SupportersService {
@@ -66,8 +64,11 @@ export class SupportersService {
       ) * 60;
   }
 
-  static MAX_DAILY_ARTICLES_SUPPORTER = MAX_DAILY_ARTICLES_SUPPORTER;
-  static MAX_DAILY_ARTICLES_DEFAULT = MAX_DAILY_ARTICLES_DEFAULT;
+  // Hardcode for now
+  static MAX_DAILY_ARTICLES_SUPPORTER = 100;
+  static MAX_DAILY_ARTICLES_DEFAULT = 0;
+  static MAX_USER_FEEDS_SUPPORTER = 5;
+  static MAX_USER_FEEDS_DEFAULT = 0;
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
@@ -103,7 +104,8 @@ export class SupportersService {
         guilds: [],
         maxGuilds: 0,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
-        maxDailyArticles: MAX_DAILY_ARTICLES_DEFAULT, // hardcode for now
+        maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT, // hardcode for now
+        maxUserFeeds: SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
       };
     }
 
@@ -117,8 +119,11 @@ export class SupportersService {
       expireAt: aggregate[0].expireAt,
       refreshRateSeconds: benefits.refreshRateSeconds,
       maxDailyArticles: benefits.isSupporter
-        ? MAX_DAILY_ARTICLES_SUPPORTER
-        : MAX_DAILY_ARTICLES_DEFAULT,
+        ? SupportersService.MAX_DAILY_ARTICLES_SUPPORTER
+        : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+      maxUserFeeds: benefits.isSupporter
+        ? SupportersService.MAX_USER_FEEDS_SUPPORTER
+        : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
     };
   }
 
@@ -146,8 +151,8 @@ export class SupportersService {
       refreshRateSeconds: b.refreshRateSeconds,
       isSupporter: b.isSupporter,
       maxDailyArticles: b.isSupporter
-        ? MAX_DAILY_ARTICLES_SUPPORTER
-        : MAX_DAILY_ARTICLES_DEFAULT,
+        ? SupportersService.MAX_DAILY_ARTICLES_SUPPORTER
+        : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
     }));
   }
 

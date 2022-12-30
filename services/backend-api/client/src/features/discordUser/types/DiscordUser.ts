@@ -13,6 +13,7 @@ export const DiscordUserSchema = object({
     expireAt: string().optional(),
   }).optional(),
   maxFeeds: number().required(),
+  maxUserFeeds: number().required(),
 });
 
 export type DiscordUser = InferType<typeof DiscordUserSchema>;

@@ -134,7 +134,7 @@ describe("UserFeedsService", () => {
     it("throws if user is at feed limit", async () => {
       jest
         .spyOn(supportersService, "getBenefitsOfDiscordUser")
-        .mockResolvedValue({ maxFeeds: 1 } as never);
+        .mockResolvedValue({ maxUserFeeds: 1 } as never);
 
       await userFeedModel.create({
         user: {

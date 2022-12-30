@@ -63,7 +63,7 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    const { maxFeeds, maxDailyArticles } =
+    const { maxUserFeeds, maxDailyArticles } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
     const feedCount = await this.userFeedModel
@@ -72,7 +72,7 @@ export class UserFeedsService {
       })
       .countDocuments();
 
-    if (feedCount >= maxFeeds) {
+    if (feedCount >= maxUserFeeds) {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
