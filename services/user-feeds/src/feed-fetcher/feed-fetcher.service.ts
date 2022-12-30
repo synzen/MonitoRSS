@@ -28,7 +28,7 @@ export class FeedFetcherService {
   }
 
   async fetch(url: string) {
-    const serviceUrl = `${this.SERVICE_HOST}/v1/feed-requests`;
+    const serviceUrl = this.SERVICE_HOST;
     let statusCode: number;
     let body: BodyReadable & Dispatcher.BodyMixin;
 
@@ -62,7 +62,7 @@ export class FeedFetcherService {
       throw new FeedRequestServerStatusException(
         `Bad status code for ${serviceUrl} (${statusCode}) (${JSON.stringify(
           bodyJson
-        )})`
+        )}).`
       );
     }
 
