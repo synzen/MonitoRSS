@@ -22,6 +22,8 @@ import FeedsV2 from './FeedsV2';
 import { FeedV2 } from './FeedV2';
 import { ConnectionDiscordChannelSettings } from './ConnectionDiscordChannelSettings';
 import { ConnectionDiscordWebhookSettings } from './ConnectionDiscordWebhookSettings';
+import { pages } from '../constants';
+import { FeedConnectionType } from '../types';
 
 const Pages: React.FC = () => (
   <Routes>
@@ -76,7 +78,7 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/feeds"
+      path={pages.userFeeds()}
       element={(
         <RequireAuth>
           <PageContentV2>
@@ -98,7 +100,7 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/feeds/:feedId"
+      path={pages.userFeed(':feedId')}
       element={(
         <RequireAuth>
           <RequireDiscordServers>
@@ -111,7 +113,11 @@ const Pages: React.FC = () => (
 
     />
     <Route
-      path="/feeds/:feedId/discord-channel-connections/:connectionId"
+      path={pages.userFeedConnection({
+        feedId: ':feedId',
+        connectionType: FeedConnectionType.DiscordChannel,
+        connectionId: ':connectionId',
+      })}
       element={(
         <RequireAuth>
           <PageContentV2>
@@ -121,7 +127,11 @@ const Pages: React.FC = () => (
     )}
     />
     <Route
-      path="/feeds/:feedId/discord-webhook-connections/:connectionId"
+      path={pages.userFeedConnection({
+        feedId: ':feedId',
+        connectionType: FeedConnectionType.DiscordWebhook,
+        connectionId: ':connectionId',
+      })}
       element={(
         <RequireAuth>
           <RequireDiscordServers>

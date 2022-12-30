@@ -44,7 +44,7 @@ export const ArticlePlaceholderTable = ({ article, asPlaceholders }: Props) => {
                   </Th>
                   <Th>
                     {t('features.feedConnections.components'
-                    + '.articlePlaceholderTable.columnHeaderPlaceholder')}
+                    + '.articlePlaceholderTable.columnHeaderValue')}
                   </Th>
                 </Tr>
               </Thead>

@@ -48,21 +48,11 @@ import { AddConnectionDialog } from '../features/feedConnections';
 import { FeedConnectionType } from '../types';
 import { notifySuccess } from '../utils/notifySuccess';
 import { notifyError } from '../utils/notifyError';
+import { pages } from '../constants';
 
 const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
   [FeedConnectionType.DiscordChannel]: 'Discord Channel',
   [FeedConnectionType.DiscordWebhook]: 'Discord Webhook',
-};
-
-const getConnectionUrlByType = (type: FeedConnectionType) => {
-  switch (type) {
-    case FeedConnectionType.DiscordChannel:
-      return '/discord-channel-connections';
-    case FeedConnectionType.DiscordWebhook:
-      return '/discord-webhook-connections';
-    default:
-      return '';
-  }
 };
 
 export const FeedV2: React.FC = () => {
@@ -110,7 +100,7 @@ export const FeedV2: React.FC = () => {
         feedId,
       });
       notifySuccess(t('common.success.deleted'));
-      navigate('/v2/feeds');
+      navigate(pages.userFeeds());
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
     }
@@ -171,7 +161,7 @@ export const FeedV2: React.FC = () => {
                       <BreadcrumbItem>
                         <BreadcrumbLink
                           as={RouterLink}
-                          to="/v2/feeds"
+                          to={pages.userFeeds()}
                         >
                           Feeds
                         </BreadcrumbLink>
@@ -385,9 +375,11 @@ export const FeedV2: React.FC = () => {
                   <Link
                     key={connection.id}
                     as={RouterLink}
-                    to={`/v2/feeds/${feedId}${
-                      getConnectionUrlByType(connection.key)
-                    }/${connection.id}`}
+                    to={pages.userFeedConnection({
+                      feedId: feedId as string,
+                      connectionType: connection.key,
+                      connectionId: connection.id,
+                    })}
                   >
                     <Flex
                       background="gray.700"

@@ -44,6 +44,7 @@ import { DashboardContentV2 } from '../components/DashboardContentV2';
 import { notifySuccess } from '../utils/notifySuccess';
 import { notifyError } from '../utils/notifyError';
 import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
+import { pages } from '../constants';
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -160,7 +161,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to="/v2/feeds"
+                        to={pages.userFeeds()}
                       >
                         Feeds
                       </BreadcrumbLink>
@@ -168,7 +169,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/feeds/${feedId}`}
+                        to={pages.userFeed(feedId as string)}
                       >
                         {feed?.title}
 

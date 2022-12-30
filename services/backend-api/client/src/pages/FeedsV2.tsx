@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { FeedsTableV2 } from '../features/feed/components/FeedsTableV2';
 import { useDiscordUserMe } from '../features/discordUser';
 import { useUserFeeds } from '../features/feed';
+import { pages } from '../constants';
 
 const FeedsV2: React.FC = () => {
   const { t } = useTranslation();
@@ -25,7 +26,7 @@ const FeedsV2: React.FC = () => {
   });
 
   const onSelectedFeed = (feedId: string) => {
-    navigate(`/v2/feeds/${feedId}`);
+    navigate(pages.userFeed(feedId));
   };
 
   return (

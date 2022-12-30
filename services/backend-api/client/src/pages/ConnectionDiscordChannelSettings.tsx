@@ -26,6 +26,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { CategoryText, DashboardContentV2 } from '../components';
+import { pages } from '../constants';
 import { DiscordChannelName } from '../features/discordServers';
 import { useUserFeed } from '../features/feed';
 import {
@@ -158,7 +159,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to="/v2/feeds"
+                        to={pages.userFeeds()}
                       >
                         Feeds
                       </BreadcrumbLink>
@@ -166,7 +167,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         as={RouterLink}
-                        to={`/v2/feeds/${feedId}`}
+                        to={pages.userFeed(feedId as string)}
                       >
                         {feed?.title}
                       </BreadcrumbLink>

@@ -10,6 +10,7 @@ import { FeedConnectionType } from '../../../../types';
 import { notifyError } from '../../../../utils/notifyError';
 import { notifySuccess } from '../../../../utils/notifySuccess';
 import { useDeleteConnection } from '../../hooks';
+import { pages } from '@/constants';
 
 interface Props {
   feedId: string;
@@ -31,7 +32,7 @@ export const DeleteConnectionButton = ({
         feedId,
         connectionId,
       });
-      navigate(`/v2/feeds/${feedId}`);
+      navigate(pages.userFeed(feedId));
       notifySuccess(t('common.success.deleted'));
     } catch (err) {
       notifyError(t('common.errors.somethingWentWrong'), err as Error);
