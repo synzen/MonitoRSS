@@ -9,3 +9,4 @@ export * from './ThemedSelect';
 export * from './DiscordMessageForm';
 export * from './DashboardContentV2';
 export * from './ConfirmModal';
+export * from './BoxConstrainedWidth';

@@ -142,12 +142,12 @@ export const FeedV2: React.FC = () => {
           minWidth="100%"
           paddingTop={12}
           background="gray.700"
-          paddingX={{ base: 4, lg: 12 }}
           alignItems="center"
         >
           <Stack
-            maxWidth="1200px"
+            maxWidth="1400px"
             width="100%"
+            paddingX={{ base: 4, lg: 12 }}
             spacing={6}
           >
             <Stack spacing={6}>
@@ -344,7 +344,7 @@ export const FeedV2: React.FC = () => {
           </Stack>
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
-          <TabPanel maxWidth="1200px" width="100%" tabIndex={-1}>
+          <TabPanel maxWidth="1400px" width="100%" tabIndex={-1} paddingX={{ base: 4, lg: 12 }}>
             <Stack spacing={6}>
               <Stack>
                 <Flex justifyContent="space-between" alignItems="center">

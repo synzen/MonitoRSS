@@ -25,7 +25,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { CategoryText } from '@/components';
+import { BoxConstrained, CategoryText } from '@/components';
 import { DiscordMessageFormData } from '@/types/discord';
 import RouteParams from '@/types/RouteParams';
 import {
@@ -138,18 +138,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       || connectionStatus === 'loading'}
     >
       <Tabs isLazy isFitted>
-        <Stack
-          width="100%"
-          minWidth="100%"
+        <BoxConstrained.Wrapper
           paddingTop={12}
           background="gray.700"
-          paddingX={{ base: 4, lg: 12 }}
-          alignItems="center"
           spacing={0}
         >
-          <Stack
-            maxWidth="1200px"
-            width="100%"
+          <BoxConstrained.Container
             spacing={12}
           >
             <Stack spacing={6}>
@@ -280,28 +274,33 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               <Tab>Filters</Tab>
               {/* <Tab>Settings</Tab> */}
             </TabList>
-          </Stack>
-
-        </Stack>
+          </BoxConstrained.Container>
+        </BoxConstrained.Wrapper>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
-          <TabPanel maxWidth="1200px" width="100%">
-            <Stack>
-              <MessageTabSection
-                feedId={feedId}
-                onMessageUpdated={onMessageUpdated}
-                defaultMessageValues={{
-                  content: connection?.details.content,
-                  embeds: connection?.details.embeds,
-                }}
-              />
-            </Stack>
+          <TabPanel>
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <MessageTabSection
+                  feedId={feedId}
+                  onMessageUpdated={onMessageUpdated}
+                  defaultMessageValues={{
+                    content: connection?.details.content,
+                    embeds: connection?.details.embeds,
+                  }}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel maxWidth="1200px" width="100%">
-            <FiltersTabSection
-              onFiltersUpdated={onFiltersUpdated}
-              feedId={feedId}
-              filters={connection?.filters?.expression as LogicalFilterExpression}
-            />
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <FiltersTabSection
+                  onFiltersUpdated={onFiltersUpdated}
+                  feedId={feedId}
+                  filters={connection?.filters?.expression as LogicalFilterExpression}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
           </TabPanel>
         </TabPanels>
       </Tabs>

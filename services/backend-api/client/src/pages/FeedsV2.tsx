@@ -1,6 +1,5 @@
 import {
   Flex,
-  Stack,
   Heading,
   Box,
   HStack,
@@ -12,6 +11,7 @@ import { FeedsTableV2 } from '../features/feed/components/FeedsTableV2';
 import { useDiscordUserMe } from '../features/discordUser';
 import { useUserFeeds } from '../features/feed';
 import { pages } from '../constants';
+import { BoxConstrained } from '../components';
 
 const FeedsV2: React.FC = () => {
   const { t } = useTranslation();
@@ -30,22 +30,10 @@ const FeedsV2: React.FC = () => {
   };
 
   return (
-    <Flex
-      width="100%"
-      height="100%"
-      overflow="auto"
-      maxWidth="1200px"
-    >
-      <Stack
-        spacing="6"
-        flex="1"
-        paddingX={{ base: 4, lg: 12 }}
-        paddingBottom="12"
-        width="100%"
-        overflow="auto"
-      >
+    <BoxConstrained.Wrapper>
+      <BoxConstrained.Container>
         <Flex
-          paddingTop="8"
+          paddingTop="12"
           justifyContent="space-between"
           alignItems="center"
         >
@@ -70,8 +58,8 @@ const FeedsV2: React.FC = () => {
         <FeedsTableV2
           onSelectedFeedId={onSelectedFeed}
         />
-      </Stack>
-    </Flex>
+      </BoxConstrained.Container>
+    </BoxConstrained.Wrapper>
   );
 };
 

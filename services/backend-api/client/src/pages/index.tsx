@@ -81,7 +81,7 @@ const Pages: React.FC = () => (
       path={pages.userFeeds()}
       element={(
         <RequireAuth>
-          <PageContentV2>
+          <PageContentV2 invertBackground>
             <FeedsV2 />
           </PageContentV2>
         </RequireAuth>
