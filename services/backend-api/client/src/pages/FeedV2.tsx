@@ -332,11 +332,8 @@ export const FeedV2: React.FC = () => {
             </Stack>
             <TabList>
               <Tab>
-                Connections
+                {t('pages.feed.connectionSectionTitle')}
               </Tab>
-              {/* <Tab disabled>
-                Request History
-              </Tab> */}
             </TabList>
           </Stack>
         </Stack>
@@ -365,9 +362,7 @@ export const FeedV2: React.FC = () => {
                   </Menu>
                 </Flex>
                 <Text>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                  sollicitudin
-                  varius quam vitae facilisis. Donec nec feugiat lacus.
+                  {t('pages.feed.connectionSectionDescription')}
                 </Text>
               </Stack>
               <Stack>

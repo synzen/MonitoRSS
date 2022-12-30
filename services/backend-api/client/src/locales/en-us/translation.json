@@ -102,7 +102,9 @@
       "addConnectionButtonText": "Add new",
       "discordChannelMenuItem": "Discord Channel",
       "discordWebhookMenuItem": "Discord Webhook",
-      "articleDailyLimit": "Article Daily Limit"
+      "articleDailyLimit": "Article Daily Limit",
+      "connectionSectionTitle": "Connections",
+      "connectionSectionDescription": "Each connection is a channel to deliver your feed articles to. You may add as many connections as you want, but every article that is delivered to a channel counts towards the article limit."
     },
     "userFeed": {
       "deleteConfirmTitle": "Delete feed",
