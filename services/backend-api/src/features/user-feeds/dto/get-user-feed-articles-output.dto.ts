@@ -8,6 +8,7 @@ class ResultDto {
   requestStatus: GetArticlesResponseRequestStatus;
   articles: Array<Record<string, string>>;
   filterStatuses?: Array<FilterStatus>;
+  selectedProperties?: string[];
 }
 
 export class GetUserFeedArticlesOutputDto {

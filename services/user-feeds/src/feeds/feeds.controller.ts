@@ -110,20 +110,25 @@ export class FeedsController {
         };
       }
 
-      const { articles: matchedArticles } =
-        await this.feedsService.queryForArticles({
-          articles: fetchResult.articles,
-          limit,
-          skip,
-          selectProperties,
-          filters,
-          random,
-        });
+      const {
+        articles: matchedArticles,
+        properties,
+        filterEvalResults,
+      } = await this.feedsService.queryForArticles({
+        articles: fetchResult.articles,
+        limit,
+        skip,
+        selectProperties,
+        filters,
+        random,
+      });
 
       return {
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
           articles: matchedArticles,
+          filterStatuses: filterEvalResults,
+          selectedProperties: properties,
         },
       };
     } catch (err) {

@@ -113,6 +113,12 @@ describe("UserFeedsController", () => {
       jest.spyOn(userFeedsService, "getFeedArticles").mockResolvedValue({
         articles: [],
         requestStatus: "success",
+        filterStatuses: [
+          {
+            passed: true,
+          },
+        ],
+        selectedProperties: ["id"],
       });
 
       const input: GetUserFeedArticlesInputDto = {
@@ -126,6 +132,12 @@ describe("UserFeedsController", () => {
         result: {
           articles: [],
           requestStatus: "success",
+          filterStatuses: [
+            {
+              passed: true,
+            },
+          ],
+          selectedProperties: ["id"],
         },
       });
     });

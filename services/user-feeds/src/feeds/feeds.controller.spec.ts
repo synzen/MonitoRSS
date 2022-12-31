@@ -150,6 +150,12 @@ describe("FeedController", () => {
 
       jest.spyOn(feedsService, "queryForArticles").mockResolvedValue({
         articles: fetchedArticles,
+        filterEvalResults: [
+          {
+            passed: true,
+          },
+        ],
+        properties: ["id"],
       });
 
       const result = await controller.getFeedArticles(input);
@@ -158,6 +164,12 @@ describe("FeedController", () => {
         GetFeedArticlesRequestStatus.Success
       );
       expect(result.result.articles).toEqual(fetchedArticles);
+      expect(result.result.filterStatuses).toEqual([
+        {
+          passed: true,
+        },
+      ]);
+      expect(result.result.selectedProperties).toEqual(["id"]);
     });
 
     it("handles parse error with no articles correctly", async () => {

@@ -93,13 +93,15 @@ export class UserFeedsController {
       filters,
     };
 
-    const { articles, requestStatus } =
+    const { articles, requestStatus, filterStatuses, selectedProperties } =
       await this.userFeedsService.getFeedArticles(input);
 
     return {
       result: {
         articles,
         requestStatus,
+        filterStatuses,
+        selectedProperties,
       },
     };
   }
