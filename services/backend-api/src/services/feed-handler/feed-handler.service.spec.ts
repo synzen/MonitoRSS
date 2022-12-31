@@ -17,7 +17,6 @@ import {
   GetArticlesResponse,
   GetArticlesResponseRequestStatus,
 } from "./types";
-import { URLSearchParams } from "url";
 
 jest.mock("../../utils/logger");
 
@@ -188,17 +187,13 @@ describe("FeedHandlerService", () => {
   });
 
   describe("getArticles", () => {
-    const endpoint = `/v1/user-feeds/articles`;
+    const endpoint = `/v1/user-feeds/get-articles`;
     const validPayload: GetArticlesInput = {
       limit: 1,
       url: "https://www.get-articles-input.com",
       random: true,
+      skip: 0,
     };
-    const expectedParams = new URLSearchParams({
-      url: validPayload.url,
-      limit: validPayload.limit.toString(),
-      random: String(validPayload.random),
-    });
 
     it("returns the result on success", async () => {
       const mockResponse: GetArticlesResponse = {
@@ -209,8 +204,7 @@ describe("FeedHandlerService", () => {
       };
 
       nock(host)
-        .get(endpoint)
-        .query(expectedParams)
+        .post(endpoint)
         .matchHeader("Content-Type", "application/json")
         .matchHeader("api-key", apiKey)
         .reply(200, mockResponse);
@@ -226,7 +220,7 @@ describe("FeedHandlerService", () => {
     });
 
     it("throws if status code is 400", async () => {
-      nock(host).get(endpoint).query(expectedParams).reply(400, {});
+      nock(host).post(endpoint).reply(400, {});
 
       await expect(service.getArticles(validPayload)).rejects.toThrow(
         FeedFetcherStatusException
@@ -234,16 +228,13 @@ describe("FeedHandlerService", () => {
     });
 
     it("throws if the status code is >= 500", async () => {
-      nock(host).get(endpoint).query(expectedParams).reply(500, {});
+      nock(host).post(endpoint).reply(500, {});
 
       await expect(service.getArticles(validPayload)).rejects.toThrow();
     });
 
     it("throws if the response payload is unexpected", async () => {
-      nock(host)
-        .get(endpoint)
-        .query(expectedParams)
-        .reply(200, { status: "unexpected" });
+      nock(host).post(endpoint).reply(200, { status: "unexpected" });
 
       await expect(service.getArticles(validPayload)).rejects.toThrow(
         UnexpectedApiResponseException

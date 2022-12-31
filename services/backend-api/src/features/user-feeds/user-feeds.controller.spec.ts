@@ -1,6 +1,7 @@
 import { NotFoundException } from "@nestjs/common";
 import { Types } from "mongoose";
 import { FeedConnectionType } from "../feeds/constants";
+import { GetUserFeedArticlesInputDto } from "./dto";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsController } from "./user-feeds.controller";
 
@@ -114,9 +115,10 @@ describe("UserFeedsController", () => {
         requestStatus: "success",
       });
 
-      const input = {
+      const input: GetUserFeedArticlesInputDto = {
         limit: 10,
         random: true,
+        skip: 10,
       };
       const result = await controller.getFeedArticles(input, feed as never);
 

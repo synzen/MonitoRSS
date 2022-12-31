@@ -228,7 +228,7 @@ const handlers = [
     );
   }),
 
-  rest.get('/api/v1/user-feeds/:feedId/articles', (req, res, ctx) => res(
+  rest.post('/api/v1/user-feeds/:feedId/get-articles', (req, res, ctx) => res(
     ctx.delay(500),
     ctx.json<GetUserFeedArticlesOutput>({
       result: {

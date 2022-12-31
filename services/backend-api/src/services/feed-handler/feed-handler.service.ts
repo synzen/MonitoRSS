@@ -16,7 +16,6 @@ import {
   SendTestArticleInput,
   SendTestArticleResult,
 } from "./types";
-import { URLSearchParams } from "url";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -164,24 +163,23 @@ export class FeedHandlerService {
     includeFilterResults,
     selectProperties,
   }: GetArticlesInput): Promise<GetArticlesOutput> {
-    const queryParameters = new URLSearchParams({
+    const body = {
       url,
-      limit: limit.toString(),
-      random: String(random),
-      skip: skip.toString(),
-      includeFilterResults: String(includeFilterResults),
-      selectProperties: selectProperties?.join(",") || "",
-    });
+      limit,
+      random: random,
+      skip,
+      includeFilterResults: includeFilterResults,
+      selectProperties,
+    };
 
-    const res = await fetch(
-      `${this.host}/v1/user-feeds/articles?${queryParameters.toString()}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": this.apiKey,
-        },
-      }
-    );
+    const res = await fetch(`${this.host}/v1/user-feeds/get-articles`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": this.apiKey,
+      },
+    });
 
     await this.validateResponseStatus(res);
 

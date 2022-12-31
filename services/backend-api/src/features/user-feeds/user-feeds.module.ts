@@ -11,6 +11,7 @@ import { FeedsModule } from "../feeds/feeds.module";
 import { UserFeedsController } from "./user-feeds.controller";
 import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
 import { MessageBrokerModule } from "../message-broker/message-broker.module";
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 
 @Module({
   controllers: [UserFeedsController],
@@ -33,6 +34,21 @@ export class UserFeedsModule {
     return {
       module: UserFeedsModule,
       imports: [MessageBrokerModule.forRoot()],
+    };
+  }
+
+  static forTest(): DynamicModule {
+    return {
+      module: UserFeedsModule,
+      providers: [
+        {
+          provide: AmqpConnection,
+          useValue: {
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            publish: async () => {},
+          },
+        },
+      ],
     };
   }
 }

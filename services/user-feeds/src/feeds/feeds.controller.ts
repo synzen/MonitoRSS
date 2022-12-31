@@ -76,10 +76,11 @@ export class FeedsController {
     };
   }
 
-  @Get("articles")
+  @Post("get-articles")
   @UseGuards(ApiGuard)
+  @HttpCode(HttpStatus.OK)
   async getFeedArticles(
-    @NestedQuery(TransformValidationPipe)
+    @Body(TransformValidationPipe)
     {
       limit,
       random,
@@ -89,12 +90,8 @@ export class FeedsController {
       selectProperties,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
-    const decodedUrl = decodeURIComponent(url);
-
     try {
-      const fetchResult = await this.feedFetcherService.fetchFeedArticles(
-        decodedUrl
-      );
+      const fetchResult = await this.feedFetcherService.fetchFeedArticles(url);
 
       if (!fetchResult) {
         return {

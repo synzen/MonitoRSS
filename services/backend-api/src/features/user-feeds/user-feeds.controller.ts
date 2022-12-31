@@ -78,9 +78,10 @@ export class UserFeedsController {
     return await this.formatFeedForResponse(feed, feed.user.discordUserId);
   }
 
-  @Get("/:feedId/articles")
+  @Post("/:feedId/get-articles")
+  @HttpCode(HttpStatus.OK)
   async getFeedArticles(
-    @NestedQuery(TransformValidationPipe)
+    @Body(TransformValidationPipe)
     { limit, random }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedArticlesOutputDto> {

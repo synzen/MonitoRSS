@@ -18,8 +18,8 @@ import { CreateUserFeedInputDto } from "./dto";
 import { ConfigService } from "@nestjs/config";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { UserFeedHealthStatus } from "./types";
-import { URLSearchParams } from "url";
 import { GetArticlesResponseRequestStatus } from "../../services/feed-handler/types";
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 
 const feedXml = readFileSync(
   path.join(__dirname, "../../test/data/feed.xml"),
@@ -47,12 +47,16 @@ describe("UserFeedsModule", () => {
 
   beforeAll(async () => {
     const { init, uncompiledModule } = setupEndpointTests({
-      imports: [UserFeedsModule, MongooseTestModule.forRoot()],
+      imports: [UserFeedsModule.forTest(), MongooseTestModule.forRoot()],
     });
 
     uncompiledModule
       .overrideProvider(DiscordAuthService)
-      .useValue(discordAuthService);
+      .useValue(discordAuthService)
+      .overrideProvider(AmqpConnection)
+      .useValue({
+        publish: jest.fn(),
+      });
 
     ({ app, setAccessToken } = await init());
 
@@ -405,12 +409,12 @@ describe("UserFeedsModule", () => {
     });
   });
 
-  describe("GET /:feedId/articles", () => {
+  describe("POST /:feedId/get-articles", () => {
     let feed: UserFeed;
-    const validQuery = `?${new URLSearchParams({
+    const validBody = {
       limit: "1",
       random: "true",
-    }).toString()}`;
+    };
 
     beforeEach(async () => {
       feed = await userFeedModel.create({
@@ -424,8 +428,9 @@ describe("UserFeedsModule", () => {
 
     it("returns 401 if not logged in with discord", async () => {
       const { statusCode } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/${feed._id}/articles${validQuery}`,
+        method: "POST",
+        payload: validBody,
+        url: `/user-feeds/${feed._id}/get-articles`,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
@@ -433,8 +438,9 @@ describe("UserFeedsModule", () => {
 
     it("returns 404 if feed does not exist", async () => {
       const { statusCode } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/123/articles${validQuery}`,
+        method: "POST",
+        payload: validBody,
+        url: `/user-feeds/123/get-articles`,
         ...standardRequestOptions,
       });
 
@@ -451,18 +457,22 @@ describe("UserFeedsModule", () => {
       });
 
       const { statusCode } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/${otherUserFeed._id}/articles${validQuery}`,
+        method: "POST",
+        payload: validBody,
+        url: `/user-feeds/${otherUserFeed._id}/get-articles`,
         ...standardRequestOptions,
       });
 
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it("returns 400 on bad query", async () => {
+    it("returns 400 on bad input", async () => {
       const { statusCode } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/${feed._id}/articles?limit=abc`,
+        method: "POST",
+        payload: {
+          limit: "abc",
+        },
+        url: `/user-feeds/${feed._id}/get-articles`,
         ...standardRequestOptions,
       });
 
@@ -477,8 +487,7 @@ describe("UserFeedsModule", () => {
       ];
 
       nock(feedHandlerApiHost)
-        .get("/v1/user-feeds/articles")
-        .query(true)
+        .post("/v1/user-feeds/get-articles")
         .reply(200, {
           result: {
             requestStatus: GetArticlesResponseRequestStatus.Success,
@@ -491,8 +500,9 @@ describe("UserFeedsModule", () => {
         });
 
       const { statusCode, body } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/${feed._id}/articles${validQuery}`,
+        method: "POST",
+        payload: validBody,
+        url: `/user-feeds/${feed._id}/get-articles`,
         ...standardRequestOptions,
       });
 

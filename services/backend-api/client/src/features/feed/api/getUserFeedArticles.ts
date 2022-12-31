@@ -27,8 +27,12 @@ export const getUserFeedArticles = async (
   const params = qs.stringify(options.data);
 
   const res = await fetchRest(
-    `/api/v1/user-feeds/${options.feedId}/articles?${params}`,
+    `/api/v1/user-feeds/${options.feedId}/get-articles?${params}`,
     {
+      requestOptions: {
+        method: 'POST',
+        body: JSON.stringify(options.data),
+      },
       validateSchema: GetUserFeedArticlesOutputSchema,
     },
   );

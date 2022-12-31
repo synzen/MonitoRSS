@@ -135,18 +135,35 @@ describe("FeedsModule", () => {
     });
   });
 
-  describe(`GET /user-feeds/articles`, () => {
-    const validQuery = `?limit=1&random=true&url=${encodeURIComponent(
-      "https://www.google.com"
-    )}`;
+  describe(`POST /user-feeds/get-articles`, () => {
+    const validBody = {
+      limit: 1,
+      random: true,
+      url: "https://www.google.com",
+    };
 
     it("returns 401 if unauthorized", async () => {
       const { statusCode } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/articles${validQuery}`,
+        method: "POST",
+        url: `/user-feeds/get-articles`,
+        payload: validBody,
       });
 
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 400 on bad payload", async () => {
+      const { statusCode } = await app.inject({
+        method: "POST",
+        url: `/user-feeds/get-articles`,
+        payload: {
+          limit: 1,
+          random: true,
+        },
+        headers: standardHeaders,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
     it("returns 200", async () => {
@@ -155,8 +172,9 @@ describe("FeedsModule", () => {
       });
 
       const { statusCode, body } = await app.inject({
-        method: "GET",
-        url: `/user-feeds/articles${validQuery}`,
+        method: "POST",
+        url: `/user-feeds/get-articles`,
+        payload: validBody,
         headers: standardHeaders,
       });
 
