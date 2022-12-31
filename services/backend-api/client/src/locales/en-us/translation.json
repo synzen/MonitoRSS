@@ -87,10 +87,11 @@
     },
     "userFeeds": {
       "title": "Personal Feeds",
-      "description": "Personal feeds are designed to be more scalable, flexible and customizable. They belong to you instead of being owned by Discord servers. Personal feeds wil leventually replace legacy feeds.",
+      "description": "Personal feeds are designed to be more reliable, flexible and customizable. They belong to you instead of being owned by Discord servers. Personal feeds will eventually replace legacy feeds.",
       "newBadge": "NEW",
       "supporterOnlyTitle": "Temporarily restricted to supporters",
-      "supporterOnlyDescription": "Personal feeds are currently restricted to supporters only. This is to ensure that the feature is stable and reliable before it is made available to everyone. Every supporter has access to 5 personal feeds during this time."
+      "supporterOnlyDescription": "Personal feeds are currently restricted to supporters only. This is to ensure that the feature is stable and reliable before it is made available to everyone. Every supporter has access to 5 personal feeds during this time.",
+      "backToLegacyFeedsButton": "Back to legacy feeds"
     },
     "feed": {
       "disabledTitle": "This feed is currently disabled",

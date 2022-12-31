@@ -140,7 +140,7 @@ export const FeedV2: React.FC = () => {
         <Stack
           width="100%"
           minWidth="100%"
-          paddingTop={12}
+          paddingTop={10}
           background="gray.700"
           alignItems="center"
         >
@@ -261,6 +261,7 @@ export const FeedV2: React.FC = () => {
                 <Alert
                   status="info"
                   hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.Manual}
+                  borderRadius="md"
                 >
                   <Box>
                     <AlertTitle>
@@ -284,6 +285,7 @@ export const FeedV2: React.FC = () => {
                 <Alert
                   status="error"
                   hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.FailedRequests}
+                  borderRadius="md"
                 >
                   <Box>
                     <AlertTitle>

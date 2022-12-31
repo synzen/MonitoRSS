@@ -9,6 +9,7 @@ import {
   AlertTitle,
   AlertDescription,
   Stack,
+  Button,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ const FeedsV2: React.FC = () => {
 
   return (
     <BoxConstrained.Wrapper>
-      <BoxConstrained.Container paddingTop={12} spacing={6}>
+      <BoxConstrained.Container paddingTop={10} spacing={6}>
         <Stack>
           <Flex
             justifyContent="space-between"
@@ -44,7 +45,7 @@ const FeedsV2: React.FC = () => {
           >
             <Flex alignItems="center" gap={4}>
               <Heading size="lg">{t('pages.userFeeds.title')}</Heading>
-              <Badge colorScheme="green" fontSize="lg">{t('pages.userFeeds.newBadge')}</Badge>
+              <Badge colorScheme="purple" fontSize="lg">{t('pages.userFeeds.newBadge')}</Badge>
             </Flex>
             <Box>
               {discordUserMe?.maxUserFeeds !== undefined && userFeeds?.total !== undefined
@@ -67,13 +68,27 @@ const FeedsV2: React.FC = () => {
             {t('pages.userFeeds.description')}
           </Text>
         </Stack>
-        <Alert status="warning" flexDirection="column" alignItems="flex-start">
+        <Alert
+          borderRadius="md"
+          colorScheme="purple"
+          flexDirection="column"
+          alignItems="flex-start"
+        >
           <AlertTitle>
             {t('pages.userFeeds.supporterOnlyTitle')}
           </AlertTitle>
           <AlertDescription>
             {t('pages.userFeeds.supporterOnlyDescription')}
           </AlertDescription>
+          <Button
+            marginTop={4}
+            variant="outline"
+            onClick={() => navigate('/')}
+            size="sm"
+          >
+            Back to legacy feeds
+
+          </Button>
         </Alert>
         <FeedsTableV2
           onSelectedFeedId={onSelectedFeed}

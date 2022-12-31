@@ -137,7 +137,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
     >
       <Tabs isLazy isFitted>
         <BoxConstrained.Wrapper
-          paddingTop={12}
+          paddingTop={10}
           background="gray.700"
         >
           <BoxConstrained.Container
@@ -228,6 +228,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   status="error"
                   hidden={!connection
                     || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat}
+                  borderRadius="md"
                 >
                   <Box>
                     <AlertTitle>

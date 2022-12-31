@@ -10,8 +10,14 @@ import {
   DrawerCloseButton,
   Text,
   IconButton,
+  Alert,
+  AlertTitle,
+  Badge,
+  HStack,
+  AlertDescription,
+  Button,
 } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeftIcon } from '@chakra-ui/icons';
@@ -20,6 +26,7 @@ import { RequireServerBotAccess, useDiscordServer } from '@/features/discordServ
 import { FeedSidebar } from '@/features/feed/components/FeedsTable/FeedSidebar';
 import { FeedsTable } from '@/features/feed/components/FeedsTable';
 import { useFeeds } from '@/features/feed';
+import { pages } from '../constants';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
@@ -28,6 +35,7 @@ const Feeds: React.FC = () => {
   const { t } = useTranslation();
   const { data: serverData } = useDiscordServer({ serverId });
   const { data: feedsData } = useFeeds({ serverId });
+  const navigate = useNavigate();
 
   useEffect(() => {
     setFocusedFeedId('');
@@ -54,12 +62,38 @@ const Feeds: React.FC = () => {
           spacing="6"
           flex="1"
           paddingX={{ base: 4, lg: 12 }}
-          paddingBottom="12"
           width="100%"
           overflow="auto"
         >
+          <Alert
+            marginTop="8"
+            status="info"
+            flexDirection="column"
+            alignItems="flex-start"
+            borderRadius="md"
+            colorScheme="purple"
+          >
+            <HStack>
+              <Badge colorScheme="purple">
+                {t('pages.userFeeds.newBadge')}
+              </Badge>
+              <AlertTitle display="block">
+                Personal feeds are available for supporters!
+              </AlertTitle>
+            </HStack>
+            <AlertDescription display="block">
+              {t('pages.userFeeds.description')}
+            </AlertDescription>
+            <Button
+              marginTop={4}
+              colorScheme="purple"
+              onClick={() => navigate(pages.userFeeds())}
+            >
+              Check it out
+            </Button>
+          </Alert>
           <Flex
-            paddingTop="8"
+
             justifyContent="space-between"
             alignItems="center"
           >

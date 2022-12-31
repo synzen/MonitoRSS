@@ -49,7 +49,7 @@ prepare().then(() => {
   root.render(
     // <React.StrictMode>
     <BrowserRouter>
-      <ChakraProvider>
+      <ChakraProvider theme={theme}>
         <ColorModeScript initialColorMode={theme.config.initialColorMode} />
         <QueryClientProvider client={queryClient}>
           <ReactQueryDevtools />
