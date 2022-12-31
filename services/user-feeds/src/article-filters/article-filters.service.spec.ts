@@ -160,7 +160,38 @@ describe("ArticleFiltersService", () => {
     });
 
     describe("AND operand", () => {
-      it("returns true correctly", async () => {
+      it("returns true correctly with 1 child", async () => {
+        await expect(
+          service.evaluateExpression(
+            {
+              type: ExpressionType.Logical,
+              op: LogicalExpressionOperator.And,
+              children: [
+                {
+                  type: ExpressionType.Relational,
+                  op: RelationalExpressionOperator.Eq,
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a",
+                  },
+                },
+              ],
+            },
+            {
+              ARTICLE: {
+                id: "1",
+                title: "a",
+              },
+            }
+          )
+        ).resolves.toBe(true);
+      });
+
+      it("returns true correctly with 2 children", async () => {
         await expect(
           service.evaluateExpression(
             {

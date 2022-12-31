@@ -3,6 +3,7 @@ import { getNestedPrimitiveValue } from "../articles/utils/get-nested-primitive-
 import { Article } from "../shared";
 import { InvalidExpressionException, RegexEvalException } from "./exceptions";
 import {
+  ArticleExpressionReference,
   ExpressionType,
   LogicalExpression,
   LogicalExpressionOperator,
@@ -20,7 +21,7 @@ const REGEX_TIMEOUT_MS = 5000;
 export class ArticleFiltersService {
   async getArticleFilterResults(
     expression: LogicalExpression,
-    references: Record<string, unknown>
+    references: ArticleExpressionReference
   ) {
     const errors = this.getFilterExpressionErrors(expression as never);
 
@@ -39,7 +40,7 @@ export class ArticleFiltersService {
 
   async evaluateExpression(
     expression: LogicalExpression | RelationalExpression,
-    references: Record<string, unknown>
+    references: ArticleExpressionReference
   ): Promise<boolean> {
     if (!expression) {
       return true;
@@ -60,7 +61,7 @@ export class ArticleFiltersService {
 
   private async evaluateLogicalExpression(
     expression: LogicalExpression,
-    references: Record<string, unknown>
+    references: ArticleExpressionReference
   ): Promise<boolean> {
     const children = expression.children;
 
@@ -191,9 +192,7 @@ export class ArticleFiltersService {
     }
   }
 
-  buildReferences(data: {
-    article: Article;
-  }): Record<RelationalExpressionLeft, unknown> {
+  buildReferences(data: { article: Article }): ArticleExpressionReference {
     return {
       [RelationalExpressionLeft.Article]: data.article,
     };
