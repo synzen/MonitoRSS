@@ -247,11 +247,17 @@ export class UserFeedsService {
     limit,
     url,
     random,
+    includeFilterResults,
+    selectProperties,
+    skip,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
     return this.feedHandlerService.getArticles({
       url,
       limit,
       random,
+      includeFilterResults,
+      skip: skip || 0,
+      selectProperties,
     });
   }
 

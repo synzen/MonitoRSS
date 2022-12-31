@@ -20,7 +20,6 @@ import {
   TransformValidationPipe,
 } from "../shared";
 import { ApiGuard } from "../shared/guards";
-import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
 import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
 import {
   CreateFeedFilterValidationInputDto,
@@ -81,7 +80,14 @@ export class FeedsController {
   @UseGuards(ApiGuard)
   async getFeedArticles(
     @NestedQuery(TransformValidationPipe)
-    { limit, random, url }: GetUserFeedArticlesInputDto
+    {
+      limit,
+      random,
+      url,
+      skip,
+      includeFilterResults,
+      selectProperties,
+    }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     const decodedUrl = decodeURIComponent(url);
 
@@ -108,17 +114,20 @@ export class FeedsController {
         };
       }
 
-      const articles = getNumbersInRange({
-        min: 0,
-        max: fetchResult.articles.length - 1,
-        countToGet: limit,
-        random,
-      }).map((index) => fetchResult.articles[index]);
+      const { articles: matchedArticles } =
+        await this.feedsService.queryForArticles({
+          articles: fetchResult.articles,
+          limit,
+          skip,
+          selectProperties,
+          includeFilterResults,
+          random,
+        });
 
       return {
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
-          articles,
+          articles: matchedArticles,
         },
       };
     } catch (err) {

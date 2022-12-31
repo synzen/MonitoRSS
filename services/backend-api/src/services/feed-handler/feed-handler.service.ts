@@ -160,11 +160,17 @@ export class FeedHandlerService {
     url,
     limit,
     random,
+    skip,
+    includeFilterResults,
+    selectProperties,
   }: GetArticlesInput): Promise<GetArticlesOutput> {
     const queryParameters = new URLSearchParams({
       url,
       limit: limit.toString(),
       random: String(random),
+      skip: skip.toString(),
+      includeFilterResults: String(includeFilterResults),
+      selectProperties: selectProperties?.join(",") || "",
     });
 
     const res = await fetch(

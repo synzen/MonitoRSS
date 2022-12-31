@@ -5,6 +5,7 @@ import {
   GetFeedArticlesRequestStatus,
 } from "../shared";
 import { TestDeliveryStatus } from "./constants";
+import { GetUserFeedArticlesInputDto } from "./dto";
 import { FeedsController } from "./feeds.controller";
 
 describe("FeedController", () => {
@@ -12,6 +13,7 @@ describe("FeedController", () => {
     initializeFeed: jest.fn(),
     getRateLimitInformation: jest.fn(),
     getFilterExpressionErrors: jest.fn(),
+    queryForArticles: jest.fn(),
   };
   const discordMediumService = {
     deliverTestArticle: jest.fn(),
@@ -89,12 +91,17 @@ describe("FeedController", () => {
   });
 
   describe("getFeedArticles", () => {
+    const url = "https://www.google.com?query=1&query=2";
+    const sampleInput: GetUserFeedArticlesInputDto = {
+      limit: 1,
+      random: false,
+      url: encodeURIComponent(url),
+      skip: 0,
+    };
+
     it("calls fetch with the decoded url", async () => {
-      const url = "https://www.google.com?query=1&query=2";
       const input = {
-        limit: 1,
-        random: false,
-        url: encodeURIComponent(url),
+        ...sampleInput,
       };
       await controller.getFeedArticles(input);
       expect(feedFetcherService.fetchFeedArticles).toHaveBeenCalledWith(url);
@@ -102,9 +109,7 @@ describe("FeedController", () => {
 
     it("returns an empty array of results if request is pending", async () => {
       const input = {
-        limit: 1,
-        random: false,
-        url: "url",
+        ...sampleInput,
       };
 
       jest
@@ -121,9 +126,7 @@ describe("FeedController", () => {
 
     it("returns an empty array of results if there are no articles", async () => {
       const input = {
-        limit: 1,
-        random: false,
-        url: "url",
+        ...sampleInput,
       };
 
       jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
@@ -140,9 +143,7 @@ describe("FeedController", () => {
 
     it("returns an array of results if request is not pending", async () => {
       const input = {
-        limit: 1,
-        random: false,
-        url: "url",
+        ...sampleInput,
       };
 
       const fetchedArticles = [
@@ -152,6 +153,10 @@ describe("FeedController", () => {
       ];
 
       jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
+        articles: fetchedArticles,
+      });
+
+      jest.spyOn(feedsService, "queryForArticles").mockResolvedValue({
         articles: fetchedArticles,
       });
 
@@ -163,42 +168,9 @@ describe("FeedController", () => {
       expect(result.result.articles).toEqual(fetchedArticles);
     });
 
-    it("respects count", async () => {
-      const input = {
-        limit: 2,
-        random: false,
-        url: "url",
-      };
-
-      const fetchedArticles = [
-        {
-          id: "1",
-        },
-        {
-          id: "2",
-        },
-        {
-          id: "3",
-        },
-      ];
-
-      jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
-        articles: fetchedArticles,
-      });
-
-      const result = await controller.getFeedArticles(input);
-
-      expect(result.result.requestStatus).toEqual(
-        GetFeedArticlesRequestStatus.Success
-      );
-      expect(result.result.articles).toHaveLength(2);
-    });
-
     it("handles parse error with no articles correctly", async () => {
       const input = {
-        limit: 1,
-        random: false,
-        url: "url",
+        ...sampleInput,
       };
 
       jest

@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { FeedsService } from "./feeds.service";
+import { QueryForArticlesInput } from "./types";
 
 describe("FeedsService", () => {
   let service: FeedsService;
@@ -76,6 +77,154 @@ describe("FeedsService", () => {
 
       const result = await service.getFilterExpressionErrors({});
       expect(result).toEqual(errors);
+    });
+  });
+
+  describe("queryForArticles", () => {
+    const articles = [
+      {
+        id: "1",
+        title: "title1",
+        description: "description1",
+      },
+      {
+        id: "2",
+        title: "title2",
+        description: "description2",
+      },
+      {
+        id: "3",
+        title: "title3",
+        description: "description3",
+      },
+    ];
+    const sampleInput: QueryForArticlesInput = {
+      articles,
+      limit: 1,
+      random: false,
+      skip: 0,
+      includeFilterResults: false,
+      selectProperties: ["id"],
+    };
+
+    it("respects limit", () => {
+      const input = {
+        ...sampleInput,
+        limit: 2,
+        skip: 0,
+      };
+
+      const result = service.queryForArticles(input);
+
+      expect(result.articles.length).toEqual(2);
+
+      expect(result.articles[0].id).toEqual("1");
+      expect(result.articles[1].id).toEqual("2");
+    });
+
+    it("respects skip", () => {
+      const input = {
+        ...sampleInput,
+        skip: 1,
+        limit: sampleInput.articles.length,
+      };
+
+      const result = service.queryForArticles(input);
+
+      expect(result.articles.length).toEqual(2);
+      expect(result.articles[0].id).toEqual("2");
+      expect(result.articles[1].id).toEqual("3");
+    });
+
+    it("respects combination of skip and limit", () => {
+      const input = {
+        ...sampleInput,
+        skip: 1,
+        limit: 1,
+      };
+
+      const result = service.queryForArticles(input);
+
+      expect(result.articles.length).toEqual(1);
+      expect(result.articles[0].id).toEqual("2");
+    });
+
+    it("returns only the input properties if input properties exist", async () => {
+      const input: QueryForArticlesInput = {
+        ...sampleInput,
+        selectProperties: ["title"],
+        limit: articles.length,
+      };
+
+      const result = service.queryForArticles(input);
+      const expected = [
+        {
+          title: "title1",
+        },
+        {
+          title: "title2",
+        },
+        {
+          title: "title3",
+        },
+      ];
+
+      expect(result.articles).toEqual(expected);
+      expect(result.properties).toEqual(["title"]);
+    });
+
+    it("returns the default id and title property if no input properties exist", () => {
+      const input: QueryForArticlesInput = {
+        ...sampleInput,
+        selectProperties: [],
+        limit: articles.length,
+      };
+
+      const result = service.queryForArticles(input);
+      const expected = [
+        {
+          id: "1",
+          title: "title1",
+        },
+        {
+          id: "2",
+          title: "title2",
+        },
+        {
+          id: "3",
+          title: "title3",
+        },
+      ];
+
+      expect(result.articles).toEqual(expected);
+      expect(result.properties).toEqual(["id", "title"]);
+    });
+
+    it("returns the default id property if input properties are empty and title is empty", () => {
+      const input: QueryForArticlesInput = {
+        ...sampleInput,
+        selectProperties: [],
+        limit: articles.length,
+        articles: sampleInput.articles.map((article) => ({
+          id: article.id,
+        })),
+      };
+
+      const result = service.queryForArticles(input);
+      const expected = [
+        {
+          id: "1",
+        },
+        {
+          id: "2",
+        },
+        {
+          id: "3",
+        },
+      ];
+
+      expect(result.articles).toEqual(expected);
+      expect(result.properties).toEqual(["id"]);
     });
   });
 });
