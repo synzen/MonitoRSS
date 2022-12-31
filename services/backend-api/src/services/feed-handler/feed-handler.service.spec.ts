@@ -200,6 +200,7 @@ describe("FeedHandlerService", () => {
         result: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
           articles: [],
+          totalArticles: 0,
         },
       };
 
@@ -214,6 +215,7 @@ describe("FeedHandlerService", () => {
       const expectedResult: GetArticlesOutput = {
         requestStatus: GetArticlesResponseRequestStatus.Success,
         articles: [],
+        totalArticles: 0,
       };
 
       expect(result).toEqual(expectedResult);

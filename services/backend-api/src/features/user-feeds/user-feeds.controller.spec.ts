@@ -119,6 +119,7 @@ describe("UserFeedsController", () => {
           },
         ],
         selectedProperties: ["id"],
+        totalArticles: 10,
       });
 
       const input: GetUserFeedArticlesInputDto = {
@@ -137,6 +138,7 @@ describe("UserFeedsController", () => {
               passed: true,
             },
           ],
+          totalArticles: 10,
           selectedProperties: ["id"],
         },
       });

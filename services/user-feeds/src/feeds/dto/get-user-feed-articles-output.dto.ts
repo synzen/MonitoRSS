@@ -7,6 +7,7 @@ class FilterStatus {
 class ResultDto {
   requestStatus: GetFeedArticlesRequestStatus;
   articles: Array<Record<string, string>>;
+  totalArticles: number;
   filterStatuses?: Array<FilterStatus>;
   selectedProperties?: string[];
 }

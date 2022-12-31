@@ -3,9 +3,11 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
+  Min,
   ValidateNested,
 } from "class-validator";
 
@@ -27,6 +29,10 @@ class Result {
   @IsArray()
   @IsObject({ each: true })
   articles: Array<Record<string, string>>;
+
+  @IsInt()
+  @Min(0)
+  totalArticles: number;
 
   @IsObject({ each: true })
   @IsArray()

@@ -91,6 +91,7 @@ export class FeedsService {
 
     return {
       articles: matchedArticles,
+      totalArticles: articles.length,
       properties,
       filterEvalResults: filterEvalResults,
     };

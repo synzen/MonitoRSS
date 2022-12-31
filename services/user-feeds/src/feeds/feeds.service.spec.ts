@@ -122,6 +122,7 @@ describe("FeedsService", () => {
 
       expect(result.articles[0].id).toEqual("1");
       expect(result.articles[1].id).toEqual("2");
+      expect(result.totalArticles).toEqual(input.articles.length);
     });
 
     it("respects skip", async () => {
@@ -136,6 +137,7 @@ describe("FeedsService", () => {
       expect(result.articles.length).toEqual(2);
       expect(result.articles[0].id).toEqual("2");
       expect(result.articles[1].id).toEqual("3");
+      expect(result.totalArticles).toEqual(input.articles.length);
     });
 
     it("respects combination of skip and limit", async () => {
@@ -149,6 +151,7 @@ describe("FeedsService", () => {
 
       expect(result.articles.length).toEqual(1);
       expect(result.articles[0].id).toEqual("2");
+      expect(result.totalArticles).toEqual(input.articles.length);
     });
 
     it("returns only the input properties if input properties exist", async () => {

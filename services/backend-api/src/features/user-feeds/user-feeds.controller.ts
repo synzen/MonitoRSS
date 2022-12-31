@@ -93,8 +93,13 @@ export class UserFeedsController {
       filters,
     };
 
-    const { articles, requestStatus, filterStatuses, selectedProperties } =
-      await this.userFeedsService.getFeedArticles(input);
+    const {
+      articles,
+      requestStatus,
+      filterStatuses,
+      selectedProperties,
+      totalArticles,
+    } = await this.userFeedsService.getFeedArticles(input);
 
     return {
       result: {
@@ -102,6 +107,7 @@ export class UserFeedsController {
         requestStatus,
         filterStatuses,
         selectedProperties,
+        totalArticles,
       },
     };
   }

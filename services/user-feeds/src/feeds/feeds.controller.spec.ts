@@ -114,6 +114,7 @@ describe("FeedController", () => {
         GetFeedArticlesRequestStatus.Pending
       );
       expect(result.result.articles).toEqual([]);
+      expect(result.result.totalArticles).toEqual(0);
     });
 
     it("returns an empty array of results if there are no articles", async () => {
@@ -131,6 +132,7 @@ describe("FeedController", () => {
         GetFeedArticlesRequestStatus.Success
       );
       expect(result.result.articles).toEqual([]);
+      expect(result.result.totalArticles).toEqual(0);
     });
 
     it("returns an array of results if request is not pending", async () => {
@@ -156,6 +158,7 @@ describe("FeedController", () => {
           },
         ],
         properties: ["id"],
+        totalArticles: 1,
       });
 
       const result = await controller.getFeedArticles(input);
@@ -170,6 +173,7 @@ describe("FeedController", () => {
         },
       ]);
       expect(result.result.selectedProperties).toEqual(["id"]);
+      expect(result.result.totalArticles).toEqual(1);
     });
 
     it("handles parse error with no articles correctly", async () => {
@@ -187,6 +191,7 @@ describe("FeedController", () => {
         GetFeedArticlesRequestStatus.ParseError
       );
       expect(result.result.articles).toEqual([]);
+      expect(result.result.totalArticles).toEqual(0);
     });
   });
 

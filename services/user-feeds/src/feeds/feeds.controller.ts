@@ -97,6 +97,7 @@ export class FeedsController {
           result: {
             requestStatus: GetFeedArticlesRequestStatus.Pending,
             articles: [],
+            totalArticles: 0,
           },
         };
       }
@@ -106,6 +107,7 @@ export class FeedsController {
           result: {
             requestStatus: GetFeedArticlesRequestStatus.Success,
             articles: [],
+            totalArticles: 0,
           },
         };
       }
@@ -114,6 +116,7 @@ export class FeedsController {
         articles: matchedArticles,
         properties,
         filterEvalResults,
+        totalArticles,
       } = await this.feedsService.queryForArticles({
         articles: fetchResult.articles,
         limit,
@@ -127,6 +130,7 @@ export class FeedsController {
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
           articles: matchedArticles,
+          totalArticles,
           filterStatuses: filterEvalResults,
           selectedProperties: properties,
         },
@@ -137,6 +141,7 @@ export class FeedsController {
           result: {
             requestStatus: GetFeedArticlesRequestStatus.ParseError,
             articles: [],
+            totalArticles: 0,
           },
         };
       }

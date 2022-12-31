@@ -9,6 +9,7 @@ class ResultDto {
   articles: Array<Record<string, string>>;
   filterStatuses?: Array<FilterStatus>;
   selectedProperties?: string[];
+  totalArticles: number;
 }
 
 export class GetUserFeedArticlesOutputDto {
