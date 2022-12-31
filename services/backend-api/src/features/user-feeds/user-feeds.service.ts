@@ -10,6 +10,8 @@ import { UserFeed, UserFeedModel } from "./entities";
 import _ from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
 import {
+  GetFeedArticlePropertiesInput,
+  GetFeedArticlePropertiesOutput,
   GetFeedArticlesInput,
   GetFeedArticlesOutput,
   UserFeedDisabledCode,
@@ -259,6 +261,27 @@ export class UserFeedsService {
       skip: skip || 0,
       selectProperties,
     });
+  }
+
+  async getFeedArticleProperties({
+    url,
+  }: GetFeedArticlePropertiesInput): Promise<GetFeedArticlePropertiesOutput> {
+    const { articles, requestStatus } =
+      await this.feedHandlerService.getArticles({
+        url,
+        limit: 10,
+        random: false,
+        skip: 0,
+      });
+
+    const properties = Array.from(
+      new Set(articles.map((article) => Object.keys(article)).flat())
+    );
+
+    return {
+      requestStatus,
+      properties,
+    };
   }
 
   private async checkUrlIsValid(url: string) {

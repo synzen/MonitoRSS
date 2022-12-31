@@ -811,6 +811,7 @@ describe("UserFeedsService", () => {
       const returned = {
         requestStatus: GetArticlesResponseRequestStatus.Success,
         articles: [],
+        totalArticles: 0,
       };
 
       jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue(returned);
@@ -818,6 +819,35 @@ describe("UserFeedsService", () => {
       const result = await service.getFeedArticles(validInput);
 
       expect(result).toEqual(returned);
+    });
+  });
+
+  describe("getFeedArticleProperties", () => {
+    it("returns correctly", async () => {
+      jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue({
+        requestStatus: "foo",
+        articles: [
+          {
+            a: "1",
+          },
+          {
+            b: "2",
+            a: "a",
+          },
+          {
+            c: "3",
+          },
+        ],
+      } as never);
+
+      const result = await service.getFeedArticleProperties({
+        url: "url",
+      });
+
+      expect(result).toEqual({
+        requestStatus: "foo",
+        properties: ["a", "b", "c"],
+      });
     });
   });
 });

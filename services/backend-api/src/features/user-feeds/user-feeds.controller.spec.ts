@@ -13,6 +13,7 @@ describe("UserFeedsController", () => {
     retryFailedFeed: jest.fn(),
     getFeedDailyLimit: jest.fn(),
     getFeedArticles: jest.fn(),
+    getFeedArticleProperties: jest.fn(),
   };
   const supportersService = {
     getBenefitsOfDiscordUser: jest.fn(),
@@ -103,6 +104,26 @@ describe("UserFeedsController", () => {
               filters: con.filters,
             })),
           ],
+        },
+      });
+    });
+  });
+
+  describe("getArticleProperties", () => {
+    it("returns the properties", async () => {
+      jest
+        .spyOn(userFeedsService, "getFeedArticleProperties")
+        .mockResolvedValue({
+          properties: ["id", "title"],
+          requestStatus: "success",
+        } as never);
+
+      const result = await controller.getArticleProperties(feed as never);
+
+      expect(result).toMatchObject({
+        result: {
+          properties: ["id", "title"],
+          requestStatus: "success",
         },
       });
     });

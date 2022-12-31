@@ -237,6 +237,87 @@ describe("UserFeedsModule", () => {
     });
   });
 
+  describe("GET /:feedId/article-properties", () => {
+    let feed: UserFeed;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}/article-properties`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}1/article-properties`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed does not belong to user", async () => {
+      const otherFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-discord-user-id",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${otherFeed._id.toHexString()}/article-properties`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns feed details on success", async () => {
+      nock(feedHandlerApiHost)
+        .post("/v1/user-feeds/get-articles")
+        .reply(200, {
+          result: {
+            requestStatus: GetArticlesResponseRequestStatus.Success,
+            articles: [
+              {
+                foo: "bar",
+              },
+            ],
+            totalArticles: 1,
+          },
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}/article-properties`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          properties: expect.any(Array),
+          requestStatus: expect.any(String),
+        },
+      });
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
   describe("PATCH /:feedId", () => {
     let feed: UserFeed;
     const validBody = {
@@ -496,6 +577,7 @@ describe("UserFeedsModule", () => {
                 foo: "bar",
               },
             ],
+            totalArticles: 1,
           },
         });
 
@@ -510,6 +592,7 @@ describe("UserFeedsModule", () => {
         result: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
           articles: retrievedArticles,
+          totalArticles: 1,
         },
       });
       expect(statusCode).toBe(HttpStatus.OK);

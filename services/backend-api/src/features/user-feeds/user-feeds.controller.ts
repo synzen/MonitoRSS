@@ -29,6 +29,7 @@ import { FeedExceptionFilter } from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   CreateUserFeedInputDto,
+  GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
   GetUserFeedDailyLimitOutputDto,
   GetUserFeedOutputDto,
@@ -41,7 +42,7 @@ import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-outpu
 import { UserFeed } from "./entities";
 import { RetryUserFeedFilter } from "./filters";
 import { GetUserFeedPipe } from "./pipes";
-import { GetFeedArticlesInput } from "./types";
+import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 
 @Controller("user-feeds")
@@ -77,6 +78,25 @@ export class UserFeedsController {
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
     return await this.formatFeedForResponse(feed, feed.user.discordUserId);
+  }
+
+  @Get("/:feedId/article-properties")
+  async getArticleProperties(
+    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+  ): Promise<GetUserFeedArticlePropertiesOutputDto> {
+    const input: GetFeedArticlePropertiesInput = {
+      url: feed.url,
+    };
+
+    const { properties, requestStatus } =
+      await this.userFeedsService.getFeedArticleProperties(input);
+
+    return {
+      result: {
+        properties,
+        requestStatus,
+      },
+    };
   }
 
   @Post("/:feedId/get-articles")
