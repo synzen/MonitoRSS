@@ -4,6 +4,11 @@ import {
   Box,
   HStack,
   Text,
+  Badge,
+  Alert,
+  AlertTitle,
+  AlertDescription,
+  Stack,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -31,30 +36,45 @@ const FeedsV2: React.FC = () => {
 
   return (
     <BoxConstrained.Wrapper>
-      <BoxConstrained.Container>
-        <Flex
-          paddingTop="12"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Heading size="lg">{t('pages.feeds.title')}</Heading>
-          <Box>
-            {discordUserMe?.maxUserFeeds !== undefined && userFeeds?.total !== undefined
+      <BoxConstrained.Container paddingTop={12} spacing={6}>
+        <Stack>
+          <Flex
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Flex alignItems="center" gap={4}>
+              <Heading size="lg">{t('pages.userFeeds.title')}</Heading>
+              <Badge colorScheme="green" fontSize="lg">{t('pages.userFeeds.newBadge')}</Badge>
+            </Flex>
+            <Box>
+              {discordUserMe?.maxUserFeeds !== undefined && userFeeds?.total !== undefined
             && (
-            <HStack>
-              <Text fontSize="lg">
-                {userFeeds.total}
-              </Text>
-              <Text fontSize="lg">
-                /
-              </Text>
-              <Text fontSize="lg">
-                {discordUserMe.maxUserFeeds}
-              </Text>
-            </HStack>
+              <HStack>
+                <Text fontSize="xl" fontWeight={600}>
+                  {userFeeds.total}
+                </Text>
+                <Text fontSize="xl" fontWeight={600}>
+                  /
+                </Text>
+                <Text fontSize="xl" fontWeight={600}>
+                  {discordUserMe.maxUserFeeds}
+                </Text>
+              </HStack>
             )}
-          </Box>
-        </Flex>
+            </Box>
+          </Flex>
+          <Text>
+            {t('pages.userFeeds.description')}
+          </Text>
+        </Stack>
+        <Alert status="warning" flexDirection="column" alignItems="flex-start">
+          <AlertTitle>
+            {t('pages.userFeeds.supporterOnlyTitle')}
+          </AlertTitle>
+          <AlertDescription>
+            {t('pages.userFeeds.supporterOnlyDescription')}
+          </AlertDescription>
+        </Alert>
         <FeedsTableV2
           onSelectedFeedId={onSelectedFeed}
         />

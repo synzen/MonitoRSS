@@ -85,6 +85,13 @@
       "tableSearch": "Search by title or url",
       "tableResults": "Showing {{start}}-{{end}} of {{total}} results"
     },
+    "userFeeds": {
+      "title": "Personal Feeds",
+      "description": "Personal feeds are designed to be more scalable, flexible and customizable. They belong to you instead of being owned by Discord servers. Personal feeds wil leventually replace legacy feeds.",
+      "newBadge": "NEW",
+      "supporterOnlyTitle": "Temporarily restricted to supporters",
+      "supporterOnlyDescription": "Personal feeds are currently restricted to supporters only. This is to ensure that the feature is stable and reliable before it is made available to everyone. Every supporter has access to 5 personal feeds during this time."
+    },
     "feed": {
       "disabledTitle": "This feed is currently disabled",
       "disabledDescription": "Articles will not be fetched until it is re-enabled. Reason: {{reason}}",
