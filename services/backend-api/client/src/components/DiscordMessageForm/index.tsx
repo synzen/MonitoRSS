@@ -145,7 +145,7 @@ export const DiscordMessageForm = ({
               {t('components.discordMessageForm.embedSectionDescription')}
             </Text>
             <Tabs
-              variant="soft-rounded"
+              variant="solid-rounded"
               index={activeEmbedIndex}
               onChange={onEmbedTabChanged}
             >
