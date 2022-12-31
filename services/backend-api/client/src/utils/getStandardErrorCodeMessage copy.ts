@@ -23,6 +23,7 @@ enum ApiErrorCode {
   FEED_NOT_FAILED = 'FEED_NOT_FAILED',
   FEED_NOT_FOUND = 'FEED_NOT_FOUND',
   FEED_INVALID_FILTER_EXPRESSION = 'FEED_INVALID_FILTER_EXPRESSION',
+  FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = 'FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED',
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -46,6 +47,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_NOT_FAILED: t('common.apiErrors.feedNotFailed'),
   FEED_NOT_FOUND: t('common.apiErrors.feedNotFound'),
   FEED_INVALID_FILTER_EXPRESSION: t('common.apiErrors.feedFilterInvalidExpression'),
+  FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED:
+    t('common.apiErrors.feedConnectionCannotEnableAutoDisabled'),
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

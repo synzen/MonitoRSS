@@ -49,7 +49,8 @@
       "webhookInvalid": "Webhook is invalid. Webhooks must be integration that are not owned by other bots.",
       "feedNotFailed": "Unable to retry feed. The feed is still active, and there is no need to retry unless the feed has failed.",
       "feedNotFound": "Feed does not exist",
-      "feedFilterInvalidExpression": "Invalid filter expression"
+      "feedFilterInvalidExpression": "Invalid filter expression",
+      "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically"
     }
   },
   "pages": {

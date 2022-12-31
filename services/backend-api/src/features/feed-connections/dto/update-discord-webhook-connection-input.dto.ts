@@ -1,12 +1,14 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsIn,
   IsObject,
   IsOptional,
   IsString,
   ValidateNested,
 } from "class-validator";
 import { DiscordEmbed } from "../../../common";
+import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class Webhook {
   @IsString()
@@ -52,4 +54,8 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @Type(() => DiscordEmbed)
   @IsOptional()
   embeds?: DiscordEmbed[];
+
+  @IsIn([FeedConnectionDisabledCode.Manual, null])
+  @IsOptional()
+  disabledCode?: FeedConnectionDisabledCode.Manual | null;
 }

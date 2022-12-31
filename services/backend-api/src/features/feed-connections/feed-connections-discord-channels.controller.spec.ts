@@ -8,6 +8,7 @@ import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discor
 import { FeedConnectionsDiscordChannelsController } from "./feed-connections-discord-channels.controller";
 import { FeedEmbed } from "../feeds/entities/feed-embed.entity";
 import { TestDeliveryStatus } from "../../services/feed-handler/constants";
+import { CannotEnableAutoDisabledConnection } from "../../common/exceptions";
 
 describe("FeedConnectionsDiscordChannelsController", () => {
   let feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService;
@@ -284,6 +285,29 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           },
         }
       );
+    });
+
+    it("throws if attempting to enable when feed has a bad format", async () => {
+      await expect(
+        controller.updateDiscordChannelConnection(
+          {
+            feed: {
+              _id: feedId,
+              guild: guildId,
+            },
+            connection: {
+              id: connectionId,
+              disabledCode: FeedConnectionDisabledCode.BadFormat,
+            },
+          } as never,
+          {
+            disabledCode: null,
+          },
+          {
+            access_token: "accessToken",
+          } as never
+        )
+      ).rejects.toThrowError(CannotEnableAutoDisabledConnection);
     });
 
     it("clears disabled code if embeds are updated", async () => {

@@ -1,6 +1,7 @@
 import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
 import {
+  CannotEnableAutoDisabledConnection,
   DiscordWebhookInvalidTypeException,
   DiscordWebhookNonexistentException,
   InvalidFilterExpressionException,
@@ -21,6 +22,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [InvalidFilterExpressionException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_INVALID_FILTER_EXPRESSION,
+    },
+    [CannotEnableAutoDisabledConnection.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED,
     },
   };
 

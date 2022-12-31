@@ -11,6 +11,7 @@ import {
   UseGuards,
   ValidationPipe,
 } from "@nestjs/common";
+import { CannotEnableAutoDisabledConnection } from "../../common/exceptions";
 import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
@@ -109,16 +110,24 @@ export class FeedConnectionsDiscordChannelsController {
       content,
       embeds,
       filters,
+      disabledCode,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
-    let enableFeedWithBadFormat = false;
+    let useDisableCode: FeedConnectionDisabledCode | undefined | null =
+      undefined;
 
     if (
-      connection.disabledCode === FeedConnectionDisabledCode.BadFormat &&
-      (content || embeds)
+      disabledCode === null &&
+      connection.disabledCode !== FeedConnectionDisabledCode.Manual
     ) {
-      enableFeedWithBadFormat = true;
+      throw new CannotEnableAutoDisabledConnection();
+    }
+
+    if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
+      if (content || embeds) {
+        useDisableCode = null;
+      }
     }
 
     const createdConnection = await this.service.updateDiscordChannelConnection(
@@ -129,7 +138,7 @@ export class FeedConnectionsDiscordChannelsController {
         updates: {
           filters,
           name,
-          disabledCode: enableFeedWithBadFormat ? null : undefined,
+          disabledCode: useDisableCode,
           details: {
             channel: channelId
               ? {

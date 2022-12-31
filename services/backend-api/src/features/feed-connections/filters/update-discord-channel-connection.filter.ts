@@ -1,6 +1,9 @@
 import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
-import { InvalidFilterExpressionException } from "../../../common/exceptions";
+import {
+  CannotEnableAutoDisabledConnection,
+  InvalidFilterExpressionException,
+} from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import { UserMissingManageGuildException } from "../../feeds/exceptions";
@@ -31,6 +34,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [InvalidFilterExpressionException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_INVALID_FILTER_EXPRESSION,
+    },
+    [CannotEnableAutoDisabledConnection.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED,
     },
   };
 
