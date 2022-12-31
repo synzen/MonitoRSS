@@ -103,7 +103,13 @@ export class UserFeedsController {
   @HttpCode(HttpStatus.OK)
   async getFeedArticles(
     @Body(TransformValidationPipe)
-    { limit, random, filters }: GetUserFeedArticlesInputDto,
+    {
+      limit,
+      random,
+      filters,
+      selectProperties,
+      skip,
+    }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedArticlesOutputDto> {
     const input: GetFeedArticlesInput = {
@@ -111,6 +117,8 @@ export class UserFeedsController {
       url: feed.url,
       random,
       filters,
+      selectProperties,
+      skip,
     };
 
     const {

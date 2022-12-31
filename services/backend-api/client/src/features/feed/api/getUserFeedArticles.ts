@@ -37,7 +37,6 @@ export type GetUserFeedArticlesOutput = InferType<typeof GetUserFeedArticlesOutp
 export const getUserFeedArticles = async (
   options: GetUserFeedArticlesInput,
 ): Promise<GetUserFeedArticlesOutput> => {
-  console.log(options);
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/get-articles`,
     {

@@ -1,4 +1,4 @@
-import { ConsoleLogger, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
 import {
@@ -272,13 +272,12 @@ export class UserFeedsService {
         limit: 10,
         random: false,
         skip: 0,
+        selectProperties: ["*"],
       });
 
     const properties = Array.from(
       new Set(articles.map((article) => Object.keys(article)).flat())
     );
-
-    console.log(properties)
 
     return {
       requestStatus,

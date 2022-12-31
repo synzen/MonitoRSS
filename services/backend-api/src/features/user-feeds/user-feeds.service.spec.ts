@@ -812,6 +812,7 @@ describe("UserFeedsService", () => {
         requestStatus: GetArticlesResponseRequestStatus.Success,
         articles: [],
         totalArticles: 0,
+        selectedProperties: [],
       };
 
       jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue(returned);

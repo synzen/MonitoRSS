@@ -38,6 +38,8 @@ export const useUserFeedArticlesWithPagination = (
     setSkip(skip - useLimit);
   };
 
+  console.log(data);
+
   return {
     data,
     error,
