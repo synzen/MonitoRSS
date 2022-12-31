@@ -10,9 +10,11 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemedSelect } from '../../../../components';
 import { GetArticlesFilterReturnType } from '../../../feed/constants';
+import { useUserFeedArticleProperties } from '../../../feed/hooks';
 import {
   useUserFeedArticlesWithLoadMore,
 } from '../../../feed/hooks/useUserFeedArticlesWithLoadMore';
@@ -27,6 +29,14 @@ interface Props {
 }
 
 export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) => {
+  const [selectedArticleProperty, setSelectedArticleProperty] = useState<
+  string | undefined
+  >(undefined);
+
+  const {
+    data: feedArticlePropertiesResult,
+    status: feedArticlePropertiesStatus,
+  } = useUserFeedArticleProperties({ feedId });
   const {
     allArticles,
     allArticleFilterResults,
@@ -38,18 +48,23 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
   } = useUserFeedArticlesWithLoadMore({
     feedId,
     data: {
-      random: true,
-      filters: !filters ? undefined : {
+      selectProperties: selectedArticleProperty ? [selectedArticleProperty] : undefined,
+      filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
-        expression: filters,
+        expression: filters || undefined,
       },
     },
   });
   const { t } = useTranslation();
 
+  const onChangeFeedArticleProperty = (value: string) => {
+    setSelectedArticleProperty(value);
+  };
+
   const articles = allArticles;
-  const selectedArticleProperty = userFeedArticlesResults?.result.selectedProperties[0];
   const filterResultsByIndex = allArticleFilterResults;
+  const useArticleProperty = selectedArticleProperty
+    || userFeedArticlesResults?.result.selectedProperties[0];
 
   const fetchErrorAlert = userFeedArticlesStatus === 'error' && (
     <Alert status="error">
@@ -77,25 +92,29 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
   return (
     <Stack spacing={12}>
       <Stack spacing={4}>
-        <Flex justifyContent="space-between" alignItems="center">
+        <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={6}>
           <Heading as="h2" size="md">
             {t('features.feedConnections.components.filtersTabSection.headingSamplePlaceholders')}
           </Heading>
           {!hasAlert && (
-            <HStack alignItems="center">
-              <Text>
-                {t('features.feedConnections.components'
+          <HStack alignItems="center">
+            <Text whiteSpace="nowrap">
+              {t('features.feedConnections.components'
                 + '.filtersTabSection.displayPropertyDropdownLabel')}
-              </Text>
+            </Text>
+            <Box width={{ md: '250px', lg: '350px' }}>
               <ThemedSelect
-                options={[{
-                  label: 'title',
-                  value: 'title',
-                }]}
-                value={selectedArticleProperty}
-                onChange={console.log}
+                options={feedArticlePropertiesResult?.result.properties.map((property) => ({
+                  value: property,
+                  label: property,
+                })) || []}
+                isDisabled={feedArticlePropertiesStatus === 'loading'}
+                loading={feedArticlePropertiesStatus === 'loading'}
+                value={useArticleProperty}
+                onChange={onChangeFeedArticleProperty}
               />
-            </HStack>
+            </Box>
+          </HStack>
           )}
         </Flex>
         <Box marginBottom="8">
@@ -116,12 +135,12 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
                   articles={
                 articles.map(
                   (article: Record<string, any>, index) => ({
-                    passedFilters: filterResultsByIndex?.[index].passed as boolean,
-                    propertyValue: article?.[selectedArticleProperty as string] as string,
+                    passedFilters: filterResultsByIndex?.[index]?.passed,
+                    propertyValue: article?.[useArticleProperty as string] as string,
                   }),
                 )
               }
-                  displayPropertyName={selectedArticleProperty as string}
+                  displayPropertyName={useArticleProperty as string}
                 />
                 <Stack alignItems="center">
                   <Button
@@ -129,6 +148,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
                     variant="ghost"
                     onClick={loadMore}
                     isLoading={fetchStatus === 'fetching'}
+                    isDisabled={fetchStatus === 'fetching'}
                     disabled={!hasMore}
                   >
                     {t('features.feedConnections.components.filtersTabSection.loadMoreButton')}

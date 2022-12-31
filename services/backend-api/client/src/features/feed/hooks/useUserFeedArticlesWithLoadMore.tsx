@@ -18,7 +18,7 @@ export const useUserFeedArticlesWithLoadMore = (
   >([]);
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const limit = 1;
+  const limit = 10;
 
   const {
     error,
@@ -40,7 +40,7 @@ export const useUserFeedArticlesWithLoadMore = (
 
         const newAllArticleFilterResults = [
           ...allArticleFilterResults,
-          ...fetchedData.result.filterStatuses,
+          ...(fetchedData.result.filterStatuses || []),
         ];
 
         setAllArticles(newAllArticles);
@@ -50,7 +50,6 @@ export const useUserFeedArticlesWithLoadMore = (
   });
 
   const loadMore = () => {
-    console.log('fe');
     setSkip(skip + limit);
   };
 

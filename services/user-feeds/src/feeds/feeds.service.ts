@@ -73,11 +73,11 @@ export class FeedsService {
 
     let filterEvalResults: Array<{ passed: boolean }> | undefined;
 
-    if (filters?.expression) {
-      if (
-        filters.returnType ===
-        GetUserFeedArticlesFilterReturnType.IncludeEvaluationResults
-      ) {
+    if (
+      filters?.returnType ===
+      GetUserFeedArticlesFilterReturnType.IncludeEvaluationResults
+    ) {
+      if (filters.expression) {
         filterEvalResults = await Promise.all(
           matchedArticles.map(async (article) => ({
             passed: await this.articleFiltersService.evaluateExpression(
@@ -86,6 +86,8 @@ export class FeedsService {
             ),
           }))
         );
+      } else {
+        filterEvalResults = matchedArticles.map(() => ({ passed: true }));
       }
     }
 

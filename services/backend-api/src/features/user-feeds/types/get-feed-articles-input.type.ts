@@ -8,6 +8,6 @@ export interface GetFeedArticlesInput {
   skip?: number;
   filters?: {
     returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
-    expression: Record<string, unknown>;
+    expression?: Record<string, unknown>;
   };
 }

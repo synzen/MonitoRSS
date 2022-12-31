@@ -11,6 +11,7 @@ import {
   GetFeedOutput,
   GetFeedsOutput,
   GetFeedSubscribersOutput,
+  GetUserFeedArticlePropertiesOutput,
   GetUserFeedArticlesOutput,
   GetUserFeedOutput,
   GetUserFeedsOutput,
@@ -249,6 +250,16 @@ const handlers = [
       }),
     );
   }),
+
+  rest.get('/api/v1/user-feeds/:feedId/article-properties', async (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<GetUserFeedArticlePropertiesOutput>({
+      result: {
+        requestStatus: 'success',
+        properties: ['title'],
+      },
+    }),
+  )),
 
   rest.get('/api/v1/user-feeds/:feedId/daily-limit', (req, res, ctx) => res(
     ctx.delay(500),

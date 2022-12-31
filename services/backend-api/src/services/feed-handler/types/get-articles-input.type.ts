@@ -7,7 +7,7 @@ export interface GetArticlesInput {
   random?: boolean;
   selectProperties?: string[];
   filters?: {
-    expression: Record<string, unknown>;
+    expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;
   };
 }

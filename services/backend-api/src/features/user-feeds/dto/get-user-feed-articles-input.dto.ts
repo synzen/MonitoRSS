@@ -16,7 +16,8 @@ class FiltersDto {
   returnType: GetFeedArticlesFilterReturnType;
 
   @IsObject()
-  expression: Record<string, unknown>;
+  @IsOptional()
+  expression?: Record<string, unknown>;
 }
 
 export class GetUserFeedArticlesInputDto {

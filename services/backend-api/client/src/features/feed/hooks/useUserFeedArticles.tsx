@@ -15,8 +15,7 @@ interface Props {
 export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess }: Props) => {
   const queryKey = ['user-feed-articles', {
     feedId,
-    skip: inputData.skip,
-    limit: inputData.limit,
+    inputData,
   }];
 
   const {

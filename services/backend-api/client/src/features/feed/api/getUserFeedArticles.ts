@@ -1,4 +1,3 @@
-import qs from 'qs';
 import {
   array, boolean, InferType, number, object, string,
 } from 'yup';
@@ -13,7 +12,7 @@ export interface GetUserFeedArticlesInput {
     random?: boolean
     selectProperties?: string[]
     filters?: {
-      expression: Record<string, any>
+      expression?: Record<string, any>
       returnType: GetArticlesFilterReturnType
     }
   }
@@ -24,7 +23,7 @@ const GetUserFeedArticlesOutputSchema = object({
     requestStatus: string().oneOf(['parse_error', 'pending', 'success']).required(),
     articles: array(object()).required(),
     totalArticles: number().required(),
-    selectedProperties: array(string().required()).optional().default([]),
+    selectedProperties: array(string().required()).required(),
     filterStatuses: array(
       object({
         passed: boolean().required(),
@@ -38,10 +37,9 @@ export type GetUserFeedArticlesOutput = InferType<typeof GetUserFeedArticlesOutp
 export const getUserFeedArticles = async (
   options: GetUserFeedArticlesInput,
 ): Promise<GetUserFeedArticlesOutput> => {
-  const params = qs.stringify(options.data);
-
+  console.log(options);
   const res = await fetchRest(
-    `/api/v1/user-feeds/${options.feedId}/get-articles?${params}`,
+    `/api/v1/user-feeds/${options.feedId}/get-articles`,
     {
       requestOptions: {
         method: 'POST',

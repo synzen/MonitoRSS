@@ -15,7 +15,7 @@ interface Props {
   displayPropertyName: string
   articles: Array<{
     propertyValue: string;
-    passedFilters: boolean
+    passedFilters?: boolean
   }>
 }
 
@@ -53,10 +53,9 @@ export const ArticleFilterResultsTable = ({ articles, displayPropertyName }: Pro
                   <Tr key={propertyValue}>
                     <Td>{propertyValue}</Td>
                     <Td isNumeric>
-                      {passedFilters
-                        ? <CheckIcon color="green.500" />
-                        : <CloseIcon color="red.500" />}
-
+                      {passedFilters === true && <CheckIcon color="green.500" />}
+                      {passedFilters === false && <CloseIcon color="red.500" />}
+                      {passedFilters === undefined && <span>?</span>}
                     </Td>
                   </Tr>
                 ))}

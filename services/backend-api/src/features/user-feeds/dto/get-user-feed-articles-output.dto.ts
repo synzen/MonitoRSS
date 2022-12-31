@@ -8,7 +8,7 @@ class ResultDto {
   requestStatus: GetArticlesResponseRequestStatus;
   articles: Array<Record<string, string>>;
   filterStatuses?: Array<FilterStatus>;
-  selectedProperties?: string[];
+  selectedProperties: string[];
   totalArticles: number;
 }
 

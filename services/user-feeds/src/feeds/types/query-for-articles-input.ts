@@ -8,7 +8,7 @@ export interface QueryForArticlesInput {
   random?: boolean;
   selectProperties?: string[];
   filters?: {
-    expression: Record<string, unknown>;
+    expression?: Record<string, unknown>;
     returnType: GetUserFeedArticlesFilterReturnType;
   };
 }

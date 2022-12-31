@@ -43,8 +43,7 @@ class Result {
 
   @IsString({ each: true })
   @IsArray()
-  @IsOptional()
-  selectedProperties?: string[];
+  selectedProperties: string[];
 }
 
 export class GetArticlesResponse {

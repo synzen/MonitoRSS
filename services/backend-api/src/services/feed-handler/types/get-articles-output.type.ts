@@ -5,5 +5,5 @@ export interface GetArticlesOutput {
   articles: Array<Record<string, string>>;
   totalArticles: number;
   filterStatuses?: Array<{ passed: boolean }>;
-  selectedProperties?: string[];
+  selectedProperties: string[];
 }
