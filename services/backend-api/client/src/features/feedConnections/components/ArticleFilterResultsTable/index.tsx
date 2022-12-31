@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 interface Props {
   displayPropertyName: string
   articles: Array<{
+    id: string;
     propertyValue: string;
     passedFilters?: boolean
   }>
@@ -49,8 +50,8 @@ export const ArticleFilterResultsTable = ({ articles, displayPropertyName }: Pro
                 </Tr>
               </Thead>
               <Tbody>
-                {articles.map(({ passedFilters, propertyValue }) => (
-                  <Tr key={propertyValue}>
+                {articles.map(({ passedFilters, propertyValue, id }) => (
+                  <Tr key={id}>
                     <Td>{propertyValue}</Td>
                     <Td isNumeric>
                       {passedFilters === true && <CheckIcon color="green.500" />}

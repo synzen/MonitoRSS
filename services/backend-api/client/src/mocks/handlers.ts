@@ -245,7 +245,7 @@ const handlers = [
           totalArticles: mockUserFeedArticles.length,
           requestStatus: 'success',
           filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
-          selectedProperties: ['title'],
+          selectedProperties: ['id', 'title'],
         },
       }),
     );
@@ -256,7 +256,7 @@ const handlers = [
     ctx.json<GetUserFeedArticlePropertiesOutput>({
       result: {
         requestStatus: 'success',
-        properties: ['title'],
+        properties: ['id', 'title'],
       },
     }),
   )),

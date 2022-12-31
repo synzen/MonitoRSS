@@ -48,7 +48,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
   } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
-      selectProperties: selectedArticleProperty ? [selectedArticleProperty] : undefined,
+      selectProperties: selectedArticleProperty ? [selectedArticleProperty, 'id'] : ['id'],
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
         expression: filters || undefined,
@@ -139,6 +139,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
                   articles={
                     articles?.map(
                       (article: Record<string, any>, index) => ({
+                        id: article.id,
                         passedFilters: filterResultsByIndex?.[index]?.passed,
                         propertyValue: article?.[useArticleProperty as string] as string,
                       }),
