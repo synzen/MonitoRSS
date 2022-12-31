@@ -82,7 +82,7 @@ describe("ArticleFiltersService", () => {
 
       await expect(
         service.evaluateExpression(expression as never, {
-          article: {
+          ARTICLE: {
             id: "1",
             title: "1",
           },
@@ -112,7 +112,7 @@ describe("ArticleFiltersService", () => {
 
       await expect(
         service.evaluateExpression(expression as never, {
-          article: {
+          ARTICLE: {
             id: "1",
             title: "1",
           },
@@ -142,7 +142,7 @@ describe("ArticleFiltersService", () => {
 
       await expect(
         service.evaluateExpression(expression, {
-          article: {
+          ARTICLE: {
             id: "1",
             title: "MOTHER",
           },
@@ -151,7 +151,7 @@ describe("ArticleFiltersService", () => {
 
       await expect(
         service.evaluateExpression(expression, {
-          article: {
+          ARTICLE: {
             id: "1",
             title: "father",
           },
@@ -194,7 +194,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
                 title: "a",
                 description: "b",
@@ -238,7 +238,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
                 title: "a",
                 description: "b",
@@ -284,7 +284,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
                 title: "a",
                 description: "b",
@@ -328,7 +328,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
                 title: "a",
                 description: "b",
@@ -372,7 +372,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
               },
             }
@@ -442,7 +442,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
                 title: "a",
               },
@@ -473,7 +473,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {
-              article: {
+              ARTICLE: {
                 id: "1",
                 title: "a",
                 description: "b",

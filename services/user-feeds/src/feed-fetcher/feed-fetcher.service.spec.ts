@@ -18,7 +18,7 @@ describe("FeedFetcherService", () => {
   };
   let service: FeedFetcherService;
   let client: Interceptable;
-  const interceptPath = "/v1/feed-requests";
+  const interceptPath = "/";
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

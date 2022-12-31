@@ -7,9 +7,12 @@ import {
   FeedV2Event,
   MediumKey,
 } from "../shared";
+import logger from "../shared/utils/logger";
 import { DeliveryService } from "./delivery.service";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
+
+jest.mock("../shared/utils/logger");
 
 describe("DeliveryService", () => {
   let service: DeliveryService;
@@ -181,7 +184,7 @@ describe("DeliveryService", () => {
         },
       };
 
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      const consoleSpy = jest.spyOn(logger, "error").mockImplementation();
       await service.deliver(eventWithFilters, articles);
 
       expect(consoleSpy).toHaveBeenCalled();

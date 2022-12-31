@@ -16,7 +16,6 @@ import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
   discordMediumTestPayloadDetailsSchema,
   GetFeedArticlesRequestStatus,
-  NestedQuery,
   TransformValidationPipe,
 } from "../shared";
 import { ApiGuard } from "../shared/guards";

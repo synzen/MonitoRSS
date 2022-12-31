@@ -99,14 +99,6 @@ describe("FeedController", () => {
       skip: 0,
     };
 
-    it("calls fetch with the decoded url", async () => {
-      const input = {
-        ...sampleInput,
-      };
-      await controller.getFeedArticles(input);
-      expect(feedFetcherService.fetchFeedArticles).toHaveBeenCalledWith(url);
-    });
-
     it("returns an empty array of results if request is pending", async () => {
       const input = {
         ...sampleInput,

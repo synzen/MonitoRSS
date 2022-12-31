@@ -26,6 +26,7 @@ describe("FeedsModule", () => {
   };
   const feedFetcherService = {
     fetchFeedArticles: jest.fn(),
+    fetchRandomFeedArticle: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -60,7 +61,7 @@ describe("FeedsModule", () => {
     await app?.close();
   });
 
-  describe(`POST /user-feeds`, () => {
+  describe(`POST /user-feeds/initialize`, () => {
     const validPayload = {
       feed: {
         id: "feed-id",
@@ -198,6 +199,9 @@ describe("FeedsModule", () => {
         },
         webhook: null,
       } as DiscordMediumTestPayloadDetails,
+      feed: {
+        url: "https://www.google.com",
+      },
     };
 
     it("returns 401 if unauthorized", async () => {
@@ -224,24 +228,35 @@ describe("FeedsModule", () => {
     });
 
     it("returns 201", async () => {
+      feedFetcherService.fetchRandomFeedArticle.mockResolvedValue({});
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "success",
-        status: 200,
+        result: {
+          state: "success",
+          status: 200,
+        },
+        apiPayload: {},
       });
 
-      const { statusCode } = await app.inject({
+      const { statusCode, body } = await app.inject({
         method: "POST",
         url: `/user-feeds/test`,
         headers: standardHeaders,
         payload: validPayload,
       });
 
+      expect(JSON.parse(body)).toMatchObject({
+        status: expect.anything(),
+      });
       expect(statusCode).toBe(HttpStatus.CREATED);
     });
 
     it("returns 500 on delivery error state", async () => {
+      feedFetcherService.fetchRandomFeedArticle.mockResolvedValue({});
+
       discordMediumService.deliverTestArticle.mockResolvedValue({
-        state: "error",
+        result: {
+          state: "error",
+        },
       });
 
       const { statusCode } = await app.inject({

@@ -24,6 +24,7 @@ import {
   FeedRequestInternalException,
   FeedRequestParseException,
 } from "../feed-fetcher/exceptions";
+import { FeedDeletedEvent } from "./types";
 
 jest.mock("../shared/utils/logger");
 
@@ -271,67 +272,6 @@ describe("FeedEventHandlerService", () => {
         await expect(service.handleV2Event(v2Event)).resolves.not.toThrow();
       });
     });
-
-    describe("when articles get rejectd with bad requests", () => {
-      const articles: Article[] = [
-        {
-          id: "1",
-        },
-        {
-          id: "2",
-        },
-      ];
-
-      beforeEach(() => {
-        feedFetcherService.fetch.mockResolvedValue("feed xml");
-        articlesService.getArticlesToDeliverFromXml.mockResolvedValue(articles);
-      });
-
-      it("emits disabled events", async () => {
-        const deliveryStates: ArticleDeliveryState[] = [
-          {
-            id: "1",
-            mediumId: "1",
-            status: ArticleDeliveryStatus.Rejected,
-            errorCode: ArticleDeliveryRejectedCode.BadRequest,
-            internalMessage: "",
-          },
-          {
-            id: "2",
-            mediumId: "1",
-            status: ArticleDeliveryStatus.FilteredOut,
-          },
-          {
-            id: "3",
-            mediumId: "2",
-            status: ArticleDeliveryStatus.Rejected,
-            errorCode: ArticleDeliveryRejectedCode.BadRequest,
-            internalMessage: "",
-          },
-        ];
-
-        jest
-          .spyOn(deliveryService, "deliver")
-          .mockResolvedValue(deliveryStates);
-
-        await service.handleV2Event(v2Event);
-
-        expect(amqpConnection.publish).toHaveBeenCalledWith(
-          "",
-          MessageBrokerQueue.FeedRejectedArticleDisable,
-          {
-            data: {
-              medium: {
-                id: "1",
-              },
-              feed: {
-                id: v2Event.data.feed.id,
-              },
-            },
-          }
-        );
-      });
-    });
   });
 
   describe("onArticleDeliveryResult", () => {
@@ -502,9 +442,11 @@ describe("FeedEventHandlerService", () => {
     });
 
     it("deletes info for feed on a valid event", async () => {
-      const event = {
+      const event: FeedDeletedEvent = {
         data: {
-          id: "feed-id",
+          feed: {
+            id: "feed-id",
+          },
         },
       };
 

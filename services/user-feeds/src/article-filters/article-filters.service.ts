@@ -45,21 +45,16 @@ export class ArticleFiltersService {
       return true;
     }
 
-    if (
-      ![ExpressionType.Logical, ExpressionType.Relational].includes(
-        expression.type
-      )
-    ) {
-      throw new InvalidExpressionException(
-        `Invalid expression type: ${expression.type}`
-      );
-    }
-
     switch (expression.type) {
       case ExpressionType.Logical:
         return this.evaluateLogicalExpression(expression, references);
       case ExpressionType.Relational:
         return this.evaluateRelationalExpression(expression, references);
+      default:
+        throw new InvalidExpressionException(
+          // @ts-ignore
+          `Invalid expression type: ${expression.type}`
+        );
     }
   }
 
@@ -101,13 +96,14 @@ export class ArticleFiltersService {
 
         return !result;
       }
-    }
 
-    throw new InvalidExpressionException(
-      `Unknown operator ${expression.op} in logical expression ${JSON.stringify(
-        expression
-      )}`
-    );
+      default:
+        throw new InvalidExpressionException(
+          `Unknown operator ${
+            expression.op
+          } in logical expression ${JSON.stringify(expression)}`
+        );
+    }
   }
 
   private async evaluateRelationalExpression(
@@ -136,30 +132,30 @@ export class ArticleFiltersService {
           return valueToCompareAgainst === right.value;
         case RelationalExpressionOperator.Contains:
           return valueToCompareAgainst.includes(right.value);
+        default:
+          throw new InvalidExpressionException(
+            `Unknown right operator "${
+              expression.op
+            }" of string-type right operand in relational expression ${JSON.stringify(
+              expression
+            )}. Only "${RelationalExpressionOperator.Eq}" and "${
+              RelationalExpressionOperator.Contains
+            }" are supported.`
+          );
       }
-
-      throw new InvalidExpressionException(
-        `Unknown right operator "${
-          expression.op
-        }" of string-type right operand in relational expression ${JSON.stringify(
-          expression
-        )}. Only "${RelationalExpressionOperator.Eq}" and "${
-          RelationalExpressionOperator.Contains
-        }" are supported.`
-      );
     } else if (right.type === RelationalExpressionRight.RegExp) {
       switch (expression.op) {
         case RelationalExpressionOperator.Matches:
           return this.testRegex(right.value, valueToCompareAgainst);
+        default:
+          throw new InvalidExpressionException(
+            `Unknown right operator "${
+              expression.op
+            }" of regex-type right operand in relational expression ${JSON.stringify(
+              expression
+            )}. Only "${RelationalExpressionOperator.Matches}" is supported.`
+          );
       }
-
-      throw new InvalidExpressionException(
-        `Unknown right operator "${
-          expression.op
-        }" of regex-type right operand in relational expression ${JSON.stringify(
-          expression
-        )}. Only "${RelationalExpressionOperator.Matches}" is supported.`
-      );
     } else {
       throw new InvalidExpressionException(
         `Unknown right type ${
@@ -199,7 +195,7 @@ export class ArticleFiltersService {
     article: Article;
   }): Record<RelationalExpressionLeft, unknown> {
     return {
-      ARTICLE: data.article,
+      [RelationalExpressionLeft.Article]: data.article,
     };
   }
 }

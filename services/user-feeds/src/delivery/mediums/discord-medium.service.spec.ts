@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   ArticleDeliveryState,
@@ -18,19 +19,23 @@ const producer = {
 
 describe("DiscordMediumService", () => {
   let service: DiscordMediumService;
+  const configService = {
+    getOrThrow: jest.fn(),
+  };
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DiscordMediumService,
         {
-          provide: "DISCORD_REST_PRODUCER",
-          useValue: producer,
+          provide: ConfigService,
+          useValue: configService,
         },
       ],
     }).compile();
 
     service = module.get<DiscordMediumService>(DiscordMediumService);
+    service.producer = producer as never;
   });
 
   beforeEach(() => {
