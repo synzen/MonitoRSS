@@ -56,12 +56,6 @@ export const Condition = ({
                   {t('features.feedConnections.components.filtersForm.relationalOpContains')}
 
                 </option>
-                <option
-                  value={Matches}
-                >
-                  {t('features.feedConnections.components.filtersForm.relationalOpMatches')}
-
-                </option>
               </Select>
             )}
           />
