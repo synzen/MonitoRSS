@@ -1,20 +1,20 @@
-import { RepeatIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertIcon,
   Box,
-  Button,
   Flex,
   Heading,
+  HStack,
   Spinner,
   Stack,
   Text,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { notifyError } from '../../../../utils/notifyError';
+import { ThemedSelect } from '../../../../components';
+import { GetArticlesFilterReturnType } from '../../../feed/constants';
 import { useUserFeedArticles } from '../../../feed/hooks';
 import { LogicalFilterExpression } from '../../types';
-import { ArticlePlaceholderTable } from '../ArticlePlaceholderTable';
+import { ArticleFilterResultsTable } from '../ArticleFilterResultsTable';
 import { FiltersForm } from '../FiltersForm';
 
 interface Props {
@@ -25,28 +25,24 @@ interface Props {
 
 export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) => {
   const {
-    data: userFeedArticles,
-    refetch: refetchUserFeedArticle,
-    fetchStatus: userFeedArticlesFetchStatus,
+    data: userFeedArticlesResults,
     status: userFeedArticlesStatus,
   } = useUserFeedArticles({
     feedId,
     data: {
       limit: 1,
       random: true,
+      filters: !filters ? undefined : {
+        returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
+        expression: filters,
+      },
     },
   });
   const { t } = useTranslation();
 
-  const onClickRandomFeedArticle = async () => {
-    try {
-      await refetchUserFeedArticle();
-    } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
-    }
-  };
-
-  const firstArticle = userFeedArticles?.result.articles[0];
+  const articles = userFeedArticlesResults?.result.articles;
+  const selectedArticleProperty = userFeedArticlesResults?.result.selectedProperties[0];
+  const filterResultsByIndex = userFeedArticlesResults?.result.filterStatuses;
 
   const fetchErrorAlert = userFeedArticlesStatus === 'error' && (
     <Alert status="error">
@@ -55,17 +51,17 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
     </Alert>
   );
 
-  const parseErrorAlert = userFeedArticles?.result.requestStatus === 'parse_error' && (
+  const parseErrorAlert = userFeedArticlesResults?.result.requestStatus === 'parse_error' && (
     <Alert status="error">
       <AlertIcon />
       {t('common.apiErrors.feedParseFailed')}
     </Alert>
   );
 
-  const noArticlesAlert = userFeedArticles?.result.articles.length === 0 && (
+  const noArticlesAlert = userFeedArticlesResults?.result.articles.length === 0 && (
     <Alert status="info">
       <AlertIcon />
-      {t('features.feedConnections.components.articlePlaceholderTable.noArticles')}
+      {t('features.feedConnections.components.filtersTabSection.noArticles')}
     </Alert>
   );
 
@@ -76,19 +72,23 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
       <Stack spacing={4}>
         <Flex justifyContent="space-between" alignItems="center">
           <Heading as="h2" size="md">
-            {t('features.feedConnections.components.articlePlaceholderTable'
-              + '.headingSamplePlaceholders')}
-
+            {t('features.feedConnections.components.filtersTabSection.headingSamplePlaceholders')}
           </Heading>
           {!hasAlert && (
-          <Button
-            size="sm"
-            leftIcon={<RepeatIcon />}
-            isLoading={userFeedArticlesFetchStatus === 'fetching'}
-            onClick={onClickRandomFeedArticle}
-          >
-            {t('features.feedConnections.components.articlePlaceholderTable.randomButton')}
-          </Button>
+            <HStack alignItems="center">
+              <Text>
+                {t('features.feedConnections.components'
+                + '.filtersTabSection.displayPropertyDropdownLabel')}
+              </Text>
+              <ThemedSelect
+                options={[{
+                  label: 'title',
+                  value: 'title',
+                }]}
+                value={selectedArticleProperty}
+                onChange={console.log}
+              />
+            </HStack>
           )}
         </Flex>
         <Box marginBottom="8">
@@ -98,12 +98,24 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
             <Stack alignItems="center">
               <Spinner size="xl" />
               <Text>
-                {t('features.feedConnections.components.articlePlaceholderTable.loadingArticle')}
+                {t('features.feedConnections.components.filtersTabSection.loadingArticles')}
               </Text>
             </Stack>
             )}
-          {!hasAlert && firstArticle
-            && <ArticlePlaceholderTable article={userFeedArticles.result.articles[0]} />}
+          {!hasAlert && articles
+            && (
+            <ArticleFilterResultsTable
+              articles={
+                articles.map(
+                  (article: Record<string, any>, index) => ({
+                    passedFilters: filterResultsByIndex?.[index].passed as boolean,
+                    propertyValue: article?.[selectedArticleProperty as string] as string,
+                  }),
+                )
+              }
+              displayPropertyName={selectedArticleProperty as string}
+            />
+            )}
         </Box>
       </Stack>
       <Stack spacing={4}>
@@ -111,7 +123,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
           as="h2"
           size="md"
         >
-          {t('features.feedConnections.components.articlePlaceholderTable.headingSettings')}
+          {t('features.feedConnections.components.filtersTabSection.headingSettings')}
         </Heading>
         <FiltersForm
           onSave={onFiltersUpdated}

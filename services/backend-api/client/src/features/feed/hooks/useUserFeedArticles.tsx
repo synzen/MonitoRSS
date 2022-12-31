@@ -2,15 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import ApiAdapterError from '../../../utils/ApiAdapterError';
 import {
   getUserFeedArticles,
+  GetUserFeedArticlesInput,
   GetUserFeedArticlesOutput,
 } from '../api';
 
 interface Props {
   feedId?: string
-  data: {
-    limit: number
-    random?: boolean
-  }
+  data: GetUserFeedArticlesInput['data']
 }
 
 export const useUserFeedArticles = ({ feedId, data: inputData }: Props) => {

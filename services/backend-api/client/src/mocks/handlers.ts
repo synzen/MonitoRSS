@@ -234,6 +234,8 @@ const handlers = [
       result: {
         articles: mockUserFeedArticles,
         requestStatus: 'success',
+        filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
+        selectedProperties: ['title'],
       },
     }),
   )),

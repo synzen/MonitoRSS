@@ -396,8 +396,17 @@
           "columnHeaderValue": "Value",
           "loadingArticle": "Loading article...",
           "headingSamplePlaceholders": "Sample Article Placeholders",
-          "headingSettings": "Settings",
           "randomButton": "Random",
+          "noArticles": "The feed currently does not have any articles to preview."
+        },
+        "articleFilterResultsTable": {
+          "columnHeaderPassedFilters": "Passed Filters"
+        },
+        "filtersTabSection": {
+          "displayPropertyDropdownLabel": "Display property:",
+          "headingSamplePlaceholders": "Article Filter Results",
+          "headingSettings": "Settings",
+          "loadingArticles": "Loading articles...",
           "noArticles": "The feed currently does not have any articles to preview."
         }
       }
