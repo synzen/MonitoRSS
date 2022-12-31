@@ -407,7 +407,8 @@
           "headingSamplePlaceholders": "Article Filter Results",
           "headingSettings": "Settings",
           "loadingArticles": "Loading articles...",
-          "noArticles": "The feed currently does not have any articles to preview."
+          "noArticles": "The feed currently does not have any articles to preview.",
+          "loadMoreButton": "Load more"
         }
       }
     },

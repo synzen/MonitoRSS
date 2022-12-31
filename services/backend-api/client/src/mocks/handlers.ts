@@ -228,17 +228,27 @@ const handlers = [
     );
   }),
 
-  rest.post('/api/v1/user-feeds/:feedId/get-articles', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.json<GetUserFeedArticlesOutput>({
-      result: {
-        articles: mockUserFeedArticles,
-        requestStatus: 'success',
-        filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
-        selectedProperties: ['title'],
-      },
-    }),
-  )),
+  rest.post('/api/v1/user-feeds/:feedId/get-articles', async (req, res, ctx) => {
+    const { skip, limit } = await req.json();
+
+    const useSkip = skip || 0;
+    const useLimit = limit || 10;
+
+    const articles = mockUserFeedArticles.slice(useSkip, useSkip + useLimit);
+
+    return res(
+      ctx.delay(500),
+      ctx.json<GetUserFeedArticlesOutput>({
+        result: {
+          articles,
+          totalArticles: mockUserFeedArticles.length,
+          requestStatus: 'success',
+          filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
+          selectedProperties: ['title'],
+        },
+      }),
+    );
+  }),
 
   rest.get('/api/v1/user-feeds/:feedId/daily-limit', (req, res, ctx) => res(
     ctx.delay(500),

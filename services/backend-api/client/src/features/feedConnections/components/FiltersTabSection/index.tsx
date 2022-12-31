@@ -2,6 +2,7 @@ import {
   Alert,
   AlertIcon,
   Box,
+  Button,
   Flex,
   Heading,
   HStack,
@@ -12,7 +13,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { ThemedSelect } from '../../../../components';
 import { GetArticlesFilterReturnType } from '../../../feed/constants';
-import { useUserFeedArticles } from '../../../feed/hooks';
+import {
+  useUserFeedArticlesWithLoadMore,
+} from '../../../feed/hooks/useUserFeedArticlesWithLoadMore';
 import { LogicalFilterExpression } from '../../types';
 import { ArticleFilterResultsTable } from '../ArticleFilterResultsTable';
 import { FiltersForm } from '../FiltersForm';
@@ -25,12 +28,16 @@ interface Props {
 
 export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) => {
   const {
+    allArticles,
+    allArticleFilterResults,
     data: userFeedArticlesResults,
     status: userFeedArticlesStatus,
-  } = useUserFeedArticles({
+    loadMore,
+    hasMore,
+    fetchStatus,
+  } = useUserFeedArticlesWithLoadMore({
     feedId,
     data: {
-      limit: 1,
       random: true,
       filters: !filters ? undefined : {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
@@ -40,9 +47,9 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
   });
   const { t } = useTranslation();
 
-  const articles = userFeedArticlesResults?.result.articles;
+  const articles = allArticles;
   const selectedArticleProperty = userFeedArticlesResults?.result.selectedProperties[0];
-  const filterResultsByIndex = userFeedArticlesResults?.result.filterStatuses;
+  const filterResultsByIndex = allArticleFilterResults;
 
   const fetchErrorAlert = userFeedArticlesStatus === 'error' && (
     <Alert status="error">
@@ -58,7 +65,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
     </Alert>
   );
 
-  const noArticlesAlert = userFeedArticlesResults?.result.articles.length === 0 && (
+  const noArticlesAlert = userFeedArticlesResults?.result.totalArticles === 0 && (
     <Alert status="info">
       <AlertIcon />
       {t('features.feedConnections.components.filtersTabSection.noArticles')}
@@ -102,10 +109,11 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
               </Text>
             </Stack>
             )}
-          {!hasAlert && articles
+          {!hasAlert && userFeedArticlesStatus !== 'loading'
             && (
-            <ArticleFilterResultsTable
-              articles={
+              <Stack>
+                <ArticleFilterResultsTable
+                  articles={
                 articles.map(
                   (article: Record<string, any>, index) => ({
                     passedFilters: filterResultsByIndex?.[index].passed as boolean,
@@ -113,8 +121,20 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
                   }),
                 )
               }
-              displayPropertyName={selectedArticleProperty as string}
-            />
+                  displayPropertyName={selectedArticleProperty as string}
+                />
+                <Stack alignItems="center">
+                  <Button
+                    width="min-content"
+                    variant="ghost"
+                    onClick={loadMore}
+                    isLoading={fetchStatus === 'fetching'}
+                    disabled={!hasMore}
+                  >
+                    {t('features.feedConnections.components.filtersTabSection.loadMoreButton')}
+                  </Button>
+                </Stack>
+              </Stack>
             )}
         </Box>
       </Stack>

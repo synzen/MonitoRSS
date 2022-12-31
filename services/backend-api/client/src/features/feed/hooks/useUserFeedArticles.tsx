@@ -9,11 +9,14 @@ import {
 interface Props {
   feedId?: string
   data: GetUserFeedArticlesInput['data']
+  onSuccess?: (data: GetUserFeedArticlesOutput) => void
 }
 
-export const useUserFeedArticles = ({ feedId, data: inputData }: Props) => {
+export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess }: Props) => {
   const queryKey = ['user-feed-articles', {
     feedId,
+    skip: inputData.skip,
+    limit: inputData.limit,
   }];
 
   const {
@@ -32,6 +35,8 @@ export const useUserFeedArticles = ({ feedId, data: inputData }: Props) => {
     },
     {
       enabled: !!feedId,
+      onSuccess,
+      keepPreviousData: true,
     },
   );
 
