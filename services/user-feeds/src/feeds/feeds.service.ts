@@ -61,7 +61,10 @@ export class FeedsService {
       countToGet: limit,
       random,
     }).map((index) => {
-      const article = articles[index];
+      return articles[index];
+    });
+
+    const matchedArticlesWithProperties = matchedArticles.map((article) => {
       const trimmed: Record<string, string> = {};
 
       properties.forEach((property) => {
@@ -82,7 +85,9 @@ export class FeedsService {
           matchedArticles.map(async (article) => ({
             passed: await this.articleFiltersService.evaluateExpression(
               filters.expression as unknown as LogicalExpression,
-              article
+              this.articleFiltersService.buildReferences({
+                article,
+              })
             ),
           }))
         );
@@ -92,7 +97,7 @@ export class FeedsService {
     }
 
     return {
-      articles: matchedArticles,
+      articles: matchedArticlesWithProperties,
       totalArticles: articles.length,
       properties,
       filterEvalResults: filterEvalResults,
