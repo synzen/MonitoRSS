@@ -10,6 +10,9 @@
       "actions": "Actions",
       "close": "Close"
     },
+    "table": {
+      "results": "Showing {{start}}-{{end}} of {{total}} results"
+    },
     "errors": {
       "somethingWentWrong": "Sorry, something went wrong.",
       "tryAgainLater": "Please try again later.",
@@ -408,7 +411,8 @@
           "headingSettings": "Settings",
           "loadingArticles": "Loading articles...",
           "noArticles": "The feed currently does not have any articles to preview.",
-          "loadMoreButton": "Load more"
+          "prevPage": "Previous",
+          "nextPage": "Next"
         }
       }
     },

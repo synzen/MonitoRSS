@@ -18,3 +18,4 @@ export * from './useDeleteUserFeed';
 export * from './useUpdateUserFeed';
 export * from './useUserFeedArticles';
 export * from './useUserFeedArticleProperties';
+export * from './useUserFeedArticlesWithPagination';

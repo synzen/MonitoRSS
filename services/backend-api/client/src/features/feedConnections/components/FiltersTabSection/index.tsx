@@ -14,10 +14,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemedSelect } from '../../../../components';
 import { GetArticlesFilterReturnType } from '../../../feed/constants';
-import { useUserFeedArticleProperties } from '../../../feed/hooks';
 import {
-  useUserFeedArticlesWithLoadMore,
-} from '../../../feed/hooks/useUserFeedArticlesWithLoadMore';
+  useUserFeedArticleProperties,
+  useUserFeedArticlesWithPagination,
+} from '../../../feed/hooks';
 import { LogicalFilterExpression } from '../../types';
 import { ArticleFilterResultsTable } from '../ArticleFilterResultsTable';
 import { FiltersForm } from '../FiltersForm';
@@ -38,14 +38,14 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
     status: feedArticlePropertiesStatus,
   } = useUserFeedArticleProperties({ feedId });
   const {
-    allArticles,
-    allArticleFilterResults,
     data: userFeedArticlesResults,
     status: userFeedArticlesStatus,
-    loadMore,
-    hasMore,
     fetchStatus,
-  } = useUserFeedArticlesWithLoadMore({
+    nextPage,
+    prevPage,
+    skip,
+    limit,
+  } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
       selectProperties: selectedArticleProperty ? [selectedArticleProperty] : undefined,
@@ -61,10 +61,14 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
     setSelectedArticleProperty(value);
   };
 
-  const articles = allArticles;
-  const filterResultsByIndex = allArticleFilterResults;
+  const articles = userFeedArticlesResults?.result.articles;
+  const filterResultsByIndex = userFeedArticlesResults?.result.filterStatuses;
   const useArticleProperty = selectedArticleProperty
     || userFeedArticlesResults?.result.selectedProperties[0];
+  const totalArticles = userFeedArticlesResults?.result.totalArticles;
+
+  const onFirstPage = skip === 0;
+  const onLastPage = !totalArticles || skip + limit >= totalArticles;
 
   const fetchErrorAlert = userFeedArticlesStatus === 'error' && (
     <Alert status="error">
@@ -133,27 +137,38 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
               <Stack>
                 <ArticleFilterResultsTable
                   articles={
-                articles.map(
-                  (article: Record<string, any>, index) => ({
-                    passedFilters: filterResultsByIndex?.[index]?.passed,
-                    propertyValue: article?.[useArticleProperty as string] as string,
-                  }),
-                )
-              }
+                    articles?.map(
+                      (article: Record<string, any>, index) => ({
+                        passedFilters: filterResultsByIndex?.[index]?.passed,
+                        propertyValue: article?.[useArticleProperty as string] as string,
+                      }),
+                    ) || []
+                  }
                   displayPropertyName={useArticleProperty as string}
                 />
-                <Stack alignItems="center">
-                  <Button
-                    width="min-content"
-                    variant="ghost"
-                    onClick={loadMore}
-                    isLoading={fetchStatus === 'fetching'}
-                    isDisabled={fetchStatus === 'fetching'}
-                    disabled={!hasMore}
-                  >
-                    {t('features.feedConnections.components.filtersTabSection.loadMoreButton')}
-                  </Button>
-                </Stack>
+                <Flex justifyContent="space-between">
+                  {t('common.table.results', {
+                    start: skip + 1,
+                    end: skip + limit,
+                    total: totalArticles,
+                  })}
+                  <HStack>
+                    <Button
+                      width="min-content"
+                      onClick={prevPage}
+                      isDisabled={onFirstPage || fetchStatus === 'fetching'}
+                    >
+                      {t('features.feedConnections.components.filtersTabSection.prevPage')}
+                    </Button>
+                    <Button
+                      width="min-content"
+                      onClick={nextPage}
+                      isDisabled={onLastPage || fetchStatus === 'fetching'}
+                    >
+                      {t('features.feedConnections.components.filtersTabSection.nextPage')}
+                    </Button>
+                  </HStack>
+                </Flex>
               </Stack>
             )}
         </Box>
