@@ -236,6 +236,67 @@ describe("FeedsService", () => {
       }
     );
 
+    it("returns every property if asterisk is passed in properties", async () => {
+      const input: QueryForArticlesInput = {
+        ...sampleInput,
+        articles: [
+          {
+            id: "1",
+            title: "title1",
+            description: "description1",
+          },
+          {
+            id: "2",
+            title: "title2",
+            description: "description2",
+            author: "author2",
+          },
+          {
+            id: "3",
+            title: "title3",
+            description: "description3",
+            image: "image3",
+          },
+        ],
+        selectProperties: ["*"],
+        limit: articles.length,
+      };
+
+      const result = await service.queryForArticles(input);
+      const expected = [
+        {
+          id: "1",
+          title: "title1",
+          description: "description1",
+          author: "",
+          image: "",
+        },
+        {
+          id: "2",
+          title: "title2",
+          description: "description2",
+          author: "author2",
+          image: "",
+        },
+        {
+          id: "3",
+          title: "title3",
+          description: "description3",
+          author: "",
+          image: "image3",
+        },
+      ];
+
+      expect(result.properties).toEqual([
+        "id",
+        "title",
+        "description",
+        "author",
+        "image",
+      ]);
+      expect(result.articles).toEqual(expected);
+    });
+
     it("returns filter evaluationn results correctly", async () => {
       const input: QueryForArticlesInput = {
         ...sampleInput,

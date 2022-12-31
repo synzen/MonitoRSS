@@ -105,8 +105,14 @@ export class FeedsService {
   ): string[] {
     let properties: string[] = requestedProperties || [];
 
+    if (properties.includes("*")) {
+      properties = Array.from(
+        new Set(articles.flatMap((article) => Object.keys(article)))
+      );
+    }
+
     // Prefer title
-    if (!properties.length && articles.every((article) => article.title)) {
+    if (!properties.length && articles.some((article) => article.title)) {
       properties = ["id", "title"];
     }
 
