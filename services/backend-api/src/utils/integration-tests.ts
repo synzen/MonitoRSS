@@ -1,6 +1,7 @@
 import { ModuleMetadata } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
+import testConfig from "../config/test-config";
 import { stopMemoryServer } from "./mongoose-test.module";
 
 let testingModule: TestingModule;
@@ -15,6 +16,7 @@ export async function setupIntegrationTests(metadata: ModuleMetadata) {
       ConfigModule.forRoot({
         ignoreEnvFile: true,
         isGlobal: true,
+        load: [testConfig],
       }),
     ],
   });

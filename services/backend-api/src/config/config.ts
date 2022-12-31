@@ -78,6 +78,14 @@ export default function config(options?: {
       .BACKEND_API_USER_FEEDS_API_KEY as string,
     BACKEND_API_RABBITMQ_BROKER_URL: process.env
       .BACKEND_API_RABBITMQ_BROKER_URL as string,
+    BACKEND_API_DEFAULT_MAX_USER_FEEDS:
+      parseInt(process.env.BACKEND_API_DEFAULT_MAX_USER_FEEDS as string, 10) ||
+      0,
+    BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS:
+      parseInt(
+        process.env.BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS as string,
+        10
+      ) || 5,
   } as const;
 
   if (!options?.skipValidation) {

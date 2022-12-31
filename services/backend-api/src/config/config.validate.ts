@@ -1,4 +1,4 @@
-import { plainToClass } from "class-transformer";
+import { plainToClass, Type } from "class-transformer";
 import {
   IsBoolean,
   IsEnum,
@@ -113,6 +113,16 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   BACKEND_API_RABBITMQ_BROKER_URL: string;
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  BACKEND_API_DEFAULT_MAX_USER_FEEDS?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS?: number;
 }
 
 export function validateConfig(

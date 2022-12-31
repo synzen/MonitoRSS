@@ -355,7 +355,7 @@ describe("UserFeedsModule", () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it("returns 403 if feed does not belong to user", async () => {
+    it("returns 404 if feed does not belong to user", async () => {
       const otherUserFeed = await userFeedModel.create({
         title: "title",
         url: "https://www.feed.com",
@@ -371,7 +371,7 @@ describe("UserFeedsModule", () => {
         payload: validBody,
       });
 
-      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it("returns 400 if payload is not valid", async () => {
@@ -860,7 +860,7 @@ describe("UserFeedsModule", () => {
       expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
-    it("returns 403 if feed does not belong to user", async () => {
+    it("returns 404 if feed does not belong to user", async () => {
       const otherUserFeed = await userFeedModel.create({
         title: "title",
         url: "https://www.feed.com",
@@ -875,7 +875,7 @@ describe("UserFeedsModule", () => {
         ...standardRequestOptions,
       });
 
-      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
     });
 
     it("returns 204 on success", async () => {

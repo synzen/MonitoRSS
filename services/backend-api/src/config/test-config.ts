@@ -21,6 +21,8 @@ export default (): ReturnType<typeof config> => {
     BACKEND_API_USER_FEEDS_API_HOST: "http://feed-handler-api-host.com:3000",
     BACKEND_API_USER_FEEDS_API_KEY: "feed-handler-api-key",
     BACKEND_API_RABBITMQ_BROKER_URL: "amqp://rabbitmq-broker-url.com:5672",
+    BACKEND_API_DEFAULT_MAX_USER_FEEDS: 1000,
+    BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: 1000,
   };
 
   validateConfig(configVals);

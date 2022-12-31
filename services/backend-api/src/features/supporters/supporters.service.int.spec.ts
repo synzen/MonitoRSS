@@ -21,7 +21,6 @@ import { createTestSupporter } from "../../test/data/supporters.test-data";
 import { createTestPatron } from "../../test/data/patron.test-data";
 import dayjs from "dayjs";
 import { PatronsService } from "./patrons.service";
-import { ConfigService } from "@nestjs/config";
 import { GuildSubscriptionsService } from "./guild-subscriptions.service";
 
 describe("SupportersService Integration", () => {
@@ -29,8 +28,6 @@ describe("SupportersService Integration", () => {
   let guildSubscriptionsService: GuildSubscriptionsService;
   let supporterModel: SupporterModel;
   let patronModel: PatronModel;
-  const defaultMaxFeeds = 5;
-  const defaultRefreshRateSeconds = 60;
   const userDiscordId = "user-discord-id";
 
   beforeAll(async () => {
@@ -42,30 +39,9 @@ describe("SupportersService Integration", () => {
       ],
     });
 
-    const configGetter = (key: string) => {
-      if (key === "BACKEND_API_DEFAULT_MAX_FEEDS") {
-        return defaultMaxFeeds;
-      }
-
-      if (key === "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES") {
-        return defaultRefreshRateSeconds / 60;
-      }
-
-      throw new Error(
-        `Config key ${key} not found. Implement it as a mock within the test`
-      );
-    };
-
-    uncompiledModule
-      .overrideProvider(ConfigService)
-      .useValue({
-        getOrThrow: configGetter,
-        get: configGetter,
-      })
-      .overrideProvider(GuildSubscriptionsService)
-      .useValue({
-        getAllSubscriptions: jest.fn(),
-      });
+    uncompiledModule.overrideProvider(GuildSubscriptionsService).useValue({
+      getAllSubscriptions: jest.fn(),
+    });
 
     const { module } = await init();
 
@@ -76,7 +52,6 @@ describe("SupportersService Integration", () => {
     jest
       .spyOn(guildSubscriptionsService, "getAllSubscriptions")
       .mockResolvedValue([]);
-    supportersService.defaultMaxFeeds = defaultMaxFeeds;
     supporterModel = module.get<SupporterModel>(getModelToken(Supporter.name));
     patronModel = module.get<PatronModel>(getModelToken(Patron.name));
   });
@@ -98,13 +73,13 @@ describe("SupportersService Integration", () => {
 
       expect(benefits).toEqual({
         isSupporter: false,
-        maxFeeds: defaultMaxFeeds,
+        maxFeeds: supportersService.defaultMaxFeeds,
         guilds: [],
         maxGuilds: 0,
         expireAt: undefined,
-        refreshRateSeconds: defaultRefreshRateSeconds,
+        refreshRateSeconds: supportersService.defaultRefreshRateSeconds,
         maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
-        maxUserFeeds: SupportersService.MAX_USER_FEEDS_DEFAULT,
+        maxUserFeeds: supportersService.defaultMaxUserFeeds,
       });
     });
     it("returns the correct benefits", async () => {
@@ -130,7 +105,7 @@ describe("SupportersService Integration", () => {
         expireAt: supporter.expireAt,
         refreshRateSeconds: 120,
         maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_SUPPORTER,
-        maxUserFeeds: SupportersService.MAX_USER_FEEDS_SUPPORTER,
+        maxUserFeeds: supportersService.defaultMaxUserFeeds,
       });
     });
   });
@@ -145,19 +120,19 @@ describe("SupportersService Integration", () => {
       expect(result).toEqual([
         {
           hasSupporter: false,
-          maxFeeds: defaultMaxFeeds,
+          maxFeeds: supportersService.defaultMaxFeeds,
           serverId: serverIds[0],
           webhooks: false,
         },
         {
           hasSupporter: false,
-          maxFeeds: defaultMaxFeeds,
+          maxFeeds: supportersService.defaultMaxFeeds,
           serverId: serverIds[1],
           webhooks: false,
         },
         {
           hasSupporter: false,
-          maxFeeds: defaultMaxFeeds,
+          maxFeeds: supportersService.defaultMaxFeeds,
           serverId: serverIds[2],
           webhooks: false,
         },
@@ -192,13 +167,13 @@ describe("SupportersService Integration", () => {
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
 
-        expect(result[0].maxFeeds).toEqual(defaultMaxFeeds);
+        expect(result[0].maxFeeds).toEqual(supportersService.defaultMaxFeeds);
       });
 
       it("returns the default max feeds if supporter is not found", async () => {
         const result = await supportersService.getBenefitsOfServers([serverId]);
 
-        expect(result[0].maxFeeds).toEqual(defaultMaxFeeds);
+        expect(result[0].maxFeeds).toEqual(supportersService.defaultMaxFeeds);
       });
 
       it("returns supporter max feeds if guild supporter has no expire at", async () => {
@@ -304,7 +279,7 @@ describe("SupportersService Integration", () => {
         await patronModel.create(patronToInsert);
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
-        expect(result[0].maxFeeds).toBe(defaultMaxFeeds);
+        expect(result[0].maxFeeds).toBe(supportersService.defaultMaxFeeds);
       });
 
       it("does not return supporter max feeds of a former patron", async () => {
@@ -317,7 +292,7 @@ describe("SupportersService Integration", () => {
         await patronModel.create(patronToInsert);
 
         const result = await supportersService.getBenefitsOfServers([serverId]);
-        expect(result[0].maxFeeds).toBe(defaultMaxFeeds);
+        expect(result[0].maxFeeds).toBe(supportersService.defaultMaxFeeds);
       });
     });
   });

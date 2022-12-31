@@ -44,6 +44,8 @@ interface SupportPatronAggregateResult {
 export class SupportersService {
   defaultMaxFeeds: number;
   defaultRefreshRateSeconds: number;
+  defaultMaxUserFeeds: number;
+  defaultMaxSupporterUserFeeds: number;
 
   constructor(
     @InjectModel(Supporter.name)
@@ -62,13 +64,19 @@ export class SupportersService {
       this.configService.getOrThrow<number>(
         "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
       ) * 60;
+
+    this.defaultMaxUserFeeds = this.configService.getOrThrow<number>(
+      "BACKEND_API_DEFAULT_MAX_USER_FEEDS"
+    );
+
+    this.defaultMaxSupporterUserFeeds = this.configService.getOrThrow<number>(
+      "BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS"
+    );
   }
 
   // Hardcode for now
   static MAX_DAILY_ARTICLES_SUPPORTER = 100;
   static MAX_DAILY_ARTICLES_DEFAULT = 0;
-  static MAX_USER_FEEDS_SUPPORTER = 5;
-  static MAX_USER_FEEDS_DEFAULT = 0;
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
@@ -105,7 +113,7 @@ export class SupportersService {
         maxGuilds: 0,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
         maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT, // hardcode for now
-        maxUserFeeds: SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+        maxUserFeeds: this.defaultMaxUserFeeds,
       };
     }
 
@@ -122,8 +130,8 @@ export class SupportersService {
         ? SupportersService.MAX_DAILY_ARTICLES_SUPPORTER
         : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
       maxUserFeeds: benefits.isSupporter
-        ? SupportersService.MAX_USER_FEEDS_SUPPORTER
-        : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+        ? this.defaultMaxSupporterUserFeeds
+        : this.defaultMaxUserFeeds,
     };
   }
 
