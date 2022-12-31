@@ -1,12 +1,23 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
   Min,
 } from "class-validator";
+import { GetFeedArticlesFilterReturnType } from "../types";
+
+class FiltersDto {
+  @IsEnum(GetFeedArticlesFilterReturnType)
+  returnType: GetFeedArticlesFilterReturnType;
+
+  @IsObject()
+  expression: Record<string, unknown>;
+}
 
 export class GetUserFeedArticlesInputDto {
   @IsInt()
@@ -35,11 +46,8 @@ export class GetUserFeedArticlesInputDto {
   @IsOptional()
   selectProperties?: string[];
 
-  /**
-   * Include the filter results for each article
-   */
-  @Type(() => Boolean)
+  @Type(() => FiltersDto)
   @IsOptional()
-  @IsBoolean()
-  includeFilterResults?: boolean;
+  @IsObject()
+  filters?: FiltersDto;
 }

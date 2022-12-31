@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
+import { LogicalExpression } from "../article-filters/types";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { Article } from "../shared";
 import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
-import { QueryForArticlesInput } from "./types";
+import { GetUserFeedArticlesFilterReturnType } from "./constants";
+import { QueryForArticlesInput, QueryForArticlesOutput } from "./types";
 
 interface InitializeFeedInputDto {
   rateLimit: {
@@ -38,13 +40,14 @@ export class FeedsService {
     return this.articleFiltersService.getFilterExpressionErrors(expression);
   }
 
-  queryForArticles({
+  async queryForArticles({
     articles,
     limit,
     skip,
     random,
     selectProperties,
-  }: QueryForArticlesInput) {
+    filters,
+  }: QueryForArticlesInput): Promise<QueryForArticlesOutput> {
     const properties = this.queryForArticleProperties(
       articles,
       selectProperties
@@ -68,9 +71,28 @@ export class FeedsService {
       return trimmed;
     });
 
+    let filterEvalResults: Array<{ passed: boolean }> | undefined;
+
+    if (filters?.expression) {
+      if (
+        filters.returnType ===
+        GetUserFeedArticlesFilterReturnType.IncludeEvaluationResults
+      ) {
+        filterEvalResults = await Promise.all(
+          matchedArticles.map(async (article) => ({
+            passed: await this.articleFiltersService.evaluateExpression(
+              filters.expression as unknown as LogicalExpression,
+              article
+            ),
+          }))
+        );
+      }
+    }
+
     return {
       articles: matchedArticles,
       properties,
+      filterEvalResults: filterEvalResults,
     };
   }
 

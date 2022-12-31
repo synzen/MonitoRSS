@@ -41,6 +41,7 @@ import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-outpu
 import { UserFeed } from "./entities";
 import { RetryUserFeedFilter } from "./filters";
 import { GetUserFeedPipe } from "./pipes";
+import { GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 
 @Controller("user-feeds")
@@ -82,15 +83,18 @@ export class UserFeedsController {
   @HttpCode(HttpStatus.OK)
   async getFeedArticles(
     @Body(TransformValidationPipe)
-    { limit, random }: GetUserFeedArticlesInputDto,
+    { limit, random, filters }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedArticlesOutputDto> {
+    const input: GetFeedArticlesInput = {
+      limit,
+      url: feed.url,
+      random,
+      filters,
+    };
+
     const { articles, requestStatus } =
-      await this.userFeedsService.getFeedArticles({
-        limit,
-        url: feed.url,
-        random,
-      });
+      await this.userFeedsService.getFeedArticles(input);
 
     return {
       result: {

@@ -86,7 +86,7 @@ export class FeedsController {
       random,
       url,
       skip,
-      includeFilterResults,
+      filters,
       selectProperties,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
@@ -117,7 +117,7 @@ export class FeedsController {
           limit,
           skip,
           selectProperties,
-          includeFilterResults,
+          filters,
           random,
         });
 

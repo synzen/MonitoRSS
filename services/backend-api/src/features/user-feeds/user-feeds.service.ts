@@ -247,7 +247,7 @@ export class UserFeedsService {
     limit,
     url,
     random,
-    includeFilterResults,
+    filters,
     selectProperties,
     skip,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
@@ -255,7 +255,7 @@ export class UserFeedsService {
       url,
       limit,
       random,
-      includeFilterResults,
+      filters,
       skip: skip || 0,
       selectProperties,
     });

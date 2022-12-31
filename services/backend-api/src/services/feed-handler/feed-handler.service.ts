@@ -160,7 +160,7 @@ export class FeedHandlerService {
     limit,
     random,
     skip,
-    includeFilterResults,
+    filters,
     selectProperties,
   }: GetArticlesInput): Promise<GetArticlesOutput> {
     const body = {
@@ -168,7 +168,7 @@ export class FeedHandlerService {
       limit,
       random: random,
       skip,
-      includeFilterResults: includeFilterResults,
+      filters,
       selectProperties,
     };
 

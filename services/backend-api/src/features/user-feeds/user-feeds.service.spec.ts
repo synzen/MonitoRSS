@@ -1,3 +1,4 @@
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
@@ -36,6 +37,12 @@ describe("UserFeedsService", () => {
         UserFeedsService,
         SupportersService,
         FeedHandlerService,
+        {
+          provide: AmqpConnection,
+          useValue: {
+            publish: jest.fn(),
+          },
+        },
       ],
       imports: [
         MongooseTestModule.forRoot(),
