@@ -283,7 +283,7 @@ const handlers = [
     ctx.delay(500),
     ctx.json<GetUserFeedArticlePropertiesOutput>({
       result: {
-        requestStatus: 'success',
+        requestStatus: UserFeedArticleRequestStatus.Success,
         properties: ['id', 'title'],
       },
     }),

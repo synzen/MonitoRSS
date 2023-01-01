@@ -378,7 +378,8 @@
           "formLinkLabel": "Link",
           "onlyForYourReferenceLabel": "This is only for your reference",
           "addButton": "Add Feed",
-          "overLimitHint": "You have reached the maximum number of feeds available to you."
+          "overLimitHint": "You have reached the maximum number of feeds available to you.",
+          "successAdd": "Successfully added feed!"
         },
         "requestsTable": {
           "title": "Request History",

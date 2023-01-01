@@ -24,6 +24,7 @@ import { useEffect } from 'react';
 import { useCreateUserFeed, useUserFeeds } from '../../hooks';
 import { notifyError } from '@/utils/notifyError';
 import { useDiscordUserMe } from '../../../discordUser';
+import { notifySuccess } from '../../../../utils/notifySuccess';
 
 const formSchema = object({
   title: string().required(),
@@ -65,6 +66,7 @@ export const AddUserFeedDialog: React.FC = () => {
       await refetchFeeds();
       reset();
       onClose();
+      notifySuccess(t('features.userFeeds.components.addUserFeedDialog.successAdd'));
     } catch (err) {
       notifyError(t('features.feed.components.addFeedDialog.failedToAdd'), err as Error);
     }

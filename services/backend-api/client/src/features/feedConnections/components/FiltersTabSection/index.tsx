@@ -84,10 +84,10 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
     && requestStatus !== UserFeedArticleRequestStatus.Success && (
     <Alert status="error">
       <AlertIcon />
-      {getErrorMessageForArticleRequestStatus(
+      {t(getErrorMessageForArticleRequestStatus(
         requestStatus,
         userFeedArticlesResults?.result?.response?.statusCode,
-      )}
+      ))}
     </Alert>
   );
 
