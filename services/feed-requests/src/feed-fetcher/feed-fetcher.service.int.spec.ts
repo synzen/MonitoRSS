@@ -229,11 +229,13 @@ describe('FeedFetcherService (Integration)', () => {
 
     describe('when there were no previous attempts', () => {
       it('should return false if no previous attempt', async () => {
-        const { skip } = await service.shouldSkipAfterPreviousFailedAttempt({
-          url,
-        });
+        const { skip, failedAttemptsCount } =
+          await service.shouldSkipAfterPreviousFailedAttempt({
+            url,
+          });
 
         expect(skip).toEqual(false);
+        expect(failedAttemptsCount).toEqual(0);
       });
     });
 

@@ -81,6 +81,13 @@ export class FeedFetcherService {
   }> {
     const failedAttempts = await this.countFailedRequests({ url });
 
+    if (failedAttempts === 0) {
+      return {
+        skip: false,
+        failedAttemptsCount: 0,
+      };
+    }
+
     if (failedAttempts >= FeedFetcherService.MAX_FAILED_ATTEMPTS) {
       this.emitFailedUrl({ url });
 
