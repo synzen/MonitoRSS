@@ -38,6 +38,11 @@ export const ConfirmModal = ({
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
 
+  const onClickConfirm = async () => {
+    await onConfirm();
+    onClose();
+  };
+
   return (
     <>
       {React.cloneElement(trigger, { onClick: onOpen })}
@@ -59,7 +64,7 @@ export const ConfirmModal = ({
               isLoading={okLoading}
               colorScheme={colorScheme}
               variant="solid"
-              onClick={onConfirm}
+              onClick={onClickConfirm}
             >
               {okText || t('common.buttons.confirm')}
             </Button>

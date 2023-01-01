@@ -201,12 +201,23 @@ const handlers = [
     );
   }),
 
-  rest.patch('/api/v1/user-feeds/:feedId', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.json<UpdateUserFeedOutput>({
-      result: mockUserFeeds[0],
-    }),
-  )),
+  rest.patch('/api/v1/user-feeds/:feedId', (req, res, ctx) => {
+    const matchingUserFeed = mockUserFeeds.find((feed) => feed.id === req.params.feedId);
+
+    if (!matchingUserFeed) {
+      return res(
+        ctx.status(404),
+        ctx.json({}),
+      );
+    }
+
+    return res(
+      ctx.delay(500),
+      ctx.json<UpdateUserFeedOutput>({
+        result: matchingUserFeed,
+      }),
+    );
+  }),
 
   rest.get('/api/v1/user-feeds/:feedId', (req, res, ctx) => {
     const { feedId } = req.params;
@@ -363,12 +374,23 @@ const handlers = [
     }),
   )),
 
-  rest.patch('/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
-    ctx.delay(500),
-    ctx.json<UpdateDiscordWebhookConnectionOutput>({
-      result: mockFeedWebhookConnections[0],
-    }),
-  )),
+  rest.patch('/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => {
+    const matchingConnection = mockFeedWebhookConnections.find((c) => c.id === req.params.id);
+
+    if (!matchingConnection) {
+      return res(
+        ctx.status(404),
+        ctx.json({}),
+      );
+    }
+
+    return res(
+      ctx.delay(500),
+      ctx.json<UpdateDiscordWebhookConnectionOutput>({
+        result: matchingConnection,
+      }),
+    );
+  }),
 
   rest.delete('/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id', (req, res, ctx) => res(
     ctx.delay(500),
