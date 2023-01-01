@@ -6,6 +6,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Get } from '@nestjs/common/decorators';
+import { NestedQuery } from '../shared/decorators';
 import { ApiGuard } from '../shared/guards';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
@@ -26,7 +27,7 @@ export class FeedFetcherController {
   @Get('feed-requests')
   @UseGuards(ApiGuard)
   async getRequests(
-    @Body(
+    @NestedQuery(
       new ValidationPipe({
         transform: true,
       }),
@@ -36,7 +37,7 @@ export class FeedFetcherController {
     const requests = await this.feedFetcherService.getRequests({
       skip,
       limit,
-      url,
+      url: decodeURIComponent(url),
       select: ['id', 'createdAt', 'nextRetryDate', 'status'],
     });
 

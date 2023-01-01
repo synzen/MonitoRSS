@@ -33,6 +33,8 @@ import {
   GetUserFeedArticlesInputDto,
   GetUserFeedDailyLimitOutputDto,
   GetUserFeedOutputDto,
+  GetUserFeedRequestsInputDto,
+  GetUserFeedRequestsOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
   UpdateUserFeedInputDto,
@@ -78,6 +80,21 @@ export class UserFeedsController {
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
     return await this.formatFeedForResponse(feed, feed.user.discordUserId);
+  }
+
+  @Get("/:feed/requests")
+  async getFeedRequests(
+    @Param("feed", GetUserFeedPipe) feed: UserFeed,
+    @NestedQuery(TransformValidationPipe)
+    { limit, skip }: GetUserFeedRequestsInputDto
+  ): Promise<GetUserFeedRequestsOutputDto> {
+    const requests = await this.userFeedsService.getFeedRequests({
+      url: feed.url,
+      limit,
+      skip,
+    });
+
+    return requests;
   }
 
   @Get("/:feedId/article-properties")

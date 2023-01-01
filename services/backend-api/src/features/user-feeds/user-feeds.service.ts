@@ -21,6 +21,7 @@ import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
+import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 
 interface GetFeedsInput {
   userId: string;
@@ -48,6 +49,7 @@ export class UserFeedsService {
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
     private readonly feedHandlerService: FeedHandlerService,
+    private readonly feedFetcherApiService: FeedFetcherApiService,
     private readonly amqpConnection: AmqpConnection
   ) {}
 
@@ -157,6 +159,22 @@ export class UserFeedsService {
     }
 
     return query.countDocuments();
+  }
+
+  async getFeedRequests({
+    skip,
+    limit,
+    url,
+  }: {
+    skip: number;
+    limit: number;
+    url: string;
+  }) {
+    return this.feedFetcherApiService.getRequests({
+      limit,
+      skip,
+      url,
+    });
   }
 
   async updateFeedById(id: string, updates: UpdateFeedInput) {

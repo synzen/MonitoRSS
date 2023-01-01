@@ -20,6 +20,7 @@ import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { UserFeedHealthStatus } from "./types";
 import { GetArticlesResponseRequestStatus } from "../../services/feed-handler/types";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { URLSearchParams } from "url";
 
 const feedXml = readFileSync(
   path.join(__dirname, "../../test/data/feed.xml"),
@@ -233,6 +234,87 @@ describe("UserFeedsModule", () => {
           }),
         })
       );
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
+  describe("GET /:feedId/requests", () => {
+    let feed: UserFeed;
+    const validQuery = `?${new URLSearchParams({
+      limit: "1",
+      skip: "0",
+    }).toString()}`;
+
+    beforeEach(async () => {
+      feed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: mockDiscordUser.id,
+        },
+      });
+    });
+
+    it("returns 401 if not logged in with discord", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}/requests${validQuery}`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("returns 404 if feed does not exist", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}1/requests${validQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns 404 if feed does not belong to user", async () => {
+      const otherFeed = await userFeedModel.create({
+        title: "title",
+        url: "https://www.feed.com",
+        user: {
+          discordUserId: "other-discord-user-id",
+        },
+      });
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${otherFeed._id.toHexString()}/requests${validQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns feed details on success", async () => {
+      nock(feedFetcherApiHost)
+        .get("/v1/feed-requests")
+        .query(true)
+        .reply(200, {
+          result: {
+            requests: [],
+            nextRetryDate: null,
+          },
+        });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/user-feeds/${feed._id.toHexString()}/requests${validQuery}`,
+        ...standardRequestOptions,
+      });
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          requests: [],
+          nextRetryDate: null,
+        },
+      });
       expect(statusCode).toBe(HttpStatus.OK);
     });
   });

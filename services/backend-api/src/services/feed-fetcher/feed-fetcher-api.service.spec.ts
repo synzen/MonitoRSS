@@ -3,6 +3,9 @@ import nock from "nock";
 import { FeedFetcherFetchFeedResponse } from "./types/feed-fetcher-fetch-feed-response.type";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
+import { FeedFetcherGetRequestsResponse } from "./types/feed-fetcher-get-requests-response.type";
+import { URLSearchParams } from "url";
+import { UnexpectedApiResponseException } from "../../common/exceptions";
 
 jest.mock("../../utils/logger");
 
@@ -70,6 +73,57 @@ describe("FeedFetcherApiService", () => {
 
       expect(loggerErrorSpy.mock.calls[0][0]).toEqual(
         expect.stringContaining(JSON.stringify(mockResponse))
+      );
+    });
+  });
+
+  describe("getRequests", () => {
+    const validPayload = {
+      limit: 10,
+      skip: 0,
+      url: "https://example.com/feed.xml",
+    };
+    const endpoint = `/v1/feed-requests`;
+    const expectedQuery = new URLSearchParams({
+      limit: validPayload.limit.toString(),
+      skip: validPayload.skip.toString(),
+      url: validPayload.url,
+    });
+
+    it("returns the result on success", async () => {
+      const mockResponse: FeedFetcherGetRequestsResponse = {
+        result: {
+          nextRetryDate: new Date(),
+          requests: [],
+        },
+      };
+
+      nock(host)
+        .get(endpoint)
+        .query(expectedQuery)
+        .matchHeader("Content-Type", "application/json")
+        .matchHeader("api-key", apiKey)
+        .reply(200, mockResponse);
+
+      const result = await service.getRequests(validPayload);
+
+      expect(result).toEqual(mockResponse);
+    });
+
+    it("throws if status code is not ok", async () => {
+      nock(host).get(endpoint).query(expectedQuery).reply(400, {});
+
+      await expect(service.getRequests(validPayload)).rejects.toThrow(Error);
+    });
+
+    it("throws if the response payload is unexpected", async () => {
+      nock(host)
+        .get(endpoint)
+        .query(expectedQuery)
+        .reply(200, { status: "unexpected" });
+
+      await expect(service.getRequests(validPayload)).rejects.toThrow(
+        UnexpectedApiResponseException
       );
     });
   });

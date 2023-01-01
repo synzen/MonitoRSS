@@ -1,8 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import fetch from "node-fetch";
+import { ClassConstructor, plainToInstance } from "class-transformer";
+import { validate } from "class-validator";
+import fetch, { Response } from "node-fetch";
+import { URLSearchParams } from "url";
+import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherFetchFeedResponse } from "./types/feed-fetcher-fetch-feed-response.type";
+import { FeedFetcherGetRequestsResponse } from "./types/feed-fetcher-get-requests-response.type";
 
 interface FeedFetchOptions {
   getCachedResponse?: boolean;
@@ -73,5 +78,72 @@ export class FeedFetcherApiService {
 
       throw error;
     }
+  }
+
+  async getRequests(payload: { limit: number; skip: number; url: string }) {
+    const urlParams = new URLSearchParams({
+      limit: payload.limit.toString(),
+      skip: payload.skip.toString(),
+      url: payload.url,
+    });
+
+    const response = await fetch(
+      `${this.host}/v1/feed-requests?${urlParams.toString()}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+      }
+    );
+
+    await this.validateResponseStatus(response);
+
+    const responseBody = await response.json();
+
+    const body = await this.validateResponseJson(
+      FeedFetcherGetRequestsResponse,
+      responseBody
+    );
+
+    return body;
+  }
+
+  private async validateResponseStatus(res: Response) {
+    if (res.status >= 500) {
+      throw new Error(`>= 500 status code (${res.status}) from User feeds api`);
+    }
+
+    if (!res.ok) {
+      let body: Record<string, unknown> | null = null;
+
+      try {
+        body = await res.json();
+      } catch (err) {}
+
+      throw new Error(
+        `Bad status code (${
+          res.status
+        }) from User feeds api, response: ${JSON.stringify(body)}`
+      );
+    }
+  }
+  private async validateResponseJson<T>(
+    classConstructor: ClassConstructor<T>,
+    json: Record<string, unknown>
+  ) {
+    const instance = plainToInstance(classConstructor, json);
+
+    const validationErrors = await validate(instance as object);
+
+    if (validationErrors.length > 0) {
+      throw new UnexpectedApiResponseException(
+        `Unexpected response from feed requests API: ${JSON.stringify(
+          validationErrors
+        )} Received body: ${JSON.stringify(json, null, 2)}`
+      );
+    }
+
+    return instance;
   }
 }

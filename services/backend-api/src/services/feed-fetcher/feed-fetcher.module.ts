@@ -4,7 +4,7 @@ import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 
 @Module({
   providers: [FeedFetcherService, FeedFetcherApiService],
-  exports: [FeedFetcherService],
+  exports: [FeedFetcherService, FeedFetcherApiService],
   imports: [],
 })
 export class FeedFetcherModule {}
