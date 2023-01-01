@@ -25,11 +25,11 @@ interface Props {
 const createStatusLabel = (status: UserFeedRequestStatus) => {
   switch (status) {
     case UserFeedRequestStatus.OK:
-      return <Badge colorScheme="green">{status}</Badge>;
+      return <Badge fontSize="sm" colorScheme="green">{status}</Badge>;
     case UserFeedRequestStatus.FETCH_ERROR:
     case UserFeedRequestStatus.FAILED:
     case UserFeedRequestStatus.PARSE_ERROR:
-      return <Badge colorScheme="red">{status}</Badge>;
+      return <Badge fontSize="sm" colorScheme="red">{status}</Badge>;
     default:
       return 'Unknown';
   }
