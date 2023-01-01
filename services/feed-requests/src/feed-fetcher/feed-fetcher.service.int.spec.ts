@@ -12,8 +12,14 @@ import { Request, Response } from './entities';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { getRepositoryToken } from '@mikro-orm/nestjs';
 import dayjs from 'dayjs';
+import nock from 'nock';
+import path from 'path';
+import { readFileSync } from 'fs';
 
 jest.mock('../utils/logger');
+
+const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
+const feedXml = readFileSync(feedFilePath, 'utf8');
 
 describe('FeedFetcherService (Integration)', () => {
   let app: INestApplication;
@@ -62,6 +68,37 @@ describe('FeedFetcherService (Integration)', () => {
 
   afterAll(async () => {
     await teardownPostgresTests();
+  });
+
+  describe('fetchAndSaveResponse', () => {
+    it('deletes stale request at the end', async () => {
+      const url = 'https://www.some-feed-url.com';
+
+      nock(url).get('/').replyWithFile(200, feedFilePath, {
+        'Content-Type': 'application/xml',
+      });
+
+      const req = new Request();
+      req.url = url;
+      req.status = RequestStatus.FAILED;
+      req.createdAt = dayjs().subtract(30, 'day').toDate();
+
+      await requestRepo.persistAndFlush(req);
+
+      await service.fetchAndSaveResponse(url);
+
+      const found = await requestRepo.find({
+        url,
+      });
+
+      expect(found).toHaveLength(1);
+
+      const request = found[0];
+
+      expect(request.createdAt.getTime()).toBeGreaterThan(
+        dayjs().subtract(15, 'days').toDate().getTime(),
+      );
+    });
   });
 
   describe('requestExistsAfterTime', () => {

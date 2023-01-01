@@ -122,10 +122,10 @@ export class FeedFetcherService {
         await this.onFailedUrl({ url });
       }
 
-      await this.responseRepo.persistAndFlush(response);
+      await this.responseRepo.persist(response);
       request.response = response;
 
-      return this.requestRepo.persistAndFlush(request);
+      return this.requestRepo.persist(request);
     } catch (err) {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
@@ -133,9 +133,10 @@ export class FeedFetcherService {
       request.status = RequestStatus.FETCH_ERROR;
       request.errorMessage = (err as Error).message;
 
-      return this.requestRepo.persistAndFlush(request);
+      return this.requestRepo.persist(request);
     } finally {
       await this.deleteStaleRequests(url);
+      await this.requestRepo.flush();
     }
   }
 
