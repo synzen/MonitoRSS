@@ -79,7 +79,10 @@ export const AddUserFeedDialog: React.FC = () => {
 
   return (
     <>
-      <Tooltip label={t('features.userFeeds.components.addUserFeedDialog.overLimitHint')}>
+      <Tooltip
+        label={t('features.userFeeds.components.addUserFeedDialog.overLimitHint')}
+        hidden={isUnderLimit === true}
+      >
         <Button
           colorScheme="blue"
           onClick={onOpen}
