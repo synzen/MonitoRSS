@@ -5,7 +5,12 @@ import { RelationalExpressionRight } from "./relational-expression-right.type";
 
 export interface RelationalStringExpression {
   type: ExpressionType.Relational;
-  op: RelationalExpressionOperator.Eq | RelationalExpressionOperator.Contains;
+  op:
+    | RelationalExpressionOperator.Eq
+    | RelationalExpressionOperator.NotEq
+    | RelationalExpressionOperator.Contains
+    | RelationalExpressionOperator.NotContain
+    | RelationalExpressionOperator.Matches;
   left: {
     type: RelationalExpressionLeft;
     value: string;
@@ -16,19 +21,17 @@ export interface RelationalStringExpression {
   };
 }
 
-export interface RelationalRegExpExpression {
-  type: ExpressionType.Relational;
-  op: RelationalExpressionOperator.Matches;
-  left: {
-    type: RelationalExpressionLeft;
-    value: string;
-  };
-  right: {
-    type: RelationalExpressionRight.RegExp;
-    value: string;
-  };
-}
+// export interface RelationalRegExpExpression {
+//   type: ExpressionType.Relational;
+//   op: RelationalExpressionOperator.Matches;
+//   left: {
+//     type: RelationalExpressionLeft;
+//     value: string;
+//   };
+//   right: {
+//     type: RelationalExpressionRight.RegExp;
+//     value: string;
+//   };
+// }
 
-export type RelationalExpression =
-  | RelationalStringExpression
-  | RelationalRegExpExpression;
+export type RelationalExpression = RelationalStringExpression;

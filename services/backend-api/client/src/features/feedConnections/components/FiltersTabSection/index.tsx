@@ -94,7 +94,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
   const hasAlert = !!(fetchErrorAlert || parseErrorAlert || noArticlesAlert);
 
   return (
-    <Stack spacing={12}>
+    <Stack spacing={12} paddingBottom={6}>
       <Stack spacing={4}>
         <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={6}>
           <Heading as="h2" size="md">

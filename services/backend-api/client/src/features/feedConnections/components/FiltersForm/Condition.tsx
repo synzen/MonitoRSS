@@ -11,6 +11,8 @@ const {
   Equals,
   Contains,
   Matches,
+  NotContain,
+  NotEqual,
 } = RelationalExpressionOperator;
 
 interface Props {
@@ -48,13 +50,26 @@ export const Condition = ({
                   value={Equals}
                 >
                   {t('features.feedConnections.components.filtersForm.relationalOpEquals')}
-
+                </option>
+                <option
+                  value={NotEqual}
+                >
+                  {t('features.feedConnections.components.filtersForm.relationalOpNotEqual')}
                 </option>
                 <option
                   value={Contains}
                 >
                   {t('features.feedConnections.components.filtersForm.relationalOpContains')}
-
+                </option>
+                <option
+                  value={NotContain}
+                >
+                  {t('features.feedConnections.components.filtersForm.relationalOpDoesNotContain')}
+                </option>
+                <option
+                  value={Matches}
+                >
+                  {t('features.feedConnections.components.filtersForm.relationalOpMatches')}
                 </option>
               </Select>
             )}

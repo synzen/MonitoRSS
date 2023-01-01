@@ -5,6 +5,7 @@ import {
   ExpressionType,
   LogicalExpression,
   LogicalExpressionOperator,
+  RelationalExpression,
   RelationalExpressionLeft,
   RelationalExpressionOperator,
   RelationalExpressionRight,
@@ -70,7 +71,7 @@ describe("ArticleFiltersService", () => {
               type: RelationalExpressionLeft.Article,
               value: "title",
             },
-            op: "invalid" as RelationalExpressionOperator,
+            op: "invalid" as never,
             right: {
               type: RelationalExpressionRight.String as never,
               value: "s",
@@ -120,43 +121,198 @@ describe("ArticleFiltersService", () => {
       ).rejects.toThrow(InvalidExpressionException);
     });
 
-    it("works with relationa expressions with regex right operands", async () => {
-      const expression: LogicalExpression = {
-        type: ExpressionType.Logical,
-        op: LogicalExpressionOperator.And,
-        children: [
-          {
+    describe("relational", () => {
+      it.each([
+        { value: "s", articleValue: "s", expected: true },
+        {
+          value: "s",
+          articleValue: "sticks",
+          expected: false,
+        },
+      ])(
+        "supports Eq when expected is $expected",
+        async ({ value, articleValue, expected }) => {
+          const expression: RelationalExpression = {
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
+            op: RelationalExpressionOperator.Eq,
+            right: {
+              type: RelationalExpressionRight.String,
+              value: value,
+            },
+            type: ExpressionType.Relational,
+          };
+
+          const reference = {
+            [RelationalExpressionLeft.Article]: {
+              id: "1",
+              title: articleValue,
+            },
+          };
+
+          await expect(
+            service.evaluateExpression(expression, reference)
+          ).resolves.toEqual(expected);
+        }
+      );
+
+      it.each([
+        { value: "s", articleValue: "s", expected: false },
+        {
+          value: "s",
+          articleValue: "sticks",
+          expected: true,
+        },
+      ])(
+        "supports NotEq when expected is $expected",
+        async ({ value, articleValue, expected }) => {
+          const expression: RelationalExpression = {
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
+            op: RelationalExpressionOperator.NotEq,
+            right: {
+              type: RelationalExpressionRight.String,
+              value,
+            },
+            type: ExpressionType.Relational,
+          };
+
+          const reference = {
+            [RelationalExpressionLeft.Article]: {
+              id: "1",
+              title: articleValue,
+            },
+          };
+
+          await expect(
+            service.evaluateExpression(expression, reference)
+          ).resolves.toEqual(expected);
+        }
+      );
+
+      it.each([
+        {
+          value: "s",
+          articleValue: "sticks",
+          expected: true,
+        },
+        {
+          value: "s",
+          articleValue: "top gun",
+          expected: false,
+        },
+      ])(
+        "supports Contains when expected is $expected",
+        async ({ value, articleValue, expected }) => {
+          const expression: RelationalExpression = {
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
+            op: RelationalExpressionOperator.Contains,
+            right: {
+              type: RelationalExpressionRight.String,
+              value: value,
+            },
+            type: ExpressionType.Relational,
+          };
+
+          const reference = {
+            [RelationalExpressionLeft.Article]: {
+              id: "1",
+              title: articleValue,
+            },
+          };
+
+          await expect(
+            service.evaluateExpression(expression, reference)
+          ).resolves.toEqual(expected);
+        }
+      );
+
+      it.each([
+        {
+          value: "s",
+          articleValue: "sticks",
+          expected: false,
+        },
+        {
+          value: "s",
+          articleValue: "top gun",
+          expected: true,
+        },
+      ])(
+        "supports NotContains when expected is $expected",
+        async ({ value, articleValue, expected }) => {
+          const expression: RelationalExpression = {
+            left: {
+              type: RelationalExpressionLeft.Article,
+              value: "title",
+            },
+            op: RelationalExpressionOperator.NotContain,
+            right: {
+              type: RelationalExpressionRight.String,
+              value: value,
+            },
+            type: ExpressionType.Relational,
+          };
+
+          const reference = {
+            [RelationalExpressionLeft.Article]: {
+              id: "1",
+              title: articleValue,
+            },
+          };
+
+          await expect(
+            service.evaluateExpression(expression, reference)
+          ).resolves.toEqual(expected);
+        }
+      );
+
+      it.each([
+        {
+          value: "a{3}",
+          articleValue: "sticks",
+          expected: false,
+        },
+        {
+          value: "a{3}",
+          articleValue: "hello-aaa-there",
+          expected: true,
+        },
+      ])(
+        "supports Matches when expected is $expected",
+        async ({ articleValue, expected, value }) => {
+          const expression: RelationalExpression = {
             left: {
               type: RelationalExpressionLeft.Article,
               value: "title",
             },
             op: RelationalExpressionOperator.Matches,
             right: {
-              type: RelationalExpressionRight.RegExp,
-              value: "other",
+              type: RelationalExpressionRight.String,
+              value,
             },
             type: ExpressionType.Relational,
-          },
-        ],
-      };
+          };
 
-      await expect(
-        service.evaluateExpression(expression, {
-          ARTICLE: {
-            id: "1",
-            title: "MOTHER",
-          },
-        })
-      ).resolves.toEqual(true);
+          const reference = {
+            [RelationalExpressionLeft.Article]: {
+              id: "1",
+              title: articleValue,
+            },
+          };
 
-      await expect(
-        service.evaluateExpression(expression, {
-          ARTICLE: {
-            id: "1",
-            title: "father",
-          },
-        })
-      ).resolves.toEqual(false);
+          await expect(
+            service.evaluateExpression(expression, reference)
+          ).resolves.toEqual(expected);
+        }
+      );
     });
 
     describe("AND operand", () => {

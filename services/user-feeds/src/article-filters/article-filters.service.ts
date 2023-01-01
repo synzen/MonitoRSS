@@ -133,6 +133,12 @@ export class ArticleFiltersService {
           return valueToCompareAgainst === right.value;
         case RelationalExpressionOperator.Contains:
           return valueToCompareAgainst.includes(right.value);
+        case RelationalExpressionOperator.NotContain:
+          return !valueToCompareAgainst.includes(right.value);
+        case RelationalExpressionOperator.NotEq:
+          return valueToCompareAgainst !== right.value;
+        case RelationalExpressionOperator.Matches:
+          return this.testRegex(right.value, valueToCompareAgainst);
         default:
           throw new InvalidExpressionException(
             `Unknown right operator "${
@@ -142,19 +148,6 @@ export class ArticleFiltersService {
             )}. Only "${RelationalExpressionOperator.Eq}" and "${
               RelationalExpressionOperator.Contains
             }" are supported.`
-          );
-      }
-    } else if (right.type === RelationalExpressionRight.RegExp) {
-      switch (expression.op) {
-        case RelationalExpressionOperator.Matches:
-          return this.testRegex(right.value, valueToCompareAgainst);
-        default:
-          throw new InvalidExpressionException(
-            `Unknown right operator "${
-              expression.op
-            }" of regex-type right operand in relational expression ${JSON.stringify(
-              expression
-            )}. Only "${RelationalExpressionOperator.Matches}" is supported.`
           );
       }
     } else {
