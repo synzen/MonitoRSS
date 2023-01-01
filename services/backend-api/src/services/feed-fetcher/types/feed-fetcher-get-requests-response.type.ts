@@ -1,19 +1,21 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
-  IsDate,
   IsIn,
+  IsInt,
   IsNumber,
   IsObject,
+  IsPositive,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { FeedFetcherRequestStatus } from "./feed-fetcher-request-status.type";
 
 class Request {
-  @IsDate()
-  @Type(() => Date)
-  createdAt: Date;
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number)
+  createdAt: number;
 
   @IsNumber()
   @Type(() => Number)
@@ -30,9 +32,10 @@ class Result {
   requests: Request[];
 
   @ValidateIf((_, val) => val !== null)
-  @IsDate()
-  @Type(() => Date)
-  nextRetryDate: Date | null;
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number)
+  nextRetryDate: number | null;
 }
 
 export class FeedFetcherGetRequestsResponse {

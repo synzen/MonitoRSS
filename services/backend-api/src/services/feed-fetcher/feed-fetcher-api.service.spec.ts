@@ -93,7 +93,7 @@ describe("FeedFetcherApiService", () => {
     it("returns the result on success", async () => {
       const mockResponse: FeedFetcherGetRequestsResponse = {
         result: {
-          nextRetryDate: new Date(),
+          nextRetryDate: 123,
           requests: [],
         },
       };

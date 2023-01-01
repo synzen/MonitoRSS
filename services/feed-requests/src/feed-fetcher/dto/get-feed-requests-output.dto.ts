@@ -3,12 +3,12 @@ import { RequestStatus } from '../constants';
 interface Request {
   id: number;
   status: RequestStatus;
-  createdAt: Date;
+  createdAt: number;
 }
 
 interface Result {
   requests: Request[];
-  nextRetryDate: Date | null;
+  nextRetryDate: number | null;
 }
 
 export interface GetFeedRequestsOutputDto {

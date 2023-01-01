@@ -6,6 +6,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Get } from '@nestjs/common/decorators';
+import dayjs from 'dayjs';
 import { NestedQuery } from '../shared/decorators';
 import { ApiGuard } from '../shared/guards';
 import logger from '../utils/logger';
@@ -46,11 +47,12 @@ export class FeedFetcherController {
     return {
       result: {
         requests: requests.map((r) => ({
-          createdAt: r.createdAt,
+          createdAt: dayjs(r.createdAt).unix(),
           id: r.id,
           status: r.status,
         })),
-        nextRetryDate,
+        // unix timestamp in seconds
+        nextRetryDate: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
       },
     };
   }

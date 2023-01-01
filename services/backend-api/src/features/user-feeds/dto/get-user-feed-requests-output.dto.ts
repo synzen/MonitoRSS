@@ -4,12 +4,13 @@ import { FeedFetcherRequestStatus } from "../../../services/feed-fetcher/types/f
 interface Request {
   id: number;
   status: FeedFetcherRequestStatus;
-  createdAt: Date;
+  createdAt: number;
 }
 
 interface Result {
   requests: Request[];
-  nextRetryDate: Date | null;
+  // Unix timestamp
+  nextRetryDate: number | null;
 }
 
 export interface GetUserFeedRequestsOutputDto {

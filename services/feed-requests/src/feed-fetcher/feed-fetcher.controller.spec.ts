@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { RequestStatus } from './constants';
 import { GetFeedRequestsInputDto } from './dto';
 import { FeedFetcherController } from './feed-fetcher.controller';
@@ -50,16 +51,16 @@ describe('FeedFetcherController', () => {
           requests: [
             {
               id: 1,
-              createdAt: mockRequests[0].createdAt,
+              createdAt: dayjs(mockRequests[0].createdAt).unix(),
               status: RequestStatus.FAILED,
             },
             {
               id: 2,
-              createdAt: mockRequests[1].createdAt,
+              createdAt: dayjs(mockRequests[1].createdAt).unix(),
               status: RequestStatus.OK,
             },
           ],
-          nextRetryDate: mockRequests[0].nextRetryDate,
+          nextRetryDate: dayjs(mockRequests[0].nextRetryDate).unix(),
         },
       });
     });
@@ -84,7 +85,7 @@ describe('FeedFetcherController', () => {
           requests: [
             {
               id: 1,
-              createdAt: mockRequests[0].createdAt,
+              createdAt: dayjs(mockRequests[0].createdAt).unix(),
               status: RequestStatus.OK,
             },
           ],
