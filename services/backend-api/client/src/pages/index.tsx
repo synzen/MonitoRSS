@@ -103,11 +103,9 @@ const Pages: React.FC = () => (
       path={pages.userFeed(':feedId')}
       element={(
         <RequireAuth>
-          <RequireDiscordServers>
-            <PageContentV2 requireFeed>
-              <FeedV2 />
-            </PageContentV2>
-          </RequireDiscordServers>
+          <PageContentV2 requireFeed>
+            <FeedV2 />
+          </PageContentV2>
         </RequireAuth>
     )}
 
