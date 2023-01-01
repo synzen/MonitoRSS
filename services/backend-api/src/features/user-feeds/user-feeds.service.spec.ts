@@ -1,6 +1,7 @@
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { Types } from "mongoose";
+import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import { GetArticlesResponseRequestStatus } from "../../services/feed-handler/types";
@@ -41,6 +42,12 @@ describe("UserFeedsService", () => {
           provide: AmqpConnection,
           useValue: {
             publish: jest.fn(),
+          },
+        },
+        {
+          provide: FeedFetcherApiService,
+          useValue: {
+            getRequests: jest.fn(),
           },
         },
       ],
@@ -848,6 +855,33 @@ describe("UserFeedsService", () => {
       expect(result).toEqual({
         requestStatus: "foo",
         properties: ["a", "b", "c"],
+      });
+    });
+
+    it("returns sorts the returned properties", async () => {
+      jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue({
+        requestStatus: "foo",
+        articles: [
+          {
+            z: "1",
+          },
+          {
+            c: "2",
+            a: "a",
+          },
+          {
+            b: "3",
+          },
+        ],
+      } as never);
+
+      const result = await service.getFeedArticleProperties({
+        url: "url",
+      });
+
+      expect(result).toEqual({
+        requestStatus: "foo",
+        properties: ["a", "b", "c", "z"],
       });
     });
   });

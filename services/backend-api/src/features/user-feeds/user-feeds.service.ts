@@ -295,7 +295,7 @@ export class UserFeedsService {
 
     const properties = Array.from(
       new Set(articles.map((article) => Object.keys(article)).flat())
-    );
+    ).sort();
 
     return {
       requestStatus,
