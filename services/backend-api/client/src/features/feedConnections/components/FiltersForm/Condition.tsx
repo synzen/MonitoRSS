@@ -36,6 +36,9 @@ export const Condition = ({
       <HStack width="100%" spacing={8} alignItems="flex-start">
         <ConditionInput
           controllerName={`${prefix}left.value`}
+          placeholder={
+            t('features.feedConnections.components.filtersForm.placeholderArticleProperty')
+          }
         />
         <FormControl>
           <Controller
@@ -77,6 +80,9 @@ export const Condition = ({
         </FormControl>
         <ConditionInput
           controllerName={`${prefix}right.value`}
+          placeholder={
+            t('features.feedConnections.components.filtersForm.placeholderArticleValue')
+          }
         />
       </HStack>
       {deletable && (

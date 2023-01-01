@@ -397,7 +397,10 @@
           "relationalOpNotEqual": "is not",
           "relationalOpContains": "contains",
           "relationalOpDoesNotContain": "does not contain",
-          "relationalOpMatches": "matches"
+          "relationalOpMatches": "regex matches",
+          "placeholderArticleProperty": "Article property",
+          "placeholderArticleValue": "Article value",
+          "valueIsRequired": "Value is required"
         },
         "deleteButton": {
           "confirmTitle": "Confirmation",
@@ -431,7 +434,7 @@
         },
         "filtersTabSection": {
           "displayPropertyDropdownLabel": "Display property:",
-          "headingSamplePlaceholders": "Article Filter Results",
+          "headingSamplePlaceholders": "Articles",
           "headingSettings": "Settings",
           "loadingArticles": "Loading articles...",
           "noArticles": "The feed currently does not have any articles to preview.",

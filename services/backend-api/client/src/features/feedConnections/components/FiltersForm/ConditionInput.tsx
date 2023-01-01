@@ -6,15 +6,19 @@ import {
 import {
   Controller, FieldError, useFormContext,
 } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { getNestedField } from '../../../../utils/getNestedField';
 
 interface Props {
   controllerName: string
+  placeholder?: string
 }
 
 export const ConditionInput = ({
   controllerName,
+  placeholder,
 }: Props) => {
+  const { t } = useTranslation();
   const {
     control,
     formState: {
@@ -34,11 +38,12 @@ export const ConditionInput = ({
           <>
             <Input
               flexGrow={1}
+              placeholder={placeholder}
               {...field}
             />
             {error?.type === 'required' && (
             <FormErrorMessage>
-              Value is required
+              {t('features.feedConnections.components.filtersForm.valueIsRequired')}
             </FormErrorMessage>
             )}
           </>
