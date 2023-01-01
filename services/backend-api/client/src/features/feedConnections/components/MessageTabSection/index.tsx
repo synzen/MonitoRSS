@@ -34,6 +34,8 @@ export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdat
     data: {
       limit: 1,
       random: true,
+      skip: 0,
+      selectProperties: ['*'],
     },
   });
   const { t } = useTranslation();
