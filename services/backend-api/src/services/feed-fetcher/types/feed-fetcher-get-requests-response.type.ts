@@ -31,6 +31,10 @@ class Result {
   @Type(() => Request)
   requests: Request[];
 
+  @Type(() => Number)
+  @IsInt()
+  totalRequests: number;
+
   @ValidateIf((_, val) => val !== null)
   @IsInt()
   @IsPositive()

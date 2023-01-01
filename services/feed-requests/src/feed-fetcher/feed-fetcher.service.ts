@@ -10,7 +10,7 @@ import { EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { UseRequestContext } from '@mikro-orm/core';
 import { MikroORM } from '@mikro-orm/core';
-import { GetFeedRequestsInput } from './types';
+import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
 
 interface FetchOptions {
   userAgent?: string;
@@ -64,6 +64,10 @@ export class FeedFetcherService {
         createdAt: 'DESC',
       })
       .execute('all', true);
+  }
+
+  async countRequests({ url }: GetFeedRequestsCountInput) {
+    return this.requestRepo.count({ url });
   }
 
   async shouldSkipAfterPreviousFailedAttempt({

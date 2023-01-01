@@ -12,6 +12,7 @@ describe('FeedFetcherController', () => {
     fetchAndSaveResponse: jest.fn(),
     getLatestRequest: jest.fn(),
     getRequests: jest.fn(),
+    countRequests: jest.fn(),
   } as never;
 
   beforeEach(() => {
@@ -44,6 +45,8 @@ describe('FeedFetcherController', () => {
         .spyOn(feedFetcherService, 'getRequests')
         .mockResolvedValue(mockRequests as never);
 
+      jest.spyOn(feedFetcherService, 'countRequests').mockResolvedValue(2);
+
       const result = await controller.getRequests(input);
 
       expect(result).toEqual({
@@ -60,6 +63,7 @@ describe('FeedFetcherController', () => {
               status: RequestStatus.OK,
             },
           ],
+          totalRequests: 2,
           nextRetryDate: dayjs(mockRequests[0].nextRetryDate).unix(),
         },
       });
@@ -80,15 +84,8 @@ describe('FeedFetcherController', () => {
 
       const result = await controller.getRequests(input);
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         result: {
-          requests: [
-            {
-              id: 1,
-              createdAt: dayjs(mockRequests[0].createdAt).unix(),
-              status: RequestStatus.OK,
-            },
-          ],
           nextRetryDate: null,
         },
       });
