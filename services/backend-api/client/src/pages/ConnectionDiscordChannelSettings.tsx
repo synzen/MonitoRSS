@@ -60,7 +60,7 @@ const getDefaultTabIndex = (search: string) => {
     return 1;
   }
 
-  return -1;
+  return 0;
 };
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
