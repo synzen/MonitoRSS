@@ -7,3 +7,5 @@ export * from './FeedRawDumpButton';
 export * from './RefreshUserFeedButton';
 export * from './EditUserFeedDialog';
 export * from './RequestHistory';
+export * from './AddUserFeedDialog';
+export * from './UserFeedsTable';

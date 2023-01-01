@@ -32,7 +32,7 @@ const formSchema = object({
 
 type FormData = InferType<typeof formSchema>;
 
-export const AddFeedDialogV2: React.FC = () => {
+export const AddUserFeedDialog: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
   const {

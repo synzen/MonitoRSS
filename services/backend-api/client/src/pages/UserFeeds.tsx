@@ -13,13 +13,13 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FeedsTableV2 } from '../features/feed/components/FeedsTableV2';
+import { UserFeedsTable } from '../features/feed/components/UserFeedsTable';
 import { useDiscordUserMe } from '../features/discordUser';
 import { useUserFeeds } from '../features/feed';
 import { pages } from '../constants';
 import { BoxConstrained } from '../components';
 
-const FeedsV2: React.FC = () => {
+export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
@@ -90,12 +90,10 @@ const FeedsV2: React.FC = () => {
 
           </Button>
         </Alert>
-        <FeedsTableV2
+        <UserFeedsTable
           onSelectedFeedId={onSelectedFeed}
         />
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
   );
 };
-
-export default FeedsV2;

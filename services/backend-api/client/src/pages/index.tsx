@@ -18,8 +18,8 @@ import FeedComparisons from './FeedComparisons';
 import Feeds from './Feeds';
 import { RequireDiscordServers } from '@/features/discordServers';
 import { PageContentV2 } from '../components/PageContentV2';
-import FeedsV2 from './FeedsV2';
-import { FeedV2 } from './FeedV2';
+import { UserFeeds } from './UserFeeds';
+import { UserFeed } from './UserFeed';
 import { ConnectionDiscordChannelSettings } from './ConnectionDiscordChannelSettings';
 import { ConnectionDiscordWebhookSettings } from './ConnectionDiscordWebhookSettings';
 import { pages } from '../constants';
@@ -82,7 +82,7 @@ const Pages: React.FC = () => (
       element={(
         <RequireAuth>
           <PageContentV2 invertBackground>
-            <FeedsV2 />
+            <UserFeeds />
           </PageContentV2>
         </RequireAuth>
     )}
@@ -104,7 +104,7 @@ const Pages: React.FC = () => (
       element={(
         <RequireAuth>
           <PageContentV2 requireFeed>
-            <FeedV2 />
+            <UserFeed />
           </PageContentV2>
         </RequireAuth>
     )}

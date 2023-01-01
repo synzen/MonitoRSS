@@ -26,7 +26,7 @@ import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons'
 import { debounce } from 'lodash';
 import { useUserFeeds } from '../../hooks';
 import { Loading } from '@/components';
-import { AddFeedDialogV2 } from '../AddFeedDialogV2';
+import { AddUserFeedDialog } from '../AddUserFeedDialog';
 import { UserFeed } from '../../types';
 import { UserFeedStatusTag } from './UserFeedStatusTag';
 
@@ -38,7 +38,7 @@ const DEFAULT_MAX_PER_PAGE = 10;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
-export const FeedsTableV2: React.FC<Props> = ({
+export const UserFeedsTable: React.FC<Props> = ({
   onSelectedFeedId,
 }) => {
   const { t } = useTranslation();
@@ -177,7 +177,7 @@ export const FeedsTableV2: React.FC<Props> = ({
             {search && isFetching && <Spinner size="sm" />}
           </InputRightElement>
         </InputGroup>
-        <AddFeedDialogV2 />
+        <AddUserFeedDialog />
       </HStack>
       <Box overflow="auto">
         <Table

@@ -54,7 +54,7 @@ const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
   [FeedConnectionType.DiscordWebhook]: 'Discord Webhook',
 };
 
-export const FeedV2: React.FC = () => {
+export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const navigate = useNavigate();
