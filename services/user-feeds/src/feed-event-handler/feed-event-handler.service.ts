@@ -18,6 +18,8 @@ import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
+  FeedRequestBadStatusCodeException,
+  FeedRequestFetchException,
   FeedRequestInternalException,
   FeedRequestParseException,
 } from "../feed-fetcher/exceptions";
@@ -185,7 +187,9 @@ export class FeedEventHandlerService {
       } catch (err) {
         if (
           err instanceof FeedRequestInternalException ||
-          err instanceof FeedRequestParseException
+          err instanceof FeedRequestParseException ||
+          err instanceof FeedRequestBadStatusCodeException ||
+          err instanceof FeedRequestFetchException
         ) {
           logger.debug(`Ignoring feed event due to expected exception`, {
             exceptionName: (err as Error).name,

@@ -1,7 +1,18 @@
 import { FeedResponseRequestStatus } from "../../shared";
 
-interface FeedResponseError {
-  requestStatus: FeedResponseRequestStatus.Error;
+interface FeedResponseInernalError {
+  requestStatus: FeedResponseRequestStatus.InternalError;
+}
+
+interface FeedResponseFetchError {
+  requestStatus: FeedResponseRequestStatus.FetchError;
+}
+
+interface FeedResponseBadStatusCodeError {
+  requestStatus: FeedResponseRequestStatus.BadStatusCode;
+  response: {
+    statusCode: number;
+  };
 }
 
 interface FeedResponseParseError {
@@ -24,7 +35,9 @@ interface FeedResponseSuccess {
 }
 
 export type FeedResponse =
-  | FeedResponseError
+  | FeedResponseInernalError
   | FeedResponseParseError
   | FeedResponsePending
-  | FeedResponseSuccess;
+  | FeedResponseSuccess
+  | FeedResponseFetchError
+  | FeedResponseBadStatusCodeError;

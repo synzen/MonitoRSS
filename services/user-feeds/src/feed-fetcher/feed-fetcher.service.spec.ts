@@ -3,12 +3,15 @@ import { FeedFetcherService } from "./feed-fetcher.service";
 import { Interceptable, MockAgent, setGlobalDispatcher } from "undici";
 import { ConfigService } from "@nestjs/config";
 import {
+  FeedRequestBadStatusCodeException,
+  FeedRequestFetchException,
   FeedRequestInternalException,
   FeedRequestNetworkException,
   FeedRequestParseException,
   FeedRequestServerStatusException,
 } from "./exceptions";
 import { ArticlesService } from "../articles/articles.service";
+import { FeedResponseRequestStatus } from "../shared";
 
 const serviceHost = "https://request-service.com";
 
@@ -79,14 +82,14 @@ describe("FeedFetcherService", () => {
       );
     });
 
-    it("throws the correct error if request status in body is error", async () => {
+    it("throws the correct error if request status in body is internal error", async () => {
       client
         .intercept({
           path: interceptPath,
           method: "POST",
         })
         .reply(200, {
-          requestStatus: "error",
+          requestStatus: FeedResponseRequestStatus.InternalError,
         });
 
       await expect(service.fetch("url")).rejects.toThrowError(
@@ -101,11 +104,44 @@ describe("FeedFetcherService", () => {
           method: "POST",
         })
         .reply(200, {
-          requestStatus: "parse_error",
+          requestStatus: FeedResponseRequestStatus.ParseError,
         });
 
       await expect(service.fetch("url")).rejects.toThrowError(
         FeedRequestParseException
+      );
+    });
+
+    it("throws the correct error if request status in body is bad status code", async () => {
+      client
+        .intercept({
+          path: interceptPath,
+          method: "POST",
+        })
+        .reply(200, {
+          requestStatus: FeedResponseRequestStatus.BadStatusCode,
+          response: {
+            statusCode: 403,
+          },
+        });
+
+      await expect(service.fetch("url")).rejects.toThrowError(
+        FeedRequestBadStatusCodeException
+      );
+    });
+
+    it("throws the correct error if request status in body is a fetch network error", async () => {
+      client
+        .intercept({
+          path: interceptPath,
+          method: "POST",
+        })
+        .reply(200, {
+          requestStatus: FeedResponseRequestStatus.FetchError,
+        });
+
+      await expect(service.fetch("url")).rejects.toThrowError(
+        FeedRequestFetchException
       );
     });
 
@@ -116,7 +152,7 @@ describe("FeedFetcherService", () => {
           method: "POST",
         })
         .reply(200, {
-          requestStatus: "pending",
+          requestStatus: FeedResponseRequestStatus.Pending,
         });
 
       await expect(service.fetch("url")).resolves.toEqual(null);

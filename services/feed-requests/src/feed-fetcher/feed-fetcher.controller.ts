@@ -91,7 +91,7 @@ export class FeedFetcherController {
         );
       } else {
         return {
-          requestStatus: 'pending',
+          requestStatus: 'PENDING',
         };
       }
     }
@@ -101,13 +101,13 @@ export class FeedFetcherController {
       !latestRequest.response
     ) {
       return {
-        requestStatus: 'error',
+        requestStatus: 'FETCH_ERROR',
       };
     }
 
     if (latestRequest.status === RequestStatus.OK) {
       return {
-        requestStatus: 'success',
+        requestStatus: 'SUCCESS',
         response: {
           body: latestRequest.response.text as string,
           statusCode: latestRequest.response.statusCode,
@@ -117,16 +117,22 @@ export class FeedFetcherController {
 
     if (latestRequest.status === RequestStatus.PARSE_ERROR) {
       return {
-        requestStatus: 'parse_error',
+        requestStatus: 'PARSE_ERROR',
         response: {
           statusCode: latestRequest.response.statusCode,
         },
       };
     }
 
-    if (latestRequest.status === RequestStatus.FAILED) {
+    if (latestRequest.status === RequestStatus.INTERNAL_ERROR) {
       return {
-        requestStatus: 'error',
+        requestStatus: 'INTERNAL_ERROR',
+      };
+    }
+
+    if (latestRequest.status === RequestStatus.BAD_STATUS_CODE) {
+      return {
+        requestStatus: 'BAD_STATUS_CODE',
         response: {
           statusCode: latestRequest.response.statusCode,
         },

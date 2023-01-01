@@ -7,5 +7,8 @@ export interface GetFeedArticlesOutput {
   filterStatuses?: Array<{
     passed: boolean;
   }>;
+  response?: {
+    statusCode?: number;
+  };
   totalArticles: number;
 }

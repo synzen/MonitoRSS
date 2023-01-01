@@ -227,7 +227,7 @@ export class FeedFetcherService {
       if (res.ok) {
         request.status = RequestStatus.OK;
       } else {
-        request.status = RequestStatus.FAILED;
+        request.status = RequestStatus.BAD_STATUS_CODE;
       }
 
       const response = new Response();
@@ -247,12 +247,6 @@ export class FeedFetcherService {
         ?.includes('cloudflare');
 
       response.isCloudflare = isCloudflareServer;
-
-      if (res.ok) {
-        request.status = RequestStatus.OK;
-      } else {
-        request.status = RequestStatus.FAILED;
-      }
 
       await this.responseRepo.persist(response);
       request.response = response;

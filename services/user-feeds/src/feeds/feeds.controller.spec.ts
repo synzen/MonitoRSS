@@ -1,5 +1,9 @@
 import { BadRequestException } from "@nestjs/common";
-import { FeedRequestParseException } from "../feed-fetcher/exceptions";
+import {
+  FeedRequestBadStatusCodeException,
+  FeedRequestFetchException,
+  FeedRequestParseException,
+} from "../feed-fetcher/exceptions";
 import {
   DiscordMediumTestPayloadDetails,
   GetFeedArticlesRequestStatus,
@@ -190,6 +194,50 @@ describe("FeedController", () => {
       expect(result.result.requestStatus).toEqual(
         GetFeedArticlesRequestStatus.ParseError
       );
+      expect(result.result.articles).toEqual([]);
+      expect(result.result.totalArticles).toEqual(0);
+    });
+
+    it("handles feed request network exceptions correctly", async () => {
+      const input = {
+        ...sampleInput,
+      };
+
+      jest
+        .spyOn(feedFetcherService, "fetchFeedArticles")
+        .mockRejectedValue(
+          new FeedRequestFetchException("random network error")
+        );
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result.result.requestStatus).toEqual(
+        GetFeedArticlesRequestStatus.FetchError
+      );
+      expect(result.result.articles).toEqual([]);
+      expect(result.result.totalArticles).toEqual(0);
+    });
+
+    it("handles bad status code exceptions correctly", async () => {
+      const input = {
+        ...sampleInput,
+      };
+
+      jest
+        .spyOn(feedFetcherService, "fetchFeedArticles")
+        .mockRejectedValue(
+          new FeedRequestBadStatusCodeException(
+            "random bad status code error",
+            403
+          )
+        );
+
+      const result = await controller.getFeedArticles(input);
+
+      expect(result.result.requestStatus).toEqual(
+        GetFeedArticlesRequestStatus.BadStatusCode
+      );
+      expect(result.result.response?.statusCode).toEqual(403);
       expect(result.result.articles).toEqual([]);
       expect(result.result.totalArticles).toEqual(0);
     });

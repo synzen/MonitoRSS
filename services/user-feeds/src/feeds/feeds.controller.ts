@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Post,
-  Get,
   ValidationPipe,
   UseGuards,
   BadRequestException,
@@ -11,7 +10,11 @@ import {
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
-import { FeedRequestParseException } from "../feed-fetcher/exceptions";
+import {
+  FeedRequestBadStatusCodeException,
+  FeedRequestFetchException,
+  FeedRequestParseException,
+} from "../feed-fetcher/exceptions";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
   discordMediumTestPayloadDetailsSchema,
@@ -98,6 +101,7 @@ export class FeedsController {
             requestStatus: GetFeedArticlesRequestStatus.Pending,
             articles: [],
             totalArticles: 0,
+            selectedProperties: [],
           },
         };
       }
@@ -108,6 +112,7 @@ export class FeedsController {
             requestStatus: GetFeedArticlesRequestStatus.Success,
             articles: [],
             totalArticles: 0,
+            selectedProperties: [],
           },
         };
       }
@@ -142,6 +147,32 @@ export class FeedsController {
             requestStatus: GetFeedArticlesRequestStatus.ParseError,
             articles: [],
             totalArticles: 0,
+            selectedProperties: [],
+          },
+        };
+      }
+
+      if (err instanceof FeedRequestFetchException) {
+        return {
+          result: {
+            requestStatus: GetFeedArticlesRequestStatus.FetchError,
+            articles: [],
+            totalArticles: 0,
+            selectedProperties: [],
+          },
+        };
+      }
+
+      if (err instanceof FeedRequestBadStatusCodeException) {
+        return {
+          result: {
+            requestStatus: GetFeedArticlesRequestStatus.BadStatusCode,
+            articles: [],
+            totalArticles: 0,
+            response: {
+              statusCode: err.statusCode,
+            },
+            selectedProperties: [],
           },
         };
       }

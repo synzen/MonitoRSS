@@ -3,6 +3,7 @@ import {
 } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
 import { GetArticlesFilterReturnType } from '../constants';
+import { UserFeedArticleRequestStatus } from '../types';
 
 export interface GetUserFeedArticlesInput {
   feedId: string;
@@ -20,7 +21,10 @@ export interface GetUserFeedArticlesInput {
 
 const GetUserFeedArticlesOutputSchema = object({
   result: object().shape({
-    requestStatus: string().oneOf(['parse_error', 'pending', 'success']).required(),
+    requestStatus: string().oneOf(Object.values(UserFeedArticleRequestStatus)).required(),
+    response: object({
+      statusCode: number(),
+    }),
     articles: array(object()).required(),
     totalArticles: number().required(),
     selectedProperties: array(string().required()).required(),

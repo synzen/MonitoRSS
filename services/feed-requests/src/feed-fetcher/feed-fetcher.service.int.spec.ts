@@ -78,11 +78,11 @@ describe('FeedFetcherService (Integration)', () => {
       req.createdAt = new Date(2020);
       const re2 = new Request();
       re2.url = url;
-      re2.status = RequestStatus.FAILED;
+      re2.status = RequestStatus.BAD_STATUS_CODE;
       re2.createdAt = new Date(2021);
       const re3 = new Request();
       re3.url = url;
-      re3.status = RequestStatus.FAILED;
+      re3.status = RequestStatus.BAD_STATUS_CODE;
       re3.createdAt = new Date(2022);
 
       await requestRepo.persistAndFlush([req, re2, re3]);
@@ -169,7 +169,7 @@ describe('FeedFetcherService (Integration)', () => {
         length: FeedFetcherService.MAX_FAILED_ATTEMPTS,
       }).map(() => {
         const request = new Request();
-        request.status = RequestStatus.FAILED;
+        request.status = RequestStatus.BAD_STATUS_CODE;
         request.createdAt = dayjs().subtract(1, 'day').toDate();
         request.url = url;
 
@@ -195,7 +195,7 @@ describe('FeedFetcherService (Integration)', () => {
         length: FeedFetcherService.MAX_FAILED_ATTEMPTS,
       }).map(() => {
         const request = new Request();
-        request.status = RequestStatus.FAILED;
+        request.status = RequestStatus.BAD_STATUS_CODE;
         request.createdAt = dayjs().subtract(1, 'day').toDate();
         request.url = url;
 
@@ -408,7 +408,7 @@ describe('FeedFetcherService (Integration)', () => {
   describe('getLatestRequest', () => {
     it('returns the request with the response', async () => {
       const req1 = new Request();
-      req1.status = RequestStatus.FAILED;
+      req1.status = RequestStatus.BAD_STATUS_CODE;
       req1.url = url;
       req1.createdAt = new Date(2020, 1, 6);
 
@@ -435,7 +435,7 @@ describe('FeedFetcherService (Integration)', () => {
   describe('requestExistsAfterTime', () => {
     it('should return true if a request exists after the given time', async () => {
       const req = new Request();
-      req.status = RequestStatus.FAILED;
+      req.status = RequestStatus.BAD_STATUS_CODE;
       req.url = url;
       req.createdAt = new Date(2020, 1, 6);
 
@@ -453,7 +453,7 @@ describe('FeedFetcherService (Integration)', () => {
 
     it('should return true if no request exists after the given time', async () => {
       const req = new Request();
-      req.status = RequestStatus.FAILED;
+      req.status = RequestStatus.BAD_STATUS_CODE;
       req.url = url;
       req.createdAt = new Date(2020, 1, 6);
 

@@ -144,11 +144,13 @@ export class UserFeedsController {
       filterStatuses,
       selectedProperties,
       totalArticles,
+      response,
     } = await this.userFeedsService.getFeedArticles(input);
 
     return {
       result: {
         articles,
+        response,
         requestStatus,
         filterStatuses,
         selectedProperties,

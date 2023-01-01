@@ -10,6 +10,9 @@ class ResultDto {
   filterStatuses?: Array<FilterStatus>;
   selectedProperties: string[];
   totalArticles: number;
+  response?: {
+    statusCode?: number;
+  };
 }
 
 export class GetUserFeedArticlesOutputDto {

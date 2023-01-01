@@ -1,5 +1,7 @@
 export enum GetFeedArticlesRequestStatus {
-  ParseError = "parse_error",
-  Pending = "pending",
-  Success = "success",
+  ParseError = "PARSE_ERROR",
+  Pending = "PENDING",
+  Success = "SUCCESS",
+  BadStatusCode = "BAD_STATUS_CODE",
+  FetchError = "FETCH_ERROR",
 }

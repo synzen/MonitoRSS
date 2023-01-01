@@ -2,6 +2,7 @@ import {
   array, InferType, object, string,
 } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
+import { UserFeedArticleRequestStatus } from '../types';
 
 export interface GetUserFeedArticlePropertiesInput {
   feedId: string;
@@ -9,7 +10,7 @@ export interface GetUserFeedArticlePropertiesInput {
 
 const GetUserFeedArticlePropertiesOutputSchema = object({
   result: object().shape({
-    requestStatus: string().oneOf(['parse_error', 'pending', 'success']).required(),
+    requestStatus: string().oneOf(Object.values(UserFeedArticleRequestStatus)).required(),
     properties: array(string().required()).required(),
   }).required(),
 }).required();

@@ -17,6 +17,7 @@ import {
   GetUserFeedsOutput,
   UpdateFeedSubscriberOutput,
   UpdateUserFeedOutput,
+  UserFeedArticleRequestStatus,
   UserFeedHealthStatus,
 } from '../features/feed';
 import mockDiscordServers from './data/discordServers';
@@ -256,7 +257,10 @@ const handlers = [
         result: {
           articles,
           totalArticles: mockUserFeedArticles.length,
-          requestStatus: 'success',
+          requestStatus: UserFeedArticleRequestStatus.Success,
+          response: {
+            statusCode: 403,
+          },
           filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
           selectedProperties: ['id', 'title'],
         },

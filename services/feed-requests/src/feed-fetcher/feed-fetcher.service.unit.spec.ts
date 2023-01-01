@@ -183,7 +183,7 @@ describe('FeedFetcherService', () => {
         expect(requestRepo.persist).toHaveBeenCalledWith(
           expect.objectContaining({
             url: feedUrl,
-            status: RequestStatus.FAILED,
+            status: RequestStatus.BAD_STATUS_CODE,
             fetchOptions: {
               userAgent,
             },

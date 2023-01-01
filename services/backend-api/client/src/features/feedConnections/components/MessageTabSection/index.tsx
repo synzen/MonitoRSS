@@ -15,6 +15,8 @@ import { DiscordMessageForm } from '../../../../components';
 import { DiscordMessageFormData } from '../../../../types/discord';
 import { notifyError } from '../../../../utils/notifyError';
 import { useUserFeedArticles } from '../../../feed/hooks';
+import { UserFeedArticleRequestStatus } from '../../../feed/types';
+import { getErrorMessageForArticleRequestStatus } from '../../../feed/utils';
 import { ArticlePlaceholderTable } from '../ArticlePlaceholderTable';
 
 interface Props {
@@ -49,6 +51,7 @@ export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdat
   };
 
   const firstArticle = userFeedArticles?.result.articles[0];
+  const requestStatus = userFeedArticles?.result.requestStatus;
 
   const fetchErrorAlert = userFeedArticlesStatus === 'error' && (
     <Alert status="error">
@@ -57,10 +60,14 @@ export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdat
     </Alert>
   );
 
-  const parseErrorAlert = userFeedArticles?.result.requestStatus === 'parse_error' && (
+  const parseErrorAlert = requestStatus
+    && requestStatus !== UserFeedArticleRequestStatus.Success && (
     <Alert status="error">
       <AlertIcon />
-      {t('common.apiErrors.feedParseFailed')}
+      {t(getErrorMessageForArticleRequestStatus(
+        requestStatus,
+        userFeedArticles?.result?.response?.statusCode,
+      ))}
     </Alert>
   );
 

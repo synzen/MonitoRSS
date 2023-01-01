@@ -5,6 +5,8 @@ import BodyReadable from "undici/types/readable";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedResponseRequestStatus } from "../shared";
 import {
+  FeedRequestBadStatusCodeException,
+  FeedRequestFetchException,
   FeedRequestInternalException,
   FeedRequestNetworkException,
   FeedRequestParseException,
@@ -76,14 +78,27 @@ export class FeedFetcherService {
 
     const { requestStatus } = response;
 
-    if (requestStatus === FeedResponseRequestStatus.Error) {
+    if (requestStatus === FeedResponseRequestStatus.InternalError) {
       throw new FeedRequestInternalException(
-        `Feed requests service encountered error while fetching feed`
+        `Feed requests service encountered internal error while fetching feed`
       );
     }
 
     if (requestStatus === FeedResponseRequestStatus.ParseError) {
       throw new FeedRequestParseException(`Invalid feed`);
+    }
+
+    if (requestStatus === FeedResponseRequestStatus.FetchError) {
+      throw new FeedRequestFetchException(
+        "Fetch on user feeds service failed, likely a network error"
+      );
+    }
+
+    if (requestStatus === FeedResponseRequestStatus.BadStatusCode) {
+      throw new FeedRequestBadStatusCodeException(
+        `Bad status code received for feed request (${response.response.statusCode})`,
+        response.response.statusCode
+      );
     }
 
     if (requestStatus === FeedResponseRequestStatus.Pending) {

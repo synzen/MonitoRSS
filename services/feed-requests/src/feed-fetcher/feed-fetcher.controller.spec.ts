@@ -32,7 +32,7 @@ describe('FeedFetcherController', () => {
           id: 1,
           createdAt: new Date(),
           nextRetryTimestamp: new Date(2022),
-          status: RequestStatus.FAILED,
+          status: RequestStatus.FETCH_ERROR,
         },
         {
           id: 2,
@@ -55,7 +55,7 @@ describe('FeedFetcherController', () => {
             {
               id: 1,
               createdAt: dayjs(mockRequests[0].createdAt).unix(),
-              status: RequestStatus.FAILED,
+              status: RequestStatus.FETCH_ERROR,
             },
             {
               id: 2,
@@ -231,7 +231,7 @@ describe('FeedFetcherController', () => {
       };
 
       jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: RequestStatus.FAILED,
+        status: RequestStatus.FETCH_ERROR,
         response: {
           statusCode: 404,
         },

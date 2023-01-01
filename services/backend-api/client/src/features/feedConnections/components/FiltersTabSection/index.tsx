@@ -18,6 +18,8 @@ import {
   useUserFeedArticleProperties,
   useUserFeedArticlesWithPagination,
 } from '../../../feed/hooks';
+import { UserFeedArticleRequestStatus } from '../../../feed/types';
+import { getErrorMessageForArticleRequestStatus } from '../../../feed/utils';
 import { LogicalFilterExpression } from '../../types';
 import { ArticleFilterResultsTable } from '../ArticleFilterResultsTable';
 import { FiltersForm } from '../FiltersForm';
@@ -66,6 +68,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
   const useArticleProperty = selectedArticleProperty
     || userFeedArticlesResults?.result.selectedProperties[0];
   const totalArticles = userFeedArticlesResults?.result.totalArticles;
+  const requestStatus = userFeedArticlesResults?.result.requestStatus;
 
   const onFirstPage = skip === 0;
   const onLastPage = !totalArticles || skip + limit >= totalArticles;
@@ -77,10 +80,14 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
     </Alert>
   );
 
-  const parseErrorAlert = userFeedArticlesResults?.result.requestStatus === 'parse_error' && (
+  const parseErrorAlert = requestStatus
+    && requestStatus !== UserFeedArticleRequestStatus.Success && (
     <Alert status="error">
       <AlertIcon />
-      {t('common.apiErrors.feedParseFailed')}
+      {getErrorMessageForArticleRequestStatus(
+        requestStatus,
+        userFeedArticlesResults?.result?.response?.statusCode,
+      )}
     </Alert>
   );
 

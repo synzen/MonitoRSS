@@ -5,3 +5,4 @@ export * from './UserFeed';
 export * from './UserFeedDisabledCode';
 export * from './UserFeedHealthStatus';
 export * from './UserFeedRequest';
+export * from './UserFeedArticleRequestStatus';
