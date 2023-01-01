@@ -168,8 +168,6 @@ export class FeedConnectionsDiscordChannelsService {
       },
     };
 
-    console.log(updateQuery);
-
     const updated = await this.userFeedModel.findOneAndUpdate(
       findQuery,
       updateQuery,
@@ -181,8 +179,6 @@ export class FeedConnectionsDiscordChannelsService {
     const updatedConnection = updated?.connections.discordChannels.find(
       (connection) => connection.id.equals(connectionId)
     );
-
-    console.log(updatedConnection);
 
     if (!updatedConnection) {
       throw new Error(
