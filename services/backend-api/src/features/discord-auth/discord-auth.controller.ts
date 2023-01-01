@@ -59,6 +59,6 @@ export class DiscordAuthController {
     @Session() session: FastifyRequest["session"]
   ) {
     await this.discordAuthService.revokeToken(accessToken);
-    await session.destroy();
+    await session.delete();
   }
 }
