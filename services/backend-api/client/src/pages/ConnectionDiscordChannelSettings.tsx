@@ -24,7 +24,9 @@ import {
   Tabs,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import {
+  useParams, Link as RouterLink, useNavigate, useLocation,
+} from 'react-router-dom';
 import {
   BoxConstrained, CategoryText, ConfirmModal, DashboardContentV2,
 } from '../components';
@@ -49,8 +51,23 @@ import RouteParams from '../types/RouteParams';
 import { notifyError } from '../utils/notifyError';
 import { notifySuccess } from '../utils/notifySuccess';
 
+const getDefaultTabIndex = (search: string) => {
+  if (search.includes('view=message')) {
+    return 0;
+  }
+
+  if (search.includes('view=filters')) {
+    return 1;
+  }
+
+  return -1;
+};
+
 export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
+  const navigate = useNavigate();
+  const { search: urlSearch } = useLocation();
+
   const {
     feed,
     status: feedStatus,
@@ -177,7 +194,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           || connectionStatus === 'loading'
       }
     >
-      <Tabs isLazy isFitted>
+      <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
         <BoxConstrained.Wrapper
           paddingTop={10}
           background="gray.700"
@@ -325,8 +342,22 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               </Grid>
             </Stack>
             <TabList>
-              <Tab>Message</Tab>
-              <Tab>Filters</Tab>
+              <Tab onClick={() => {
+                navigate({
+                  search: '?view=message',
+                });
+              }}
+              >
+                Message
+              </Tab>
+              <Tab onClick={() => {
+                navigate({
+                  search: '?view=filters',
+                });
+              }}
+              >
+                Filters
+              </Tab>
             </TabList>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
