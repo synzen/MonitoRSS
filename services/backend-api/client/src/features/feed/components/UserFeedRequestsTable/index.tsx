@@ -80,7 +80,7 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
         {t('features.userFeeds.components.requestsTable.title')}
       </Heading>
       {typeof nextRetryTimestamp === 'number' && (
-      <Alert status="warning">
+      <Alert status="warning" borderRadius="md">
         <AlertIcon />
         <Box>
           <AlertTitle>
