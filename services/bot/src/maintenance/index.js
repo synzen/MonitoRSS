@@ -47,12 +47,12 @@ async function pruneWithBot (bot, restProducer) {
     }
   })
   log.debug(`Fetched ${feeds.length} feeds for pruning`)
-  await Promise.all([
-    pruneSubscribers.pruneSubscribers(bot, feeds, restProducer),
-    pruneProfileAlerts(bot, restProducer),
-    pruneWebhooks.pruneWebhooks(bot, feeds, restProducer)
-  ])
-  await checkPermissions.feeds(bot, feeds)
+  // await Promise.all([
+  //   pruneSubscribers.pruneSubscribers(bot, feeds, restProducer),
+  //   pruneProfileAlerts(bot, restProducer),
+  //   pruneWebhooks.pruneWebhooks(bot, feeds, restProducer)
+  // ])
+  // await checkPermissions.feeds(bot, feeds)
 }
 
 /**
