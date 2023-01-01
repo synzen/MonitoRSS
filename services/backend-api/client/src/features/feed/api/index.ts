@@ -21,3 +21,4 @@ export * from './deleteUserFeed';
 export * from './updateUserFeed';
 export * from './getUserFeedArticles';
 export * from './getUserFeedArticleProperties';
+export * from './getUserFeedRequests';

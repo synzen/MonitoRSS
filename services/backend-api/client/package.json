@@ -20,6 +20,7 @@
     "@tanstack/react-query": "^4.16.1",
     "@tanstack/react-query-devtools": "^4.16.1",
     "cross-env": "^7.0.3",
+    "dayjs": "^1.11.7",
     "eslint-config-airbnb-typescript": "^16.1.0",
     "framer-motion": "^5.5.6",
     "i18next": "^21.6.12",

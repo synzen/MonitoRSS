@@ -27,11 +27,11 @@ import {
   Text,
   useDisclosure,
 } from '@chakra-ui/react';
-import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useParams, Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
-import { CategoryText, ConfirmModal } from '@/components';
+import { BoxConstrained, CategoryText, ConfirmModal } from '@/components';
 import {
   EditUserFeedDialog,
   RefreshUserFeedButton,
@@ -48,6 +48,19 @@ import { FeedConnectionType } from '../types';
 import { notifySuccess } from '../utils/notifySuccess';
 import { notifyError } from '../utils/notifyError';
 import { pages } from '../constants';
+import { UserFeedRequestsTable } from '../features/feed/components/UserFeedRequestsTable';
+
+const getDefaultTabIndex = (search: string) => {
+  if (search.includes('view=connections')) {
+    return 0;
+  }
+
+  if (search.includes('view=logs')) {
+    return 1;
+  }
+
+  return 0;
+};
 
 const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
   [FeedConnectionType.DiscordChannel]: 'Discord Channel',
@@ -58,6 +71,7 @@ export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { search: urlSearch } = useLocation();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
     undefined,
@@ -136,7 +150,7 @@ export const UserFeed: React.FC = () => {
       loading={status === 'loading'}
     >
       <AddConnectionDialog isOpen={isOpen} type={addConnectionType} onClose={onClose} />
-      <Tabs isFitted>
+      <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
         <Stack
           width="100%"
           minWidth="100%"
@@ -339,85 +353,107 @@ export const UserFeed: React.FC = () => {
               </Grid>
             </Stack>
             <TabList>
-              <Tab>
-                {t('pages.feed.connectionSectionTitle')}
+              <Tab
+                onClick={() => navigate({
+                  search: '?view=connections',
+                })}
+              >
+                {t('pages.userFeeds.tabConnections')}
+              </Tab>
+              <Tab
+                onClick={() => navigate({
+                  search: '?view=logs',
+                })}
+              >
+                {t('pages.userFeeds.tabLogs')}
               </Tab>
             </TabList>
           </Stack>
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
-          <TabPanel maxWidth="1400px" width="100%" tabIndex={-1} paddingX={{ base: 4, lg: 12 }}>
-            <Stack spacing={6}>
-              <Stack>
-                <Flex justifyContent="space-between" alignItems="center">
-                  <Heading size="md">
-                    {t('pages.feed.connectionSectionTitle')}
-                  </Heading>
-                  <Menu>
-                    <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                      {t('pages.feed.addConnectionButtonText')}
-                    </MenuButton>
-                    <MenuList>
-                      <MenuItem
-                        onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
-                      >
-                        {t('pages.feed.discordChannelMenuItem')}
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
-                      >
-                        {t('pages.feed.discordWebhookMenuItem')}
-                      </MenuItem>
-                    </MenuList>
-                  </Menu>
-                </Flex>
-                <Text>
-                  {t('pages.feed.connectionSectionDescription')}
-                </Text>
-              </Stack>
-              <Stack>
-                {feed?.connections?.map((connection) => (
-                  <Link
-                    key={connection.id}
-                    as={RouterLink}
-                    to={pages.userFeedConnection({
-                      feedId: feedId as string,
-                      connectionType: connection.key,
-                      connectionId: connection.id,
-                    })}
-                    textDecoration="none"
-                    _hover={{
-                      textDecoration: 'none',
-                      color: 'blue.300',
-                    }}
-                  >
-                    <Flex
-                      background="gray.700"
-                      paddingX={8}
-                      paddingY={4}
-                      borderRadius="md"
-                      flexDirection="column"
-                    >
-                      <Stack spacing="1">
-                        <Text
-                          color="gray.500"
-                          fontSize="sm"
-                        >
-                          {PRETTY_CONNECTION_NAMES[connection.key]}
-                        </Text>
-                        <Stack spacing="0">
-                          <Text
-                            fontWeight={600}
+          <TabPanel width="100%" tabIndex={-1}>
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <Stack spacing={6}>
+                  <Stack>
+                    <Flex justifyContent="space-between" alignItems="center">
+                      <Heading size="md">
+                        {t('pages.userFeeds.tabConnections')}
+                      </Heading>
+                      <Menu>
+                        <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                          {t('pages.feed.addConnectionButtonText')}
+                        </MenuButton>
+                        <MenuList>
+                          <MenuItem
+                            onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
                           >
-                            {connection.name}
-                          </Text>
-                        </Stack>
-                      </Stack>
+                            {t('pages.feed.discordChannelMenuItem')}
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
+                          >
+                            {t('pages.feed.discordWebhookMenuItem')}
+                          </MenuItem>
+                        </MenuList>
+                      </Menu>
                     </Flex>
-                  </Link>
-                ))}
-              </Stack>
-            </Stack>
+                    <Text>
+                      {t('pages.feed.connectionSectionDescription')}
+                    </Text>
+                  </Stack>
+                  <Stack>
+                    {feed?.connections?.map((connection) => (
+                      <Link
+                        key={connection.id}
+                        as={RouterLink}
+                        to={pages.userFeedConnection({
+                          feedId: feedId as string,
+                          connectionType: connection.key,
+                          connectionId: connection.id,
+                        })}
+                        textDecoration="none"
+                        _hover={{
+                          textDecoration: 'none',
+                          color: 'blue.300',
+                        }}
+                      >
+                        <Flex
+                          background="gray.700"
+                          paddingX={8}
+                          paddingY={4}
+                          borderRadius="md"
+                          flexDirection="column"
+                        >
+                          <Stack spacing="1">
+                            <Text
+                              color="gray.500"
+                              fontSize="sm"
+                            >
+                              {PRETTY_CONNECTION_NAMES[connection.key]}
+                            </Text>
+                            <Stack spacing="0">
+                              <Text
+                                fontWeight={600}
+                              >
+                                {connection.name}
+                              </Text>
+                            </Stack>
+                          </Stack>
+                        </Flex>
+                      </Link>
+                    ))}
+                  </Stack>
+                </Stack>
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <UserFeedRequestsTable feedId={feedId} />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
           </TabPanel>
         </TabPanels>
       </Tabs>

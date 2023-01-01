@@ -97,7 +97,9 @@
       "newBadge": "NEW",
       "supporterOnlyTitle": "Temporarily restricted to supporters",
       "supporterOnlyDescription": "Personal feeds are currently restricted to supporters only. This is to ensure that the feature is stable and reliable before it is made available to everyone. Every supporter has access to 5 personal feeds during this time on top of their regular feed limit, however the regular feed limit will apply again once personal feeds are generally available.",
-      "backToLegacyFeedsButton": "Back to legacy feeds"
+      "backToLegacyFeedsButton": "Back to legacy feeds",
+      "tabLogs": "Logs",
+      "tabConnections": "Connections"
     },
     "feed": {
       "disabledTitle": "This feed is currently disabled",
@@ -117,7 +119,6 @@
       "discordChannelMenuItem": "Discord Channel",
       "discordWebhookMenuItem": "Discord Webhook",
       "articleDailyLimit": "Article Daily Limit",
-      "connectionSectionTitle": "Connections",
       "connectionSectionDescription": "Each connection is a channel to deliver your feed articles to. You may add as many connections as you want, but every article that is delivered to a channel counts towards the article limit.",
       "articleDailyLimitHint": "Maximum number of articles within the past 24 hour timeframe, calculated from the time of every article delivery attempt."
     },
@@ -378,6 +379,10 @@
           "onlyForYourReferenceLabel": "This is only for your reference",
           "addButton": "Add Feed",
           "overLimitHint": "You have reached the maximum number of feeds avaialble to you."
+        },
+        "requestsTable": {
+          "tableHeaderDate": "Date",
+          "tableHeaderStatus": "Status"
         }
       }
     },

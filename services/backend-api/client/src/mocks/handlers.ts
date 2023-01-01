@@ -50,6 +50,8 @@ import mockUserFeeds from './data/userFeeds';
 import mockFeedSummaries from './data/feeds';
 import { mockSendTestArticleResult } from './data/testArticleResult';
 import { mockUserFeedArticles } from './data/userFeedArticles';
+import { GetUserFeedRequestsOutput } from '../features/feed/api/getUserFeedRequests';
+import { mockUserFeedRequests } from './data/userFeedRequests';
 
 const handlers = [
   rest.get('/api/v1/discord-users/bot', (req, res, ctx) => res(
@@ -261,6 +263,16 @@ const handlers = [
       }),
     );
   }),
+
+  rest.get('/api/v1/user-feeds/:feedId/requests', async (req, res, ctx) => res(
+    ctx.delay(500),
+    ctx.json<GetUserFeedRequestsOutput>({
+      result: {
+        requests: mockUserFeedRequests,
+        nextRetryDate: Math.floor(new Date(2020).getTime() / 1000),
+      },
+    }),
+  )),
 
   rest.get('/api/v1/user-feeds/:feedId/article-properties', async (req, res, ctx) => res(
     ctx.delay(500),
