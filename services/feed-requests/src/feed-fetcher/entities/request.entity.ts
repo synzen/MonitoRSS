@@ -29,6 +29,15 @@ export class Request {
   })
   createdAt: Date = new Date();
 
+  /**
+   * Should be defined when handling fetch request broker events, and requests failed.
+   */
+  @Property({
+    nullable: true,
+    type: 'timestamp with time zone',
+  })
+  nextRetryDate!: Date | null;
+
   @Property({
     nullable: true,
     type: 'text',

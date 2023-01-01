@@ -6,7 +6,6 @@ import { URL } from 'url';
 import { readFileSync } from 'fs';
 import { Request, Response } from './entities';
 import { RequestStatus } from './constants';
-import dayjs from 'dayjs';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { MikroORM } from '@mikro-orm/core';
@@ -23,10 +22,12 @@ describe('FeedFetcherService', () => {
   const feedXml = readFileSync(feedFilePath, 'utf8');
   const requestRepo: EntityRepository<Request> = {
     persistAndFlush: jest.fn(),
+    persist: jest.fn(),
     findOne: jest.fn(),
   } as never;
   const responseRepo: EntityRepository<Response> = {
     persistAndFlush: jest.fn(),
+    persist: jest.fn(),
   } as never;
   const amqpConnection: AmqpConnection = {
     publish: jest.fn(),
@@ -135,7 +136,7 @@ describe('FeedFetcherService', () => {
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(requestRepo.persistAndFlush).toHaveBeenCalledWith(
+        expect(requestRepo.persist).toHaveBeenCalledWith(
           expect.objectContaining({
             url: feedUrl,
             status: RequestStatus.OK,
@@ -158,7 +159,7 @@ describe('FeedFetcherService', () => {
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(responseRepo.persistAndFlush).toHaveBeenCalledWith(
+        expect(responseRepo.persist).toHaveBeenCalledWith(
           expect.objectContaining({
             isCloudflare: true,
             statusCode: 200,
@@ -179,7 +180,7 @@ describe('FeedFetcherService', () => {
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(requestRepo.persistAndFlush).toHaveBeenCalledWith(
+        expect(requestRepo.persist).toHaveBeenCalledWith(
           expect.objectContaining({
             url: feedUrl,
             status: RequestStatus.FAILED,
@@ -202,25 +203,13 @@ describe('FeedFetcherService', () => {
         });
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(responseRepo.persistAndFlush).toHaveBeenCalledWith(
+        expect(responseRepo.persist).toHaveBeenCalledWith(
           expect.objectContaining({
             isCloudflare: true,
             statusCode: 404,
             text: JSON.stringify(feedResponseBody),
           }),
         );
-      });
-
-      it('calles onFailed if bad status', async () => {
-        nock(url.origin).get(url.pathname).reply(404, feedResponseBody, {
-          'Content-Type': 'application/xml',
-        });
-
-        const onFailed = jest.spyOn(service, 'onFailedUrl');
-
-        await service.fetchAndSaveResponse(feedUrl);
-
-        expect(onFailed).toHaveBeenCalledWith({ url: feedUrl });
       });
     });
 
@@ -229,7 +218,7 @@ describe('FeedFetcherService', () => {
         nock(url.origin).get(url.pathname).replyWithError('failed');
 
         await service.fetchAndSaveResponse(feedUrl);
-        expect(requestRepo.persistAndFlush).toHaveBeenCalledWith(
+        expect(requestRepo.persist).toHaveBeenCalledWith(
           expect.objectContaining({
             url: feedUrl,
             status: RequestStatus.FETCH_ERROR,
@@ -243,115 +232,11 @@ describe('FeedFetcherService', () => {
     });
   });
 
-  describe('onFailedUrl', () => {
-    it('publishes the url event if past failure threshold', async () => {
-      jest.spyOn(service, 'isPastFailureThreshold').mockResolvedValue(true);
-
-      await service.onFailedUrl({ url: feedUrl });
+  describe('emitFailedUrl', () => {
+    it('publishes the url event', () => {
+      service.emitFailedUrl({ url: feedUrl });
 
       expect(amqpConnection.publish).toHaveBeenCalled();
-    });
-
-    it('does not fail url if not past failure threshold', async () => {
-      jest.spyOn(service, 'isPastFailureThreshold').mockResolvedValue(false);
-
-      await service.onFailedUrl({ url: feedUrl });
-
-      expect(amqpConnection.publish).not.toHaveBeenCalled();
-    });
-
-    it('does not reject if an unexpected error occurs', async () => {
-      jest
-        .spyOn(service, 'isPastFailureThreshold')
-        .mockRejectedValue(new Error('fake-rejection'));
-
-      await service.onFailedUrl({ url: feedUrl });
-    });
-  });
-
-  describe('isEarliestFailureDatePastThreshold', () => {
-    it('returns true if date is past threshold', () => {
-      service.failedDurationThresholdHours = 1;
-      const failedDate = dayjs().subtract(2, 'hours').toDate();
-
-      expect(service.isEarliestFailureDatePastThreshold(failedDate)).toBe(true);
-    });
-
-    it('returns false if date is not past threshold', () => {
-      service.failedDurationThresholdHours = 1;
-      const failedDate = dayjs().subtract(30, 'minutes').toDate();
-
-      expect(service.isEarliestFailureDatePastThreshold(failedDate)).toBe(
-        false,
-      );
-    });
-  });
-
-  describe('isPastFailureThreshold', () => {
-    it('returns false if there is no latest request', async () => {
-      jest.spyOn(requestRepo, 'findOne').mockResolvedValue(null);
-
-      const result = await service.isPastFailureThreshold(feedUrl);
-
-      expect(result).toBe(false);
-    });
-
-    it('returns false if latest request is not failed', async () => {
-      jest.spyOn(requestRepo, 'findOne').mockResolvedValue({
-        status: RequestStatus.OK,
-      } as never);
-
-      const result = await service.isPastFailureThreshold(feedUrl);
-
-      expect(result).toBe(false);
-    });
-
-    it('returns false if there is no earliest failed attempt', async () => {
-      jest.spyOn(requestRepo, 'findOne').mockResolvedValue({
-        status: RequestStatus.FAILED,
-      } as never);
-
-      jest.spyOn(service, 'getEarliestFailedAttempt').mockResolvedValue(null);
-
-      const result = await service.isPastFailureThreshold(feedUrl);
-
-      expect(result).toBe(false);
-    });
-
-    it('returns false if earliest failure date is not past threshold', async () => {
-      jest.spyOn(requestRepo, 'findOne').mockResolvedValue({
-        status: RequestStatus.FAILED,
-      } as never);
-
-      jest.spyOn(service, 'getEarliestFailedAttempt').mockResolvedValue({
-        createdAt: new Date(),
-      } as never);
-
-      jest
-        .spyOn(service, 'isEarliestFailureDatePastThreshold')
-        .mockReturnValue(false);
-
-      const result = await service.isPastFailureThreshold(feedUrl);
-
-      expect(result).toBe(false);
-    });
-
-    it('returns true if earliest failure date is past threshold', async () => {
-      jest.spyOn(requestRepo, 'findOne').mockResolvedValue({
-        status: RequestStatus.FAILED,
-      } as never);
-
-      jest.spyOn(service, 'getEarliestFailedAttempt').mockResolvedValue({
-        createdAt: new Date(),
-      } as never);
-
-      jest
-        .spyOn(service, 'isEarliestFailureDatePastThreshold')
-        .mockReturnValue(true);
-
-      const result = await service.isPastFailureThreshold(feedUrl);
-
-      expect(result).toBe(true);
     });
   });
 });

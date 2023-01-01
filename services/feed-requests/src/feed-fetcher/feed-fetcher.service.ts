@@ -37,6 +37,9 @@ export class FeedFetcherService {
     );
   }
 
+  static BASE_FAILED_ATTEMPT_WAIT_MINUTES = 5;
+  static MAX_FAILED_ATTEMPTS = 11; // Fail feeds after 5*(2^11) minutes, or 6.25 days
+
   @RabbitSubscribe({
     exchange: '',
     queue: 'url.fetch',
@@ -45,6 +48,68 @@ export class FeedFetcherService {
     data: { url: string; rateSeconds: number };
   }) {
     await this.handleBrokerFetchRequest(message);
+  }
+
+  async shouldSkipAfterPreviousFailedAttempt({
+    url,
+  }: {
+    url: string;
+  }): Promise<{
+    skip: boolean;
+    failedAttemptsCount: number;
+    nextRetryDate?: Date | null;
+  }> {
+    const failedAttempts = await this.countFailedRequests({ url });
+
+    if (failedAttempts >= FeedFetcherService.MAX_FAILED_ATTEMPTS) {
+      this.emitFailedUrl({ url });
+
+      return {
+        skip: true,
+        failedAttemptsCount: failedAttempts,
+      };
+    }
+
+    const latestNextRetryDate = await this.requestRepo.findOne(
+      {
+        url,
+        nextRetryDate: {
+          $ne: null,
+        },
+      },
+      {
+        fields: ['nextRetryDate'],
+        orderBy: {
+          createdAt: 'DESC',
+        },
+      },
+    );
+
+    if (!latestNextRetryDate) {
+      logger.error(
+        `Request for ${url} has previously failed, but there is no` +
+          ` nextRetryDate set. All failed requests handled via broker events` +
+          ` should have retry dates. Continuing with request as fallback behavior.`,
+      );
+
+      return {
+        skip: false,
+        failedAttemptsCount: failedAttempts,
+      };
+    }
+
+    if (dayjs().isBefore(latestNextRetryDate.nextRetryDate)) {
+      return {
+        skip: true,
+        nextRetryDate: latestNextRetryDate.nextRetryDate,
+        failedAttemptsCount: failedAttempts,
+      };
+    }
+
+    return {
+      skip: false,
+      failedAttemptsCount: failedAttempts,
+    };
   }
 
   async requestExistsAfterTime(
@@ -79,7 +144,49 @@ export class FeedFetcherService {
     return response;
   }
 
-  async fetchAndSaveResponse(url: string) {
+  async countFailedRequests({ url }: { url: string }): Promise<number> {
+    const latestOkRequest = await this.requestRepo.findOne(
+      {
+        url,
+        status: RequestStatus.OK,
+      },
+      {
+        fields: ['createdAt'],
+        orderBy: {
+          createdAt: 'DESC',
+        },
+      },
+    );
+
+    if (latestOkRequest) {
+      return this.requestRepo.count({
+        url,
+        status: {
+          $ne: RequestStatus.OK,
+        },
+        createdAt: {
+          $gte: latestOkRequest.createdAt,
+        },
+      });
+    } else {
+      return this.requestRepo.count({
+        url,
+        status: {
+          $ne: RequestStatus.OK,
+        },
+      });
+    }
+  }
+
+  calculateNextRetryDate(referenceDate: Date, attemptsSoFar: number) {
+    const minutesToWait =
+      FeedFetcherService.BASE_FAILED_ATTEMPT_WAIT_MINUTES *
+      Math.pow(2, attemptsSoFar);
+
+    return dayjs(referenceDate).add(minutesToWait, 'minute').toDate();
+  }
+
+  async fetchAndSaveResponse(url: string): Promise<Request> {
     const fetchOptions: FetchOptions = {
       userAgent: this.configService.get<string>('feedUserAgent'),
     };
@@ -94,7 +201,6 @@ export class FeedFetcherService {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.FAILED;
-        await this.onFailedUrl({ url });
       }
 
       const response = new Response();
@@ -119,13 +225,14 @@ export class FeedFetcherService {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.FAILED;
-        await this.onFailedUrl({ url });
       }
 
       await this.responseRepo.persist(response);
       request.response = response;
 
-      return this.requestRepo.persist(request);
+      await this.requestRepo.persist(request);
+
+      return request;
     } catch (err) {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
@@ -133,38 +240,33 @@ export class FeedFetcherService {
       request.status = RequestStatus.FETCH_ERROR;
       request.errorMessage = (err as Error).message;
 
-      return this.requestRepo.persist(request);
-    } finally {
-      await this.deleteStaleRequests(url);
-      await this.requestRepo.flush();
+      await this.requestRepo.persist(request);
+
+      return request;
     }
   }
 
-  async onFailedUrl({ url }: { url: string }) {
+  emitFailedUrl({ url }: { url: string }) {
     try {
-      const pastFailureThreshold = await this.isPastFailureThreshold(url);
+      logger.info(
+        `Disabling feeds with url "${url}" due to failure threshold ` +
+          `(${this.failedDurationThresholdHours}hrs)`,
+        {
+          url,
+        },
+      );
 
-      if (pastFailureThreshold) {
-        logger.info(
-          `Disabling feeds with url "${url}" due to failure threshold ` +
-            `(${this.failedDurationThresholdHours}hrs)`,
-          {
+      this.amqpConnection.publish<{ data: { url: string } }>(
+        '',
+        'url.failed.disable-feeds',
+        {
+          data: {
             url,
           },
-        );
-
-        await this.amqpConnection.publish<{ data: { url: string } }>(
-          '',
-          'url.failed.disable-feeds',
-          {
-            data: {
-              url,
-            },
-          },
-        );
-      }
+        },
+      );
     } catch (err) {
-      logger.error(`Failed to check failed status of url ${url}`, {
+      logger.error(`Failed to publish failed url event: ${url}`, {
         stack: (err as Error).stack,
         url,
       });
@@ -186,98 +288,11 @@ export class FeedFetcherService {
     return res;
   }
 
-  async isPastFailureThreshold(url: string) {
-    const latestRequest = await this.requestRepo.findOne(
-      {
-        url: url,
-      },
-      {
-        orderBy: {
-          createdAt: 'DESC',
-        },
-      },
-    );
-
-    if (!latestRequest || latestRequest.status === RequestStatus.OK) {
-      return false;
-    }
-
-    const earliestFailedAttempt = await this.getEarliestFailedAttempt(url);
-
-    if (!earliestFailedAttempt) {
-      return false;
-    }
-
-    const earliestFailedAttemptDate = earliestFailedAttempt.createdAt;
-
-    if (!this.isEarliestFailureDatePastThreshold(earliestFailedAttemptDate)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  async getEarliestFailedAttempt(url: string) {
-    const latestOkRequest = await this.requestRepo.findOne(
-      {
-        status: RequestStatus.OK,
-        url,
-      },
-      {
-        orderBy: {
-          createdAt: 'DESC',
-        },
-        fields: ['createdAt'],
-      },
-    );
-
-    if (latestOkRequest) {
-      const earliestFailedRequest = await this.requestRepo.findOne(
-        {
-          status: {
-            $ne: RequestStatus.OK,
-          },
-          url,
-          createdAt: {
-            $gt: latestOkRequest.createdAt,
-          },
-        },
-        {
-          orderBy: {
-            createdAt: 'ASC',
-          },
-        },
-      );
-
-      return earliestFailedRequest;
-    } else {
-      const earliestFailedRequest = await this.requestRepo.findOne(
-        {
-          status: {
-            $ne: RequestStatus.OK,
-          },
-          url,
-        },
-        {
-          orderBy: {
-            createdAt: 'ASC',
-          },
-        },
-      );
-
-      return earliestFailedRequest;
-    }
-  }
-
-  isEarliestFailureDatePastThreshold(earliestFailureDate: Date) {
-    const cutoffDate = dayjs(earliestFailureDate).add(
-      this.failedDurationThresholdHours,
-      'hours',
-    );
-
-    return dayjs().isAfter(cutoffDate);
-  }
-
+  /**
+   * Delete requests and responses that are older than 14 days. There's a risk of this interfering
+   * with the retry logic, but it's a small risk and the alternative is to keep a lot of data around
+   * for no reason.
+   */
   async deleteStaleRequests(url: string) {
     const cutoff = dayjs().subtract(14, 'days').toDate();
 
@@ -350,7 +365,36 @@ export class FeedFetcherService {
       return;
     }
 
-    await this.fetchAndSaveResponse(url);
+    const { skip, nextRetryDate, failedAttemptsCount } =
+      await this.shouldSkipAfterPreviousFailedAttempt({ url });
+
+    if (skip) {
+      logger.debug(
+        `Request ${url} with rate ${rateSeconds} has ` +
+          `recently failed and will be skipped until ${nextRetryDate}`,
+      );
+    } else {
+      const latestRequest = await this.fetchAndSaveResponse(url);
+
+      if (latestRequest.status !== RequestStatus.OK) {
+        const nextRetryDate = this.calculateNextRetryDate(
+          new Date(),
+          failedAttemptsCount,
+        );
+
+        logger.debug(
+          `Request with url ${url} failed, next retry date: ${nextRetryDate}`,
+        );
+
+        latestRequest.nextRetryDate = nextRetryDate;
+        await this.requestRepo.persist(latestRequest);
+      }
+    }
+
+    await this.deleteStaleRequests(url);
+
+    await this.requestRepo.flush();
+    await this.responseRepo.flush();
 
     logger.debug(`Fetch request message processed for url ${url}`);
   }

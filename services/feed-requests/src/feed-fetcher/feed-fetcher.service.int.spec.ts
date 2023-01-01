@@ -14,12 +14,10 @@ import { getRepositoryToken } from '@mikro-orm/nestjs';
 import dayjs from 'dayjs';
 import nock from 'nock';
 import path from 'path';
-import { readFileSync } from 'fs';
 
 jest.mock('../utils/logger');
 
 const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
-const feedXml = readFileSync(feedFilePath, 'utf8');
 
 describe('FeedFetcherService (Integration)', () => {
   let app: INestApplication;
@@ -27,6 +25,9 @@ describe('FeedFetcherService (Integration)', () => {
   const url = 'https://rss-feed.com/feed.xml';
   let requestRepo: EntityRepository<Request>;
   let responseRepo: EntityRepository<Response>;
+  const amqpConnection = {
+    publish: jest.fn(),
+  };
   const failedDurationThresholdHours = 36;
 
   beforeAll(async () => {
@@ -36,9 +37,7 @@ describe('FeedFetcherService (Integration)', () => {
           FeedFetcherService,
           {
             provide: AmqpConnection,
-            useValue: {
-              publish: jest.fn(),
-            },
+            useValue: amqpConnection,
           },
         ],
       },
@@ -63,6 +62,7 @@ describe('FeedFetcherService (Integration)', () => {
   });
 
   afterEach(async () => {
+    jest.resetAllMocks();
     await clearDatabase();
   });
 
@@ -70,27 +70,27 @@ describe('FeedFetcherService (Integration)', () => {
     await teardownPostgresTests();
   });
 
-  describe('fetchAndSaveResponse', () => {
+  describe('onBrokerFetchRequest', () => {
     it('deletes stale request at the end', async () => {
-      const url = 'https://www.some-feed-url.com';
+      const req = new Request();
+      req.url = url;
+      req.status = RequestStatus.OK;
+      req.createdAt = dayjs().subtract(30, 'day').toDate();
 
       nock(url).get('/').replyWithFile(200, feedFilePath, {
         'Content-Type': 'application/xml',
       });
 
-      const req = new Request();
-      req.url = url;
-      req.status = RequestStatus.FAILED;
-      req.createdAt = dayjs().subtract(30, 'day').toDate();
-
-      await requestRepo.persistAndFlush(req);
-
-      await service.fetchAndSaveResponse(url);
+      await service.onBrokerFetchRequest({
+        data: {
+          url,
+          rateSeconds: 100,
+        },
+      });
 
       const found = await requestRepo.find({
         url,
       });
-
       expect(found).toHaveLength(1);
 
       const request = found[0];
@@ -98,6 +98,293 @@ describe('FeedFetcherService (Integration)', () => {
       expect(request.createdAt.getTime()).toBeGreaterThan(
         dayjs().subtract(15, 'days').toDate().getTime(),
       );
+    });
+
+    it('saves a failed attempt with a next retry date if failed', async () => {
+      nock(url).get('/').replyWithFile(404, feedFilePath, {
+        'Content-Type': 'application/xml',
+      });
+
+      await service.onBrokerFetchRequest({
+        data: {
+          url,
+          rateSeconds: 100,
+        },
+      });
+
+      const request = await requestRepo.findOneOrFail({
+        url,
+        status: {
+          $ne: RequestStatus.OK,
+        },
+      });
+
+      expect(request.nextRetryDate).toBeDefined();
+    });
+
+    it('does not process the event if at failure retry count', async () => {
+      const requests = Array.from({
+        length: FeedFetcherService.MAX_FAILED_ATTEMPTS,
+      }).map(() => {
+        const request = new Request();
+        request.status = RequestStatus.FAILED;
+        request.createdAt = dayjs().subtract(1, 'day').toDate();
+        request.url = url;
+
+        return request;
+      });
+
+      await requestRepo.persistAndFlush(requests);
+
+      const fetchAndSaveResponse = jest.spyOn(service, 'fetchAndSaveResponse');
+
+      await service.onBrokerFetchRequest({
+        data: {
+          url,
+          rateSeconds: 100,
+        },
+      });
+
+      expect(fetchAndSaveResponse).not.toHaveBeenCalled();
+    });
+
+    it('emits a failed url if at failure retry count', async () => {
+      const requests = Array.from({
+        length: FeedFetcherService.MAX_FAILED_ATTEMPTS,
+      }).map(() => {
+        const request = new Request();
+        request.status = RequestStatus.FAILED;
+        request.createdAt = dayjs().subtract(1, 'day').toDate();
+        request.url = url;
+
+        return request;
+      });
+
+      await requestRepo.persistAndFlush(requests);
+
+      await service.onBrokerFetchRequest({
+        data: {
+          url,
+          rateSeconds: 100,
+        },
+      });
+
+      expect(amqpConnection.publish).toHaveBeenCalledTimes(1);
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        'url.failed.disable-feeds',
+        {
+          data: {
+            url,
+          },
+        },
+      );
+    });
+  });
+
+  describe('shouldSkipAfterPreviousFailedAttempt', () => {
+    const url = 'random-url';
+
+    describe('when there were no previous attempts', () => {
+      it('should return false if no previous attempt', async () => {
+        const { skip } = await service.shouldSkipAfterPreviousFailedAttempt({
+          url,
+        });
+
+        expect(skip).toEqual(false);
+      });
+    });
+
+    it('should return false if latest attempt was successful', async () => {
+      const request = new Request();
+      request.status = RequestStatus.OK;
+      request.createdAt = new Date();
+      request.url = url;
+
+      await requestRepo.persistAndFlush(request);
+
+      const { skip } = await service.shouldSkipAfterPreviousFailedAttempt({
+        url,
+      });
+
+      expect(skip).toEqual(false);
+    });
+
+    it('should skip if the found latest retry date is in the future', async () => {
+      const okRequest = new Request();
+      okRequest.status = RequestStatus.OK;
+      okRequest.createdAt = dayjs().subtract(30, 'minutes').toDate();
+      okRequest.url = url;
+      const failedRequest = new Request();
+      failedRequest.status = RequestStatus.FETCH_ERROR;
+      failedRequest.url = url;
+      failedRequest.createdAt = dayjs().subtract(20, 'minutes').toDate();
+      failedRequest.nextRetryDate = dayjs().add(30, 'minutes').toDate();
+
+      await requestRepo.persistAndFlush([okRequest, failedRequest]);
+
+      const { skip } = await service.shouldSkipAfterPreviousFailedAttempt({
+        url,
+      });
+
+      expect(skip).toEqual(true);
+    });
+
+    it('should not skip if the found latest retry date is in the past', async () => {
+      const okRequest = new Request();
+      okRequest.status = RequestStatus.OK;
+      okRequest.createdAt = dayjs().subtract(30, 'minutes').toDate();
+      okRequest.url = url;
+      const failedRequest = new Request();
+      failedRequest.status = RequestStatus.FETCH_ERROR;
+      failedRequest.url = url;
+      failedRequest.createdAt = dayjs().subtract(20, 'minutes').toDate();
+      failedRequest.nextRetryDate = dayjs().subtract(10, 'minutes').toDate();
+
+      await requestRepo.persistAndFlush([okRequest, failedRequest]);
+
+      const { skip } = await service.shouldSkipAfterPreviousFailedAttempt({
+        url,
+      });
+
+      expect(skip).toEqual(false);
+    });
+  });
+
+  describe('countFailedRequests', () => {
+    it('should return the number of failed requests after the latest OK attempt', async () => {
+      const okRequestOlder = new Request();
+      okRequestOlder.status = RequestStatus.OK;
+      okRequestOlder.createdAt = dayjs().subtract(30, 'days').toDate();
+      okRequestOlder.url = url;
+      const failedRequestOlder = new Request();
+      failedRequestOlder.status = RequestStatus.FETCH_ERROR;
+      failedRequestOlder.url = url;
+      failedRequestOlder.createdAt = dayjs().subtract(20, 'days').toDate();
+
+      const okRequest = new Request();
+      okRequest.status = RequestStatus.OK;
+      okRequest.createdAt = dayjs().subtract(30, 'minutes').toDate();
+      okRequest.url = url;
+      const failedRequest = new Request();
+      failedRequest.status = RequestStatus.FETCH_ERROR;
+      failedRequest.url = url;
+      failedRequest.createdAt = dayjs().subtract(20, 'minutes').toDate();
+      const failedRequest2 = new Request();
+      failedRequest2.status = RequestStatus.FETCH_ERROR;
+      failedRequest2.url = url;
+      failedRequest2.createdAt = dayjs().subtract(10, 'minutes').toDate();
+
+      await requestRepo.persistAndFlush([
+        okRequestOlder,
+        failedRequestOlder,
+        okRequest,
+        failedRequest,
+        failedRequest2,
+      ]);
+
+      const failedRequestsCount = await service.countFailedRequests({ url });
+
+      expect(failedRequestsCount).toEqual(2);
+    });
+
+    it('should return 0 if there are no failed requests after the latest OK attempt', async () => {
+      const okRequestOlder = new Request();
+      okRequestOlder.status = RequestStatus.OK;
+      okRequestOlder.createdAt = dayjs().subtract(30, 'days').toDate();
+      okRequestOlder.url = url;
+      const failedRequestOlder = new Request();
+      failedRequestOlder.status = RequestStatus.FETCH_ERROR;
+      failedRequestOlder.url = url;
+      failedRequestOlder.createdAt = dayjs().subtract(20, 'days').toDate();
+
+      const okRequest = new Request();
+      okRequest.status = RequestStatus.OK;
+      okRequest.createdAt = dayjs().subtract(30, 'minutes').toDate();
+      okRequest.url = url;
+
+      await requestRepo.persistAndFlush([
+        okRequestOlder,
+        failedRequestOlder,
+        okRequest,
+      ]);
+
+      const failedRequestsCount = await service.countFailedRequests({ url });
+
+      expect(failedRequestsCount).toEqual(0);
+    });
+  });
+
+  describe('calculateNextRetryDate', () => {
+    const referenceDate = new Date();
+
+    it.each([
+      {
+        referenceDate,
+        attemptsSoFar: 0,
+        expected: dayjs(referenceDate)
+          .add(FeedFetcherService.BASE_FAILED_ATTEMPT_WAIT_MINUTES, 'minutes')
+          .toDate(),
+      },
+      {
+        referenceDate,
+        attemptsSoFar: 1,
+        expected: dayjs(referenceDate)
+          .add(FeedFetcherService.BASE_FAILED_ATTEMPT_WAIT_MINUTES, 'minutes')
+          .toDate(),
+      },
+      {
+        referenceDate,
+        attemptsSoFar: 2,
+        expected: dayjs(referenceDate)
+          .add(FeedFetcherService.BASE_FAILED_ATTEMPT_WAIT_MINUTES, 'minutes')
+          .toDate(),
+      },
+      {
+        referenceDate,
+        attemptsSoFar: 3,
+        expected: dayjs(referenceDate)
+          .add(FeedFetcherService.BASE_FAILED_ATTEMPT_WAIT_MINUTES, 'minutes')
+          .toDate(),
+      },
+    ])(
+      'returns correctly on attempt #$attemptsSoFar' +
+        ' with max $maxAttempts attempts',
+      ({ referenceDate, attemptsSoFar, expected }) => {
+        const returned = service.calculateNextRetryDate(
+          referenceDate,
+          attemptsSoFar,
+        );
+
+        expect(returned).toEqual(expected);
+      },
+    );
+  });
+
+  describe('getLatestRequest', () => {
+    it('returns the request with the response', async () => {
+      const req1 = new Request();
+      req1.status = RequestStatus.FAILED;
+      req1.url = url;
+      req1.createdAt = new Date(2020, 1, 6);
+
+      const response = new Response();
+      response.statusCode = 200;
+      response.text = 'text';
+      response.isCloudflare = false;
+
+      req1.response = response;
+
+      await requestRepo.persistAndFlush([req1]);
+
+      const latestRequest = await service.getLatestRequest(url);
+
+      expect(latestRequest?.id).toEqual(req1.id);
+      expect(latestRequest?.response).toMatchObject({
+        statusCode: 200,
+        text: 'text',
+        isCloudflare: false,
+      });
     });
   });
 
@@ -136,222 +423,6 @@ describe('FeedFetcherService (Integration)', () => {
           new Date(2021, 1, 1),
         ),
       ).resolves.toEqual(false);
-    });
-  });
-
-  describe('getEarliestFailedAttempt', () => {
-    it('returns the earliest failed attempt if there were no previous ok attempts', async () => {
-      const req1 = new Request();
-      req1.status = RequestStatus.FAILED;
-      req1.url = url;
-      req1.createdAt = new Date(2020, 1, 6);
-      const req2 = new Request();
-      req2.status = RequestStatus.FAILED;
-      req2.url = url;
-      req2.createdAt = new Date(2020, 1, 5);
-      const req3 = new Request();
-      req3.status = RequestStatus.FAILED;
-      req3.url = url;
-      req3.createdAt = new Date(2020, 1, 4);
-      const req4 = new Request();
-      req4.status = RequestStatus.FAILED;
-      req4.url = 'fake-url';
-      req4.createdAt = new Date(2020, 1, 1);
-
-      await requestRepo.persistAndFlush([req1, req2, req3, req4]);
-
-      const earliestFailedAttempt = await service.getEarliestFailedAttempt(url);
-
-      expect(earliestFailedAttempt?.id).toEqual(req3.id);
-    });
-    it('returns the first failed attempt after the latest success', async () => {
-      const irrelevantUrl = 'https://irrelevant.com/feed.xml';
-
-      const req1 = new Request();
-      req1.status = RequestStatus.FAILED;
-      req1.url = url;
-      req1.createdAt = new Date(2020, 1, 6);
-
-      const req2 = new Request();
-      req2.status = RequestStatus.FAILED;
-      req2.url = url;
-      req2.createdAt = new Date(2020, 1, 5);
-
-      const req3 = new Request();
-      req3.status = RequestStatus.FAILED;
-      req3.url = url;
-      req3.createdAt = new Date(2020, 1, 4);
-
-      const req4 = new Request();
-      req4.status = RequestStatus.FAILED;
-      req4.url = irrelevantUrl;
-      req4.createdAt = new Date(2020, 1, 4);
-
-      const req5 = new Request();
-      req5.status = RequestStatus.OK;
-      req5.url = url;
-      req5.createdAt = new Date(2020, 1, 3);
-
-      const req6 = new Request();
-      req6.status = RequestStatus.OK;
-      req6.url = irrelevantUrl;
-      req6.createdAt = new Date(2020, 1, 5);
-
-      await requestRepo.persistAndFlush([req1, req2, req3, req4, req5, req6]);
-
-      const foundAttempt = await service.getEarliestFailedAttempt(url);
-
-      expect(foundAttempt?.id).toEqual(req3.id);
-    });
-  });
-
-  describe('getLatestRequest', () => {
-    it('returns the request with the response', async () => {
-      const req1 = new Request();
-      req1.status = RequestStatus.FAILED;
-      req1.url = url;
-      req1.createdAt = new Date(2020, 1, 6);
-
-      const response = new Response();
-      response.statusCode = 200;
-      response.text = 'text';
-      response.isCloudflare = false;
-
-      req1.response = response;
-
-      await requestRepo.persistAndFlush([req1]);
-
-      const latestRequest = await service.getLatestRequest(url);
-
-      expect(latestRequest?.id).toEqual(req1.id);
-      expect(latestRequest?.response).toMatchObject({
-        statusCode: 200,
-        text: 'text',
-        isCloudflare: false,
-      });
-    });
-  });
-
-  describe('isPastFailureThreshold', () => {
-    it('returns false if the latest request is OK', async () => {
-      const req1 = new Request();
-      req1.status = RequestStatus.OK;
-      req1.url = url;
-      req1.createdAt = new Date(2020, 1, 6);
-
-      await requestRepo.persistAndFlush([req1]);
-
-      const isPastFailureThreshold = await service.isPastFailureThreshold(url);
-
-      expect(isPastFailureThreshold).toEqual(false);
-    });
-
-    it('returns false if there is no latest request', async () => {
-      const isPastFailureThreshold = await service.isPastFailureThreshold(url);
-
-      expect(isPastFailureThreshold).toEqual(false);
-    });
-
-    it('returns false if the latest request is failed but the earliest failed attempt is not past the threshold', async () => {
-      const latestOkAttempt = new Date(2020, 1, 3);
-
-      const req2 = new Request();
-      req2.status = RequestStatus.FAILED;
-      req2.url = url;
-      req2.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours - 2, 'hour')
-        .toDate();
-
-      const req3 = new Request();
-      req3.status = RequestStatus.FAILED;
-      req3.url = url;
-      req3.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours - 1, 'hour')
-        .toDate();
-
-      const req4 = new Request();
-      req4.status = RequestStatus.OK;
-      req4.url = url;
-      req4.createdAt = latestOkAttempt;
-
-      await requestRepo.persistAndFlush([req2, req3, req4]);
-
-      const isPastFailureThreshold = await service.isPastFailureThreshold(url);
-
-      expect(isPastFailureThreshold).toEqual(false);
-    });
-
-    it('returns true if the earliest failed attempt after the latest OK attempt passes the threshold', async () => {
-      const latestOkAttempt = new Date(2020, 1, 3);
-
-      const req2 = new Request();
-      req2.status = RequestStatus.FAILED;
-      req2.url = url;
-      req2.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours, 'hour')
-        .toDate();
-
-      const req3 = new Request();
-      req3.status = RequestStatus.FAILED;
-      req3.url = url;
-      req3.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours + 1, 'hour')
-        .toDate();
-
-      const req4 = new Request();
-      req4.status = RequestStatus.OK;
-      req4.url = url;
-      req4.createdAt = latestOkAttempt;
-
-      await requestRepo.persistAndFlush([req2, req3, req4]);
-
-      const isPastFailureThreshold = await service.isPastFailureThreshold(url);
-
-      expect(isPastFailureThreshold).toEqual(true);
-    });
-
-    it('returns false if there are no OK attempts and the earliest failed attempt is not past threshold', async () => {
-      const req3 = new Request();
-      req3.status = RequestStatus.FAILED;
-      req3.url = url;
-      req3.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours - 2, 'hour')
-        .toDate();
-
-      const req4 = new Request();
-      req4.status = RequestStatus.FETCH_ERROR;
-      req4.url = url;
-      req4.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours - 1, 'hour')
-        .toDate();
-
-      await requestRepo.persistAndFlush([req3, req4]);
-
-      const isPastFailureThreshold = await service.isPastFailureThreshold(url);
-
-      expect(isPastFailureThreshold).toEqual(false);
-    });
-
-    it('returns true if there are no OK attempts and the earliest failed attempt is past threshold', async () => {
-      const req3 = new Request();
-      req3.status = RequestStatus.FAILED;
-      req3.url = url;
-      req3.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours - 1, 'hour')
-        .toDate();
-
-      const req4 = new Request();
-      req4.status = RequestStatus.FETCH_ERROR;
-      req4.url = url;
-      req4.createdAt = dayjs()
-        .subtract(failedDurationThresholdHours + 1, 'hour')
-        .toDate();
-
-      await requestRepo.persistAndFlush([req3, req4]);
-
-      const isPastFailureThreshold = await service.isPastFailureThreshold(url);
-
-      expect(isPastFailureThreshold).toEqual(true);
     });
   });
 
