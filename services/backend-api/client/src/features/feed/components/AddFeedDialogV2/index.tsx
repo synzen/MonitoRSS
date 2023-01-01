@@ -13,6 +13,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Tooltip,
   useDisclosure,
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -22,6 +23,7 @@ import { InferType, object, string } from 'yup';
 import { useEffect } from 'react';
 import { useCreateUserFeed, useUserFeeds } from '../../hooks';
 import { notifyError } from '@/utils/notifyError';
+import { useDiscordUserMe } from '../../../discordUser';
 
 const formSchema = object({
   title: string().required(),
@@ -45,8 +47,11 @@ export const AddFeedDialogV2: React.FC = () => {
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
-  const { refetch: refetchFeeds } = useUserFeeds();
+  const { refetch: refetchFeeds, data } = useUserFeeds();
   const { mutateAsync } = useCreateUserFeed();
+  const {
+    data: discordUserMe,
+  } = useDiscordUserMe();
 
   const onSubmit = async ({ title, url }: FormData) => {
     try {
@@ -69,26 +74,33 @@ export const AddFeedDialogV2: React.FC = () => {
     reset();
   }, [isOpen]);
 
+  const isUnderLimit = data?.total && discordUserMe?.maxUserFeeds
+    && data.total < discordUserMe.maxUserFeeds;
+
   return (
     <>
-      <Button
-        colorScheme="blue"
-        onClick={onOpen}
-      >
-        {t('features.feed.components.addFeedDialog.addButton')}
-      </Button>
+      <Tooltip label={t('features.userFeeds.components.addUserFeedDialog.overLimitHint')}>
+        <Button
+          colorScheme="blue"
+          onClick={onOpen}
+          disabled={!isUnderLimit}
+        >
+          {t('features.userFeeds.components.addUserFeedDialog.addButton')}
+        </Button>
+      </Tooltip>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
           <form onSubmit={handleSubmit(onSubmit)}>
-            <ModalHeader>{t('features.feed.components.addFeedDialog.title')}</ModalHeader>
+            <ModalHeader>
+              {t('features.userFeeds.components.addUserFeedDialog.title')}
+            </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.title}>
                   <FormLabel>
-                    {t('features.feed.components.addFeedDialog.formTitleLabel')}
-
+                    {t('features.userFeeds.components.addUserFeedDialog.formTitleLabel')}
                   </FormLabel>
                   <Controller
                     name="title"
@@ -101,8 +113,7 @@ export const AddFeedDialogV2: React.FC = () => {
                     )}
                   />
                   <FormHelperText>
-                    {t('features.feed.components.addFeedDialog.formTitleDescription')}
-
+                    {t('features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel')}
                   </FormHelperText>
                   <FormErrorMessage>
                     {errors.title?.message}
@@ -110,7 +121,7 @@ export const AddFeedDialogV2: React.FC = () => {
                 </FormControl>
                 <FormControl isInvalid={!!errors.url}>
                   <FormLabel>
-                    {t('features.feed.components.addFeedDialog.formLinkLabel')}
+                    {t('features.userFeeds.components.addUserFeedDialog.formLinkLabel')}
                   </FormLabel>
                   <Controller
                     name="url"
@@ -123,7 +134,7 @@ export const AddFeedDialogV2: React.FC = () => {
                     )}
                   />
                   <FormHelperText>
-                    {t('features.feed.components.addFeedDialog.formLinkDescription')}
+                    {t('features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel')}
                   </FormHelperText>
                   <FormErrorMessage>
                     {errors.url?.message}
@@ -138,17 +149,15 @@ export const AddFeedDialogV2: React.FC = () => {
                 onClick={onClose}
                 disabled={isSubmitting}
               >
-                {t('features.feed.components.addFeedDialog.cancelButton')}
+                {t('common.buttons.cancel')}
               </Button>
               <Button
                 colorScheme="blue"
                 type="submit"
-                // form="addfeed"
                 isLoading={isSubmitting}
                 isDisabled={!isDirty || isSubmitting}
-                onClick={() => console.log('c')}
               >
-                {t('features.feed.components.addFeedDialog.saveButton')}
+                {t('common.buttons.save')}
               </Button>
             </ModalFooter>
           </form>
