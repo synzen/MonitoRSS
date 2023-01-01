@@ -37,6 +37,7 @@ export const useUserFeedRequests = ({ feedId, data: inputData }: Props) => {
     {
       enabled: !!feedId,
       keepPreviousData: true,
+      refetchOnWindowFocus: true,
     },
   );
 
