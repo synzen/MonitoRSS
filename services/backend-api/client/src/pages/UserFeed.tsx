@@ -27,7 +27,9 @@ import {
   Text,
   useDisclosure,
 } from '@chakra-ui/react';
-import { useParams, Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import {
+  useParams, Link as RouterLink, useNavigate, useLocation,
+} from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';

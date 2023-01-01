@@ -378,12 +378,14 @@
           "formLinkLabel": "Link",
           "onlyForYourReferenceLabel": "This is only for your reference",
           "addButton": "Add Feed",
-          "overLimitHint": "You have reached the maximum number of feeds avaialble to you."
+          "overLimitHint": "You have reached the maximum number of feeds available to you."
         },
         "requestsTable": {
           "title": "Request History",
           "tableHeaderDate": "Date",
-          "tableHeaderStatus": "Status"
+          "tableHeaderStatus": "Status",
+          "alertFailingTitle": "Requests are currently failing",
+          "alertFailingDescription": "We've been unable to successfully fetch this feed. Attempts will continue automatically. The next attempt will be at {{nextAttemptDate}}."
         }
       }
     },

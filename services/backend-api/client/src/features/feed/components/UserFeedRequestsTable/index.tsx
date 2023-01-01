@@ -1,6 +1,8 @@
 import {
   Alert,
+  AlertDescription,
   AlertIcon,
+  AlertTitle,
   Badge,
   Box,
   Button,
@@ -70,12 +72,28 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
 
   const onFirstPage = skip === 0;
   const onLastPage = skip + limit >= total;
+  const nextRetryTimestamp = data?.result.nextRetryTimestamp;
 
   return (
     <Stack spacing={4}>
       <Heading size="md">
         {t('features.userFeeds.components.requestsTable.title')}
       </Heading>
+      {typeof nextRetryTimestamp === 'number' && (
+      <Alert status="warning">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>
+            {t('features.userFeeds.components.requestsTable.alertFailingTitle')}
+          </AlertTitle>
+          <AlertDescription>
+            {t('features.userFeeds.components.requestsTable.alertFailingDescription', {
+              nextAttemptDate: dayjs.unix(nextRetryTimestamp).format('DD MMM YYYY, HH:mm:ss'),
+            })}
+          </AlertDescription>
+        </Box>
+      </Alert>
+      )}
       <Stack>
         <Box
           border="solid 1px"
