@@ -57,9 +57,18 @@ export const LogicalExpressionForm = ({
   };
 
   const onAddRelational = () => {
-    const indexOfLastRelational = (fields as Array<(FilterExpression & {
+    let indexOfLastRelational = 0;
+
+    const typedFields = (fields as Array<(FilterExpression & {
       id: string
-    })>)?.findIndex((child) => child?.type === FilterExpressionType.Relational) || -1;
+    })>);
+
+    for (let i = typedFields.length - 1; i >= 0; i -= 1) {
+      if (typedFields[i]?.type === FilterExpressionType.Relational) {
+        indexOfLastRelational = i;
+        break;
+      }
+    }
 
     const toInsert: RelationalFilterExpression = {
       type: FilterExpressionType.Relational,
