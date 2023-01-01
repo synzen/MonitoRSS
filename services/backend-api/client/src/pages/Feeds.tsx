@@ -10,6 +10,12 @@ import {
   DrawerCloseButton,
   Text,
   IconButton,
+  Alert,
+  HStack,
+  Badge,
+  AlertTitle,
+  AlertDescription,
+  Button,
 } from '@chakra-ui/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -20,6 +26,8 @@ import { RequireServerBotAccess, useDiscordServer } from '@/features/discordServ
 import { FeedSidebar } from '@/features/feed/components/FeedsTable/FeedSidebar';
 import { FeedsTable } from '@/features/feed/components/FeedsTable';
 import { useFeeds } from '@/features/feed';
+import { pages } from '../constants';
+import { useDiscordUserMe } from '../features/discordUser';
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
@@ -28,6 +36,9 @@ const Feeds: React.FC = () => {
   const { t } = useTranslation();
   const { data: serverData } = useDiscordServer({ serverId });
   const { data: feedsData } = useFeeds({ serverId });
+  const {
+    data,
+  } = useDiscordUserMe();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,7 +70,8 @@ const Feeds: React.FC = () => {
           overflow="auto"
           marginTop="8"
         >
-          {/* <Alert
+          {data?.maxUserFeeds && data.supporter && (
+          <Alert
             status="info"
             flexDirection="column"
             alignItems="flex-start"
@@ -85,7 +97,8 @@ const Feeds: React.FC = () => {
             >
               Check it out
             </Button>
-          </Alert> */}
+          </Alert>
+          )}
           <Flex
             justifyContent="space-between"
             alignItems="center"
