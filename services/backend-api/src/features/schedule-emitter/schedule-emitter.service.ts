@@ -18,13 +18,13 @@ export class ScheduleEmitterService {
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
     const supporterRefreshRates = await this.getSupporterRefreshRates();
-    logger.info(`Supporter refresh rates: [${supporterRefreshRates}]`);
+    logger.debug(`Supporter refresh rates: [${supporterRefreshRates}]`);
 
     const scheduleRefreshRates = await this.getScheduleRefreshRates();
-    logger.info(`Schedule refresh rates: [${scheduleRefreshRates}]`);
+    logger.debug(`Schedule refresh rates: [${scheduleRefreshRates}]`);
 
     const defaultRefreshRate = await this.getDefaultRefreshRate();
-    logger.info(`Default refresh rate: [${defaultRefreshRate}]`);
+    logger.debug(`Default refresh rate: [${defaultRefreshRate}]`);
 
     const setOfRefreshRatesMs = new Set([
       ...supporterRefreshRates,
@@ -84,7 +84,7 @@ export class ScheduleEmitterService {
       inputTimers.delete(key);
     });
 
-    logger.info(
+    logger.debug(
       `Removed ${timersRemoved.length} timers: [${timersRemoved.map(
         (refreshRate) => `${refreshRate / 1000}s`
       )}]`
@@ -110,7 +110,7 @@ export class ScheduleEmitterService {
       inputTimers.set(refreshRate, timer);
     });
 
-    logger.info(
+    logger.debug(
       `Set ${timersSet.length} timers: [${timersSet.map(
         (refreshRate) => `${refreshRate / 1000}s`
       )}]`

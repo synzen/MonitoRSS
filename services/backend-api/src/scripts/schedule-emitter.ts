@@ -36,10 +36,10 @@ async function runTimerSync(app: INestApplicationContext) {
   const scheduleHandlerService = app.get(ScheduleHandlerService);
 
   try {
-    logger.info(`Syncing timer states`);
+    logger.debug(`Syncing timer states`);
     await scheduleEmitterService.syncTimerStates(async (refreshRateSeconds) => {
       try {
-        logger.info(`Handling refresh rate ${refreshRateSeconds}s`);
+        logger.debug(`Handling refresh rate ${refreshRateSeconds}s`);
         await scheduleHandlerService.handleRefreshRate(refreshRateSeconds, {
           urlHandler: async (url) =>
             urlEventHandler(app, {
