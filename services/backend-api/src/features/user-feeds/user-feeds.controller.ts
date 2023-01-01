@@ -245,6 +245,7 @@ export class UserFeedsController {
         key: FeedConnectionType.DiscordChannel,
         details: con.details,
         filters: con.filters,
+        disabledCode: con.disabledCode,
       }));
 
     const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
@@ -254,6 +255,7 @@ export class UserFeedsController {
         key: FeedConnectionType.DiscordWebhook,
         details: con.details,
         filters: con.filters,
+        disabledCode: con.disabledCode,
       }));
 
     const { refreshRateSeconds } =

@@ -209,6 +209,27 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       });
     });
 
+    it("updates disabled code", async () => {
+      await service.updateDiscordChannelConnection(
+        createdFeed._id.toHexString(),
+        connectionIdToUse.toHexString(),
+        {
+          accessToken: updateInput.accessToken,
+          updates: {
+            disabledCode: FeedConnectionDisabledCode.BadFormat,
+          },
+        }
+      );
+
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordChannels).toHaveLength(1);
+      expect(updatedFeed?.connections.discordChannels[0]).toMatchObject({
+        id: connectionIdToUse,
+        disabledCode: FeedConnectionDisabledCode.BadFormat,
+      });
+    });
+
     it("allows nullable properties to be cleared", async () => {
       await service.updateDiscordChannelConnection(
         createdFeed._id.toHexString(),

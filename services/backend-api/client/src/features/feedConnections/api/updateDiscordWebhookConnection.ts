@@ -1,6 +1,6 @@
 import { InferType, object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { FeedConnectionSchema } from '@/types';
+import { FeedConnectionDisabledCode, FeedConnectionSchema } from '@/types';
 
 export interface UpdateDiscordWebhookConnectionInput {
   feedId: string;
@@ -13,6 +13,7 @@ export interface UpdateDiscordWebhookConnectionInput {
       iconUrl?: string
     }
     content?: string | null
+    disabledCode?: FeedConnectionDisabledCode.Manual | null
     filters?: {
       expression: Record<string, any>
     } | null

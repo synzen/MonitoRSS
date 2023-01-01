@@ -25,7 +25,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { BoxConstrained, CategoryText } from '@/components';
+import { BoxConstrained, CategoryText, ConfirmModal } from '@/components';
 import { DiscordMessageFormData } from '@/types/discord';
 import RouteParams from '@/types/RouteParams';
 import {
@@ -38,6 +38,7 @@ import {
   SendConnectionTestArticleButton,
   FiltersTabSection,
   MessageTabSection,
+  ConnectionDisabledAlert,
 } from '../features/feedConnections';
 import { useUserFeed } from '../features/feed';
 import { DashboardContentV2 } from '../components/DashboardContentV2';
@@ -64,7 +65,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
     connectionId,
   });
   const { t } = useTranslation();
-  const { mutateAsync } = useUpdateDiscordWebhookConnection();
+  const { mutateAsync, status: updateStatus } = useUpdateDiscordWebhookConnection();
 
   const onFiltersUpdated = async (filters: FilterExpression | null) => {
     if (!feedId || !connectionId) {
@@ -123,6 +124,44 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         details: {
           webhook,
           name,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
+  };
+
+  const onDisabled = async () => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          disabledCode: FeedConnectionDisabledCode.Manual,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
+  };
+
+  const onEnabled = async () => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          disabledCode: null,
         },
       });
       notifySuccess(t('common.success.savedChanges'));
@@ -215,6 +254,26 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                               </MenuItem>
                         )}
                           />
+                          {
+                            connection && !connection.disabledCode && (
+                            <ConfirmModal
+                              title={t('pages.discordWebhookConnection.manualDisableConfirmTitle')}
+                              description={t('pages.discordWebhookConnection'
+                                + '.manualDisableConfirmDescription')}
+                              trigger={(
+                                <MenuItem
+                                  disabled={updateStatus === 'loading'}
+                                >
+                                  {t('common.buttons.disable')}
+                                </MenuItem>
+                            )}
+                              okText={t('common.buttons.yes')}
+                              okLoading={updateStatus === 'loading'}
+                              colorScheme="blue"
+                              onConfirm={() => onDisabled()}
+                            />
+                            )
+                            }
                           <MenuDivider />
                           <DeleteConnectionButton
                             connectionId={connectionId as string}
@@ -232,6 +291,10 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     )}
                   </HStack>
                 </Box>
+                <ConnectionDisabledAlert
+                  disabledCode={connection?.disabledCode}
+                  onEnable={onEnabled}
+                />
                 <Alert
                   status="error"
                   hidden={!connection

@@ -8,7 +8,9 @@
       "delete": "Delete",
       "yes": "Yes",
       "actions": "Actions",
-      "close": "Close"
+      "close": "Close",
+      "disable": "Disable",
+      "reEnable": "Re-enable"
     },
     "table": {
       "results": "Showing {{start}}-{{end}} of {{total}} results"
@@ -222,11 +224,15 @@
     },
     "discordChannelConnection": {
       "disabledAlertBadFormatTitle": "Disabled due to invalid message format",
-      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format."
+      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format.",
+      "manualDisableConfirmTitle": "Are you sure you want to disable this connection?",
+      "manualDisableConfirmDescription": "This will disable the connection and prevent any further messages from being sent to this channel. You may re-enable it at any time."
     },
     "discordWebhookConnection": {
       "disabledAlertBadFormatTitle": "Disabled due to invalid message format",
-      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format."
+      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format.",
+      "manualDisableConfirmTitle": "Are you sure you want to disable this connection?",
+      "manualDisableConfirmDescription": "This will disable the connection and prevent any further messages from being sent to this channel. You may re-enable it at any time."
     }
   },
   "components": {
@@ -414,6 +420,10 @@
           "noArticles": "The feed currently does not have any articles to preview.",
           "prevPage": "Previous",
           "nextPage": "Next"
+        },
+        "manuallyDisabledAlert": {
+          "title": "This connection has been manually disabled",
+          "description": "Article delivery through this connection is paused until it is re-enabled."
         }
       }
     },

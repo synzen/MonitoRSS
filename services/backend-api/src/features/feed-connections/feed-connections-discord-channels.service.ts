@@ -168,6 +168,8 @@ export class FeedConnectionsDiscordChannelsService {
       },
     };
 
+    console.log(updateQuery);
+
     const updated = await this.userFeedModel.findOneAndUpdate(
       findQuery,
       updateQuery,
@@ -180,9 +182,12 @@ export class FeedConnectionsDiscordChannelsService {
       (connection) => connection.id.equals(connectionId)
     );
 
+    console.log(updatedConnection);
+
     if (!updatedConnection) {
       throw new Error(
-        "Connection was not successfuly updated. Check insertion statement and schemas are correct."
+        "Connection was not successfully updated." +
+          " Check insertion statement and schemas are correct."
       );
     }
 

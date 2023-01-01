@@ -117,7 +117,7 @@ export class FeedConnectionsDiscordWebhooksController {
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
     let useDisableCode: FeedConnectionDisabledCode | undefined | null =
-      undefined;
+      disabledCode;
 
     if (
       disabledCode === null &&

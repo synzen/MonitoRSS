@@ -8,3 +8,4 @@ export * from './ArticlePlaceholderTable';
 export * from './FiltersTabSection';
 export * from './MessageTabSection';
 export * from './ArticleFilterResultsTable';
+export * from './ConnectionDisabledAlert';

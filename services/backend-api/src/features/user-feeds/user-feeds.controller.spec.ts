@@ -1,6 +1,9 @@
 import { NotFoundException } from "@nestjs/common";
 import { Types } from "mongoose";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { GetUserFeedArticlesInputDto } from "./dto";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsController } from "./user-feeds.controller";
@@ -33,6 +36,7 @@ describe("UserFeedsController", () => {
         {
           id: new Types.ObjectId(),
           name: "discord channel con name",
+          disabledCode: FeedConnectionDisabledCode.Manual,
           filters: {
             expression: {
               foo: "discord channel filters",
@@ -47,6 +51,7 @@ describe("UserFeedsController", () => {
         {
           id: new Types.ObjectId(),
           name: "discord webhook con name",
+          disabledCode: FeedConnectionDisabledCode.Manual,
           filters: {
             expression: {
               foo: "discord webhook filters",
@@ -95,6 +100,7 @@ describe("UserFeedsController", () => {
               key: FeedConnectionType.DiscordChannel,
               details: con.details,
               filters: con.filters,
+              disabledCode: FeedConnectionDisabledCode.Manual,
             })),
             ...feed.connections.discordWebhooks.map((con) => ({
               id: con.id.toHexString(),
@@ -102,6 +108,7 @@ describe("UserFeedsController", () => {
               key: FeedConnectionType.DiscordWebhook,
               details: con.details,
               filters: con.filters,
+              disabledCode: FeedConnectionDisabledCode.Manual,
             })),
           ],
         },

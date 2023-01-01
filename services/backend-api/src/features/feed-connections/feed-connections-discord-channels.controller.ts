@@ -115,10 +115,10 @@ export class FeedConnectionsDiscordChannelsController {
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
     let useDisableCode: FeedConnectionDisabledCode | undefined | null =
-      undefined;
+      disabledCode;
 
     if (
-      disabledCode === null &&
+      useDisableCode === null &&
       connection.disabledCode !== FeedConnectionDisabledCode.Manual
     ) {
       throw new CannotEnableAutoDisabledConnection();

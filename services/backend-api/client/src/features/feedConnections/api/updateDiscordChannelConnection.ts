@@ -1,6 +1,6 @@
 import { InferType, object } from 'yup';
 import fetchRest from '../../../utils/fetchRest';
-import { FeedConnectionSchema } from '@/types';
+import { FeedConnectionDisabledCode, FeedConnectionSchema } from '@/types';
 
 export interface UpdateDiscordChannelConnectionInput {
   feedId: string;
@@ -12,6 +12,7 @@ export interface UpdateDiscordChannelConnectionInput {
     filters?: {
       expression: Record<string, any>
     } | null
+    disabledCode?: FeedConnectionDisabledCode.Manual | null
     embeds?: Array<{
       color?: string
       authorTitle?: string | null

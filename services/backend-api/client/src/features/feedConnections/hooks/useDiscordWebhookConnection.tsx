@@ -11,6 +11,7 @@ export const useDiscordWebhookConnection = ({ feedId, connectionId }: Props) => 
     feed,
     status,
     error,
+    fetchStatus,
   } = useUserFeed({ feedId });
 
   const connection = feed?.connections
@@ -21,5 +22,6 @@ export const useDiscordWebhookConnection = ({ feedId, connectionId }: Props) => 
     connection,
     status,
     error,
+    fetchStatus,
   };
 };

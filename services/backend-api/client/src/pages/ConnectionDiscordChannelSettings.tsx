@@ -25,7 +25,9 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { BoxConstrained, CategoryText, DashboardContentV2 } from '../components';
+import {
+  BoxConstrained, CategoryText, ConfirmModal, DashboardContentV2,
+} from '../components';
 import { pages } from '../constants';
 import { DiscordChannelName } from '../features/discordServers';
 import { useUserFeed } from '../features/feed';
@@ -39,6 +41,7 @@ import {
   SendConnectionTestArticleButton,
   FiltersTabSection,
   MessageTabSection,
+  ConnectionDisabledAlert,
 } from '../features/feedConnections';
 import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
@@ -66,6 +69,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { t } = useTranslation();
   const {
     mutateAsync,
+    status: updateStatus,
   } = useUpdateDiscordChannelConnection();
 
   const serverId = connection?.details.channel.guildId;
@@ -125,6 +129,44 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
         channelId: data.channelId,
       },
     });
+  };
+
+  const onDisabled = async () => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          disabledCode: FeedConnectionDisabledCode.Manual,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
+  };
+
+  const onEnabled = async () => {
+    if (!feedId || !connectionId) {
+      return;
+    }
+
+    try {
+      await mutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          disabledCode: null,
+        },
+      });
+      notifySuccess(t('common.success.savedChanges'));
+    } catch (err) {
+      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+    }
   };
 
   return (
@@ -207,6 +249,26 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                               </MenuItem>
                         )}
                           />
+                          {
+                            connection && !connection.disabledCode && (
+                            <ConfirmModal
+                              title={t('pages.discordChannelConnection.manualDisableConfirmTitle')}
+                              description={t('pages.discordChannelConnection'
+                                + '.manualDisableConfirmDescription')}
+                              trigger={(
+                                <MenuItem
+                                  disabled={updateStatus === 'loading'}
+                                >
+                                  {t('common.buttons.disable')}
+                                </MenuItem>
+                            )}
+                              okText={t('common.buttons.yes')}
+                              okLoading={updateStatus === 'loading'}
+                              colorScheme="blue"
+                              onConfirm={() => onDisabled()}
+                            />
+                            )
+                            }
                           <MenuDivider />
                           <DeleteConnectionButton
                             connectionId={connectionId as string}
@@ -224,6 +286,10 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     )}
                   </HStack>
                 </Box>
+                <ConnectionDisabledAlert
+                  disabledCode={connection?.disabledCode}
+                  onEnable={onEnabled}
+                />
                 <Alert
                   status="error"
                   hidden={!connection
