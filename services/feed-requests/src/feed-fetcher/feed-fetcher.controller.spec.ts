@@ -31,7 +31,7 @@ describe('FeedFetcherController', () => {
         {
           id: 1,
           createdAt: new Date(),
-          nextRetryDate: new Date(2022),
+          nextRetryTimestamp: new Date(2022),
           status: RequestStatus.FAILED,
         },
         {
@@ -64,7 +64,7 @@ describe('FeedFetcherController', () => {
             },
           ],
           totalRequests: 2,
-          nextRetryDate: dayjs(mockRequests[0].nextRetryDate).unix(),
+          nextRetryTimestamp: dayjs(mockRequests[0].nextRetryTimestamp).unix(),
         },
       });
     });
@@ -86,7 +86,7 @@ describe('FeedFetcherController', () => {
 
       expect(result).toMatchObject({
         result: {
-          nextRetryDate: null,
+          nextRetryTimestamp: null,
         },
       });
     });

@@ -9,7 +9,7 @@ interface Request {
 interface Result {
   requests: Request[];
   totalRequests: number;
-  nextRetryDate: number | null;
+  nextRetryTimestamp: number | null;
 }
 
 export interface GetFeedRequestsOutputDto {

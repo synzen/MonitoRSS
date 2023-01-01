@@ -381,6 +381,7 @@
           "overLimitHint": "You have reached the maximum number of feeds avaialble to you."
         },
         "requestsTable": {
+          "title": "Request History",
           "tableHeaderDate": "Date",
           "tableHeaderStatus": "Status"
         }

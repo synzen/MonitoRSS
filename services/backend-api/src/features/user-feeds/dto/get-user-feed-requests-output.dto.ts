@@ -11,7 +11,7 @@ interface Result {
   requests: Request[];
   totalRequests: number;
   // Unix timestamp
-  nextRetryDate: number | null;
+  nextRetryTimestamp: number | null;
 }
 
 export interface GetUserFeedRequestsOutputDto {

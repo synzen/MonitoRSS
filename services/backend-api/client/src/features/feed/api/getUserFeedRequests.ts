@@ -16,7 +16,8 @@ export interface GetUserFeedRequestsInput {
 const GetUserFeedRequestsOutputSchema = object({
   result: object().shape({
     requests: array(UserFeedRequestSchema).required(),
-    nextRetryDate: number().nullable().default(null),
+    totalRequests: number().required(),
+    nextRetryTimestamp: number().nullable().default(null),
   }).required(),
 }).required();
 

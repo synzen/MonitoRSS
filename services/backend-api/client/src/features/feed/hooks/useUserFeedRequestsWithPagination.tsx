@@ -14,8 +14,6 @@ export const useUserFeedRequestsWithPagination = (
   const [skip, setSkip] = useState(0);
   const useLimit = limit || 10;
 
-  console.log('a');
-
   const {
     error,
     data,

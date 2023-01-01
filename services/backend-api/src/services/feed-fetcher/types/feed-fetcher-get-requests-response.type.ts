@@ -39,7 +39,7 @@ class Result {
   @IsInt()
   @IsPositive()
   @Type(() => Number)
-  nextRetryDate: number | null;
+  nextRetryTimestamp: number | null;
 }
 
 export class FeedFetcherGetRequestsResponse {

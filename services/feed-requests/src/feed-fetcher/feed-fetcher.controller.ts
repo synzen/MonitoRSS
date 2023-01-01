@@ -58,7 +58,7 @@ export class FeedFetcherController {
         })),
         totalRequests: total,
         // unix timestamp in seconds
-        nextRetryDate: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
+        nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
       },
     };
   }
