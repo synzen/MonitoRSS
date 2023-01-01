@@ -45,6 +45,30 @@ describe('FeedFetcherController', () => {
       });
     });
 
+    it('creates a new request if executeIfNotExists is true', async () => {
+      const data = {
+        url: 'https://www.example.com',
+        executeFetchIfNotExists: true,
+      };
+
+      jest
+        .spyOn(feedFetcherService, 'getLatestRequest')
+        .mockResolvedValue(null);
+
+      jest.spyOn(feedFetcherService, 'fetchAndSaveResponse').mockResolvedValue({
+        status: RequestStatus.OK,
+        response: {
+          statusCode: 200,
+        },
+      } as never);
+
+      const result = await controller.fetchFeed(data);
+
+      expect(result).toMatchObject({
+        requestStatus: 'success',
+      });
+    });
+
     it('returns error if latest request is a fetch error', async () => {
       const data = {
         url: 'https://www.example.com',

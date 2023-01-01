@@ -289,9 +289,9 @@ export class FeedFetcherService {
   }
 
   /**
-   * Delete requests and responses that are older than 14 days. There's a risk of this interfering
-   * with the retry logic, but it's a small risk and the alternative is to keep a lot of data around
-   * for no reason.
+   * While this may delete all requests of feeds that have been disabled and were not fetched
+   * for a long time for example, fetches should always execute anyways if there are no
+   * existing requests stored.
    */
   async deleteStaleRequests(url: string) {
     const cutoff = dayjs().subtract(14, 'days').toDate();

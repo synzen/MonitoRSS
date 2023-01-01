@@ -27,7 +27,12 @@ export class FeedFetcherService {
     this.API_KEY = configService.getOrThrow("USER_FEEDS_FEED_REQUESTS_API_KEY");
   }
 
-  async fetch(url: string) {
+  async fetch(
+    url: string,
+    options?: {
+      executeFetchIfNotInCache?: boolean;
+    }
+  ) {
     const serviceUrl = this.SERVICE_HOST;
     let statusCode: number;
     let body: BodyReadable & Dispatcher.BodyMixin;
@@ -37,6 +42,7 @@ export class FeedFetcherService {
         method: "POST",
         body: JSON.stringify({
           url,
+          executeFetchIfNotInCache: options?.executeFetchIfNotInCache ?? false,
         }),
         headers: {
           "content-type": "application/json",
@@ -94,7 +100,9 @@ export class FeedFetcherService {
   }
 
   async fetchFeedArticles(url: string) {
-    const feedXml = await this.fetch(url);
+    const feedXml = await this.fetch(url, {
+      executeFetchIfNotInCache: true,
+    });
 
     if (!feedXml) {
       return null;

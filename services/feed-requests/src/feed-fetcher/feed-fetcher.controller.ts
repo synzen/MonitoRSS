@@ -34,14 +34,20 @@ export class FeedFetcherController {
       }
     }
 
-    const latestRequest = await this.feedFetcherService.getLatestRequest(
+    let latestRequest = await this.feedFetcherService.getLatestRequest(
       data.url,
     );
 
     if (!latestRequest) {
-      return {
-        requestStatus: 'pending',
-      };
+      if (data.executeFetchIfNotExists) {
+        latestRequest = await this.feedFetcherService.fetchAndSaveResponse(
+          data.url,
+        );
+      } else {
+        return {
+          requestStatus: 'pending',
+        };
+      }
     }
 
     if (
