@@ -377,13 +377,13 @@ export const UserFeed: React.FC = () => {
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <Stack spacing={6}>
-                  <Stack>
+                  <Stack spacing={3}>
                     <Flex justifyContent="space-between" alignItems="center">
                       <Heading size="md">
                         {t('pages.userFeeds.tabConnections')}
                       </Heading>
                       <Menu>
-                        <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                        <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
                           {t('pages.feed.addConnectionButtonText')}
                         </MenuButton>
                         <MenuList>
