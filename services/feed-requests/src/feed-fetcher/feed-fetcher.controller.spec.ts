@@ -1,4 +1,5 @@
 import { RequestStatus } from './constants';
+import { GetFeedRequestsInputDto } from './dto';
 import { FeedFetcherController } from './feed-fetcher.controller';
 import { FeedFetcherService } from './feed-fetcher.service';
 
@@ -9,10 +10,88 @@ describe('FeedFetcherController', () => {
   const feedFetcherService: FeedFetcherService = {
     fetchAndSaveResponse: jest.fn(),
     getLatestRequest: jest.fn(),
+    getRequests: jest.fn(),
   } as never;
 
   beforeEach(() => {
     controller = new FeedFetcherController(feedFetcherService);
+  });
+
+  describe('getRequests', () => {
+    const input: GetFeedRequestsInputDto = {
+      skip: 1,
+      limit: 1,
+      url: 'url',
+    };
+
+    it('returns the requests', async () => {
+      const mockRequests = [
+        {
+          id: 1,
+          createdAt: new Date(),
+          nextRetryDate: new Date(2022),
+          status: RequestStatus.FAILED,
+        },
+        {
+          id: 2,
+          createdAt: new Date(),
+          status: RequestStatus.OK,
+        },
+      ];
+
+      jest
+        .spyOn(feedFetcherService, 'getRequests')
+        .mockResolvedValue(mockRequests as never);
+
+      const result = await controller.getRequests(input);
+
+      expect(result).toEqual({
+        result: {
+          requests: [
+            {
+              id: 1,
+              createdAt: mockRequests[0].createdAt,
+              status: RequestStatus.FAILED,
+            },
+            {
+              id: 2,
+              createdAt: mockRequests[1].createdAt,
+              status: RequestStatus.OK,
+            },
+          ],
+          nextRetryDate: mockRequests[0].nextRetryDate,
+        },
+      });
+    });
+
+    it('returns null for retry date if latest request is not failed', async () => {
+      const mockRequests = [
+        {
+          id: 1,
+          createdAt: new Date(),
+          status: RequestStatus.OK,
+        },
+      ];
+
+      jest
+        .spyOn(feedFetcherService, 'getRequests')
+        .mockResolvedValue(mockRequests as never);
+
+      const result = await controller.getRequests(input);
+
+      expect(result).toEqual({
+        result: {
+          requests: [
+            {
+              id: 1,
+              createdAt: mockRequests[0].createdAt,
+              status: RequestStatus.OK,
+            },
+          ],
+          nextRetryDate: null,
+        },
+      });
+    });
   });
 
   describe('fetchFeed', () => {

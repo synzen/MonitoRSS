@@ -10,6 +10,7 @@ import { EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { UseRequestContext } from '@mikro-orm/core';
 import { MikroORM } from '@mikro-orm/core';
+import { GetFeedRequestsInput } from './types';
 
 interface FetchOptions {
   userAgent?: string;
@@ -48,6 +49,21 @@ export class FeedFetcherService {
     data: { url: string; rateSeconds: number };
   }) {
     await this.handleBrokerFetchRequest(message);
+  }
+
+  async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
+    return this.requestRepo
+      .createQueryBuilder()
+      .select(select || '*')
+      .where({
+        url,
+      })
+      .limit(limit)
+      .offset(skip)
+      .orderBy({
+        createdAt: 'DESC',
+      })
+      .execute('all', true);
   }
 
   async shouldSkipAfterPreviousFailedAttempt({

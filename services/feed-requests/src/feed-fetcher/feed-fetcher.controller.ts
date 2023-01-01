@@ -5,10 +5,16 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
+import { Get } from '@nestjs/common/decorators';
 import { ApiGuard } from '../shared/guards';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
-import { FetchFeedDto, FetchFeedDetailsDto } from './dto';
+import {
+  FetchFeedDto,
+  FetchFeedDetailsDto,
+  GetFeedRequestsInputDto,
+  GetFeedRequestsOutputDto,
+} from './dto';
 import { FeedFetcherService } from './feed-fetcher.service';
 
 @Controller({
@@ -16,6 +22,37 @@ import { FeedFetcherService } from './feed-fetcher.service';
 })
 export class FeedFetcherController {
   constructor(private readonly feedFetcherService: FeedFetcherService) {}
+
+  @Get('feed-requests')
+  @UseGuards(ApiGuard)
+  async getRequests(
+    @Body(
+      new ValidationPipe({
+        transform: true,
+      }),
+    )
+    { skip, limit, url }: GetFeedRequestsInputDto,
+  ): Promise<GetFeedRequestsOutputDto> {
+    const requests = await this.feedFetcherService.getRequests({
+      skip,
+      limit,
+      url,
+      select: ['id', 'createdAt', 'nextRetryDate', 'status'],
+    });
+
+    const nextRetryDate = requests[0]?.nextRetryDate || null;
+
+    return {
+      result: {
+        requests: requests.map((r) => ({
+          createdAt: r.createdAt,
+          id: r.id,
+          status: r.status,
+        })),
+        nextRetryDate,
+      },
+    };
+  }
 
   @Post('feed-requests')
   @UseGuards(ApiGuard)

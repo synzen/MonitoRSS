@@ -70,6 +70,48 @@ describe('FeedFetcherService (Integration)', () => {
     await teardownPostgresTests();
   });
 
+  describe('getRequests', () => {
+    it('returns correctly according to input params', async () => {
+      const req = new Request();
+      req.url = url;
+      req.status = RequestStatus.OK;
+      req.createdAt = new Date(2020);
+      const re2 = new Request();
+      re2.url = url;
+      re2.status = RequestStatus.FAILED;
+      re2.createdAt = new Date(2021);
+      const re3 = new Request();
+      re3.url = url;
+      re3.status = RequestStatus.FAILED;
+      re3.createdAt = new Date(2022);
+
+      await requestRepo.persistAndFlush([req, re2, re3]);
+
+      const result = await service.getRequests({
+        skip: 1,
+        limit: 1,
+        url,
+        select: ['id', 'status'],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: re2.id,
+        status: re2.status,
+      });
+    });
+
+    it('returns an empty array if nothing matches', async () => {
+      const result = await service.getRequests({
+        skip: 0,
+        limit: 10,
+        url,
+      });
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
   describe('onBrokerFetchRequest', () => {
     it('deletes stale request at the end', async () => {
       const req = new Request();
