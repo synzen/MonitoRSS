@@ -93,7 +93,6 @@ const Feeds: React.FC = () => {
             </Button>
           </Alert>
           <Flex
-
             justifyContent="space-between"
             alignItems="center"
           >
