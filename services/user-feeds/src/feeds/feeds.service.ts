@@ -53,7 +53,18 @@ export class FeedsService {
       selectProperties
     );
 
-    const max = Math.min(articles.length - 1, skip + limit - 1);
+    if (articles.length === 0) {
+      return {
+        articles: [],
+        properties,
+        totalArticles: 0,
+        filterEvalResults: [],
+      };
+    }
+
+    const max = !random
+      ? Math.min(articles.length - 1, skip + limit - 1)
+      : articles.length - 1;
 
     const matchedArticles = getNumbersInRange({
       min: skip,

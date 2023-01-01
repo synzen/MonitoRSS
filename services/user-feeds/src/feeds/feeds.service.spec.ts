@@ -109,6 +109,22 @@ describe("FeedsService", () => {
       selectProperties: ["id"],
     };
 
+    it("returns properly when there are 0 articles", async () => {
+      const input: QueryForArticlesInput = {
+        ...sampleInput,
+        articles: [],
+      };
+
+      const result = await service.queryForArticles(input);
+
+      expect(result).toMatchObject({
+        articles: [],
+        properties: input.selectProperties,
+        totalArticles: 0,
+        filterEvalResults: [],
+      });
+    });
+
     it("respects limit", async () => {
       const input = {
         ...sampleInput,
