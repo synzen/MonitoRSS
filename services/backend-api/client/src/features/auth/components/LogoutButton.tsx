@@ -1,10 +1,14 @@
 import { Button } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { cloneElement, useState } from 'react';
 import { notifyError } from '@/utils/notifyError';
 import { getLogout } from '../api';
 
-export const LogoutButton: React.FC = () => {
+interface Props {
+  trigger?: React.ReactElement
+}
+
+export const LogoutButton = ({ trigger }: Props) => {
   const { t } = useTranslation();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -19,6 +23,12 @@ export const LogoutButton: React.FC = () => {
       setLoggingOut(false);
     }
   };
+
+  if (trigger) {
+    return cloneElement(trigger, {
+      onClick: onClickLogout,
+    });
+  }
 
   return (
     <Button

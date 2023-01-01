@@ -256,6 +256,9 @@
       "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {{empty}}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field)."
     },
+    "pageContentV2": {
+      "logout": "Logout"
+    },
     "sidebar": {
       "supporterUserTag": "Supporter",
       "regularUserTag": "Regular User",

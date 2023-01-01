@@ -2,11 +2,18 @@ import {
   Alert,
   Avatar,
   Box,
+  Button,
   Flex,
   Heading,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
+import { LogoutButton } from '../../features/auth';
 
-import { useDiscordBot } from '../../features/discordUser';
+import { useDiscordBot, useDiscordUserMe } from '../../features/discordUser';
 import { Loading } from '../Loading';
 
 interface Props {
@@ -22,6 +29,10 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
     status,
     error,
   } = useDiscordBot();
+  const {
+    data: userMe,
+  } = useDiscordUserMe();
+  const { t } = useTranslation();
 
   return (
     <Flex
@@ -48,7 +59,7 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
             <Flex alignItems="center" paddingBottom="1" overflow="hidden">
               <Avatar
                 src={discordBotData.result.avatar || undefined}
-                size="xs"
+                size="sm"
                 name={discordBotData.result.username}
                 marginRight="2"
                 backgroundColor="transparent"
@@ -69,15 +80,26 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
             {error && <Alert status="error">{error.message}</Alert>}
 
           </Flex>
-          <Flex alignItems="center" paddingRight={{ base: '4', lg: '12' }} paddingY="4">
-            <Avatar
-              src={discordBotData?.result.avatar || undefined}
-              size="sm"
-              name={discordBotData?.result.username}
-              marginRight="2"
-              backgroundColor="transparent"
-              title={discordBotData?.result.username}
-            />
+          <Flex alignItems="center" paddingY="4">
+            <Menu placement="bottom-end">
+              <MenuButton as={Button} size="sm" variant="link">
+                <Avatar
+                  src={userMe?.iconUrl}
+                  size="sm"
+                  name={userMe?.username}
+                  backgroundColor="transparent"
+                  title={userMe?.username}
+                />
+              </MenuButton>
+              <MenuList>
+                <LogoutButton trigger={(
+                  <MenuItem>
+                    {t('components.pageContentV2.logout')}
+                  </MenuItem>
+                  )}
+                />
+              </MenuList>
+            </Menu>
           </Flex>
         </Flex>
       </Box>
