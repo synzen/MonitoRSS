@@ -22,7 +22,9 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  useDisclosure,
 } from '@chakra-ui/react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useParams, Link as RouterLink, useNavigate, useLocation,
@@ -35,7 +37,6 @@ import { DiscordChannelName } from '../features/discordServers';
 import { useUserFeed } from '../features/feed';
 import {
   DeleteConnectionButton,
-  EditConnectionChannelDialog,
   FilterExpression,
   LogicalFilterExpression,
   useDiscordChannelConnection,
@@ -44,6 +45,7 @@ import {
   FiltersTabSection,
   MessageTabSection,
   ConnectionDisabledAlert,
+  EditConnectionChannelDialog,
 } from '../features/feedConnections';
 import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
 import { DiscordMessageFormData } from '../types/discord';
@@ -67,6 +69,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
+  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     feed,
@@ -194,6 +198,17 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           || connectionStatus === 'loading'
       }
     >
+      <EditConnectionChannelDialog
+        onCloseRef={actionsButtonRef}
+        defaultValues={{
+          channelId: connection.details.channel.id,
+          name: connection.name,
+          serverId,
+        }}
+        onUpdate={onChannelUpdated}
+        isOpen={editIsOpen}
+        onClose={editOnClose}
+      />
       <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
         <BoxConstrained.Wrapper
           paddingTop={10}
@@ -244,6 +259,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       />
                       <Menu>
                         <MenuButton
+                          ref={actionsButtonRef}
                           as={Button}
                           variant="outline"
                           rightIcon={<ChevronDownIcon />}
@@ -251,21 +267,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                           {t('common.buttons.actions')}
                         </MenuButton>
                         <MenuList>
-                          <EditConnectionChannelDialog
-                            defaultValues={{
-                              channelId: connection.details.channel.id,
-                              name: connection.name,
-                              serverId,
-                            }}
-                            onUpdate={onChannelUpdated}
-                            trigger={(
-                              <MenuItem
-                                aria-label="Edit"
-                              >
-                                {t('common.buttons.configure')}
-                              </MenuItem>
-                        )}
-                          />
+                          <MenuItem
+                            aria-label="Edit"
+                            onClick={editOnOpen}
+                          >
+                            {t('common.buttons.configure')}
+                          </MenuItem>
                           {
                             connection && !connection.disabledCode && (
                             <ConfirmModal

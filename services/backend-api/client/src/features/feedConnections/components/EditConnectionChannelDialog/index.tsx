@@ -13,13 +13,12 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
-  useDisclosure,
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { InferType, object, string } from 'yup';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { DiscordServerSearchSelectv2, useDiscordServerChannels } from '@/features/discordServers';
 import { ThemedSelect } from '@/components';
 
@@ -39,16 +38,19 @@ type FormData = InferType<typeof formSchema>;
 
 interface Props {
   onUpdate: (data: FormData) => Promise<void>
-  trigger: React.ReactElement
   defaultValues: Required<FormData>
+  onClose: () => void
+  isOpen: boolean
+  onCloseRef: React.RefObject<HTMLButtonElement>
 }
 
 export const EditConnectionChannelDialog: React.FC<Props> = ({
   onUpdate,
-  trigger,
   defaultValues,
+  onClose,
+  isOpen,
+  onCloseRef,
 }) => {
-  const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const {
     handleSubmit,
@@ -67,6 +69,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
   });
   const serverId = watch('serverId');
   const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
+  const initialRef = useRef<HTMLInputElement>(null);
 
   const loadingChannels = status === 'loading';
 
@@ -81,108 +84,110 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
   }, [isOpen]);
 
   return (
-    <>
-      {React.cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {t('features.feed.components.updateDiscordChannelConnectionDialog.title')}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
-              <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.name}>
-                  <FormLabel>
-                    {t('features.feed.components.addDiscordChannelConnectionDialog.formNameLabel')}
-                  </FormLabel>
-                  <Controller
-                    name="name"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} />
-                    )}
-                  />
-                  {errors.name && (
+    <Modal
+      initialFocusRef={initialRef}
+      finalFocusRef={onCloseRef}
+      isOpen={isOpen}
+      onClose={onClose}
+    >
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          {t('features.feed.components.updateDiscordChannelConnectionDialog.title')}
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
+            <Stack spacing={4}>
+              <FormControl isInvalid={!!errors.name}>
+                <FormLabel>
+                  {t('features.feed.components.addDiscordChannelConnectionDialog.formNameLabel')}
+                </FormLabel>
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} ref={initialRef} />
+                  )}
+                />
+                {errors.name && (
                   <FormErrorMessage>
                     {errors.name.message}
                   </FormErrorMessage>
-                  )}
-                  <FormHelperText>
-                    {t('features.feed.components'
+                )}
+                <FormHelperText>
+                  {t('features.feed.components'
                   + '.addDiscordChannelConnectionDialog.formNameDescription')}
-                  </FormHelperText>
-                </FormControl>
-                <FormControl isInvalid={!!errors.serverId}>
-                  <FormLabel>
-                    {t('features.feed.components'
+                </FormHelperText>
+              </FormControl>
+              <FormControl isInvalid={!!errors.serverId}>
+                <FormLabel>
+                  {t('features.feed.components'
                     + '.addDiscordChannelConnectionDialog.formServerLabel')}
-                  </FormLabel>
-                  <Controller
-                    name="serverId"
-                    control={control}
-                    render={({ field }) => (
-                      <DiscordServerSearchSelectv2
-                        {...field}
-                        onChange={(id) => field.onChange(id)}
-                        value={field.value || ''}
-                      />
+                </FormLabel>
+                <Controller
+                  name="serverId"
+                  control={control}
+                  render={({ field }) => (
+                    <DiscordServerSearchSelectv2
+                      {...field}
+                      onChange={(id) => field.onChange(id)}
+                      value={field.value || ''}
+                    />
 
-                    )}
-                  />
-                </FormControl>
-                <FormControl isInvalid={!!errors.channelId}>
-                  <FormLabel>
-                    {t('features.feed.components'
+                  )}
+                />
+              </FormControl>
+              <FormControl isInvalid={!!errors.channelId}>
+                <FormLabel>
+                  {t('features.feed.components'
                       + '.addDiscordChannelConnectionDialog.formChannelLabel')}
-                  </FormLabel>
-                  <Controller
-                    name="channelId"
-                    control={control}
-                    render={({ field }) => (
-                      <ThemedSelect
-                        {...field}
-                        loading={loadingChannels}
-                        isDisabled={isSubmitting || loadingChannels || !!channelsError}
-                        options={data?.results.map((channel) => ({
-                          label: channel.name,
-                          value: channel.id,
-                        })) || []}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value}
-                      />
-                    )}
-                  />
-                  <FormErrorMessage>
-                    {errors.channelId?.message}
-                  </FormErrorMessage>
-                </FormControl>
-              </Stack>
-            </form>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="ghost"
-              mr={3}
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              {t('common.buttons.cancel')}
-            </Button>
-            <Button
-              colorScheme="blue"
-              type="submit"
-              form="addfeed"
-              isLoading={isSubmitting}
-              isDisabled={!isDirty || isSubmitting}
-            >
-              {t('common.buttons.save')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+                </FormLabel>
+                <Controller
+                  name="channelId"
+                  control={control}
+                  render={({ field }) => (
+                    <ThemedSelect
+                      {...field}
+                      loading={loadingChannels}
+                      isDisabled={isSubmitting || loadingChannels || !!channelsError}
+                      options={data?.results.map((channel) => ({
+                        label: channel.name,
+                        value: channel.id,
+                      })) || []}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                    />
+                  )}
+                />
+                <FormErrorMessage>
+                  {errors.channelId?.message}
+                </FormErrorMessage>
+              </FormControl>
+            </Stack>
+          </form>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="ghost"
+            mr={3}
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            {t('common.buttons.cancel')}
+          </Button>
+          <Button
+            colorScheme="blue"
+            type="submit"
+            form="addfeed"
+            isLoading={isSubmitting}
+            isDisabled={!isDirty || isSubmitting}
+          >
+            {t('common.buttons.save')}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };

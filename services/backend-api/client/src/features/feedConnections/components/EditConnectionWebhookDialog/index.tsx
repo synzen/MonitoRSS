@@ -19,13 +19,12 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  useDisclosure,
 } from '@chakra-ui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { InferType, object, string } from 'yup';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ThemedSelect } from '@/components';
 import { useDiscordWebhooks } from '../../../discordWebhooks';
 import { useUserFeed } from '../../../feed/hooks';
@@ -55,16 +54,19 @@ interface Props {
   feedId?: string
   defaultValues: Required<FormData>
   onUpdate: (data: FormData) => Promise<void>
-  trigger: React.ReactElement
+  isOpen: boolean
+  onClose: () => void
+  onCloseRef: React.RefObject<HTMLButtonElement>
 }
 
 export const EditConnectionWebhookDialog: React.FC<Props> = ({
   feedId,
   defaultValues,
   onUpdate,
-  trigger,
+  isOpen,
+  onClose,
+  onCloseRef,
 }) => {
-  const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const {
     handleSubmit,
@@ -98,6 +100,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     serverId,
     isWebhooksEnabled: !!discordUser?.supporter,
   });
+  const initialRef = useRef<HTMLInputElement>(null);
 
   const onSubmit = async (formData: FormData) => {
     await onUpdate(formData);
@@ -116,24 +119,27 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     || discordWebhooksStatus === 'loading';
 
   return (
-    <>
-      {React.cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <ModalHeader>
-              {t('features.feed.components.updateDiscordWebhookConnectionDialog.title')}
+    <Modal
+      initialFocusRef={initialRef}
+      finalFocusRef={onCloseRef}
+      isOpen={isOpen}
+      onClose={onClose}
+    >
+      <ModalOverlay />
+      <ModalContent>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <ModalHeader>
+            {t('features.feed.components.updateDiscordWebhookConnectionDialog.title')}
 
-            </ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              {webhooksDisabled && (
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {webhooksDisabled && (
               <Text color="orange.500">
                 {t('common.errors.supporterRequiredAccessV2')}
               </Text>
-              )}
-              {!webhooksDisabled && (
+            )}
+            {!webhooksDisabled && (
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.name}>
                   <FormLabel>
@@ -143,7 +149,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     name="name"
                     control={control}
                     render={({ field }) => (
-                      <Input {...field} />
+                      <Input {...field} ref={initialRef} />
                     )}
                   />
                   {errors.name && (
@@ -287,30 +293,29 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   </FormHelperText>
                 </FormControl>
               </Stack>
-              )}
-            </ModalBody>
-            <ModalFooter>
-              <HStack>
-                <Button
-                  onClick={onClose}
-                  variant="ghost"
-                  disabled={isSubmitting}
-                >
-                  {t('common.buttons.cancel')}
-                </Button>
-                <Button
-                  type="submit"
-                  colorScheme="blue"
-                  disabled={isSubmitting || !isDirty}
-                  isLoading={isSubmitting}
-                >
-                  {t('common.buttons.save')}
-                </Button>
-              </HStack>
-            </ModalFooter>
-          </form>
-        </ModalContent>
-      </Modal>
-    </>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <HStack>
+              <Button
+                onClick={onClose}
+                variant="ghost"
+                disabled={isSubmitting}
+              >
+                {t('common.buttons.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                colorScheme="blue"
+                disabled={isSubmitting || !isDirty}
+                isLoading={isSubmitting}
+              >
+                {t('common.buttons.save')}
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
   );
 };

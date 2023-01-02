@@ -21,12 +21,14 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import {
   useParams, Link as RouterLink, useNavigate, useLocation,
 } from 'react-router-dom';
 import { ChevronDownIcon } from '@chakra-ui/icons';
+import { useRef } from 'react';
 import { BoxConstrained, CategoryText, ConfirmModal } from '@/components';
 import { DiscordMessageFormData } from '@/types/discord';
 import RouteParams from '@/types/RouteParams';
@@ -82,6 +84,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
   });
   const { t } = useTranslation();
   const { mutateAsync, status: updateStatus } = useUpdateDiscordWebhookConnection();
+  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const onFiltersUpdated = async (filters: FilterExpression | null) => {
     if (!feedId || !connectionId) {
@@ -192,6 +196,24 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       loading={feedStatus === 'loading'
       || connectionStatus === 'loading'}
     >
+      {connection && (
+      <EditConnectionWebhookDialog
+        onCloseRef={actionsButtonRef}
+        feedId={feedId}
+        onUpdate={onWebhookUpdated}
+        isOpen={editIsOpen}
+        onClose={editOnClose}
+        defaultValues={{
+          name: connection.name,
+          webhook: {
+            id: connection.details.webhook.id,
+            iconUrl: connection.details.webhook.iconUrl,
+            name: connection.details.webhook.name,
+          },
+          serverId: connection.details.webhook.guildId,
+        }}
+      />
+      )}
       <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
         <BoxConstrained.Wrapper
           paddingTop={10}
@@ -245,31 +267,18 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                         <MenuButton
                           as={Button}
                           variant="outline"
+                          ref={actionsButtonRef}
                           rightIcon={<ChevronDownIcon />}
                         >
                           {t('common.buttons.actions')}
                         </MenuButton>
                         <MenuList>
-                          <EditConnectionWebhookDialog
-                            feedId={feedId}
-                            onUpdate={onWebhookUpdated}
-                            defaultValues={{
-                              name: connection.name,
-                              webhook: {
-                                id: connection.details.webhook.id,
-                                iconUrl: connection.details.webhook.iconUrl,
-                                name: connection.details.webhook.name,
-                              },
-                              serverId: connection.details.webhook.guildId,
-                            }}
-                            trigger={(
-                              <MenuItem
-                                aria-label="Edit"
-                              >
-                                {t('common.buttons.configure')}
-                              </MenuItem>
-                        )}
-                          />
+                          <MenuItem
+                            aria-label="Edit"
+                            onClick={editOnOpen}
+                          >
+                            {t('common.buttons.configure')}
+                          </MenuItem>
                           {
                             connection && !connection.disabledCode && (
                             <ConfirmModal

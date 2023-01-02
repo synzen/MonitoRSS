@@ -32,7 +32,7 @@ import {
 } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { BoxConstrained, CategoryText, ConfirmModal } from '@/components';
 import {
   EditUserFeedDialog,
@@ -71,10 +71,12 @@ const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
 
 export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
   const { isOpen, onClose, onOpen } = useDisclosure();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
     undefined,
   );
@@ -152,6 +154,16 @@ export const UserFeed: React.FC = () => {
       loading={status === 'loading'}
     >
       <AddConnectionDialog isOpen={isOpen} type={addConnectionType} onClose={onClose} />
+      <EditUserFeedDialog
+        onCloseRef={menuButtonRef}
+        isOpen={editIsOpen}
+        onClose={editOnClose}
+        defaultValues={{
+          title: feed?.title as string,
+          url: feed?.url as string,
+        }}
+        onUpdate={onUpdateFeed}
+      />
       <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
         <Stack
           width="100%"
@@ -211,25 +223,18 @@ export const UserFeed: React.FC = () => {
                     <MenuButton
                       as={Button}
                       variant="outline"
+                      ref={menuButtonRef}
                       rightIcon={<ChevronDownIcon />}
                     >
                       {t('pages.userFeed.actionsButtonText')}
                     </MenuButton>
                     <MenuList>
-                      <EditUserFeedDialog
-                        trigger={(
-                          <MenuItem
-                            aria-label="Edit"
-                          >
-                            {t('common.buttons.configure')}
-                          </MenuItem>
-                        )}
-                        defaultValues={{
-                          title: feed?.title as string,
-                          url: feed?.url as string,
-                        }}
-                        onUpdate={onUpdateFeed}
-                      />
+                      <MenuItem
+                        aria-label="Edit"
+                        onClick={editOnOpen}
+                      >
+                        {t('common.buttons.configure')}
+                      </MenuItem>
                       {
                       feed && !feed.disabledCode && (
                       <ConfirmModal
