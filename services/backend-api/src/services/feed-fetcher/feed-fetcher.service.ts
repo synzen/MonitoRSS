@@ -20,6 +20,7 @@ import {
 } from "./exceptions";
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import { Readable } from "stream";
+import { FeedFetcherFetchStatus } from "./types/feed-fetcher-fetch-feed-response.type";
 
 interface FetchFeedOptions {
   formatTables?: boolean;
@@ -93,7 +94,7 @@ export class FeedFetcherService {
   ): Promise<NodeJS.ReadableStream> {
     const result = await this.feedFetcherApiService.fetchAndSave(url, options);
 
-    if (result.requestStatus === "error") {
+    if (result.requestStatus === FeedFetcherFetchStatus.BadStatusCode) {
       if (result.response?.statusCode) {
         this.handleStatusCode(result.response.statusCode);
       }
@@ -101,13 +102,13 @@ export class FeedFetcherService {
       throw new Error("Prior feed requests have failed");
     }
 
-    if (result.requestStatus === "parse_error") {
+    if (result.requestStatus === FeedFetcherFetchStatus.ParseError) {
       throw new FeedParseException(
         `Feed host failed to return a valid, parseable feed`
       );
     }
 
-    if (result.requestStatus === "success") {
+    if (result.requestStatus === FeedFetcherFetchStatus.Success) {
       this.handleStatusCode(result.response.statusCode);
       const readable = new Readable();
       readable.push(result.response.body);
@@ -116,7 +117,7 @@ export class FeedFetcherService {
       return readable;
     }
 
-    if (result.requestStatus === "pending") {
+    if (result.requestStatus === FeedFetcherFetchStatus.Pending) {
       const readable = new Readable();
       readable.push(null);
 

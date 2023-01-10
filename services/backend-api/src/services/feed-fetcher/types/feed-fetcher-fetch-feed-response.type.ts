@@ -1,5 +1,14 @@
+export enum FeedFetcherFetchStatus {
+  Success = "SUCCESS",
+  ParseError = "PARSE_ERROR",
+  FetchError = "FETCH_ERROR",
+  InteralError = "INTERNAL_ERROR",
+  BadStatusCode = "BAD_STATUS_CODE",
+  Pending = "PENDING",
+}
+
 interface FetchFeedResponseSuccess {
-  requestStatus: "success";
+  requestStatus: FeedFetcherFetchStatus.Success;
   response: {
     body: string;
     statusCode: number;
@@ -7,18 +16,18 @@ interface FetchFeedResponseSuccess {
 }
 
 interface FetchFeedResponsePending {
-  requestStatus: "pending";
+  requestStatus: FeedFetcherFetchStatus.Pending;
 }
 
-interface FetchFeedResponseError {
-  requestStatus: "error";
+interface FetchFeedResponseBadStatus {
+  requestStatus: FeedFetcherFetchStatus.BadStatusCode;
   response?: {
     statusCode: number;
   };
 }
 
 interface FeedFetchResponseParseError {
-  requestStatus: "parse_error";
+  requestStatus: FeedFetcherFetchStatus.ParseError;
   response: {
     statusCode: number;
   };
@@ -26,6 +35,6 @@ interface FeedFetchResponseParseError {
 
 export type FeedFetcherFetchFeedResponse =
   | FetchFeedResponseSuccess
-  | FetchFeedResponseError
+  | FetchFeedResponseBadStatus
   | FetchFeedResponsePending
   | FeedFetchResponseParseError;
