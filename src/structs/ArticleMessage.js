@@ -118,7 +118,7 @@ class ArticleMessage {
 
       const url = convert(objectEmbed.url)
       if (url) {
-        richEmbed.setURL(url)
+        richEmbed.setURL(url || null)
       }
 
       const color = objectEmbed.color
@@ -129,24 +129,24 @@ class ArticleMessage {
       const footerText = convert(objectEmbed.footerText)
       if (footerText) {
         const footerIconURL = convert(objectEmbed.footerIconURL)
-        richEmbed.setFooter(footerText, footerIconURL)
+        richEmbed.setFooter(footerText, footerIconURL || null)
       }
 
       const authorName = convert(objectEmbed.authorName)
       if (authorName) {
         const authorIconURL = convert(objectEmbed.authorIconURL)
         const authorURL = convert(objectEmbed.authorURL)
-        richEmbed.setAuthor(authorName, authorIconURL, authorURL)
+        richEmbed.setAuthor(authorName, authorIconURL || null, authorURL || null)
       }
 
       const thumbnailURL = convert(objectEmbed.thumbnailURL)
       if (thumbnailURL) {
-        richEmbed.setThumbnail(thumbnailURL)
+        richEmbed.setThumbnail(thumbnailURL || null)
       }
 
       const imageURL = convert(objectEmbed.imageURL)
       if (imageURL) {
-        richEmbed.setImage(imageURL)
+        richEmbed.setImage(imageURL || null)
       }
 
       const timestamp = objectEmbed.timestamp
