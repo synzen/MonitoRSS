@@ -261,29 +261,34 @@ export class DiscordMediumService implements DeliveryMedium {
           ? undefined
           : {
               name: replaceTemplateString(article, embed.author.name) as string,
-              icon_url: replaceTemplateString(article, embed.author.iconUrl),
+              icon_url:
+                replaceTemplateString(article, embed.author.iconUrl) || null,
             },
         color: embed.color,
         footer: !embed.footer?.text
           ? undefined
           : {
               text: replaceTemplateString(article, embed.footer.text) as string,
-              icon_url: replaceTemplateString(article, embed.footer.iconUrl),
+              icon_url:
+                replaceTemplateString(article, embed.footer.iconUrl) || null,
             },
         image: !embed.image?.url
           ? undefined
           : {
-              url: replaceTemplateString(article, embed.image.url) as string,
+              url:
+                (replaceTemplateString(article, embed.image.url) as string) ||
+                null,
             },
         thumbnail: !embed.thumbnail?.url
           ? undefined
           : {
-              url: replaceTemplateString(
-                article,
-                embed.thumbnail.url
-              ) as string,
+              url:
+                (replaceTemplateString(
+                  article,
+                  embed.thumbnail.url
+                ) as string) || null,
             },
-        url: replaceTemplateString(article, embed.url),
+        url: replaceTemplateString(article, embed.url) || null,
         fields: embed.fields
           ?.filter((field) => field.name && field.value)
           .map((field) => ({

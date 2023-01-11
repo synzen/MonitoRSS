@@ -6,7 +6,7 @@ export interface DiscordMessageApiPayload {
 export interface DiscordEmbed {
   title?: string;
   description?: string;
-  url?: string;
+  url?: string | null;
   color?: number;
   footer?: DiscordEmbedFooter;
   image?: DiscordEmbedImage;
@@ -17,21 +17,21 @@ export interface DiscordEmbed {
 
 export interface DiscordEmbedFooter {
   text: string;
-  icon_url?: string;
+  icon_url?: string | null;
 }
 
 export interface DiscordEmbedImage {
-  url: string;
+  url: string | null;
 }
 
 export interface DiscordEmbedThumbnail {
-  url: string;
+  url: string | null;
 }
 
 export interface DiscordEmbedAuthor {
   name: string;
-  url?: string;
-  icon_url?: string;
+  url?: string | null;
+  icon_url?: string | null;
 }
 
 export interface DiscordEmbedField {
