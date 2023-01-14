@@ -7,9 +7,9 @@ export const ConfigSchema = z.object({
   rabbitmqUri: z.string(),
   discordClientId: z.string(),
   datadog: z.object({
-    apiKey: z.string(),
-    host: z.string(),
-    service: z.string(),
+    apiKey: z.string().optional(),
+    host: z.string().optional(),
+    service: z.string().optional(),
   }).optional(),
 })
 
