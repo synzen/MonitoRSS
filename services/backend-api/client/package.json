@@ -48,7 +48,7 @@
     "@types/react-table": "^7.7.12",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
-    "@vitejs/plugin-react": "^2.2.0",
+    "@vitejs/plugin-react": "^3.0.1",
     "eslint": "^8.2.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^8.6.0",
@@ -61,8 +61,8 @@
     "msw": "^0.47.3",
     "prettier": "2.8.2",
     "typescript": "^4.5.4",
-    "vite": "^3.2.4",
-    "vitest": "^0.25.2"
+    "vite": "^4.0.4",
+    "vitest": "^0.27.1"
   },
   "msw": {
     "workerDirectory": "public"
