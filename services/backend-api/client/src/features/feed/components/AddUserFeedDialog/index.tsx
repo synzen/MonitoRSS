@@ -71,7 +71,9 @@ export const AddUserFeedDialog: React.FC = () => {
   }, [isOpen]);
 
   const isUnderLimit =
-    data?.total && discordUserMe?.maxUserFeeds && data.total < discordUserMe.maxUserFeeds;
+    data?.total !== undefined &&
+    discordUserMe?.maxUserFeeds !== undefined &&
+    data.total < discordUserMe.maxUserFeeds;
 
   return (
     <>
@@ -98,7 +100,9 @@ export const AddUserFeedDialog: React.FC = () => {
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => <Input disabled={isSubmitting} {...field} />}
+                    render={({ field }) => (
+                      <Input disabled={isSubmitting} {...field} value={field.value || ""} />
+                    )}
                   />
                   <FormHelperText>
                     {t("features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel")}
@@ -112,7 +116,9 @@ export const AddUserFeedDialog: React.FC = () => {
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => <Input disabled={isSubmitting} {...field} />}
+                    render={({ field }) => (
+                      <Input disabled={isSubmitting} {...field} value={field.value || ""} />
+                    )}
                   />
                   <FormHelperText>
                     {t("features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel")}
