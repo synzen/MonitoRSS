@@ -202,7 +202,8 @@ export class FeedsController {
             .shape({
               id: string().required(),
             })
-            .optional(),
+            .optional()
+            .default(undefined),
         })
         .required()
         .validate(payload);

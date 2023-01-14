@@ -207,6 +207,7 @@ export const SendConnectionTestArticleButton = ({ feedId, connectionId, type }: 
           </Button>
         }
         onArticleSelected={onClick}
+        onClickRandomArticle={onClick}
       />
     </>
   );

@@ -130,6 +130,7 @@ export class FeedHandlerService {
     details,
   }: SendTestArticleInput): Promise<SendTestArticleResult> {
     let res: Response;
+    const body = JSON.stringify(details);
 
     try {
       res = await fetch(`${this.host}/v1/user-feeds/test`, {
@@ -138,7 +139,7 @@ export class FeedHandlerService {
           "Content-Type": "application/json",
           "api-key": this.apiKey,
         },
-        body: JSON.stringify(details),
+        body,
       });
     } catch (err) {
       // Fetch may have some obscure errors

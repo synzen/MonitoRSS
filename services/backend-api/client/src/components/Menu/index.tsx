@@ -1,4 +1,4 @@
-import { Box, SlideFade, useColorModeValue as mode } from "@chakra-ui/react";
+import { Box, Flex, SlideFade, useColorModeValue as mode } from "@chakra-ui/react";
 import * as React from "react";
 import { MenuItem } from "./MenuItem";
 
@@ -28,13 +28,14 @@ export const Menu: React.FC<Props> = ({ onSelectedValue, items, shown, boxProps 
       bg={mode("white", "gray.700")}
       rounded="lg"
       overflow="auto"
-      paddingTop={1}
+      paddingY="2"
+      paddingX="2"
       minWidth="xs"
       {...boxProps}
     >
-      <Box as="ul" listStyleType="none" px="2" pb="2">
+      <Box as="ul" listStyleType="none">
         {items.map((item) => (
-          <Box as="li" key={item.id}>
+          <Flex as="li" key={item.id} flexDirection="column" gap="2">
             <MenuItem
               onClick={() => onClickMenuItem(item.value)}
               title={item.title}
@@ -42,7 +43,7 @@ export const Menu: React.FC<Props> = ({ onSelectedValue, items, shown, boxProps 
             >
               {item.description}
             </MenuItem>
-          </Box>
+          </Flex>
         ))}
       </Box>
     </Box>

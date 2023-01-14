@@ -388,7 +388,8 @@
         },
         "articleSelectPrompt": {
           "title": "Select an article",
-          "loadingArticles": "Loading articles..."
+          "loadingArticles": "Loading articles...",
+          "selectRandom": "Select random"
         }
       }
     },
