@@ -5,6 +5,7 @@ import { SendTestArticleResultSchema } from "@/types";
 export interface CreateDiscordWebhookConnectionTestArticleInput {
   feedId: string;
   connectionId: string;
+  articleId?: string;
 }
 
 const CreateDiscordWebhookConnectionTestArticleOutputSchema = object({
@@ -25,7 +26,13 @@ export const createDiscordWebhookConnectionTestArticle = async (
       validateSchema: CreateDiscordWebhookConnectionTestArticleOutputSchema,
       requestOptions: {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          article: options.articleId
+            ? {
+                id: options.articleId,
+              }
+            : undefined,
+        }),
       },
     }
   );

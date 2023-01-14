@@ -5,6 +5,7 @@ import { SendTestArticleResultSchema } from "@/types";
 export interface CreateDiscordChannelConnectionTestArticleInput {
   feedId: string;
   connectionId: string;
+  articleId?: string;
 }
 
 const CreateDiscordChannelConnectionTestArticleOutputSchema = object({
@@ -25,7 +26,13 @@ export const createDiscordChannelConnectionTestArticle = async (
       validateSchema: CreateDiscordChannelConnectionTestArticleOutputSchema,
       requestOptions: {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          article: options.articleId
+            ? {
+                id: options.articleId,
+              }
+            : undefined,
+        }),
       },
     }
   );

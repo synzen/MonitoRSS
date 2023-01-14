@@ -12,9 +12,10 @@ interface Props {
     value: string;
     icon?: string;
   }>;
+  boxProps?: React.ComponentProps<typeof Box>;
 }
 
-export const Menu: React.FC<Props> = ({ onSelectedValue, items, shown }) => {
+export const Menu: React.FC<Props> = ({ onSelectedValue, items, shown, boxProps }) => {
   const onClickMenuItem = (value: string) => {
     onSelectedValue(value);
   };
@@ -29,6 +30,7 @@ export const Menu: React.FC<Props> = ({ onSelectedValue, items, shown }) => {
       overflow="auto"
       paddingTop={1}
       minWidth="xs"
+      {...boxProps}
     >
       <Box as="ul" listStyleType="none" px="2" pb="2">
         {items.map((item) => (

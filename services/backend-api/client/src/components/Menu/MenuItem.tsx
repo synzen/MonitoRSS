@@ -24,7 +24,7 @@ export const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
       _hover={{ bg: mode("gray.50", "gray.600") }}
     >
       <HStack spacing={4}>
-        <Avatar name="Dan" src={icon || "https://bit.ly/dan-abramov"} />
+        {icon && <Avatar name="Dan" src={icon} />}
         <Box as="dl">
           <Text
             display="inline-block"

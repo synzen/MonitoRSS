@@ -24,7 +24,11 @@ const GetUserFeedArticlesOutputSchema = object({
       response: object({
         statusCode: number(),
       }),
-      articles: array(object()).required(),
+      articles: array(
+        object({
+          id: string().required(),
+        })
+      ).required(),
       totalArticles: number().required(),
       selectedProperties: array(string().required()).required(),
       filterStatuses: array(

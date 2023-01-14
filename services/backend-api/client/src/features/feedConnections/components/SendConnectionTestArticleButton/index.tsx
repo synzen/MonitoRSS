@@ -9,7 +9,6 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  Tooltip,
   useDisclosure,
 } from "@chakra-ui/react";
 import { useState } from "react";
@@ -19,6 +18,7 @@ import getChakraColor from "../../../../utils/getChakraColor";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifyInfo } from "../../../../utils/notifyInfo";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { ArticleSelectPrompt } from "../../../feed/components";
 import { useCreateConnectionTestArticle } from "../../hooks";
 
 interface Props {
@@ -110,11 +110,12 @@ export const SendConnectionTestArticleButton = ({ feedId, connectionId, type }: 
     headerBackgroundColor: "",
   });
 
-  const onClick = async () => {
+  const onClick = async (articleId?: string) => {
     try {
       const { result } = await mutateAsync({
         feedId,
         connectionId,
+        articleId,
       });
 
       const { title, description, useModal, useNotify } = messagesByStatus[result.status];
@@ -198,16 +199,15 @@ export const SendConnectionTestArticleButton = ({ feedId, connectionId, type }: 
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Tooltip label={t("features.feedConnections.components.sendTestArticleButton.description")}>
-        <Button
-          variant="solid"
-          colorScheme="blue"
-          isLoading={status === "loading"}
-          onClick={onClick}
-        >
-          {t("features.feedConnections.components.sendTestArticleButton.text")}
-        </Button>
-      </Tooltip>
+      <ArticleSelectPrompt
+        feedId={feedId}
+        trigger={
+          <Button variant="solid" colorScheme="blue" isLoading={status === "loading"}>
+            {t("features.feedConnections.components.sendTestArticleButton.text")}
+          </Button>
+        }
+        onArticleSelected={onClick}
+      />
     </>
   );
 };

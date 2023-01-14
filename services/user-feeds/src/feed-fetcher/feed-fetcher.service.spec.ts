@@ -231,7 +231,6 @@ describe("FeedFetcherService", () => {
     });
 
     it("throws if article ID was not found", async () => {
-      const article = { id: "1", title: "title", link: "link" };
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
         articles: [
           {

@@ -384,6 +384,10 @@
           "tableHeaderStatus": "Status",
           "alertFailingTitle": "Requests are currently failing",
           "alertFailingDescription": "We've been unable to successfully fetch this feed. Attempts will continue automatically. The next attempt will be at {{nextAttemptDate}}."
+        },
+        "articleSelectPrompt": {
+          "title": "Select an article",
+          "loadingArticles": "Loading articles..."
         }
       }
     },
@@ -413,7 +417,7 @@
           "confirmDescription": "Are you sure you want to delete this connection? This cannot be undone."
         },
         "sendTestArticleButton": {
-          "text": "Send Test Article",
+          "text": "Send Article",
           "description": "Send a random article to test the connection with your currently saved settings. Filters are not applied.",
           "alertTitleSuccess": "Successfully sent!",
           "alertTitleFailure": "Failed to send article",

@@ -9,6 +9,7 @@ import {
 interface CreateConnectionTestArticleInput {
   feedId: string;
   connectionId: string;
+  articleId?: string;
 }
 
 interface CreateConnectionTestArticleOutput {
