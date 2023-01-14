@@ -62,7 +62,7 @@ const Feeds: React.FC = () => {
           overflow="auto"
           marginTop="8"
         >
-          {data?.maxUserFeeds && data.supporter && (
+          {data?.maxUserFeeds && (
             <Alert
               status="info"
               flexDirection="column"
@@ -71,22 +71,24 @@ const Feeds: React.FC = () => {
               colorScheme="purple"
               overflow="visible"
             >
-              <HStack>
-                <Badge colorScheme="purple">{t("pages.userFeeds.newBadge")}</Badge>
-                <AlertTitle display="block">
-                  Personal feeds are available for supporters!
-                </AlertTitle>
-              </HStack>
-              <AlertDescription display="block">
-                {t("pages.userFeeds.description")}
-              </AlertDescription>
-              <Button
-                marginTop={4}
-                colorScheme="purple"
-                onClick={() => navigate(pages.userFeeds())}
-              >
-                Check it out
-              </Button>
+              <Stack spacing={4}>
+                <Stack spacing={2}>
+                  <HStack>
+                    <Badge colorScheme="purple">{t("pages.userFeeds.newBadge")}</Badge>
+                    <AlertTitle display="block">Personal feeds are available!</AlertTitle>
+                  </HStack>
+                  <AlertDescription display="block">
+                    Personal feeds are designed to be more reliable, flexible and customizable.
+                    Features include Cloudflare support, AND/OR filters, and customizeable messages
+                    based on filters. Personal feeds will eventually replace legacy feeds.
+                  </AlertDescription>
+                </Stack>
+                <Box>
+                  <Button colorScheme="purple" onClick={() => navigate(pages.userFeeds())}>
+                    Check it out
+                  </Button>
+                </Box>
+              </Stack>
             </Alert>
           )}
           <Flex justifyContent="space-between" alignItems="center">

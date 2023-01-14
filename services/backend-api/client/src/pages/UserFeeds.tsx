@@ -1,16 +1,4 @@
-import {
-  Flex,
-  Heading,
-  Box,
-  HStack,
-  Text,
-  Badge,
-  Alert,
-  AlertTitle,
-  AlertDescription,
-  Stack,
-  Button,
-} from "@chakra-ui/react";
+import { Flex, Heading, Box, HStack, Text, Badge, Stack, Button } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
@@ -58,20 +46,72 @@ export const UserFeeds: React.FC = () => {
               )}
             </Box>
           </Flex>
-          <Text>{t("pages.userFeeds.description")}</Text>
+          <Stack spacing={6}>
+            {t("pages.userFeeds.description")}
+            <Text>
+              You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feeds during
+              this time on top of their regular feed limit, however the regular feed limit will
+              apply again once personal feeds are fully released and legacy feeds are deprecated.
+            </Text>
+            <Stack>
+              <Text>Some features of personal feeds are:</Text>
+              <ul
+                style={{
+                  listStylePosition: "inside",
+                }}
+              >
+                <li>Feed sites behind Cloudflare are supported</li>
+                <li>Enable or disable feeds</li>
+                <li>Customize messages based on filters</li>
+                <li>Improved filter with unlimited possibilities (with regex!)</li>
+                <li>Test article deliveries with comprehensive details on failures</li>
+              </ul>
+            </Stack>
+            <Text>
+              There will eventually be a way to migrate legacy feeds to personal feeds as more
+              features are added for feature parity.
+            </Text>
+            <Box>
+              <Button marginTop={2} variant="outline" onClick={() => navigate("/")} size="sm">
+                Back to legacy feeds
+              </Button>
+            </Box>
+          </Stack>
         </Stack>
-        <Alert
+        {/* <Alert
           borderRadius="md"
           colorScheme="purple"
           flexDirection="column"
           alignItems="flex-start"
         >
-          <AlertTitle>{t("pages.userFeeds.supporterOnlyTitle")}</AlertTitle>
-          <AlertDescription>{t("pages.userFeeds.supporterOnlyDescription")}</AlertDescription>
+          <AlertDescription>
+            <Text paddingBottom="2">
+              You&apos;ll has access to {discordUserMe?.maxUserFeeds} personal feeds during this
+              time on top of their regular feed limit, however the regular feed limit will apply
+              again once personal feeds are generally available.
+            </Text>
+            <Box paddingBottom="2">
+              <ul
+                style={{
+                  listStylePosition: "inside",
+                }}
+              >
+                <li>Feed sites behind Cloudflare are supported</li>
+                <li>Enable or disable feeds</li>
+                <li>Customize messages based on filters</li>
+                <li>Improved filter with unlimited possibilities (with regex!)</li>
+                <li>Test article deliveries with comprehensive details on failures</li>
+              </ul>
+            </Box>
+            <Text>
+              There will eventually be a way to migrate legacy feeds to personal feeds as personal
+              feeds improve to ensure feature parity.
+            </Text>
+          </AlertDescription>
           <Button marginTop={4} variant="outline" onClick={() => navigate("/")} size="sm">
             Back to legacy feeds
           </Button>
-        </Alert>
+        </Alert> */}
         <UserFeedsTable onSelectedFeedId={onSelectedFeed} />
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
