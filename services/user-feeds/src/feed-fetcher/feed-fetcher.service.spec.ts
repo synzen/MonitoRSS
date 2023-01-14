@@ -3,6 +3,7 @@ import { FeedFetcherService } from "./feed-fetcher.service";
 import { Interceptable, MockAgent, setGlobalDispatcher } from "undici";
 import { ConfigService } from "@nestjs/config";
 import {
+  FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestInternalException,
@@ -207,6 +208,53 @@ describe("FeedFetcherService", () => {
       await expect(service.fetchFeedArticles("url")).resolves.toEqual({
         articles: [],
       });
+    });
+  });
+
+  describe("fetchFeedArticle", () => {
+    it("throws if request is still pending", async () => {
+      jest.spyOn(service, "fetchFeedArticles").mockResolvedValue(null);
+
+      await expect(
+        service.fetchFeedArticle("url", "id")
+      ).rejects.toThrowError();
+    });
+
+    it("returns null if there are 0 articles", async () => {
+      jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
+        articles: [],
+      });
+
+      await expect(service.fetchFeedArticle("url", "id")).resolves.toEqual(
+        null
+      );
+    });
+
+    it("throws if article ID was not found", async () => {
+      const article = { id: "1", title: "title", link: "link" };
+      jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
+        articles: [
+          {
+            id: "2",
+          },
+        ],
+      });
+
+      await expect(service.fetchFeedArticle("url", "1")).rejects.toThrowError(
+        FeedArticleNotFoundException
+      );
+    });
+
+    it("returns the article with the correct id", async () => {
+      const article1 = { id: "1", title: "title", link: "link" };
+      const article2 = { id: "2", title: "title", link: "link" };
+      jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
+        articles: [article1, article2],
+      });
+
+      await expect(service.fetchFeedArticle("url", "2")).resolves.toEqual(
+        article2
+      );
     });
   });
 

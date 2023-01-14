@@ -17,6 +17,7 @@ import {
 } from "../feed-fetcher/exceptions";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
+  Article,
   discordMediumTestPayloadDetailsSchema,
   GetFeedArticlesRequestStatus,
   TransformValidationPipe,
@@ -195,14 +196,29 @@ export class FeedsController {
               url: string().required(),
             })
             .required(),
+          article: object()
+            .shape({
+              id: string().required(),
+            })
+            .optional(),
         })
         .required()
         .validate(payload);
 
-      const randomArticle =
-        await this.feedFetcherService.fetchRandomFeedArticle(withType.feed.url);
+      let article: Article | null = null;
 
-      if (!randomArticle) {
+      if (!withType.article) {
+        article = await this.feedFetcherService.fetchRandomFeedArticle(
+          withType.feed.url
+        );
+      } else {
+        article = await this.feedFetcherService.fetchFeedArticle(
+          withType.feed.url,
+          withType.article.id
+        );
+      }
+
+      if (!article) {
         return {
           status: TestDeliveryStatus.NoArticles,
         };
@@ -219,7 +235,7 @@ export class FeedsController {
           .validate(payload);
 
         const { result, apiPayload } =
-          await this.discordMediumService.deliverTestArticle(randomArticle, {
+          await this.discordMediumService.deliverTestArticle(article, {
             mediumDetails,
           });
 

@@ -25,6 +25,7 @@ describe("FeedController", () => {
   const feedFetcherService = {
     fetchRandomFeedArticle: jest.fn(),
     fetchFeedArticles: jest.fn(),
+    fetchFeedArticle: jest.fn(),
   };
   let controller: FeedsController;
 
@@ -389,7 +390,7 @@ describe("FeedController", () => {
       });
     });
 
-    it("returns the correct result for 200 status", async () => {
+    it("returns the correct result for random article with 200 status", async () => {
       const apiPayload = {
         foo: "bar",
       };
@@ -402,6 +403,36 @@ describe("FeedController", () => {
       });
 
       expect(await controller.sendTestArticle(validPayload)).toEqual({
+        status: TestDeliveryStatus.Success,
+        apiPayload,
+      });
+    });
+
+    it("returns the correct result if specific article with 200 status", async () => {
+      const apiPayload = {
+        foo: "bar",
+      };
+
+      feedFetcherService.fetchFeedArticle.mockResolvedValue({
+        id: "id",
+      });
+
+      discordMediumService.deliverTestArticle.mockResolvedValue({
+        result: {
+          state: "success",
+          status: 200,
+        },
+        apiPayload,
+      });
+
+      const payload = {
+        ...validPayload,
+        article: {
+          id: "id",
+        },
+      };
+
+      expect(await controller.sendTestArticle(payload)).toEqual({
         status: TestDeliveryStatus.Success,
         apiPayload,
       });

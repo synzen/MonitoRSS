@@ -5,6 +5,7 @@ import BodyReadable from "undici/types/readable";
 import { ArticlesService } from "../articles/articles.service";
 import { FeedResponseRequestStatus } from "../shared";
 import {
+  FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestInternalException,
@@ -124,6 +125,30 @@ export class FeedFetcherService {
     }
 
     return this.articlesService.getArticlesFromXml(feedXml);
+  }
+
+  async fetchFeedArticle(url: string, id: string) {
+    const result = await this.fetchFeedArticles(url);
+
+    if (!result) {
+      throw new Error(`Request for ${url} is still pending`);
+    }
+
+    const { articles } = result;
+
+    if (!articles.length) {
+      return null;
+    }
+
+    const article = articles.find((article) => article.id === id);
+
+    if (!article) {
+      throw new FeedArticleNotFoundException(
+        `Article with id ${id} for url ${url} not found`
+      );
+    }
+
+    return article;
   }
 
   async fetchRandomFeedArticle(url: string) {
