@@ -46,6 +46,8 @@ export class SupportersService {
   defaultRefreshRateSeconds: number;
   defaultMaxUserFeeds: number;
   defaultMaxSupporterUserFeeds: number;
+  maxDailyArticlesSupporter: number;
+  maxDailyArticlesDefault: number;
 
   constructor(
     @InjectModel(Supporter.name)
@@ -75,11 +77,15 @@ export class SupportersService {
     this.defaultMaxSupporterUserFeeds = this.configService.getOrThrow<number>(
       "BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS"
     );
-  }
 
-  // Hardcode for now
-  static MAX_DAILY_ARTICLES_SUPPORTER = 100;
-  static MAX_DAILY_ARTICLES_DEFAULT = 0;
+    this.maxDailyArticlesSupporter = +this.configService.getOrThrow<number>(
+      "BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER"
+    );
+
+    this.maxDailyArticlesDefault = +this.configService.getOrThrow<number>(
+      "BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT"
+    );
+  }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
@@ -115,7 +121,7 @@ export class SupportersService {
         guilds: [],
         maxGuilds: 0,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
-        maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT, // hardcode for now
+        maxDailyArticles: this.maxDailyArticlesDefault, // hardcode for now
         maxUserFeeds: this.defaultMaxUserFeeds,
       };
     }
@@ -130,8 +136,8 @@ export class SupportersService {
       expireAt: aggregate[0].expireAt,
       refreshRateSeconds: benefits.refreshRateSeconds,
       maxDailyArticles: benefits.isSupporter
-        ? SupportersService.MAX_DAILY_ARTICLES_SUPPORTER
-        : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+        ? this.maxDailyArticlesSupporter
+        : this.maxDailyArticlesDefault,
       maxUserFeeds: benefits.isSupporter
         ? this.defaultMaxSupporterUserFeeds
         : this.defaultMaxUserFeeds,
@@ -162,8 +168,8 @@ export class SupportersService {
       refreshRateSeconds: b.refreshRateSeconds,
       isSupporter: b.isSupporter,
       maxDailyArticles: b.isSupporter
-        ? SupportersService.MAX_DAILY_ARTICLES_SUPPORTER
-        : SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+        ? this.maxDailyArticlesSupporter
+        : this.maxDailyArticlesDefault,
     }));
   }
 
@@ -387,7 +393,7 @@ export class SupportersService {
       refreshRateSeconds =
         patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
     } else {
-      refreshRateSeconds = 10;
+      refreshRateSeconds = 120;
     }
 
     return {

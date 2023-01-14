@@ -84,6 +84,12 @@ export default function config(options?: {
     BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: Number(
       (process.env.BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS as string) || 5
     ),
+    BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER: Number(
+      (process.env.BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER as string) || 100
+    ),
+    BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT: Number(
+      (process.env.BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT as string) || 0
+    ),
   } as const;
 
   if (!options?.skipValidation) {

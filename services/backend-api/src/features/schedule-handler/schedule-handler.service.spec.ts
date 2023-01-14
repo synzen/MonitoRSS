@@ -270,7 +270,7 @@ describe("handle-schedule", () => {
           title: createdFeeds[2].title,
         }),
         {
-          maxDailyArticles: SupportersService.MAX_DAILY_ARTICLES_DEFAULT,
+          maxDailyArticles: supportersService.maxDailyArticlesDefault,
         }
       );
     });
@@ -1272,6 +1272,9 @@ describe("handle-schedule", () => {
               },
             ],
           },
+        },
+        {
+          expiration: 3600000,
         }
       );
     });
@@ -1393,6 +1396,9 @@ describe("handle-schedule", () => {
               },
             ],
           },
+        },
+        {
+          expiration: 1000 * 60 * 60,
         }
       );
     });

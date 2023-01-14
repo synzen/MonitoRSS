@@ -265,7 +265,7 @@ export class ScheduleHandlerService {
       const discordUserId = feed.user.discordUserId;
       const maxDailyArticles =
         dailyLimitsByDiscordUserId.get(discordUserId) ||
-        SupportersService.MAX_DAILY_ARTICLES_DEFAULT;
+        this.supportersService.maxDailyArticlesDefault;
 
       await feedHandler(feed, {
         maxDailyArticles,

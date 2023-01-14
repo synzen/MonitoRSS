@@ -123,6 +123,16 @@ export class EnvironmentVariables {
   @IsOptional()
   @Type(() => Number)
   BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT?: number;
 }
 
 export function validateConfig(
