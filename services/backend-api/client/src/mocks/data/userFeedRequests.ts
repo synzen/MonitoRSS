@@ -8,7 +8,7 @@ export const mockUserFeedRequests: UserFeedRequest[] = [
   },
   {
     id: 2,
-    status: UserFeedRequestStatus.FAILED,
+    status: UserFeedRequestStatus.INTERNAL_ERROR,
     createdAt: Math.floor(new Date(2021).getTime() / 1000),
   },
   {
@@ -19,6 +19,11 @@ export const mockUserFeedRequests: UserFeedRequest[] = [
   {
     id: 4,
     status: UserFeedRequestStatus.PARSE_ERROR,
+    createdAt: Math.floor(new Date(2023).getTime() / 1000),
+  },
+  {
+    id: 4,
+    status: UserFeedRequestStatus.BAD_STATUS_CODE,
     createdAt: Math.floor(new Date(2023).getTime() / 1000),
   },
 ];
