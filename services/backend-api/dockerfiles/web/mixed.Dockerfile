@@ -1,4 +1,4 @@
-FROM node:16 AS build
+FROM node:18 AS build
 
 WORKDIR /usr/src/app
 
@@ -9,7 +9,7 @@ RUN npm install && cd client && npm install
 
 COPY . ./
 
-FROM node:16 AS build-prod
+FROM node:18 AS build-prod
 
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app ./
@@ -25,7 +25,7 @@ RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
 # Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
-FROM node:16-slim AS prod
+FROM node:18-slim AS prod
 
 WORKDIR /usr/src/app
 

@@ -1,4 +1,4 @@
-FROM node:16 AS build
+FROM node:18 AS build
 
 WORKDIR /usr/src/app
 
@@ -9,7 +9,7 @@ RUN npm install
 COPY . ./
 
 # Build production files
-FROM node:16-alpine AS prod
+FROM node:18-alpine AS prod
 
 RUN apt install curl
 RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin

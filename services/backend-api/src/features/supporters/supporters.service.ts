@@ -384,7 +384,7 @@ export class SupportersService {
       refreshRateSeconds =
         patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
     } else {
-      refreshRateSeconds = 120;
+      refreshRateSeconds = 10;
     }
 
     return {
