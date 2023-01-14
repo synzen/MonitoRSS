@@ -37,7 +37,8 @@ const createStatusLabel = (status: UserFeedRequestStatus) => {
         </Badge>
       );
     case UserFeedRequestStatus.FETCH_ERROR:
-    case UserFeedRequestStatus.FAILED:
+    case UserFeedRequestStatus.BAD_STATUS_CODE:
+    case UserFeedRequestStatus.INTERNAL_ERROR:
     case UserFeedRequestStatus.PARSE_ERROR:
       return (
         <Badge fontSize="sm" colorScheme="red">

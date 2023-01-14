@@ -1,6 +1,9 @@
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import nock from "nock";
-import { FeedFetcherFetchFeedResponse } from "./types/feed-fetcher-fetch-feed-response.type";
+import {
+  FeedFetcherFetchFeedResponse,
+  FeedFetcherFetchStatus,
+} from "./types/feed-fetcher-fetch-feed-response.type";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
 import { FeedFetcherGetRequestsResponse } from "./types/feed-fetcher-get-requests-response.type";
@@ -40,7 +43,7 @@ describe("FeedFetcherApiService", () => {
         executeFetch: true,
       };
       const mockResponse: FeedFetcherFetchFeedResponse = {
-        requestStatus: "success",
+        requestStatus: FeedFetcherFetchStatus.Success,
         response: {
           body: "",
           statusCode: 200,
@@ -93,7 +96,7 @@ describe("FeedFetcherApiService", () => {
     it("returns the result on success", async () => {
       const mockResponse: FeedFetcherGetRequestsResponse = {
         result: {
-          nextRetryDate: 123,
+          nextRetryTimestamp: 123,
           requests: [],
           totalRequests: 1,
         },
