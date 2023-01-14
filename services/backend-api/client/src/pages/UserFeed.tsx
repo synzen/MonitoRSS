@@ -307,12 +307,10 @@ export const UserFeed: React.FC = () => {
                     description: t("pages.feed.articleDailyLimitHint"),
                   }}
                 >
-                  <Box>
-                    <Text color={isAtLimit ? "red.300" : ""}>
-                      {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
-                    </Text>
-                    {!dailyLimit && <Spinner size="sm" />}
-                  </Box>
+                  <Text color={isAtLimit ? "red.300" : ""} display="block">
+                    {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                  </Text>
+                  {!dailyLimit && <Spinner display="block" size="sm" />}
                 </CategoryText>
               </Grid>
             </Stack>

@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import { QuestionOutlineIcon } from "@chakra-ui/icons";
-import { HStack, Stack, StackProps, Text, Tooltip } from "@chakra-ui/react";
+import { Box, HStack, Stack, StackProps, Text, Tooltip } from "@chakra-ui/react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -47,9 +47,11 @@ export const CategoryText: React.FC<DescriptionProps> = ({
           </Tooltip>
         )}
       </HStack>
-      <Text fontSize="sm" fontWeight="medium">
+      <Box>
+        {/* <Text fontSize="sm" fontWeight="medium"> */}
         {children}
-      </Text>
+      </Box>
+      {/* </Text> */}
     </Stack>
   );
 };

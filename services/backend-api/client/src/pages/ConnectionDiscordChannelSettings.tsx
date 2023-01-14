@@ -190,17 +190,19 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       error={feedError || connectionError}
       loading={feedStatus === "loading" || connectionStatus === "loading"}
     >
-      <EditConnectionChannelDialog
-        onCloseRef={actionsButtonRef}
-        defaultValues={{
-          channelId: connection.details.channel.id,
-          name: connection.name,
-          serverId,
-        }}
-        onUpdate={onChannelUpdated}
-        isOpen={editIsOpen}
-        onClose={editOnClose}
-      />
+      {connection && (
+        <EditConnectionChannelDialog
+          onCloseRef={actionsButtonRef}
+          defaultValues={{
+            channelId: connection.details.channel.id,
+            name: connection.name,
+            serverId,
+          }}
+          onUpdate={onChannelUpdated}
+          isOpen={editIsOpen}
+          onClose={editOnClose}
+        />
+      )}
       <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
         <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
           <BoxConstrained.Container spacing={12}>

@@ -15,7 +15,6 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
@@ -130,7 +129,7 @@ export const ArticleSelectPrompt = ({ feedId, trigger, onArticleSelected }: Prop
                   </HStack>
                 </Flex>
                 <Stack spacing={8}>
-                  <Stack spacing={4} bg={useColorModeValue("white", "gray.700")} rounded="lg">
+                  <Stack spacing={4} bg="gray.700" rounded="lg">
                     <Box overflow="auto" height="100%">
                       <Menu
                         items={articles.map((article) => ({
