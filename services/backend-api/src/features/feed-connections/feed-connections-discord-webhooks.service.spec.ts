@@ -509,6 +509,38 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       });
     });
 
+    it("calls sendTestArticle with the specific article if the field exists", async () => {
+      const sendTestArticle = jest.spyOn(feedHandlerService, "sendTestArticle");
+
+      await service.sendTestArticle(userFeed, targetConnection, {
+        article: {
+          id: "1",
+        },
+      });
+
+      expect(sendTestArticle).toHaveBeenCalledWith({
+        details: {
+          type: "discord",
+          feed: {
+            url: userFeed.url,
+          },
+          article: {
+            id: "1",
+          },
+          mediumDetails: {
+            webhook: {
+              id: targetConnection.details.webhook.id,
+              token: targetConnection.details.webhook.token,
+              iconUrl: targetConnection.details.webhook.iconUrl,
+              name: targetConnection.details.webhook.name,
+            },
+            content: targetConnection.details.content,
+            embeds: targetConnection.details.embeds,
+          },
+        },
+      });
+    });
+
     it("returns the result", async () => {
       const testResult = {
         status: TestDeliveryStatus.Success,

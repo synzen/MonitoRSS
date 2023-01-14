@@ -396,6 +396,35 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       });
     });
 
+    it("calls sendTestArticle with the specific article if the field exists", async () => {
+      const sendTestArticle = jest.spyOn(feedHandlerService, "sendTestArticle");
+
+      await service.sendTestArticle(userFeed, targetConnection, {
+        article: {
+          id: "1",
+        },
+      });
+
+      expect(sendTestArticle).toHaveBeenCalledWith({
+        details: {
+          type: "discord",
+          feed: {
+            url: userFeed.url,
+          },
+          article: {
+            id: "1",
+          },
+          mediumDetails: {
+            channel: {
+              id: targetConnection.details.channel.id,
+            },
+            content: targetConnection.details.content,
+            embeds: targetConnection.details.embeds,
+          },
+        },
+      });
+    });
+
     it("returns the result", async () => {
       const testResult = {
         status: TestDeliveryStatus.Success,

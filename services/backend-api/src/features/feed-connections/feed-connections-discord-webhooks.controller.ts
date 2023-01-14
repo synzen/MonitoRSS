@@ -23,6 +23,7 @@ import {
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
+  CreateDiscordChannelConnectionTestArticleInputDto,
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
   CreateDiscordWebhookConnectionTestArticleOutputDto,
@@ -91,9 +92,13 @@ export class FeedConnectionsDiscordWebhooksController {
   @UseFilters(CreateDiscordWebhookTestArticleFilter)
   async sendTestArticle(
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
-    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput
+    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
+    @Body(ValidationPipe)
+    { article }: CreateDiscordChannelConnectionTestArticleInputDto
   ): Promise<CreateDiscordWebhookConnectionTestArticleOutputDto> {
-    const result = await this.service.sendTestArticle(feed, connection);
+    const result = await this.service.sendTestArticle(feed, connection, {
+      article,
+    });
 
     return {
       result,

@@ -207,13 +207,19 @@ export class FeedConnectionsDiscordChannelsService {
 
   async sendTestArticle(
     userFeed: UserFeed,
-    connection: DiscordChannelConnection
+    connection: DiscordChannelConnection,
+    details?: {
+      article?: {
+        id: string;
+      };
+    }
   ): Promise<SendTestArticleResult> {
     const payload = {
       type: "discord",
       feed: {
         url: userFeed.url,
       },
+      article: details?.article ? details.article : undefined,
       mediumDetails: {
         channel: {
           id: connection.details.channel.id,

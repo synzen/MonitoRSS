@@ -6,6 +6,9 @@ export interface SendTestDiscordChannelArticleInput {
     feed: {
       url: string;
     };
+    article?: {
+      id: string;
+    };
     mediumDetails: {
       channel: {
         id: string;

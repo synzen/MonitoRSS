@@ -24,6 +24,7 @@ import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionOutputDto,
+  CreateDiscordChannelConnectionTestArticleInputDto,
   CreateDiscordChannelConnectionTestArticleOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
   UpdateDiscordChannelConnectionInputDto,
@@ -85,9 +86,13 @@ export class FeedConnectionsDiscordChannelsController {
   @UseFilters(CreateDiscordChannelTestArticleFilter)
   async sendTestArticle(
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Body(ValidationPipe)
+    { article }: CreateDiscordChannelConnectionTestArticleInputDto
   ): Promise<CreateDiscordChannelConnectionTestArticleOutputDto> {
-    const result = await this.service.sendTestArticle(feed, connection);
+    const result = await this.service.sendTestArticle(feed, connection, {
+      article,
+    });
 
     return {
       result: {

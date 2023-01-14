@@ -6,6 +6,9 @@ export interface SendTestDiscordWebhookArticleInput {
     feed: {
       url: string;
     };
+    article?: {
+      id: string;
+    };
     mediumDetails: {
       webhook: {
         id: string;

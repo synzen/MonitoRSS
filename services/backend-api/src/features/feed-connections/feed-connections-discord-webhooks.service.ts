@@ -237,13 +237,19 @@ export class FeedConnectionsDiscordWebhooksService {
 
   async sendTestArticle(
     userFeed: UserFeed,
-    connection: DiscordWebhookConnection
+    connection: DiscordWebhookConnection,
+    details?: {
+      article?: {
+        id: string;
+      };
+    }
   ): Promise<SendTestArticleResult> {
     const payload = {
       type: "discord",
       feed: {
         url: userFeed.url,
       },
+      article: details?.article ? details.article : undefined,
       mediumDetails: {
         content: castDiscordContentForMedium(connection.details.content),
         embeds: castDiscordEmbedsForMedium(connection.details.embeds),
