@@ -387,7 +387,6 @@ module.exports = class Article {
     let img = ''
     for (var x = inputArr.length - 1; x >= 0; x--) {
       const term = inputArr[x]
-      console.log(term)
       if (term.startsWith('http')) {
         img = term.replace(/\{|\}/g, '')
         continue
