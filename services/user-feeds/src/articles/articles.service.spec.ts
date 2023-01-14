@@ -165,6 +165,43 @@ describe("ArticlesService", () => {
       expect(articlesToDeliver).toHaveLength(1);
       expect(articlesToDeliver[0].id).toEqual(articlesFromXml[1].id);
     });
+
+    it("returns the new articles in reverse order", async () => {
+      const articlesFromXml = [
+        {
+          id: "article id",
+        },
+        {
+          id: "article id 2",
+        },
+      ];
+      jest.spyOn(service, "getArticlesFromXml").mockResolvedValue({
+        articles: articlesFromXml,
+      });
+      jest.spyOn(service, "hasPriorArticlesStored").mockResolvedValue(true);
+
+      jest.spyOn(service, "filterForNewArticles").mockResolvedValue([
+        {
+          id: articlesFromXml[1].id,
+        },
+      ]);
+
+      jest
+        .spyOn(service, "checkBlockingComparisons")
+        .mockResolvedValue([articlesFromXml[0]]);
+      jest
+        .spyOn(service, "checkPassingComparisons")
+        .mockResolvedValue([articlesFromXml[1]]);
+
+      const articlesToDeliver = await service.getArticlesToDeliverFromXml(
+        feedText,
+        feedDetails
+      );
+
+      expect(articlesToDeliver).toHaveLength(2);
+      expect(articlesToDeliver[0].id).toEqual(articlesFromXml[1].id);
+      expect(articlesToDeliver[1].id).toEqual(articlesFromXml[0].id);
+    });
   });
 
   describe("hasPriorArticlesStored", () => {

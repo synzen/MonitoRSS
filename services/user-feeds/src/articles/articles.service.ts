@@ -76,7 +76,11 @@ export class ArticlesService {
       });
     }
 
-    return [...articlesPastBlocks, ...articlesPassedComparisons];
+    /**
+     * Reverse since feed XMLs typically store newest articles at the top, so we want to deliver
+     * the oldest articles first (hence putting them in the lowest indices)
+     */
+    return [...articlesPastBlocks, ...articlesPassedComparisons].reverse();
   }
 
   async hasPriorArticlesStored(feedId: string) {
