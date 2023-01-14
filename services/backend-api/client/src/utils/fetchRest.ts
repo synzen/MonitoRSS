@@ -102,25 +102,29 @@ const handleStatusCode = async (res: Response) => {
 
   try {
     json = await res.json();
+
+    if (json.isStandardized) {
+      throw new ApiAdapterError(getStandardErrorCodeMessage(json.code), {
+        statusCode: res.status,
+      });
+    } else if (res.status === 400) {
+      // Legacy error formatting
+      throw new ApiAdapterError(json.message || "Unknown error", {
+        statusCode: res.status,
+      });
+    } else {
+      throw new ApiAdapterError(getStatusCodeErrorMessage(res.status), {
+        statusCode: res.status,
+      });
+    }
   } catch (err) {
+    if (err instanceof ApiAdapterError) {
+      throw err;
+    }
+
     const errorMessage = getStatusCodeErrorMessage(res.status);
 
     throw new ApiAdapterError(errorMessage, {
-      statusCode: res.status,
-    });
-  }
-
-  if (json.isStandardized) {
-    throw new ApiAdapterError(getStandardErrorCodeMessage(json.code), {
-      statusCode: res.status,
-    });
-  } else if (res.status === 400) {
-    // Legacy error formatting
-    throw new ApiAdapterError(json.message || "Unknown error", {
-      statusCode: res.status,
-    });
-  } else {
-    throw new ApiAdapterError(getStatusCodeErrorMessage(res.status), {
       statusCode: res.status,
     });
   }

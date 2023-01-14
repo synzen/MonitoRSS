@@ -5,7 +5,10 @@ import { validate } from "class-validator";
 import fetch, { Response } from "node-fetch";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
-import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
+import {
+  FeedArticleNotFoundException,
+  FeedFetcherStatusException,
+} from "../feed-fetcher/exceptions";
 import {
   CreateFilterValidationInput,
   CreateFilterValidationOutput,
@@ -144,6 +147,10 @@ export class FeedHandlerService {
           err.constructor.name
         }: ${(err as Error).message}`
       );
+    }
+
+    if (res.status === 404) {
+      throw new FeedArticleNotFoundException("Feed article not found");
     }
 
     await this.validateResponseStatus(res);

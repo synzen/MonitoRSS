@@ -7,10 +7,12 @@ import {
   BadRequestException,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import {
+  FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestParseException,
@@ -289,6 +291,10 @@ export class FeedsController {
     } catch (err) {
       if (err instanceof ValidationError) {
         throw new BadRequestException(err.errors);
+      }
+
+      if (err instanceof FeedArticleNotFoundException) {
+        throw new NotFoundException(err.message);
       }
 
       throw err;

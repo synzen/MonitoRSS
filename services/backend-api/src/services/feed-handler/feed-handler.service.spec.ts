@@ -5,7 +5,10 @@ import {
 import nock from "nock";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
-import { FeedFetcherStatusException } from "../feed-fetcher/exceptions";
+import {
+  FeedArticleNotFoundException,
+  FeedFetcherStatusException,
+} from "../feed-fetcher/exceptions";
 import { TestDeliveryStatus } from "./constants";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import {
@@ -161,6 +164,14 @@ describe("FeedHandlerService", () => {
       expect(result).toEqual({
         status: TestDeliveryStatus.Success,
       });
+    });
+
+    it("throws a special exception on 404", async () => {
+      nock(host).post(endpoint).reply(404, {});
+
+      await expect(service.sendTestArticle(validPayload)).rejects.toThrow(
+        FeedArticleNotFoundException
+      );
     });
 
     it("throws if status code is 400", async () => {

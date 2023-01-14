@@ -24,6 +24,7 @@ export enum ApiErrorCode {
   BANNED_FEED = "BANNED_FEED",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = "FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED",
+  FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
 }
 
 // Create a package for the frontend?
@@ -60,4 +61,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_INVALID_FILTER_EXPRESSION: "Invalid filter expression",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED:
     "Cannot enable a feed that was automatically disabled",
+  FEED_ARTICLE_NOT_FOUND: "Article does not exist",
 };

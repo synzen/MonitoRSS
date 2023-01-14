@@ -52,7 +52,8 @@
       "feedNotFailed": "Unable to retry feed. The feed is still active, and there is no need to retry unless the feed has failed.",
       "feedNotFound": "Feed does not exist",
       "feedFilterInvalidExpression": "Invalid filter expression",
-      "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically"
+      "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically",
+      "feedArticleNotFound": "Article does not exist. Try selecting another article or refreshing the page."
     }
   },
   "pages": {

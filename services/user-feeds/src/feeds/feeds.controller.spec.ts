@@ -1,5 +1,6 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import {
+  FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestParseException,
@@ -271,6 +272,21 @@ describe("FeedController", () => {
       await expect(controller.sendTestArticle(payload)).rejects.toThrowError(
         BadRequestException
       );
+    });
+
+    it("throws not found if article is not found", async () => {
+      feedFetcherService.fetchFeedArticle.mockRejectedValue(
+        new FeedArticleNotFoundException()
+      );
+
+      await expect(
+        controller.sendTestArticle({
+          ...validPayload,
+          article: {
+            id: "1",
+          },
+        })
+      ).rejects.toThrowError(NotFoundException);
     });
 
     it("throws bad request if medium details is malformed", async () => {

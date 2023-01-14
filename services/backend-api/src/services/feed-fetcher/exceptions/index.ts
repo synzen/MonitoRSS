@@ -9,3 +9,4 @@ export * from "./FeedTooManyRequestsException";
 export * from "./FeedUnauthorizedException";
 export * from "./FeedFetcherStatusException";
 export * from "./FeedNotFoundException";
+export * from "./FeedArticleNotFoundException";
