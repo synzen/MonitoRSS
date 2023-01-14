@@ -65,8 +65,11 @@ export class SupportersService {
         "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
       ) * 60;
 
-    this.defaultMaxUserFeeds = this.configService.getOrThrow<number>(
-      "BACKEND_API_DEFAULT_MAX_USER_FEEDS"
+    // For some reason, config service returns a string even though it should be casted as a number
+    this.defaultMaxUserFeeds = Number(
+      this.configService.getOrThrow<number>(
+        "BACKEND_API_DEFAULT_MAX_USER_FEEDS"
+      )
     );
 
     this.defaultMaxSupporterUserFeeds = this.configService.getOrThrow<number>(
