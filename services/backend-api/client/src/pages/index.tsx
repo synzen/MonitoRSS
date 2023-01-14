@@ -1,49 +1,44 @@
-import {
-  Route, Routes,
-} from 'react-router-dom';
-import Feed from './Feed';
-import FeedFilters from './FeedFilters';
-import FeedMessage from './FeedMessage';
-import FeedMiscOptions from './FeedMiscOptions';
-import FeedSubscribers from './FeedSubscribers';
-import Home from './Home';
-import ServerDasboard from './ServerDashboard';
-import Servers from './Servers';
-import { RequireAuth } from '@/features/auth';
-import { PageContent } from '@/components/PageContent';
+import { Route, Routes } from "react-router-dom";
+import Feed from "./Feed";
+import FeedFilters from "./FeedFilters";
+import FeedMessage from "./FeedMessage";
+import FeedMiscOptions from "./FeedMiscOptions";
+import FeedSubscribers from "./FeedSubscribers";
+import Home from "./Home";
+import ServerDasboard from "./ServerDashboard";
+import Servers from "./Servers";
+import { RequireAuth } from "@/features/auth";
+import { PageContent } from "@/components/PageContent";
 // import Webhooks from './Webhooks';
-import { ServerSettings } from './ServerSettings';
-import FeedClone from './FeedClone';
-import FeedComparisons from './FeedComparisons';
-import Feeds from './Feeds';
-import { RequireDiscordServers } from '@/features/discordServers';
-import { PageContentV2 } from '../components/PageContentV2';
-import { UserFeeds } from './UserFeeds';
-import { UserFeed } from './UserFeed';
-import { ConnectionDiscordChannelSettings } from './ConnectionDiscordChannelSettings';
-import { ConnectionDiscordWebhookSettings } from './ConnectionDiscordWebhookSettings';
-import { pages } from '../constants';
-import { FeedConnectionType } from '../types';
+import { ServerSettings } from "./ServerSettings";
+import FeedClone from "./FeedClone";
+import FeedComparisons from "./FeedComparisons";
+import Feeds from "./Feeds";
+import { RequireDiscordServers } from "@/features/discordServers";
+import { PageContentV2 } from "../components/PageContentV2";
+import { UserFeeds } from "./UserFeeds";
+import { UserFeed } from "./UserFeed";
+import { ConnectionDiscordChannelSettings } from "./ConnectionDiscordChannelSettings";
+import { ConnectionDiscordWebhookSettings } from "./ConnectionDiscordWebhookSettings";
+import { pages } from "../constants";
+import { FeedConnectionType } from "../types";
 
 const Pages: React.FC = () => (
   <Routes>
-    <Route
-      path="/"
-      element={<Home />}
-    />
+    <Route path="/" element={<Home />} />
     <Route
       path="/servers"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <Servers />
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent>
@@ -51,11 +46,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/settings"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent>
@@ -63,11 +58,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent>
@@ -75,21 +70,21 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path={pages.userFeeds()}
-      element={(
+      element={
         <RequireAuth>
           <PageContentV2 invertBackground>
             <UserFeeds />
           </PageContentV2>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -97,40 +92,39 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
-      path={pages.userFeed(':feedId')}
-      element={(
+      path={pages.userFeed(":feedId")}
+      element={
         <RequireAuth>
           <PageContentV2 requireFeed>
             <UserFeed />
           </PageContentV2>
         </RequireAuth>
-    )}
-
+      }
     />
     <Route
       path={pages.userFeedConnection({
-        feedId: ':feedId',
+        feedId: ":feedId",
         connectionType: FeedConnectionType.DiscordChannel,
-        connectionId: ':connectionId',
+        connectionId: ":connectionId",
       })}
-      element={(
+      element={
         <RequireAuth>
           <PageContentV2>
             <ConnectionDiscordChannelSettings />
           </PageContentV2>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path={pages.userFeedConnection({
-        feedId: ':feedId',
+        feedId: ":feedId",
         connectionType: FeedConnectionType.DiscordWebhook,
-        connectionId: ':connectionId',
+        connectionId: ":connectionId",
       })}
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContentV2 requireFeed>
@@ -138,11 +132,11 @@ const Pages: React.FC = () => (
             </PageContentV2>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/message"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -150,11 +144,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/filters"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -162,11 +156,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/comparisons"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -174,11 +168,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/subscribers"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -186,11 +180,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/misc-options"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -198,11 +192,11 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
     <Route
       path="/servers/:serverId/feeds/:feedId/clone"
-      element={(
+      element={
         <RequireAuth>
           <RequireDiscordServers>
             <PageContent requireFeed>
@@ -210,7 +204,7 @@ const Pages: React.FC = () => (
             </PageContent>
           </RequireDiscordServers>
         </RequireAuth>
-    )}
+      }
     />
   </Routes>
 );

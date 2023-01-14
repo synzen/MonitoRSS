@@ -1,11 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
-import {
-  Avatar, HStack, Text, useColorModeValue,
-} from '@chakra-ui/react';
-import Select, {
-  GroupBase, StylesConfig, components,
-} from 'react-select';
-import { REACT_SELECT_STYLES } from '@/constants/reactSelectStyles';
+import { Avatar, HStack, Text, useColorModeValue } from "@chakra-ui/react";
+import Select, { GroupBase, StylesConfig, components } from "react-select";
+import { REACT_SELECT_STYLES } from "@/constants/reactSelectStyles";
 
 const { Option } = components;
 
@@ -17,17 +13,17 @@ interface SelectOption {
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
 
 interface Props {
-  value?: string
+  value?: string;
   options: SelectOption[];
   loading?: boolean;
-  isDisabled?: boolean
-  id?: string
-  onBlur?: () => void
-  onChange: (value: string) => void
-  name?: string
-  isClearable?: boolean
-  onInputChange?: (value: string) => void
-  placeholder?: string
+  isDisabled?: boolean;
+  id?: string;
+  onBlur?: () => void;
+  onChange: (value: string) => void;
+  name?: string;
+  isClearable?: boolean;
+  onInputChange?: (value: string) => void;
+  placeholder?: string;
 }
 
 export const ThemedSelect: React.FC<Props> = ({
@@ -61,9 +57,9 @@ export const ThemedSelect: React.FC<Props> = ({
       isClearable={isClearable}
       // @ts-ignore
       styles={styles}
-      value={selectedOption || ''}
+      value={selectedOption || ""}
       onChange={(option) => {
-        onChange((option as SelectOption)?.value || '');
+        onChange((option as SelectOption)?.value || "");
       }}
       components={{
         Option: IconOption,
@@ -86,20 +82,14 @@ const IconOption: React.FC<IconOptionProps> = (props) => {
   const castedData = data as SelectOption;
 
   return (
-  // eslint-disable-next-line react/jsx-props-no-spreading
+    // eslint-disable-next-line react/jsx-props-no-spreading
     <Option {...props}>
       <HStack alignItems="center">
-        {typeof castedData.icon === 'string' && (
-        <Avatar
-          src={castedData.icon}
-          name={castedData.value}
-          size="xs"
-        />
+        {typeof castedData.icon === "string" && (
+          <Avatar src={castedData.icon} name={castedData.value} size="xs" />
         )}
-        {typeof castedData.icon === 'object' && castedData.icon}
-        <Text>
-          {castedData.label}
-        </Text>
+        {typeof castedData.icon === "object" && castedData.icon}
+        <Text>{castedData.label}</Text>
       </HStack>
     </Option>
   );

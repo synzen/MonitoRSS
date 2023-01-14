@@ -1,6 +1,4 @@
-import {
-  bool, InferType, number, object, string,
-} from 'yup';
+import { bool, InferType, number, object, string } from "yup";
 
 export const DiscordServerSchema = object({
   id: string().required(),

@@ -1,14 +1,14 @@
-import { CheckCircleIcon, NotAllowedIcon, WarningIcon } from '@chakra-ui/icons';
-import { UserFeed, UserFeedDisabledCode } from '../../types';
+import { CheckCircleIcon, NotAllowedIcon, WarningIcon } from "@chakra-ui/icons";
+import { UserFeed, UserFeedDisabledCode } from "../../types";
 
 interface Props {
-  disabledCode?: UserFeed['disabledCode']
+  disabledCode?: UserFeed["disabledCode"];
 }
 
 export const UserFeedStatusTag: React.FC<Props> = ({ disabledCode }) => {
   if (
-    disabledCode === UserFeedDisabledCode.FailedRequests
-    || disabledCode === UserFeedDisabledCode.BadFormat
+    disabledCode === UserFeedDisabledCode.FailedRequests ||
+    disabledCode === UserFeedDisabledCode.BadFormat
   ) {
     return <WarningIcon boxSize={5} color="red.300" />;
   }

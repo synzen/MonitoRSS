@@ -1,26 +1,31 @@
 import {
   Alert,
   AlertDescription,
-  AlertIcon, AlertTitle, Box, Code, Select, Stack, StackDivider, Text,
-} from '@chakra-ui/react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Loading } from '@/components';
-import { useFeedArticles } from '../../hooks/useFeedArticles';
-import { FeedDumpButton } from '../FeedRawDumpButton';
+  AlertIcon,
+  AlertTitle,
+  Box,
+  Code,
+  Select,
+  Stack,
+  StackDivider,
+  Text,
+} from "@chakra-ui/react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Loading } from "@/components";
+import { useFeedArticles } from "../../hooks/useFeedArticles";
+import { FeedDumpButton } from "../FeedRawDumpButton";
 
 interface Props {
-  feedId?: string
+  feedId?: string;
 }
 
 export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
   const [articleIndex, setArticleIndex] = useState(0);
   const { t } = useTranslation();
-  const {
-    articles, status, error,
-  } = useFeedArticles({ feedId });
+  const { articles, status, error } = useFeedArticles({ feedId });
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return <Loading />;
   }
 
@@ -30,11 +35,9 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
         <AlertIcon />
         <Box>
           <AlertTitle display="block">
-            {t('pages.message.failedToRetrieveArticlesError')}
+            {t("pages.message.failedToRetrieveArticlesError")}
           </AlertTitle>
-          <AlertDescription display="block">
-            {error.message}
-          </AlertDescription>
+          <AlertDescription display="block">{error.message}</AlertDescription>
         </Box>
       </Alert>
     );
@@ -75,9 +78,7 @@ export const FeedArticlesPlaceholders: React.FC<Props> = ({ feedId }) => {
         </Stack>
       </Stack>
       <Stack spacing="3">
-        <Text>
-          {t('pages.message.placeholdersRawSectionDescription')}
-        </Text>
+        <Text>{t("pages.message.placeholdersRawSectionDescription")}</Text>
         <FeedDumpButton feedId={feedId} />
       </Stack>
     </Stack>

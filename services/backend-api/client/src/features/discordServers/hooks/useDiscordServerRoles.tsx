@@ -1,24 +1,25 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getServerRoles, GetServerRolesOutput } from '../api';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { getServerRoles, GetServerRolesOutput } from "../api";
 
 interface Props {
-  serverId?: string
+  serverId?: string;
 }
 
-export const useDiscordServerRoles = (
-  { serverId }: Props,
-) => {
+export const useDiscordServerRoles = ({ serverId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
 
   const { data, status, error } = useQuery<GetServerRolesOutput, ApiAdapterError>(
-    ['server-roles', {
-      serverId,
-    }],
+    [
+      "server-roles",
+      {
+        serverId,
+      },
+    ],
     async () => {
       if (!serverId) {
-        throw new Error('Missing server ID when getting server roles');
+        throw new Error("Missing server ID when getting server roles");
       }
 
       return getServerRoles({
@@ -28,7 +29,7 @@ export const useDiscordServerRoles = (
     {
       enabled: !!serverId && !hasErrored,
       onError: () => setHasErrored(true),
-    },
+    }
   );
 
   const getRolebyId = (roleId: string) => {

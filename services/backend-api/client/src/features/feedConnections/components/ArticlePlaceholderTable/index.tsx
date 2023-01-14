@@ -1,19 +1,9 @@
-import {
-  Box,
-  Code,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
+import { Box, Code, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
-  article: Record<string, string>
-  asPlaceholders?: boolean
+  article: Record<string, string>;
+  asPlaceholders?: boolean;
 }
 
 export const ArticlePlaceholderTable = ({ article, asPlaceholders }: Props) => {
@@ -21,30 +11,28 @@ export const ArticlePlaceholderTable = ({ article, asPlaceholders }: Props) => {
 
   return (
     <Box>
-
-      <Box
-        position="relative"
-        border="solid 1px"
-        borderColor="gray.600"
-        borderRadius="md"
-      >
-        <Box
-          maxHeight="sm"
-          overflow="auto"
-        >
+      <Box position="relative" border="solid 1px" borderColor="gray.600" borderRadius="md">
+        <Box maxHeight="sm" overflow="auto">
           <TableContainer>
             <Table size="sm">
               <Thead>
                 <Tr>
                   <Th>
-                    {asPlaceholders ? t('features.feedConnections.components'
-                    + '.articlePlaceholderTable.columnHeaderPlaceholder')
-                      : t('features.feedConnections.components'
-                    + '.articlePlaceholderTable.columnHeaderProperty')}
+                    {asPlaceholders
+                      ? t(
+                          "features.feedConnections.components" +
+                            ".articlePlaceholderTable.columnHeaderPlaceholder"
+                        )
+                      : t(
+                          "features.feedConnections.components" +
+                            ".articlePlaceholderTable.columnHeaderProperty"
+                        )}
                   </Th>
                   <Th>
-                    {t('features.feedConnections.components'
-                    + '.articlePlaceholderTable.columnHeaderValue')}
+                    {t(
+                      "features.feedConnections.components" +
+                        ".articlePlaceholderTable.columnHeaderValue"
+                    )}
                   </Th>
                 </Tr>
               </Thead>

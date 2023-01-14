@@ -1,19 +1,19 @@
-import { Stack, Text } from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import {
-  FiRss, FiSettings,
-} from 'react-icons/fi';
-import { SidebarLink } from '../../../../components/SidebarLink';
-import { DiscordServerSearchSelect } from '../DiscordServerSearchSelect';
+import { Stack, Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { FiRss, FiSettings } from "react-icons/fi";
+import { SidebarLink } from "../../../../components/SidebarLink";
+import { DiscordServerSearchSelect } from "../DiscordServerSearchSelect";
 
 interface Props {
-  currentPath: string
-  serverId: string
-  onChangePath: (path: string) => void
+  currentPath: string;
+  serverId: string;
+  onChangePath: (path: string) => void;
 }
 
 export const SidebarDiscordServerLinks: React.FC<Props> = ({
-  currentPath, serverId, onChangePath,
+  currentPath,
+  serverId,
+  onChangePath,
 }) => {
   const { t } = useTranslation();
 
@@ -36,7 +36,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
         letterSpacing="widest"
         color="gray.500"
       >
-        {t('components.sidebar.server.manage')}
+        {t("components.sidebar.server.manage")}
       </Text>
       <DiscordServerSearchSelect />
       <SidebarLink
@@ -45,7 +45,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
         active={currentPath === paths.SERVER_FEEDS}
         onClick={() => onClickNavLink(paths.SERVER_FEEDS)}
       >
-        {t('components.sidebar.server.feeds')}
+        {t("components.sidebar.server.feeds")}
       </SidebarLink>
       <SidebarLink
         disabled={!serverId}
@@ -55,7 +55,7 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
           onClickNavLink(paths.SERVER_SETTINGS);
         }}
       >
-        {t('components.sidebar.server.settings')}
+        {t("components.sidebar.server.settings")}
       </SidebarLink>
       {/* <SidebarLink
         icon={FiShare2}
@@ -65,6 +65,5 @@ export const SidebarDiscordServerLinks: React.FC<Props> = ({
         {t('components.sidebar.server.webhooks')}
       </SidebarLink> */}
     </Stack>
-
   );
 };

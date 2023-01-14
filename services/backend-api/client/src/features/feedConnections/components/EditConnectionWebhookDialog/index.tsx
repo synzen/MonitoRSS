@@ -19,26 +19,26 @@ import {
   ModalOverlay,
   Stack,
   Text,
-} from '@chakra-ui/react';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { InferType, object, string } from 'yup';
-import React, { useEffect, useRef } from 'react';
-import { ThemedSelect } from '@/components';
-import { useDiscordWebhooks } from '../../../discordWebhooks';
-import { useUserFeed } from '../../../feed/hooks';
-import { DiscordChannelName } from '../../../discordServers/components/DiscordChannelName';
-import { useDiscordUserMe } from '../../../discordUser';
-import { DiscordServerSearchSelectv2 } from '../../../discordServers';
+} from "@chakra-ui/react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { InferType, object, string } from "yup";
+import React, { useEffect, useRef } from "react";
+import { ThemedSelect } from "@/components";
+import { useDiscordWebhooks } from "../../../discordWebhooks";
+import { useUserFeed } from "../../../feed/hooks";
+import { DiscordChannelName } from "../../../discordServers/components/DiscordChannelName";
+import { useDiscordUserMe } from "../../../discordUser";
+import { DiscordServerSearchSelectv2 } from "../../../discordServers";
 
 const formSchema = object({
   name: string().optional(),
   webhook: object({
-    id: string().required('This is a required field'),
+    id: string().required("This is a required field"),
     name: string().optional(),
     iconUrl: string().optional(),
-  }).when('serverId', ([serverId], schema) => {
+  }).when("serverId", ([serverId], schema) => {
     if (serverId) {
       return schema.required();
     }
@@ -51,12 +51,12 @@ const formSchema = object({
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
-  feedId?: string
-  defaultValues: Required<FormData>
-  onUpdate: (data: FormData) => Promise<void>
-  isOpen: boolean
-  onClose: () => void
-  onCloseRef: React.RefObject<HTMLButtonElement>
+  feedId?: string;
+  defaultValues: Required<FormData>;
+  onUpdate: (data: FormData) => Promise<void>;
+  isOpen: boolean;
+  onClose: () => void;
+  onCloseRef: React.RefObject<HTMLButtonElement>;
 }
 
 export const EditConnectionWebhookDialog: React.FC<Props> = ({
@@ -72,26 +72,17 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
-    formState: {
-      isDirty,
-      isSubmitting,
-      errors,
-    },
+    formState: { isDirty, isSubmitting, errors },
     watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues,
   });
-  const serverId = watch('serverId');
-  const {
-    status: feedStatus,
-  } = useUserFeed({
+  const serverId = watch("serverId");
+  const { status: feedStatus } = useUserFeed({
     feedId,
   });
-  const {
-    data: discordUser,
-    status: discordUserStatus,
-  } = useDiscordUserMe();
+  const { data: discordUser, status: discordUserStatus } = useDiscordUserMe();
   const {
     data: discordWebhooks,
     status: discordWebhooksStatus,
@@ -112,11 +103,9 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     reset();
   }, [isOpen]);
 
-  const webhooksDisabled = discordUserStatus !== 'success'
-  || !discordUser?.supporter;
+  const webhooksDisabled = discordUserStatus !== "success" || !discordUser?.supporter;
 
-  const isLoading = feedStatus === 'loading'
-    || discordWebhooksStatus === 'loading';
+  const isLoading = feedStatus === "loading" || discordWebhooksStatus === "loading";
 
   return (
     <Modal
@@ -129,43 +118,38 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
       <ModalContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <ModalHeader>
-            {t('features.feed.components.updateDiscordWebhookConnectionDialog.title')}
-
+            {t("features.feed.components.updateDiscordWebhookConnectionDialog.title")}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             {webhooksDisabled && (
-              <Text color="orange.500">
-                {t('common.errors.supporterRequiredAccessV2')}
-              </Text>
+              <Text color="orange.500">{t("common.errors.supporterRequiredAccessV2")}</Text>
             )}
             {!webhooksDisabled && (
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.name}>
                   <FormLabel>
-                    {t('features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel')}
+                    {t("features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel")}
                   </FormLabel>
                   <Controller
                     name="name"
                     control={control}
-                    render={({ field }) => (
-                      <Input {...field} ref={initialRef} />
-                    )}
+                    render={({ field }) => <Input {...field} ref={initialRef} />}
                   />
-                  {errors.name && (
-                  <FormErrorMessage>
-                    {errors.name.message}
-                  </FormErrorMessage>
-                  )}
+                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                   <FormHelperText>
-                    {t('features.feed.components'
-                  + '.addDiscordWebhookConnectionDialog.formNameDescription')}
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordWebhookConnectionDialog.formNameDescription"
+                    )}
                   </FormHelperText>
                 </FormControl>
                 <FormControl isInvalid={!!errors.serverId}>
                   <FormLabel>
-                    {t('features.feed.components'
-                    + '.addDiscordWebhookConnectionDialog.formServerLabel')}
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordWebhookConnectionDialog.formServerLabel"
+                    )}
                   </FormLabel>
                   <Controller
                     name="serverId"
@@ -174,25 +158,26 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                       <DiscordServerSearchSelectv2
                         {...field}
                         onChange={(id) => field.onChange(id)}
-                        value={field.value || ''}
+                        value={field.value || ""}
                       />
-
                     )}
                   />
                   {errors.serverId && (
-                  <FormErrorMessage>
-                    {errors.serverId.message}
-                  </FormErrorMessage>
+                    <FormErrorMessage>{errors.serverId.message}</FormErrorMessage>
                   )}
                   <FormHelperText>
-                    {t('features.feed.components'
-                    + '.addDiscordWebhookConnectionDialog.formServerDescription')}
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordWebhookConnectionDialog.formServerDescription"
+                    )}
                   </FormHelperText>
                 </FormControl>
                 <FormControl isInvalid={!!errors?.webhook?.id}>
                   <FormLabel htmlFor="webhook">
-                    {t('features.feed.components'
-                    + '.addDiscordWebhookConnectionDialog.webhookFormLabel')}
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordWebhookConnectionDialog.webhookFormLabel"
+                    )}
                   </FormLabel>
                   <Controller
                     name="webhook.id"
@@ -201,22 +186,22 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                       <ThemedSelect
                         loading={isLoading}
                         isDisabled={isSubmitting || isLoading}
-                        options={discordWebhooks?.map((webhook) => ({
-                          label: (
-                            <span>
-                              {webhook.name}
-                              {' '}
-                              (
-                              <DiscordChannelName
-                                serverId={serverId}
-                                channelId={webhook.channelId}
-                              />
-                              )
-                            </span>
-                          ),
-                          value: webhook.id,
-                          icon: webhook.avatarUrl,
-                        })) || []}
+                        options={
+                          discordWebhooks?.map((webhook) => ({
+                            label: (
+                              <span>
+                                {webhook.name} (
+                                <DiscordChannelName
+                                  serverId={serverId}
+                                  channelId={webhook.channelId}
+                                />
+                                )
+                              </span>
+                            ),
+                            value: webhook.id,
+                            icon: webhook.avatarUrl,
+                          })) || []
+                        }
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
@@ -225,70 +210,68 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   />
                   <Stack>
                     {errors.webhook && (
-                      <FormErrorMessage>
-                        {errors.webhook.message}
-                      </FormErrorMessage>
+                      <FormErrorMessage>{errors.webhook.message}</FormErrorMessage>
                     )}
                     <FormHelperText>
-                      {t('features.feed.components.addDiscordWebhookConnectionDialog'
-                    + '.webhooksInputHelperText')}
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog" +
+                          ".webhooksInputHelperText"
+                      )}
                     </FormHelperText>
                     {discordWebhooksError && (
-                    <Alert status="error">
-                      <Box>
-                        <AlertTitle>
-                          {t('features.feed.components.'
-                        + 'addDiscordWebhookConnectionDialog.failedToGetWebhooks')}
-                        </AlertTitle>
-                        <AlertDescription>
-                          {discordWebhooksError.message}
-                        </AlertDescription>
-                      </Box>
-                    </Alert>
+                      <Alert status="error">
+                        <Box>
+                          <AlertTitle>
+                            {t(
+                              "features.feed.components." +
+                                "addDiscordWebhookConnectionDialog.failedToGetWebhooks"
+                            )}
+                          </AlertTitle>
+                          <AlertDescription>{discordWebhooksError.message}</AlertDescription>
+                        </Box>
+                      </Alert>
                     )}
                   </Stack>
                 </FormControl>
                 <FormControl>
                   <FormLabel>
-                    {t('features.feed.components'
-                    + '.addDiscordWebhookConnectionDialog.webhookNameLabel')}
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordWebhookConnectionDialog.webhookNameLabel"
+                    )}
                   </FormLabel>
                   <Controller
                     name="webhook.name"
                     control={control}
                     render={({ field }) => (
-                      <Input
-                        placeholder="Optional"
-                        {...field}
-                        isDisabled={isSubmitting}
-                      />
+                      <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
                     )}
                   />
                   <FormHelperText>
-                    {t('features.feed.components.addDiscordWebhookConnectionDialog'
-                  + '.webhookNameDescription')}
+                    {t(
+                      "features.feed.components.addDiscordWebhookConnectionDialog" +
+                        ".webhookNameDescription"
+                    )}
                   </FormHelperText>
                 </FormControl>
                 <FormControl>
                   <FormLabel>
-                    {t('features.feed.components.addDiscordWebhookConnectionDialog'
-                  + '.webhookIconUrlLabel')}
+                    {t(
+                      "features.feed.components.addDiscordWebhookConnectionDialog" +
+                        ".webhookIconUrlLabel"
+                    )}
                   </FormLabel>
                   <Controller
                     name="webhook.iconUrl"
                     control={control}
                     render={({ field }) => (
-                      <Input
-                        placeholder="Optional"
-                        {...field}
-                        isDisabled={isSubmitting}
-                      />
+                      <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
                     )}
                   />
                   <FormHelperText>
                     {t(
-                      'features.feed.components.addDiscordWebhookConnectionDialog'
-                    + '.webhookIconUrlDescription',
+                      "features.feed.components.addDiscordWebhookConnectionDialog" +
+                        ".webhookIconUrlDescription"
                     )}
                   </FormHelperText>
                 </FormControl>
@@ -297,12 +280,8 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
           </ModalBody>
           <ModalFooter>
             <HStack>
-              <Button
-                onClick={onClose}
-                variant="ghost"
-                disabled={isSubmitting}
-              >
-                {t('common.buttons.cancel')}
+              <Button onClick={onClose} variant="ghost" disabled={isSubmitting}>
+                {t("common.buttons.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -310,7 +289,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                 disabled={isSubmitting || !isDirty}
                 isLoading={isSubmitting}
               >
-                {t('common.buttons.save')}
+                {t("common.buttons.save")}
               </Button>
             </HStack>
           </ModalFooter>

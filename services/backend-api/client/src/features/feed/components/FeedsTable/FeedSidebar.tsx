@@ -10,39 +10,34 @@ import {
   SlideFade,
   Stack,
   Text,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router-dom';
-import { ExternalLinkIcon } from '@chakra-ui/icons';
-import { FiTrash } from 'react-icons/fi';
-import { useState } from 'react';
-import { CategoryText, Loading } from '@/components';
-import { useDeleteFeed, useFeed, useFeeds } from '../../hooks';
-import { RefreshButton } from '../RefreshButton';
-import RouteParams from '@/types/RouteParams';
-import { SettingsForm } from './SettingsForm';
-import { ErrorAlert } from '@/components/ErrorAlert';
-import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
-import { notifyError } from '@/utils/notifyError';
-import { Feed } from '@/types';
-import { FeedStatusTag } from './FeedStatusTag';
-import { WebhookForm } from './WebhookForm';
+} from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { Link, useParams } from "react-router-dom";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FiTrash } from "react-icons/fi";
+import { useState } from "react";
+import { CategoryText, Loading } from "@/components";
+import { useDeleteFeed, useFeed, useFeeds } from "../../hooks";
+import { RefreshButton } from "../RefreshButton";
+import RouteParams from "@/types/RouteParams";
+import { SettingsForm } from "./SettingsForm";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { DiscordChannelName } from "@/features/discordServers/components/DiscordChannelName";
+import { notifyError } from "@/utils/notifyError";
+import { Feed } from "@/types";
+import { FeedStatusTag } from "./FeedStatusTag";
+import { WebhookForm } from "./WebhookForm";
 
 interface Props {
   feedId?: string;
-  onDeleted: () => void
+  onDeleted: () => void;
 }
 
-export const FeedSidebar: React.FC<Props> = ({
-  feedId,
-  onDeleted,
-}) => {
+export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
   const { t } = useTranslation();
   const { serverId } = useParams<RouteParams>();
   const { refetch: refetchFeeds, updateCachedFeed } = useFeeds({ serverId });
-  const {
-    feed, status, error, updateCache,
-  } = useFeed({
+  const { feed, status, error, updateCache } = useFeed({
     feedId,
   });
   const { mutateAsync } = useDeleteFeed();
@@ -52,11 +47,15 @@ export const FeedSidebar: React.FC<Props> = ({
     return null;
   }
 
-  if (status === 'loading') {
-    return <Flex justifyContent="center" padding="20"><Loading /></Flex>;
+  if (status === "loading") {
+    return (
+      <Flex justifyContent="center" padding="20">
+        <Loading />
+      </Flex>
+    );
   }
 
-  if (status === 'error') {
+  if (status === "error") {
     return (
       <Box height="100%">
         <ErrorAlert description={error?.message} />
@@ -77,7 +76,7 @@ export const FeedSidebar: React.FC<Props> = ({
       await refetchFeeds();
       onDeleted();
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     } finally {
       setDeleting(false);
     }
@@ -102,12 +101,9 @@ export const FeedSidebar: React.FC<Props> = ({
         <Stack>
           <Stack>
             <Box>
-              <FeedStatusTag status={feed?.status || 'ok'} />
+              <FeedStatusTag status={feed?.status || "ok"} />
             </Box>
-            <Heading
-              size="lg"
-              marginRight={4}
-            >
+            <Heading size="lg" marginRight={4}>
               {feed?.title}
             </Heading>
           </Stack>
@@ -124,46 +120,35 @@ export const FeedSidebar: React.FC<Props> = ({
             {feed?.url}
           </Text>
         </Stack>
-        <Alert status="warning" hidden={feed && feed.status !== 'failing'}>
+        <Alert status="warning" hidden={feed && feed.status !== "failing"}>
           <Box>
-            <AlertTitle>
-              {t('pages.feed.connectingFailingTitle')}
-            </AlertTitle>
+            <AlertTitle>{t("pages.feed.connectingFailingTitle")}</AlertTitle>
             <AlertDescription display="block">
-              {t('pages.feed.connectingFailingDescription', {
-                reason: feed?.failReason || t('pages.feed.unknownReason'),
+              {t("pages.feed.connectingFailingDescription", {
+                reason: feed?.failReason || t("pages.feed.unknownReason"),
               })}
             </AlertDescription>
           </Box>
         </Alert>
-        <Alert status="error" hidden={feed && feed.status !== 'failed'}>
+        <Alert status="error" hidden={feed && feed.status !== "failed"}>
           <Box>
-            <AlertTitle>
-              {t('pages.feed.connectionFailureTitle')}
-            </AlertTitle>
+            <AlertTitle>{t("pages.feed.connectionFailureTitle")}</AlertTitle>
             <AlertDescription display="block">
-              {t('pages.feed.connectionFailureText', {
-                reason: feed?.failReason || t('pages.feed.unknownReason'),
+              {t("pages.feed.connectionFailureText", {
+                reason: feed?.failReason || t("pages.feed.unknownReason"),
               })}
               <Box marginTop="1rem">
-                {feed && (
-                  <RefreshButton
-                    feedId={feed.id}
-                    onSuccess={onFeedChanged}
-                  />
-                )}
+                {feed && <RefreshButton feedId={feed.id} onSuccess={onFeedChanged} />}
               </Box>
             </AlertDescription>
           </Box>
         </Alert>
-        <Alert status="warning" hidden={feed && feed.status !== 'disabled'}>
+        <Alert status="warning" hidden={feed && feed.status !== "disabled"}>
           <Box>
-            <AlertTitle>
-              {t('pages.feed.disabledTitle')}
-            </AlertTitle>
+            <AlertTitle>{t("pages.feed.disabledTitle")}</AlertTitle>
             <AlertDescription display="block">
-              {t('pages.feed.disabledDescription', {
-                reason: feed?.disabledReason || t('pages.feed.unknownReason'),
+              {t("pages.feed.disabledDescription", {
+                reason: feed?.disabledReason || t("pages.feed.unknownReason"),
               })}
             </AlertDescription>
           </Box>
@@ -171,43 +156,21 @@ export const FeedSidebar: React.FC<Props> = ({
       </Stack>
       <Stack>
         <Flex wrap="wrap">
-          <CategoryText
-            paddingRight="6"
-            paddingBottom="6"
-            title={t('pages.feed.channelLabel')}
-          >
-            {feed?.channel && (
-            <DiscordChannelName
-              channelId={feed.channel}
-              serverId={serverId}
-            />
-            )}
-
+          <CategoryText paddingRight="6" paddingBottom="6" title={t("pages.feed.channelLabel")}>
+            {feed?.channel && <DiscordChannelName channelId={feed.channel} serverId={serverId} />}
           </CategoryText>
-          <CategoryText
-            paddingRight="6"
-            paddingBottom="6"
-            title={t('pages.feed.refreshRateLabel')}
-          >
-            {feed && t('pages.feed.refreshRateValue', {
-              seconds: feed.refreshRateSeconds,
-            })}
+          <CategoryText paddingRight="6" paddingBottom="6" title={t("pages.feed.refreshRateLabel")}>
+            {feed &&
+              t("pages.feed.refreshRateValue", {
+                seconds: feed.refreshRateSeconds,
+              })}
           </CategoryText>
-          <CategoryText
-            paddingRight="6"
-            paddingBottom="0"
-            title={t('pages.feed.createdAtLabel')}
-          >
+          <CategoryText paddingRight="6" paddingBottom="0" title={t("pages.feed.createdAtLabel")}>
             {feed?.createdAt}
-
           </CategoryText>
         </Flex>
-        <Button
-          as={Link}
-          to={`${feedId}/message`}
-          leftIcon={<ExternalLinkIcon />}
-        >
-          {t('features.feed.components.sidebar.customizeButton')}
+        <Button as={Link} to={`${feedId}/message`} leftIcon={<ExternalLinkIcon />}>
+          {t("features.feed.components.sidebar.customizeButton")}
         </Button>
         <Button
           variant="outline"
@@ -216,30 +179,22 @@ export const FeedSidebar: React.FC<Props> = ({
           isDisabled={deleting}
           onClick={onDeleteFeed}
         >
-          {t('features.feed.components.sidebar.deleteButton')}
+          {t("features.feed.components.sidebar.deleteButton")}
         </Button>
       </Stack>
       {/* <Divider /> */}
       <Stack spacing={5}>
         <Stack spacing={5} divider={<Divider />}>
           <Heading as="h3" size="md" fontWeight="medium">
-            {t('features.feed.components.sidebar.settings')}
+            {t("features.feed.components.sidebar.settings")}
           </Heading>
-          <SettingsForm
-            feedId={feedId}
-            serverId={serverId}
-            onUpdated={onFeedChanged}
-          />
+          <SettingsForm feedId={feedId} serverId={serverId} onUpdated={onFeedChanged} />
         </Stack>
         <Stack spacing={5} divider={<Divider />}>
           <Heading as="h3" size="md" fontWeight="medium">
-            {t('features.feed.components.sidebar.webhookTitle')}
+            {t("features.feed.components.sidebar.webhookTitle")}
           </Heading>
-          <WebhookForm
-            feedId={feedId}
-            serverId={serverId}
-            onUpdated={onFeedChanged}
-          />
+          <WebhookForm feedId={feedId} serverId={serverId} onUpdated={onFeedChanged} />
         </Stack>
       </Stack>
     </Stack>

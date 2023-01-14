@@ -1,16 +1,14 @@
-import { Button } from '@chakra-ui/react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { notifyError } from '@/utils/notifyError';
-import { getServerBackup } from '../../api';
+import { Button } from "@chakra-ui/react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { notifyError } from "@/utils/notifyError";
+import { getServerBackup } from "../../api";
 
 interface Props {
-  serverId?: string
+  serverId?: string;
 }
 
-export const DiscordServerBackupButton: React.FC<Props> = ({
-  serverId,
-}) => {
+export const DiscordServerBackupButton: React.FC<Props> = ({ serverId }) => {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
 
@@ -25,32 +23,23 @@ export const DiscordServerBackupButton: React.FC<Props> = ({
       const blob = await getServerBackup({
         serverId,
       });
-      const url = window.URL.createObjectURL(
-        new Blob([blob]),
-      );
-      const link = document.createElement('a');
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute(
-        'download',
-        `${serverId}-${Math.round(new Date().getTime() / 1000)}.json`,
-      );
+      link.setAttribute("download", `${serverId}-${Math.round(new Date().getTime() / 1000)}.json`);
       document.body.appendChild(link);
       link.click();
       link?.parentNode?.removeChild(link);
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     } finally {
       setDownloading(false);
     }
   };
 
   return (
-    <Button
-      onClick={onClick}
-      isLoading={downloading}
-      disabled={downloading || !serverId}
-    >
-      {t('features.discordServers.components.backupButton.text')}
+    <Button onClick={onClick} isLoading={downloading} disabled={downloading || !serverId}>
+      {t("features.discordServers.components.backupButton.text")}
     </Button>
   );
 };

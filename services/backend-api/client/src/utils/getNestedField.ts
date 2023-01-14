@@ -1,10 +1,10 @@
 export const getNestedField = <T>(object: Record<string, any>, key: string): T | undefined => {
   // Check if object is an actual JSON object
-  if (typeof object !== 'object' || Array.isArray(object)) {
+  if (typeof object !== "object" || Array.isArray(object)) {
     return undefined;
   }
 
-  const keys = key.split('.');
+  const keys = key.split(".");
 
   let result = object;
 

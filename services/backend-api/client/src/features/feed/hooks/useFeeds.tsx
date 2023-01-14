@@ -1,44 +1,42 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { pick } from 'lodash';
-import { getFeeds, GetFeedsOutput } from '../api';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { useDiscordServerAccessStatus } from '@/features/discordServers';
-import { FeedSummary } from '../types';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { pick } from "lodash";
+import { getFeeds, GetFeedsOutput } from "../api";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { useDiscordServerAccessStatus } from "@/features/discordServers";
+import { FeedSummary } from "../types";
 
 interface Props {
-  serverId?: string
-  initialLimit?: number
+  serverId?: string;
+  initialLimit?: number;
 }
 
 export const useFeeds = ({ serverId, initialLimit }: Props) => {
   const [limit, setLimit] = useState(initialLimit || 10);
   const [offset, setOffset] = useState(0);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
   const { data: accessData } = useDiscordServerAccessStatus({ serverId });
   const queryClient = useQueryClient();
 
-  const queryKey = ['feeds', {
-    serverId,
-    limit,
-    offset,
-    search: search || '',
-  }];
+  const queryKey = [
+    "feeds",
+    {
+      serverId,
+      limit,
+      offset,
+      search: search || "",
+    },
+  ];
 
-  const {
-    data,
-    status,
-    error,
-    isFetching,
-    isPreviousData,
-    isLoading,
-    refetch,
-  } = useQuery<GetFeedsOutput, ApiAdapterError>(
+  const { data, status, error, isFetching, isPreviousData, isLoading, refetch } = useQuery<
+    GetFeedsOutput,
+    ApiAdapterError
+  >(
     queryKey,
     async () => {
       if (!serverId) {
-        throw new Error('Missing server ID when getting feeds');
+        throw new Error("Missing server ID when getting feeds");
       }
 
       const result = await getFeeds({
@@ -56,7 +54,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
       onError: () => {
         setHasErrored(true);
       },
-    },
+    }
   );
 
   const isFetchingNewPage = isLoading || (isFetching && isPreviousData);
@@ -97,7 +95,7 @@ export const useFeeds = ({ serverId, initialLimit }: Props) => {
     isFetchingNewPage,
     isFetching,
     refetch,
-    search: search || '',
+    search: search || "",
     updateCachedFeed,
   };
 };

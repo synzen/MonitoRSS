@@ -1,45 +1,49 @@
 module.exports = {
-  "root": true,
-  "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "@typescript-eslint",
-    "unused-imports"
-  ],
-  "extends": [
-    'airbnb',
-    'airbnb-typescript',
+  root: true,
+  parser: "@typescript-eslint/parser",
+  plugins: ["@typescript-eslint", "unused-imports"],
+  extends: [
+    "airbnb",
+    "airbnb-typescript",
+    "plugin:prettier/recommended",
     // "eslint:recommended",
     // "plugin:@typescript-eslint/recommended"
   ],
-  "parserOptions": {
+  parserOptions: {
     project: "./tsconfig.eslint.json",
   },
-  "rules": {
+  rules: {
+    "prettier/prettier": [
+      "error",
+      {
+        endOfLine: "auto",
+      },
+    ],
     "linebreak-style": 0,
     /** Generic rules */
     "padding-line-between-statements": [
       "error",
       {
-        "blankLine": 'always',
-        "prev": '*',
-        "next": 'block-like'
+        blankLine: "always",
+        prev: "*",
+        next: "block-like",
       },
       {
-        "blankLine": 'always',
-        "prev": 'block-like',
-        "next": '*'
-      }
+        blankLine: "always",
+        prev: "block-like",
+        next: "*",
+      },
     ],
     "newline-before-return": "error",
-    'curly': 'error',
+    curly: "error",
     "eol-last": ["error"],
-    "max-len": ["error", { "code": 100 }],
+    // "max-len": ["error", { "code": 100 }],
     /** React rules */
     "react/jsx-uses-react": "off",
     "react/react-in-jsx-scope": "off",
-    "react/function-component-definition": [2, { "namedComponents": "arrow-function" }],
+    "react/function-component-definition": [2, { namedComponents: "arrow-function" }],
     "react/require-default-props": "off",
-    "react/jsx-newline": [1, { "prevent": true }],
+    "react/jsx-newline": [1, { prevent: true }],
     "react/jsx-props-no-multi-spaces": 1,
     "react/prop-types": "off",
     "@typescript-eslint/no-use-before-define": "off",
@@ -49,22 +53,22 @@ module.exports = {
     "unused-imports/no-unused-vars": [
       "warn",
       {
-        "vars": "all",
-        "varsIgnorePattern": "^_",
-        "args": "after-used",
-        "argsIgnorePattern": "^_"
-      }
+        vars: "all",
+        varsIgnorePattern: "^_",
+        args: "after-used",
+        argsIgnorePattern: "^_",
+      },
     ],
     "import/prefer-default-export": "off",
     "import/extensions": [
       "error",
       {
-        "js": "never",
-        "jsx": "never",
-        "ts": "never",
-        "tsx": "never"
-      }
-   ],
-   "react/jsx-props-no-spreading": "off",
-  }
-}
+        js: "never",
+        jsx: "never",
+        ts: "never",
+        tsx: "never",
+      },
+    ],
+    "react/jsx-props-no-spreading": "off",
+  },
+};

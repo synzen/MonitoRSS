@@ -1,6 +1,4 @@
-import {
-  array, InferType, object, string,
-} from 'yup';
+import { array, InferType, object, string } from "yup";
 
 const Placeholder = object({
   name: string().required(),

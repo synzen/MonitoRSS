@@ -1,19 +1,12 @@
-import {
-  array,
-  boolean,
-  InferType,
-  number,
-  object,
-  string,
-} from 'yup';
-import { FeedConnectionSchema } from './FeedConnection';
-import { FeedEmbedSchema } from './FeedEmbed';
+import { array, boolean, InferType, number, object, string } from "yup";
+import { FeedConnectionSchema } from "./FeedConnection";
+import { FeedEmbedSchema } from "./FeedEmbed";
 
 export const FeedSchema = object({
   // From FeedSumarySchema, copied over since TypeScript doesn't work well with yup's .concat()
   id: string().required(),
   title: string().required(),
-  status: string().oneOf(['ok', 'failed', 'disabled', 'failing']).required(),
+  status: string().oneOf(["ok", "failed", "disabled", "failing"]).required(),
   url: string().required(),
   channel: string().required(),
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
@@ -21,10 +14,12 @@ export const FeedSchema = object({
 
   // Extra details
   failReason: string().optional(),
-  filters: array(object({
-    category: string().required(),
-    value: string().required(),
-  })).required(),
+  filters: array(
+    object({
+      category: string().required(),
+      value: string().required(),
+    })
+  ).required(),
   refreshRateSeconds: number().required(),
   text: string().defined(),
   embeds: array(FeedEmbedSchema).required(),

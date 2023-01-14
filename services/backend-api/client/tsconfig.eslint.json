@@ -5,6 +5,8 @@
     "src/**/*.ts",
     "src/**/*.jsx",
     "src/**/*.js",
-    "src/**/*.test.{ts,tsx,js,jsx}"
-  ],
+    "src/**/*.test.{ts,tsx,js,jsx}",
+    ".eslintrc.js",
+    "public/**/*.js"
+  ]
 }

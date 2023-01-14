@@ -1,6 +1,4 @@
-import {
-  FormControl, FormLabel, Input, Stack,
-} from '@chakra-ui/react';
+import { FormControl, FormLabel, Input, Stack } from "@chakra-ui/react";
 
 const EmbedTitleInput = () => (
   <Stack spacing="4">

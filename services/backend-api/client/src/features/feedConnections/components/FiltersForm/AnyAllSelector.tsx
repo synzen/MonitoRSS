@@ -1,14 +1,11 @@
-import { Button, ButtonGroup } from '@chakra-ui/react';
-import { LogicalExpressionOperator } from '../../types';
+import { Button, ButtonGroup } from "@chakra-ui/react";
+import { LogicalExpressionOperator } from "../../types";
 
-const {
-  And,
-  Or,
-} = LogicalExpressionOperator;
+const { And, Or } = LogicalExpressionOperator;
 
 interface Props {
-  value?: LogicalExpressionOperator
-  onChange: (value: LogicalExpressionOperator) => void
+  value?: LogicalExpressionOperator;
+  onChange: (value: LogicalExpressionOperator) => void;
 }
 
 export const AnyAllSelector = ({ value, onChange }: Props) => {
@@ -24,15 +21,15 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
     <ButtonGroup size="sm" isAttached variant="outline">
       <Button
         onClick={onSelectAnd}
-        colorScheme={value === And ? 'blue' : undefined}
-        variant={value === And ? 'solid' : 'outline'}
+        colorScheme={value === And ? "blue" : undefined}
+        variant={value === And ? "solid" : "outline"}
       >
         ALL
       </Button>
       <Button
         onClick={onSelectOr}
-        colorScheme={value === Or ? 'blue' : undefined}
-        variant={value === Or ? 'solid' : 'outline'}
+        colorScheme={value === Or ? "blue" : undefined}
+        variant={value === Or ? "solid" : "outline"}
       >
         ANY
       </Button>

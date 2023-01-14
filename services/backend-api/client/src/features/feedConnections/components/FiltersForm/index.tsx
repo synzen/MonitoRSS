@@ -1,11 +1,7 @@
-import {
-  Button, HStack, Stack,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import {
-  FormProvider, useForm, useWatch,
-} from 'react-hook-form';
-import React from 'react';
+import { Button, HStack, Stack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
+import React from "react";
 import {
   FilterExpressionType,
   LogicalExpressionOperator,
@@ -13,25 +9,22 @@ import {
   RelationalExpressionLeftOperandType,
   RelationalExpressionOperator,
   RelationalExpressionRightOperandType,
-} from '../../types';
-import { LogicalExpressionForm } from './LogicalExpressionForm';
+} from "../../types";
+import { LogicalExpressionForm } from "./LogicalExpressionForm";
 
 interface FormData {
-  expression: LogicalFilterExpression | null
+  expression: LogicalFilterExpression | null;
 }
 
 interface Props {
-  expression?: LogicalFilterExpression | null
-  onSave: (expression: LogicalFilterExpression | null) => Promise<void>
+  expression?: LogicalFilterExpression | null;
+  onSave: (expression: LogicalFilterExpression | null) => Promise<void>;
 }
 
-export const FiltersForm = ({
-  expression = null,
-  onSave,
-}: Props) => {
+export const FiltersForm = ({ expression = null, onSave }: Props) => {
   const { t } = useTranslation();
   const formMethods = useForm<FormData>({
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: {
       expression,
     },
@@ -39,10 +32,7 @@ export const FiltersForm = ({
   const {
     handleSubmit,
     control,
-    formState: {
-      isDirty,
-      isSubmitting,
-    },
+    formState: { isDirty, isSubmitting },
     setValue,
     resetField,
     reset,
@@ -50,16 +40,16 @@ export const FiltersForm = ({
   // @ts-ignore cyclical references in typescript types
   const watchedExpression = useWatch({
     control,
-    name: 'expression',
+    name: "expression",
   });
 
   const onClickReset = (e?: React.MouseEvent) => {
     e?.preventDefault();
-    resetField('expression');
+    resetField("expression");
   };
 
   const onDeletedExpression = async () => {
-    setValue('expression', null, {
+    setValue("expression", null, {
       shouldDirty: true,
     });
   };
@@ -72,24 +62,30 @@ export const FiltersForm = ({
   };
 
   const addInitialExpression = () => {
-    setValue('expression', {
-      type: FilterExpressionType.Logical,
-      op: LogicalExpressionOperator.And,
-      children: [{
-        type: FilterExpressionType.Relational,
-        op: RelationalExpressionOperator.Equals,
-        left: {
-          type: RelationalExpressionLeftOperandType.Article,
-          value: '',
-        },
-        right: {
-          type: RelationalExpressionRightOperandType.String,
-          value: '',
-        },
-      }],
-    }, {
-      shouldDirty: true,
-    });
+    setValue(
+      "expression",
+      {
+        type: FilterExpressionType.Logical,
+        op: LogicalExpressionOperator.And,
+        children: [
+          {
+            type: FilterExpressionType.Relational,
+            op: RelationalExpressionOperator.Equals,
+            left: {
+              type: RelationalExpressionLeftOperandType.Article,
+              value: "",
+            },
+            right: {
+              type: RelationalExpressionRightOperandType.String,
+              value: "",
+            },
+          },
+        ],
+      },
+      {
+        shouldDirty: true,
+      }
+    );
   };
 
   if (!watchedExpression) {
@@ -97,10 +93,8 @@ export const FiltersForm = ({
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSaveExpression)}>
           <Stack>
-            <Button
-              onClick={addInitialExpression}
-            >
-              {t('features.feedConnections.components.filtersForm.addNewFiltersButtonText')}
+            <Button onClick={addInitialExpression}>
+              {t("features.feedConnections.components.filtersForm.addNewFiltersButtonText")}
             </Button>
             <HStack justifyContent="flex-end">
               <Button
@@ -109,7 +103,7 @@ export const FiltersForm = ({
                 isLoading={isSubmitting}
                 disabled={!isDirty || isSubmitting}
               >
-                {t('common.buttons.save')}
+                {t("common.buttons.save")}
               </Button>
             </HStack>
           </Stack>
@@ -122,19 +116,12 @@ export const FiltersForm = ({
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSaveExpression)}>
         <Stack>
-          <LogicalExpressionForm
-            onDeleted={onDeletedExpression}
-            prefix="expression."
-          />
+          <LogicalExpressionForm onDeleted={onDeletedExpression} prefix="expression." />
           <HStack justifyContent="flex-end">
             {isDirty && (
-            <Button
-              variant="outline"
-              onClick={onClickReset}
-              type="reset"
-            >
-              {t('common.buttons.reset')}
-            </Button>
+              <Button variant="outline" onClick={onClickReset} type="reset">
+                {t("common.buttons.reset")}
+              </Button>
             )}
             <Button
               colorScheme="blue"
@@ -142,7 +129,7 @@ export const FiltersForm = ({
               disabled={!isDirty || isSubmitting}
               type="submit"
             >
-              {t('common.buttons.save')}
+              {t("common.buttons.save")}
             </Button>
           </HStack>
         </Stack>

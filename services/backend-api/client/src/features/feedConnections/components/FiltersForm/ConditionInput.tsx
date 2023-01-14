@@ -1,29 +1,18 @@
-import {
-  FormControl,
-  FormErrorMessage,
-  Input,
-} from '@chakra-ui/react';
-import {
-  Controller, FieldError, useFormContext,
-} from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { getNestedField } from '../../../../utils/getNestedField';
+import { FormControl, FormErrorMessage, Input } from "@chakra-ui/react";
+import { Controller, FieldError, useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { getNestedField } from "../../../../utils/getNestedField";
 
 interface Props {
-  controllerName: string
-  placeholder?: string
+  controllerName: string;
+  placeholder?: string;
 }
 
-export const ConditionInput = ({
-  controllerName,
-  placeholder,
-}: Props) => {
+export const ConditionInput = ({ controllerName, placeholder }: Props) => {
   const { t } = useTranslation();
   const {
     control,
-    formState: {
-      errors,
-    },
+    formState: { errors },
   } = useFormContext();
   // Using bracket notation on the errors object will not work since the prefix is a string
   const error = getNestedField<FieldError>(errors, controllerName);
@@ -36,15 +25,11 @@ export const ConditionInput = ({
         rules={{ required: true }}
         render={({ field }) => (
           <>
-            <Input
-              flexGrow={1}
-              placeholder={placeholder}
-              {...field}
-            />
-            {error?.type === 'required' && (
-            <FormErrorMessage>
-              {t('features.feedConnections.components.filtersForm.valueIsRequired')}
-            </FormErrorMessage>
+            <Input flexGrow={1} placeholder={placeholder} {...field} />
+            {error?.type === "required" && (
+              <FormErrorMessage>
+                {t("features.feedConnections.components.filtersForm.valueIsRequired")}
+              </FormErrorMessage>
             )}
           </>
         )}

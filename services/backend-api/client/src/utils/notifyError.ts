@@ -1,5 +1,5 @@
-import { createStandaloneToast, UseToastOptions } from '@chakra-ui/react';
-import theme from './theme';
+import { createStandaloneToast, UseToastOptions } from "@chakra-ui/react";
+import theme from "./theme";
 
 const { toast } = createStandaloneToast({
   theme,
@@ -12,11 +12,11 @@ interface Options {
 export const notifyError = (
   title: string,
   error: Error | string | React.ReactNode,
-  options?: Options,
+  options?: Options
 ) => {
-  let description: string | React.ReactNode = '';
+  let description: string | React.ReactNode = "";
 
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     description = error;
   } else if (error instanceof Error) {
     description = error.message;
@@ -27,8 +27,8 @@ export const notifyError = (
   toast({
     title,
     description,
-    status: 'error',
-    position: 'top',
+    status: "error",
+    position: "top",
     ...options,
   });
 };

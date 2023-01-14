@@ -13,19 +13,19 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
-} from '@chakra-ui/react';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { InferType, object, string } from 'yup';
-import React, { useEffect, useRef } from 'react';
-import { DiscordServerSearchSelectv2, useDiscordServerChannels } from '@/features/discordServers';
-import { ThemedSelect } from '@/components';
+} from "@chakra-ui/react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { InferType, object, string } from "yup";
+import React, { useEffect, useRef } from "react";
+import { DiscordServerSearchSelectv2, useDiscordServerChannels } from "@/features/discordServers";
+import { ThemedSelect } from "@/components";
 
 const formSchema = object({
   name: string().optional(),
   serverId: string().optional(),
-  channelId: string().when('serverId', ([serverId], schema) => {
+  channelId: string().when("serverId", ([serverId], schema) => {
     if (serverId) {
       return schema.required();
     }
@@ -37,11 +37,11 @@ const formSchema = object({
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
-  onUpdate: (data: FormData) => Promise<void>
-  defaultValues: Required<FormData>
-  onClose: () => void
-  isOpen: boolean
-  onCloseRef: React.RefObject<HTMLButtonElement>
+  onUpdate: (data: FormData) => Promise<void>;
+  defaultValues: Required<FormData>;
+  onClose: () => void;
+  isOpen: boolean;
+  onCloseRef: React.RefObject<HTMLButtonElement>;
 }
 
 export const EditConnectionChannelDialog: React.FC<Props> = ({
@@ -56,22 +56,18 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
-    formState: {
-      isDirty,
-      errors,
-      isSubmitting,
-    },
+    formState: { isDirty, errors, isSubmitting },
     watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    mode: 'all',
+    mode: "all",
     defaultValues,
   });
-  const serverId = watch('serverId');
+  const serverId = watch("serverId");
   const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
   const initialRef = useRef<HTMLInputElement>(null);
 
-  const loadingChannels = status === 'loading';
+  const loadingChannels = status === "loading";
 
   const onSubmit = async ({ channelId, name }: FormData) => {
     await onUpdate({ channelId, name });
@@ -93,7 +89,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
-          {t('features.feed.components.updateDiscordChannelConnectionDialog.title')}
+          {t("features.feed.components.updateDiscordChannelConnectionDialog.title")}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
@@ -101,29 +97,27 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
             <Stack spacing={4}>
               <FormControl isInvalid={!!errors.name}>
                 <FormLabel>
-                  {t('features.feed.components.addDiscordChannelConnectionDialog.formNameLabel')}
+                  {t("features.feed.components.addDiscordChannelConnectionDialog.formNameLabel")}
                 </FormLabel>
                 <Controller
                   name="name"
                   control={control}
-                  render={({ field }) => (
-                    <Input {...field} ref={initialRef} />
-                  )}
+                  render={({ field }) => <Input {...field} ref={initialRef} />}
                 />
-                {errors.name && (
-                  <FormErrorMessage>
-                    {errors.name.message}
-                  </FormErrorMessage>
-                )}
+                {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                 <FormHelperText>
-                  {t('features.feed.components'
-                  + '.addDiscordChannelConnectionDialog.formNameDescription')}
+                  {t(
+                    "features.feed.components" +
+                      ".addDiscordChannelConnectionDialog.formNameDescription"
+                  )}
                 </FormHelperText>
               </FormControl>
               <FormControl isInvalid={!!errors.serverId}>
                 <FormLabel>
-                  {t('features.feed.components'
-                    + '.addDiscordChannelConnectionDialog.formServerLabel')}
+                  {t(
+                    "features.feed.components" +
+                      ".addDiscordChannelConnectionDialog.formServerLabel"
+                  )}
                 </FormLabel>
                 <Controller
                   name="serverId"
@@ -132,16 +126,17 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                     <DiscordServerSearchSelectv2
                       {...field}
                       onChange={(id) => field.onChange(id)}
-                      value={field.value || ''}
+                      value={field.value || ""}
                     />
-
                   )}
                 />
               </FormControl>
               <FormControl isInvalid={!!errors.channelId}>
                 <FormLabel>
-                  {t('features.feed.components'
-                      + '.addDiscordChannelConnectionDialog.formChannelLabel')}
+                  {t(
+                    "features.feed.components" +
+                      ".addDiscordChannelConnectionDialog.formChannelLabel"
+                  )}
                 </FormLabel>
                 <Controller
                   name="channelId"
@@ -151,31 +146,26 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                       {...field}
                       loading={loadingChannels}
                       isDisabled={isSubmitting || loadingChannels || !!channelsError}
-                      options={data?.results.map((channel) => ({
-                        label: channel.name,
-                        value: channel.id,
-                      })) || []}
+                      options={
+                        data?.results.map((channel) => ({
+                          label: channel.name,
+                          value: channel.id,
+                        })) || []
+                      }
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       value={field.value}
                     />
                   )}
                 />
-                <FormErrorMessage>
-                  {errors.channelId?.message}
-                </FormErrorMessage>
+                <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
               </FormControl>
             </Stack>
           </form>
         </ModalBody>
         <ModalFooter>
-          <Button
-            variant="ghost"
-            mr={3}
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            {t('common.buttons.cancel')}
+          <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+            {t("common.buttons.cancel")}
           </Button>
           <Button
             colorScheme="blue"
@@ -184,7 +174,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
             isLoading={isSubmitting}
             isDisabled={!isDirty || isSubmitting}
           >
-            {t('common.buttons.save')}
+            {t("common.buttons.save")}
           </Button>
         </ModalFooter>
       </ModalContent>

@@ -1,9 +1,9 @@
-import { array, InferType, object } from 'yup';
-import { FeedArticlesSchema } from '../types';
-import fetchRest from '../../../utils/fetchRest';
+import { array, InferType, object } from "yup";
+import { FeedArticlesSchema } from "../types";
+import fetchRest from "../../../utils/fetchRest";
 
 export interface GetFeedArticlesInput {
-  feedId: string
+  feedId: string;
 }
 
 const GetFeedArticlesSchema = object({
@@ -13,14 +13,11 @@ const GetFeedArticlesSchema = object({
 export type GetFeedArticlesOutput = InferType<typeof GetFeedArticlesSchema>;
 
 export const getFeedArticles = async (
-  options: GetFeedArticlesInput,
+  options: GetFeedArticlesInput
 ): Promise<GetFeedArticlesOutput> => {
-  const res = await fetchRest(
-    `/api/v1/feeds/${options.feedId}/articles`,
-    {
-      validateSchema: GetFeedArticlesSchema,
-    },
-  );
+  const res = await fetchRest(`/api/v1/feeds/${options.feedId}/articles`, {
+    validateSchema: GetFeedArticlesSchema,
+  });
 
   return res as GetFeedArticlesOutput;
 };

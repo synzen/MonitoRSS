@@ -1,16 +1,14 @@
-import { Button } from '@chakra-ui/react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { notifyError } from '@/utils/notifyError';
-import { getFeedArticlesRawDump } from '../../api';
+import { Button } from "@chakra-ui/react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { notifyError } from "@/utils/notifyError";
+import { getFeedArticlesRawDump } from "../../api";
 
 interface Props {
-  feedId?: string
+  feedId?: string;
 }
 
-export const FeedRawDumpButton: React.FC<Props> = ({
-  feedId,
-}) => {
+export const FeedRawDumpButton: React.FC<Props> = ({ feedId }) => {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
 
@@ -25,32 +23,23 @@ export const FeedRawDumpButton: React.FC<Props> = ({
       const blob = await getFeedArticlesRawDump({
         feedId,
       });
-      const url = window.URL.createObjectURL(
-        new Blob([blob]),
-      );
-      const link = document.createElement('a');
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute(
-        'download',
-        'raw-placeholders.txt',
-      );
+      link.setAttribute("download", "raw-placeholders.txt");
       document.body.appendChild(link);
       link.click();
       link?.parentNode?.removeChild(link);
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     } finally {
       setDownloading(false);
     }
   };
 
   return (
-    <Button
-      onClick={onClick}
-      isLoading={downloading}
-      disabled={downloading || !feedId}
-    >
-      {t('features.feed.components.rawDumpButton.text')}
+    <Button onClick={onClick} isLoading={downloading} disabled={downloading || !feedId}>
+      {t("features.feed.components.rawDumpButton.text")}
     </Button>
   );
 };

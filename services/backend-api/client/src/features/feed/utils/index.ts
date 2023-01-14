@@ -1,1 +1,1 @@
-export * from './getErrorMessageForArticleRequestStatus';
+export * from "./getErrorMessageForArticleRequestStatus";

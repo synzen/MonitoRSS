@@ -1,22 +1,22 @@
-import { FeedConnectionType } from '../types';
+import { FeedConnectionType } from "../types";
 
 const getConnectionPathByType = (type: FeedConnectionType) => {
   switch (type) {
     case FeedConnectionType.DiscordChannel:
-      return '/discord-channel-connections';
+      return "/discord-channel-connections";
     case FeedConnectionType.DiscordWebhook:
-      return '/discord-webhook-connections';
+      return "/discord-webhook-connections";
     default:
-      return '';
+      return "";
   }
 };
 
 export const pages = {
-  userFeeds: () => '/feeds',
+  userFeeds: () => "/feeds",
   userFeed: (feedId: string) => `/feeds/${feedId}`,
   userFeedConnection: (data: {
-    feedId: string,
-    connectionType: FeedConnectionType,
-    connectionId: string,
+    feedId: string;
+    connectionType: FeedConnectionType;
+    connectionId: string;
   }) => `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}`,
 };

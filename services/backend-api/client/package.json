@@ -51,6 +51,7 @@
     "@vitejs/plugin-react": "^2.2.0",
     "eslint": "^8.2.0",
     "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jsx-a11y": "^6.5.1",
     "eslint-plugin-react": "^7.28.0",
@@ -58,6 +59,7 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "happy-dom": "^6.0.4",
     "msw": "^0.47.3",
+    "prettier": "2.8.2",
     "typescript": "^4.5.4",
     "vite": "^3.2.4",
     "vitest": "^0.25.2"

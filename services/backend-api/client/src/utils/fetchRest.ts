@@ -1,9 +1,7 @@
-import {
-  Schema, ValidationError,
-} from 'yup';
-import ApiAdapterError from './ApiAdapterError';
-import { getStandardErrorCodeMessage } from './getStandardErrorCodeMessage copy';
-import getStatusCodeErrorMessage from './getStatusCodeErrorMessage';
+import { Schema, ValidationError } from "yup";
+import ApiAdapterError from "./ApiAdapterError";
+import { getStandardErrorCodeMessage } from "./getStandardErrorCodeMessage copy";
+import getStatusCodeErrorMessage from "./getStatusCodeErrorMessage";
 
 interface StandardApiError {
   /**
@@ -40,12 +38,12 @@ interface StandardApiErrorResponse {
 }
 
 interface FetchOptions<T> {
-  requestOptions?: RequestInit
-  validateSchema?: Schema<T>
-  skipJsonParse?: boolean
+  requestOptions?: RequestInit;
+  validateSchema?: Schema<T>;
+  skipJsonParse?: boolean;
 }
 
-const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promise<T | Response> => {
+const fetchRest = async <T>(url: string, fetchOptions?: FetchOptions<T>): Promise<T | Response> => {
   const headers = determineHeaders(fetchOptions?.requestOptions);
   const res = await fetch(url, {
     ...fetchOptions?.requestOptions,
@@ -69,8 +67,9 @@ const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promis
       return validationResult;
     } catch (err) {
       const yupErr = err as ValidationError;
+      // eslint-disable-next-line no-console
       console.error(url, yupErr.errors);
-      throw new ApiAdapterError('API contract violation detected. Try again later.');
+      throw new ApiAdapterError("API contract violation detected. Try again later.");
     }
   }
 
@@ -82,10 +81,10 @@ const fetchRest = async<T> (url: string, fetchOptions?: FetchOptions<T>): Promis
 };
 
 const determineHeaders = (requestOptions?: RequestInit) => {
-  const headers: RequestInit['headers'] = {};
+  const headers: RequestInit["headers"] = {};
 
-  if (['POST', 'PUT', 'PATCH', 'GET'].includes(requestOptions?.method?.toUpperCase() || '')) {
-    headers['Content-Type'] = 'application/json';
+  if (["POST", "PUT", "PATCH", "GET"].includes(requestOptions?.method?.toUpperCase() || "")) {
+    headers["Content-Type"] = "application/json";
   }
 
   return {
@@ -117,7 +116,7 @@ const handleStatusCode = async (res: Response) => {
     });
   } else if (res.status === 400) {
     // Legacy error formatting
-    throw new ApiAdapterError(json.message || 'Unknown error', {
+    throw new ApiAdapterError(json.message || "Unknown error", {
       statusCode: res.status,
     });
   } else {

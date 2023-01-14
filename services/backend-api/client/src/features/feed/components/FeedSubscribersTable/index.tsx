@@ -1,28 +1,17 @@
-import {
-  Box,
-  HStack,
-  IconButton,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-} from '@chakra-ui/react';
-import { FiTrash } from 'react-icons/fi';
-import { useState } from 'react';
-import { Loading } from '@/components';
-import { useDiscordServerRoles } from '@/features/discordServers';
-import { useDeleteFeedSubscriber, useFeedSubscribers } from '../../hooks';
-import { notifyError } from '@/utils/notifyError';
+import { Box, HStack, IconButton, Table, Tbody, Td, Text, Th, Thead, Tr } from "@chakra-ui/react";
+import { FiTrash } from "react-icons/fi";
+import { useState } from "react";
+import { Loading } from "@/components";
+import { useDiscordServerRoles } from "@/features/discordServers";
+import { useDeleteFeedSubscriber, useFeedSubscribers } from "../../hooks";
+import { notifyError } from "@/utils/notifyError";
 
 interface Props {
-  selectedSubscriberId: string
-  onSelectedSubscriber: (subscriberId: string) => void
-  onDeletedSubscriber: (subscriberId: string) => void
+  selectedSubscriberId: string;
+  onSelectedSubscriber: (subscriberId: string) => void;
+  onDeletedSubscriber: (subscriberId: string) => void;
   serverId?: string;
-  feedId?: string
+  feedId?: string;
 }
 
 export const FeedSubscribersTable: React.FC<Props> = ({
@@ -32,17 +21,9 @@ export const FeedSubscribersTable: React.FC<Props> = ({
   serverId,
   feedId,
 }) => {
-  const {
-    status: rolesStatus,
-    getRolebyId,
-  } = useDiscordServerRoles({ serverId });
-  const {
-    data: feedSubscribersData,
-  } = useFeedSubscribers({ feedId });
-  const {
-    mutateAsync: deletSubscriber,
-    status: deletingStatus,
-  } = useDeleteFeedSubscriber();
+  const { status: rolesStatus, getRolebyId } = useDiscordServerRoles({ serverId });
+  const { data: feedSubscribersData } = useFeedSubscribers({ feedId });
+  const { mutateAsync: deletSubscriber, status: deletingStatus } = useDeleteFeedSubscriber();
   const [deletingId, setDeletingId] = useState<string>();
 
   const onDeleteSubscriber = async (subscriberId: string) => {
@@ -58,7 +39,7 @@ export const FeedSubscribersTable: React.FC<Props> = ({
       });
       onDeletedSubscriber(subscriberId);
     } catch (err) {
-      notifyError('Failed to delete subscriber', err as Error);
+      notifyError("Failed to delete subscriber", err as Error);
     } finally {
       setDeletingId(undefined);
     }
@@ -84,10 +65,10 @@ export const FeedSubscribersTable: React.FC<Props> = ({
         {(feedSubscribersData?.results || []).map((subscriber) => {
           const details = {
             name: subscriber.discordId,
-            color: '#000000',
+            color: "#000000",
           };
 
-          if (subscriber.type === 'role') {
+          if (subscriber.type === "role") {
             const role = getRolebyId(subscriber.discordId);
             details.name = `@${role?.name || details.name}`;
             details.color = role?.color || details.color;
@@ -98,15 +79,15 @@ export const FeedSubscribersTable: React.FC<Props> = ({
               key={subscriber.id}
               tabIndex={0}
               position="relative"
-              bg={selectedSubscriberId === subscriber.id ? 'gray.700' : undefined}
+              bg={selectedSubscriberId === subscriber.id ? "gray.700" : undefined}
               _hover={{
-                bg: 'gray.700',
-                cursor: 'pointer',
-                boxShadow: 'outline',
+                bg: "gray.700",
+                cursor: "pointer",
+                boxShadow: "outline",
               }}
               _focus={{
-                boxShadow: 'outline',
-                outline: 'none',
+                boxShadow: "outline",
+                outline: "none",
               }}
               onClick={() => onSelectedSubscriber(subscriber.id)}
             >
@@ -115,19 +96,8 @@ export const FeedSubscribersTable: React.FC<Props> = ({
               </Td>
               <Td>
                 <HStack alignItems="center">
-                  <Box
-                    borderRadius="50%"
-                    height={6}
-                    width={6}
-                    background={details.color}
-                  />
-                  {rolesStatus === 'loading'
-                    ? <Loading />
-                    : (
-                      <Text>
-                        {details.name}
-                      </Text>
-                    )}
+                  <Box borderRadius="50%" height={6} width={6} background={details.color} />
+                  {rolesStatus === "loading" ? <Loading /> : <Text>{details.name}</Text>}
                 </HStack>
               </Td>
               <Td isNumeric>
@@ -136,7 +106,7 @@ export const FeedSubscribersTable: React.FC<Props> = ({
                   aria-label="Delete filter"
                   size="sm"
                   icon={<FiTrash />}
-                  isLoading={deletingId === subscriber.id && deletingStatus === 'loading'}
+                  isLoading={deletingId === subscriber.id && deletingStatus === "loading"}
                   variant="ghost"
                   onClick={(e) => {
                     e.preventDefault();

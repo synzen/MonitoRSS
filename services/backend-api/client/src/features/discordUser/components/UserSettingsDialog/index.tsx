@@ -15,43 +15,31 @@ import {
   ModalOverlay,
   Stack,
   Text,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { useCallback, useEffect } from 'react';
-import { useDiscordUserMe } from '../../hooks';
-import { updateDiscordMeSupporter } from '../../api';
-import { notifySuccess } from '@/utils/notifySuccess';
-import { useDiscordServers } from '@/features/discordServers';
+} from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { useForm, useFieldArray } from "react-hook-form";
+import { useCallback, useEffect } from "react";
+import { useDiscordUserMe } from "../../hooks";
+import { updateDiscordMeSupporter } from "../../api";
+import { notifySuccess } from "@/utils/notifySuccess";
+import { useDiscordServers } from "@/features/discordServers";
 
 interface FormValues {
-  serverIds: string[]
+  serverIds: string[];
 }
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export const UserSettingsDialog: React.FC<Props> = ({
-  isOpen,
-  onClose,
-}) => {
-  const {
-    data: userMe,
-  } = useDiscordUserMe();
+export const UserSettingsDialog: React.FC<Props> = ({ isOpen, onClose }) => {
+  const { data: userMe } = useDiscordUserMe();
   const { refetch: refetchServers } = useDiscordServers();
-  const {
-    register,
-    control,
-    handleSubmit,
-    setValue,
-    reset,
-    formState,
-  } = useForm<FormValues>();
+  const { register, control, handleSubmit, setValue, reset, formState } = useForm<FormValues>();
   const { fields } = useFieldArray({
     control,
-    name: 'serverIds' as never,
+    name: "serverIds" as never,
   });
   const { t } = useTranslation();
 
@@ -60,7 +48,7 @@ export const UserSettingsDialog: React.FC<Props> = ({
       return [];
     }
 
-    const initArray = new Array(userMe.supporter.maxGuilds).fill('');
+    const initArray = new Array(userMe.supporter.maxGuilds).fill("");
 
     for (let i = 0; i < userMe.supporter.guilds.length; i += 1) {
       initArray[i] = userMe.supporter.guilds[i];
@@ -70,7 +58,7 @@ export const UserSettingsDialog: React.FC<Props> = ({
   }, [userMe]);
 
   useEffect(() => {
-    setValue('serverIds', getDefaultFormValue());
+    setValue("serverIds", getDefaultFormValue());
   }, [userMe, getDefaultFormValue]);
 
   const onSubmit = async (data: FormValues) => {
@@ -86,7 +74,7 @@ export const UserSettingsDialog: React.FC<Props> = ({
     await refetchServers();
 
     reset(data);
-    notifySuccess(t('features.discordUsers.components.settingsDialog.serversUpdatedSuccess'));
+    notifySuccess(t("features.discordUsers.components.settingsDialog.serversUpdatedSuccess"));
     onClose();
   };
 
@@ -101,41 +89,33 @@ export const UserSettingsDialog: React.FC<Props> = ({
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>
-          {t('features.discordUsers.components.settingsDialog.title')}
-        </ModalHeader>
+        <ModalHeader>{t("features.discordUsers.components.settingsDialog.title")}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           {userMe && userMe.supporter && (
-          <Stack spacing="4">
-            <Text>
-              {t('features.discordUsers.components.settingsDialog.description')}
-            </Text>
-            <form id="supporter-servers" onSubmit={handleSubmit(onSubmit)}>
-              <Stack>
-                {fields.map((field, index) => (
-                  <FormControl key={field.id}>
-                    <Input
-                      {...register(`serverIds.${index}`)}
-                      placeholder={
-                        t('features.discordUsers.components.settingsDialog.serverInputPlaceholder')
-                      }
-                    />
-                  </FormControl>
-                ))}
-              </Stack>
-              <Divider />
-            </form>
-          </Stack>
+            <Stack spacing="4">
+              <Text>{t("features.discordUsers.components.settingsDialog.description")}</Text>
+              <form id="supporter-servers" onSubmit={handleSubmit(onSubmit)}>
+                <Stack>
+                  {fields.map((field, index) => (
+                    <FormControl key={field.id}>
+                      <Input
+                        {...register(`serverIds.${index}`)}
+                        placeholder={t(
+                          "features.discordUsers.components.settingsDialog.serverInputPlaceholder"
+                        )}
+                      />
+                    </FormControl>
+                  ))}
+                </Stack>
+                <Divider />
+              </form>
+            </Stack>
           )}
         </ModalBody>
         <ModalFooter>
           <HStack>
-            <Button
-              onClick={onReset}
-              variant="ghost"
-              disabled={formState.isSubmitting}
-            >
+            <Button onClick={onReset} variant="ghost" disabled={formState.isSubmitting}>
               Cancel
             </Button>
             <Button

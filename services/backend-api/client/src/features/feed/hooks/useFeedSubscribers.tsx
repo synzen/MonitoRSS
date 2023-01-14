@@ -1,21 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getFeedSubscribers, GetFeedSubscribersOutput } from '../api';
+import { useQuery } from "@tanstack/react-query";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { getFeedSubscribers, GetFeedSubscribersOutput } from "../api";
 
 interface Props {
-  feedId?: string
+  feedId?: string;
 }
 
 export const useFeedSubscribers = ({ feedId }: Props) => {
-  const {
-    data, status, error, refetch,
-  } = useQuery<GetFeedSubscribersOutput, ApiAdapterError | Error>(
-    ['feed-subscribers', {
-      feedId,
-    }],
+  const { data, status, error, refetch } = useQuery<
+    GetFeedSubscribersOutput,
+    ApiAdapterError | Error
+  >(
+    [
+      "feed-subscribers",
+      {
+        feedId,
+      },
+    ],
     async () => {
       if (!feedId) {
-        throw new Error('Missing feed selection when getting subscribers');
+        throw new Error("Missing feed selection when getting subscribers");
       }
 
       return getFeedSubscribers({
@@ -24,7 +28,7 @@ export const useFeedSubscribers = ({ feedId }: Props) => {
     },
     {
       enabled: !!feedId,
-    },
+    }
   );
 
   return {

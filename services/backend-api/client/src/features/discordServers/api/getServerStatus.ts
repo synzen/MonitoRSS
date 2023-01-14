@@ -1,5 +1,5 @@
-import { boolean, InferType, object } from 'yup';
-import fetchRest from '../../../utils/fetchRest';
+import { boolean, InferType, object } from "yup";
+import fetchRest from "../../../utils/fetchRest";
 
 export interface GetServerStatusInput {
   serverId: string;
@@ -14,14 +14,11 @@ const GetServerStatusOutputSchema = object({
 export type GetServerStatusOutput = InferType<typeof GetServerStatusOutputSchema>;
 
 export const getServerStatus = async (
-  options: GetServerStatusInput,
+  options: GetServerStatusInput
 ): Promise<GetServerStatusOutput> => {
-  const res = await fetchRest(
-    `/api/v1/discord-servers/${options.serverId}/status`,
-    {
-      validateSchema: GetServerStatusOutputSchema,
-    },
-  );
+  const res = await fetchRest(`/api/v1/discord-servers/${options.serverId}/status`, {
+    validateSchema: GetServerStatusOutputSchema,
+  });
 
   return res as GetServerStatusOutput;
 };

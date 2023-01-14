@@ -10,24 +10,20 @@ import {
   AlertDescription,
   Stack,
   Button,
-} from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { UserFeedsTable } from '../features/feed/components/UserFeedsTable';
-import { useDiscordUserMe } from '../features/discordUser';
-import { useUserFeeds } from '../features/feed';
-import { pages } from '../constants';
-import { BoxConstrained } from '../components';
+} from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
+import { useDiscordUserMe } from "../features/discordUser";
+import { useUserFeeds } from "../features/feed";
+import { pages } from "../constants";
+import { BoxConstrained } from "../components";
 
 export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const {
-    data: discordUserMe,
-  } = useDiscordUserMe();
-  const {
-    data: userFeeds,
-  } = useUserFeeds({
+  const { data: discordUserMe } = useDiscordUserMe();
+  const { data: userFeeds } = useUserFeeds({
     initialLimit: 10,
   });
 
@@ -39,34 +35,30 @@ export const UserFeeds: React.FC = () => {
     <BoxConstrained.Wrapper>
       <BoxConstrained.Container paddingTop={10} spacing={6}>
         <Stack>
-          <Flex
-            justifyContent="space-between"
-            alignItems="center"
-          >
+          <Flex justifyContent="space-between" alignItems="center">
             <Flex alignItems="center" gap={4}>
-              <Heading size="lg">{t('pages.userFeeds.title')}</Heading>
-              <Badge colorScheme="purple" fontSize="lg">{t('pages.userFeeds.newBadge')}</Badge>
+              <Heading size="lg">{t("pages.userFeeds.title")}</Heading>
+              <Badge colorScheme="purple" fontSize="lg">
+                {t("pages.userFeeds.newBadge")}
+              </Badge>
             </Flex>
             <Box>
-              {discordUserMe?.maxUserFeeds !== undefined && userFeeds?.total !== undefined
-            && (
-              <HStack>
-                <Text fontSize="xl" fontWeight={600}>
-                  {userFeeds.total}
-                </Text>
-                <Text fontSize="xl" fontWeight={600}>
-                  /
-                </Text>
-                <Text fontSize="xl" fontWeight={600}>
-                  {discordUserMe.maxUserFeeds}
-                </Text>
-              </HStack>
-            )}
+              {discordUserMe?.maxUserFeeds !== undefined && userFeeds?.total !== undefined && (
+                <HStack>
+                  <Text fontSize="xl" fontWeight={600}>
+                    {userFeeds.total}
+                  </Text>
+                  <Text fontSize="xl" fontWeight={600}>
+                    /
+                  </Text>
+                  <Text fontSize="xl" fontWeight={600}>
+                    {discordUserMe.maxUserFeeds}
+                  </Text>
+                </HStack>
+              )}
             </Box>
           </Flex>
-          <Text>
-            {t('pages.userFeeds.description')}
-          </Text>
+          <Text>{t("pages.userFeeds.description")}</Text>
         </Stack>
         <Alert
           borderRadius="md"
@@ -74,25 +66,13 @@ export const UserFeeds: React.FC = () => {
           flexDirection="column"
           alignItems="flex-start"
         >
-          <AlertTitle>
-            {t('pages.userFeeds.supporterOnlyTitle')}
-          </AlertTitle>
-          <AlertDescription>
-            {t('pages.userFeeds.supporterOnlyDescription')}
-          </AlertDescription>
-          <Button
-            marginTop={4}
-            variant="outline"
-            onClick={() => navigate('/')}
-            size="sm"
-          >
+          <AlertTitle>{t("pages.userFeeds.supporterOnlyTitle")}</AlertTitle>
+          <AlertDescription>{t("pages.userFeeds.supporterOnlyDescription")}</AlertDescription>
+          <Button marginTop={4} variant="outline" onClick={() => navigate("/")} size="sm">
             Back to legacy feeds
-
           </Button>
         </Alert>
-        <UserFeedsTable
-          onSelectedFeedId={onSelectedFeed}
-        />
+        <UserFeedsTable onSelectedFeedId={onSelectedFeed} />
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
   );

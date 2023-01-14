@@ -1,18 +1,16 @@
-import { InferType, object, string } from 'yup';
-import {
-  Button, HStack, Stack, Textarea,
-} from '@chakra-ui/react';
-import { Controller, useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { notifyError } from '@/utils/notifyError';
-import { useUpdateFeed } from '../../hooks/useUpdateFeed';
+import { InferType, object, string } from "yup";
+import { Button, HStack, Stack, Textarea } from "@chakra-ui/react";
+import { Controller, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { notifyError } from "@/utils/notifyError";
+import { useUpdateFeed } from "../../hooks/useUpdateFeed";
 
 interface Props {
-  feedId: string
-  text: string
-  onUpdated: () => Promise<any>
+  feedId: string;
+  text: string;
+  onUpdated: () => Promise<any>;
 }
 
 const FormSchema = object({
@@ -31,17 +29,14 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
     control,
     reset,
     setValue,
-    formState: {
-      isDirty,
-      isSubmitting,
-    },
+    formState: { isDirty, isSubmitting },
   } = useForm<FormValues>({
     resolver: yupResolver(FormSchema),
     defaultValues,
   });
 
   useEffect(() => {
-    setValue('text', text);
+    setValue("text", text);
   }, [text]);
 
   const onUpdatedFeed = async (values: FormValues) => {
@@ -57,7 +52,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
         text: updatedFeed.result.text,
       });
     } catch (error) {
-      notifyError('Failed to update feed', error as Error);
+      notifyError("Failed to update feed", error as Error);
     }
   };
 
@@ -67,9 +62,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
         <Controller
           name="text"
           control={control}
-          render={({ field }) => (
-            <Textarea spellCheck={false} {...field} />
-          )}
+          render={({ field }) => <Textarea spellCheck={false} {...field} />}
         />
         <HStack justifyContent="flex-end">
           <Button
@@ -77,7 +70,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
             onClick={() => reset(defaultValues)}
             variant="ghost"
           >
-            {t('pages.message.textSectionResetButton')}
+            {t("pages.message.textSectionResetButton")}
           </Button>
           <Button
             type="submit"
@@ -85,7 +78,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
             isLoading={isSubmitting}
             disabled={isSubmitting || !isDirty}
           >
-            {t('pages.message.textSectionSaveButton')}
+            {t("pages.message.textSectionSaveButton")}
           </Button>
         </HStack>
       </Stack>

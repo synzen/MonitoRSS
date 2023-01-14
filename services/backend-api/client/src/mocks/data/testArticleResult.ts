@@ -1,4 +1,4 @@
-import { SendTestArticleDeliveryStatus, SendTestArticleResult } from '@/types';
+import { SendTestArticleDeliveryStatus, SendTestArticleResult } from "@/types";
 
 export const mockSendTestArticleResult: SendTestArticleResult = {
   status: SendTestArticleDeliveryStatus.Success,

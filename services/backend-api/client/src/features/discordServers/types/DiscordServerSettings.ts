@@ -1,4 +1,4 @@
-import { InferType, object, string } from 'yup';
+import { InferType, object, string } from "yup";
 
 export const DiscordServerSettingsSchema = object({
   dateFormat: string().required(),

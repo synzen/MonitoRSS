@@ -1,20 +1,28 @@
-import { Stack, Text } from '@chakra-ui/react';
+import { Stack, Text } from "@chakra-ui/react";
 import {
-  FiMessageCircle, FiFilter, FiAtSign, FiSliders, FiCopy, FiGitPullRequest,
-} from 'react-icons/fi';
-import { useTranslation } from 'react-i18next';
-import { SidebarLink } from '../../../../components/SidebarLink';
-import { FeedSearchSelect } from '../FeedSearchSelect';
+  FiMessageCircle,
+  FiFilter,
+  FiAtSign,
+  FiSliders,
+  FiCopy,
+  FiGitPullRequest,
+} from "react-icons/fi";
+import { useTranslation } from "react-i18next";
+import { SidebarLink } from "../../../../components/SidebarLink";
+import { FeedSearchSelect } from "../FeedSearchSelect";
 
 interface Props {
-  currentPath: string
-  serverId: string
-  feedId?: string
-  onChangePath: (path: string) => void
+  currentPath: string;
+  serverId: string;
+  feedId?: string;
+  onChangePath: (path: string) => void;
 }
 
 export const SidebarFeedLinks: React.FC<Props> = ({
-  currentPath, serverId, feedId, onChangePath,
+  currentPath,
+  serverId,
+  feedId,
+  onChangePath,
 }) => {
   const { t } = useTranslation();
 
@@ -42,7 +50,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
           letterSpacing="widest"
           color="gray.500"
         >
-          {t('components.sidebar.feed.manage')}
+          {t("components.sidebar.feed.manage")}
         </Text>
         <Stack spacing="2" paddingBottom="4">
           <FeedSearchSelect />
@@ -60,7 +68,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={!!feedId && currentPath === paths.FEED_MESSAGES}
             onClick={() => onClickNavLink(paths.FEED_MESSAGES)}
           >
-            {t('components.sidebar.feed.message')}
+            {t("components.sidebar.feed.message")}
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}
@@ -68,7 +76,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={!!feedId && currentPath === paths.FEED_FILTERS}
             onClick={() => onClickNavLink(paths.FEED_FILTERS)}
           >
-            {t('components.sidebar.feed.filters')}
+            {t("components.sidebar.feed.filters")}
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}
@@ -76,7 +84,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={!!feedId && currentPath === paths.FEED_COMPARISONS}
             onClick={() => onClickNavLink(paths.FEED_COMPARISONS)}
           >
-            {t('components.sidebar.feed.comparisons')}
+            {t("components.sidebar.feed.comparisons")}
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}
@@ -84,7 +92,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={!!feedId && currentPath === paths.FEED_SUBSCRIBERS}
             onClick={() => onClickNavLink(paths.FEED_SUBSCRIBERS)}
           >
-            {t('components.sidebar.feed.subscribers')}
+            {t("components.sidebar.feed.subscribers")}
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}
@@ -92,7 +100,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={!!feedId && currentPath === paths.FEED_MISC_OPTIONS}
             onClick={() => onClickNavLink(paths.FEED_MISC_OPTIONS)}
           >
-            {t('components.sidebar.feed.miscoptions')}
+            {t("components.sidebar.feed.miscoptions")}
           </SidebarLink>
           <SidebarLink
             disabled={!feedId}
@@ -100,7 +108,7 @@ export const SidebarFeedLinks: React.FC<Props> = ({
             active={!!feedId && currentPath === paths.FEED_CLONE}
             onClick={() => onClickNavLink(paths.FEED_CLONE)}
           >
-            {t('components.sidebar.feed.clone')}
+            {t("components.sidebar.feed.clone")}
           </SidebarLink>
         </Stack>
       </Stack>

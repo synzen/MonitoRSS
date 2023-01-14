@@ -1,10 +1,10 @@
-import { object } from 'yup';
-import fetchRest from '../../../utils/fetchRest';
-import { FeedConnectionSchema, FeedDiscordWebhookConnection } from '@/types';
+import { object } from "yup";
+import fetchRest from "../../../utils/fetchRest";
+import { FeedConnectionSchema, FeedDiscordWebhookConnection } from "@/types";
 
 export interface GetDiscordWebhookConnectionInput {
   feedId: string;
-  connectionId: string
+  connectionId: string;
 }
 
 const GetFeedConnectionOutputSchema = object({
@@ -12,17 +12,17 @@ const GetFeedConnectionOutputSchema = object({
 }).required();
 
 export type GetDiscordWebhookConnectionOutput = {
-  result: FeedDiscordWebhookConnection
+  result: FeedDiscordWebhookConnection;
 };
 
 export const getDiscordWebhookConnection = async (
-  options: GetDiscordWebhookConnectionInput,
+  options: GetDiscordWebhookConnectionInput
 ): Promise<GetDiscordWebhookConnectionOutput> => {
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-webhooks/${options.connectionId}`,
     {
       validateSchema: GetFeedConnectionOutputSchema,
-    },
+    }
   );
 
   return res as GetDiscordWebhookConnectionOutput;

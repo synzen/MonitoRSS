@@ -1,1 +1,1 @@
-export * from './getLogout';
+export * from "./getLogout";

@@ -1,10 +1,8 @@
-import {
-  InferType, number, object,
-} from 'yup';
-import fetchRest from '../../../utils/fetchRest';
+import { InferType, number, object } from "yup";
+import fetchRest from "../../../utils/fetchRest";
 
 export interface GetArticleDailyLimitInput {
-  feedId: string
+  feedId: string;
 }
 
 const GetArticleDailyLimitSchema = object({
@@ -17,14 +15,11 @@ const GetArticleDailyLimitSchema = object({
 export type GetArticleDailyLimitOutput = InferType<typeof GetArticleDailyLimitSchema>;
 
 export const getArticleDailyLimit = async (
-  options: GetArticleDailyLimitInput,
+  options: GetArticleDailyLimitInput
 ): Promise<GetArticleDailyLimitOutput> => {
-  const res = await fetchRest(
-    `/api/v1/user-feeds/${options.feedId}/daily-limit`,
-    {
-      validateSchema: GetArticleDailyLimitSchema,
-    },
-  );
+  const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/daily-limit`, {
+    validateSchema: GetArticleDailyLimitSchema,
+  });
 
   return res as GetArticleDailyLimitOutput;
 };

@@ -1,1 +1,1 @@
-export * from './embedRequiredFields';
+export * from "./embedRequiredFields";

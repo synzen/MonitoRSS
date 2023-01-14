@@ -1,19 +1,19 @@
-import fetchRest from '../../../utils/fetchRest';
+import fetchRest from "../../../utils/fetchRest";
 
 export interface DeleteDiscordWebhookConnectionInput {
   feedId: string;
-  connectionId: string
+  connectionId: string;
 }
 
 export const deleteDiscordWebhookConnection = async (
-  options: DeleteDiscordWebhookConnectionInput,
+  options: DeleteDiscordWebhookConnectionInput
 ): Promise<void> => {
   await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-webhooks/${options.connectionId}`,
     {
       requestOptions: {
-        method: 'DELETE',
+        method: "DELETE",
       },
-    },
+    }
   );
 };

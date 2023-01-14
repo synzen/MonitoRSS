@@ -1,45 +1,28 @@
-import {
-  Box,
-  Divider,
-  Flex,
-  Heading,
-  SlideFade,
-  Stack,
-  Text,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
-import { Loading } from '@/components';
-import { useFeedSubscriber } from '../../hooks';
-import { ErrorAlert } from '@/components/ErrorAlert';
-import { useDiscordServerRoles } from '@/features/discordServers';
-import { FiltersTable } from '../FiltersTable';
-import { useUpdateFeedSubscriber } from '../../hooks/useUpdateFeedSubscriber';
-import { notifyError } from '@/utils/notifyError';
+import { Box, Divider, Flex, Heading, SlideFade, Stack, Text } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
+import { Loading } from "@/components";
+import { useFeedSubscriber } from "../../hooks";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { useDiscordServerRoles } from "@/features/discordServers";
+import { FiltersTable } from "../FiltersTable";
+import { useUpdateFeedSubscriber } from "../../hooks/useUpdateFeedSubscriber";
+import { notifyError } from "@/utils/notifyError";
 
 interface Props {
-  serverId?: string
+  serverId?: string;
   feedId?: string;
-  subscriberId?: string
+  subscriberId?: string;
 }
 
-export const SubscriberSidebar: React.FC<Props> = ({
-  serverId,
-  feedId,
-  subscriberId,
-}) => {
+export const SubscriberSidebar: React.FC<Props> = ({ serverId, feedId, subscriberId }) => {
   const { t } = useTranslation();
-  const {
-    data, status, error,
-  } = useFeedSubscriber({
+  const { data, status, error } = useFeedSubscriber({
     feedId,
     subscriberId,
   });
   const { getRolebyId } = useDiscordServerRoles({ serverId });
-  const {
-    mutateAsync,
-    status: updatingStatus,
-  } = useUpdateFeedSubscriber();
+  const { mutateAsync, status: updatingStatus } = useUpdateFeedSubscriber();
 
   const filtersData = useMemo(() => {
     const filters = data?.filters || [];
@@ -50,7 +33,7 @@ export const SubscriberSidebar: React.FC<Props> = ({
     }));
   }, [data]);
 
-  const onFiltersChanged = async (filters: Array<{ category: string, value: string }>) => {
+  const onFiltersChanged = async (filters: Array<{ category: string; value: string }>) => {
     if (!feedId || !subscriberId) {
       return;
     }
@@ -64,11 +47,11 @@ export const SubscriberSidebar: React.FC<Props> = ({
         },
       });
     } catch (err) {
-      notifyError('Failed to update', err as Error);
+      notifyError("Failed to update", err as Error);
     }
   };
 
-  if (status === 'error') {
+  if (status === "error") {
     return (
       <Box height="100%">
         <ErrorAlert description={error?.message} />
@@ -76,8 +59,12 @@ export const SubscriberSidebar: React.FC<Props> = ({
     );
   }
 
-  if (status === 'loading' || !data) {
-    return <Flex justifyContent="center" padding="20"><Loading /></Flex>;
+  if (status === "loading" || !data) {
+    return (
+      <Flex justifyContent="center" padding="20">
+        <Loading />
+      </Flex>
+    );
   }
 
   return (
@@ -92,24 +79,24 @@ export const SubscriberSidebar: React.FC<Props> = ({
     >
       <Stack>
         <Text color="gray.500">
-          {data.type === 'role'
-            ? t('pages.subscribers.roleSubscriberTitle')
-            : t('pages.subscribers.userSubscriberTitle')}
+          {data.type === "role"
+            ? t("pages.subscribers.roleSubscriberTitle")
+            : t("pages.subscribers.userSubscriberTitle")}
         </Text>
         <Heading>
-          {data.type === 'role' && (getRolebyId(data.discordId)?.name || data.discordId)}
-          {data.type === 'user' && data.discordId}
+          {data.type === "role" && (getRolebyId(data.discordId)?.name || data.discordId)}
+          {data.type === "user" && data.discordId}
         </Heading>
       </Stack>
       <Divider />
       <Stack spacing={6}>
         <Heading size="md" as="h2">
-          {t('pages.subscribers.subscriberFiltersTitle')}
+          {t("pages.subscribers.subscriberFiltersTitle")}
         </Heading>
         <FiltersTable
           data={filtersData}
           onFiltersChanged={onFiltersChanged}
-          isUpdating={updatingStatus === 'loading'}
+          isUpdating={updatingStatus === "loading"}
         />
       </Stack>
     </Stack>

@@ -1,12 +1,10 @@
-import {
-  array, boolean, object, string,
-} from 'yup';
+import { array, boolean, object, string } from "yup";
 
 export const FeedEmbedSchema = object({
   title: string().optional(),
   description: string().optional(),
   url: string().optional(),
-  timestamp: string().oneOf(['now', 'article']).optional(),
+  timestamp: string().oneOf(["now", "article"]).optional(),
   footer: object({
     text: string().optional(),
     iconUrl: string().optional(),
@@ -23,9 +21,11 @@ export const FeedEmbedSchema = object({
     iconUrl: string().optional(),
   }).optional(),
   color: string().optional(),
-  fields: array(object({
-    name: string(),
-    value: string(),
-    inline: boolean().optional(),
-  })).optional(),
+  fields: array(
+    object({
+      name: string(),
+      value: string(),
+      inline: boolean().optional(),
+    })
+  ).optional(),
 }).required();

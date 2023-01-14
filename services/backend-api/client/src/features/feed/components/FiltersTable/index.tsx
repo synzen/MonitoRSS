@@ -1,20 +1,28 @@
 /* eslint-disable react/no-unstable-nested-components */
-import { ArrowDownIcon, ArrowUpIcon } from '@chakra-ui/icons';
+import { ArrowDownIcon, ArrowUpIcon } from "@chakra-ui/icons";
 import {
-  Button, Checkbox, Flex, Stack, Table, Tbody, Td, Th, Thead, Tr, Box,
-} from '@chakra-ui/react';
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  Column, useRowSelect, useSortBy, useTable,
-} from 'react-table';
-import { AddFilterDialog } from '../AddFilterDialog';
+  Button,
+  Checkbox,
+  Flex,
+  Stack,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  Box,
+} from "@chakra-ui/react";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Column, useRowSelect, useSortBy, useTable } from "react-table";
+import { AddFilterDialog } from "../AddFilterDialog";
 
 interface Props {
-  data: Array<{ category: string, value: string }>
-  onFiltersChanged: (data: Array<{ category: string, value: string }>) => void
-  isUpdating?: boolean
-  isLoading?: boolean
+  data: Array<{ category: string; value: string }>;
+  onFiltersChanged: (data: Array<{ category: string; value: string }>) => void;
+  isUpdating?: boolean;
+  isLoading?: boolean;
 }
 
 export const FiltersTable: React.FC<Props> = ({
@@ -25,72 +33,65 @@ export const FiltersTable: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
-  const columns = useMemo<Column<{ category: string, value: string }>[]>(() => [{
-    Header: t('pages.filters.tableCategory') as string,
-    accessor: 'category',
-  }, {
-    Header: t('pages.filters.tableValue') as string,
-    accessor: 'value',
-  }], []);
-
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    prepareRow,
-    rows,
-    selectedFlatRows,
-  } = useTable(
-    {
-      columns,
-      data,
-    },
-    useSortBy,
-    useRowSelect,
-    (hooks) => {
-      hooks.visibleColumns.push((cols) => [
-        {
-          id: 'selection',
-          Header: ({ getToggleAllRowsSelectedProps }) => {
-            const {
-              indeterminate, title, checked, onChange,
-            } = getToggleAllRowsSelectedProps();
-
-            return (
-              <Checkbox
-                isIndeterminate={indeterminate}
-                title={title}
-                isChecked={checked}
-                onChange={onChange}
-              />
-            );
-          },
-          // @ts-ignore
-          Cell: ({ row }) => {
-            const {
-              indeterminate, title, checked, onChange,
-            } = row.getToggleRowSelectedProps();
-
-            return (
-              <Checkbox
-                isIndeterminate={indeterminate}
-                title={title}
-                isChecked={checked}
-                onChange={onChange}
-              />
-            );
-          },
-        },
-        ...cols,
-      ]);
-    },
+  const columns = useMemo<Column<{ category: string; value: string }>[]>(
+    () => [
+      {
+        Header: t("pages.filters.tableCategory") as string,
+        accessor: "category",
+      },
+      {
+        Header: t("pages.filters.tableValue") as string,
+        accessor: "value",
+      },
+    ],
+    []
   );
 
-  const onAddFilters = async (addedFilters: Array<{ category: string, value: string }>) => {
-    onFiltersChanged([
-      ...addedFilters,
-      ...data,
-    ]);
+  const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows, selectedFlatRows } =
+    useTable(
+      {
+        columns,
+        data,
+      },
+      useSortBy,
+      useRowSelect,
+      (hooks) => {
+        hooks.visibleColumns.push((cols) => [
+          {
+            id: "selection",
+            Header: ({ getToggleAllRowsSelectedProps }) => {
+              const { indeterminate, title, checked, onChange } = getToggleAllRowsSelectedProps();
+
+              return (
+                <Checkbox
+                  isIndeterminate={indeterminate}
+                  title={title}
+                  isChecked={checked}
+                  onChange={onChange}
+                />
+              );
+            },
+            // @ts-ignore
+            Cell: ({ row }) => {
+              const { indeterminate, title, checked, onChange } = row.getToggleRowSelectedProps();
+
+              return (
+                <Checkbox
+                  isIndeterminate={indeterminate}
+                  title={title}
+                  isChecked={checked}
+                  onChange={onChange}
+                />
+              );
+            },
+          },
+          ...cols,
+        ]);
+      }
+    );
+
+  const onAddFilters = async (addedFilters: Array<{ category: string; value: string }>) => {
+    onFiltersChanged([...addedFilters, ...data]);
   };
 
   const onRemoveFilters = async () => {
@@ -117,7 +118,7 @@ export const FiltersTable: React.FC<Props> = ({
             marginRight="4"
             marginBottom="2"
           >
-            {t('pages.filters.removeSelectedFilters')}
+            {t("pages.filters.removeSelectedFilters")}
           </Button>
           <AddFilterDialog onSubmit={onAddFilters} />
         </Flex>
@@ -137,17 +138,9 @@ export const FiltersTable: React.FC<Props> = ({
                   {headerGroup.headers.map((column) => (
                     <Th {...column.getHeaderProps(column.getSortByToggleProps())}>
                       <Flex alignItems="center" userSelect="none">
-                        {column.render('Header')}
-                        {column.isSorted && column.isSortedDesc && (
-                        <ArrowDownIcon
-                          marginLeft="1"
-                        />
-                        )}
-                        {column.isSorted && !column.isSortedDesc && (
-                        <ArrowUpIcon
-                          marginLeft="1"
-                        />
-                        )}
+                        {column.render("Header")}
+                        {column.isSorted && column.isSortedDesc && <ArrowDownIcon marginLeft="1" />}
+                        {column.isSorted && !column.isSortedDesc && <ArrowUpIcon marginLeft="1" />}
                       </Flex>
                     </Th>
                   ))}
@@ -161,9 +154,7 @@ export const FiltersTable: React.FC<Props> = ({
                 return (
                   <Tr {...row.getRowProps()}>
                     {row.cells.map((cell) => (
-                      <Td {...cell.getCellProps()}>
-                        {cell.render('Cell')}
-                      </Td>
+                      <Td {...cell.getCellProps()}>{cell.render("Cell")}</Td>
                     ))}
                   </Tr>
                 );

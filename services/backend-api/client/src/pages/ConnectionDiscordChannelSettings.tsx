@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
   Alert,
   AlertDescription,
@@ -23,18 +23,14 @@ import {
   TabPanels,
   Tabs,
   useDisclosure,
-} from '@chakra-ui/react';
-import { useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  useParams, Link as RouterLink, useNavigate, useLocation,
-} from 'react-router-dom';
-import {
-  BoxConstrained, CategoryText, ConfirmModal, DashboardContentV2,
-} from '../components';
-import { pages } from '../constants';
-import { DiscordChannelName } from '../features/discordServers';
-import { useUserFeed } from '../features/feed';
+} from "@chakra-ui/react";
+import { useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
+import { BoxConstrained, CategoryText, ConfirmModal, DashboardContentV2 } from "../components";
+import { pages } from "../constants";
+import { DiscordChannelName } from "../features/discordServers";
+import { useUserFeed } from "../features/feed";
 import {
   DeleteConnectionButton,
   FilterExpression,
@@ -46,19 +42,19 @@ import {
   MessageTabSection,
   ConnectionDisabledAlert,
   EditConnectionChannelDialog,
-} from '../features/feedConnections';
-import { FeedConnectionDisabledCode, FeedConnectionType } from '../types';
-import { DiscordMessageFormData } from '../types/discord';
-import RouteParams from '../types/RouteParams';
-import { notifyError } from '../utils/notifyError';
-import { notifySuccess } from '../utils/notifySuccess';
+} from "../features/feedConnections";
+import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
+import { DiscordMessageFormData } from "../types/discord";
+import RouteParams from "../types/RouteParams";
+import { notifyError } from "../utils/notifyError";
+import { notifySuccess } from "../utils/notifySuccess";
 
 const getDefaultTabIndex = (search: string) => {
-  if (search.includes('view=message')) {
+  if (search.includes("view=message")) {
     return 0;
   }
 
-  if (search.includes('view=filters')) {
+  if (search.includes("view=filters")) {
     return 1;
   }
 
@@ -88,10 +84,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
     feedId,
   });
   const { t } = useTranslation();
-  const {
-    mutateAsync,
-    status: updateStatus,
-  } = useUpdateDiscordChannelConnection();
+  const { mutateAsync, status: updateStatus } = useUpdateDiscordChannelConnection();
 
   const serverId = connection?.details.channel.guildId;
 
@@ -105,14 +98,16 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
         feedId,
         connectionId,
         details: {
-          filters: filters ? {
-            expression: filters,
-          } : null,
+          filters: filters
+            ? {
+                expression: filters,
+              }
+            : null,
         },
       });
-      notifySuccess(t('common.success.savedChanges'));
+      notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t('common.errors.failedToSave'), err as Error);
+      notifyError(t("common.errors.failedToSave"), err as Error);
       throw err;
     }
   };
@@ -131,13 +126,13 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           embeds: data.embeds,
         },
       });
-      notifySuccess(t('common.success.savedChanges'));
+      notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
 
-  const onChannelUpdated = async (data: { channelId?: string, name?: string }) => {
+  const onChannelUpdated = async (data: { channelId?: string; name?: string }) => {
     if (!feedId || !connectionId) {
       return;
     }
@@ -165,9 +160,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           disabledCode: FeedConnectionDisabledCode.Manual,
         },
       });
-      notifySuccess(t('common.success.savedChanges'));
+      notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
 
@@ -184,19 +179,16 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           disabledCode: null,
         },
       });
-      notifySuccess(t('common.success.savedChanges'));
+      notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
 
   return (
     <DashboardContentV2
       error={feedError || connectionError}
-      loading={
-        feedStatus === 'loading'
-          || connectionStatus === 'loading'
-      }
+      loading={feedStatus === "loading" || connectionStatus === "loading"}
     >
       <EditConnectionChannelDialog
         onCloseRef={actionsButtonRef}
@@ -210,32 +202,19 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
         onClose={editOnClose}
       />
       <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
-        <BoxConstrained.Wrapper
-          paddingTop={10}
-          background="gray.700"
-        >
-          <BoxConstrained.Container
-            spacing={12}
-          >
+        <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
+          <BoxConstrained.Container spacing={12}>
             <Stack spacing={6}>
-              <Stack
-                spacing={4}
-              >
+              <Stack spacing={4}>
                 <Box>
                   <Breadcrumb>
                     <BreadcrumbItem>
-                      <BreadcrumbLink
-                        as={RouterLink}
-                        to={pages.userFeeds()}
-                      >
+                      <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
                         Feeds
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbItem>
-                      <BreadcrumbLink
-                        as={RouterLink}
-                        to={pages.userFeed(feedId as string)}
-                      >
+                      <BreadcrumbLink as={RouterLink} to={pages.userFeed(feedId as string)}>
                         {feed?.title}
                       </BreadcrumbLink>
                     </BreadcrumbItem>
@@ -244,69 +223,59 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     </BreadcrumbItem>
                   </Breadcrumb>
                   <HStack alignItems="center" justifyContent="space-between">
-                    <Heading
-                      size="lg"
-                      marginRight={4}
-                    >
+                    <Heading size="lg" marginRight={4}>
                       {connection?.name}
                     </Heading>
                     {connection && (
-                    <HStack>
-                      <SendConnectionTestArticleButton
-                        connectionId={connectionId as string}
-                        feedId={feedId as string}
-                        type={FeedConnectionType.DiscordChannel}
-                      />
-                      <Menu>
-                        <MenuButton
-                          ref={actionsButtonRef}
-                          as={Button}
-                          variant="outline"
-                          rightIcon={<ChevronDownIcon />}
-                        >
-                          {t('common.buttons.actions')}
-                        </MenuButton>
-                        <MenuList>
-                          <MenuItem
-                            aria-label="Edit"
-                            onClick={editOnOpen}
+                      <HStack>
+                        <SendConnectionTestArticleButton
+                          connectionId={connectionId as string}
+                          feedId={feedId as string}
+                          type={FeedConnectionType.DiscordChannel}
+                        />
+                        <Menu>
+                          <MenuButton
+                            ref={actionsButtonRef}
+                            as={Button}
+                            variant="outline"
+                            rightIcon={<ChevronDownIcon />}
                           >
-                            {t('common.buttons.configure')}
-                          </MenuItem>
-                          {
-                            connection && !connection.disabledCode && (
-                            <ConfirmModal
-                              title={t('pages.discordChannelConnection.manualDisableConfirmTitle')}
-                              description={t('pages.discordChannelConnection'
-                                + '.manualDisableConfirmDescription')}
-                              trigger={(
-                                <MenuItem
-                                  disabled={updateStatus === 'loading'}
-                                >
-                                  {t('common.buttons.disable')}
-                                </MenuItem>
+                            {t("common.buttons.actions")}
+                          </MenuButton>
+                          <MenuList>
+                            <MenuItem aria-label="Edit" onClick={editOnOpen}>
+                              {t("common.buttons.configure")}
+                            </MenuItem>
+                            {connection && !connection.disabledCode && (
+                              <ConfirmModal
+                                title={t(
+                                  "pages.discordChannelConnection.manualDisableConfirmTitle"
+                                )}
+                                description={t(
+                                  "pages.discordChannelConnection" +
+                                    ".manualDisableConfirmDescription"
+                                )}
+                                trigger={
+                                  <MenuItem disabled={updateStatus === "loading"}>
+                                    {t("common.buttons.disable")}
+                                  </MenuItem>
+                                }
+                                okText={t("common.buttons.yes")}
+                                okLoading={updateStatus === "loading"}
+                                colorScheme="blue"
+                                onConfirm={() => onDisabled()}
+                              />
                             )}
-                              okText={t('common.buttons.yes')}
-                              okLoading={updateStatus === 'loading'}
-                              colorScheme="blue"
-                              onConfirm={() => onDisabled()}
+                            <MenuDivider />
+                            <DeleteConnectionButton
+                              connectionId={connectionId as string}
+                              feedId={feedId as string}
+                              type={FeedConnectionType.DiscordChannel}
+                              trigger={<MenuItem>{t("common.buttons.delete")}</MenuItem>}
                             />
-                            )
-                            }
-                          <MenuDivider />
-                          <DeleteConnectionButton
-                            connectionId={connectionId as string}
-                            feedId={feedId as string}
-                            type={FeedConnectionType.DiscordChannel}
-                            trigger={(
-                              <MenuItem>
-                                {t('common.buttons.delete')}
-                              </MenuItem>
-                          )}
-                          />
-                        </MenuList>
-                      </Menu>
-                    </HStack>
+                          </MenuList>
+                        </Menu>
+                      </HStack>
                     )}
                   </HStack>
                 </Box>
@@ -316,52 +285,54 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 />
                 <Alert
                   status="error"
-                  hidden={!connection
-                    || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat}
+                  hidden={
+                    !connection || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat
+                  }
                   borderRadius="md"
                 >
                   <Box>
                     <AlertTitle>
-                      {t('pages.discordChannelConnection.disabledAlertBadFormatTitle')}
+                      {t("pages.discordChannelConnection.disabledAlertBadFormatTitle")}
                     </AlertTitle>
                     <AlertDescription display="block">
-                      {t('pages.discordChannelConnection.disabledAlertBadFormatDescription')}
+                      {t("pages.discordChannelConnection.disabledAlertBadFormatDescription")}
                     </AlertDescription>
                   </Box>
                 </Alert>
               </Stack>
               <Grid
                 templateColumns={{
-                  base: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  lg: 'repeat(4, fit-content(320px))',
+                  base: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(4, fit-content(320px))",
                 }}
                 columnGap="20"
-                rowGap={{ base: '8', lg: '14' }}
+                rowGap={{ base: "8", lg: "14" }}
               >
                 <CategoryText title="Channel">
                   <DiscordChannelName
                     serverId={serverId}
-                    channelId={connection
-                      ?.details.channel.id as string}
+                    channelId={connection?.details.channel.id as string}
                   />
                 </CategoryText>
               </Grid>
             </Stack>
             <TabList>
-              <Tab onClick={() => {
-                navigate({
-                  search: '?view=message',
-                });
-              }}
+              <Tab
+                onClick={() => {
+                  navigate({
+                    search: "?view=message",
+                  });
+                }}
               >
                 Message
               </Tab>
-              <Tab onClick={() => {
-                navigate({
-                  search: '?view=filters',
-                });
-              }}
+              <Tab
+                onClick={() => {
+                  navigate({
+                    search: "?view=filters",
+                  });
+                }}
               >
                 Filters
               </Tab>

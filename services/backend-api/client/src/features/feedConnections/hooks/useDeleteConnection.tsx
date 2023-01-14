@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { FeedConnectionType } from '../../../types';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { deleteDiscordChannelConnection, deleteDiscordWebhookConnection } from '../api';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FeedConnectionType } from "../../../types";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { deleteDiscordChannelConnection, deleteDiscordWebhookConnection } from "../api";
 
 interface DeleteConnectionInput {
   feedId: string;
@@ -15,27 +15,24 @@ const methodsByType: Record<FeedConnectionType, (input: DeleteConnectionInput) =
 
 export const useDeleteConnection = (type: FeedConnectionType) => {
   const queryClient = useQueryClient();
-  const {
-    mutateAsync,
-    status,
-  } = useMutation<
-  void,
-  ApiAdapterError,
-  DeleteConnectionInput
-  >(
+  const { mutateAsync, status } = useMutation<void, ApiAdapterError, DeleteConnectionInput>(
     (details) => {
       const method = methodsByType[type];
 
       return method(details);
     },
     {
-      onSuccess: (data, inputData) => queryClient.invalidateQueries({
-        queryKey: ['user-feed', {
-          feedId: inputData.feedId,
-        }],
-        refetchType: 'all',
-      }),
-    },
+      onSuccess: (data, inputData) =>
+        queryClient.invalidateQueries({
+          queryKey: [
+            "user-feed",
+            {
+              feedId: inputData.feedId,
+            },
+          ],
+          refetchType: "all",
+        }),
+    }
   );
 
   return {

@@ -1,15 +1,15 @@
-import { useColorMode } from '@chakra-ui/react';
-import { useEffect } from 'react';
+import { useColorMode } from "@chakra-ui/react";
+import { useEffect } from "react";
 
 interface Props {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export const ForceDarkMode = ({ children }: Props) => {
   const { colorMode, toggleColorMode } = useColorMode();
 
   useEffect(() => {
-    if (colorMode === 'dark') {
+    if (colorMode === "dark") {
       return;
     }
 

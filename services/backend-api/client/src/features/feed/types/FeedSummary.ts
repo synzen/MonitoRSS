@@ -1,9 +1,9 @@
-import { InferType, object, string } from 'yup';
+import { InferType, object, string } from "yup";
 
 export const FeedSummarySchema = object({
   id: string().required(),
   title: string().required(),
-  status: string().oneOf(['ok', 'failed', 'disabled', 'failing']).required(),
+  status: string().oneOf(["ok", "failed", "disabled", "failing"]).required(),
   url: string().required(),
   channel: string().required(),
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),

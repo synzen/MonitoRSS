@@ -1,7 +1,7 @@
-import { Text, useColorModeValue } from '@chakra-ui/react';
+import { Text, useColorModeValue } from "@chakra-ui/react";
 
 interface Props {
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }
 
 export const SidebarHeading = ({ children }: Props) => (
@@ -12,7 +12,7 @@ export const SidebarHeading = ({ children }: Props) => (
     px="2"
     lineHeight="1.25"
     userSelect="none"
-    color={useColorModeValue('gray.600', 'gray.400')}
+    color={useColorModeValue("gray.600", "gray.400")}
   >
     {children}
   </Text>

@@ -1,4 +1,4 @@
-import { AddIcon } from '@chakra-ui/icons';
+import { AddIcon } from "@chakra-ui/icons";
 import {
   Button,
   Flex,
@@ -12,33 +12,28 @@ import {
   TabPanels,
   Tabs,
   Text,
-} from '@chakra-ui/react';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useState } from 'react';
-import {
-  FormProvider, useFieldArray, useForm,
-} from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
+} from "@chakra-ui/react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useState } from "react";
+import { FormProvider, useFieldArray, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   DiscordMessageEmbedFormData,
   DiscordMessageFormData,
   discordMessageFormSchema,
-} from '@/types/discord';
-import { notifyError } from '../../utils/notifyError';
-import { DiscordMessageContentForm } from './DiscordMessageContentForm';
-import { DiscordMessageEmbedForm } from './DiscordMessageEmbedForm';
+} from "@/types/discord";
+import { notifyError } from "../../utils/notifyError";
+import { DiscordMessageContentForm } from "./DiscordMessageContentForm";
+import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
 
 interface Props {
-  defaultValues?: DiscordMessageFormData
-  onClickSave: (data: DiscordMessageFormData) => Promise<void>
+  defaultValues?: DiscordMessageFormData;
+  onClickSave: (data: DiscordMessageFormData) => Promise<void>;
 }
 
 const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({});
 
-export const DiscordMessageForm = ({
-  defaultValues,
-  onClickSave,
-}: Props) => {
+export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
   const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
 
   const { t } = useTranslation();
@@ -47,17 +42,13 @@ export const DiscordMessageForm = ({
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
     defaultValues,
-    mode: 'all',
+    mode: "all",
   });
   const {
     handleSubmit,
     control,
     reset,
-    formState: {
-      isDirty,
-      isSubmitting,
-      errors,
-    },
+    formState: { isDirty, isSubmitting, errors },
   } = formMethods;
   const {
     fields: embeds,
@@ -65,7 +56,7 @@ export const DiscordMessageForm = ({
     remove,
   } = useFieldArray({
     control,
-    name: 'embeds',
+    name: "embeds",
   });
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
@@ -100,7 +91,7 @@ export const DiscordMessageForm = ({
       await onClickSave(toSubmit);
       reset(toSubmit);
     } catch (err) {
-      notifyError(t('common.errors.failedToSave'), err as Error);
+      notifyError(t("common.errors.failedToSave"), err as Error);
     }
   };
 
@@ -126,46 +117,27 @@ export const DiscordMessageForm = ({
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={12}>
           <Stack spacing={4}>
-            <Heading size="md">
-              {t('components.discordMessageForm.textSectionTitle')}
-            </Heading>
-            <Text>
-              {t('components.discordMessageForm.textSectionDescription')}
-            </Text>
-            <DiscordMessageContentForm
-              control={control}
-              errors={errors}
-            />
+            <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
+            <Text>{t("components.discordMessageForm.textSectionDescription")}</Text>
+            <DiscordMessageContentForm control={control} errors={errors} />
           </Stack>
           <Stack spacing={4}>
-            <Heading size="md">
-              {t('components.discordMessageForm.embedSectionTitle')}
-            </Heading>
-            <Text>
-              {t('components.discordMessageForm.embedSectionDescription')}
-            </Text>
-            <Tabs
-              variant="solid-rounded"
-              index={activeEmbedIndex}
-              onChange={onEmbedTabChanged}
-            >
+            <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
+            <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
+            <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
               <HStack overflow="auto">
                 <TabList>
                   {embeds?.map((embed, index) => (
-                    <Tab key={embed.id}>
-                      Embed
-                      {' '}
-                      {index + 1}
-                    </Tab>
+                    <Tab key={embed.id}>Embed {index + 1}</Tab>
                   ))}
                 </TabList>
                 {(embeds?.length ?? 0) < 10 && (
-                <IconButton
-                  onClick={onAddEmbed}
-                  variant="ghost"
-                  aria-label="Add new embed"
-                  icon={<AddIcon />}
-                />
+                  <IconButton
+                    onClick={onAddEmbed}
+                    variant="ghost"
+                    aria-label="Add new embed"
+                    icon={<AddIcon />}
+                  />
                 )}
               </HStack>
               <TabPanels>
@@ -178,12 +150,10 @@ export const DiscordMessageForm = ({
                         variant="outline"
                         onClick={() => onRemoveEmbed(index)}
                       >
-                        {t('features.feedConnections.components.embedForm.deleteButtonText')}
+                        {t("features.feedConnections.components.embedForm.deleteButtonText")}
                       </Button>
                     </Flex>
-                    <DiscordMessageEmbedForm
-                      index={index}
-                    />
+                    <DiscordMessageEmbedForm index={index} />
                   </TabPanel>
                 ))}
               </TabPanels>
@@ -192,13 +162,9 @@ export const DiscordMessageForm = ({
           <Flex direction="row-reverse">
             <HStack>
               {isDirty && (
-              <Button
-                onClick={() => reset()}
-                variant="ghost"
-                disabled={!isDirty || isSubmitting}
-              >
-                {t('features.feed.components.sidebar.resetButton')}
-              </Button>
+                <Button onClick={() => reset()} variant="ghost" disabled={!isDirty || isSubmitting}>
+                  {t("features.feed.components.sidebar.resetButton")}
+                </Button>
               )}
               <Button
                 type="submit"
@@ -206,7 +172,7 @@ export const DiscordMessageForm = ({
                 disabled={isSubmitting || !isDirty || errorsExist}
                 isLoading={isSubmitting}
               >
-                {t('features.feed.components.sidebar.saveButton')}
+                {t("features.feed.components.sidebar.saveButton")}
               </Button>
             </HStack>
           </Flex>

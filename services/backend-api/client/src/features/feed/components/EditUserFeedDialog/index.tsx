@@ -13,12 +13,12 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
-} from '@chakra-ui/react';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { InferType, object, string } from 'yup';
-import React, { useEffect, useRef } from 'react';
+} from "@chakra-ui/react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { InferType, object, string } from "yup";
+import React, { useEffect, useRef } from "react";
 
 const formSchema = object({
   title: string().optional(),
@@ -28,11 +28,11 @@ const formSchema = object({
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
-  onUpdate: (data: FormData) => Promise<void>
-  defaultValues: Required<FormData>
-  onCloseRef?: React.RefObject<HTMLButtonElement>
-  isOpen: boolean
-  onClose: () => void
+  onUpdate: (data: FormData) => Promise<void>;
+  defaultValues: Required<FormData>;
+  onCloseRef?: React.RefObject<HTMLButtonElement>;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const EditUserFeedDialog: React.FC<Props> = ({
@@ -48,14 +48,10 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
-    formState: {
-      isDirty,
-      errors,
-      isSubmitting,
-    },
+    formState: { isDirty, errors, isSubmitting },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    mode: 'all',
+    mode: "all",
     defaultValues,
   });
 
@@ -73,66 +69,41 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     <Modal finalFocusRef={onCloseRef} isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>
-          {t('features.feed.components.updateUserFeedDialog.title')}
-        </ModalHeader>
+        <ModalHeader>{t("features.feed.components.updateUserFeedDialog.title")}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <form id="update-user-feed" onSubmit={handleSubmit(onSubmit)}>
             <Stack spacing={4}>
               <FormControl isInvalid={!!errors.title}>
-                <FormLabel>
-                  {t('features.feed.components.addFeedDialog.formTitleLabel')}
-                </FormLabel>
+                <FormLabel>{t("features.feed.components.addFeedDialog.formTitleLabel")}</FormLabel>
                 <Controller
                   name="title"
                   control={control}
-                  render={({ field }) => (
-                    <Input {...field} tabIndex={0} ref={initialFocusRef} />
-                  )}
+                  render={({ field }) => <Input {...field} tabIndex={0} ref={initialFocusRef} />}
                 />
-                {errors.title && (
-                  <FormErrorMessage>
-                    {errors.title.message}
-                  </FormErrorMessage>
-                )}
+                {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
                 <FormHelperText>
-                  {t('features.feed.components'
-                  + '.addFeedDialog.formTitleDescription')}
+                  {t("features.feed.components.addFeedDialog.formTitleDescription")}
                 </FormHelperText>
               </FormControl>
               <FormControl isInvalid={!!errors.title}>
-                <FormLabel>
-                  {t('features.feed.components.addFeedDialog.formLinkLabel')}
-                </FormLabel>
+                <FormLabel>{t("features.feed.components.addFeedDialog.formLinkLabel")}</FormLabel>
                 <Controller
                   name="url"
                   control={control}
-                  render={({ field }) => (
-                    <Input {...field} tabIndex={0} />
-                  )}
+                  render={({ field }) => <Input {...field} tabIndex={0} />}
                 />
-                {errors.url && (
-                  <FormErrorMessage>
-                    {errors.url.message}
-                  </FormErrorMessage>
-                )}
+                {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
                 <FormHelperText>
-                  {t('features.feed.components'
-                  + '.addFeedDialog.formLinkDescription')}
+                  {t("features.feed.components.addFeedDialog.formLinkDescription")}
                 </FormHelperText>
               </FormControl>
             </Stack>
           </form>
         </ModalBody>
         <ModalFooter>
-          <Button
-            variant="ghost"
-            mr={3}
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            {t('common.buttons.cancel')}
+          <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+            {t("common.buttons.cancel")}
           </Button>
           <Button
             colorScheme="blue"
@@ -141,7 +112,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
             isLoading={isSubmitting}
             isDisabled={!isDirty || isSubmitting}
           >
-            {t('common.buttons.save')}
+            {t("common.buttons.save")}
           </Button>
         </ModalFooter>
       </ModalContent>

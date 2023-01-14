@@ -15,16 +15,16 @@ import {
   Stack,
   Tooltip,
   useDisclosure,
-} from '@chakra-ui/react';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { InferType, object, string } from 'yup';
-import { useEffect } from 'react';
-import { useCreateUserFeed, useUserFeeds } from '../../hooks';
-import { notifyError } from '@/utils/notifyError';
-import { useDiscordUserMe } from '../../../discordUser';
-import { notifySuccess } from '../../../../utils/notifySuccess';
+} from "@chakra-ui/react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { InferType, object, string } from "yup";
+import { useEffect } from "react";
+import { useCreateUserFeed, useUserFeeds } from "../../hooks";
+import { notifyError } from "@/utils/notifyError";
+import { useDiscordUserMe } from "../../../discordUser";
+import { notifySuccess } from "../../../../utils/notifySuccess";
 
 const formSchema = object({
   title: string().required(),
@@ -40,19 +40,13 @@ export const AddUserFeedDialog: React.FC = () => {
     handleSubmit,
     control,
     reset,
-    formState: {
-      isDirty,
-      errors,
-      isSubmitting,
-    },
+    formState: { isDirty, errors, isSubmitting },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
   const { refetch: refetchFeeds, data } = useUserFeeds();
   const { mutateAsync } = useCreateUserFeed();
-  const {
-    data: discordUserMe,
-  } = useDiscordUserMe();
+  const { data: discordUserMe } = useDiscordUserMe();
 
   const onSubmit = async ({ title, url }: FormData) => {
     try {
@@ -66,9 +60,9 @@ export const AddUserFeedDialog: React.FC = () => {
       await refetchFeeds();
       reset();
       onClose();
-      notifySuccess(t('features.userFeeds.components.addUserFeedDialog.successAdd'));
+      notifySuccess(t("features.userFeeds.components.addUserFeedDialog.successAdd"));
     } catch (err) {
-      notifyError(t('features.feed.components.addFeedDialog.failedToAdd'), err as Error);
+      notifyError(t("features.feed.components.addFeedDialog.failedToAdd"), err as Error);
     }
   };
 
@@ -76,85 +70,60 @@ export const AddUserFeedDialog: React.FC = () => {
     reset();
   }, [isOpen]);
 
-  const isUnderLimit = data?.total && discordUserMe?.maxUserFeeds
-    && data.total < discordUserMe.maxUserFeeds;
+  const isUnderLimit =
+    data?.total && discordUserMe?.maxUserFeeds && data.total < discordUserMe.maxUserFeeds;
 
   return (
     <>
       <Tooltip
-        label={t('features.userFeeds.components.addUserFeedDialog.overLimitHint')}
+        label={t("features.userFeeds.components.addUserFeedDialog.overLimitHint")}
         hidden={isUnderLimit === true}
       >
-        <Button
-          colorScheme="blue"
-          onClick={onOpen}
-          disabled={!isUnderLimit}
-        >
-          {t('features.userFeeds.components.addUserFeedDialog.addButton')}
+        <Button colorScheme="blue" onClick={onOpen} disabled={!isUnderLimit}>
+          {t("features.userFeeds.components.addUserFeedDialog.addButton")}
         </Button>
       </Tooltip>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
           <form onSubmit={handleSubmit(onSubmit)}>
-            <ModalHeader>
-              {t('features.userFeeds.components.addUserFeedDialog.title')}
-            </ModalHeader>
+            <ModalHeader>{t("features.userFeeds.components.addUserFeedDialog.title")}</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.title}>
                   <FormLabel>
-                    {t('features.userFeeds.components.addUserFeedDialog.formTitleLabel')}
+                    {t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
                   </FormLabel>
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => (
-                      <Input
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    )}
+                    render={({ field }) => <Input disabled={isSubmitting} {...field} />}
                   />
                   <FormHelperText>
-                    {t('features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel')}
+                    {t("features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel")}
                   </FormHelperText>
-                  <FormErrorMessage>
-                    {errors.title?.message}
-                  </FormErrorMessage>
+                  <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors.url}>
                   <FormLabel>
-                    {t('features.userFeeds.components.addUserFeedDialog.formLinkLabel')}
+                    {t("features.userFeeds.components.addUserFeedDialog.formLinkLabel")}
                   </FormLabel>
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => (
-                      <Input
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    )}
+                    render={({ field }) => <Input disabled={isSubmitting} {...field} />}
                   />
                   <FormHelperText>
-                    {t('features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel')}
+                    {t("features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel")}
                   </FormHelperText>
-                  <FormErrorMessage>
-                    {errors.url?.message}
-                  </FormErrorMessage>
+                  <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
                 </FormControl>
               </Stack>
             </ModalBody>
             <ModalFooter>
-              <Button
-                variant="ghost"
-                mr={3}
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                {t('common.buttons.cancel')}
+              <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+                {t("common.buttons.cancel")}
               </Button>
               <Button
                 colorScheme="blue"
@@ -162,7 +131,7 @@ export const AddUserFeedDialog: React.FC = () => {
                 isLoading={isSubmitting}
                 isDisabled={!isDirty || isSubmitting}
               >
-                {t('common.buttons.save')}
+                {t("common.buttons.save")}
               </Button>
             </ModalFooter>
           </form>

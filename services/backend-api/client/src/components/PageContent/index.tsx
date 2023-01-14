@@ -14,18 +14,16 @@ import {
   DrawerCloseButton,
   HStack,
   Alert,
-} from '@chakra-ui/react';
-import { HamburgerIcon } from '@chakra-ui/icons';
-import {
-  Navigate, useLocation, useNavigate, useParams,
-} from 'react-router-dom';
-import { useState } from 'react';
-import { SidebarDiscordServerLinks } from '@/features/discordServers';
-import { SidebarFeedLinks } from '@/features/feed';
-import { useDiscordBot, useDiscordUserMe, UserStatusTag } from '@/features/discordUser';
-import { DiscordUserDropdown } from '@/features/discordUser/components/DiscordUserDropdown';
-import { LogoutButton } from '@/features/auth';
-import { Loading } from '../Loading';
+} from "@chakra-ui/react";
+import { HamburgerIcon } from "@chakra-ui/icons";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { SidebarDiscordServerLinks } from "@/features/discordServers";
+import { SidebarFeedLinks } from "@/features/feed";
+import { useDiscordBot, useDiscordUserMe, UserStatusTag } from "@/features/discordUser";
+import { DiscordUserDropdown } from "@/features/discordUser/components/DiscordUserDropdown";
+import { LogoutButton } from "@/features/auth";
+import { Loading } from "../Loading";
 
 interface Props {
   requireFeed?: boolean;
@@ -38,9 +36,7 @@ export const PageContent = ({ requireFeed, children }: Props) => {
   const location = useLocation();
   const { feedId, serverId } = useParams();
   const [sidebarToggledOpen, setSidebarToggledOpen] = useState(false);
-  const {
-    data: userMe,
-  } = useDiscordUserMe();
+  const { data: userMe } = useDiscordUserMe();
   const {
     data: discordBotData,
     error: discordBotError,
@@ -72,7 +68,7 @@ export const PageContent = ({ requireFeed, children }: Props) => {
         flexDir="column"
         // height="75px"
         width="full"
-        background={staticSidebarShown ? 'gray.700' : 'gray.800'}
+        background={staticSidebarShown ? "gray.700" : "gray.800"}
         paddingX="4"
         paddingY="2"
       >
@@ -94,32 +90,21 @@ export const PageContent = ({ requireFeed, children }: Props) => {
                 title={discordBotData.result.username}
               >
                 {discordBotData.result.username}
-
               </Heading>
             </Flex>
             <Text display="block">Control Panel</Text>
           </>
         )}
         {discordBotError && <Alert status="error">{discordBotError.message}</Alert>}
-        {discordBotStatus === 'loading' && <Box><Loading /></Box>}
+        {discordBotStatus === "loading" && (
+          <Box>
+            <Loading />
+          </Box>
+        )}
       </Flex>
-      <Stack
-        paddingX="6"
-        marginTop="6"
-        display="flex"
-        alignItems="flex-start"
-        spacing="2"
-      >
-        <Stack
-          width="100%"
-          alignItems="flex-start"
-          spacing="4"
-        >
-          <Avatar
-            name={userMe?.username}
-            src={userMe?.iconUrl}
-            size="lg"
-          />
+      <Stack paddingX="6" marginTop="6" display="flex" alignItems="flex-start" spacing="2">
+        <Stack width="100%" alignItems="flex-start" spacing="4">
+          <Avatar name={userMe?.username} src={userMe?.iconUrl} size="lg" />
           <DiscordUserDropdown />
         </Stack>
         <UserStatusTag />
@@ -178,7 +163,6 @@ export const PageContent = ({ requireFeed, children }: Props) => {
           <Heading>Monito.RSS</Heading>
         </HStack>
         {children}
-
       </Box>
     );
   }
@@ -201,14 +185,8 @@ export const PageContent = ({ requireFeed, children }: Props) => {
       >
         {sidebarContent}
       </Flex>
-      <Flex
-        width="100%"
-        justifyContent="center"
-        overflow="auto"
-      >
-        <Box width="100%">
-          {children}
-        </Box>
+      <Flex width="100%" justifyContent="center" overflow="auto">
+        <Box width="100%">{children}</Box>
       </Flex>
     </Flex>
   );

@@ -9,19 +9,19 @@ import {
   Switch,
   Text,
   Box,
-} from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
-import { boolean, InferType, object } from 'yup';
-import { Controller, useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { DashboardContent } from '@/components';
-import RouteParams from '../types/RouteParams';
-import { useFeed } from '@/features/feed';
-import { ErrorAlert } from '@/components/ErrorAlert';
-import { useUpdateFeed } from '@/features/feed/hooks/useUpdateFeed';
-import { notifyError } from '@/utils/notifyError';
+} from "@chakra-ui/react";
+import { useParams } from "react-router-dom";
+import { boolean, InferType, object } from "yup";
+import { Controller, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { DashboardContent } from "@/components";
+import RouteParams from "../types/RouteParams";
+import { useFeed } from "@/features/feed";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { useUpdateFeed } from "@/features/feed/hooks/useUpdateFeed";
+import { notifyError } from "@/utils/notifyError";
 
 const formSchema = object({
   checkTitles: boolean().optional(),
@@ -41,19 +41,12 @@ const FeedMiscOptions: React.FC = () => {
     handleSubmit,
     control,
     reset,
-    formState: {
-      isDirty,
-      isSubmitting,
-    },
+    formState: { isDirty, isSubmitting },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
   const { t } = useTranslation();
-  const {
-    status,
-    feed,
-    error,
-  } = useFeed({
+  const { status, feed, error } = useFeed({
     feedId,
   });
   const { mutateAsync } = useUpdateFeed();
@@ -101,42 +94,47 @@ const FeedMiscOptions: React.FC = () => {
         },
       });
     } catch (err) {
-      notifyError(t('common.errors.failedToSave'), err as Error);
+      notifyError(t("common.errors.failedToSave"), err as Error);
     }
   };
 
-  const options: Array<{ formKey: keyof FormData, label: string, description: string }> = [{
-    label: t('pages.miscOptions.titleChecks'),
-    description: t('pages.miscOptions.titleChecksDescription'),
-    formKey: 'checkTitles',
-  }, {
-    label: t('pages.miscOptions.dateChecks'),
-    description: t('pages.miscOptions.dateChecksDescription'),
-    formKey: 'checkDates',
-  }, {
-    label: t('pages.miscOptions.imageLinksPreviews'),
-    description: t('pages.miscOptions.imageLinksPreviewsDescription'),
-    formKey: 'imgPreviews',
-  }, {
-    label: t('pages.miscOptions.imageLinksExistence'),
-    description: t('pages.miscOptions.imageLinksExistenceDescription'),
-    formKey: 'imgLinksExistence',
-  }, {
-    label: t('pages.miscOptions.formatTables'),
-    description: t('pages.miscOptions.formatTablesDescription'),
-    formKey: 'formatTables',
-  }, {
-    label: t('pages.miscOptions.splitMessage'),
-    description: t('pages.miscOptions.splitMessageDescription'),
-    formKey: 'splitMessage',
-  }];
+  const options: Array<{ formKey: keyof FormData; label: string; description: string }> = [
+    {
+      label: t("pages.miscOptions.titleChecks"),
+      description: t("pages.miscOptions.titleChecksDescription"),
+      formKey: "checkTitles",
+    },
+    {
+      label: t("pages.miscOptions.dateChecks"),
+      description: t("pages.miscOptions.dateChecksDescription"),
+      formKey: "checkDates",
+    },
+    {
+      label: t("pages.miscOptions.imageLinksPreviews"),
+      description: t("pages.miscOptions.imageLinksPreviewsDescription"),
+      formKey: "imgPreviews",
+    },
+    {
+      label: t("pages.miscOptions.imageLinksExistence"),
+      description: t("pages.miscOptions.imageLinksExistenceDescription"),
+      formKey: "imgLinksExistence",
+    },
+    {
+      label: t("pages.miscOptions.formatTables"),
+      description: t("pages.miscOptions.formatTablesDescription"),
+      formKey: "formatTables",
+    },
+    {
+      label: t("pages.miscOptions.splitMessage"),
+      description: t("pages.miscOptions.splitMessageDescription"),
+      formKey: "splitMessage",
+    },
+  ];
 
   return (
-    <DashboardContent
-      loading={status === 'loading'}
-    >
+    <DashboardContent loading={status === "loading"}>
       <Stack spacing={6}>
-        <Heading>{t('pages.miscOptions.title')}</Heading>
+        <Heading>{t("pages.miscOptions.title")}</Heading>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack>
             <Stack spacing="8">
@@ -149,11 +147,7 @@ const FeedMiscOptions: React.FC = () => {
                     render={({ field }) => (
                       <FormControl>
                         <Flex justifyContent="space-between">
-                          <Heading
-                            as="label"
-                            htmlFor="checkTitles"
-                            size="md"
-                          >
+                          <Heading as="label" htmlFor="checkTitles" size="md">
                             {option.label}
                           </Heading>
                           <Switch
@@ -163,9 +157,7 @@ const FeedMiscOptions: React.FC = () => {
                             isChecked={field.value}
                           />
                         </Flex>
-                        <Text paddingBottom="8">
-                          {option.description}
-                        </Text>
+                        <Text paddingBottom="8">{option.description}</Text>
                       </FormControl>
                     )}
                   />
@@ -174,12 +166,8 @@ const FeedMiscOptions: React.FC = () => {
               ))}
             </Stack>
             <HStack justifyContent="flex-end">
-              <Button
-                variant="ghost"
-                onClick={resetForm}
-                disabled={!isDirty || isSubmitting}
-              >
-                {t('pages.miscOptions.resetButton')}
+              <Button variant="ghost" onClick={resetForm} disabled={!isDirty || isSubmitting}>
+                {t("pages.miscOptions.resetButton")}
               </Button>
               <Button
                 colorScheme="blue"
@@ -187,7 +175,7 @@ const FeedMiscOptions: React.FC = () => {
                 isLoading={isSubmitting}
                 isDisabled={!isDirty || isSubmitting}
               >
-                {t('pages.miscOptions.saveButton')}
+                {t("pages.miscOptions.saveButton")}
               </Button>
             </HStack>
           </Stack>

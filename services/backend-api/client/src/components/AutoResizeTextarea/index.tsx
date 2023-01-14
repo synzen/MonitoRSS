@@ -1,10 +1,10 @@
-import { Textarea, TextareaProps } from '@chakra-ui/react';
-import ResizeTextarea from 'react-textarea-autosize';
-import React from 'react';
+import { Textarea, TextareaProps } from "@chakra-ui/react";
+import ResizeTextarea from "react-textarea-autosize";
+import React from "react";
 
 export const AutoResizeTextarea = React.forwardRef<
-HTMLTextAreaElement,
-TextareaProps & { minRows?: number }
+  HTMLTextAreaElement,
+  TextareaProps & { minRows?: number }
 >((props, ref) => (
   <Textarea
     minH="unset"

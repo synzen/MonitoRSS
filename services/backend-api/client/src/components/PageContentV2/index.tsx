@@ -9,42 +9,30 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import { LogoutButton } from '../../features/auth';
+} from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { LogoutButton } from "../../features/auth";
 
-import { useDiscordBot, useDiscordUserMe } from '../../features/discordUser';
-import { Loading } from '../Loading';
+import { useDiscordBot, useDiscordUserMe } from "../../features/discordUser";
+import { Loading } from "../Loading";
 
 interface Props {
   // eslint-disable-next-line react/no-unused-prop-types
-  requireFeed?: boolean
+  requireFeed?: boolean;
   children?: React.ReactNode;
-  invertBackground?: boolean
+  invertBackground?: boolean;
 }
 
 export const PageContentV2 = ({ children, invertBackground }: Props) => {
-  const {
-    data: discordBotData,
-    status,
-    error,
-  } = useDiscordBot();
-  const {
-    data: userMe,
-  } = useDiscordUserMe();
+  const { data: discordBotData, status, error } = useDiscordBot();
+  const { data: userMe } = useDiscordUserMe();
   const { t } = useTranslation();
 
   return (
-    <Flex
-      flexGrow={1}
-      height="100%"
-      alignItems="center"
-      flexDir="column"
-      overflowX="auto"
-    >
+    <Flex flexGrow={1} height="100%" alignItems="center" flexDir="column" overflowX="auto">
       <Box
         width="100%"
-        background={invertBackground ? 'gray.700' : 'none'}
+        background={invertBackground ? "gray.700" : "none"}
         display="flex"
         justifyContent="center"
       >
@@ -56,29 +44,31 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
         >
           <Flex alignItems="center" overflow="hidden">
             {discordBotData && (
-            <Flex alignItems="center" paddingBottom="1" overflow="hidden">
-              <Avatar
-                src={discordBotData.result.avatar || undefined}
-                size="sm"
-                name={discordBotData.result.username}
-                marginRight="2"
-                backgroundColor="transparent"
-              />
-              <Heading
-                fontSize="xl"
-                whiteSpace="nowrap"
-                overflow="hidden"
-                textOverflow="ellipsis"
-                title={discordBotData.result.username}
-              >
-                {discordBotData.result.username}
-
-              </Heading>
-            </Flex>
+              <Flex alignItems="center" paddingBottom="1" overflow="hidden">
+                <Avatar
+                  src={discordBotData.result.avatar || undefined}
+                  size="sm"
+                  name={discordBotData.result.username}
+                  marginRight="2"
+                  backgroundColor="transparent"
+                />
+                <Heading
+                  fontSize="xl"
+                  whiteSpace="nowrap"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  title={discordBotData.result.username}
+                >
+                  {discordBotData.result.username}
+                </Heading>
+              </Flex>
             )}
-            {status === 'loading' && <Box><Loading /></Box>}
+            {status === "loading" && (
+              <Box>
+                <Loading />
+              </Box>
+            )}
             {error && <Alert status="error">{error.message}</Alert>}
-
           </Flex>
           <Flex alignItems="center" paddingY="4">
             <Menu placement="bottom-end">
@@ -92,11 +82,8 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
                 />
               </MenuButton>
               <MenuList>
-                <LogoutButton trigger={(
-                  <MenuItem>
-                    {t('components.pageContentV2.logout')}
-                  </MenuItem>
-                  )}
+                <LogoutButton
+                  trigger={<MenuItem>{t("components.pageContentV2.logout")}</MenuItem>}
                 />
               </MenuList>
             </Menu>

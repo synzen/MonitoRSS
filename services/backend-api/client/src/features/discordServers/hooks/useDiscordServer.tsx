@@ -1,7 +1,7 @@
-import { useDiscordServers } from './useDiscordServers';
+import { useDiscordServers } from "./useDiscordServers";
 
 interface Props {
-  serverId?: string
+  serverId?: string;
 }
 
 export const useDiscordServer = ({ serverId }: Props) => {

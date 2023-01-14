@@ -1,18 +1,13 @@
-import fetchRest from '../../../utils/fetchRest';
+import fetchRest from "../../../utils/fetchRest";
 
 export interface GetServerBackupInput {
-  serverId: string
+  serverId: string;
 }
 
-export const getServerBackup = async (
-  options: GetServerBackupInput,
-): Promise<Blob> => {
-  const res: Response = await fetchRest(
-    `/api/v1/discord-servers/${options.serverId}/backup`,
-    {
-      skipJsonParse: true,
-    },
-  );
+export const getServerBackup = async (options: GetServerBackupInput): Promise<Blob> => {
+  const res: Response = await fetchRest(`/api/v1/discord-servers/${options.serverId}/backup`, {
+    skipJsonParse: true,
+  });
 
   return res.blob();
 };

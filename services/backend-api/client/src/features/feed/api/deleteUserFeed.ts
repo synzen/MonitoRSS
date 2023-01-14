@@ -1,17 +1,14 @@
-import fetchRest from '@/utils/fetchRest';
+import fetchRest from "@/utils/fetchRest";
 
 export interface DeleteUserFeedInput {
-  feedId: string
+  feedId: string;
 }
 
 export const deleteUserFeed = async (options: DeleteUserFeedInput): Promise<void> => {
-  await fetchRest(
-    `/api/v1/user-feeds/${options.feedId}`,
-    {
-      requestOptions: {
-        method: 'DELETE',
-      },
-      skipJsonParse: true,
+  await fetchRest(`/api/v1/user-feeds/${options.feedId}`, {
+    requestOptions: {
+      method: "DELETE",
     },
-  );
+    skipJsonParse: true,
+  });
 };

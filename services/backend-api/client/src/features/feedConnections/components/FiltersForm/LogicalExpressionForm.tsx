@@ -1,9 +1,18 @@
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
-  Box, Button, CloseButton, Flex, Menu, MenuButton, MenuItem, MenuList, Stack, Text,
-} from '@chakra-ui/react';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
+  Box,
+  Button,
+  CloseButton,
+  Flex,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   FilterExpression,
   FilterExpressionType,
@@ -13,29 +22,18 @@ import {
   RelationalExpressionOperator,
   RelationalExpressionRightOperandType,
   RelationalFilterExpression,
-} from '../../types';
-import { AnyAllSelector } from './AnyAllSelector';
-import { Condition } from './Condition';
+} from "../../types";
+import { AnyAllSelector } from "./AnyAllSelector";
+import { Condition } from "./Condition";
 
 interface Props {
-  onDeleted: () => void
-  prefix?: string
+  onDeleted: () => void;
+  prefix?: string;
 }
 
-export const LogicalExpressionForm = ({
-  onDeleted,
-  prefix = '',
-}: Props) => {
-  const {
-    control,
-    setValue,
-  } = useFormContext();
-  const {
-    fields,
-    append,
-    remove,
-    insert,
-  } = useFieldArray({
+export const LogicalExpressionForm = ({ onDeleted, prefix = "" }: Props) => {
+  const { control, setValue } = useFormContext();
+  const { fields, append, remove, insert } = useFieldArray({
     control,
     name: `${prefix}children`,
   });
@@ -46,7 +44,7 @@ export const LogicalExpressionForm = ({
 
   const { t } = useTranslation();
 
-  const onAnyAllChange = (value: LogicalFilterExpression['op']) => {
+  const onAnyAllChange = (value: LogicalFilterExpression["op"]) => {
     setValue(`${prefix}op`, value, {
       shouldDirty: true,
     });
@@ -59,9 +57,11 @@ export const LogicalExpressionForm = ({
   const onAddRelational = () => {
     let indexOfLastRelational = 0;
 
-    const typedFields = (fields as Array<(FilterExpression & {
-      id: string
-    })>);
+    const typedFields = fields as Array<
+      FilterExpression & {
+        id: string;
+      }
+    >;
 
     for (let i = typedFields.length - 1; i >= 0; i -= 1) {
       if (typedFields[i]?.type === FilterExpressionType.Relational) {
@@ -75,11 +75,11 @@ export const LogicalExpressionForm = ({
       op: RelationalExpressionOperator.Equals,
       left: {
         type: RelationalExpressionLeftOperandType.Article,
-        value: '',
+        value: "",
       },
       right: {
         type: RelationalExpressionRightOperandType.String,
-        value: '',
+        value: "",
       },
     };
 
@@ -90,26 +90,33 @@ export const LogicalExpressionForm = ({
     const toInsert: LogicalFilterExpression = {
       type: FilterExpressionType.Logical,
       op: LogicalExpressionOperator.And,
-      children: [{
-        type: FilterExpressionType.Relational,
-        op: RelationalExpressionOperator.Equals,
-        left: {
-          type: RelationalExpressionLeftOperandType.Article,
-          value: '',
+      children: [
+        {
+          type: FilterExpressionType.Relational,
+          op: RelationalExpressionOperator.Equals,
+          left: {
+            type: RelationalExpressionLeftOperandType.Article,
+            value: "",
+          },
+          right: {
+            type: RelationalExpressionRightOperandType.String,
+            value: "",
+          },
         },
-        right: {
-          type: RelationalExpressionRightOperandType.String,
-          value: '',
-        },
-      }],
+      ],
     };
 
     append(toInsert);
   };
 
-  const numberOfRelational = (fields as Array<(FilterExpression & {
-    id: string
-  })>)?.filter((child) => child?.type === FilterExpressionType.Relational).length || 0;
+  const numberOfRelational =
+    (
+      fields as Array<
+        FilterExpression & {
+          id: string;
+        }
+      >
+    )?.filter((child) => child?.type === FilterExpressionType.Relational).length || 0;
 
   return (
     <Stack>
@@ -126,18 +133,12 @@ export const LogicalExpressionForm = ({
             <Text display="inline" paddingRight={2}>
               When
             </Text>
-            <AnyAllSelector
-              value={operator}
-              onChange={onAnyAllChange}
-            />
+            <AnyAllSelector value={operator} onChange={onAnyAllChange} />
             <Text display="inline" paddingLeft={2} paddingBottom={4}>
               of the conditions match:
             </Text>
           </Box>
-          <CloseButton
-            aria-label="Delete condition group"
-            onClick={onDeleted}
-          />
+          <CloseButton aria-label="Delete condition group" onClick={onDeleted} />
         </Flex>
         <Stack>
           <Stack spacing={2} marginTop={4} width="100%">
@@ -168,26 +169,15 @@ export const LogicalExpressionForm = ({
           </Stack>
           <Box>
             <Menu>
-              <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                variant="ghost"
-              >
-                {t('features.feedConnections.components.filtersForm.addButtonText')}
-
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} variant="ghost">
+                {t("features.feedConnections.components.filtersForm.addButtonText")}
               </MenuButton>
               <MenuList>
-                <MenuItem
-                  onClick={onAddRelational}
-                >
-                  {t('features.feedConnections.components.filtersForm.addRelationalButtonText')}
-
+                <MenuItem onClick={onAddRelational}>
+                  {t("features.feedConnections.components.filtersForm.addRelationalButtonText")}
                 </MenuItem>
-                <MenuItem
-                  onClick={onAddLogical}
-                >
-                  {t('features.feedConnections.components.filtersForm.addLogicalButtonText')}
-
+                <MenuItem onClick={onAddLogical}>
+                  {t("features.feedConnections.components.filtersForm.addLogicalButtonText")}
                 </MenuItem>
               </MenuList>
             </Menu>

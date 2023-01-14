@@ -1,9 +1,7 @@
-import {
-  array, InferType, number, object, string,
-} from 'yup';
-import { FeedConnectionSchema } from '../../../types';
-import { UserFeedDisabledCode } from './UserFeedDisabledCode';
-import { UserFeedHealthStatus } from './UserFeedHealthStatus';
+import { array, InferType, number, object, string } from "yup";
+import { FeedConnectionSchema } from "../../../types";
+import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
+import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
 
 export const UserFeedSchema = object({
   id: string().required(),

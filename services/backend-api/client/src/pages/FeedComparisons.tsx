@@ -6,46 +6,55 @@ import {
   HStack,
   Text,
   FormHelperText,
-} from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
-import { isEqual } from 'lodash';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { DashboardContent } from '@/components';
-import RouteParams from '../types/RouteParams';
-import { FeedRawDumpButton, useFeed } from '@/features/feed';
-import { ErrorAlert } from '@/components/ErrorAlert';
-import { useUpdateFeed } from '@/features/feed/hooks/useUpdateFeed';
-import { notifyError } from '@/utils/notifyError';
-import { AutoResizeTextarea } from '@/components/AutoResizeTextarea';
+} from "@chakra-ui/react";
+import { useParams } from "react-router-dom";
+import { isEqual } from "lodash";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { DashboardContent } from "@/components";
+import RouteParams from "../types/RouteParams";
+import { FeedRawDumpButton, useFeed } from "@/features/feed";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { useUpdateFeed } from "@/features/feed/hooks/useUpdateFeed";
+import { notifyError } from "@/utils/notifyError";
+import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
 
 interface FormState {
-  pcomparisons: string
-  ncomparisons: string
+  pcomparisons: string;
+  ncomparisons: string;
 }
 
 const FeedComparisons: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
-  const {
-    status,
-    feed,
-    error,
-  } = useFeed({
+  const { status, feed, error } = useFeed({
     feedId,
   });
   const { mutateAsync } = useUpdateFeed();
   const [formState, setFormState] = useState<FormState>({
-    ncomparisons: '',
-    pcomparisons: '',
+    ncomparisons: "",
+    pcomparisons: "",
   });
   const [saving, setSaving] = useState(false);
 
   const formIsDifferent = !isEqual(
-    [[...formState.ncomparisons.split('\n').map((s) => s.trim()).filter(Boolean).sort()],
-      [...formState.pcomparisons.split('\n').map((s) => s.trim()).filter(Boolean).sort()]],
-    [[...feed?.ncomparisons?.sort() || []],
-      [...feed?.pcomparisons?.sort() || []]],
+    [
+      [
+        ...formState.ncomparisons
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .sort(),
+      ],
+      [
+        ...formState.pcomparisons
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .sort(),
+      ],
+    ],
+    [[...(feed?.ncomparisons?.sort() || [])], [...(feed?.pcomparisons?.sort() || [])]]
   );
 
   const resetForm = () => {
@@ -54,8 +63,8 @@ const FeedComparisons: React.FC = () => {
     }
 
     setFormState({
-      ncomparisons: feed.ncomparisons.join('\n'),
-      pcomparisons: feed.pcomparisons.join('\n'),
+      ncomparisons: feed.ncomparisons.join("\n"),
+      pcomparisons: feed.pcomparisons.join("\n"),
     });
   };
 
@@ -80,18 +89,24 @@ const FeedComparisons: React.FC = () => {
         feedId,
         details: {
           ncomparisons: formState.ncomparisons
-            .split('\n').map((s) => s.trim()).filter(Boolean).sort(),
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .sort(),
           pcomparisons: formState.pcomparisons
-            .split('\n').map((s) => s.trim()).filter(Boolean).sort(),
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .sort(),
         },
       });
 
       setFormState({
-        ncomparisons: response.result.ncomparisons.join('\n'),
-        pcomparisons: response.result.pcomparisons.join('\n'),
+        ncomparisons: response.result.ncomparisons.join("\n"),
+        pcomparisons: response.result.pcomparisons.join("\n"),
       });
     } catch (err) {
-      notifyError(t('common.errors.failedToSave'), err as Error);
+      notifyError(t("common.errors.failedToSave"), err as Error);
     } finally {
       setSaving(false);
     }
@@ -112,24 +127,18 @@ const FeedComparisons: React.FC = () => {
   };
 
   return (
-    <DashboardContent
-      loading={status === 'loading'}
-    >
+    <DashboardContent loading={status === "loading"}>
       <Stack spacing={8}>
         <Stack>
-          <Heading>{t('pages.comparisons.title')}</Heading>
-          <Text>
-            {t('pages.comparisons.description')}
-          </Text>
+          <Heading>{t("pages.comparisons.title")}</Heading>
+          <Text>{t("pages.comparisons.description")}</Text>
         </Stack>
         <FeedRawDumpButton feedId={feedId} />
         <form onSubmit={onSubmit}>
           <Stack spacing={4}>
             <Stack>
-              <Heading size="md">{t('pages.comparisons.passingComparisonsTitle')}</Heading>
-              <Text>
-                {t('pages.comparisons.passingComparisonsDescription')}
-              </Text>
+              <Heading size="md">{t("pages.comparisons.passingComparisonsTitle")}</Heading>
+              <Text>{t("pages.comparisons.passingComparisonsDescription")}</Text>
             </Stack>
             <FormControl>
               {/* <FormLabel>
@@ -146,17 +155,11 @@ const FeedComparisons: React.FC = () => {
                   onChangePcomparisons(e.target.value);
                 }}
               />
-              <FormHelperText>
-                {t('pages.comparisons.comparisonsInputHelperText')}
-              </FormHelperText>
+              <FormHelperText>{t("pages.comparisons.comparisonsInputHelperText")}</FormHelperText>
             </FormControl>
             <Stack>
-              <Heading size="md">
-                {t('pages.comparisons.blockingComparisonsTitle')}
-              </Heading>
-              <Text>
-                {t('pages.comparisons.blockingComparisonsDescription')}
-              </Text>
+              <Heading size="md">{t("pages.comparisons.blockingComparisonsTitle")}</Heading>
+              <Text>{t("pages.comparisons.blockingComparisonsDescription")}</Text>
             </Stack>
             <FormControl>
               {/* <FormLabel>
@@ -173,19 +176,12 @@ const FeedComparisons: React.FC = () => {
                   onChangeNcomparisons(e.target.value);
                 }}
               />
-              <FormHelperText>
-                {t('pages.comparisons.comparisonsInputHelperText')}
-              </FormHelperText>
+              <FormHelperText>{t("pages.comparisons.comparisonsInputHelperText")}</FormHelperText>
             </FormControl>
-
           </Stack>
           <HStack marginTop="4" justifyContent="flex-end">
-            <Button
-              variant="ghost"
-              onClick={resetForm}
-              isDisabled={!formIsDifferent || saving}
-            >
-              {t('pages.comparisons.resetButtonLabel')}
+            <Button variant="ghost" onClick={resetForm} isDisabled={!formIsDifferent || saving}>
+              {t("pages.comparisons.resetButtonLabel")}
             </Button>
             <Button
               colorScheme="blue"
@@ -193,7 +189,7 @@ const FeedComparisons: React.FC = () => {
               type="submit"
               isDisabled={!formIsDifferent || saving}
             >
-              {t('pages.comparisons.saveButtonLabel')}
+              {t("pages.comparisons.saveButtonLabel")}
             </Button>
           </HStack>
         </form>

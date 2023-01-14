@@ -10,19 +10,19 @@ import {
   Text,
   ThemingProps,
   useDisclosure,
-} from '@chakra-ui/react';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+} from "@chakra-ui/react";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
-  onConfirm: () => void
-  trigger: React.ReactElement
-  title?: string
-  description?: string
-  cancelText?: string
-  okText?: string
-  colorScheme?: ThemingProps['colorScheme']
-  okLoading?: boolean
+  onConfirm: () => void;
+  trigger: React.ReactElement;
+  title?: string;
+  description?: string;
+  cancelText?: string;
+  okText?: string;
+  colorScheme?: ThemingProps["colorScheme"];
+  okLoading?: boolean;
 }
 
 export const ConfirmModal = ({
@@ -58,7 +58,7 @@ export const ConfirmModal = ({
           )}
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>
-              {cancelText || t('common.buttons.cancel')}
+              {cancelText || t("common.buttons.cancel")}
             </Button>
             <Button
               isLoading={okLoading}
@@ -66,7 +66,7 @@ export const ConfirmModal = ({
               variant="solid"
               onClick={onClickConfirm}
             >
-              {okText || t('common.buttons.confirm')}
+              {okText || t("common.buttons.confirm")}
             </Button>
           </ModalFooter>
         </ModalContent>

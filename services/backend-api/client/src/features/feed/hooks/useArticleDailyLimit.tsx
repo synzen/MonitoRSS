@@ -1,25 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import {
-  getArticleDailyLimit, GetArticleDailyLimitOutput,
-} from '../api';
+import { useQuery } from "@tanstack/react-query";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { getArticleDailyLimit, GetArticleDailyLimitOutput } from "../api";
 
 interface Props {
-  feedId?: string
+  feedId?: string;
 }
 
 export const useArticleDailyLimit = ({ feedId }: Props) => {
-  const queryKey = ['article-daily-limit', {
-    feedId,
-  }];
+  const queryKey = [
+    "article-daily-limit",
+    {
+      feedId,
+    },
+  ];
 
-  const {
-    data, error,
-  } = useQuery<GetArticleDailyLimitOutput, ApiAdapterError | Error>(
+  const { data, error } = useQuery<GetArticleDailyLimitOutput, ApiAdapterError | Error>(
     queryKey,
     async () => {
       if (!feedId) {
-        throw new Error('Missing feed selection');
+        throw new Error("Missing feed selection");
       }
 
       return getArticleDailyLimit({
@@ -29,7 +28,7 @@ export const useArticleDailyLimit = ({ feedId }: Props) => {
     {
       enabled: !!feedId,
       refetchOnWindowFocus: true,
-    },
+    }
   );
 
   return {

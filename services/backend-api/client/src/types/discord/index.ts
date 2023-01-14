@@ -1,1 +1,1 @@
-export * from './DiscordMessageFormData';
+export * from "./DiscordMessageFormData";

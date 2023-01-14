@@ -1,12 +1,10 @@
-import {
-  array, InferType, object,
-} from 'yup';
-import qs from 'qs';
-import fetchRest from '../../../utils/fetchRest';
-import { DiscordWebhookSchema } from '../types';
+import { array, InferType, object } from "yup";
+import qs from "qs";
+import fetchRest from "../../../utils/fetchRest";
+import { DiscordWebhookSchema } from "../types";
 
 export interface GetDiscordWebhooksInput {
-  serverId: string
+  serverId: string;
 }
 
 const GetDiscordWebhooksOutputSchema = object({
@@ -15,9 +13,9 @@ const GetDiscordWebhooksOutputSchema = object({
 
 export type GetDiscordWebhooksOutput = InferType<typeof GetDiscordWebhooksOutputSchema>;
 
-export const getDiscordWebhooks = async (options: GetDiscordWebhooksInput): Promise<
-GetDiscordWebhooksOutput
-> => {
+export const getDiscordWebhooks = async (
+  options: GetDiscordWebhooksInput
+): Promise<GetDiscordWebhooksOutput> => {
   const query = qs.stringify({
     filters: {
       serverId: options.serverId,

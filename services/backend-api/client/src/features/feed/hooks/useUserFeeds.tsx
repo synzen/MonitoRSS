@@ -1,38 +1,38 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { pick } from 'lodash';
-import { getUserFeeds, GetUserFeedsOutput } from '../api';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { UserFeed } from '../types';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { pick } from "lodash";
+import { getUserFeeds, GetUserFeedsOutput } from "../api";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { UserFeed } from "../types";
 
 interface Props {
-  initialLimit?: number
+  initialLimit?: number;
 }
 
-export const useUserFeeds = ({ initialLimit }: Props = {
-  initialLimit: 10,
-}) => {
+export const useUserFeeds = (
+  { initialLimit }: Props = {
+    initialLimit: 10,
+  }
+) => {
   const [limit, setLimit] = useState(initialLimit);
   const [offset, setOffset] = useState(0);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
   const queryClient = useQueryClient();
 
-  const queryKey = ['user-feeds', {
-    limit,
-    offset,
-    search: search || '',
-  }];
+  const queryKey = [
+    "user-feeds",
+    {
+      limit,
+      offset,
+      search: search || "",
+    },
+  ];
 
-  const {
-    data,
-    status,
-    error,
-    isFetching,
-    isPreviousData,
-    isLoading,
-    refetch,
-  } = useQuery<GetUserFeedsOutput, ApiAdapterError>(
+  const { data, status, error, isFetching, isPreviousData, isLoading, refetch } = useQuery<
+    GetUserFeedsOutput,
+    ApiAdapterError
+  >(
     queryKey,
     async () => {
       const result = await getUserFeeds({
@@ -49,7 +49,7 @@ export const useUserFeeds = ({ initialLimit }: Props = {
       onError: () => {
         setHasErrored(true);
       },
-    },
+    }
   );
 
   const isFetchingNewPage = isLoading || (isFetching && isPreviousData);
@@ -90,7 +90,7 @@ export const useUserFeeds = ({ initialLimit }: Props = {
     isFetchingNewPage,
     isFetching,
     refetch,
-    search: search || '',
+    search: search || "",
     updateCachedFeed,
   };
 };

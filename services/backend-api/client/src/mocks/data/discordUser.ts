@@ -1,8 +1,8 @@
-import { DiscordUser } from '@/features/discordUser';
+import { DiscordUser } from "@/features/discordUser";
 
 const mockDiscordUser: DiscordUser = {
-  id: '1',
-  username: 'My name'.padEnd(1000, 'nasd'),
+  id: "1",
+  username: "My name".padEnd(1000, "nasd"),
   iconUrl: undefined,
   maxFeeds: 10,
   maxUserFeeds: 5,

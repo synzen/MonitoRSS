@@ -1,13 +1,13 @@
-import { InferType, object } from 'yup';
-import fetchRest from '../../../utils/fetchRest';
-import { DiscordServerSettingsSchema } from '../types';
+import { InferType, object } from "yup";
+import fetchRest from "../../../utils/fetchRest";
+import { DiscordServerSettingsSchema } from "../types";
 
 export interface UpdateServerSettingsInput {
   serverId: string;
   details: {
-    dateFormat?: string
-    timezone?: string
-  }
+    dateFormat?: string;
+    timezone?: string;
+  };
 }
 
 const UpdateServerSettingsOutputSchema = object({
@@ -19,18 +19,15 @@ const UpdateServerSettingsOutputSchema = object({
 export type UpdateServerSettingsOutput = InferType<typeof UpdateServerSettingsOutputSchema>;
 
 export const updateServerSettings = async (
-  options: UpdateServerSettingsInput,
+  options: UpdateServerSettingsInput
 ): Promise<UpdateServerSettingsOutput> => {
-  const res = await fetchRest(
-    `/api/v1/discord-servers/${options.serverId}`,
-    {
-      validateSchema: UpdateServerSettingsOutputSchema,
-      requestOptions: {
-        method: 'PATCH',
-        body: JSON.stringify(options.details),
-      },
+  const res = await fetchRest(`/api/v1/discord-servers/${options.serverId}`, {
+    validateSchema: UpdateServerSettingsOutputSchema,
+    requestOptions: {
+      method: "PATCH",
+      body: JSON.stringify(options.details),
     },
-  );
+  });
 
   return res as UpdateServerSettingsOutput;
 };

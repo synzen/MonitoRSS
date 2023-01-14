@@ -1,2 +1,2 @@
-export * from './DiscordUser';
-export * from './DiscordBot';
+export * from "./DiscordUser";
+export * from "./DiscordBot";

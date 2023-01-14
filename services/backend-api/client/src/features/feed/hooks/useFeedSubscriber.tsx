@@ -1,14 +1,12 @@
-import { useFeedSubscribers } from './useFeedSubscribers';
+import { useFeedSubscribers } from "./useFeedSubscribers";
 
 interface Props {
-  feedId?: string
-  subscriberId?: string
+  feedId?: string;
+  subscriberId?: string;
 }
 
 export const useFeedSubscriber = ({ feedId, subscriberId }: Props) => {
-  const {
-    data, status, error,
-  } = useFeedSubscribers({
+  const { data, status, error } = useFeedSubscribers({
     feedId,
   });
 

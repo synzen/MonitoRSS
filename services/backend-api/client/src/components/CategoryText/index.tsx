@@ -1,41 +1,32 @@
 /* eslint-disable react/jsx-props-no-spreading */
-import { QuestionOutlineIcon } from '@chakra-ui/icons';
-import {
-  HStack,
-  Stack,
-  StackProps,
-  Text,
-  Tooltip,
-} from '@chakra-ui/react';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { QuestionOutlineIcon } from "@chakra-ui/icons";
+import { HStack, Stack, StackProps, Text, Tooltip } from "@chakra-ui/react";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface DescriptionProps extends StackProps {
-  title: string
-  children: React.ReactNode
+  title: string;
+  children: React.ReactNode;
   helpTooltip?: {
-    buttonLabel?: string
-    description: string
-  }
-  helpText?: string
+    buttonLabel?: string;
+    description: string;
+  };
+  helpText?: string;
 }
 
-const QuestionOutlineComponent = React
-  .forwardRef<any>((props, ref) => (
-    <QuestionOutlineIcon
-      fontSize={12}
-      tabIndex={0}
-      ref={ref}
-      {...props}
-    />
+const QuestionOutlineComponent = React.forwardRef<any>((props, ref) => (
+  <QuestionOutlineIcon fontSize={12} tabIndex={0} ref={ref} {...props} />
 ));
 
 export const CategoryText: React.FC<DescriptionProps> = ({
-  title, children, helpTooltip, ...styles
+  title,
+  children,
+  helpTooltip,
+  ...styles
 }) => {
   const { t } = useTranslation();
 
-  const defaultTooltipLabel = t('common.components.categoryText.defaullTooltipLabel');
+  const defaultTooltipLabel = t("common.components.categoryText.defaullTooltipLabel");
 
   return (
     <Stack as="dl" spacing="1" {...styles}>
@@ -51,10 +42,10 @@ export const CategoryText: React.FC<DescriptionProps> = ({
           {title}
         </Text>
         {helpTooltip && (
-        <Tooltip label={helpTooltip.description}>
-          <QuestionOutlineComponent aria-label={helpTooltip.buttonLabel || defaultTooltipLabel} />
-        </Tooltip>
-        ) }
+          <Tooltip label={helpTooltip.description}>
+            <QuestionOutlineComponent aria-label={helpTooltip.buttonLabel || defaultTooltipLabel} />
+          </Tooltip>
+        )}
       </HStack>
       <Text fontSize="sm" fontWeight="medium">
         {children}

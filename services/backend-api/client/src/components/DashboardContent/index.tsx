@@ -1,19 +1,14 @@
-import {
-  Alert, AlertIcon, Box, Flex,
-} from '@chakra-ui/react';
-import { Loading } from '../Loading';
+import { Alert, AlertIcon, Box, Flex } from "@chakra-ui/react";
+import { Loading } from "../Loading";
 
 interface Props {
-  loading?: boolean
-  error?: Error | null
-  children?: React.ReactNode
+  loading?: boolean;
+  error?: Error | null;
+  children?: React.ReactNode;
 }
 
 export const DashboardContent = ({ loading, error, children }: Props) => (
-  <Flex
-    width="100%"
-    justifyContent="center"
-  >
+  <Flex width="100%" justifyContent="center">
     <Box
       maxWidth="7xl"
       width="100%"

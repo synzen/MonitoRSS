@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -11,29 +11,27 @@ import {
   Input,
   Stack,
   Text,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import { InferType, object, string } from 'yup';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect, useMemo, useState } from 'react';
-import moment from 'moment-timezone';
+} from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { InferType, object, string } from "yup";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useEffect, useMemo, useState } from "react";
+import moment from "moment-timezone";
 import {
   DiscordServerBackupButton,
   LiveClock,
   RequireServerBotAccess,
   useDiscordServerSettings,
   useUpdateDiscordServerSettings,
-} from '@/features/discordServers';
-import RouteParams from '@/types/RouteParams';
-import { DashboardContent } from '@/components';
-import getChakraColor from '@/utils/getChakraColor';
-import { notifyError } from '@/utils/notifyError';
+} from "@/features/discordServers";
+import RouteParams from "@/types/RouteParams";
+import { DashboardContent } from "@/components";
+import getChakraColor from "@/utils/getChakraColor";
+import { notifyError } from "@/utils/notifyError";
 // Must use moment for backwards compatibility with server logic
 
-interface Props {
-
-}
+interface Props {}
 
 export const ServerSettings: React.FC<Props> = () => {
   const { serverId } = useParams<RouteParams>();
@@ -41,28 +39,32 @@ export const ServerSettings: React.FC<Props> = () => {
   const { mutateAsync } = useUpdateDiscordServerSettings();
   const { t } = useTranslation();
 
-  const formSchema = useMemo(() => object({
-    dateFormat: string().min(1, t('pages.serverSettings.dateFormatInputErrorEmpty')),
-    timezone: string().test(
-      'timezone',
-      t('pages.serverSettings.timezoneInputErrorInvalid'),
-      (value) => {
-        if (!value) {
-          return false;
-        }
+  const formSchema = useMemo(
+    () =>
+      object({
+        dateFormat: string().min(1, t("pages.serverSettings.dateFormatInputErrorEmpty")),
+        timezone: string().test(
+          "timezone",
+          t("pages.serverSettings.timezoneInputErrorInvalid"),
+          (value) => {
+            if (!value) {
+              return false;
+            }
 
-        const zone = moment.tz.zone(value);
+            const zone = moment.tz.zone(value);
 
-        return !!zone;
-      },
-    ),
-  }).required(), []);
+            return !!zone;
+          }
+        ),
+      }).required(),
+    []
+  );
 
   type FormData = InferType<typeof formSchema>;
 
   const defaultFormValues = {
-    dateFormat: data?.profile.dateFormat || '',
-    timezone: data?.profile.timezone || '',
+    dateFormat: data?.profile.dateFormat || "",
+    timezone: data?.profile.timezone || "",
   };
   const [formValuesSoFar, setFormValuesSoFar] = useState<FormData>(defaultFormValues);
   const {
@@ -70,11 +72,7 @@ export const ServerSettings: React.FC<Props> = () => {
     reset,
     watch,
     register,
-    formState: {
-      isDirty,
-      isSubmitting,
-      errors,
-    },
+    formState: { isDirty, isSubmitting, errors },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
@@ -99,7 +97,7 @@ export const ServerSettings: React.FC<Props> = () => {
       });
       reset(newData);
     } catch (err) {
-      notifyError(t('common.errors.failedToSave'), err as Error);
+      notifyError(t("common.errors.failedToSave"), err as Error);
     }
   };
 
@@ -116,21 +114,16 @@ export const ServerSettings: React.FC<Props> = () => {
   }, [watch]);
 
   return (
-    <RequireServerBotAccess
-      serverId={serverId}
-    >
-      <DashboardContent
-        error={error}
-        loading={status === 'loading'}
-      >
+    <RequireServerBotAccess serverId={serverId}>
+      <DashboardContent error={error} loading={status === "loading"}>
         <Stack spacing={6}>
-          <Heading as="h1">{t('pages.serverSettings.title')}</Heading>
+          <Heading as="h1">{t("pages.serverSettings.title")}</Heading>
           <Stack spacing={8}>
-            <Heading as="h2" size="lg">{t('pages.serverSettings.datesTitle')}</Heading>
+            <Heading as="h2" size="lg">
+              {t("pages.serverSettings.datesTitle")}
+            </Heading>
             <Box>
-              <FormLabel>
-                {t('pages.serverSettings.previewLabel')}
-              </FormLabel>
+              <FormLabel>{t("pages.serverSettings.previewLabel")}</FormLabel>
               <Text fontSize="2xl" fontWeight="light">
                 <LiveClock
                   dateFormat={formValuesSoFar.dateFormat}
@@ -141,62 +134,44 @@ export const ServerSettings: React.FC<Props> = () => {
             <form onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors?.dateFormat}>
-                  <FormLabel>
-                    {t('pages.serverSettings.dateFormatInputLabel')}
-                  </FormLabel>
-                  <Input
-                    {...register('dateFormat')}
-                  />
+                  <FormLabel>{t("pages.serverSettings.dateFormatInputLabel")}</FormLabel>
+                  <Input {...register("dateFormat")} />
                   <FormHelperText>
-                    {t('pages.serverSettings.dateFormatInputDescription')}
-                    {' '}
+                    {t("pages.serverSettings.dateFormatInputDescription")}{" "}
                     <a
                       style={{
-                        color: getChakraColor('blue.500'),
+                        color: getChakraColor("blue.500"),
                       }}
                       href="https://momentjs.com/docs/#/displaying/"
                       target="_blank"
                       rel="noreferrer"
                     >
-                      {t('pages.serverSettings.dateFormatInputDescriptionPromot')}
+                      {t("pages.serverSettings.dateFormatInputDescriptionPromot")}
                     </a>
                   </FormHelperText>
-                  <FormErrorMessage>
-                    {errors.dateFormat?.message}
-                  </FormErrorMessage>
+                  <FormErrorMessage>{errors.dateFormat?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors?.timezone}>
-                  <FormLabel>
-                    {t('pages.serverSettings.timezoneInputLabel')}
-                  </FormLabel>
-                  <Input
-                    {...register('timezone')}
-                  />
+                  <FormLabel>{t("pages.serverSettings.timezoneInputLabel")}</FormLabel>
+                  <Input {...register("timezone")} />
                   <FormHelperText>
-                    {t('pages.serverSettings.timezoneInputDescription')}
-                    {' '}
+                    {t("pages.serverSettings.timezoneInputDescription")}{" "}
                     <a
                       style={{
-                        color: getChakraColor('blue.500'),
+                        color: getChakraColor("blue.500"),
                       }}
                       href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                       target="_blank"
                       rel="noreferrer"
                     >
-                      {t('pages.serverSettings.timezoneInputDescriptionPrompt')}
+                      {t("pages.serverSettings.timezoneInputDescriptionPrompt")}
                     </a>
                   </FormHelperText>
-                  <FormErrorMessage>
-                    {errors.timezone?.message}
-                  </FormErrorMessage>
+                  <FormErrorMessage>{errors.timezone?.message}</FormErrorMessage>
                 </FormControl>
                 <HStack justifyContent="flex-end">
-                  <Button
-                    variant="ghost"
-                    disabled={!isDirty || isSubmitting}
-                    onClick={resetForm}
-                  >
-                    {t('pages.serverSettings.resetButton')}
+                  <Button variant="ghost" disabled={!isDirty || isSubmitting} onClick={resetForm}>
+                    {t("pages.serverSettings.resetButton")}
                   </Button>
                   <Button
                     colorScheme="blue"
@@ -204,7 +179,7 @@ export const ServerSettings: React.FC<Props> = () => {
                     isLoading={isSubmitting}
                     type="submit"
                   >
-                    {t('pages.serverSettings.saveButton')}
+                    {t("pages.serverSettings.saveButton")}
                   </Button>
                 </HStack>
               </Stack>
@@ -212,10 +187,10 @@ export const ServerSettings: React.FC<Props> = () => {
           </Stack>
           <Stack spacing={8}>
             <Stack>
-              <Heading as="h2" size="lg">{t('pages.serverSettings.backupTitle')}</Heading>
-              <Text>
-                {t('pages.serverSettings.backupDescription')}
-              </Text>
+              <Heading as="h2" size="lg">
+                {t("pages.serverSettings.backupTitle")}
+              </Heading>
+              <Text>{t("pages.serverSettings.backupDescription")}</Text>
             </Stack>
             <Box>
               <DiscordServerBackupButton serverId={serverId} />

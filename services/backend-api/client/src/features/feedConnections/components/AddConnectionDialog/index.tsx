@@ -1,10 +1,10 @@
-import { Box } from '@chakra-ui/react';
-import { FeedConnectionType } from '@/types';
-import { DiscordChannelConnectionContent } from './DiscordChannelConnectionContent';
-import { DiscordWebhookConnectionContent } from './DiscordWebhookConnectionContent';
+import { Box } from "@chakra-ui/react";
+import { FeedConnectionType } from "@/types";
+import { DiscordChannelConnectionContent } from "./DiscordChannelConnectionContent";
+import { DiscordWebhookConnectionContent } from "./DiscordWebhookConnectionContent";
 
 interface Props {
-  type?: FeedConnectionType
+  type?: FeedConnectionType;
   isOpen: boolean;
   onClose: () => void;
 }

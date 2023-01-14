@@ -1,23 +1,14 @@
-import { CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import {
-  Box,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
+import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
+import { Box, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
-  displayPropertyName: string
+  displayPropertyName: string;
   articles: Array<{
     id: string;
     propertyValue: string;
-    passedFilters?: boolean
-  }>
+    passedFilters?: boolean;
+  }>;
 }
 
 export const ArticleFilterResultsTable = ({ articles, displayPropertyName }: Props) => {
@@ -25,27 +16,18 @@ export const ArticleFilterResultsTable = ({ articles, displayPropertyName }: Pro
 
   return (
     <Box>
-
-      <Box
-        position="relative"
-        border="solid 1px"
-        borderColor="gray.600"
-        borderRadius="md"
-      >
-        <Box
-          maxHeight="sm"
-          overflow="auto"
-        >
+      <Box position="relative" border="solid 1px" borderColor="gray.600" borderRadius="md">
+        <Box maxHeight="sm" overflow="auto">
           <TableContainer>
             <Table size="sm">
               <Thead>
                 <Tr>
-                  <Th>
-                    {displayPropertyName}
-                  </Th>
+                  <Th>{displayPropertyName}</Th>
                   <Th isNumeric>
-                    {t('features.feedConnections.components'
-                      + '.articleFilterResultsTable.columnHeaderPassedFilters')}
+                    {t(
+                      "features.feedConnections.components" +
+                        ".articleFilterResultsTable.columnHeaderPassedFilters"
+                    )}
                   </Th>
                 </Tr>
               </Thead>

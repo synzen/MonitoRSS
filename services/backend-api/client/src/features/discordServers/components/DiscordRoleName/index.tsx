@@ -1,18 +1,15 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import { useMemo } from 'react';
-import { Text, Tooltip } from '@chakra-ui/react';
-import { Loading } from '@/components';
-import { useDiscordServerRoles } from '../../hooks';
+import { useMemo } from "react";
+import { Text, Tooltip } from "@chakra-ui/react";
+import { Loading } from "@/components";
+import { useDiscordServerRoles } from "../../hooks";
 
 interface Props {
-  serverId?: string
-  roleId: string
+  serverId?: string;
+  roleId: string;
 }
 
-export const DiscordRoleName: React.FC<Props> = ({
-  serverId,
-  roleId,
-}) => {
+export const DiscordRoleName: React.FC<Props> = ({ serverId, roleId }) => {
   const { data, status, error } = useDiscordServerRoles({ serverId });
   const roleNamesById = useMemo(() => {
     const map = new Map<string, string>();
@@ -26,19 +23,14 @@ export const DiscordRoleName: React.FC<Props> = ({
     return map;
   }, [data]);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return <Loading size="sm" />;
   }
 
   if (error) {
     return (
-      <Tooltip
-        placement="bottom-start"
-        label={`Unable to get role name (${error?.message})`}
-      >
-        <Text color="orange.500">
-          {roleId}
-        </Text>
+      <Tooltip placement="bottom-start" label={`Unable to get role name (${error?.message})`}>
+        <Text color="orange.500">{roleId}</Text>
       </Tooltip>
     );
   }

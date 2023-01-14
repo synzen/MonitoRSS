@@ -11,101 +11,83 @@ import {
   InputGroup,
   InputLeftElement,
   Stack,
-  Table, Td, Text, Th, Thead, Tr,
+  Table,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
   Box,
   InputRightElement,
   Spinner,
   HStack,
-} from '@chakra-ui/react';
-import { useEffect, useMemo } from 'react';
-import {
-  useTable, usePagination, Column, useGlobalFilter,
-} from 'react-table';
-import { useTranslation } from 'react-i18next';
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons';
-import { debounce } from 'lodash';
-import { useFeeds } from '../../hooks';
-import { Feed } from '@/types';
-import { Loading } from '@/components';
-import { DiscordChannelName } from '@/features/discordServers/components/DiscordChannelName';
-import { AddFeedDialog } from '../AddFeedDialog';
-import { FeedStatusTag } from './FeedStatusTag';
+} from "@chakra-ui/react";
+import { useEffect, useMemo } from "react";
+import { useTable, usePagination, Column, useGlobalFilter } from "react-table";
+import { useTranslation } from "react-i18next";
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
+import { debounce } from "lodash";
+import { useFeeds } from "../../hooks";
+import { Feed } from "@/types";
+import { Loading } from "@/components";
+import { DiscordChannelName } from "@/features/discordServers/components/DiscordChannelName";
+import { AddFeedDialog } from "../AddFeedDialog";
+import { FeedStatusTag } from "./FeedStatusTag";
 
 interface Props {
-  serverId?: string
-  selectedFeedId?: string
-  onSelectedFeedId?: (feedId: string) => void
+  serverId?: string;
+  selectedFeedId?: string;
+  onSelectedFeedId?: (feedId: string) => void;
 }
 
 const DEFAULT_MAX_PER_PAGE = 10;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
-export const FeedsTable: React.FC<Props> = ({
-  serverId,
-  selectedFeedId,
-  onSelectedFeedId,
-}) => {
+export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelectedFeedId }) => {
   const { t } = useTranslation();
-  const {
-    data,
-    status,
-    error,
-    setOffset,
-    isFetchingNewPage,
-    search,
-    setSearch,
-    isFetching,
-  } = useFeeds({
-    serverId,
-    initialLimit: maxPerPage,
-  });
+  const { data, status, error, setOffset, isFetchingNewPage, search, setSearch, isFetching } =
+    useFeeds({
+      serverId,
+      initialLimit: maxPerPage,
+    });
 
   const tableData = useMemo(
-    () => (data?.results || []).map((feed) => ({
-      id: feed.id,
-      status: feed.status,
-      title: feed.title,
-      url: feed.url,
-      channel: feed.channel,
-    })),
-    [data],
+    () =>
+      (data?.results || []).map((feed) => ({
+        id: feed.id,
+        status: feed.status,
+        title: feed.title,
+        url: feed.url,
+        channel: feed.channel,
+      })),
+    [data]
   );
 
   const total = data?.total || 0;
 
-  const columns = useMemo<Column<Pick<Feed, 'status' | 'title' | 'url' | 'channel' | 'id'>>[]>(
+  const columns = useMemo<Column<Pick<Feed, "status" | "title" | "url" | "channel" | "id">>[]>(
     () => [
       {
-        Header: t('pages.feeds.tableStatus') as string,
-        accessor: 'status', // accessor is the "key" in the data
-        Cell: ({
-          cell: {
-            value,
-          },
-        }) => <FeedStatusTag status={value} />,
+        Header: t("pages.feeds.tableStatus") as string,
+        accessor: "status", // accessor is the "key" in the data
+        Cell: ({ cell: { value } }) => <FeedStatusTag status={value} />,
       },
       {
-        Header: t('pages.feeds.tableTitle') as string,
-        accessor: 'title',
+        Header: t("pages.feeds.tableTitle") as string,
+        accessor: "title",
       },
       {
-        Header: t('pages.feeds.tableUrl') as string,
-        accessor: 'url',
+        Header: t("pages.feeds.tableUrl") as string,
+        accessor: "url",
       },
       {
-        Header: t('pages.feeds.tableChannel') as string,
-        accessor: 'channel',
-        Cell: ({
-          cell: {
-            value,
-          },
-        }) => <DiscordChannelName serverId={serverId} channelId={value} />,
+        Header: t("pages.feeds.tableChannel") as string,
+        accessor: "channel",
+        Cell: ({ cell: { value } }) => <DiscordChannelName serverId={serverId} channelId={value} />,
       },
     ],
-    [
-      serverId,
-    ],
+    [serverId]
   );
 
   const tableInstance = useTable(
@@ -120,7 +102,7 @@ export const FeedsTable: React.FC<Props> = ({
       },
     },
     useGlobalFilter,
-    usePagination,
+    usePagination
   );
 
   const {
@@ -134,9 +116,7 @@ export const FeedsTable: React.FC<Props> = ({
     canPreviousPage,
     page,
     setGlobalFilter,
-    state: {
-      pageIndex,
-    },
+    state: { pageIndex },
   } = tableInstance;
 
   useEffect(() => {
@@ -152,7 +132,7 @@ export const FeedsTable: React.FC<Props> = ({
     setSearch(value);
   }, 500);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <Center width="100%" height="100%">
         <Loading size="lg" />
@@ -160,7 +140,7 @@ export const FeedsTable: React.FC<Props> = ({
     );
   }
 
-  if (status === 'error') {
+  if (status === "error") {
     return (
       <Alert status="error">
         <AlertIcon />
@@ -173,25 +153,17 @@ export const FeedsTable: React.FC<Props> = ({
     <Stack>
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">
-          <InputLeftElement
-            pointerEvents="none"
-          >
+          <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.400" />
           </InputLeftElement>
           <Input
-            onChange={({
-              target: {
-                value,
-              },
-            }) => {
+            onChange={({ target: { value } }) => {
               onSearchChange(value);
             }}
             minWidth="325px"
-            placeholder={t('pages.feeds.tableSearch')}
+            placeholder={t("pages.feeds.tableSearch")}
           />
-          <InputRightElement>
-            {search && isFetching && <Spinner size="sm" />}
-          </InputRightElement>
+          <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
         </InputGroup>
         <AddFeedDialog />
       </HStack>
@@ -210,9 +182,7 @@ export const FeedsTable: React.FC<Props> = ({
             {headerGroups.map((headerGroup) => (
               <Tr {...headerGroup.getHeaderGroupProps()}>
                 {headerGroup.headers.map((column) => (
-                  <Th {...column.getHeaderProps()}>
-                    {column.render('Header')}
-                  </Th>
+                  <Th {...column.getHeaderProps()}>{column.render("Header")}</Th>
                 ))}
               </Tr>
             ))}
@@ -228,19 +198,19 @@ export const FeedsTable: React.FC<Props> = ({
                   tabIndex={0}
                   zIndex={100}
                   position="relative"
-                  bg={selectedFeedId === feed.id ? 'gray.700' : undefined}
+                  bg={selectedFeedId === feed.id ? "gray.700" : undefined}
                   _hover={{
-                    bg: 'gray.700',
-                    cursor: 'pointer',
-                    boxShadow: 'outline',
+                    bg: "gray.700",
+                    cursor: "pointer",
+                    boxShadow: "outline",
                   }}
                   _focus={{
-                    boxShadow: 'outline',
-                    outline: 'none',
+                    boxShadow: "outline",
+                    outline: "none",
                   }}
                   onClick={() => onClickFeedRow(feed.id)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       onClickFeedRow(feed.id);
                     }
                   }}
@@ -252,7 +222,7 @@ export const FeedsTable: React.FC<Props> = ({
                       overflow="hidden"
                       textOverflow="ellipsis"
                     >
-                      {cell.render('Cell')}
+                      {cell.render("Cell")}
                     </Td>
                   ))}
                 </Tr>
@@ -263,15 +233,11 @@ export const FeedsTable: React.FC<Props> = ({
       </Box>
       <Flex justifyContent="space-between" flexWrap="wrap">
         <Text marginBottom="4">
-          {t('pages.feeds.tableResults', {
+          {t("pages.feeds.tableResults", {
             start: pageIndex * maxPerPage + 1,
-            end: Math.min(
-              (pageIndex + 1) * maxPerPage,
-              total,
-            ),
+            end: Math.min((pageIndex + 1) * maxPerPage, total),
             total,
           })}
-
         </Text>
         <ButtonGroup>
           <IconButton
@@ -281,9 +247,7 @@ export const FeedsTable: React.FC<Props> = ({
             isDisabled={isFetchingNewPage || !canPreviousPage}
           />
           <Flex alignItems="center">
-            <Text>{pageIndex + 1}</Text>
-            /
-            <Text>{Math.ceil(total / maxPerPage)}</Text>
+            <Text>{pageIndex + 1}</Text>/<Text>{Math.ceil(total / maxPerPage)}</Text>
           </Flex>
           <IconButton
             icon={<ChevronRightIcon />}

@@ -1,25 +1,26 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getFeed, GetFeedOutput } from '../api';
-import { Feed } from '@/types';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { getFeed, GetFeedOutput } from "../api";
+import { Feed } from "@/types";
 
 interface Props {
-  feedId?: string
+  feedId?: string;
 }
 
 export const useFeed = ({ feedId }: Props) => {
   const queryClient = useQueryClient();
-  const queryKey = ['feed', {
-    feedId,
-  }];
+  const queryKey = [
+    "feed",
+    {
+      feedId,
+    },
+  ];
 
-  const {
-    data, error, refetch, status,
-  } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
+  const { data, error, refetch, status } = useQuery<GetFeedOutput, ApiAdapterError | Error>(
     queryKey,
     async () => {
       if (!feedId) {
-        throw new Error('Missing feed selection');
+        throw new Error("Missing feed selection");
       }
 
       return getFeed({
@@ -28,7 +29,7 @@ export const useFeed = ({ feedId }: Props) => {
     },
     {
       enabled: !!feedId,
-    },
+    }
   );
 
   const updateCache = (details: Partial<Feed>) => {

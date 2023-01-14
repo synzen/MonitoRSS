@@ -1,18 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getServerSettings } from '../api';
-import { useDiscordServerAccessStatus } from './useDiscordServerAccessStatus';
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { getServerSettings } from "../api";
+import { useDiscordServerAccessStatus } from "./useDiscordServerAccessStatus";
 
 interface Props {
-  serverId?: string
+  serverId?: string;
 }
 
 export interface UseDiscordServerSettingsData {
   profile: {
-    dateFormat: string
-    timezone: string
-  }
+    dateFormat: string;
+    timezone: string;
+  };
 }
 
 export const useDiscordServerSettings = ({ serverId }: Props) => {
@@ -20,10 +20,10 @@ export const useDiscordServerSettings = ({ serverId }: Props) => {
   const { data: accessStatus } = useDiscordServerAccessStatus({ serverId });
 
   const { data, error, status } = useQuery<UseDiscordServerSettingsData, ApiAdapterError>(
-    ['server-settings', serverId],
+    ["server-settings", serverId],
     async () => {
       if (!serverId) {
-        throw new Error('Server ID is required when fetching discord server settings');
+        throw new Error("Server ID is required when fetching discord server settings");
       }
 
       const response = await getServerSettings({ serverId });
@@ -38,7 +38,7 @@ export const useDiscordServerSettings = ({ serverId }: Props) => {
     {
       enabled: accessStatus?.result.authorized && !hasErrored,
       onError: () => setHasErrored(true),
-    },
+    }
   );
 
   return {

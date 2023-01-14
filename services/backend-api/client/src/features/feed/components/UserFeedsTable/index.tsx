@@ -11,85 +11,73 @@ import {
   InputGroup,
   InputLeftElement,
   Stack,
-  Table, Td, Text, Th, Thead, Tr,
+  Table,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
   Box,
   InputRightElement,
   Spinner,
   HStack,
-} from '@chakra-ui/react';
-import { useEffect, useMemo } from 'react';
-import {
-  useTable, usePagination, Column, useGlobalFilter,
-} from 'react-table';
-import { useTranslation } from 'react-i18next';
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from '@chakra-ui/icons';
-import { debounce } from 'lodash';
-import { useUserFeeds } from '../../hooks';
-import { Loading } from '@/components';
-import { AddUserFeedDialog } from '../AddUserFeedDialog';
-import { UserFeed } from '../../types';
-import { UserFeedStatusTag } from './UserFeedStatusTag';
+} from "@chakra-ui/react";
+import { useEffect, useMemo } from "react";
+import { useTable, usePagination, Column, useGlobalFilter } from "react-table";
+import { useTranslation } from "react-i18next";
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
+import { debounce } from "lodash";
+import { useUserFeeds } from "../../hooks";
+import { Loading } from "@/components";
+import { AddUserFeedDialog } from "../AddUserFeedDialog";
+import { UserFeed } from "../../types";
+import { UserFeedStatusTag } from "./UserFeedStatusTag";
 
 interface Props {
-  onSelectedFeedId?: (feedId: string) => void
+  onSelectedFeedId?: (feedId: string) => void;
 }
 
 const DEFAULT_MAX_PER_PAGE = 10;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
-export const UserFeedsTable: React.FC<Props> = ({
-  onSelectedFeedId,
-}) => {
+export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
-  const {
-    data,
-    status,
-    error,
-    setOffset,
-    isFetchingNewPage,
-    search,
-    setSearch,
-    isFetching,
-  } = useUserFeeds({
-    initialLimit: maxPerPage,
-  });
+  const { data, status, error, setOffset, isFetchingNewPage, search, setSearch, isFetching } =
+    useUserFeeds({
+      initialLimit: maxPerPage,
+    });
 
   const tableData = useMemo(
-    () => (data?.results || []).map((feed) => ({
-      id: feed.id,
-      disabledCode: feed.disabledCode,
-      title: feed.title,
-      url: feed.url,
-    })),
-    [data],
+    () =>
+      (data?.results || []).map((feed) => ({
+        id: feed.id,
+        disabledCode: feed.disabledCode,
+        title: feed.title,
+        url: feed.url,
+      })),
+    [data]
   );
 
   const total = data?.total || 0;
 
-  const columns = useMemo<Column<Pick<
-  UserFeed, 'title' | 'url' | 'id' | 'disabledCode'
-  >>[]>(
+  const columns = useMemo<Column<Pick<UserFeed, "title" | "url" | "id" | "disabledCode">>[]>(
     () => [
       {
-        Header: t('pages.feeds.tableStatus') as string,
-        accessor: 'disabledCode', // accessor is the "key" in the data
-        Cell: ({
-          cell: {
-            value,
-          },
-        }) => <UserFeedStatusTag disabledCode={value} />,
+        Header: t("pages.feeds.tableStatus") as string,
+        accessor: "disabledCode", // accessor is the "key" in the data
+        Cell: ({ cell: { value } }) => <UserFeedStatusTag disabledCode={value} />,
       },
       {
-        Header: t('pages.feeds.tableTitle') as string,
-        accessor: 'title',
+        Header: t("pages.feeds.tableTitle") as string,
+        accessor: "title",
       },
       {
-        Header: t('pages.feeds.tableUrl') as string,
-        accessor: 'url',
+        Header: t("pages.feeds.tableUrl") as string,
+        accessor: "url",
       },
     ],
-    [],
+    []
   );
 
   const tableInstance = useTable(
@@ -104,7 +92,7 @@ export const UserFeedsTable: React.FC<Props> = ({
       },
     },
     useGlobalFilter,
-    usePagination,
+    usePagination
   );
 
   const {
@@ -118,9 +106,7 @@ export const UserFeedsTable: React.FC<Props> = ({
     canPreviousPage,
     page,
     setGlobalFilter,
-    state: {
-      pageIndex,
-    },
+    state: { pageIndex },
   } = tableInstance;
 
   useEffect(() => {
@@ -136,7 +122,7 @@ export const UserFeedsTable: React.FC<Props> = ({
     setSearch(value);
   }, 500);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <Center width="100%" height="100%">
         <Loading size="lg" />
@@ -144,7 +130,7 @@ export const UserFeedsTable: React.FC<Props> = ({
     );
   }
 
-  if (status === 'error') {
+  if (status === "error") {
     return (
       <Alert status="error">
         <AlertIcon />
@@ -157,25 +143,17 @@ export const UserFeedsTable: React.FC<Props> = ({
     <Stack>
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">
-          <InputLeftElement
-            pointerEvents="none"
-          >
+          <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.400" />
           </InputLeftElement>
           <Input
-            onChange={({
-              target: {
-                value,
-              },
-            }) => {
+            onChange={({ target: { value } }) => {
               onSearchChange(value);
             }}
             minWidth="325px"
-            placeholder={t('pages.feeds.tableSearch')}
+            placeholder={t("pages.feeds.tableSearch")}
           />
-          <InputRightElement>
-            {search && isFetching && <Spinner size="sm" />}
-          </InputRightElement>
+          <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
         </InputGroup>
         <AddUserFeedDialog />
       </HStack>
@@ -193,9 +171,7 @@ export const UserFeedsTable: React.FC<Props> = ({
             {headerGroups.map((headerGroup) => (
               <Tr {...headerGroup.getHeaderGroupProps()}>
                 {headerGroup.headers.map((column) => (
-                  <Th {...column.getHeaderProps()}>
-                    {column.render('Header')}
-                  </Th>
+                  <Th {...column.getHeaderProps()}>{column.render("Header")}</Th>
                 ))}
               </Tr>
             ))}
@@ -212,17 +188,17 @@ export const UserFeedsTable: React.FC<Props> = ({
                   zIndex={100}
                   position="relative"
                   _hover={{
-                    bg: 'gray.700',
-                    cursor: 'pointer',
-                    boxShadow: 'outline',
+                    bg: "gray.700",
+                    cursor: "pointer",
+                    boxShadow: "outline",
                   }}
                   _focus={{
-                    boxShadow: 'outline',
-                    outline: 'none',
+                    boxShadow: "outline",
+                    outline: "none",
                   }}
                   onClick={() => onClickFeedRow(feed.id)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       onClickFeedRow(feed.id);
                     }
                   }}
@@ -234,7 +210,7 @@ export const UserFeedsTable: React.FC<Props> = ({
                       overflow="hidden"
                       textOverflow="ellipsis"
                     >
-                      {cell.render('Cell')}
+                      {cell.render("Cell")}
                     </Td>
                   ))}
                 </Tr>
@@ -245,15 +221,11 @@ export const UserFeedsTable: React.FC<Props> = ({
       </Box>
       <Flex justifyContent="space-between" flexWrap="wrap">
         <Text marginBottom="4">
-          {t('pages.feeds.tableResults', {
+          {t("pages.feeds.tableResults", {
             start: pageIndex * maxPerPage + 1,
-            end: Math.min(
-              (pageIndex + 1) * maxPerPage,
-              total,
-            ),
+            end: Math.min((pageIndex + 1) * maxPerPage, total),
             total,
           })}
-
         </Text>
         <ButtonGroup>
           <IconButton
@@ -263,9 +235,7 @@ export const UserFeedsTable: React.FC<Props> = ({
             isDisabled={isFetchingNewPage || !canPreviousPage}
           />
           <Flex alignItems="center">
-            <Text>{pageIndex + 1}</Text>
-            /
-            <Text>{Math.ceil(total / maxPerPage)}</Text>
+            <Text>{pageIndex + 1}</Text>/<Text>{Math.ceil(total / maxPerPage)}</Text>
           </Flex>
           <IconButton
             icon={<ChevronRightIcon />}

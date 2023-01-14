@@ -1,16 +1,7 @@
-import {
-  Checkbox,
-  FormControl, Input, Stack, Text, Textarea,
-} from '@chakra-ui/react';
+import { Checkbox, FormControl, Input, Stack, Text, Textarea } from "@chakra-ui/react";
 
 const EmbedFieldInput = () => (
-  <Stack
-    backgroundColor="gray.700"
-    borderRadius="8"
-    padding="4"
-    spacing="8"
-    minWidth="250px"
-  >
+  <Stack backgroundColor="gray.700" borderRadius="8" padding="4" spacing="8" minWidth="250px">
     <Text fontWeight="semibold">Field 1</Text>
     <Stack spacing="4">
       <FormControl>

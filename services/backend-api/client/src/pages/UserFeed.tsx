@@ -26,14 +26,12 @@ import {
   Tabs,
   Text,
   useDisclosure,
-} from '@chakra-ui/react';
-import {
-  useParams, Link as RouterLink, useNavigate, useLocation,
-} from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon } from '@chakra-ui/icons';
-import { useRef, useState } from 'react';
-import { BoxConstrained, CategoryText, ConfirmModal } from '@/components';
+} from "@chakra-ui/react";
+import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { ChevronDownIcon } from "@chakra-ui/icons";
+import { useRef, useState } from "react";
+import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
   EditUserFeedDialog,
   RefreshUserFeedButton,
@@ -42,22 +40,22 @@ import {
   UserFeedDisabledCode,
   useUpdateUserFeed,
   useUserFeed,
-} from '../features/feed';
-import RouteParams from '../types/RouteParams';
-import { DashboardContentV2 } from '../components/DashboardContentV2';
-import { AddConnectionDialog } from '../features/feedConnections';
-import { FeedConnectionType } from '../types';
-import { notifySuccess } from '../utils/notifySuccess';
-import { notifyError } from '../utils/notifyError';
-import { pages } from '../constants';
-import { UserFeedRequestsTable } from '../features/feed/components/UserFeedRequestsTable';
+} from "../features/feed";
+import RouteParams from "../types/RouteParams";
+import { DashboardContentV2 } from "../components/DashboardContentV2";
+import { AddConnectionDialog } from "../features/feedConnections";
+import { FeedConnectionType } from "../types";
+import { notifySuccess } from "../utils/notifySuccess";
+import { notifyError } from "../utils/notifyError";
+import { pages } from "../constants";
+import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
 
 const getDefaultTabIndex = (search: string) => {
-  if (search.includes('view=connections')) {
+  if (search.includes("view=connections")) {
     return 0;
   }
 
-  if (search.includes('view=logs')) {
+  if (search.includes("view=logs")) {
     return 1;
   }
 
@@ -65,8 +63,8 @@ const getDefaultTabIndex = (search: string) => {
 };
 
 const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
-  [FeedConnectionType.DiscordChannel]: 'Discord Channel',
-  [FeedConnectionType.DiscordWebhook]: 'Discord Webhook',
+  [FeedConnectionType.DiscordChannel]: "Discord Channel",
+  [FeedConnectionType.DiscordWebhook]: "Discord Webhook",
 };
 
 export const UserFeed: React.FC = () => {
@@ -78,27 +76,17 @@ export const UserFeed: React.FC = () => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
-    undefined,
+    undefined
   );
-  const {
-    data: dailyLimit,
-  } = useArticleDailyLimit({
+  const { data: dailyLimit } = useArticleDailyLimit({
     feedId,
   });
-  const {
-    feed, status, error,
-  } = useUserFeed({
+  const { feed, status, error } = useUserFeed({
     feedId,
   });
-  const {
-    mutateAsync: mutateAsyncUserFeed,
-    status: updatingStatus,
-  } = useUpdateUserFeed();
+  const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
 
-  const {
-    mutateAsync,
-    status: deleteingStatus,
-  } = useDeleteUserFeed();
+  const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
 
   const onAddConnection = (type: FeedConnectionType) => {
     setAddConnectionType(type);
@@ -116,10 +104,10 @@ export const UserFeed: React.FC = () => {
       await mutateAsync({
         feedId,
       });
-      notifySuccess(t('common.success.deleted'));
+      notifySuccess(t("common.success.deleted"));
       navigate(pages.userFeeds());
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
 
@@ -127,7 +115,11 @@ export const UserFeed: React.FC = () => {
     title,
     url,
     disabledCode,
-  }: { title?: string, url?: string, disabledCode?: UserFeedDisabledCode.Manual | null }) => {
+  }: {
+    title?: string;
+    url?: string;
+    disabledCode?: UserFeedDisabledCode.Manual | null;
+  }) => {
     if (!feedId) {
       return;
     }
@@ -141,18 +133,15 @@ export const UserFeed: React.FC = () => {
           disabledCode,
         },
       });
-      notifySuccess(t('common.success.savedChanges'));
+      notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
       throw err;
     }
   };
 
   return (
-    <DashboardContentV2
-      error={error}
-      loading={status === 'loading'}
-    >
+    <DashboardContentV2 error={error} loading={status === "loading"}>
       <AddConnectionDialog isOpen={isOpen} type={addConnectionType} onClose={onClose} />
       <EditUserFeedDialog
         onCloseRef={menuButtonRef}
@@ -172,45 +161,30 @@ export const UserFeed: React.FC = () => {
           background="gray.700"
           alignItems="center"
         >
-          <Stack
-            maxWidth="1400px"
-            width="100%"
-            paddingX={{ base: 4, lg: 12 }}
-            spacing={6}
-          >
+          <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, lg: 12 }} spacing={6}>
             <Stack spacing={6}>
-              <Stack
-                spacing={4}
-              >
+              <Stack spacing={4}>
                 <HStack justifyContent="space-between">
                   <Box>
                     <Breadcrumb>
                       <BreadcrumbItem>
-                        <BreadcrumbLink
-                          as={RouterLink}
-                          to={pages.userFeeds()}
-                        >
+                        <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
                           Feeds
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbItem isCurrentPage>
-                        <BreadcrumbLink href="#">
-                          {feed?.title}
-                        </BreadcrumbLink>
+                        <BreadcrumbLink href="#">{feed?.title}</BreadcrumbLink>
                       </BreadcrumbItem>
                     </Breadcrumb>
                     <HStack alignItems="center">
-                      <Heading
-                        size="lg"
-                        marginRight={4}
-                      >
+                      <Heading size="lg" marginRight={4}>
                         {feed?.title}
                       </Heading>
                     </HStack>
                     <Link
                       color="gray.400"
                       _hover={{
-                        color: 'gray.200',
+                        color: "gray.200",
                       }}
                       href={feed?.url}
                       target="_blank"
@@ -226,56 +200,47 @@ export const UserFeed: React.FC = () => {
                       ref={menuButtonRef}
                       rightIcon={<ChevronDownIcon />}
                     >
-                      {t('pages.userFeed.actionsButtonText')}
+                      {t("pages.userFeed.actionsButtonText")}
                     </MenuButton>
                     <MenuList>
-                      <MenuItem
-                        aria-label="Edit"
-                        onClick={editOnOpen}
-                      >
-                        {t('common.buttons.configure')}
+                      <MenuItem aria-label="Edit" onClick={editOnOpen}>
+                        {t("common.buttons.configure")}
                       </MenuItem>
-                      {
-                      feed && !feed.disabledCode && (
-                      <ConfirmModal
-                        title={t('pages.userFeed.disableFeedConfirmTitle')}
-                        description={t('pages.userFeed.disableFeedConfirmDescription')}
-                        trigger={(
-                          <MenuItem
-                            disabled={updatingStatus === 'loading'}
-                          >
-                            {t('pages.userFeed.disableFeedButtonText')}
-                          </MenuItem>
+                      {feed && !feed.disabledCode && (
+                        <ConfirmModal
+                          title={t("pages.userFeed.disableFeedConfirmTitle")}
+                          description={t("pages.userFeed.disableFeedConfirmDescription")}
+                          trigger={
+                            <MenuItem disabled={updatingStatus === "loading"}>
+                              {t("pages.userFeed.disableFeedButtonText")}
+                            </MenuItem>
+                          }
+                          okText={t("common.buttons.yes")}
+                          okLoading={updatingStatus === "loading"}
+                          colorScheme="blue"
+                          onConfirm={() =>
+                            onUpdateFeed({
+                              disabledCode: UserFeedDisabledCode.Manual,
+                            })
+                          }
+                        />
                       )}
-                        okText={t('common.buttons.yes')}
-                        okLoading={updatingStatus === 'loading'}
-                        colorScheme="blue"
-                        onConfirm={() => onUpdateFeed({
-                          disabledCode: UserFeedDisabledCode.Manual,
-                        })}
-                      />
-                      )
-                      }
                       <MenuDivider />
-                      {
-                      feedId && (
-                      <ConfirmModal
-                        title={t('pages.userFeed.deleteConfirmTitle')}
-                        description={t('pages.userFeed.deleteConfirmDescription')}
-                        trigger={(
-                          <MenuItem
-                            disabled={deleteingStatus === 'loading'}
-                          >
-                            {t('common.buttons.delete')}
-                          </MenuItem>
-                        )}
-                        okText={t('pages.userFeed.deleteConfirmOk')}
-                        okLoading={deleteingStatus === 'loading'}
-                        colorScheme="red"
-                        onConfirm={onDeleteFeed}
-                      />
-                      )
-                    }
+                      {feedId && (
+                        <ConfirmModal
+                          title={t("pages.userFeed.deleteConfirmTitle")}
+                          description={t("pages.userFeed.deleteConfirmDescription")}
+                          trigger={
+                            <MenuItem disabled={deleteingStatus === "loading"}>
+                              {t("common.buttons.delete")}
+                            </MenuItem>
+                          }
+                          okText={t("pages.userFeed.deleteConfirmOk")}
+                          okLoading={deleteingStatus === "loading"}
+                          colorScheme="red"
+                          onConfirm={onDeleteFeed}
+                        />
+                      )}
                     </MenuList>
                   </Menu>
                 </HStack>
@@ -285,19 +250,19 @@ export const UserFeed: React.FC = () => {
                   borderRadius="md"
                 >
                   <Box>
-                    <AlertTitle>
-                      {t('pages.userFeed.manuallyDisabledTitle')}
-                    </AlertTitle>
+                    <AlertTitle>{t("pages.userFeed.manuallyDisabledTitle")}</AlertTitle>
                     <AlertDescription display="block">
-                      {t('pages.userFeed.manuallyDisabledDescription')}
+                      {t("pages.userFeed.manuallyDisabledDescription")}
                       <Box marginTop="1rem">
                         <Button
-                          isLoading={updatingStatus === 'loading'}
-                          onClick={() => onUpdateFeed({
-                            disabledCode: null,
-                          })}
+                          isLoading={updatingStatus === "loading"}
+                          onClick={() =>
+                            onUpdateFeed({
+                              disabledCode: null,
+                            })
+                          }
                         >
-                          {t('pages.userFeed.manuallyDisabledEnableButtonText')}
+                          {t("pages.userFeed.manuallyDisabledEnableButtonText")}
                         </Button>
                       </Box>
                     </AlertDescription>
@@ -309,17 +274,11 @@ export const UserFeed: React.FC = () => {
                   borderRadius="md"
                 >
                   <Box>
-                    <AlertTitle>
-                      {t('pages.userFeed.connectionFailureTitle')}
-                    </AlertTitle>
+                    <AlertTitle>{t("pages.userFeed.connectionFailureTitle")}</AlertTitle>
                     <AlertDescription display="block">
-                      {t('pages.userFeed.connectionFailureText')}
+                      {t("pages.userFeed.connectionFailureText")}
                       <Box marginTop="1rem">
-                        {feedId && (
-                        <RefreshUserFeedButton
-                          feedId={feedId}
-                        />
-                        )}
+                        {feedId && <RefreshUserFeedButton feedId={feedId} />}
                       </Box>
                     </AlertDescription>
                   </Box>
@@ -327,31 +286,29 @@ export const UserFeed: React.FC = () => {
               </Stack>
               <Grid
                 templateColumns={{
-                  base: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  lg: 'repeat(4, fit-content(320px))',
+                  base: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(4, fit-content(320px))",
                 }}
                 columnGap="20"
-                rowGap={{ base: '8', lg: '14' }}
+                rowGap={{ base: "8", lg: "14" }}
               >
-                <CategoryText title={t('pages.feed.refreshRateLabel')}>
-                  {t('pages.feed.refreshRateValue', {
+                <CategoryText title={t("pages.feed.refreshRateLabel")}>
+                  {t("pages.feed.refreshRateValue", {
                     seconds: feed?.refreshRateSeconds,
                   })}
                 </CategoryText>
-                <CategoryText
-                  title={t('pages.feed.createdAtLabel')}
-                >
+                <CategoryText title={t("pages.feed.createdAtLabel")}>
                   {feed?.createdAt}
                 </CategoryText>
                 <CategoryText
-                  title={t('pages.feed.articleDailyLimit')}
+                  title={t("pages.feed.articleDailyLimit")}
                   helpTooltip={{
-                    description: t('pages.feed.articleDailyLimitHint'),
+                    description: t("pages.feed.articleDailyLimitHint"),
                   }}
                 >
                   <Box>
-                    <Text color={isAtLimit ? 'red.300' : ''}>
+                    <Text color={isAtLimit ? "red.300" : ""}>
                       {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
                     </Text>
                     {!dailyLimit && <Spinner size="sm" />}
@@ -361,18 +318,22 @@ export const UserFeed: React.FC = () => {
             </Stack>
             <TabList>
               <Tab
-                onClick={() => navigate({
-                  search: '?view=connections',
-                })}
+                onClick={() =>
+                  navigate({
+                    search: "?view=connections",
+                  })
+                }
               >
-                {t('pages.userFeeds.tabConnections')}
+                {t("pages.userFeeds.tabConnections")}
               </Tab>
               <Tab
-                onClick={() => navigate({
-                  search: '?view=logs',
-                })}
+                onClick={() =>
+                  navigate({
+                    search: "?view=logs",
+                  })
+                }
               >
-                {t('pages.userFeeds.tabLogs')}
+                {t("pages.userFeeds.tabLogs")}
               </Tab>
             </TabList>
           </Stack>
@@ -384,30 +345,26 @@ export const UserFeed: React.FC = () => {
                 <Stack spacing={6}>
                   <Stack spacing={3}>
                     <Flex justifyContent="space-between" alignItems="center">
-                      <Heading size="md">
-                        {t('pages.userFeeds.tabConnections')}
-                      </Heading>
+                      <Heading size="md">{t("pages.userFeeds.tabConnections")}</Heading>
                       <Menu>
                         <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
-                          {t('pages.feed.addConnectionButtonText')}
+                          {t("pages.feed.addConnectionButtonText")}
                         </MenuButton>
                         <MenuList>
                           <MenuItem
                             onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
                           >
-                            {t('pages.feed.discordChannelMenuItem')}
+                            {t("pages.feed.discordChannelMenuItem")}
                           </MenuItem>
                           <MenuItem
                             onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
                           >
-                            {t('pages.feed.discordWebhookMenuItem')}
+                            {t("pages.feed.discordWebhookMenuItem")}
                           </MenuItem>
                         </MenuList>
                       </Menu>
                     </Flex>
-                    <Text>
-                      {t('pages.feed.connectionSectionDescription')}
-                    </Text>
+                    <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                   </Stack>
                   <Stack>
                     {feed?.connections?.map((connection) => (
@@ -421,8 +378,8 @@ export const UserFeed: React.FC = () => {
                         })}
                         textDecoration="none"
                         _hover={{
-                          textDecoration: 'none',
-                          color: 'blue.300',
+                          textDecoration: "none",
+                          color: "blue.300",
                         }}
                       >
                         <Flex
@@ -433,18 +390,11 @@ export const UserFeed: React.FC = () => {
                           flexDirection="column"
                         >
                           <Stack spacing="1">
-                            <Text
-                              color="gray.500"
-                              fontSize="sm"
-                            >
+                            <Text color="gray.500" fontSize="sm">
                               {PRETTY_CONNECTION_NAMES[connection.key]}
                             </Text>
                             <Stack spacing="0">
-                              <Text
-                                fontWeight={600}
-                              >
-                                {connection.name}
-                              </Text>
+                              <Text fontWeight={600}>{connection.name}</Text>
                             </Stack>
                           </Stack>
                         </Flex>

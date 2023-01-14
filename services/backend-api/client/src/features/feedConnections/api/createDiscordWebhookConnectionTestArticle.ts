@@ -1,10 +1,10 @@
-import { InferType, object } from 'yup';
-import fetchRest from '../../../utils/fetchRest';
-import { SendTestArticleResultSchema } from '@/types';
+import { InferType, object } from "yup";
+import fetchRest from "../../../utils/fetchRest";
+import { SendTestArticleResultSchema } from "@/types";
 
 export interface CreateDiscordWebhookConnectionTestArticleInput {
   feedId: string;
-  connectionId: string
+  connectionId: string;
 }
 
 const CreateDiscordWebhookConnectionTestArticleOutputSchema = object({
@@ -16,18 +16,18 @@ export type CreateDiscordWebhookConnectionTestArticleOutput = InferType<
 >;
 
 export const createDiscordWebhookConnectionTestArticle = async (
-  options: CreateDiscordWebhookConnectionTestArticleInput,
+  options: CreateDiscordWebhookConnectionTestArticleInput
 ): Promise<CreateDiscordWebhookConnectionTestArticleOutput> => {
   const res = await fetchRest(
-    `/api/v1/user-feeds/${options.feedId}/connections/`
-     + `discord-webhooks/${options.connectionId}/test`,
+    `/api/v1/user-feeds/${options.feedId}/connections/` +
+      `discord-webhooks/${options.connectionId}/test`,
     {
       validateSchema: CreateDiscordWebhookConnectionTestArticleOutputSchema,
       requestOptions: {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({}),
       },
-    },
+    }
   );
 
   return res as CreateDiscordWebhookConnectionTestArticleOutput;

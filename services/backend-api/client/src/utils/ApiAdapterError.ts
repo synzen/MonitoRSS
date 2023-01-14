@@ -1,5 +1,5 @@
 interface ErrorDetails {
-  statusCode?: number
+  statusCode?: number;
 }
 
 class ApiAdapterError extends Error {

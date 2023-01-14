@@ -1,10 +1,10 @@
-import { InferType, object } from 'yup';
-import fetchRest from '../../../utils/fetchRest';
-import { SendTestArticleResultSchema } from '@/types';
+import { InferType, object } from "yup";
+import fetchRest from "../../../utils/fetchRest";
+import { SendTestArticleResultSchema } from "@/types";
 
 export interface CreateDiscordChannelConnectionTestArticleInput {
   feedId: string;
-  connectionId: string
+  connectionId: string;
 }
 
 const CreateDiscordChannelConnectionTestArticleOutputSchema = object({
@@ -16,18 +16,18 @@ export type CreateDiscordChannelConnectionTestArticleOutput = InferType<
 >;
 
 export const createDiscordChannelConnectionTestArticle = async (
-  options: CreateDiscordChannelConnectionTestArticleInput,
+  options: CreateDiscordChannelConnectionTestArticleInput
 ): Promise<CreateDiscordChannelConnectionTestArticleOutput> => {
   const res = await fetchRest(
-    `/api/v1/user-feeds/${options.feedId}/connections/`
-     + `discord-channels/${options.connectionId}/test`,
+    `/api/v1/user-feeds/${options.feedId}/connections/` +
+      `discord-channels/${options.connectionId}/test`,
     {
       validateSchema: CreateDiscordChannelConnectionTestArticleOutputSchema,
       requestOptions: {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({}),
       },
-    },
+    }
   );
 
   return res as CreateDiscordChannelConnectionTestArticleOutput;

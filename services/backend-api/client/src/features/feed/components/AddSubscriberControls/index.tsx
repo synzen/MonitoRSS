@@ -1,34 +1,20 @@
-import {
-  Box,
-  Button,
-  FormControl,
-  FormLabel,
-  Flex,
-  VisuallyHidden,
-} from '@chakra-ui/react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ThemedSelect } from '@/components';
-import { DiscordRole } from '@/features/discordServers';
-import { useCreateFeedSubscriber } from '../../hooks';
-import { notifyError } from '@/utils/notifyError';
+import { Box, Button, FormControl, FormLabel, Flex, VisuallyHidden } from "@chakra-ui/react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ThemedSelect } from "@/components";
+import { DiscordRole } from "@/features/discordServers";
+import { useCreateFeedSubscriber } from "../../hooks";
+import { notifyError } from "@/utils/notifyError";
 
 interface Props {
-  feedId: string
-  roles: DiscordRole[]
-  loading?: boolean
+  feedId: string;
+  roles: DiscordRole[];
+  loading?: boolean;
 }
 
-export const AddSubscriberControls: React.FC<Props> = ({
-  feedId,
-  roles,
-  loading,
-}) => {
+export const AddSubscriberControls: React.FC<Props> = ({ feedId, roles, loading }) => {
   const [currentRoleId, setCurrentRoleId] = useState<string | undefined>();
-  const {
-    mutateAsync,
-    status,
-  } = useCreateFeedSubscriber({
+  const { mutateAsync, status } = useCreateFeedSubscriber({
     feedId,
   });
   const { t } = useTranslation();
@@ -43,12 +29,12 @@ export const AddSubscriberControls: React.FC<Props> = ({
         feedId,
         details: {
           discordId: currentRoleId,
-          type: 'role',
+          type: "role",
         },
       });
       setCurrentRoleId(undefined);
     } catch (err) {
-      notifyError('Failed to add subscriber', err as Error);
+      notifyError("Failed to add subscriber", err as Error);
     }
   };
 
@@ -57,7 +43,7 @@ export const AddSubscriberControls: React.FC<Props> = ({
       <FormControl width={250}>
         <VisuallyHidden>
           <FormLabel htmlFor="subscriber-name">
-            {t('pages.filters.formAddFilterInputLabel')}
+            {t("pages.filters.formAddFilterInputLabel")}
           </FormLabel>
         </VisuallyHidden>
         <Box marginRight="4" marginTop="2">
@@ -79,11 +65,11 @@ export const AddSubscriberControls: React.FC<Props> = ({
         alignSelf="flex-end"
         minWidth="100"
         colorScheme="blue"
-        disabled={!currentRoleId || status === 'loading' || roles.length === 0}
+        disabled={!currentRoleId || status === "loading" || roles.length === 0}
         onClick={onClickAdd}
-        isLoading={status === 'loading'}
+        isLoading={status === "loading"}
       >
-        {t('pages.subscribers.addSubscriberButton')}
+        {t("pages.subscribers.addSubscriberButton")}
       </Button>
     </Flex>
   );

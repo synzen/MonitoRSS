@@ -1,26 +1,25 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import ApiAdapterError from '../../../utils/ApiAdapterError';
-import { getFeedArticles, GetFeedArticlesOutput } from '../api';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { getFeedArticles, GetFeedArticlesOutput } from "../api";
 
 interface Props {
-  feedId?: string
+  feedId?: string;
 }
 
 export const useFeedArticles = ({ feedId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
 
-  const {
-    data, status, error,
-  } = useQuery<
-  GetFeedArticlesOutput, ApiAdapterError | Error
-  >(
-    ['feed-articles', {
-      feedId,
-    }],
+  const { data, status, error } = useQuery<GetFeedArticlesOutput, ApiAdapterError | Error>(
+    [
+      "feed-articles",
+      {
+        feedId,
+      },
+    ],
     async () => {
       if (!feedId) {
-        throw new Error('Missing feed selection');
+        throw new Error("Missing feed selection");
       }
 
       return getFeedArticles({
@@ -32,7 +31,7 @@ export const useFeedArticles = ({ feedId }: Props) => {
       onError: () => {
         setHasErrored(true);
       },
-    },
+    }
   );
 
   return {

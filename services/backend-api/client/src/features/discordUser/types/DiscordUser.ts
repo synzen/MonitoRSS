@@ -1,6 +1,4 @@
-import {
-  array, InferType, number, object, string,
-} from 'yup';
+import { array, InferType, number, object, string } from "yup";
 
 export const DiscordUserSchema = object({
   id: string().required(),

@@ -1,1 +1,1 @@
-export * from './getDiscordWebhooks';
+export * from "./getDiscordWebhooks";

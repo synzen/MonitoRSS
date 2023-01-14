@@ -1,14 +1,12 @@
-import {
-  array, InferType, number, object,
-} from 'yup';
-import { FeedSummarySchema } from '../types';
-import fetchRest from '../../../utils/fetchRest';
+import { array, InferType, number, object } from "yup";
+import { FeedSummarySchema } from "../types";
+import fetchRest from "../../../utils/fetchRest";
 
 export interface GetFeedsInput {
   serverId: string;
   limit?: number;
   offset?: number;
-  search?: string
+  search?: string;
 }
 
 const GetFeedsOutputSchema = object({
@@ -20,17 +18,14 @@ export type GetFeedsOutput = InferType<typeof GetFeedsOutputSchema>;
 
 export const getFeeds = async (options: GetFeedsInput): Promise<GetFeedsOutput> => {
   const searchParams = new URLSearchParams({
-    limit: options.limit?.toString() || '10',
-    offset: options.offset?.toString() || '0',
-    search: options.search || '',
+    limit: options.limit?.toString() || "10",
+    offset: options.offset?.toString() || "0",
+    search: options.search || "",
   });
 
-  const res = await fetchRest(
-    `/api/v1/discord-servers/${options.serverId}/feeds?${searchParams}`,
-    {
-      validateSchema: GetFeedsOutputSchema,
-    },
-  );
+  const res = await fetchRest(`/api/v1/discord-servers/${options.serverId}/feeds?${searchParams}`, {
+    validateSchema: GetFeedsOutputSchema,
+  });
 
   return res as GetFeedsOutput;
 };

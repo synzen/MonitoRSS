@@ -1,4 +1,4 @@
-import { InferType, object, string } from 'yup';
+import { InferType, object, string } from "yup";
 
 export const DiscordWebhookSchema = object({
   id: string().required(),

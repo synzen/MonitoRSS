@@ -1,16 +1,14 @@
-import {
-  array, InferType, object, string,
-} from 'yup';
-import { FeedEmbedSchema } from './FeedEmbed';
+import { array, InferType, object, string } from "yup";
+import { FeedEmbedSchema } from "./FeedEmbed";
 
 export enum FeedConnectionType {
-  DiscordChannel = 'DISCORD_CHANNEL',
-  DiscordWebhook = 'DISCORD_WEBHOOK',
+  DiscordChannel = "DISCORD_CHANNEL",
+  DiscordWebhook = "DISCORD_WEBHOOK",
 }
 
 export enum FeedConnectionDisabledCode {
-  Manual = 'MANUAL',
-  BadFormat = 'BAD_FORMAT',
+  Manual = "MANUAL",
+  BadFormat = "BAD_FORMAT",
 }
 
 const DiscordChannelConnectionDetailsSchema = object({
@@ -40,8 +38,11 @@ export const FeedConnectionSchema = object({
   disabledCode: string().oneOf(Object.values(FeedConnectionDisabledCode)).optional(),
   filters: object({
     expression: object(),
-  }).optional().default(undefined).nullable(),
-  details: object().when('key', ([key]) => {
+  })
+    .optional()
+    .default(undefined)
+    .nullable(),
+  details: object().when("key", ([key]) => {
     if (key === FeedConnectionType.DiscordWebhook) {
       return DiscordWebhookConnectionDetailsSchema;
     }

@@ -1,1 +1,1 @@
-export * from './getArticlesFilterReturnType';
+export * from "./getArticlesFilterReturnType";

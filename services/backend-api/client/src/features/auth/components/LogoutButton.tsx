@@ -1,11 +1,11 @@
-import { Button } from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
-import { cloneElement, useState } from 'react';
-import { notifyError } from '@/utils/notifyError';
-import { getLogout } from '../api';
+import { Button } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { cloneElement, useState } from "react";
+import { notifyError } from "@/utils/notifyError";
+import { getLogout } from "../api";
 
 interface Props {
-  trigger?: React.ReactElement
+  trigger?: React.ReactElement;
 }
 
 export const LogoutButton = ({ trigger }: Props) => {
@@ -16,9 +16,9 @@ export const LogoutButton = ({ trigger }: Props) => {
     try {
       setLoggingOut(true);
       await getLogout();
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (err) {
-      notifyError(t('common.errors.somethingWentWrong'), err as Error);
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     } finally {
       setLoggingOut(false);
     }

@@ -479,7 +479,7 @@
     "discordWebhooks": {
       "components": {
         "dropdown": {
-          "failedToGetWebhooks":"Failed to get server webhooks"
+          "failedToGetWebhooks": "Failed to get server webhooks"
         }
       }
     }

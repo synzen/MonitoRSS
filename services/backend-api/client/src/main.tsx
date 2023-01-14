@@ -1,20 +1,20 @@
-import './utils/setupSentry';
-import './utils/i18n';
-import React from 'react';
-import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
-import './index.css';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import theme from './utils/theme';
-import setupMockBrowserWorker from './mocks/browser';
-import { ForceDarkMode } from './components/ForceDarkMode';
-import { GenericErrorBoundary } from './components/GenericErrorBoundary';
+import "./utils/setupSentry";
+import "./utils/i18n";
+import React from "react";
+import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+import "./index.css";
+import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import theme from "./utils/theme";
+import setupMockBrowserWorker from "./mocks/browser";
+import { ForceDarkMode } from "./components/ForceDarkMode";
+import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
 
 async function prepare() {
-  if (import.meta.env.MODE === 'development-mockapi') {
+  if (import.meta.env.MODE === "development-mockapi") {
     return setupMockBrowserWorker().then((worker) => worker.start());
   }
 
@@ -33,10 +33,10 @@ const queryClient = new QueryClient({
 });
 
 prepare().then(() => {
-  const container = document.getElementById('root');
+  const container = document.getElementById("root");
 
   if (!container) {
-    throw new Error('Could not find root container');
+    throw new Error("Could not find root container");
   }
 
   const root = createRoot(container);
@@ -60,7 +60,7 @@ prepare().then(() => {
           </ForceDarkMode>
         </QueryClientProvider>
       </ChakraProvider>
-    </BrowserRouter>,
+    </BrowserRouter>
     // </React.StrictMode>,
   );
 });

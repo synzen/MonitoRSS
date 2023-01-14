@@ -1,12 +1,10 @@
-import {
-  InferType, number, object, string,
-} from 'yup';
+import { InferType, number, object, string } from "yup";
 
 export enum UserFeedRequestStatus {
-  OK = 'OK',
-  FAILED = 'FAILED',
-  FETCH_ERROR = 'FETCH_ERROR',
-  PARSE_ERROR = 'PARSE_ERROR',
+  OK = "OK",
+  FAILED = "FAILED",
+  FETCH_ERROR = "FETCH_ERROR",
+  PARSE_ERROR = "PARSE_ERROR",
 }
 
 export const UserFeedRequestSchema = object({
