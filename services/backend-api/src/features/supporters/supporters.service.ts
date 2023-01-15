@@ -74,7 +74,7 @@ export class SupportersService {
       )
     );
 
-    this.defaultMaxSupporterUserFeeds = this.configService.getOrThrow<number>(
+    this.defaultMaxSupporterUserFeeds = +this.configService.getOrThrow<number>(
       "BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS"
     );
 
