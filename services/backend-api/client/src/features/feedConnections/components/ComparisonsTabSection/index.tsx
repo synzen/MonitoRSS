@@ -98,7 +98,7 @@ export const ComparisonsTabSection = ({
           an article has alreadt been determine to be old.
         </Text>
         <HStack flexWrap="wrap">
-          {passingComaprisonsToAdd?.map((comparison) => (
+          {passingComparisons?.map((comparison) => (
             <ComparisonTab
               title={comparison}
               colorScheme="cyan"
@@ -122,7 +122,7 @@ export const ComparisonsTabSection = ({
           after an article has alreadt been determine to be new.
         </Text>
         <HStack flexWrap="wrap">
-          {blockingComparisonsToAdd?.map((comparison) => (
+          {blockingComparisons?.map((comparison) => (
             <ComparisonTab
               title={comparison}
               colorScheme="red"
@@ -133,7 +133,7 @@ export const ComparisonsTabSection = ({
             isDisabled={status !== "success"}
             isLoading={status === "loading" || fetchStatus === "fetching"}
             onChange={onAddBlockingComparison}
-            properties={passingComaprisonsToAdd}
+            properties={blockingComparisonsToAdd}
           />
         </HStack>
       </Stack>

@@ -106,10 +106,13 @@ describe("FeedConnectionsController", () => {
           status: TestDeliveryStatus.Success,
         });
 
-      const response = await controller.sendTestArticle({
-        feed: {} as never,
-        connection: {} as never,
-      });
+      const response = await controller.sendTestArticle(
+        {
+          feed: {} as never,
+          connection: {} as never,
+        },
+        {} as never
+      );
 
       expect(response).toEqual({
         result: {

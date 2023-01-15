@@ -93,6 +93,18 @@ export class DiscordChannelConnection {
   filters?: Filters;
 
   @Prop({
+    type: [String],
+    required: false,
+  })
+  passingComparisons?: string[];
+
+  @Prop({
+    type: [String],
+    required: false,
+  })
+  blockingComparisons?: string[];
+
+  @Prop({
     type: DetailsSchema,
     required: true,
   })

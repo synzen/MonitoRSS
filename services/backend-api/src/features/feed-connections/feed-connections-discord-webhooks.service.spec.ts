@@ -66,6 +66,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    feedHandlerService.validateFilters.mockResolvedValue({
+      errors: [],
+    });
   });
 
   afterEach(async () => {
@@ -199,6 +202,8 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         },
       },
       name: "new-name",
+      passingComparisons: ["pass1", "pass2"],
+      blockingComparisons: ["block1", "block2"],
       details: {
         embeds: [
           {
@@ -277,6 +282,8 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
         filters: updateDetails.filters,
+        passingComparisons: updateDetails.passingComparisons,
+        blockingComparisons: updateDetails.blockingComparisons,
         details: {
           embeds: updateDetails.details.embeds,
           webhook: {

@@ -64,6 +64,16 @@ export class CreateDiscordWebhookConnectionOutputDto {
   @IsOptional()
   filters?: FiltersDto | null;
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  passingComparisons?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  blockingComparisons?: string[];
+
   @IsObject()
   @Type(() => DetailsDto)
   @ValidateNested()

@@ -116,6 +116,8 @@ export class FeedConnectionsDiscordChannelsController {
       embeds,
       filters,
       disabledCode,
+      passingComparisons,
+      blockingComparisons,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -144,6 +146,8 @@ export class FeedConnectionsDiscordChannelsController {
           filters,
           name,
           disabledCode: useDisableCode,
+          blockingComparisons,
+          passingComparisons,
           details: {
             channel: channelId
               ? {

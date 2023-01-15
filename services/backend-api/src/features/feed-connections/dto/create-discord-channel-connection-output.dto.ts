@@ -56,6 +56,16 @@ export class CreateDiscordChannelConnectionOutputDto {
   @IsOptional()
   filters?: FiltersDto;
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  passingComparisons?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  blockingComparisons?: string[];
+
   @IsObject()
   @Type(() => DetailsDto)
   @ValidateNested()

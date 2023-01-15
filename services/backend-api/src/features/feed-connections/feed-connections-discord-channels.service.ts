@@ -27,6 +27,8 @@ export interface UpdateDiscordChannelConnectionInput {
     filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
+    blockingComparisons?: string[];
+    passingComparisons?: string[];
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       channel?: {
@@ -156,6 +158,14 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.disabledCode && {
           [`connections.discordChannels.$.disabledCode`]: updates.disabledCode,
+        }),
+        ...(updates.blockingComparisons && {
+          [`connections.discordChannels.$.blockingComparisons`]:
+            updates.blockingComparisons,
+        }),
+        ...(updates.passingComparisons && {
+          [`connections.discordChannels.$.passingComparisons`]:
+            updates.passingComparisons,
         }),
       },
       $unset: {

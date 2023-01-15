@@ -55,6 +55,16 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @IsOptional()
   embeds?: DiscordEmbed[];
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  passingComparisons?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  blockingComparisons?: string[];
+
   @IsIn([FeedConnectionDisabledCode.Manual, null])
   @IsOptional()
   disabledCode?: FeedConnectionDisabledCode.Manual | null;

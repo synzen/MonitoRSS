@@ -29,6 +29,8 @@ export interface UpdateDiscordWebhookConnectionInput {
     filters?: DiscordWebhookConnection["filters"] | null;
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
+    blockingComparisons?: string[];
+    passingComparisons?: string[];
     details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
@@ -112,7 +114,14 @@ export class FeedConnectionsDiscordWebhooksService {
   async updateDiscordWebhookConnection({
     feedId,
     connectionId,
-    updates: { details, filters, name, disabledCode },
+    updates: {
+      details,
+      filters,
+      name,
+      disabledCode,
+      passingComparisons,
+      blockingComparisons,
+    },
     accessToken,
   }: UpdateDiscordWebhookConnectionInput) {
     let webhookUpdates:
@@ -154,13 +163,15 @@ export class FeedConnectionsDiscordWebhooksService {
     }
 
     if (filters) {
-      const { errors } = await this.feedHandlerService.validateFilters({
+      const results = await this.feedHandlerService.validateFilters({
         expression: filters.expression,
       });
 
-      if (errors.length) {
+      if (results.errors.length) {
         throw new InvalidFilterExpressionException(
-          errors.map((message) => new InvalidFilterExpressionException(message))
+          results.errors.map(
+            (message) => new InvalidFilterExpressionException(message)
+          )
         );
       }
     }
@@ -181,6 +192,14 @@ export class FeedConnectionsDiscordWebhooksService {
         }),
         ...(disabledCode && {
           "connections.discordWebhooks.$.disabledCode": disabledCode,
+        }),
+        ...(passingComparisons && {
+          "connections.discordWebhooks.$.passingComparisons":
+            passingComparisons,
+        }),
+        ...(blockingComparisons && {
+          "connections.discordWebhooks.$.blockingComparisons":
+            blockingComparisons,
         }),
       },
       $unset: {
