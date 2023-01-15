@@ -453,6 +453,13 @@
           "prevPage": "Previous",
           "nextPage": "Next"
         },
+        "comparisonsTabSection": {
+          "title": "Comparisons",
+          "description": "Comparisons are additional checks to determine whether an article is new and should be delivered, or if it's old and should be ignored.",
+          "passingComparisonsTitle": "Passing Comparisons",
+          "blockingComparisonsTitle": "Blocking comparison",
+          "errorFailedToGetPropertiesTitle": "Failed to get article properties to add"
+        },
         "manuallyDisabledAlert": {
           "title": "This connection has been manually disabled",
           "description": "Article delivery through this connection is paused until it is re-enabled."

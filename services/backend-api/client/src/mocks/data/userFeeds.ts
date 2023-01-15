@@ -25,6 +25,8 @@ const mockUserFeeds: UserFeed[] = [
         id: "1",
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Channel 1",
+        blockingComparisons: ["title", "description"],
+        passingComparisons: ["author"],
       },
       {
         details: {
@@ -40,6 +42,8 @@ const mockUserFeeds: UserFeed[] = [
         id: "2",
         key: FeedConnectionType.DiscordWebhook,
         name: "Discord Webhook 1",
+        blockingComparisons: ["title", "description"],
+        passingComparisons: ["author"],
       },
     ],
     healthStatus: UserFeedHealthStatus.Failed,

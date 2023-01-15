@@ -33,7 +33,6 @@ import { DiscordChannelName } from "../features/discordServers";
 import { useUserFeed } from "../features/feed";
 import {
   DeleteConnectionButton,
-  FilterExpression,
   LogicalFilterExpression,
   useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
@@ -42,24 +41,25 @@ import {
   MessageTabSection,
   ConnectionDisabledAlert,
   EditConnectionChannelDialog,
+  ComparisonsTabSection,
+  UpdateDiscordChannelConnectionInput,
 } from "../features/feedConnections";
 import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
-import { DiscordMessageFormData } from "../types/discord";
 import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 
-const getDefaultTabIndex = (search: string) => {
-  if (search.includes("view=message")) {
-    return 0;
-  }
+enum TabSearchParam {
+  Message = "?view=message",
+  Filters = "?view=filters",
+  CustomComparisons = "?view=custom-comparisons",
+}
 
-  if (search.includes("view=filters")) {
-    return 1;
-  }
-
-  return 0;
-};
+const tabIndexBySearchParam = new Map<string, number>([
+  [TabSearchParam.Message, 0],
+  [TabSearchParam.Filters, 1],
+  [TabSearchParam.CustomComparisons, 2],
+]);
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -88,7 +88,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
 
   const serverId = connection?.details.channel.guildId;
 
-  const onFiltersUpdated = async (filters: FilterExpression | null) => {
+  const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
     if (!feedId || !connectionId) {
       return;
     }
@@ -97,87 +97,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       await mutateAsync({
         feedId,
         connectionId,
-        details: {
-          filters: filters
-            ? {
-                expression: filters,
-              }
-            : null,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.failedToSave"), err as Error);
-      throw err;
-    }
-  };
-
-  const onMessageUpdated = async (data: DiscordMessageFormData) => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          content: data.content,
-          embeds: data.embeds,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
-  };
-
-  const onChannelUpdated = async (data: { channelId?: string; name?: string }) => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    await mutateAsync({
-      feedId,
-      connectionId,
-      details: {
-        name: data.name,
-        channelId: data.channelId,
-      },
-    });
-  };
-
-  const onDisabled = async () => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          disabledCode: FeedConnectionDisabledCode.Manual,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
-  };
-
-  const onEnabled = async () => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          disabledCode: null,
-        },
+        details,
       });
       notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
@@ -198,12 +118,17 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             name: connection.name,
             serverId,
           }}
-          onUpdate={onChannelUpdated}
+          onUpdate={({ channelId, name }) =>
+            onUpdate({
+              channelId,
+              name,
+            })
+          }
           isOpen={editIsOpen}
           onClose={editOnClose}
         />
       )}
-      <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
+      <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
         <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
           <BoxConstrained.Container spacing={12}>
             <Stack spacing={6}>
@@ -265,7 +190,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                                 okText={t("common.buttons.yes")}
                                 okLoading={updateStatus === "loading"}
                                 colorScheme="blue"
-                                onConfirm={() => onDisabled()}
+                                onConfirm={() =>
+                                  onUpdate({
+                                    disabledCode: FeedConnectionDisabledCode.Manual,
+                                  })
+                                }
                               />
                             )}
                             <MenuDivider />
@@ -283,7 +212,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 </Box>
                 <ConnectionDisabledAlert
                   disabledCode={connection?.disabledCode}
-                  onEnable={onEnabled}
+                  onEnable={() =>
+                    onUpdate({
+                      disabledCode: null,
+                    })
+                  }
                 />
                 <Alert
                   status="error"
@@ -323,7 +256,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <Tab
                 onClick={() => {
                   navigate({
-                    search: "?view=message",
+                    search: TabSearchParam.Message,
                   });
                 }}
               >
@@ -332,11 +265,20 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <Tab
                 onClick={() => {
                   navigate({
-                    search: "?view=filters",
+                    search: TabSearchParam.Filters,
                   });
                 }}
               >
                 Filters
+              </Tab>
+              <Tab
+                onClick={() => {
+                  navigate({
+                    search: TabSearchParam.CustomComparisons,
+                  });
+                }}
+              >
+                Comparisons
               </Tab>
             </TabList>
           </BoxConstrained.Container>
@@ -347,7 +289,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <BoxConstrained.Container>
                 <MessageTabSection
                   feedId={feedId}
-                  onMessageUpdated={onMessageUpdated}
+                  onMessageUpdated={({ content, embeds }) =>
+                    onUpdate({
+                      content,
+                      embeds,
+                    })
+                  }
                   defaultMessageValues={{
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
@@ -360,9 +307,34 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <FiltersTabSection
-                  onFiltersUpdated={onFiltersUpdated}
+                  onFiltersUpdated={(filters) =>
+                    onUpdate({
+                      filters: filters
+                        ? {
+                            expression: filters,
+                          }
+                        : null,
+                    })
+                  }
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <ComparisonsTabSection
+                  feedId={feedId as string}
+                  passingComparisons={connection?.passingComparisons}
+                  blockingComparisons={connection?.blockingComparisons}
+                  onUpdate={({ blockingComparisons, passingComparisons }) => {
+                    return onUpdate({
+                      blockingComparisons,
+                      passingComparisons,
+                    });
+                  }}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

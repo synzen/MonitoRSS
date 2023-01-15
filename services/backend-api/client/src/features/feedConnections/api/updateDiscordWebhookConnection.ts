@@ -14,6 +14,8 @@ export interface UpdateDiscordWebhookConnectionInput {
     };
     content?: string | null;
     disabledCode?: FeedConnectionDisabledCode.Manual | null;
+    passingComparisons?: string[];
+    blockingComparisons?: string[];
     filters?: {
       expression: Record<string, any>;
     } | null;

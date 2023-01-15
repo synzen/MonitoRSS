@@ -35,6 +35,8 @@ export const FeedConnectionSchema = object({
   id: string().required(),
   name: string().required(),
   key: string().oneOf(Object.values(FeedConnectionType)).required(),
+  passingComparisons: array(string().required()).optional().default(undefined),
+  blockingComparisons: array(string().required()).optional().default(undefined),
   disabledCode: string().oneOf(Object.values(FeedConnectionDisabledCode)).optional(),
   filters: object({
     expression: object(),

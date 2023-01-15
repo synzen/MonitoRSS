@@ -9,3 +9,4 @@ export * from "./FiltersTabSection";
 export * from "./MessageTabSection";
 export * from "./ArticleFilterResultsTable";
 export * from "./ConnectionDisabledAlert";
+export * from "./ComparisonsTabSection";

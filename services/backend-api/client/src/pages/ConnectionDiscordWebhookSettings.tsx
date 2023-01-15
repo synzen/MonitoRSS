@@ -28,11 +28,9 @@ import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-r
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useRef } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
-import { DiscordMessageFormData } from "@/types/discord";
 import RouteParams from "@/types/RouteParams";
 import {
   EditConnectionWebhookDialog,
-  FilterExpression,
   LogicalFilterExpression,
   useDiscordWebhookConnection,
   useUpdateDiscordWebhookConnection,
@@ -41,6 +39,8 @@ import {
   FiltersTabSection,
   MessageTabSection,
   ConnectionDisabledAlert,
+  ComparisonsTabSection,
+  UpdateDiscordWebhookConnectionInput,
 } from "../features/feedConnections";
 import { useUserFeed } from "../features/feed";
 import { DashboardContentV2 } from "../components/DashboardContentV2";
@@ -49,17 +49,17 @@ import { notifyError } from "../utils/notifyError";
 import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
 import { pages } from "../constants";
 
-const getDefaultTabIndex = (search: string) => {
-  if (search.includes("view=message")) {
-    return 0;
-  }
+enum TabSearchParam {
+  Message = "?view=message",
+  Filters = "?view=filters",
+  CustomComparisons = "?view=custom-comparisons",
+}
 
-  if (search.includes("view=filters")) {
-    return 1;
-  }
-
-  return 0;
-};
+const tabIndexBySearchParam = new Map<string, number>([
+  [TabSearchParam.Message, 0],
+  [TabSearchParam.Filters, 1],
+  [TabSearchParam.CustomComparisons, 2],
+]);
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -85,25 +85,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
-  const onFiltersUpdated = async (filters: FilterExpression | null) => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    await mutateAsync({
-      feedId,
-      connectionId,
-      details: {
-        filters: filters
-          ? {
-              expression: filters,
-            }
-          : null,
-      },
-    });
-  };
-
-  const onMessageUpdated = async (data: DiscordMessageFormData) => {
+  const onUpdate = async (details: UpdateDiscordWebhookConnectionInput["details"]) => {
     if (!feedId || !connectionId) {
       return;
     }
@@ -112,78 +94,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
       await mutateAsync({
         feedId,
         connectionId,
-        details: {
-          content: data.content,
-          embeds: data.embeds,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
-  };
-
-  const onWebhookUpdated = async ({
-    webhook,
-    name,
-  }: {
-    webhook?: {
-      id?: string;
-      name?: string;
-      iconUrl?: string;
-    };
-    name?: string;
-  }) => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          webhook,
-          name,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
-  };
-
-  const onDisabled = async () => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          disabledCode: FeedConnectionDisabledCode.Manual,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
-  };
-
-  const onEnabled = async () => {
-    if (!feedId || !connectionId) {
-      return;
-    }
-
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          disabledCode: null,
-        },
+        details,
       });
       notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
@@ -200,7 +111,11 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
         <EditConnectionWebhookDialog
           onCloseRef={actionsButtonRef}
           feedId={feedId}
-          onUpdate={onWebhookUpdated}
+          onUpdate={({ webhook }) =>
+            onUpdate({
+              webhook,
+            })
+          }
           isOpen={editIsOpen}
           onClose={editOnClose}
           defaultValues={{
@@ -214,7 +129,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
           }}
         />
       )}
-      <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
+      <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
         <BoxConstrained.Wrapper paddingTop={10} background="gray.700" spacing={0}>
           <BoxConstrained.Container spacing={12}>
             <Stack spacing={6}>
@@ -274,7 +189,11 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                                 okText={t("common.buttons.yes")}
                                 okLoading={updateStatus === "loading"}
                                 colorScheme="blue"
-                                onConfirm={() => onDisabled()}
+                                onConfirm={() =>
+                                  onUpdate({
+                                    disabledCode: FeedConnectionDisabledCode.Manual,
+                                  })
+                                }
                               />
                             )}
                             <MenuDivider />
@@ -292,7 +211,11 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                 </Box>
                 <ConnectionDisabledAlert
                   disabledCode={connection?.disabledCode}
-                  onEnable={onEnabled}
+                  onEnable={() =>
+                    onUpdate({
+                      disabledCode: null,
+                    })
+                  }
                 />
                 <Alert
                   status="error"
@@ -333,7 +256,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               <Tab
                 onClick={() => {
                   navigate({
-                    search: "?view=message",
+                    search: TabSearchParam.Message,
                   });
                 }}
               >
@@ -342,13 +265,21 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               <Tab
                 onClick={() => {
                   navigate({
-                    search: "?view=filters",
+                    search: TabSearchParam.Filters,
                   });
                 }}
               >
                 Filters
               </Tab>
-              {/* <Tab>Settings</Tab> */}
+              <Tab
+                onClick={() => {
+                  navigate({
+                    search: TabSearchParam.CustomComparisons,
+                  });
+                }}
+              >
+                Comparisons
+              </Tab>
             </TabList>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
@@ -358,7 +289,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               <BoxConstrained.Container>
                 <MessageTabSection
                   feedId={feedId}
-                  onMessageUpdated={onMessageUpdated}
+                  onMessageUpdated={({ content, embeds }) =>
+                    onUpdate({
+                      content,
+                      embeds,
+                    })
+                  }
                   defaultMessageValues={{
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
@@ -371,9 +307,34 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <FiltersTabSection
-                  onFiltersUpdated={onFiltersUpdated}
+                  onFiltersUpdated={(filters) =>
+                    onUpdate({
+                      filters: filters
+                        ? {
+                            expression: filters,
+                          }
+                        : null,
+                    })
+                  }
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <ComparisonsTabSection
+                  feedId={feedId as string}
+                  passingComparisons={connection?.passingComparisons}
+                  blockingComparisons={connection?.blockingComparisons}
+                  onUpdate={({ passingComparisons, blockingComparisons }) =>
+                    onUpdate({
+                      blockingComparisons,
+                      passingComparisons,
+                    })
+                  }
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

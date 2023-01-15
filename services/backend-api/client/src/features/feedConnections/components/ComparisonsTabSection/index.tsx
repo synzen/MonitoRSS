@@ -1,0 +1,142 @@
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Heading,
+  HStack,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { useUserFeedArticleProperties } from "../../../feed/hooks";
+import { AddComparisonSelect } from "./AddComparisonSelect";
+import { ComparisonTab } from "./ComparisonTab";
+
+interface Props {
+  feedId: string;
+  passingComparisons?: string[];
+  blockingComparisons?: string[];
+  onUpdate: (data: {
+    passingComparisons?: string[];
+    blockingComparisons?: string[];
+  }) => Promise<void>;
+}
+
+export const ComparisonsTabSection = ({
+  feedId,
+  blockingComparisons,
+  passingComparisons,
+  onUpdate,
+}: Props) => {
+  const { t } = useTranslation();
+  const { data, error, status, fetchStatus } = useUserFeedArticleProperties({
+    feedId,
+  });
+
+  const passingComaprisonsToAdd = data?.result.properties.filter(
+    (property) => !passingComparisons?.includes(property)
+  );
+
+  const blockingComparisonsToAdd = data?.result.properties.filter(
+    (property) => !blockingComparisons?.includes(property)
+  );
+
+  const onAddPassingComparison = async (value: string) => {
+    await onUpdate({
+      passingComparisons: [...(passingComparisons || []), value],
+      blockingComparisons,
+    });
+  };
+
+  const onAddBlockingComparison = async (value: string) => {
+    await onUpdate({
+      passingComparisons,
+      blockingComparisons: [...(blockingComparisons || []), value],
+    });
+  };
+
+  const onRemovePassingComparison = async (value: string) => {
+    await onUpdate({
+      passingComparisons: passingComparisons?.filter((comparison) => comparison !== value),
+      blockingComparisons,
+    });
+  };
+
+  const onRemoveBlockingComparison = async (value: string) => {
+    await onUpdate({
+      passingComparisons,
+      blockingComparisons: blockingComparisons?.filter((comparison) => comparison !== value),
+    });
+  };
+
+  return (
+    <Stack spacing={12}>
+      <Stack spacing={4}>
+        <Heading size="md" as="h3">
+          {t("features.feedConnections.components.comparisonsTabSection.title")}
+        </Heading>
+        <Text>{t("features.feedConnections.components.comparisonsTabSection.description")}</Text>
+        {error && (
+          <Alert status="error">
+            <AlertIcon />
+            <AlertTitle>
+              {t(
+                "features.feedConnections.components.comparisonsTabSection.errorFailedToGetPropertiesTitle"
+              )}
+            </AlertTitle>
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
+        )}
+      </Stack>
+      <Stack spacing={4}>
+        <Heading size="sm" as="h3">
+          Passing Comparisons
+        </Heading>
+        <Text>
+          Article properties that will be checked to attempt to pass an article for it to send after
+          an article has alreadt been determine to be old.
+        </Text>
+        <HStack flexWrap="wrap">
+          {passingComaprisonsToAdd?.map((comparison) => (
+            <ComparisonTab
+              title={comparison}
+              colorScheme="cyan"
+              onDelete={() => onRemovePassingComparison(comparison)}
+            />
+          ))}
+          <AddComparisonSelect
+            isDisabled={status !== "success"}
+            isLoading={status === "loading" || fetchStatus === "fetching"}
+            onChange={onAddPassingComparison}
+            properties={passingComaprisonsToAdd}
+          />
+        </HStack>
+      </Stack>
+      <Stack spacing={4}>
+        <Heading size="sm" as="h3">
+          Blocking Comparisons
+        </Heading>
+        <Text>
+          Article properties that will be checked to attempt to block an article for it to send
+          after an article has alreadt been determine to be new.
+        </Text>
+        <HStack flexWrap="wrap">
+          {blockingComparisonsToAdd?.map((comparison) => (
+            <ComparisonTab
+              title={comparison}
+              colorScheme="red"
+              onDelete={() => onRemoveBlockingComparison(comparison)}
+            />
+          ))}
+          <AddComparisonSelect
+            isDisabled={status !== "success"}
+            isLoading={status === "loading" || fetchStatus === "fetching"}
+            onChange={onAddBlockingComparison}
+            properties={passingComaprisonsToAdd}
+          />
+        </HStack>
+      </Stack>
+    </Stack>
+  );
+};

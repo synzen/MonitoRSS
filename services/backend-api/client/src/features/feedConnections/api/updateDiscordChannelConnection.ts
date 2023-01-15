@@ -13,6 +13,8 @@ export interface UpdateDiscordChannelConnectionInput {
       expression: Record<string, any>;
     } | null;
     disabledCode?: FeedConnectionDisabledCode.Manual | null;
+    passingComparisons?: string[];
+    blockingComparisons?: string[];
     embeds?: Array<{
       color?: string;
       authorTitle?: string | null;
