@@ -23,7 +23,7 @@ interface Props {
   name?: string;
   isClearable?: boolean;
   onInputChange?: (value: string) => void;
-  placeholder?: string;
+  placeholder?: string | React.ReactNode;
 }
 
 export const ThemedSelect: React.FC<Props> = ({

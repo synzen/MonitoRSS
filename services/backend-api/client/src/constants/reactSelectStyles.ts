@@ -66,4 +66,8 @@ export const REACT_SELECT_STYLES: SelectStyles = {
     borderWidth: "1px",
     background: getChakraColor("gray.800"),
   }),
+  placeholder: (provided) => ({
+    ...provided,
+    color: getChakraColor("gray.400"),
+  }),
 };
