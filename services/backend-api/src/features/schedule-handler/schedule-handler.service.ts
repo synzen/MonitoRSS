@@ -205,8 +205,8 @@ export class ScheduleHandlerService {
           feed: {
             id: userFeed._id.toHexString(),
             url: userFeed.url,
-            passingComparisons: [],
-            blockingComparisons: [],
+            passingComparisons: userFeed.passingComparisons || [],
+            blockingComparisons: userFeed.blockingComparisons || [],
           },
           mediums: allMediums,
         },

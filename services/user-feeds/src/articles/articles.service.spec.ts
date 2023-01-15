@@ -33,7 +33,7 @@ const invalidFeed = readFileSync(
 describe("ArticlesService", () => {
   let service: ArticlesService;
   let articleFieldRepo: EntityRepository<FeedArticleField>;
-  let storedCustomComparisonsRepo: EntityRepository<FeedArticleCustomComparison>;
+  let articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>;
   const articleParserService = {
     flatten: jest.fn(),
   };
@@ -59,15 +59,14 @@ describe("ArticlesService", () => {
     service = module.get<ArticlesService>(ArticlesService);
     const em = module.get(EntityManager);
     articleFieldRepo = em.getRepository(FeedArticleField);
-    storedCustomComparisonsRepo = em.getRepository(FeedArticleCustomComparison);
+    articleCustomComparisonRepo = em.getRepository(FeedArticleCustomComparison);
   });
 
   beforeEach(() => {
     jest.restoreAllMocks();
-    jest.spyOn(console, "log").mockImplementation();
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await clearDatabase();
   });
 
@@ -334,7 +333,7 @@ describe("ArticlesService", () => {
         comparisonFields: ["title", "description"],
       });
 
-      const found = await storedCustomComparisonsRepo.findAll();
+      const found = await articleCustomComparisonRepo.findAll();
       expect(found).toHaveLength(2);
       expect(found).toEqual(
         expect.arrayContaining([
@@ -369,7 +368,7 @@ describe("ArticlesService", () => {
         },
       ];
 
-      await storedCustomComparisonsRepo.nativeInsert({
+      await articleCustomComparisonRepo.nativeInsert({
         feed_id: feedId,
         field_name: "title",
         id: 100,
@@ -380,7 +379,7 @@ describe("ArticlesService", () => {
         comparisonFields: ["title", "description"],
       });
 
-      const found = await storedCustomComparisonsRepo.findAll();
+      const found = await articleCustomComparisonRepo.findAll();
       const fields = found.map((f) => f.field_name);
       expect(fields).toHaveLength(2);
       expect(fields).toEqual(expect.arrayContaining(["title", "description"]));
@@ -422,7 +421,7 @@ describe("ArticlesService", () => {
     it("returns the correct results", async () => {
       const feedId = "feed-id";
 
-      await storedCustomComparisonsRepo.nativeInsert({
+      await articleCustomComparisonRepo.nativeInsert({
         feed_id: feedId,
         field_name: "title",
         id: 1,
@@ -433,7 +432,10 @@ describe("ArticlesService", () => {
         "title",
         "description",
       ]);
-      expect(result).toEqual([true, false]);
+      expect(result).toEqual([
+        { field: "title", isStored: true },
+        { field: "description", isStored: false },
+      ]);
     });
   });
 
@@ -501,6 +503,53 @@ describe("ArticlesService", () => {
     });
   });
 
+  describe("checkPassingComparisons", () => {
+    const feed = {
+      id: "feed-id",
+      passingComparisons: ["title"],
+    };
+    const articles = [
+      { id: "1", title: "foo" },
+      { id: "2", title: "bar" },
+    ];
+
+    it("returns an empty array if there were no seen articles", async () => {
+      const result = await service.checkPassingComparisons(feed, []);
+      expect(result).toEqual([]);
+    });
+
+    it("returns an empty array if there are no passing comparisons", async () => {
+      const result = await service.checkPassingComparisons(
+        { ...feed, passingComparisons: [] },
+        articles
+      );
+      expect(result).toEqual([]);
+    });
+
+    it("does not return any articles if the comparisons were not stored", async () => {
+      const result = await service.checkPassingComparisons(feed, articles);
+      expect(result).toEqual([]);
+    });
+
+    it("only returns the articles whose values were not seen before", async () => {
+      await articleFieldRepo.nativeInsert({
+        feed_id: feed.id,
+        created_at: new Date(),
+        field_name: "title",
+        field_value: "foo",
+      });
+
+      await articleCustomComparisonRepo.nativeInsert({
+        field_name: "title",
+        feed_id: feed.id,
+        created_at: new Date(),
+      });
+
+      const result = await service.checkPassingComparisons(feed, articles);
+      expect(result).toEqual([articles[1]]);
+    });
+  });
+
   describe("deleteInfoForFeed", () => {
     it("deletes article field entities", async () => {
       await articleFieldRepo.nativeInsert({
@@ -523,13 +572,13 @@ describe("ArticlesService", () => {
     });
 
     it("deletes article custom comparison entities", async () => {
-      await storedCustomComparisonsRepo.nativeInsert({
+      await articleCustomComparisonRepo.nativeInsert({
         feed_id: feedId,
         field_name: "title",
         id: 1,
         created_at: new Date(),
       });
-      await storedCustomComparisonsRepo.nativeInsert({
+      await articleCustomComparisonRepo.nativeInsert({
         feed_id: feedId,
         field_name: "description",
         id: 2,
@@ -538,7 +587,7 @@ describe("ArticlesService", () => {
 
       await service.deleteInfoForFeed(feedId);
 
-      const fields = await storedCustomComparisonsRepo.findAll();
+      const fields = await articleCustomComparisonRepo.findAll();
       expect(fields).toHaveLength(0);
     });
   });

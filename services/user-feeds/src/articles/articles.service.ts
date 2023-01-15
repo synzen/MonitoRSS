@@ -57,22 +57,52 @@ export class ArticlesService {
       (article) => !newArticles.find((a) => a.id === article.id)
     );
 
+    const allComparisons = [...blockingComparisons, ...passingComparisons];
+    const comparisonStorageResults = await this.areComparisonsStored(
+      id,
+      allComparisons
+    );
+
+    const storedComparisons = comparisonStorageResults
+      .filter((r) => r.isStored)
+      .map((r) => r.field);
+
     const articlesPastBlocks = await this.checkBlockingComparisons(
       { id, blockingComparisons },
-      newArticles
+      newArticles,
+      storedComparisons
     );
     const articlesPassedComparisons = await this.checkPassingComparisons(
       {
         id,
         passingComparisons,
       },
-      seenArticles
+      seenArticles,
+      storedComparisons
     );
 
     // any new comparisons stored must re-store all articles
     if (newArticles.length > 0) {
       await this.storeArticles(id, newArticles, {
-        comparisonFields: [...passingComparisons, ...blockingComparisons],
+        comparisonFields: storedComparisons,
+      });
+    }
+
+    if (articlesPassedComparisons.length) {
+      await this.storeArticles(id, articlesPassedComparisons, {
+        comparisonFields: storedComparisons,
+        skipIdStorage: true,
+      });
+    }
+
+    const unstoredComparisons = comparisonStorageResults
+      .filter((r) => !r.isStored)
+      .map((r) => r.field);
+
+    if (unstoredComparisons.length > 0) {
+      await this.storeArticles(id, articles, {
+        comparisonFields: unstoredComparisons,
+        skipIdStorage: true,
       });
     }
 
@@ -96,6 +126,10 @@ export class ArticlesService {
     articles: Article[],
     options?: {
       comparisonFields?: string[];
+      /**
+       * Set to true if we only want to store comparison fields
+       */
+      skipIdStorage?: boolean;
     }
   ) {
     const fieldsToSave: FeedArticleField[] = [];
@@ -225,7 +259,10 @@ export class ArticlesService {
 
     const storedFields = new Set(rows.map((r) => r.field_name));
 
-    return comparisonFields.map((field) => storedFields.has(field));
+    return comparisonFields.map((field) => ({
+      field,
+      isStored: storedFields.has(field),
+    }));
   }
 
   async articleFieldsSeenBefore(
@@ -326,9 +363,17 @@ export class ArticlesService {
 
   async checkBlockingComparisons(
     { id, blockingComparisons }: { id: string; blockingComparisons: string[] },
-    newArticles: Article[]
+    newArticles: Article[],
+    currentlyStoredComparisons: string[]
   ) {
-    if (newArticles.length === 0) {
+    const currentlyStoredBlockingComparisons = blockingComparisons.filter((r) =>
+      currentlyStoredComparisons.includes(r)
+    );
+
+    if (
+      newArticles.length === 0 ||
+      !currentlyStoredBlockingComparisons.length
+    ) {
       return newArticles;
     }
 
@@ -338,21 +383,12 @@ export class ArticlesService {
       return newArticles;
     }
 
-    const relevantComparisons = await this.areComparisonsStored(
-      id,
-      blockingComparisons
-    );
-
-    const relevantCustomComparisons = relevantComparisons
-      .filter((result) => result)
-      .map((_, i) => blockingComparisons[i]);
-
     const articlesToSend = await Promise.all(
       newArticles.map(async (article) => {
         const shouldBlock = await this.articleFieldsSeenBefore(
           id,
           article,
-          relevantCustomComparisons
+          currentlyStoredBlockingComparisons
         );
 
         return shouldBlock ? null : article;
@@ -364,15 +400,21 @@ export class ArticlesService {
 
   async checkPassingComparisons(
     { id, passingComparisons }: { id: string; passingComparisons: string[] },
-    seenArticles: Article[]
+    seenArticles: Article[],
+    currentlyStoredComparisons: string[]
   ) {
     if (seenArticles.length === 0) {
       return seenArticles;
     }
 
-    if (passingComparisons.length === 0) {
-      // send to medium
+    const currentlyStoredPassingComparisons = passingComparisons.filter((r) =>
+      currentlyStoredComparisons.includes(r)
+    );
 
+    if (
+      passingComparisons.length === 0 ||
+      !currentlyStoredPassingComparisons.length
+    ) {
       return [];
     }
 
@@ -382,8 +424,16 @@ export class ArticlesService {
     );
 
     const relevantComparisons = storedComparisonResults
-      .filter((result) => result)
-      .map((_, i) => passingComparisons[i]);
+      .filter((r) => r.isStored)
+      .map((r) => r.field);
+
+    if (relevantComparisons.length === 0) {
+      /**
+       * Just store the comparison values, otherwise all articles would get delivered since none
+       * of the comparison values have been seen before.
+       */
+      return [];
+    }
 
     const articlesToSend = await Promise.all(
       seenArticles.map(async (article) => {
