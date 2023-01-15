@@ -168,6 +168,7 @@ services:
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
+      - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
     command: npm run start:schedule-emitter:local
 
   # Web - Backend api
