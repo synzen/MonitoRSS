@@ -91,7 +91,7 @@ export const UserFeeds: React.FC = () => {
               Back to legacy feeds
             </Button>
           </Box>
-          <Flex justifyContent="space-between" alignItems="center">
+          <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
               <Heading size="lg">{t("pages.userFeeds.title")}</Heading>
               <Badge colorScheme="purple" fontSize="lg">
@@ -122,10 +122,12 @@ export const UserFeeds: React.FC = () => {
             <Text>
               Personal feeds were created to address core infrastructure/stability issues related to
               legacy feeds. It is currently in beta until it reaches feature parity with legacy
-              feeds. You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feed(s)
-              during this time on top of their regular feed limit. Once personal feeds are out of
-              beta, legacy feeds will no longer function and the regular feed limit will apply
-              again.
+              feeds.
+            </Text>
+            <Text>
+              You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feed(s) during
+              this time on top of their regular feed limit. Once personal feeds are out of beta,
+              legacy feeds will no longer function and the regular feed limit will apply again.
             </Text>
             <Text>
               There will eventually be a way to migrate legacy feeds to personal feeds as more

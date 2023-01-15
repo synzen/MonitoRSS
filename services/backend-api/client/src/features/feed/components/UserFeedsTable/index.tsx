@@ -141,7 +141,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   return (
     <Stack>
-      <HStack justifyContent="space-between" flexWrap="wrap">
+      <HStack justifyContent="space-between" flexWrap="wrap" gap="0">
         <InputGroup width="min-content">
           <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.400" />
