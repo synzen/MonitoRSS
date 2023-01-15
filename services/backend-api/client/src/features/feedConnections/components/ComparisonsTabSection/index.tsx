@@ -71,7 +71,7 @@ export const ComparisonsTabSection = ({
   };
 
   return (
-    <Stack spacing={12}>
+    <Stack spacing={12} marginBottom={8}>
       <Stack spacing={4}>
         <Heading size="md" as="h3">
           {t("features.feedConnections.components.comparisonsTabSection.title")}
