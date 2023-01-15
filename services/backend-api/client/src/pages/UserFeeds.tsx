@@ -50,8 +50,9 @@ export const UserFeeds: React.FC = () => {
             {t("pages.userFeeds.description")}
             <Text>
               You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feed(s) during
-              this time on top of their regular feed limit, however the regular feed limit will
-              apply again once personal feeds are fully released and legacy feeds are deprecated.
+              this time on top of their regular feed limit (subject to change), however the regular
+              feed limit will apply again once personal feeds are fully released and legacy feeds
+              are deprecated.
             </Text>
             <Stack>
               <Text>Some features of personal feeds are:</Text>
