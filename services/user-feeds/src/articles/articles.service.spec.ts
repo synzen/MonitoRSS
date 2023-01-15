@@ -514,20 +514,21 @@ describe("ArticlesService", () => {
     ];
 
     it("returns an empty array if there were no seen articles", async () => {
-      const result = await service.checkPassingComparisons(feed, []);
+      const result = await service.checkPassingComparisons(feed, [], ["title"]);
       expect(result).toEqual([]);
     });
 
     it("returns an empty array if there are no passing comparisons", async () => {
       const result = await service.checkPassingComparisons(
         { ...feed, passingComparisons: [] },
-        articles
+        articles,
+        []
       );
       expect(result).toEqual([]);
     });
 
     it("does not return any articles if the comparisons were not stored", async () => {
-      const result = await service.checkPassingComparisons(feed, articles);
+      const result = await service.checkPassingComparisons(feed, articles, []);
       expect(result).toEqual([]);
     });
 
@@ -545,7 +546,9 @@ describe("ArticlesService", () => {
         created_at: new Date(),
       });
 
-      const result = await service.checkPassingComparisons(feed, articles);
+      const result = await service.checkPassingComparisons(feed, articles, [
+        "title",
+      ]);
       expect(result).toEqual([articles[1]]);
     });
   });
