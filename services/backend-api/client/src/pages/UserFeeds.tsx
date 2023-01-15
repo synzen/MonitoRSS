@@ -7,68 +7,15 @@ import {
   Badge,
   Stack,
   Button,
-  Icon,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaCloudflare } from "react-icons/fa";
-import { StarIcon } from "@chakra-ui/icons";
-import {
-  BsClockFill,
-  BsCursorFill,
-  BsFillPencilFill,
-  BsFunnelFill,
-  BsToggles,
-} from "react-icons/bs";
 import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
 import { useDiscordUserMe } from "../features/discordUser";
 import { useUserFeeds } from "../features/feed";
 import { pages } from "../constants";
 import { BoxConstrained } from "../components";
-
-interface FeatureProps {
-  icon: React.ReactNode;
-  name: string;
-  description: string;
-}
-
-const Feature = ({ icon, name, description }: FeatureProps) => {
-  return (
-    <Stack flexGrow={1} maxWidth="sm" width="sm">
-      <Box borderRadius="lg" padding="4" width="min-content">
-        {icon}
-      </Box>
-      <Text fontWeight="bold" fontSize="lg">
-        {name}
-      </Text>
-      <Text>{description}</Text>
-    </Stack>
-  );
-};
-
-interface FeaturesProp {
-  features: Array<FeatureProps>;
-}
-
-const Features = ({ features }: FeaturesProp) => {
-  return (
-    <Flex gap="8" justifyContent="space-between" flexWrap="wrap">
-      {features.map((feature) => (
-        <Feature
-          icon={feature.icon}
-          description={feature.description}
-          name={feature.name}
-          key={feature.name}
-        />
-      ))}
-    </Flex>
-  );
-};
 
 export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
@@ -118,88 +65,15 @@ export const UserFeeds: React.FC = () => {
             </Box>
           </Flex>
           <Stack spacing={6}>
-            {t("pages.userFeeds.description")}
             <Text>
-              Personal feeds were created to address core infrastructure/stability issues related to
-              legacy feeds. It is currently in beta until it reaches feature parity with legacy
-              feeds.
+              Personal feeds are a new type of feed that will replace current (now considered
+              &quot;legacy&quot;) feeds. They contain new features that have never been seen before,
+              and are more reliable than legacy feeds. For more information, see the{" "}
+              <ChakraLink as={Link} color="blue.300" to={pages.userFeedsFaq()}>
+                Frequently Asked Questions
+              </ChakraLink>{" "}
+              page.
             </Text>
-            <Text>
-              You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feed(s) during
-              this time on top of the regular feed limit, which may be increased over time. Once
-              personal feeds are out of beta, legacy feeds will no longer work and the regular feed
-              limit will apply again.
-            </Text>
-            <Text>
-              There will eventually be a way to migrate legacy feeds to personal feeds as more
-              features are added for feature parity.
-            </Text>
-            <Accordion allowToggle>
-              <AccordionItem>
-                <AccordionButton>
-                  <Flex width="100%" justifyContent="space-between" alignItems="center">
-                    <HStack>
-                      <Icon as={StarIcon} color="purple.400" />
-                      <Text>Features</Text>
-                    </HStack>
-                    <AccordionIcon />
-                  </Flex>
-                </AccordionButton>
-                <AccordionPanel>
-                  <Stack spacing={8}>
-                    <Features
-                      features={[
-                        {
-                          icon: (
-                            <Icon
-                              as={FaCloudflare}
-                              boxSize={10}
-                              color="blue.500"
-                              transform="scale(1.4)"
-                            />
-                          ),
-                          name: "Cloudflare Support",
-                          description:
-                            'Feed sites behind Cloudflare are now supported. Most feeds that previously could not be added due to errors related to "Cloudflare" can now be added!',
-                        },
-                        {
-                          icon: <Icon as={BsToggles} boxSize={10} color="blue.500" />,
-                          name: "Enable/disable delivery",
-                          description:
-                            "Enable delivery to one or more channels/webhooks for any feed.",
-                        },
-                        {
-                          icon: <Icon as={BsFunnelFill} boxSize={10} color="blue.500" />,
-                          name: "Upgraded Filters",
-                          description:
-                            "Customize messages with different types of conditions (ANDs/ORs/regex) on filters with unlimited combinations.",
-                        },
-                        {
-                          icon: <Icon as={BsFillPencilFill} boxSize={10} color="blue.500" />,
-                          name: "Filter-Customized Messages",
-                          description: "Customize messages of a single feed based on filters.",
-                        },
-                        {
-                          icon: <Icon as={BsCursorFill} boxSize={10} color="blue.500" />,
-                          name: "Delivery Testing",
-                          description:
-                            "Test article delivery for any article and receive comprehensive details on failures for easy troubleshooting.",
-                        },
-                        {
-                          icon: <Icon as={BsClockFill} boxSize={10} color="blue.500" />,
-                          name: "Longer Retry Times",
-                          description:
-                            "Feeds will get disabled much less often after request failures using an exponential backoff retry strategy, retrying for up to 1 week.",
-                        },
-                      ]}
-                    />
-                    <Text textAlign="center" paddingTop="8">
-                      ...and much more coming!
-                    </Text>
-                  </Stack>
-                </AccordionPanel>
-              </AccordionItem>
-            </Accordion>
           </Stack>
         </Stack>
         {/* <Alert

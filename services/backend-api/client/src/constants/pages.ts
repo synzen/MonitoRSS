@@ -19,4 +19,5 @@ export const pages = {
     connectionType: FeedConnectionType;
     connectionId: string;
   }) => `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}`,
+  userFeedsFaq: () => "/feeds/faq",
 };

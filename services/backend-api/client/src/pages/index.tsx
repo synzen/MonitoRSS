@@ -22,6 +22,7 @@ import { ConnectionDiscordChannelSettings } from "./ConnectionDiscordChannelSett
 import { ConnectionDiscordWebhookSettings } from "./ConnectionDiscordWebhookSettings";
 import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
+import UserFeedsFAQ from "./UserFeedsFAQ";
 
 const Pages: React.FC = () => (
   <Routes>
@@ -78,6 +79,16 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <PageContentV2 invertBackground>
             <UserFeeds />
+          </PageContentV2>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path={pages.userFeedsFaq()}
+      element={
+        <RequireAuth>
+          <PageContentV2 invertBackground>
+            <UserFeedsFAQ />
           </PageContentV2>
         </RequireAuth>
       }
