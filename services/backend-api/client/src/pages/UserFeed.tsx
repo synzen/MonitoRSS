@@ -35,6 +35,7 @@ import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
   EditUserFeedDialog,
   RefreshUserFeedButton,
+  UpdateUserFeedInput,
   useArticleDailyLimit,
   useDeleteUserFeed,
   UserFeedDisabledCode,
@@ -43,24 +44,24 @@ import {
 } from "../features/feed";
 import RouteParams from "../types/RouteParams";
 import { DashboardContentV2 } from "../components/DashboardContentV2";
-import { AddConnectionDialog } from "../features/feedConnections";
+import { AddConnectionDialog, ComparisonsTabSection } from "../features/feedConnections";
 import { FeedConnectionType } from "../types";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
 
-const getDefaultTabIndex = (search: string) => {
-  if (search.includes("view=connections")) {
-    return 0;
-  }
+enum TabSearchParam {
+  Connections = "?view=connections",
+  Comparisons = "?view=comparisons",
+  Logs = "?view=logs",
+}
 
-  if (search.includes("view=logs")) {
-    return 1;
-  }
-
-  return 0;
-};
+const tabIndexBySearchParam = new Map<string, number>([
+  [TabSearchParam.Connections, 0],
+  [TabSearchParam.Comparisons, 1],
+  [TabSearchParam.Logs, 2],
+]);
 
 const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
   [FeedConnectionType.DiscordChannel]: "Discord Channel",
@@ -111,15 +112,7 @@ export const UserFeed: React.FC = () => {
     }
   };
 
-  const onUpdateFeed = async ({
-    title,
-    url,
-    disabledCode,
-  }: {
-    title?: string;
-    url?: string;
-    disabledCode?: UserFeedDisabledCode.Manual | null;
-  }) => {
+  const onUpdateFeed = async ({ url, ...rest }: UpdateUserFeedInput["data"]) => {
     if (!feedId) {
       return;
     }
@@ -128,9 +121,8 @@ export const UserFeed: React.FC = () => {
       await mutateAsyncUserFeed({
         feedId,
         data: {
-          title,
           url: url === feed?.url ? undefined : url,
-          disabledCode,
+          ...rest,
         },
       });
       notifySuccess(t("common.success.savedChanges"));
@@ -153,7 +145,7 @@ export const UserFeed: React.FC = () => {
         }}
         onUpdate={onUpdateFeed}
       />
-      <Tabs isLazy isFitted defaultIndex={getDefaultTabIndex(urlSearch)}>
+      <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
         <Stack
           width="100%"
           minWidth="100%"
@@ -318,7 +310,7 @@ export const UserFeed: React.FC = () => {
               <Tab
                 onClick={() =>
                   navigate({
-                    search: "?view=connections",
+                    search: TabSearchParam.Connections,
                   })
                 }
               >
@@ -327,7 +319,16 @@ export const UserFeed: React.FC = () => {
               <Tab
                 onClick={() =>
                   navigate({
-                    search: "?view=logs",
+                    search: TabSearchParam.Comparisons,
+                  })
+                }
+              >
+                {t("pages.userFeeds.tabComparisons")}
+              </Tab>
+              <Tab
+                onClick={() =>
+                  navigate({
+                    search: TabSearchParam.Logs,
                   })
                 }
               >
@@ -343,7 +344,9 @@ export const UserFeed: React.FC = () => {
                 <Stack spacing={6}>
                   <Stack spacing={3}>
                     <Flex justifyContent="space-between" alignItems="center">
-                      <Heading size="md">{t("pages.userFeeds.tabConnections")}</Heading>
+                      <Heading size="md" as="h3">
+                        {t("pages.userFeeds.tabConnections")}
+                      </Heading>
                       <Menu>
                         <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
                           {t("pages.feed.addConnectionButtonText")}
@@ -400,6 +403,23 @@ export const UserFeed: React.FC = () => {
                     ))}
                   </Stack>
                 </Stack>
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <ComparisonsTabSection
+                  feedId={feedId as string}
+                  passingComparisons={feed?.passingComparisons}
+                  blockingComparisons={feed?.blockingComparisons}
+                  onUpdate={({ passingComparisons, blockingComparisons }) =>
+                    onUpdateFeed({
+                      passingComparisons,
+                      blockingComparisons,
+                    })
+                  }
+                />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>

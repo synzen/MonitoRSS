@@ -7,6 +7,8 @@ export const UserFeedSchema = object({
   id: string().required(),
   title: string().required(),
   url: string().required(),
+  passingComparisons: array(string().required()).optional().default(undefined),
+  blockingComparisons: array(string().required()).optional().default(undefined),
   createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
   updatedAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
   disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),

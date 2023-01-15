@@ -39,7 +39,6 @@ import {
   FiltersTabSection,
   MessageTabSection,
   ConnectionDisabledAlert,
-  ComparisonsTabSection,
   UpdateDiscordWebhookConnectionInput,
 } from "../features/feedConnections";
 import { useUserFeed } from "../features/feed";
@@ -52,13 +51,11 @@ import { pages } from "../constants";
 enum TabSearchParam {
   Message = "?view=message",
   Filters = "?view=filters",
-  CustomComparisons = "?view=custom-comparisons",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Message, 0],
   [TabSearchParam.Filters, 1],
-  [TabSearchParam.CustomComparisons, 2],
 ]);
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
@@ -271,15 +268,6 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               >
                 Filters
               </Tab>
-              <Tab
-                onClick={() => {
-                  navigate({
-                    search: TabSearchParam.CustomComparisons,
-                  });
-                }}
-              >
-                Comparisons
-              </Tab>
             </TabList>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
@@ -318,23 +306,6 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                   }
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
-                />
-              </BoxConstrained.Container>
-            </BoxConstrained.Wrapper>
-          </TabPanel>
-          <TabPanel width="100%">
-            <BoxConstrained.Wrapper>
-              <BoxConstrained.Container>
-                <ComparisonsTabSection
-                  feedId={feedId as string}
-                  passingComparisons={connection?.passingComparisons}
-                  blockingComparisons={connection?.blockingComparisons}
-                  onUpdate={({ passingComparisons, blockingComparisons }) =>
-                    onUpdate({
-                      blockingComparisons,
-                      passingComparisons,
-                    })
-                  }
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

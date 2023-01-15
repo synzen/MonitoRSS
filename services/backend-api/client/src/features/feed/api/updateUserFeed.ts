@@ -8,6 +8,8 @@ export interface UpdateUserFeedInput {
     title?: string;
     url?: string;
     disabledCode?: UserFeedDisabledCode.Manual | null;
+    passingComparisons?: string[];
+    blockingComparisons?: string[];
   };
 }
 

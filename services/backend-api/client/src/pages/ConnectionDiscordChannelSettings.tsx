@@ -41,7 +41,6 @@ import {
   MessageTabSection,
   ConnectionDisabledAlert,
   EditConnectionChannelDialog,
-  ComparisonsTabSection,
   UpdateDiscordChannelConnectionInput,
 } from "../features/feedConnections";
 import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
@@ -52,13 +51,11 @@ import { notifySuccess } from "../utils/notifySuccess";
 enum TabSearchParam {
   Message = "?view=message",
   Filters = "?view=filters",
-  CustomComparisons = "?view=custom-comparisons",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Message, 0],
   [TabSearchParam.Filters, 1],
-  [TabSearchParam.CustomComparisons, 2],
 ]);
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
@@ -271,15 +268,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               >
                 Filters
               </Tab>
-              <Tab
-                onClick={() => {
-                  navigate({
-                    search: TabSearchParam.CustomComparisons,
-                  });
-                }}
-              >
-                Comparisons
-              </Tab>
             </TabList>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
@@ -318,23 +306,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   }
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
-                />
-              </BoxConstrained.Container>
-            </BoxConstrained.Wrapper>
-          </TabPanel>
-          <TabPanel width="100%">
-            <BoxConstrained.Wrapper>
-              <BoxConstrained.Container>
-                <ComparisonsTabSection
-                  feedId={feedId as string}
-                  passingComparisons={connection?.passingComparisons}
-                  blockingComparisons={connection?.blockingComparisons}
-                  onUpdate={({ blockingComparisons, passingComparisons }) => {
-                    return onUpdate({
-                      blockingComparisons,
-                      passingComparisons,
-                    });
-                  }}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
