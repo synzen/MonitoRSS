@@ -91,11 +91,12 @@ export const ComparisonsTabSection = ({
       </Stack>
       <Stack spacing={4}>
         <Heading size="sm" as="h3">
-          Passing Comparisons
+          {t("features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle")}
         </Heading>
         <Text>
-          Article properties that will be checked to attempt to pass an article for it to send after
-          an article has alreadt been determine to be old.
+          {t(
+            "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription"
+          )}
         </Text>
         <HStack flexWrap="wrap">
           {passingComparisons?.map((comparison) => (
@@ -115,11 +116,12 @@ export const ComparisonsTabSection = ({
       </Stack>
       <Stack spacing={4}>
         <Heading size="sm" as="h3">
-          Blocking Comparisons
+          {t("features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle")}
         </Heading>
         <Text>
-          Article properties that will be checked to attempt to block an article for it to send
-          after an article has alreadt been determine to be new.
+          {t(
+            "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription"
+          )}
         </Text>
         <HStack flexWrap="wrap">
           {blockingComparisons?.map((comparison) => (

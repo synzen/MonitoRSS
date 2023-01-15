@@ -458,7 +458,9 @@
           "title": "Comparisons",
           "description": "Comparisons are additional checks to determine whether an article is new and should be delivered, or if it's old and should be ignored.",
           "passingComparisonsTitle": "Passing Comparisons",
-          "blockingComparisonsTitle": "Blocking comparison",
+          "passingComparisonsDescription": "Article properties that will be checked to attempt to pass an article for it to send after an article has already been determine to be old.",
+          "blockingComparisonsTitle": "Blocking Comparison",
+          "blockingComparisonsDescription": "Article properties that will be checked to attempt to block an article from sending after default algorithms mark an article as new.",
           "errorFailedToGetPropertiesTitle": "Failed to get article properties to add"
         },
         "manuallyDisabledAlert": {
