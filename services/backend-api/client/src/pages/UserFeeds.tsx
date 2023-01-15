@@ -120,7 +120,8 @@ export const UserFeeds: React.FC = () => {
           <Stack spacing={6}>
             {t("pages.userFeeds.description")}
             <Text>
-              Personal feeds are currently in beta until it reaches feature parity with legacy
+              Personal feeds were created to address core infrastructure/stability issues related to
+              legacy feeds. It is currently in beta until it reaches feature parity with legacy
               feeds. You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feed(s)
               during this time on top of their regular feed limit. Once personal feeds are out of
               beta, legacy feeds will no longer function and the regular feed limit will apply
