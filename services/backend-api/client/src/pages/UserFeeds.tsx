@@ -126,8 +126,9 @@ export const UserFeeds: React.FC = () => {
             </Text>
             <Text>
               You&apos;ll has access to {discordUserMe?.maxUserFeeds || ""} personal feed(s) during
-              this time on top of their regular feed limit. Once personal feeds are out of beta,
-              legacy feeds will no longer function and the regular feed limit will apply again.
+              this time on top of the regular feed limit, which may be increased over time. Once
+              personal feeds are out of beta, legacy feeds will no longer work and the regular feed
+              limit will apply again.
             </Text>
             <Text>
               There will eventually be a way to migrate legacy feeds to personal feeds as more
