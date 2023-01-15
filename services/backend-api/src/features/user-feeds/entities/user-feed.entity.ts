@@ -30,6 +30,18 @@ export class UserFeed {
   disabledCode?: UserFeedDisabledCode;
 
   @Prop({
+    type: [String],
+    required: false,
+  })
+  passingComparisons?: string[];
+
+  @Prop({
+    type: [String],
+    required: false,
+  })
+  blockingComparisons?: string[];
+
+  @Prop({
     enum: Object.values(UserFeedHealthStatus),
     required: true,
     default: UserFeedHealthStatus.Ok,

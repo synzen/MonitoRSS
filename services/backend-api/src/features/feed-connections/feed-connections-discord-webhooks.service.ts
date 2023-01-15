@@ -29,8 +29,6 @@ export interface UpdateDiscordWebhookConnectionInput {
     filters?: DiscordWebhookConnection["filters"] | null;
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
-    blockingComparisons?: string[];
-    passingComparisons?: string[];
     details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
@@ -114,14 +112,7 @@ export class FeedConnectionsDiscordWebhooksService {
   async updateDiscordWebhookConnection({
     feedId,
     connectionId,
-    updates: {
-      details,
-      filters,
-      name,
-      disabledCode,
-      passingComparisons,
-      blockingComparisons,
-    },
+    updates: { details, filters, name, disabledCode },
     accessToken,
   }: UpdateDiscordWebhookConnectionInput) {
     let webhookUpdates:
@@ -192,14 +183,6 @@ export class FeedConnectionsDiscordWebhooksService {
         }),
         ...(disabledCode && {
           "connections.discordWebhooks.$.disabledCode": disabledCode,
-        }),
-        ...(passingComparisons && {
-          "connections.discordWebhooks.$.passingComparisons":
-            passingComparisons,
-        }),
-        ...(blockingComparisons && {
-          "connections.discordWebhooks.$.blockingComparisons":
-            blockingComparisons,
         }),
       },
       $unset: {

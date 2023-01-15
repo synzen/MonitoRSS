@@ -197,7 +197,14 @@ export class UserFeedsController {
   @UseFilters(FeedExceptionFilter)
   async updateFeed(
     @Param("feedId", GetUserFeedPipe) feed: UserFeed,
-    @Body(ValidationPipe) { title, url, disabledCode }: UpdateUserFeedInputDto
+    @Body(ValidationPipe)
+    {
+      title,
+      url,
+      disabledCode,
+      passingComparisons,
+      blockingComparisons,
+    }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
     if (disabledCode && feed.disabledCode) {
       throw new ForbiddenException("Feed is already disabled");
@@ -209,6 +216,8 @@ export class UserFeedsController {
         title,
         url,
         disabledCode,
+        passingComparisons,
+        blockingComparisons,
       }
     )) as UserFeed;
 
@@ -262,8 +271,6 @@ export class UserFeedsController {
         id: con.id.toHexString(),
         name: con.name,
         key: FeedConnectionType.DiscordChannel,
-        blockingComparisons: con.blockingComparisons,
-        passingComparisons: con.passingComparisons,
         details: con.details,
         filters: con.filters,
         disabledCode: con.disabledCode,
@@ -274,8 +281,6 @@ export class UserFeedsController {
         id: con.id.toHexString(),
         name: con.name,
         key: FeedConnectionType.DiscordWebhook,
-        blockingComparisons: con.blockingComparisons,
-        passingComparisons: con.passingComparisons,
         details: con.details,
         filters: con.filters,
         disabledCode: con.disabledCode,
@@ -295,6 +300,8 @@ export class UserFeedsController {
         ],
         disabledCode: feed.disabledCode,
         healthStatus: feed.healthStatus,
+        passingComparisons: feed.passingComparisons,
+        blockingComparisons: feed.blockingComparisons,
         createdAt: feed.createdAt.toISOString(),
         updatedAt: feed.updatedAt.toISOString(),
         refreshRateSeconds,

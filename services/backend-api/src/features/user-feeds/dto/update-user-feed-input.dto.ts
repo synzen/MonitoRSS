@@ -16,4 +16,14 @@ export class UpdateUserFeedInputDto {
   @IsIn([UserFeedDisabledCode.Manual, null])
   @IsOptional()
   disabledCode?: UserFeedDisabledCode | null;
+
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @IsOptional()
+  passingComparisons?: string[];
+
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @IsOptional()
+  blockingComparisons?: string[];
 }

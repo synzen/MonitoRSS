@@ -39,6 +39,8 @@ interface UpdateFeedInput {
   title?: string;
   url?: string;
   disabledCode?: UserFeedDisabledCode | null;
+  passingComparisons?: string[];
+  blockingComparisons?: string[];
 }
 
 @Injectable()
@@ -203,6 +205,14 @@ export class UserFeedsService {
 
     if (updates.disabledCode) {
       query.set("disabledCode", updates.disabledCode);
+    }
+
+    if (updates.passingComparisons) {
+      query.set("passingComparisons", updates.passingComparisons);
+    }
+
+    if (updates.blockingComparisons) {
+      query.set("blockingComparisons", updates.blockingComparisons);
     }
 
     return query.lean();

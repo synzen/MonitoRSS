@@ -35,16 +35,6 @@ export class UpdateDiscordChannelConnectionInputDto {
   filters?: FiltersDto;
 
   @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  passingComparisons?: string[];
-
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  blockingComparisons?: string[];
-
-  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => DiscordEmbed)
   @IsOptional()

@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsDateString,
   IsIn,
   IsInt,
@@ -32,6 +33,18 @@ class GetUserFeedOutputResultDto {
   @IsString()
   @IsNotEmpty()
   url: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @IsOptional()
+  passingComparisons?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @IsOptional()
+  blockingComparisons?: string[];
 
   @IsObject()
   @ValidateNested()

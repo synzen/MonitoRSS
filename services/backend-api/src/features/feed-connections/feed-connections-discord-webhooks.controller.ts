@@ -118,8 +118,6 @@ export class FeedConnectionsDiscordWebhooksController {
       name,
       webhook,
       disabledCode,
-      blockingComparisons,
-      passingComparisons,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -148,8 +146,6 @@ export class FeedConnectionsDiscordWebhooksController {
           name,
           filters,
           disabledCode: useDisableCode,
-          passingComparisons,
-          blockingComparisons,
           details: {
             content,
             embeds: convertToFlatDiscordEmbeds(embeds),

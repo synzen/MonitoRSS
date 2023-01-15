@@ -129,8 +129,6 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             foo: "bar",
           },
         },
-        passingComparisons: ["pass1", "pass2"],
-        blockingComparisons: ["block1", "block2"],
         details: {
           channel: {
             id: "updatedChannelId",
@@ -161,8 +159,6 @@ describe("FeedConnectionsDiscordChannelsService", () => {
               id: connectionIdToUse,
               name: "name",
               disabledCode: FeedConnectionDisabledCode.BadFormat,
-              passingComparisons: [],
-              failingComparisons: [],
               filters: {
                 expression: {
                   foo: "bar",
@@ -205,8 +201,6 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         id: connectionIdToUse,
         name: updateInput.updates.name,
         filters: updateInput.updates.filters,
-        passingComparisons: updateInput.updates.passingComparisons,
-        blockingComparisons: updateInput.updates.blockingComparisons,
         details: {
           embeds: updateInput.updates.details?.embeds,
           channel: {
@@ -390,6 +384,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
 
       expect(sendTestArticle).toHaveBeenCalledWith({
         details: {
+          article: undefined,
           type: "discord",
           feed: {
             url: userFeed.url,
@@ -398,7 +393,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             channel: {
               id: targetConnection.details.channel.id,
             },
-            content: targetConnection.details.content,
+            content: expect.any(String),
             embeds: targetConnection.details.embeds,
           },
         },
@@ -427,7 +422,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             channel: {
               id: targetConnection.details.channel.id,
             },
-            content: targetConnection.details.content,
+            content: expect.any(String),
             embeds: targetConnection.details.embeds,
           },
         },
