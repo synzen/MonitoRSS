@@ -223,14 +223,10 @@
       "saveButton": "Save"
     },
     "discordChannelConnection": {
-      "disabledAlertBadFormatTitle": "Disabled due to invalid message format",
-      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format.",
       "manualDisableConfirmTitle": "Are you sure you want to disable this connection?",
       "manualDisableConfirmDescription": "This will disable the connection and prevent any further messages from being sent to this channel. You may re-enable it at any time."
     },
     "discordWebhookConnection": {
-      "disabledAlertBadFormatTitle": "Disabled due to invalid message format",
-      "disabledAlertBadFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format.",
       "manualDisableConfirmTitle": "Are you sure you want to disable this connection?",
       "manualDisableConfirmDescription": "This will disable the connection and prevent any further messages from being sent to this channel. You may re-enable it at any time."
     }
@@ -396,6 +392,16 @@
     },
     "feedConnections": {
       "components": {
+        "connectionDisabledAlert": {
+          "badFormatTitle": "Disabled due to invalid message format",
+          "badFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format.",
+          "manuallyDisabledTitle": "This connection has been manually disabled",
+          "manuallyDisabledDescription": "Article delivery through this connection is paused until it is re-enabled.",
+          "missingMediumTitle": "This connection has been disabled because the delivery channel is missing",
+          "missingMediumDescription": "Article delivery through this connection is paused until the delivery channel is updated. Please configure and update this connection to use a valid delivery channel.",
+          "missingPermissionsTitle": "This connection has been disabled because of missing permissions",
+          "missingPermissionsDescription": "Article delivery through this connection is currently paused. Please update the permissions of the application and re-enable this connection to restore article delivery."
+        },
         "embedForm": {
           "errorOneOfRequiredFields": "One of the following fields that are title, description, author, image, thumbnail, footer is required",
           "deleteButtonText": "Delete embed"
@@ -462,10 +468,6 @@
           "blockingComparisonsTitle": "Blocking Comparison",
           "blockingComparisonsDescription": "Article properties that will be checked to attempt to block an article from sending after default algorithms mark an article as new.",
           "errorFailedToGetPropertiesTitle": "Failed to get article properties to add"
-        },
-        "manuallyDisabledAlert": {
-          "title": "This connection has been manually disabled",
-          "description": "Article delivery through this connection is paused until it is re-enabled."
         }
       }
     },

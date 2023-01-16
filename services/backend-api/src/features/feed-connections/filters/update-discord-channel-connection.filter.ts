@@ -6,7 +6,10 @@ import {
 } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
-import { UserMissingManageGuildException } from "../../feeds/exceptions";
+import {
+  MissingChannelPermissionsException,
+  UserMissingManageGuildException,
+} from "../../feeds/exceptions";
 import {
   DiscordChannelPermissionsException,
   FeedConnectionNotFoundException,
@@ -38,6 +41,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [CannotEnableAutoDisabledConnection.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED,
+    },
+    [MissingChannelPermissionsException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
     },
   };
 

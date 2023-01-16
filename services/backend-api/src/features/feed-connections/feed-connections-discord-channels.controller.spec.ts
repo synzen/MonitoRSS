@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { Types } from "mongoose";
 import {
   FeedConnectionDisabledCode,
@@ -288,6 +289,80 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           },
         }
       );
+    });
+
+    it("sets channel id to current channel id if connection is currently disabled because of missing permissions", async () => {
+      await controller.updateDiscordChannelConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+            disabledCode: FeedConnectionDisabledCode.MissingPermissions,
+            details: {
+              channel: {
+                id: channelId,
+              },
+            },
+          },
+        } as never,
+        {
+          disabledCode: null,
+        },
+        {
+          access_token: "accessToken",
+        } as never
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        feedId.toHexString(),
+        connectionId.toHexString(),
+        {
+          accessToken: "accessToken",
+          updates: {
+            name: undefined,
+            filters: undefined,
+            disabledCode: null,
+            details: {
+              content: undefined,
+              embeds: undefined,
+              channel: {
+                id: channelId,
+              },
+            },
+          },
+        }
+      );
+    });
+
+    it("throws if attempting to enable feed for unhandled disabled code", async () => {
+      await expect(
+        controller.updateDiscordChannelConnection(
+          {
+            feed: {
+              _id: feedId,
+              guild: guildId,
+            },
+            connection: {
+              id: connectionId,
+              disabledCode: FeedConnectionDisabledCode.Unknown,
+              details: {
+                channel: {
+                  id: channelId,
+                },
+              },
+            },
+          } as never,
+          {
+            disabledCode: null,
+          },
+          {
+            access_token: "accessToken",
+          } as never
+        )
+      ).rejects.toThrow(CannotEnableAutoDisabledConnection);
     });
 
     it("throws if attempting to enable when feed has a bad format", async () => {

@@ -21,25 +21,83 @@ export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
     }
   };
 
-  return (
-    <Alert
-      status="info"
-      hidden={disabledCode !== FeedConnectionDisabledCode.Manual}
-      borderRadius="md"
-    >
-      <Box>
-        <AlertTitle>
-          {t("features.feedConnections.components.manuallyDisabledAlert.title")}
-        </AlertTitle>
-        <AlertDescription display="block">
-          {t("features.feedConnections.components.manuallyDisabledAlert.description")}
-          <Box marginTop="1rem">
-            <Button isLoading={isUpdating} onClick={onClickEnable}>
-              {t("common.buttons.reEnable")}
-            </Button>
-          </Box>
-        </AlertDescription>
-      </Box>
-    </Alert>
-  );
+  if (disabledCode === FeedConnectionDisabledCode.Manual) {
+    return (
+      <Alert status="info" borderRadius="md">
+        <Box>
+          <AlertTitle>
+            {t("features.feedConnections.components.connectionDisabledAlert.manuallyDisabledTitle")}
+          </AlertTitle>
+          <AlertDescription display="block">
+            {t(
+              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription"
+            )}
+            <Box marginTop="1rem">
+              <Button isLoading={isUpdating} onClick={onClickEnable}>
+                {t("common.buttons.reEnable")}
+              </Button>
+            </Box>
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  if (disabledCode === FeedConnectionDisabledCode.BadFormat) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <Box>
+          <AlertTitle>
+            {t("features.feedConnections.components.connectionDisabledAlert.badFormatTitle")}
+          </AlertTitle>
+          <AlertDescription display="block">
+            {t("features.feedConnections.components.connectionDisabledAlert.badFormatDescription")}
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  if (disabledCode === FeedConnectionDisabledCode.MissingMedium) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <Box>
+          <AlertTitle>
+            {t("features.feedConnections.components.connectionDisabledAlert.missingMediumTitle")}
+          </AlertTitle>
+          <AlertDescription display="block">
+            {t(
+              "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription"
+            )}
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  if (disabledCode === FeedConnectionDisabledCode.MissingPermissions) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <Box>
+          <AlertTitle>
+            {t(
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle"
+            )}
+          </AlertTitle>
+          <AlertDescription display="block">
+            {t(
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription"
+            )}
+            <Box marginTop="1rem">
+              <Button isLoading={isUpdating} onClick={onClickEnable}>
+                {t("common.buttons.reEnable")}
+              </Button>
+            </Box>
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  return null;
 };

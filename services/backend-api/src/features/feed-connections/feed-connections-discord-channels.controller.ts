@@ -120,19 +120,31 @@ export class FeedConnectionsDiscordChannelsController {
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
     let useDisableCode: FeedConnectionDisabledCode | undefined | null =
-      disabledCode;
-
-    if (
-      useDisableCode === null &&
-      connection.disabledCode !== FeedConnectionDisabledCode.Manual
-    ) {
-      throw new CannotEnableAutoDisabledConnection();
-    }
+      undefined;
+    let useChannelId: string | undefined = channelId;
 
     if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
+      if (disabledCode === null) {
+        throw new CannotEnableAutoDisabledConnection();
+      }
+
       if (content || embeds) {
         useDisableCode = null;
       }
+    } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
+      if (disabledCode === null) {
+        useDisableCode = null;
+      }
+    } else if (
+      connection.disabledCode === FeedConnectionDisabledCode.MissingPermissions
+    ) {
+      if (disabledCode === null) {
+        // Force re-validation of channel permissions
+        useChannelId = channelId || connection.details.channel.id;
+        useDisableCode = null;
+      }
+    } else if (disabledCode === null) {
+      throw new CannotEnableAutoDisabledConnection();
     }
 
     const createdConnection = await this.service.updateDiscordChannelConnection(
@@ -145,9 +157,9 @@ export class FeedConnectionsDiscordChannelsController {
           name,
           disabledCode: useDisableCode,
           details: {
-            channel: channelId
+            channel: useChannelId
               ? {
-                  id: channelId,
+                  id: useChannelId,
                 }
               : undefined,
             embeds: convertToFlatDiscordEmbeds(embeds),

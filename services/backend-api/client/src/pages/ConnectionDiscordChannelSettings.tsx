@@ -1,8 +1,5 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Breadcrumb,
   BreadcrumbItem,
@@ -215,22 +212,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     })
                   }
                 />
-                <Alert
-                  status="error"
-                  hidden={
-                    !connection || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat
-                  }
-                  borderRadius="md"
-                >
-                  <Box>
-                    <AlertTitle>
-                      {t("pages.discordChannelConnection.disabledAlertBadFormatTitle")}
-                    </AlertTitle>
-                    <AlertDescription display="block">
-                      {t("pages.discordChannelConnection.disabledAlertBadFormatDescription")}
-                    </AlertDescription>
-                  </Box>
-                </Alert>
               </Stack>
               <Grid
                 templateColumns={{

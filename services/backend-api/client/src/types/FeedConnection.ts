@@ -9,6 +9,8 @@ export enum FeedConnectionType {
 export enum FeedConnectionDisabledCode {
   Manual = "MANUAL",
   BadFormat = "BAD_FORMAT",
+  MissingPermissions = "MISSING_PERMISSIONS",
+  MissingMedium = "MISSING_MEDIUM",
 }
 
 const DiscordChannelConnectionDetailsSchema = object({

@@ -29,7 +29,7 @@ import {
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, WarningIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -45,11 +45,12 @@ import {
 import RouteParams from "../types/RouteParams";
 import { DashboardContentV2 } from "../components/DashboardContentV2";
 import { AddConnectionDialog, ComparisonsTabSection } from "../features/feedConnections";
-import { FeedConnectionType } from "../types";
+import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
+import getChakraColor from "../utils/getChakraColor";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -395,7 +396,13 @@ export const UserFeed: React.FC = () => {
                               {PRETTY_CONNECTION_NAMES[connection.key]}
                             </Text>
                             <Stack spacing="0">
-                              <Text fontWeight={600}>{connection.name}</Text>
+                              <HStack alignItems="flex-end">
+                                {connection.disabledCode &&
+                                  connection.disabledCode !== FeedConnectionDisabledCode.Manual && (
+                                    <WarningIcon color={`${getChakraColor("red.500")}`} />
+                                  )}
+                                <Text fontWeight={600}>{connection.name}</Text>
+                              </HStack>
                             </Stack>
                           </Stack>
                         </Flex>

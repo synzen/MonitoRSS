@@ -122,19 +122,31 @@ export class FeedConnectionsDiscordWebhooksController {
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
     let useDisableCode: FeedConnectionDisabledCode | undefined | null =
-      disabledCode;
-
-    if (
-      disabledCode === null &&
-      connection.disabledCode !== FeedConnectionDisabledCode.Manual
-    ) {
-      throw new CannotEnableAutoDisabledConnection();
-    }
+      undefined;
+    let useWebhook: UpdateDiscordWebhookConnectionInputDto["webhook"] = webhook;
 
     if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
+      if (disabledCode === null) {
+        throw new CannotEnableAutoDisabledConnection();
+      }
+
       if (content || embeds) {
         useDisableCode = null;
       }
+    } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
+      if (disabledCode === null) {
+        useDisableCode = null;
+      }
+    } else if (
+      connection.disabledCode === FeedConnectionDisabledCode.MissingPermissions
+    ) {
+      if (disabledCode === null) {
+        // Force re-validation of permissions
+        useWebhook = webhook || connection.details.webhook;
+        useDisableCode = null;
+      }
+    } else if (disabledCode === null) {
+      throw new CannotEnableAutoDisabledConnection();
     }
 
     const updatedConnection = await this.service.updateDiscordWebhookConnection(
@@ -149,11 +161,11 @@ export class FeedConnectionsDiscordWebhooksController {
           details: {
             content,
             embeds: convertToFlatDiscordEmbeds(embeds),
-            webhook: webhook
+            webhook: useWebhook
               ? {
-                  id: webhook.id,
-                  iconUrl: webhook.iconUrl,
-                  name: webhook.name,
+                  id: useWebhook.id,
+                  iconUrl: useWebhook.iconUrl,
+                  name: useWebhook.name,
                 }
               : undefined,
           },

@@ -1,6 +1,6 @@
 import { UserFeed } from "@/features/feed";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../../features/feed/types";
-import { FeedConnectionType } from "../../types";
+import { FeedConnectionDisabledCode, FeedConnectionType } from "../../types";
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
@@ -25,6 +25,7 @@ const mockUserFeeds: UserFeed[] = [
         },
         filters: null,
         id: "1",
+        disabledCode: FeedConnectionDisabledCode.MissingPermissions,
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Channel 1",
       },
