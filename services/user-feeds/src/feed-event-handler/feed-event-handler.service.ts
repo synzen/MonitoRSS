@@ -174,6 +174,33 @@ export class FeedEventHandlerService {
           },
         }
       );
+    } else if (result.status === 404) {
+      const record = await this.deliveryRecordService.updateDeliveryStatus(
+        deliveryRecordId,
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.MediumNotFound,
+          internalMessage: `Discord rejected the request with status code ${
+            result.status
+          } Body: ${JSON.stringify(result.body)}`,
+        }
+      );
+
+      this.amqpConnection.publish(
+        "",
+        MessageBrokerQueue.FeedRejectedArticleDisable,
+        {
+          data: {
+            rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,
+            medium: {
+              id: record.medium_id,
+            },
+            feed: {
+              id: record.feed_id,
+            },
+          },
+        }
+      );
     } else if (result.status < 200 || result.status > 400) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,

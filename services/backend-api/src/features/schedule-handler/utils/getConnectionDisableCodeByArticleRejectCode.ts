@@ -9,6 +9,8 @@ export const getConnectionDisableCodeByArticleRejectCode = (
       return UserFeedDisabledCode.BadFormat;
     case ArticleRejectCode.Forbidden:
       return UserFeedDisabledCode.MissingPermissions;
+    case ArticleRejectCode.MediumNotFound:
+      return UserFeedDisabledCode.MissingMedium;
     default:
       throw new Error(
         `Failed to get connection disable code by article reject code since it is` +

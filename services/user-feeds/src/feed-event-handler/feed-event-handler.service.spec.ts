@@ -422,6 +422,68 @@ describe("FeedEventHandlerService", () => {
       );
     });
 
+    it("handles 404 status correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 404,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.MediumNotFound,
+          internalMessage: expect.any(String),
+        }
+      );
+    });
+
+    it("emits disable feed event for 404 status", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 404,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      jest
+        .spyOn(deliveryRecordService, "updateDeliveryStatus")
+        .mockResolvedValue({
+          medium_id: "medium-id",
+          feed_id: "feed-id",
+        });
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        "",
+        MessageBrokerQueue.FeedRejectedArticleDisable,
+        {
+          data: {
+            rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,
+            medium: {
+              id: "medium-id",
+            },
+            feed: {
+              id: "feed-id",
+            },
+          },
+        }
+      );
+    });
+
     it("handles 500 status correctly", async () => {
       const articleDeliveryResult: ArticleDeliveryResult = {
         result: {

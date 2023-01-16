@@ -4,4 +4,5 @@ export enum UserFeedDisabledCode {
   Manual = "MANUAL",
   MissingPermissions = "MISSING_PERMISSIONS",
   Unknown = "UNKNOWN",
+  MissingMedium = "MISSING_MEDIUM",
 }
