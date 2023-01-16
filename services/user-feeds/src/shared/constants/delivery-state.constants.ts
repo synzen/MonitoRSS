@@ -1,9 +1,10 @@
 export enum ArticleDeliveryRejectedCode {
-  BadRequest = "handler/bad-request",
+  BadRequest = "user-feeds/bad-request",
+  Forbidden = "user-feeds/forbidden",
 }
 
 export enum ArticleDeliveryErrorCode {
-  Internal = "handler/internal-error",
-  NoChannelOrWebhook = "handler/no-channel-or-webhook",
-  ThirdPartyInternal = "handler/third-party-internal",
+  Internal = "user-feeds/internal-error",
+  NoChannelOrWebhook = "user-feeds/no-channel-or-webhook",
+  ThirdPartyInternal = "user-feeds/third-party-internal",
 }

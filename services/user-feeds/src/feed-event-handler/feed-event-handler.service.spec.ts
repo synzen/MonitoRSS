@@ -348,6 +348,69 @@ describe("FeedEventHandlerService", () => {
         MessageBrokerQueue.FeedRejectedArticleDisable,
         {
           data: {
+            rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
+            medium: {
+              id: "medium-id",
+            },
+            feed: {
+              id: "feed-id",
+            },
+          },
+        }
+      );
+    });
+
+    it("handles 403 status correctly", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 403,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(deliveryRecordService.updateDeliveryStatus).toHaveBeenCalledWith(
+        articleDeliveryResult.job.id,
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.Forbidden,
+          internalMessage: expect.any(String),
+        }
+      );
+    });
+
+    it("emits disable feed event for 403 status", async () => {
+      const articleDeliveryResult: ArticleDeliveryResult = {
+        result: {
+          state: "success",
+          status: 403,
+          body: {} as never,
+        },
+        job: {
+          id: "job-id",
+        } as never,
+      };
+
+      jest
+        .spyOn(deliveryRecordService, "updateDeliveryStatus")
+        .mockResolvedValue({
+          medium_id: "medium-id",
+          feed_id: "feed-id",
+        });
+
+      await service.onArticleDeliveryResult(articleDeliveryResult);
+
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        "",
+        MessageBrokerQueue.FeedRejectedArticleDisable,
+        {
+          data: {
+            rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
             medium: {
               id: "medium-id",
             },
@@ -387,7 +450,7 @@ describe("FeedEventHandlerService", () => {
       const articleDeliveryResult: ArticleDeliveryResult = {
         result: {
           state: "success",
-          status: 403,
+          status: 444,
           body: {} as never,
         },
         job: {

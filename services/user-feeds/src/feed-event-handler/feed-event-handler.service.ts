@@ -129,6 +129,7 @@ export class FeedEventHandlerService {
         MessageBrokerQueue.FeedRejectedArticleDisable,
         {
           data: {
+            rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
             medium: {
               id: record.medium_id,
             },
@@ -146,6 +147,33 @@ export class FeedEventHandlerService {
           result.status
         } Body: ${JSON.stringify(result.body)}`,
       });
+    } else if (result.status === 403) {
+      const record = await this.deliveryRecordService.updateDeliveryStatus(
+        deliveryRecordId,
+        {
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryRejectedCode.Forbidden,
+          internalMessage: `Discord rejected the request with status code ${
+            result.status
+          } Body: ${JSON.stringify(result.body)}`,
+        }
+      );
+
+      this.amqpConnection.publish(
+        "",
+        MessageBrokerQueue.FeedRejectedArticleDisable,
+        {
+          data: {
+            rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
+            medium: {
+              id: record.medium_id,
+            },
+            feed: {
+              id: record.feed_id,
+            },
+          },
+        }
+      );
     } else if (result.status < 200 || result.status > 400) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,

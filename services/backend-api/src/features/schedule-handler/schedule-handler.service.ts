@@ -22,6 +22,8 @@ import {
   castDiscordEmbedsForMedium,
 } from "../../common/utils";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
+import { ArticleRejectCode } from "./constants";
+import { getConnectionDisableCodeByArticleRejectCode } from "./utils";
 
 interface PublishFeedDeliveryArticlesData {
   data: {
@@ -83,11 +85,13 @@ export class ScheduleHandlerService {
   })
   async handleRejectedArticleDisableFeed({
     data: {
+      rejectedCode,
       medium: { id: mediumId },
       feed: { id: feedId },
     },
   }: {
     data: {
+      rejectedCode: ArticleRejectCode;
       medium: {
         id: string;
       };
@@ -114,6 +118,9 @@ export class ScheduleHandlerService {
       ]
     >;
 
+    const disableCode =
+      getConnectionDisableCodeByArticleRejectCode(rejectedCode);
+
     for (const [connectionKey, connections] of connectionEntries) {
       for (let conIdx = 0; conIdx < connections.length; ++conIdx) {
         const connection = connections[conIdx];
@@ -129,7 +136,7 @@ export class ScheduleHandlerService {
           {
             $set: {
               [`connections.${connectionKey}.${conIdx}.disabledCode`]:
-                UserFeedDisabledCode.BadFormat,
+                disableCode,
             },
           }
         );
