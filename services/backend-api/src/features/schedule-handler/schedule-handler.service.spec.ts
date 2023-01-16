@@ -24,6 +24,8 @@ import {
 } from "../user-feeds/types";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { SupportersService } from "../supporters/supporters.service";
+import { ArticleRejectCode } from "./constants";
+import { FeedConnectionDisabledCode } from "../feeds/constants";
 
 jest.mock("../../utils/logger");
 
@@ -1109,55 +1111,72 @@ describe("handle-schedule", () => {
     });
   });
 
-  describe("handleRejectedArticleDisableFeed", () => {
-    it("disables the connection", async () => {
-      const connectionId = new Types.ObjectId();
-      const feed = await userFeedModel.create({
-        title: "feed-title",
-        url: "new-york-times.com",
-        user: {
-          discordUserId: "user-id-1",
-        },
-        connections: {
-          discordChannels: [
-            {
-              id: connectionId,
-              name: "connection-name",
-              filters: {
-                expression: {
-                  foo: "bar",
+  describe("handleRejectedArticleDisableConnection", () => {
+    it.each([
+      {
+        articleRejectCode: ArticleRejectCode.BadRequest,
+        connectionDisableCode: FeedConnectionDisabledCode.BadFormat,
+      },
+      {
+        articleRejectCode: ArticleRejectCode.Forbidden,
+        connectionDisableCode: FeedConnectionDisabledCode.MissingPermissions,
+      },
+      {
+        articleRejectCode: ArticleRejectCode.MediumNotFound,
+        connectionDisableCode: FeedConnectionDisabledCode.MissingMedium,
+      },
+    ])(
+      "disables the connection with article reject code $articleRejectCode",
+      async ({ articleRejectCode, connectionDisableCode }) => {
+        const connectionId = new Types.ObjectId();
+        const feed = await userFeedModel.create({
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-1",
+          },
+          connections: {
+            discordChannels: [
+              {
+                id: connectionId,
+                name: "connection-name",
+                filters: {
+                  expression: {
+                    foo: "bar",
+                  },
+                },
+                details: {
+                  channel: {
+                    id: "channel-id",
+                    guildId: "guild-id",
+                  },
                 },
               },
-              details: {
-                channel: {
-                  id: "channel-id",
-                  guildId: "guild-id",
-                },
-              },
+            ],
+          },
+        });
+
+        const payload = {
+          data: {
+            rejectedCode: articleRejectCode,
+            medium: {
+              id: connectionId.toHexString(),
             },
-          ],
-        },
-      });
-
-      const payload = {
-        data: {
-          medium: {
-            id: connectionId.toHexString(),
+            feed: {
+              id: feed._id.toHexString(),
+            },
           },
-          feed: {
-            id: feed._id.toHexString(),
-          },
-        },
-      };
+        };
 
-      await service.handleRejectedArticleDisableFeed(payload);
+        await service.handleRejectedArticleDisableConnection(payload);
 
-      const foundUserFeed = await userFeedModel.findById(feed._id).lean();
+        const foundUserFeed = await userFeedModel.findById(feed._id).lean();
 
-      expect(
-        foundUserFeed?.connections.discordChannels[0].disabledCode
-      ).toEqual(UserFeedDisabledCode.BadFormat);
-    });
+        expect(
+          foundUserFeed?.connections.discordChannels[0].disabledCode
+        ).toEqual(connectionDisableCode);
+      }
+    );
   });
 
   describe("emitDeliverFeedArticlesEvent", () => {

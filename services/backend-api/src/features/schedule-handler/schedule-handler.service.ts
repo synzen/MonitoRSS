@@ -83,7 +83,7 @@ export class ScheduleHandlerService {
     exchange: "",
     queue: MessageBrokerQueue.FeedRejectedArticleDisable,
   })
-  async handleRejectedArticleDisableFeed({
+  async handleRejectedArticleDisableConnection({
     data: {
       rejectedCode,
       medium: { id: mediumId },

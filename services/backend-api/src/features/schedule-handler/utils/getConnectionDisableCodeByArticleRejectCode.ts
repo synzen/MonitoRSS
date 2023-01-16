@@ -1,16 +1,16 @@
-import { UserFeedDisabledCode } from "../../user-feeds/types";
+import { FeedConnectionDisabledCode } from "../../feeds/constants";
 import { ArticleRejectCode } from "../constants";
 
 export const getConnectionDisableCodeByArticleRejectCode = (
   articleRejectCode: ArticleRejectCode
-): UserFeedDisabledCode => {
+): FeedConnectionDisabledCode => {
   switch (articleRejectCode) {
     case ArticleRejectCode.BadRequest:
-      return UserFeedDisabledCode.BadFormat;
+      return FeedConnectionDisabledCode.BadFormat;
     case ArticleRejectCode.Forbidden:
-      return UserFeedDisabledCode.MissingPermissions;
+      return FeedConnectionDisabledCode.MissingPermissions;
     case ArticleRejectCode.MediumNotFound:
-      return UserFeedDisabledCode.MissingMedium;
+      return FeedConnectionDisabledCode.MissingMedium;
     default:
       throw new Error(
         `Failed to get connection disable code by article reject code since it is` +

@@ -84,7 +84,7 @@ export class DiscordChannelConnection {
     enum: Object.values(FeedConnectionDisabledCode),
     required: false,
   })
-  disabledCode?: string;
+  disabledCode?: FeedConnectionDisabledCode;
 
   @Prop({
     type: FiltersSchema,
