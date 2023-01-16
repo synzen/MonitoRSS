@@ -345,7 +345,7 @@ describe("FeedEventHandlerService", () => {
 
       expect(amqpConnection.publish).toHaveBeenCalledWith(
         "",
-        MessageBrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
@@ -407,7 +407,7 @@ describe("FeedEventHandlerService", () => {
 
       expect(amqpConnection.publish).toHaveBeenCalledWith(
         "",
-        MessageBrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
@@ -469,7 +469,7 @@ describe("FeedEventHandlerService", () => {
 
       expect(amqpConnection.publish).toHaveBeenCalledWith(
         "",
-        MessageBrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,

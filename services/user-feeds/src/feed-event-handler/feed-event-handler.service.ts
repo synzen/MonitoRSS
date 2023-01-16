@@ -126,7 +126,7 @@ export class FeedEventHandlerService {
 
       this.amqpConnection.publish(
         "",
-        MessageBrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
@@ -161,7 +161,7 @@ export class FeedEventHandlerService {
 
       this.amqpConnection.publish(
         "",
-        MessageBrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
@@ -188,7 +188,7 @@ export class FeedEventHandlerService {
 
       this.amqpConnection.publish(
         "",
-        MessageBrokerQueue.FeedRejectedArticleDisable,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,

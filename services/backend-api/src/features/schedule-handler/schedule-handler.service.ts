@@ -81,7 +81,7 @@ export class ScheduleHandlerService {
 
   @RabbitSubscribe({
     exchange: "",
-    queue: MessageBrokerQueue.FeedRejectedArticleDisable,
+    queue: MessageBrokerQueue.FeedRejectedArticleDisableConnection,
   })
   async handleRejectedArticleDisableConnection({
     data: {
@@ -105,7 +105,7 @@ export class ScheduleHandlerService {
     if (!foundFeed) {
       logger.warn(
         `No feed with ID ${feedId} was found when attempting to` +
-          ` handle message from ${MessageBrokerQueue.FeedRejectedArticleDisable}`
+          ` handle message from ${MessageBrokerQueue.FeedRejectedArticleDisableConnection}`
       );
 
       return;
