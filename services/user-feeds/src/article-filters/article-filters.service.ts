@@ -132,9 +132,13 @@ export class ArticleFiltersService {
         case RelationalExpressionOperator.Eq:
           return valueToCompareAgainst === right.value;
         case RelationalExpressionOperator.Contains:
-          return valueToCompareAgainst.includes(right.value.toLowerCase());
+          return valueToCompareAgainst
+            .toLowerCase()
+            .includes(right.value.toLowerCase());
         case RelationalExpressionOperator.NotContain:
-          return !valueToCompareAgainst.includes(right.value.toLowerCase());
+          return !valueToCompareAgainst
+            .toLowerCase()
+            .includes(right.value.toLowerCase());
         case RelationalExpressionOperator.NotEq:
           return valueToCompareAgainst !== right.value;
         case RelationalExpressionOperator.Matches:
