@@ -1,9 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import { getNestedPrimitiveValue } from "../articles/utils/get-nested-primitive-value";
 import { Article } from "../shared";
 import { InvalidExpressionException, RegexEvalException } from "./exceptions";
 import {
-  ArticleExpressionReference,
+  FilterExpressionReference,
   ExpressionType,
   LogicalExpression,
   LogicalExpressionOperator,
@@ -21,7 +20,7 @@ const REGEX_TIMEOUT_MS = 5000;
 export class ArticleFiltersService {
   async getArticleFilterResults(
     expression: LogicalExpression,
-    references: ArticleExpressionReference
+    references: FilterExpressionReference
   ) {
     const errors = this.getFilterExpressionErrors(expression as never);
 
@@ -40,7 +39,7 @@ export class ArticleFiltersService {
 
   async evaluateExpression(
     expression: LogicalExpression | RelationalExpression,
-    references: ArticleExpressionReference
+    references: FilterExpressionReference
   ): Promise<boolean> {
     if (!expression) {
       return true;
@@ -61,7 +60,7 @@ export class ArticleFiltersService {
 
   private async evaluateLogicalExpression(
     expression: LogicalExpression,
-    references: ArticleExpressionReference
+    references: FilterExpressionReference
   ): Promise<boolean> {
     const children = expression.children;
 
@@ -109,7 +108,7 @@ export class ArticleFiltersService {
 
   private async evaluateRelationalExpression(
     expression: RelationalExpression,
-    references: Record<string, unknown>
+    references: FilterExpressionReference
   ): Promise<boolean> {
     const { left, right } = expression;
     const referenceObject = references[left.type];
@@ -118,10 +117,7 @@ export class ArticleFiltersService {
       return false;
     }
 
-    const valueToCompareAgainst = getNestedPrimitiveValue(
-      referenceObject as Record<string, unknown>,
-      left.value
-    );
+    const valueToCompareAgainst = references.ARTICLE[left.value];
 
     if (valueToCompareAgainst === null) {
       return false;
@@ -189,9 +185,9 @@ export class ArticleFiltersService {
     }
   }
 
-  buildReferences(data: { article: Article }): ArticleExpressionReference {
+  buildReferences(data: { article: Article }): FilterExpressionReference {
     return {
       [RelationalExpressionLeft.Article]: data.article,
-    };
+    } as const;
   }
 }

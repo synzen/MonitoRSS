@@ -9,7 +9,7 @@ import { SqlEntityManager } from "@mikro-orm/postgresql";
 
 let testingModule: TestingModule;
 let orm: MikroORM;
-const postgresSchema = randomUUID().replaceAll("-", "");
+const postgresSchema = randomUUID().replace(/-/g, "");
 
 interface Options {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

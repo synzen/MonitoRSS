@@ -123,19 +123,31 @@ describe("ArticleFiltersService", () => {
 
     describe("relational", () => {
       it.each([
-        { value: "s", articleValue: "s", expected: true },
         {
           value: "s",
+          articleProperty: "title",
+          articleValue: "s",
+          expected: true,
+        },
+        {
+          value: "s",
+          articleProperty: "title",
           articleValue: "sticks",
           expected: false,
         },
+        {
+          value: "r/FORTnITE",
+          articleProperty: "atom:category__@__label",
+          articleValue: "r/FORTnITE",
+          expected: true,
+        },
       ])(
         "supports Eq when expected is $expected",
-        async ({ value, articleValue, expected }) => {
+        async ({ value, articleProperty, articleValue, expected }) => {
           const expression: RelationalExpression = {
             left: {
               type: RelationalExpressionLeft.Article,
-              value: "title",
+              value: articleProperty,
             },
             op: RelationalExpressionOperator.Eq,
             right: {
@@ -148,7 +160,7 @@ describe("ArticleFiltersService", () => {
           const reference = {
             [RelationalExpressionLeft.Article]: {
               id: "1",
-              title: articleValue,
+              [articleProperty]: articleValue,
             },
           };
 
