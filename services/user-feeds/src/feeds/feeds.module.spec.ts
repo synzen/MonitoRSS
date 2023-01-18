@@ -192,7 +192,6 @@ describe("FeedsModule", () => {
   describe(`POST /user-feeds/test`, () => {
     const validPayload = {
       type: TestDeliveryMedium.Discord,
-      article: {},
       mediumDetails: {
         channel: {
           id: "channel-id",
@@ -234,7 +233,7 @@ describe("FeedsModule", () => {
           state: "success",
           status: 200,
         },
-        apiPayload: {},
+        apiPayload: validPayload,
       });
 
       const { statusCode, body } = await app.inject({

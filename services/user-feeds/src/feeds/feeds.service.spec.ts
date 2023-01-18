@@ -14,6 +14,7 @@ describe("FeedsService", () => {
   const articleFiltersService = {
     getFilterExpressionErrors: jest.fn(),
     evaluateExpression: jest.fn(),
+    buildReferences: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -313,7 +314,7 @@ describe("FeedsService", () => {
       expect(result.articles).toEqual(expected);
     });
 
-    it("returns filter evaluationn results correctly", async () => {
+    it("returns filter evaluation results correctly", async () => {
       const input: QueryForArticlesInput = {
         ...sampleInput,
         filters: {
