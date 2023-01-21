@@ -138,14 +138,10 @@ export class DeliveryService {
 
       return articleState;
     } catch (err) {
-      logger.error(
-        `Failed to deliver event ${JSON.stringify(event)} to medium ${
-          medium.key
-        }`,
-        {
-          error: (err as Error).stack,
-        }
-      );
+      logger.error(`Failed to deliver article to medium ${medium.key}`, {
+        event,
+        error: (err as Error).stack,
+      });
 
       return {
         id: deliveryId,

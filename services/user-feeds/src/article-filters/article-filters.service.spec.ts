@@ -170,6 +170,31 @@ describe("ArticleFiltersService", () => {
         }
       );
 
+      it("uses empty string as default if the article property does not exist", () => {
+        const expression: RelationalExpression = {
+          left: {
+            type: RelationalExpressionLeft.Article,
+            value: "title",
+          },
+          op: RelationalExpressionOperator.NotContain,
+          right: {
+            type: RelationalExpressionRight.String,
+            value: "s",
+          },
+          type: ExpressionType.Relational,
+        };
+
+        const reference = {
+          [RelationalExpressionLeft.Article]: {
+            id: "1",
+          },
+        };
+
+        return expect(
+          service.evaluateExpression(expression, reference)
+        ).resolves.toEqual(true);
+      });
+
       it.each([
         { value: "s", articleValue: "s", expected: false },
         {

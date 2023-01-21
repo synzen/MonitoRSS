@@ -117,10 +117,10 @@ export class ArticleFiltersService {
       return false;
     }
 
-    const valueToCompareAgainst = references.ARTICLE[left.value];
+    let valueToCompareAgainst = references.ARTICLE[left.value];
 
-    if (valueToCompareAgainst === null) {
-      return false;
+    if (!Object.keys(references.ARTICLE).includes(left.value)) {
+      valueToCompareAgainst = "";
     }
 
     if (right.type === RelationalExpressionRight.String) {
