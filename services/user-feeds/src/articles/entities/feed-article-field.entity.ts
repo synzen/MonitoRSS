@@ -11,7 +11,9 @@ export class FeedArticleField {
   @Property()
   field_name: string;
 
-  @Property()
+  @Property({
+    type: "text",
+  })
   field_value: string;
 
   @Property()
