@@ -2,7 +2,10 @@ import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
-import { UserMissingManageGuildException } from "../../feeds/exceptions";
+import {
+  MissingChannelPermissionsException,
+  UserMissingManageGuildException,
+} from "../../feeds/exceptions";
 import {
   DiscordChannelPermissionsException,
   MissingDiscordChannelException,
@@ -21,6 +24,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [UserMissingManageGuildException.name]: {
       status: HttpStatus.FORBIDDEN,
       code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+    },
+    [MissingChannelPermissionsException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
     },
   };
 
