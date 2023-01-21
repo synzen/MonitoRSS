@@ -19,9 +19,12 @@ interface FormData {
 interface Props {
   expression?: LogicalFilterExpression | null;
   onSave: (expression: LogicalFilterExpression | null) => Promise<void>;
+  data: {
+    feedId?: string;
+  };
 }
 
-export const FiltersForm = ({ expression = null, onSave }: Props) => {
+export const FiltersForm = ({ expression = null, onSave, data }: Props) => {
   const { t } = useTranslation();
   const formMethods = useForm<FormData>({
     mode: "onChange",
@@ -116,7 +119,7 @@ export const FiltersForm = ({ expression = null, onSave }: Props) => {
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSaveExpression)}>
         <Stack>
-          <LogicalExpressionForm onDeleted={onDeletedExpression} prefix="expression." />
+          <LogicalExpressionForm onDeleted={onDeletedExpression} prefix="expression." data={data} />
           <HStack justifyContent="flex-end">
             {isDirty && (
               <Button variant="outline" onClick={onClickReset} type="reset">

@@ -185,7 +185,13 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
         <Heading as="h2" size="md">
           {t("features.feedConnections.components.filtersTabSection.headingSettings")}
         </Heading>
-        <FiltersForm onSave={onFiltersUpdated} expression={filters} />
+        <FiltersForm
+          onSave={onFiltersUpdated}
+          expression={filters}
+          data={{
+            feedId,
+          }}
+        />
       </Stack>
     </Stack>
   );

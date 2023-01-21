@@ -418,6 +418,7 @@
           "relationalOpDoesNotContain": "does not contain",
           "relationalOpMatches": "regex matches",
           "placeholderArticleProperty": "Article property",
+          "placeholderSelectArticleProperty": "Select article property",
           "placeholderArticleValue": "Article value",
           "valueIsRequired": "Value is required"
         },

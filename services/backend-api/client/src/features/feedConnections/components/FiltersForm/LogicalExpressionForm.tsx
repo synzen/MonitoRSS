@@ -29,9 +29,12 @@ import { Condition } from "./Condition";
 interface Props {
   onDeleted: () => void;
   prefix?: string;
+  data: {
+    feedId?: string;
+  };
 }
 
-export const LogicalExpressionForm = ({ onDeleted, prefix = "" }: Props) => {
+export const LogicalExpressionForm = ({ onDeleted, prefix = "", data }: Props) => {
   const { control, setValue } = useFormContext();
   const { fields, append, remove, insert } = useFieldArray({
     control,
@@ -149,6 +152,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "" }: Props) => {
                     key={child.id}
                     onDeleted={() => onChildDeleted(childIndex)}
                     prefix={`${prefix}children.${childIndex}.`}
+                    data={data}
                   />
                 );
               }
@@ -157,6 +161,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "" }: Props) => {
                 return (
                   <Condition
                     key={child.id}
+                    data={data}
                     onDelete={() => onChildDeleted(childIndex)}
                     prefix={`${prefix}children.${childIndex}.`}
                     deletable={numberOfRelational > 1}
