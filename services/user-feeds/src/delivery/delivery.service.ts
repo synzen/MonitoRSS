@@ -105,8 +105,16 @@ export class DeliveryService {
         };
       }
 
+      const mediumService = this.mediumServices[medium.key];
+
+      const formattedArticle = await mediumService.formatArticle(article, {
+        // TODO: Replace with custom settings from event
+        formatTables: false,
+        stripImages: false,
+      });
+
       const filterReferences = this.articleFiltersService.buildReferences({
-        article,
+        article: formattedArticle,
       });
 
       const passesFilters = !medium.filters?.expression
@@ -124,8 +132,8 @@ export class DeliveryService {
         };
       }
 
-      const articleState = await this.mediumServices[medium.key].deliverArticle(
-        article,
+      const articleState = await mediumService.deliverArticle(
+        formattedArticle,
         {
           deliveryId,
           mediumId: medium.id,

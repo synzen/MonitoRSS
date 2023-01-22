@@ -13,13 +13,18 @@ import { replaceTemplateString } from "../../articles/utils/replace-template-str
 import logger from "../../shared/utils/logger";
 import { ConfigService } from "@nestjs/config";
 import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
+import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
+import { FormatOptions } from "../../article-formatter/types";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
   static BASE_API_URL = "https://discord.com/api/v10";
   producer: RESTProducer;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly articleFormatterService: ArticleFormatterService
+  ) {
     const rabbitmqUri = configService.getOrThrow(
       "USER_FEEDS_DISCORD_RABBITMQ_URI"
     );
@@ -38,6 +43,16 @@ export class DiscordMediumService implements DeliveryMedium {
 
   private getWebhookApiUrl(webhookId: string, webhookToken: string) {
     return `${DiscordMediumService.BASE_API_URL}/webhooks/${webhookId}/${webhookToken}`;
+  }
+
+  async formatArticle(
+    article: Article,
+    options: FormatOptions
+  ): Promise<Article> {
+    return this.articleFormatterService.formatArticleForDiscord(
+      article,
+      options
+    );
   }
 
   async deliverTestArticle(

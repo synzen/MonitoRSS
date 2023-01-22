@@ -1,5 +1,6 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
+import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -22,6 +23,9 @@ describe("DiscordMediumService", () => {
   const configService = {
     getOrThrow: jest.fn(),
   };
+  const articleFormatterService = {
+    formatArticleForDiscord: jest.fn(),
+  };
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -30,6 +34,10 @@ describe("DiscordMediumService", () => {
         {
           provide: ConfigService,
           useValue: configService,
+        },
+        {
+          provide: ArticleFormatterService,
+          useValue: articleFormatterService,
         },
       ],
     }).compile();
@@ -40,7 +48,6 @@ describe("DiscordMediumService", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    jest.spyOn(console, "error").mockImplementation();
   });
 
   describe("deliverTestArticle", () => {
