@@ -13,6 +13,10 @@ export const mockFeedChannelConnections: FeedConnection[] = [
         id: mockDiscordChannels[0].id,
         guildId: mockDiscordServers[0].id,
       },
+      formatter: {
+        formatTables: false,
+        stripImages: false,
+      },
       content: "test",
     },
     key: FeedConnectionType.DiscordChannel,
@@ -29,6 +33,10 @@ export const mockFeedWebhookConnections: FeedConnection[] = [
         id: "1",
         name: "test",
         guildId: mockDiscordServers[0].id,
+      },
+      formatter: {
+        formatTables: false,
+        stripImages: false,
       },
       content: "test",
       embeds: [],
