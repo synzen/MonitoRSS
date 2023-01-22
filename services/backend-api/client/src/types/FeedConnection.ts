@@ -1,4 +1,4 @@
-import { array, InferType, object, string } from "yup";
+import { array, boolean, InferType, object, string } from "yup";
 import { FeedEmbedSchema } from "./FeedEmbed";
 
 export enum FeedConnectionType {
@@ -20,6 +20,10 @@ const DiscordChannelConnectionDetailsSchema = object({
     guildId: string().required(),
   }).required(),
   content: string().optional(),
+  formatter: object({
+    formatTables: boolean().required(),
+    stripImages: boolean().required(),
+  }).required(),
 });
 
 const DiscordWebhookConnectionDetailsSchema = object({
@@ -31,6 +35,10 @@ const DiscordWebhookConnectionDetailsSchema = object({
     guildId: string().required(),
   }).required(),
   content: string().optional(),
+  formatter: object({
+    formatTables: boolean().required(),
+    stripImages: boolean().required(),
+  }).required(),
 });
 
 export const FeedConnectionSchema = object({

@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { DiscordMessageForm } from "../../../../components";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { useUserFeedArticles } from "../../../feed/hooks";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
@@ -23,9 +24,15 @@ interface Props {
   feedId?: string;
   defaultMessageValues?: DiscordMessageFormData;
   onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdated }: Props) => {
+export const MessageTabSection = ({
+  feedId,
+  defaultMessageValues,
+  onMessageUpdated,
+  articleFormatter,
+}: Props) => {
   const {
     data: userFeedArticles,
     refetch: refetchUserFeedArticle,
@@ -38,6 +45,7 @@ export const MessageTabSection = ({ feedId, defaultMessageValues, onMessageUpdat
       random: true,
       skip: 0,
       selectProperties: ["*"],
+      formatter: articleFormatter,
     },
   });
   const { t } = useTranslation();

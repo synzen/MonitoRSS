@@ -577,6 +577,12 @@ describe("UserFeedsModule", () => {
     const validBody = {
       limit: "1",
       random: "true",
+      formatter: {
+        options: {
+          formatTables: true,
+          stripImages: false,
+        },
+      },
     };
 
     beforeEach(async () => {

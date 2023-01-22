@@ -178,6 +178,10 @@ export class ScheduleHandlerService {
           },
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          formatter: {
+            formatTables: con.details.formatter?.formatTables,
+            stripImages: con.details.formatter?.stripImages,
+          },
         },
       }));
 
@@ -198,6 +202,10 @@ export class ScheduleHandlerService {
           },
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          formatter: {
+            formatTables: con.details.formatter?.formatTables,
+            stripImages: con.details.formatter?.stripImages,
+          },
         },
       }));
 

@@ -126,6 +126,7 @@ export class UserFeedsController {
       filters,
       selectProperties,
       skip,
+      formatter,
     }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedPipe) feed: UserFeed
   ): Promise<GetUserFeedArticlesOutputDto> {
@@ -136,6 +137,7 @@ export class UserFeedsController {
       filters,
       selectProperties,
       skip,
+      formatter,
     };
 
     const {
@@ -271,7 +273,13 @@ export class UserFeedsController {
         id: con.id.toHexString(),
         name: con.name,
         key: FeedConnectionType.DiscordChannel,
-        details: con.details,
+        details: {
+          ...con.details,
+          formatter: {
+            formatTables: con.details.formatter?.formatTables || false,
+            stripImages: con.details.formatter?.stripImages || false,
+          },
+        },
         filters: con.filters,
         disabledCode: con.disabledCode,
       }));
@@ -281,7 +289,13 @@ export class UserFeedsController {
         id: con.id.toHexString(),
         name: con.name,
         key: FeedConnectionType.DiscordWebhook,
-        details: con.details,
+        details: {
+          ...con.details,
+          formatter: {
+            formatTables: con.details.formatter?.formatTables || false,
+            stripImages: con.details.formatter?.stripImages || false,
+          },
+        },
         filters: con.filters,
         disabledCode: con.disabledCode,
       }));

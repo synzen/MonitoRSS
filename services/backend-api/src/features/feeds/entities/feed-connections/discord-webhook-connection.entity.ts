@@ -2,6 +2,10 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types, Schema as MongooseSchema } from "mongoose";
 import { FeedConnectionDisabledCode } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
+import {
+  DiscordFormatter,
+  DiscordFormatterSchema,
+} from "./discord-formatter.entity";
 
 @Schema({
   _id: false,
@@ -60,6 +64,12 @@ class Details {
     required: false,
   })
   content?: string;
+
+  @Prop({
+    type: DiscordFormatterSchema,
+    required: false,
+  })
+  formatter?: DiscordFormatter;
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);
@@ -110,6 +120,7 @@ export class DiscordWebhookConnection {
   @Prop({
     type: DetailsSchema,
     required: true,
+    default: {},
   })
   details: Details;
 

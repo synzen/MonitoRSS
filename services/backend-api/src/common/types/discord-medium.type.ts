@@ -39,5 +39,9 @@ export interface DiscordMediumEvent {
         inline?: boolean;
       }>;
     }>;
+    formatter: {
+      stripImages?: boolean;
+      formatTables?: boolean;
+    };
   };
 }

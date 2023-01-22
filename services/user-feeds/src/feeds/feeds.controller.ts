@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
+import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import {
   FeedArticleNotFoundException,
@@ -44,7 +45,8 @@ export class FeedsController {
   constructor(
     private readonly feedsService: FeedsService,
     private readonly discordMediumService: DiscordMediumService,
-    private readonly feedFetcherService: FeedFetcherService
+    private readonly feedFetcherService: FeedFetcherService,
+    private readonly articleFormatterService: ArticleFormatterService
   ) {}
 
   @Post("initialize")
@@ -93,6 +95,7 @@ export class FeedsController {
       skip,
       filters,
       selectProperties,
+      formatter,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     try {
@@ -134,10 +137,19 @@ export class FeedsController {
         random,
       });
 
+      const formattedArticles = await Promise.all(
+        matchedArticles.map(async (article) => {
+          return this.articleFormatterService.formatArticleForDiscord(article, {
+            formatTables: formatter?.options.formatTables,
+            stripImages: formatter?.options.stripImages,
+          });
+        })
+      );
+
       return {
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
-          articles: matchedArticles,
+          articles: formattedArticles,
           totalArticles,
           filterStatuses: filterEvalResults,
           selectedProperties: properties,
@@ -237,8 +249,14 @@ export class FeedsController {
           .required()
           .validate(payload);
 
+        const formattedArticle =
+          await this.articleFormatterService.formatArticleForDiscord(article, {
+            formatTables: mediumDetails.formatter.formatTables,
+            stripImages: mediumDetails.formatter.stripImages,
+          });
+
         const { result, apiPayload } =
-          await this.discordMediumService.deliverTestArticle(article, {
+          await this.discordMediumService.deliverTestArticle(formattedArticle, {
             mediumDetails,
           });
 

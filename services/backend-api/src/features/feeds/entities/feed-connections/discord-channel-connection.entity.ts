@@ -2,6 +2,10 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types, Schema as MongooseSchema } from "mongoose";
 import { FeedConnectionDisabledCode } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
+import {
+  DiscordFormatter,
+  DiscordFormatterSchema,
+} from "./discord-formatter.entity";
 
 @Schema({
   _id: false,
@@ -45,6 +49,13 @@ class Details {
     required: false,
   })
   content?: string;
+
+  @Prop({
+    type: DiscordFormatterSchema,
+    required: true,
+    default: {},
+  })
+  formatter: DiscordFormatter;
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);

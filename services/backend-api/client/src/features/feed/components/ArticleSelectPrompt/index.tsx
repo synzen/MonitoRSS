@@ -25,12 +25,14 @@ import { Loading, Menu, ThemedSelect } from "@/components";
 import { GetArticlesFilterReturnType } from "../../constants";
 import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from "../../hooks";
 import getChakraColor from "../../../../utils/getChakraColor";
+import { GetUserFeedArticlesInput } from "../../api";
 
 interface Props {
   feedId: string;
   trigger: React.ReactElement;
   onArticleSelected: (articleId: string) => void;
   onClickRandomArticle: () => void;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 export const ArticleSelectPrompt = ({
@@ -38,6 +40,7 @@ export const ArticleSelectPrompt = ({
   trigger,
   onArticleSelected,
   onClickRandomArticle,
+  articleFormatter,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
@@ -62,6 +65,7 @@ export const ArticleSelectPrompt = ({
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
       },
+      formatter: articleFormatter,
     },
   });
 

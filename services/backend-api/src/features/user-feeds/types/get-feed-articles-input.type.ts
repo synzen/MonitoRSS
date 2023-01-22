@@ -10,4 +10,10 @@ export interface GetFeedArticlesInput {
     returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
     expression?: Record<string, unknown>;
   };
+  formatter: {
+    options: {
+      stripImages: boolean;
+      formatTables: boolean;
+    };
+  };
 }

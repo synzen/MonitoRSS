@@ -8,6 +8,7 @@ import {
   IsString,
   Max,
   Min,
+  ValidateNested,
 } from "class-validator";
 import { GetFeedArticlesFilterReturnType } from "../types";
 
@@ -18,6 +19,23 @@ class FiltersDto {
   @IsObject()
   @IsOptional()
   expression?: Record<string, unknown>;
+}
+
+class FormatterOptionsDto {
+  @IsBoolean()
+  @Type(() => Boolean)
+  formatTables: boolean;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  stripImages: boolean;
+}
+
+class FormatterDto {
+  @Type(() => FormatterOptionsDto)
+  @IsObject()
+  @ValidateNested()
+  options: FormatterOptionsDto;
 }
 
 export class GetUserFeedArticlesInputDto {
@@ -51,4 +69,8 @@ export class GetUserFeedArticlesInputDto {
   @IsOptional()
   @IsObject()
   filters?: FiltersDto;
+
+  @Type(() => FormatterDto)
+  @IsObject()
+  formatter: FormatterDto;
 }

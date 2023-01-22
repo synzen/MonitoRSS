@@ -14,6 +14,12 @@ export interface GetUserFeedArticlesInput {
       expression?: Record<string, any>;
       returnType: GetArticlesFilterReturnType;
     };
+    formatter: {
+      options: {
+        formatTables: boolean;
+        stripImages: boolean;
+      };
+    };
   };
 }
 
@@ -47,6 +53,7 @@ export type GetUserFeedArticlesOutput = InferType<typeof GetUserFeedArticlesOutp
 export const getUserFeedArticles = async (
   options: GetUserFeedArticlesInput
 ): Promise<GetUserFeedArticlesOutput> => {
+  console.log(options.data);
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/get-articles`, {
     requestOptions: {
       method: "POST",

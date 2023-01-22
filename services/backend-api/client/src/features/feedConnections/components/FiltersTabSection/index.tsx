@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ThemedSelect } from "../../../../components";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { GetArticlesFilterReturnType } from "../../../feed/constants";
 import {
   useUserFeedArticleProperties,
@@ -28,9 +29,15 @@ interface Props {
   feedId?: string;
   filters?: LogicalFilterExpression | null;
   onFiltersUpdated: (filters: LogicalFilterExpression | null) => Promise<void>;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) => {
+export const FiltersTabSection = ({
+  feedId,
+  filters,
+  onFiltersUpdated,
+  articleFormatter,
+}: Props) => {
   const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
     undefined
   );
@@ -53,6 +60,7 @@ export const FiltersTabSection = ({ feedId, filters, onFiltersUpdated }: Props) 
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
         expression: filters || undefined,
       },
+      formatter: articleFormatter,
     },
   });
   const { t } = useTranslation();

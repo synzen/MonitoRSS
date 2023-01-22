@@ -22,6 +22,10 @@ const mockUserFeeds: UserFeed[] = [
             guildId: mockDiscordServers[0].id,
           },
           embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
         },
         filters: null,
         id: "1",
@@ -37,6 +41,10 @@ const mockUserFeeds: UserFeed[] = [
             iconUrl: mockDiscordWebhooks[0].avatarUrl,
             name: mockDiscordWebhooks[0].name,
             guildId: mockDiscordServers[0].id,
+          },
+          formatter: {
+            formatTables: false,
+            stripImages: false,
           },
         },
         filters: null,

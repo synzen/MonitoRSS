@@ -28,6 +28,9 @@ describe("FeedController", () => {
     fetchFeedArticles: jest.fn(),
     fetchFeedArticle: jest.fn(),
   };
+  const articleFormatterService = {
+    formatArticleForDiscord: jest.fn(),
+  };
   let controller: FeedsController;
 
   beforeEach(async () => {
@@ -35,7 +38,8 @@ describe("FeedController", () => {
     controller = new FeedsController(
       feedsService as never,
       discordMediumService as never,
-      feedFetcherService as never
+      feedFetcherService as never,
+      articleFormatterService as never
     );
   });
 

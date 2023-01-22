@@ -154,6 +154,12 @@ describe("UserFeedsController", () => {
         limit: 10,
         random: true,
         skip: 10,
+        formatter: {
+          options: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
       };
       const result = await controller.getFeedArticles(input, feed as never);
 

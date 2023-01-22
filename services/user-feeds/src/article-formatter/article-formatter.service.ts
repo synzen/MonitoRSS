@@ -7,7 +7,7 @@ import { FormatOptions } from "./types";
 export class ArticleFormatterService {
   async formatArticleForDiscord(
     article: Article,
-    options?: FormatOptions
+    options: FormatOptions
   ): Promise<Article> {
     const newRecord: Article = {
       ...article,

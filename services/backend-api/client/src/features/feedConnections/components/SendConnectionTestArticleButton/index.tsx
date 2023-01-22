@@ -18,6 +18,7 @@ import getChakraColor from "../../../../utils/getChakraColor";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifyInfo } from "../../../../utils/notifyInfo";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { ArticleSelectPrompt } from "../../../feed/components";
 import { useCreateConnectionTestArticle } from "../../hooks";
 
@@ -25,6 +26,7 @@ interface Props {
   feedId: string;
   connectionId: string;
   type: FeedConnectionType;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 const messagesByStatus: Record<
@@ -100,7 +102,12 @@ const messagesByStatus: Record<
   },
 };
 
-export const SendConnectionTestArticleButton = ({ feedId, connectionId, type }: Props) => {
+export const SendConnectionTestArticleButton = ({
+  feedId,
+  connectionId,
+  type,
+  articleFormatter,
+}: Props) => {
   const { t } = useTranslation();
   const { mutateAsync, status } = useCreateConnectionTestArticle(type);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -208,6 +215,7 @@ export const SendConnectionTestArticleButton = ({ feedId, connectionId, type }: 
         }
         onArticleSelected={onClick}
         onClickRandomArticle={onClick}
+        articleFormatter={articleFormatter}
       />
     </>
   );

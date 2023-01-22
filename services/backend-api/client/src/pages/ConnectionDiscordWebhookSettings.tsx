@@ -155,6 +155,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                           connectionId={connection.id}
                           feedId={feedId as string}
                           type={FeedConnectionType.DiscordWebhook}
+                          articleFormatter={{
+                            options: {
+                              formatTables: connection?.details.formatter?.formatTables || false,
+                              stripImages: connection?.details.formatter?.stripImages || false,
+                            },
+                          }}
                         />
                         <Menu>
                           <MenuButton
@@ -287,6 +293,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
                   }}
+                  articleFormatter={{
+                    options: {
+                      formatTables: connection?.details.formatter.formatTables || false,
+                      stripImages: connection?.details.formatter.stripImages || false,
+                    },
+                  }}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
@@ -306,6 +318,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                   }
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
+                  articleFormatter={{
+                    options: {
+                      formatTables: connection?.details.formatter?.formatTables || false,
+                      stripImages: connection?.details.formatter?.stripImages || false,
+                    },
+                  }}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

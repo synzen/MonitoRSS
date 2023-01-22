@@ -170,6 +170,7 @@ export class FeedHandlerService {
     skip,
     filters,
     selectProperties,
+    formatter,
   }: GetArticlesInput): Promise<GetArticlesOutput> {
     const body = {
       url,
@@ -178,6 +179,7 @@ export class FeedHandlerService {
       skip,
       filters,
       selectProperties,
+      formatter,
     };
 
     const res = await fetch(`${this.host}/v1/user-feeds/get-articles`, {

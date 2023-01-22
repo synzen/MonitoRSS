@@ -10,8 +10,17 @@ import {
   IsString,
   Max,
   Min,
+  ValidateNested,
 } from "class-validator";
+import { FormatOptions } from "../../article-formatter/types";
 import { GetUserFeedArticlesFilterReturnType } from "../constants";
+
+class FormatterDto {
+  @IsObject()
+  @Type(() => FormatOptions)
+  @ValidateNested()
+  options: FormatOptions;
+}
 
 class FiltersDto {
   @IsEnum(GetUserFeedArticlesFilterReturnType)
@@ -57,4 +66,9 @@ export class GetUserFeedArticlesInputDto {
   @IsObject()
   @IsOptional()
   filters?: FiltersDto;
+
+  @IsObject()
+  @Type(() => FormatterDto)
+  @ValidateNested()
+  formatter: FormatterDto;
 }

@@ -153,6 +153,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                           connectionId={connectionId as string}
                           feedId={feedId as string}
                           type={FeedConnectionType.DiscordChannel}
+                          articleFormatter={{
+                            options: {
+                              formatTables: connection?.details.formatter?.formatTables || false,
+                              stripImages: connection?.details.formatter?.stripImages || false,
+                            },
+                          }}
                         />
                         <Menu>
                           <MenuButton
@@ -268,6 +274,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
                   }}
+                  articleFormatter={{
+                    options: {
+                      formatTables: connection?.details.formatter.formatTables,
+                      stripImages: connection?.details.formatter.stripImages,
+                    },
+                  }}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
@@ -287,6 +299,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   }
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
+                  articleFormatter={{
+                    options: {
+                      formatTables: connection?.details.formatter.formatTables,
+                      stripImages: connection?.details.formatter.stripImages,
+                    },
+                  }}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

@@ -18,6 +18,7 @@ describe("DeliveryService", () => {
   let service: DeliveryService;
   const discordMediumService = {
     deliverArticle: jest.fn(),
+    formatArticle: jest.fn(),
   };
   const articleFiltersService = {
     buildReferences: jest.fn(),
@@ -80,6 +81,10 @@ describe("DeliveryService", () => {
               guildId: "1",
               channel: { id: "channel 1" },
               webhook: null,
+              formatter: {
+                formatTables: false,
+                stripImages: false,
+              },
             },
           },
           {
@@ -89,6 +94,10 @@ describe("DeliveryService", () => {
               guildId: "2",
               channel: { id: "channel 2" },
               webhook: null,
+              formatter: {
+                formatTables: false,
+                stripImages: false,
+              },
             },
           },
         ],
@@ -104,6 +113,11 @@ describe("DeliveryService", () => {
     ];
 
     it("calls deliver on the mediums", async () => {
+      discordMediumService.formatArticle
+        .mockResolvedValueOnce(articles[0])
+        .mockResolvedValueOnce(articles[1])
+        .mockResolvedValueOnce(articles[0])
+        .mockResolvedValueOnce(articles[1]);
       await service.deliver(event, articles);
 
       expect(discordMediumService.deliverArticle).toHaveBeenCalledTimes(4);
@@ -178,6 +192,10 @@ describe("DeliveryService", () => {
                 guildId: "1",
                 channel: { id: "channel 1" },
                 webhook: null,
+                formatter: {
+                  formatTables: false,
+                  stripImages: false,
+                },
               },
             },
           ],
@@ -209,6 +227,10 @@ describe("DeliveryService", () => {
                   guildId: "1",
                   channel: { id: "channel 1" },
                   webhook: null,
+                  formatter: {
+                    formatTables: false,
+                    stripImages: false,
+                  },
                 },
               },
             ],
@@ -253,6 +275,10 @@ describe("DeliveryService", () => {
                   guildId: "1",
                   channel: { id: "channel 1" },
                   webhook: null,
+                  formatter: {
+                    formatTables: false,
+                    stripImages: false,
+                  },
                 },
               },
             ],
@@ -304,6 +330,10 @@ describe("DeliveryService", () => {
                   guildId: "1",
                   channel: { id: "channel 1" },
                   webhook: null,
+                  formatter: {
+                    formatTables: false,
+                    stripImages: false,
+                  },
                 },
               },
             ],

@@ -280,6 +280,7 @@ export class UserFeedsService {
     filters,
     selectProperties,
     skip,
+    formatter,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
     return this.feedHandlerService.getArticles({
       url,
@@ -288,6 +289,7 @@ export class UserFeedsService {
       filters,
       skip: skip || 0,
       selectProperties,
+      formatter,
     });
   }
 
@@ -301,6 +303,12 @@ export class UserFeedsService {
         random: false,
         skip: 0,
         selectProperties: ["*"],
+        formatter: {
+          options: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
       });
 
     const properties = Array.from(

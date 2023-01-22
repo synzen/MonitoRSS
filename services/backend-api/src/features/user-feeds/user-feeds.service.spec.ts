@@ -18,7 +18,11 @@ import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
-import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
+import {
+  GetFeedArticlesInput,
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 
 describe("UserFeedsService", () => {
@@ -808,10 +812,16 @@ describe("UserFeedsService", () => {
   });
 
   describe("getFeedArticles", () => {
-    const validInput = {
+    const validInput: GetFeedArticlesInput = {
       limit: 1,
       random: true,
       url: "random-url",
+      formatter: {
+        options: {
+          formatTables: false,
+          stripImages: false,
+        },
+      },
     };
 
     it("returns correctly", async () => {

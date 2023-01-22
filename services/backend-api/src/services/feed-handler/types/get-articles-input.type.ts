@@ -10,4 +10,10 @@ export interface GetArticlesInput {
     expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;
   };
+  formatter: {
+    options: {
+      stripImages: boolean;
+      formatTables: boolean;
+    };
+  };
 }

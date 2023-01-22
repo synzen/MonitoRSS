@@ -110,6 +110,10 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             id: creationDetails.channelId,
             guildId,
           },
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
         },
       });
     });

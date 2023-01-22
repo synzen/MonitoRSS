@@ -1,5 +1,7 @@
+import { Article } from "../../shared";
+
 export interface QueryForArticlesOutput {
-  articles: Record<string, string>[];
+  articles: Article[];
   totalArticles: number;
   properties: string[];
   filterEvalResults?: Array<{ passed: boolean }>;

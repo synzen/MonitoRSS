@@ -1197,6 +1197,10 @@ describe("handle-schedule", () => {
                 },
               },
               details: {
+                formatter: {
+                  formatTables: true,
+                  stripImages: true,
+                },
                 channel: {
                   id: "channel-id",
                   guildId: "guild-id",
@@ -1287,6 +1291,10 @@ describe("handle-schedule", () => {
                       },
                     },
                   ],
+                  formatter: {
+                    formatTables: true,
+                    stripImages: true,
+                  },
                 },
               },
             ],
@@ -1316,6 +1324,10 @@ describe("handle-schedule", () => {
                 },
               },
               details: {
+                formatter: {
+                  formatTables: true,
+                  stripImages: true,
+                },
                 webhook: {
                   id: "webhook-id",
                   token: "webhook token",
@@ -1411,6 +1423,10 @@ describe("handle-schedule", () => {
                       },
                     },
                   ],
+                  formatter: {
+                    formatTables: true,
+                    stripImages: true,
+                  },
                 },
               },
             ],

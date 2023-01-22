@@ -204,6 +204,12 @@ describe("FeedHandlerService", () => {
       url: "https://www.get-articles-input.com",
       random: true,
       skip: 0,
+      formatter: {
+        options: {
+          formatTables: false,
+          stripImages: false,
+        },
+      },
     };
 
     it("returns the result on success", async () => {

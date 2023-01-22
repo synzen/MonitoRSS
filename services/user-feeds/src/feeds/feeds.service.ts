@@ -76,7 +76,9 @@ export class FeedsService {
     });
 
     const matchedArticlesWithProperties = matchedArticles.map((article) => {
-      const trimmed: Record<string, string> = {};
+      const trimmed: Article = {
+        id: article.id,
+      };
 
       properties.forEach((property) => {
         trimmed[property] = article[property] || "";

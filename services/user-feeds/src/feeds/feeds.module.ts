@@ -5,10 +5,16 @@ import { ArticleRateLimitModule } from "../article-rate-limit/article-rate-limit
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { ArticleFiltersModule } from "../article-filters/article-filters.module";
+import { ArticleFormatterModule } from "../article-formatter/article-formatter.module";
 
 @Module({
   controllers: [FeedsController],
   providers: [FeedsService, DiscordMediumService],
-  imports: [ArticleRateLimitModule, FeedFetcherModule, ArticleFiltersModule],
+  imports: [
+    ArticleRateLimitModule,
+    FeedFetcherModule,
+    ArticleFiltersModule,
+    ArticleFormatterModule,
+  ],
 })
 export class FeedsModule {}
