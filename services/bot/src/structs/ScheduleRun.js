@@ -10,6 +10,7 @@ const promisify = require('util').promisify
 const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
+const { randomUUID } = require('crypto')
 
 /**
  * @typedef {string} FeedID
@@ -439,7 +440,7 @@ class ScheduleRun extends EventEmitter {
     await this.finishFeedsCycle()
   }
 
-  createMessageHandler (batches, batchIndex, debugFeedURLs, onAllConnected, onComplete) {
+  createMessageHandler (batches, batchIndex, debugFeedURLs, runId, onAllConnected, onComplete) {
     const thisBatch = batches[batchIndex]
     const batchLength = Object.keys(thisBatch).length
     let connectedLinks = 0
@@ -447,7 +448,12 @@ class ScheduleRun extends EventEmitter {
     let thisFailures = 0
 
     return linkCompletion => {
-      const { link, status, lastModified, etag, memoryCollection, newArticle } = linkCompletion
+      const { link, status, lastModified, etag, memoryCollection, newArticle, runId: receivedRunId } = linkCompletion
+
+      if (runId !== receivedRunId) {
+        return
+      }
+
       const debugLog = debugFeedURLs.has(link) ? m => this.log.info({ url: link, status }, m) : () => {}
       if (status === 'headers') {
         this.headers[link] = {
@@ -512,7 +518,9 @@ class ScheduleRun extends EventEmitter {
         onBatchesComplete()
       }
     }
-    const handler = this.createMessageHandler(batches, batchIndex, debugFeedURLs, onAllConnected, onComplete)
+    const runId = randomUUID()
+
+    const handler = this.createMessageHandler(batches, batchIndex, debugFeedURLs, runId, onAllConnected, onComplete)
     processor.on('message', handler.bind(this))
     processor.send({
       config: getConfig(),
@@ -523,7 +531,8 @@ class ScheduleRun extends EventEmitter {
       memoryCollections: this.memoryCollections,
       runNum: this.ran,
       scheduleName: this.name,
-      testRun: this.testRun
+      testRun: this.testRun,
+      runId
     })
   }
 
