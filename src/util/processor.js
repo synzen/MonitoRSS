@@ -9,7 +9,7 @@ const databaseFuncs = require('../util/database.js')
 const devLevels = require('./devLevels.js')
 const setConfig = require('../config.js').set
 
-async function fetchFeed (headers, url, urlLog) {
+async function fetchFeed (headers, url, runId, urlLog) {
   const fetchOptions = {}
   if (headers) {
     if (!headers.lastModified || !headers.etag) {
@@ -32,7 +32,8 @@ async function fetchFeed (headers, url, urlLog) {
         status: 'headers',
         link: url,
         lastModified,
-        etag
+        etag,
+        runId
       })
       urlLog('Sending back headers')
     }
@@ -74,19 +75,20 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, isDatabasel
  * @param {import('../structs/NewArticle.js')[]} newArticles
  * @param {import('pino').Logger} log
  */
-async function sendArticles (newArticles) {
+async function sendArticles (newArticles, runId) {
   const len = newArticles.length
   for (var i = 0; i < len; ++i) {
     const newArticle = newArticles[i]
     process.send({
       status: 'newArticle',
-      newArticle: newArticle.toJSON()
+      newArticle: newArticle.toJSON(),
+      runId
     })
   }
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun } = data
+  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun, runId } = data
   const isDatabaseless = !!memoryCollections
   const debugLogger = log.child({
     url: link
@@ -98,11 +100,11 @@ async function getFeed (data, log) {
   try {
     // Request URL
     urlLog('Requesting url')
-    const fetchData = await fetchFeed(headers[link], link, urlLog)
+    const fetchData = await fetchFeed(headers[link], link, runId, urlLog)
     if (!fetchData) {
       urlLog('304 response, sending success')
-      process.send({ status: 'connected' })
-      process.send({ status: 'success', link })
+      process.send({ status: 'connected', runId })
+      process.send({ status: 'success', link, runId })
       return
     }
     // Parse feed
@@ -110,10 +112,10 @@ async function getFeed (data, log) {
     const charset = FeedFetcher.getCharsetFromResponse(response)
     urlLog(`Parsing stream with ${charset} charset`)
     articleList = await parseStream(stream, charset, link, urlLog)
-    process.send({ status: 'connected' })
+    process.send({ status: 'connected', runId })
     if (articleList.length === 0) {
       urlLog('No articles found, sending success')
-      process.send({ status: 'success', link })
+      process.send({ status: 'success', link, runId })
       return
     }
   } catch (err) {
@@ -123,15 +125,16 @@ async function getFeed (data, log) {
       log.warn({ error: err }, `Skipping ${link}`)
     }
     urlLog({ error: err }, 'Sending failed status during connection')
-    process.send({ status: 'connected' })
-    process.send({ status: 'failed', link, rssList, reason: err.message })
+    process.send({ status: 'connected', runId })
+    process.send({ status: 'failed', link, rssList, reason: err.message, runId })
     return
   }
 
   if (testRun || devLevels.disableCycleDatabase(config)) {
     return process.send({
       status: 'success',
-      link
+      link,
+      runId
     })
   }
 
@@ -165,17 +168,18 @@ async function getFeed (data, log) {
      */
     if (runNum !== 0 || config.feeds.sendFirstCycle === true) {
       urlLog(`${newArticles.length} new articles found`)
-      await sendArticles(newArticles)
+      await sendArticles(newArticles, runId)
     }
 
     process.send({
       status: 'success',
       link,
-      memoryCollection: isDatabaseless ? docs : undefined
+      memoryCollection: isDatabaseless ? docs : undefined,
+      runId
     })
   } catch (err) {
     log.error(err, `Cycle logic for ${link}`)
-    process.send({ status: 'failed', link, rssList, reason: err.message })
+    process.send({ status: 'failed', link, rssList, reason: err.message, runId })
   }
 }
 
