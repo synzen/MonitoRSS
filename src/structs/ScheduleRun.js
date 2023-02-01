@@ -10,7 +10,7 @@ const promisify = require('util').promisify
 const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
-const { randomUUID } = require('crypto')
+const crytpo = require('crypto')
 
 /**
  * @typedef {string} FeedID
@@ -518,7 +518,7 @@ class ScheduleRun extends EventEmitter {
         onBatchesComplete()
       }
     }
-    const runId = randomUUID()
+    const runId = crypto.randomBytes(20).toString('hex')
 
     const handler = this.createMessageHandler(batches, batchIndex, debugFeedURLs, runId, onAllConnected, onComplete)
     processor.on('message', handler.bind(this))
