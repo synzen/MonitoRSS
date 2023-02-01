@@ -10,7 +10,7 @@ const promisify = require('util').promisify
 const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
-const crytpo = require('crypto')
+const crypto = require('crypto')
 
 /**
  * @typedef {string} FeedID
