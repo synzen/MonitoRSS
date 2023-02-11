@@ -125,28 +125,35 @@ export class FeedConnectionsDiscordWebhooksController {
       undefined;
     let useWebhook: UpdateDiscordWebhookConnectionInputDto["webhook"] = webhook;
 
-    if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
-      if (disabledCode === null) {
+    if (connection.disabledCode) {
+      if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
+        if (disabledCode === null) {
+          throw new CannotEnableAutoDisabledConnection();
+        }
+
+        if (content || embeds) {
+          useDisableCode = null;
+        }
+      } else if (
+        connection.disabledCode === FeedConnectionDisabledCode.Manual
+      ) {
+        if (disabledCode === null) {
+          useDisableCode = null;
+        }
+      } else if (
+        connection.disabledCode ===
+        FeedConnectionDisabledCode.MissingPermissions
+      ) {
+        if (disabledCode === null) {
+          // Force re-validation of permissions
+          useWebhook = webhook || connection.details.webhook;
+          useDisableCode = null;
+        }
+      } else if (disabledCode === null) {
         throw new CannotEnableAutoDisabledConnection();
       }
-
-      if (content || embeds) {
-        useDisableCode = null;
-      }
-    } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
-      if (disabledCode === null) {
-        useDisableCode = null;
-      }
-    } else if (
-      connection.disabledCode === FeedConnectionDisabledCode.MissingPermissions
-    ) {
-      if (disabledCode === null) {
-        // Force re-validation of permissions
-        useWebhook = webhook || connection.details.webhook;
-        useDisableCode = null;
-      }
-    } else if (disabledCode === null) {
-      throw new CannotEnableAutoDisabledConnection();
+    } else if (disabledCode === FeedConnectionDisabledCode.Manual) {
+      useDisableCode = FeedConnectionDisabledCode.Manual;
     }
 
     const updatedConnection = await this.service.updateDiscordWebhookConnection(

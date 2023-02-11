@@ -41,7 +41,10 @@ describe("FeedConnectionsDiscordChannelsController", () => {
           expression: {},
         },
         details: {
-          type: FeedConnectionType.DiscordChannel,
+          formatter: {
+            formatTables: true,
+            stripImages: true,
+          },
           channel: {
             id: channelId,
             guildId,
@@ -141,7 +144,10 @@ describe("FeedConnectionsDiscordChannelsController", () => {
         expression: {},
       },
       details: {
-        type: FeedConnectionType.DiscordChannel,
+        formatter: {
+          formatTables: true,
+          stripImages: true,
+        },
         channel: {
           id: channelId,
           guildId,
@@ -420,6 +426,44 @@ describe("FeedConnectionsDiscordChannelsController", () => {
             details: {
               content: undefined,
               embeds: [],
+              channel: undefined,
+            },
+          },
+        }
+      );
+    });
+
+    it("allows connection to be disabled when disable code is manual", async () => {
+      await controller.updateDiscordChannelConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+          },
+        } as never,
+        {
+          disabledCode: FeedConnectionDisabledCode.Manual,
+        },
+        {
+          access_token: "accessToken",
+        } as never
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        feedId.toHexString(),
+        connectionId.toHexString(),
+        {
+          accessToken: "accessToken",
+          updates: {
+            name: undefined,
+            filters: undefined,
+            disabledCode: FeedConnectionDisabledCode.Manual,
+            details: {
+              content: undefined,
+              embeds: undefined,
               channel: undefined,
             },
           },

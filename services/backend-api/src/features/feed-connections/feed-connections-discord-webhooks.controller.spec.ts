@@ -500,6 +500,42 @@ describe("FeedConnectionsController", () => {
         },
       });
     });
+
+    it("allows connection to be disabled when disable code is manual", async () => {
+      await controller.updateDiscordWebhookConnection(
+        {
+          feed: {
+            _id: feedId,
+            guild: guildId,
+          },
+          connection: {
+            id: connectionId,
+          },
+        } as never,
+        {
+          disabledCode: FeedConnectionDisabledCode.Manual,
+        },
+        {
+          access_token: accessToken,
+        } as never
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        accessToken,
+        feedId: feedId.toHexString(),
+        connectionId: connectionId.toHexString(),
+        updates: {
+          name: undefined,
+          disabledCode: FeedConnectionDisabledCode.Manual,
+          filters: undefined,
+          details: {
+            content: undefined,
+            embeds: undefined,
+            webhook: undefined,
+          },
+        },
+      });
+    });
   });
 
   describe("deleteDiscordWebhookConnection", () => {

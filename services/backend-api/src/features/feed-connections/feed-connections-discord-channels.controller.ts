@@ -123,28 +123,35 @@ export class FeedConnectionsDiscordChannelsController {
       undefined;
     let useChannelId: string | undefined = channelId;
 
-    if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
-      if (disabledCode === null) {
+    if (connection.disabledCode) {
+      if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
+        if (disabledCode === null) {
+          throw new CannotEnableAutoDisabledConnection();
+        }
+
+        if (content || embeds) {
+          useDisableCode = null;
+        }
+      } else if (
+        connection.disabledCode === FeedConnectionDisabledCode.Manual
+      ) {
+        if (disabledCode === null) {
+          useDisableCode = null;
+        }
+      } else if (
+        connection.disabledCode ===
+        FeedConnectionDisabledCode.MissingPermissions
+      ) {
+        if (disabledCode === null) {
+          // Force re-validation of channel permissions
+          useChannelId = channelId || connection.details.channel.id;
+          useDisableCode = null;
+        }
+      } else if (disabledCode === null) {
         throw new CannotEnableAutoDisabledConnection();
       }
-
-      if (content || embeds) {
-        useDisableCode = null;
-      }
-    } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
-      if (disabledCode === null) {
-        useDisableCode = null;
-      }
-    } else if (
-      connection.disabledCode === FeedConnectionDisabledCode.MissingPermissions
-    ) {
-      if (disabledCode === null) {
-        // Force re-validation of channel permissions
-        useChannelId = channelId || connection.details.channel.id;
-        useDisableCode = null;
-      }
-    } else if (disabledCode === null) {
-      throw new CannotEnableAutoDisabledConnection();
+    } else if (disabledCode === FeedConnectionDisabledCode.Manual) {
+      useDisableCode = FeedConnectionDisabledCode.Manual;
     }
 
     const createdConnection = await this.service.updateDiscordChannelConnection(
