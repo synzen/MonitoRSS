@@ -21,6 +21,7 @@ import { UserFeedHealthStatus } from "./types";
 import { GetArticlesResponseRequestStatus } from "../../services/feed-handler/types";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { URLSearchParams } from "url";
+import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 
 const feedXml = readFileSync(
   path.join(__dirname, "../../test/data/feed.xml"),
@@ -473,7 +474,7 @@ describe("UserFeedsModule", () => {
       nock(feedFetcherApiHost)
         .post("/v1/feed-requests")
         .reply(200, {
-          requestStatus: "success",
+          requestStatus: FeedFetcherFetchStatus.Success,
           response: {
             statusCode: 429,
           },
@@ -493,7 +494,7 @@ describe("UserFeedsModule", () => {
       nock(feedFetcherApiHost)
         .post("/v1/feed-requests")
         .reply(200, {
-          requestStatus: "success",
+          requestStatus: FeedFetcherFetchStatus.Success,
           response: {
             statusCode: 200,
             body: feedXml,

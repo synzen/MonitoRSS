@@ -41,6 +41,7 @@ interface UpdateFeedInput {
   disabledCode?: UserFeedDisabledCode | null;
   passingComparisons?: string[];
   blockingComparisons?: string[];
+  formatOptions?: Partial<UserFeed["formatOptions"]>;
 }
 
 @Injectable()
@@ -213,6 +214,10 @@ export class UserFeedsService {
 
     if (updates.blockingComparisons) {
       query.set("blockingComparisons", updates.blockingComparisons);
+    }
+
+    if (updates.formatOptions) {
+      query.set("formatOptions", updates.formatOptions);
     }
 
     return query.lean();

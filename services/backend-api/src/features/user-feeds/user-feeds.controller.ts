@@ -212,6 +212,7 @@ export class UserFeedsController {
       disabledCode,
       passingComparisons,
       blockingComparisons,
+      formatOptions,
     }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
     if (disabledCode && feed.disabledCode) {
@@ -226,6 +227,7 @@ export class UserFeedsController {
         disabledCode,
         passingComparisons,
         blockingComparisons,
+        formatOptions,
       }
     )) as UserFeed;
 

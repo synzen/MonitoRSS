@@ -1,5 +1,20 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  IsIn,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateNested,
+} from "class-validator";
 import { UserFeedDisabledCode } from "../types";
+
+class FormatOptions {
+  @IsString()
+  @IsOptional()
+  dateFormat?: string;
+}
 
 export class UpdateUserFeedInputDto {
   @IsString()
@@ -26,4 +41,10 @@ export class UpdateUserFeedInputDto {
   @IsNotEmpty({ each: true })
   @IsOptional()
   blockingComparisons?: string[];
+
+  @IsOptional()
+  @Type(() => FormatOptions)
+  @ValidateNested()
+  @IsObject()
+  formatOptions?: FormatOptions;
 }
