@@ -24,6 +24,7 @@ import {
   discordMediumTestPayloadDetailsSchema,
   GetFeedArticlesRequestStatus,
   TransformValidationPipe,
+  UserFeedFormatOptions,
 } from "../shared";
 import { ApiGuard } from "../shared/guards";
 import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
@@ -99,7 +100,11 @@ export class FeedsController {
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     try {
-      const fetchResult = await this.feedFetcherService.fetchFeedArticles(url);
+      const fetchResult = await this.feedFetcherService.fetchFeedArticles(url, {
+        formatOptions: {
+          dateFormat: formatter?.options.dateFormat,
+        },
+      });
 
       if (!fetchResult) {
         return {
@@ -208,6 +213,12 @@ export class FeedsController {
           feed: object()
             .shape({
               url: string().required(),
+              formatOptions: object()
+                .shape({
+                  dateFormat: string().optional().default(undefined),
+                })
+                .optional()
+                .default(undefined),
             })
             .required(),
           article: object()
@@ -222,14 +233,24 @@ export class FeedsController {
 
       let article: Article | null = null;
 
+      const formatOptions: UserFeedFormatOptions = {
+        dateFormat: withType.feed.formatOptions?.dateFormat,
+      };
+
       if (!withType.article) {
         article = await this.feedFetcherService.fetchRandomFeedArticle(
-          withType.feed.url
+          withType.feed.url,
+          {
+            formatOptions,
+          }
         );
       } else {
         article = await this.feedFetcherService.fetchFeedArticle(
           withType.feed.url,
-          withType.article.id
+          withType.article.id,
+          {
+            formatOptions,
+          }
         );
       }
 

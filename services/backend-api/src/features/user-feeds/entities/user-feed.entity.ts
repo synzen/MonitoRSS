@@ -5,6 +5,10 @@ import {
   FeedConnectionSchema,
 } from "../../feeds/entities/feed-connections.entity";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
+import {
+  UserFeedFormatOptions,
+  UserFeedFormatOptionsSchema,
+} from "./user-feed-format-options.entity";
 import { UserFeedUser, UserFeedUserSchema } from "./user-feed-user.entity";
 
 @Schema({
@@ -60,6 +64,12 @@ export class UserFeed {
     schema: UserFeedUserSchema,
   })
   user: UserFeedUser;
+
+  @Prop({
+    required: false,
+    schema: UserFeedFormatOptionsSchema,
+  })
+  formatOptions?: UserFeedFormatOptions;
 
   createdAt: Date;
   updatedAt: Date;

@@ -14,6 +14,7 @@ export interface GetFeedArticlesInput {
     options: {
       stripImages: boolean;
       formatTables: boolean;
+      dateFormat: string | undefined;
     };
   };
 }

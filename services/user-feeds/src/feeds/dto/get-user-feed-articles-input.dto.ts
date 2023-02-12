@@ -12,14 +12,14 @@ import {
   Min,
   ValidateNested,
 } from "class-validator";
-import { FormatOptions } from "../../article-formatter/types";
 import { GetUserFeedArticlesFilterReturnType } from "../constants";
+import { GetUserFeedArticlesFormatterDto } from "./shared";
 
 class FormatterDto {
   @IsObject()
-  @Type(() => FormatOptions)
+  @Type(() => GetUserFeedArticlesFormatterDto)
   @ValidateNested()
-  options: FormatOptions;
+  options: GetUserFeedArticlesFormatterDto;
 }
 
 class FiltersDto {

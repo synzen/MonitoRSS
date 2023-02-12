@@ -32,6 +32,9 @@ interface PublishFeedDeliveryArticlesData {
       url: string;
       passingComparisons: string[];
       blockingComparisons: string[];
+      formatOptions: {
+        dateFormat: string | undefined;
+      };
     };
     articleDayLimit: number;
     mediums: Array<DiscordMediumEvent>;
@@ -222,6 +225,9 @@ export class ScheduleHandlerService {
             url: userFeed.url,
             passingComparisons: userFeed.passingComparisons || [],
             blockingComparisons: userFeed.blockingComparisons || [],
+            formatOptions: {
+              dateFormat: userFeed.formatOptions?.dateFormat,
+            },
           },
           mediums: allMediums,
         },

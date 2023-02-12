@@ -307,6 +307,7 @@ export class UserFeedsService {
           options: {
             formatTables: false,
             stripImages: false,
+            dateFormat: undefined,
           },
         },
       });

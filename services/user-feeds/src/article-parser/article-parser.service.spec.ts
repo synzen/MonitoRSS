@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
 import { ArticleParserService } from "./article-parser.service";
 
@@ -232,6 +233,56 @@ describe("ArticleParserService", () => {
         id: article.id,
         a: "1",
         [`b${DL}c${DL}d${DL}e`]: "2",
+      });
+    });
+  });
+
+  describe("dates", () => {
+    it("converts dates to ISO strings", () => {
+      const article = {
+        id: "hello world",
+        a: new Date(),
+        b: {
+          c: {
+            d: {
+              e: new Date(),
+            },
+          },
+        },
+      };
+
+      const flattenedArticle = service.flatten(article);
+
+      expect(flattenedArticle).toEqual({
+        id: article.id,
+        a: article.a.toISOString(),
+        [`b${DL}c${DL}d${DL}e`]: article.b.c.d.e.toISOString(),
+      });
+    });
+
+    it("converts dates to ISO strings with a custom date format", () => {
+      const article = {
+        id: "hello world",
+        a: new Date(),
+        b: {
+          c: {
+            d: {
+              e: new Date(),
+            },
+          },
+        },
+      };
+
+      const dateFormat = "YYYY-MM-DD";
+
+      const flattenedArticle = service.flatten(article, {
+        dateFormat,
+      });
+
+      expect(flattenedArticle).toEqual({
+        id: article.id,
+        a: dayjs(article.a).format(dateFormat),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e).format(dateFormat),
       });
     });
   });

@@ -1,15 +1,22 @@
 import { Injectable } from "@nestjs/common";
+import dayjs from "dayjs";
 import { flatten } from "flat";
 import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
+import { Article, UserFeedFormatOptions } from "../shared";
+
+type ArticleWithoutId = Omit<Article, "id">;
 
 @Injectable()
 export class ArticleParserService {
-  flatten(input: Record<string, unknown>): Record<string, string> {
+  flatten(
+    input: Record<string, unknown>,
+    formatOptions?: UserFeedFormatOptions
+  ): ArticleWithoutId {
     const flattened = flatten(input, {
       delimiter: ARTICLE_FIELD_DELIMITER,
     }) as Record<string, unknown>;
 
-    const newRecord: Record<string, string> = {};
+    const newRecord: ArticleWithoutId = {};
 
     Object.entries(flattened).forEach(([key, value]) => {
       if (!value) {
@@ -27,6 +34,12 @@ export class ArticleParserService {
       }
 
       if (value instanceof Date) {
+        if (formatOptions?.dateFormat) {
+          newRecord[key] = dayjs(value).format(formatOptions.dateFormat);
+        } else {
+          newRecord[key] = value.toISOString();
+        }
+
         return;
       }
 

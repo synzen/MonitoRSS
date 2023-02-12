@@ -140,6 +140,9 @@ describe("FeedHandlerService", () => {
         type: "discord" as const,
         feed: {
           url: "url",
+          formatOptions: {
+            dateFormat: 'yyyy-MM-dd "at" HH:mm:ss',
+          },
         },
         mediumDetails: {
           channel: {
@@ -208,6 +211,7 @@ describe("FeedHandlerService", () => {
         options: {
           formatTables: false,
           stripImages: false,
+          dateFormat: "yyyy-MM-dd",
         },
       },
     };

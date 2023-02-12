@@ -7,7 +7,7 @@ import { ArticleIDResolver } from "./utils";
 import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
 import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
 import { EntityManager, MikroORM } from "@mikro-orm/core";
-import { Article } from "../shared/types";
+import { Article, UserFeedFormatOptions } from "../shared/types";
 import { ArticleParserService } from "../article-parser/article-parser.service";
 
 @Injectable()
@@ -30,13 +30,19 @@ export class ArticlesService {
       id,
       blockingComparisons,
       passingComparisons,
+      formatOptions,
     }: {
       id: string;
       blockingComparisons: string[];
       passingComparisons: string[];
+      formatOptions: UserFeedFormatOptions;
     }
   ) {
-    const { articles } = await this.getArticlesFromXml(feedXml);
+    const { articles } = await this.getArticlesFromXml(feedXml, {
+      formatOptions: {
+        dateFormat: formatOptions.dateFormat,
+      },
+    });
 
     if (!articles.length) {
       return [];
@@ -300,8 +306,9 @@ export class ArticlesService {
 
   async getArticlesFromXml(
     xml: string,
-    options?: {
+    options: {
       timeout?: number;
+      formatOptions: UserFeedFormatOptions;
     }
   ): Promise<{
     articles: Article[];

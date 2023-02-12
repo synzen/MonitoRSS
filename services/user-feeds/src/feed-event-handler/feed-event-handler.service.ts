@@ -270,6 +270,9 @@ export class FeedEventHandlerService {
           id: event.data.feed.id,
           blockingComparisons,
           passingComparisons,
+          formatOptions: {
+            dateFormat: event.data.feed.formatOptions?.dateFormat,
+          },
         }
       );
 

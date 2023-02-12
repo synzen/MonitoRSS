@@ -5,6 +5,9 @@ export interface SendTestDiscordChannelArticleInput {
     type: "discord";
     feed: {
       url: string;
+      formatOptions: {
+        dateFormat: string | undefined;
+      };
     };
     article?: {
       id: string;

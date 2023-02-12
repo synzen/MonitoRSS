@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { Dispatcher, request } from "undici";
 import BodyReadable from "undici/types/readable";
 import { ArticlesService } from "../articles/articles.service";
-import { FeedResponseRequestStatus } from "../shared";
+import { FeedResponseRequestStatus, UserFeedFormatOptions } from "../shared";
 import {
   FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,
@@ -14,6 +14,10 @@ import {
   FeedRequestServerStatusException,
 } from "./exceptions";
 import { FeedResponse } from "./types";
+
+interface FetchFeedArticleOptions {
+  formatOptions: UserFeedFormatOptions;
+}
 
 @Injectable()
 export class FeedFetcherService {
@@ -115,7 +119,10 @@ export class FeedFetcherService {
     );
   }
 
-  async fetchFeedArticles(url: string) {
+  async fetchFeedArticles(
+    url: string,
+    { formatOptions }: FetchFeedArticleOptions
+  ) {
     const feedXml = await this.fetch(url, {
       executeFetchIfNotInCache: true,
     });
@@ -124,11 +131,23 @@ export class FeedFetcherService {
       return null;
     }
 
-    return this.articlesService.getArticlesFromXml(feedXml);
+    return this.articlesService.getArticlesFromXml(feedXml, {
+      formatOptions: {
+        dateFormat: formatOptions.dateFormat,
+      },
+    });
   }
 
-  async fetchFeedArticle(url: string, id: string) {
-    const result = await this.fetchFeedArticles(url);
+  async fetchFeedArticle(
+    url: string,
+    id: string,
+    { formatOptions }: FetchFeedArticleOptions
+  ) {
+    const result = await this.fetchFeedArticles(url, {
+      formatOptions: {
+        dateFormat: formatOptions.dateFormat,
+      },
+    });
 
     if (!result) {
       throw new Error(`Request for ${url} is still pending`);
@@ -151,8 +170,15 @@ export class FeedFetcherService {
     return article;
   }
 
-  async fetchRandomFeedArticle(url: string) {
-    const result = await this.fetchFeedArticles(url);
+  async fetchRandomFeedArticle(
+    url: string,
+    { formatOptions }: FetchFeedArticleOptions
+  ) {
+    const result = await this.fetchFeedArticles(url, {
+      formatOptions: {
+        dateFormat: formatOptions.dateFormat,
+      },
+    });
 
     if (!result) {
       throw new Error(`Request for ${url} is still pending`);

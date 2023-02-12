@@ -46,6 +46,10 @@ const sampleConnections: UserFeed["connections"] = {
           id: "channel-id",
           guildId: "guild-id",
         },
+        formatter: {
+          formatTables: false,
+          stripImages: true,
+        },
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1187,6 +1191,9 @@ describe("handle-schedule", () => {
         user: {
           discordUserId: "user-id-1",
         },
+        formatOptions: {
+          dateFormat: "MMMM Do YYYY, h:mm:ss a",
+        },
         connections: {
           discordChannels: [
             {
@@ -1250,6 +1257,9 @@ describe("handle-schedule", () => {
               url: feed.url,
               passingComparisons: [],
               blockingComparisons: [],
+              formatOptions: {
+                dateFormat: "MMMM Do YYYY, h:mm:ss a",
+              },
             },
             mediums: [
               {
@@ -1312,6 +1322,9 @@ describe("handle-schedule", () => {
         url: "new-york-times.com",
         user: {
           discordUserId: "user-id-1",
+        },
+        formatOptions: {
+          dateFormat: "MMMM Do YYYY, h:mm:ss a",
         },
         connections: {
           discordWebhooks: [
@@ -1379,6 +1392,9 @@ describe("handle-schedule", () => {
               url: feed.url,
               passingComparisons: [],
               blockingComparisons: [],
+              formatOptions: {
+                dateFormat: "MMMM Do YYYY, h:mm:ss a",
+              },
             },
             mediums: [
               {

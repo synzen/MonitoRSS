@@ -141,6 +141,13 @@ describe("FeedsModule", () => {
       limit: 1,
       random: true,
       url: "https://www.google.com",
+      formatter: {
+        options: {
+          dateFormat: "MM/DD/YYYY",
+          stripImages: false,
+          formatTables: true,
+        },
+      },
     };
 
     it("returns 401 if unauthorized", async () => {

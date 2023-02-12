@@ -137,7 +137,13 @@ export class UserFeedsController {
       filters,
       selectProperties,
       skip,
-      formatter,
+      formatter: {
+        ...formatter,
+        options: {
+          ...formatter.options,
+          dateFormat: feed.formatOptions?.dateFormat,
+        },
+      },
     };
 
     const {

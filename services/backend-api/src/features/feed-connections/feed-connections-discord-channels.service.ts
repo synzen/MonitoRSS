@@ -218,6 +218,9 @@ export class FeedConnectionsDiscordChannelsService {
       type: "discord",
       feed: {
         url: userFeed.url,
+        formatOptions: {
+          dateFormat: userFeed.formatOptions?.dateFormat,
+        },
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {
