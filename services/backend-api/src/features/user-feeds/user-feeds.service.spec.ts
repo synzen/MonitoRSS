@@ -820,6 +820,7 @@ describe("UserFeedsService", () => {
         options: {
           formatTables: false,
           stripImages: false,
+          dateFormat: "foo",
         },
       },
     };
