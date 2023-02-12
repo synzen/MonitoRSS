@@ -14,6 +14,7 @@ import {
 import { CreateDiscordChannelConnectionOutputDto } from "../../feed-connections/dto/create-discord-channel-connection-output.dto";
 import { CreateDiscordWebhookConnectionOutputDto } from "../../feed-connections/dto/create-discord-webhook-connection-output.dto";
 import { FeedConnectionType } from "../../feeds/constants";
+import { UserFeed } from "../entities";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 
 class ConnectionBaseDto {
@@ -45,6 +46,8 @@ class GetUserFeedOutputResultDto {
   @IsNotEmpty({ each: true })
   @IsOptional()
   blockingComparisons?: string[];
+
+  formatOptions?: UserFeed["formatOptions"];
 
   @IsObject()
   @ValidateNested()

@@ -31,6 +31,9 @@ describe("UserFeedsController", () => {
     },
     disabledCode: UserFeedDisabledCode.Manual,
     healthStatus: UserFeedHealthStatus.Failed,
+    formatOptions: {
+      dateFormat: "dateFormat",
+    },
     connections: {
       discordChannels: [
         {
@@ -93,6 +96,7 @@ describe("UserFeedsController", () => {
           healthStatus: feed.healthStatus,
           disabledCode: feed.disabledCode,
           refreshRateSeconds: 123,
+          formatOptions: feed.formatOptions,
           connections: [
             ...feed.connections.discordChannels.map((con) => ({
               id: con.id.toHexString(),
@@ -203,6 +207,7 @@ describe("UserFeedsController", () => {
           healthStatus: feed.healthStatus,
           disabledCode: feed.disabledCode,
           refreshRateSeconds: 123,
+          formatOptions: feed.formatOptions,
           connections: [
             ...feed.connections.discordChannels.map((con) => ({
               id: con.id.toHexString(),
@@ -270,6 +275,7 @@ describe("UserFeedsController", () => {
           healthStatus: feed.healthStatus,
           disabledCode: feed.disabledCode,
           refreshRateSeconds: 60,
+          formatOptions: feed.formatOptions,
           connections: [
             ...feed.connections.discordChannels.map((con) => ({
               id: con.id.toHexString(),

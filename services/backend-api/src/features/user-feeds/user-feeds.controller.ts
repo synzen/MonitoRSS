@@ -326,6 +326,7 @@ export class UserFeedsController {
         blockingComparisons: feed.blockingComparisons,
         createdAt: feed.createdAt.toISOString(),
         updatedAt: feed.updatedAt.toISOString(),
+        formatOptions: feed.formatOptions,
         refreshRateSeconds,
       },
     };
