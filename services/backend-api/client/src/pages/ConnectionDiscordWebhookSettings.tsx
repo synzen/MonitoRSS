@@ -47,6 +47,7 @@ import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
 import { pages } from "../constants";
+import { DiscordServerName } from "../features/discordServers";
 
 enum TabSearchParam {
   Message = "?view=message",
@@ -246,6 +247,9 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                 columnGap="20"
                 rowGap={{ base: "8", lg: "14" }}
               >
+                <CategoryText title="Server">
+                  <DiscordServerName serverId={connection?.details.webhook.guildId} />
+                </CategoryText>
                 <CategoryText title="Webhook">{connection?.details.webhook.id}</CategoryText>
                 <CategoryText title="Custom name">
                   {connection?.details.webhook.name || "N/A"}

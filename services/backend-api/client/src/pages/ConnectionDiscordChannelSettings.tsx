@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { BoxConstrained, CategoryText, ConfirmModal, DashboardContentV2 } from "../components";
 import { pages } from "../constants";
-import { DiscordChannelName } from "../features/discordServers";
+import { DiscordChannelName, DiscordServerName } from "../features/discordServers";
 import { useUserFeed } from "../features/feed";
 import {
   DeleteConnectionButton,
@@ -227,6 +227,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 columnGap="20"
                 rowGap={{ base: "8", lg: "14" }}
               >
+                <CategoryText title="Server">
+                  <DiscordServerName serverId={serverId} />
+                </CategoryText>
                 <CategoryText title="Channel">
                   <DiscordChannelName
                     serverId={serverId}
