@@ -6,14 +6,21 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Validate,
   ValidateNested,
 } from "class-validator";
+import { IsValidTimezone } from "../../../common/validations/is-valid-timezone";
 import { UserFeedDisabledCode } from "../types";
 
 class FormatOptions {
   @IsString()
   @IsOptional()
   dateFormat?: string;
+
+  @IsString()
+  @IsOptional()
+  @Validate(IsValidTimezone)
+  dateTimezone?: string;
 }
 
 export class UpdateUserFeedInputDto {

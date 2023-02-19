@@ -41,6 +41,7 @@ export class ArticlesService {
     const { articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions: {
         dateFormat: formatOptions.dateFormat,
+        dateTimezone: formatOptions.dateTimezone,
       },
     });
 

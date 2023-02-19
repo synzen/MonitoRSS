@@ -25,6 +25,7 @@ export const feedV2EventSchema = object({
       blockingComparisons: array(string().required()).required(),
       formatOptions: object({
         dateFormat: string().optional(),
+        dateTimezone: string().optional(),
       }).optional(),
     }),
     mediums: array(mediumPayloadSchema.required()).min(1).required(),

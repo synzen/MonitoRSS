@@ -6,6 +6,10 @@ class UserFeedFormatOptions {
   @IsString()
   @ValidateIf((o) => o.dateFormat !== undefined)
   dateFormat?: string;
+
+  @IsString()
+  @ValidateIf((o) => o.dateTimezone !== undefined)
+  dateTimezone?: string;
 }
 
 class MediumFormatOptions extends FormatOptions {}

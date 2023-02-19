@@ -3,6 +3,11 @@ import dayjs from "dayjs";
 import { flatten } from "flat";
 import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
 import { Article, UserFeedFormatOptions } from "../shared";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(timezone);
+dayjs.extend(utc);
 
 type ArticleWithoutId = Omit<Article, "id">;
 
@@ -34,11 +39,15 @@ export class ArticleParserService {
       }
 
       if (value instanceof Date) {
+        const useTimezone = formatOptions?.dateTimezone || "UTC";
+        const dateVal = dayjs(value).tz(useTimezone);
+        let stringDate = dateVal.format();
+
         if (formatOptions?.dateFormat) {
-          newRecord[key] = dayjs(value).format(formatOptions.dateFormat);
-        } else {
-          newRecord[key] = value.toISOString();
+          stringDate = dateVal.format(formatOptions.dateFormat);
         }
+
+        newRecord[key] = stringDate;
 
         return;
       }

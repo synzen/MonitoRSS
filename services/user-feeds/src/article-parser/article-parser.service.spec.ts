@@ -255,8 +255,8 @@ describe("ArticleParserService", () => {
 
       expect(flattenedArticle).toEqual({
         id: article.id,
-        a: article.a.toISOString(),
-        [`b${DL}c${DL}d${DL}e`]: article.b.c.d.e.toISOString(),
+        a: dayjs(article.a).tz("UTC").format(),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e).tz("UTC").format(),
       });
     });
 
@@ -277,12 +277,44 @@ describe("ArticleParserService", () => {
 
       const flattenedArticle = service.flatten(article, {
         dateFormat,
+        dateTimezone: undefined,
       });
 
       expect(flattenedArticle).toEqual({
         id: article.id,
-        a: dayjs(article.a).format(dateFormat),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e).format(dateFormat),
+        a: dayjs(article.a).tz("UTC").format(dateFormat),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+          .tz("UTC")
+          .format(dateFormat),
+      });
+    });
+
+    it("works with custom timezones", async () => {
+      const article = {
+        id: "hello world",
+        a: new Date(),
+        b: {
+          c: {
+            d: {
+              e: new Date(),
+            },
+          },
+        },
+      };
+
+      const dateTimezone = "America/New_York";
+
+      const flattenedArticle = service.flatten(article, {
+        dateFormat: undefined,
+        dateTimezone,
+      });
+
+      expect(flattenedArticle).toEqual({
+        id: article.id,
+        a: dayjs(article.a).tz(dateTimezone).format(),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+          .tz(dateTimezone)
+          .format(),
       });
     });
   });

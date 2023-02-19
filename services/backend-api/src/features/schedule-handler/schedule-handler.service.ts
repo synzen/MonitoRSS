@@ -34,6 +34,7 @@ interface PublishFeedDeliveryArticlesData {
       blockingComparisons: string[];
       formatOptions: {
         dateFormat: string | undefined;
+        dateTimezone: string | undefined;
       };
     };
     articleDayLimit: number;
@@ -227,6 +228,7 @@ export class ScheduleHandlerService {
             blockingComparisons: userFeed.blockingComparisons || [],
             formatOptions: {
               dateFormat: userFeed.formatOptions?.dateFormat,
+              dateTimezone: userFeed.formatOptions?.dateTimezone,
             },
           },
           mediums: allMediums,

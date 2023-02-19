@@ -470,6 +470,22 @@ describe("UserFeedsModule", () => {
       expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
+    it("returns 400 on invalid timezone update", async () => {
+      const { statusCode } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+        payload: {
+          ...validBody,
+          formatOptions: {
+            dateTimezone: "invalid",
+          },
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
+    });
+
     it("returns 400 if feed request fails", async () => {
       nock(feedFetcherApiHost)
         .post("/v1/feed-requests")

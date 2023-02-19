@@ -134,6 +134,7 @@ export class FeedFetcherService {
     return this.articlesService.getArticlesFromXml(feedXml, {
       formatOptions: {
         dateFormat: formatOptions.dateFormat,
+        dateTimezone: formatOptions.dateTimezone,
       },
     });
   }
@@ -146,6 +147,7 @@ export class FeedFetcherService {
     const result = await this.fetchFeedArticles(url, {
       formatOptions: {
         dateFormat: formatOptions.dateFormat,
+        dateTimezone: formatOptions.dateTimezone,
       },
     });
 
@@ -177,6 +179,7 @@ export class FeedFetcherService {
     const result = await this.fetchFeedArticles(url, {
       formatOptions: {
         dateFormat: formatOptions.dateFormat,
+        dateTimezone: formatOptions.dateTimezone,
       },
     });
 

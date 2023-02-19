@@ -9,6 +9,11 @@ export class UserFeedFormatOptions {
     required: false,
   })
   dateFormat?: string;
+
+  @Prop({
+    required: false,
+  })
+  dateTimezone?: string;
 }
 
 export const UserFeedFormatOptionsSchema = SchemaFactory.createForClass(

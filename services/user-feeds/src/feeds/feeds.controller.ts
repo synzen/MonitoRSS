@@ -103,6 +103,7 @@ export class FeedsController {
       const fetchResult = await this.feedFetcherService.fetchFeedArticles(url, {
         formatOptions: {
           dateFormat: formatter?.options.dateFormat,
+          dateTimezone: formatter?.options.dateTimezone,
         },
       });
 
@@ -216,6 +217,7 @@ export class FeedsController {
               formatOptions: object()
                 .shape({
                   dateFormat: string().optional().default(undefined),
+                  dateTimezone: string().optional().default(undefined),
                 })
                 .optional()
                 .default(undefined),
@@ -235,6 +237,7 @@ export class FeedsController {
 
       const formatOptions: UserFeedFormatOptions = {
         dateFormat: withType.feed.formatOptions?.dateFormat,
+        dateTimezone: withType.feed.formatOptions?.dateTimezone,
       };
 
       if (!withType.article) {
