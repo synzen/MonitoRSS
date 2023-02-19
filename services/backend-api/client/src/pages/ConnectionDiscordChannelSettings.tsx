@@ -1,6 +1,5 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
-  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -127,7 +126,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           <BoxConstrained.Container spacing={12}>
             <Stack spacing={6}>
               <Stack spacing={4}>
-                <Box>
+                <Stack>
                   <Breadcrumb>
                     <BreadcrumbItem>
                       <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
@@ -209,7 +208,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       </HStack>
                     )}
                   </HStack>
-                </Box>
+                </Stack>
                 <ConnectionDisabledAlert
                   disabledCode={connection?.disabledCode}
                   onEnable={() =>
@@ -259,7 +258,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
-          <TabPanel>
+          <TabPanel width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <MessageTabSection
