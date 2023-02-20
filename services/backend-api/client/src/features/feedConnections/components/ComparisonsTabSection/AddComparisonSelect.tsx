@@ -16,6 +16,7 @@ export const AddComparisonSelect = ({ properties, isDisabled, isLoading, onChang
   const onClickAdd = async () => {
     setIsAdding(true);
     await onChange(value);
+    setValue("");
     setIsAdding(false);
   };
 
