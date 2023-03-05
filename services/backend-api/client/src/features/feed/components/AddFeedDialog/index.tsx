@@ -21,9 +21,8 @@ import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
 import { useEffect } from "react";
-import { useDiscordServerChannels } from "@/features/discordServers";
+import { DiscordChannelDropdown } from "@/features/discordServers";
 import RouteParams from "../../../../types/RouteParams";
-import { ThemedSelect } from "@/components";
 import { useFeeds } from "../../hooks/useFeeds";
 import { useCreateFeed } from "../../hooks";
 import { notifyError } from "@/utils/notifyError";
@@ -49,11 +48,8 @@ export const AddFeedDialog: React.FC = () => {
     resolver: yupResolver(formSchema),
     mode: "all",
   });
-  const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
   const { refetch: refetchFeeds } = useFeeds({ serverId });
   const { mutateAsync } = useCreateFeed();
-
-  const loadingChannels = status === "loading";
 
   const onSubmit = async ({ channelId, title, url }: FormData) => {
     try {
@@ -116,18 +112,12 @@ export const AddFeedDialog: React.FC = () => {
                     name="channelId"
                     control={control}
                     render={({ field }) => (
-                      <ThemedSelect
-                        loading={loadingChannels}
-                        isDisabled={isSubmitting || loadingChannels || !!channelsError}
-                        options={
-                          data?.results.map((channel) => ({
-                            label: channel.name,
-                            value: channel.id,
-                          })) || []
-                        }
+                      <DiscordChannelDropdown
+                        value={field.value}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
-                        value={field.value}
+                        isDisabled={isSubmitting}
+                        serverId={serverId}
                       />
                     )}
                   />

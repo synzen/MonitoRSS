@@ -19,8 +19,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
-import { DiscordServerSearchSelectv2, useDiscordServerChannels } from "@/features/discordServers";
-import { ThemedSelect } from "@/components";
+import { DiscordChannelDropdown, DiscordServerSearchSelectv2 } from "@/features/discordServers";
 
 const formSchema = object({
   name: string().optional(),
@@ -64,10 +63,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
     defaultValues,
   });
   const serverId = watch("serverId");
-  const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
   const initialRef = useRef<HTMLInputElement>(null);
-
-  const loadingChannels = status === "loading";
 
   const onSubmit = async ({ channelId, name }: FormData) => {
     await onUpdate({ channelId, name });
@@ -142,19 +138,12 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                   name="channelId"
                   control={control}
                   render={({ field }) => (
-                    <ThemedSelect
-                      {...field}
-                      loading={loadingChannels}
-                      isDisabled={isSubmitting || loadingChannels || !!channelsError}
-                      options={
-                        data?.results.map((channel) => ({
-                          label: channel.name,
-                          value: channel.id,
-                        })) || []
-                      }
+                    <DiscordChannelDropdown
+                      value={field.value}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      value={field.value}
+                      isDisabled={isSubmitting}
+                      serverId={serverId}
                     />
                   )}
                 />

@@ -21,9 +21,8 @@ import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
 import { useEffect } from "react";
-import { DiscordServerSearchSelectv2, useDiscordServerChannels } from "@/features/discordServers";
+import { DiscordChannelDropdown, DiscordServerSearchSelectv2 } from "@/features/discordServers";
 import RouteParams from "../../../../types/RouteParams";
-import { ThemedSelect } from "@/components";
 import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordChannelConnection } from "../../hooks";
 
@@ -54,10 +53,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
     mode: "all",
   });
   const serverId = watch("serverId");
-  const { data, error: channelsError, status } = useDiscordServerChannels({ serverId });
   const { mutateAsync } = useCreateDiscordChannelConnection();
-
-  const loadingChannels = status === "loading";
 
   const onSubmit = async ({ channelId, name }: FormData) => {
     if (!feedId) {
@@ -134,18 +130,12 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
                   name="channelId"
                   control={control}
                   render={({ field }) => (
-                    <ThemedSelect
-                      loading={loadingChannels}
-                      isDisabled={isSubmitting || loadingChannels || !!channelsError || !serverId}
-                      options={
-                        data?.results.map((channel) => ({
-                          label: channel.name,
-                          value: channel.id,
-                        })) || []
-                      }
+                    <DiscordChannelDropdown
+                      value={field.value}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      value={field.value}
+                      isDisabled={isSubmitting}
+                      serverId={serverId}
                     />
                   )}
                 />
