@@ -1,8 +1,12 @@
-import { DiscordGuildChannel } from "../../../common";
+import { DiscordGuildChannelFormatted } from "../types";
 
 interface ServerChannelOutputDto {
   id: string;
   name: string;
+  category: null | {
+    id: string;
+    name: string;
+  };
 }
 
 export class GetServerChannelsOutputDto {
@@ -10,12 +14,13 @@ export class GetServerChannelsOutputDto {
   total: number;
 
   static fromEntities(
-    channels: DiscordGuildChannel[]
+    channels: DiscordGuildChannelFormatted[]
   ): GetServerChannelsOutputDto {
     return {
       results: channels.map((channel) => ({
         id: channel.id,
         name: channel.name,
+        category: channel.category,
       })),
       total: channels.length,
     };

@@ -5,9 +5,16 @@ interface ChannelPermissionOverwrite {
   deny: string;
 }
 
+export enum DiscordChannelType {
+  GUILD_TEXT = 0,
+  GUILD_CATEGORY = 4,
+}
+
 export interface DiscordGuildChannel {
   id: string;
   name: string;
   guild_id: string;
   permission_overwrites: ChannelPermissionOverwrite[];
+  type: DiscordChannelType;
+  parent_id: string | null;
 }

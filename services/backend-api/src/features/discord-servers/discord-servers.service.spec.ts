@@ -16,7 +16,7 @@ import {
   DiscordServerProfileFeature,
   DiscordServerProfileModel,
 } from "./entities/discord-server-profile.entity";
-import { DiscordGuildChannel } from "../../common";
+import { DiscordChannelType, DiscordGuildChannel } from "../../common";
 import { FeedFeature } from "../feeds/entities/feed.entity";
 import { FeedSubscriberFeature } from "../feeds/entities/feed-subscriber.entity";
 import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-format.entity";
@@ -33,6 +33,7 @@ describe("DiscordServersService", () => {
   let profileModel: DiscordServerProfileModel;
   const configService: ConfigService = {
     get: jest.fn(),
+    getOrThrow: jest.fn(),
   } as never;
   const discordApiService = {
     executeBotRequest: jest.fn(),
@@ -385,30 +386,86 @@ describe("DiscordServersService", () => {
     });
   });
 
-  describe("getChannelsOfServer", () => {
+  describe("getTextChannelsOfServer", () => {
     it("returns the channels from Discord", async () => {
       const serverId = "server-id";
       const mockChannels: DiscordGuildChannel[] = [
         {
-          id: "channel-1",
+          id: "id-1",
           guild_id: serverId,
           permission_overwrites: [],
           name: "channel-1",
+          type: DiscordChannelType.GUILD_TEXT,
+          parent_id: "id-3",
         },
         {
           id: "id-2",
           name: "channel-2",
           guild_id: serverId,
           permission_overwrites: [],
+          type: DiscordChannelType.GUILD_TEXT,
+          parent_id: "id-4",
+        },
+        {
+          id: "id-3",
+          name: "category1",
+          guild_id: serverId,
+          permission_overwrites: [],
+          type: DiscordChannelType.GUILD_CATEGORY,
+          parent_id: "",
+        },
+        {
+          id: "id-4",
+          name: "category2",
+          guild_id: serverId,
+          permission_overwrites: [],
+          type: DiscordChannelType.GUILD_CATEGORY,
+          parent_id: "",
+        },
+        {
+          id: "id-5",
+          name: "channel-3",
+          guild_id: serverId,
+          permission_overwrites: [],
+          type: DiscordChannelType.GUILD_TEXT,
+          parent_id: "",
         },
       ];
       jest
         .spyOn(discordApiService, "executeBotRequest")
         .mockResolvedValue(mockChannels);
 
-      const channels = await service.getChannelsOfServer(serverId);
+      const channels = await service.getTextChannelsOfServer(serverId);
 
-      expect(channels).toEqual(mockChannels);
+      expect(channels).toEqual([
+        {
+          id: "id-1",
+          guild_id: serverId,
+          name: "channel-1",
+          type: DiscordChannelType.GUILD_TEXT,
+          category: {
+            id: "id-3",
+            name: "category1",
+          },
+        },
+        {
+          id: "id-2",
+          name: "channel-2",
+          guild_id: serverId,
+          type: DiscordChannelType.GUILD_TEXT,
+          category: {
+            id: "id-4",
+            name: "category2",
+          },
+        },
+        {
+          id: "id-5",
+          name: "channel-3",
+          guild_id: serverId,
+          type: DiscordChannelType.GUILD_TEXT,
+          category: null,
+        },
+      ]);
     });
   });
 

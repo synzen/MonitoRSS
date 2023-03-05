@@ -132,7 +132,7 @@ export class DiscordServersController {
   async getServerChannels(
     @Param("serverId") serverId: string
   ): Promise<GetServerChannelsOutputDto> {
-    const channels = await this.discordServersService.getChannelsOfServer(
+    const channels = await this.discordServersService.getTextChannelsOfServer(
       serverId
     );
 
