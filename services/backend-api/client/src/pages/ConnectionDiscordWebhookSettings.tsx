@@ -160,6 +160,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                             options: {
                               formatTables: connection?.details.formatter?.formatTables || false,
                               stripImages: connection?.details.formatter?.stripImages || false,
+                              dateFormat: feed?.formatOptions.dateFormat,
+                              dateTimezone: feed?.formatOptions.dateTimezone,
                             },
                           }}
                         />
@@ -301,6 +303,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     options: {
                       formatTables: connection?.details.formatter.formatTables || false,
                       stripImages: connection?.details.formatter.stripImages || false,
+                      dateFormat: feed?.formatOptions.dateFormat,
+                      dateTimezone: feed?.formatOptions.dateTimezone,
                     },
                   }}
                 />
@@ -326,6 +330,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     options: {
                       formatTables: connection?.details.formatter?.formatTables || false,
                       stripImages: connection?.details.formatter?.stripImages || false,
+                      dateFormat: feed?.formatOptions.dateFormat,
+                      dateTimezone: feed?.formatOptions.dateTimezone,
                     },
                   }}
                 />

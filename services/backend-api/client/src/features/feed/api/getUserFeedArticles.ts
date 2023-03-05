@@ -18,6 +18,8 @@ export interface GetUserFeedArticlesInput {
       options: {
         formatTables: boolean;
         stripImages: boolean;
+        dateFormat: string | undefined;
+        dateTimezone: string | undefined;
       };
     };
   };
@@ -53,7 +55,6 @@ export type GetUserFeedArticlesOutput = InferType<typeof GetUserFeedArticlesOutp
 export const getUserFeedArticles = async (
   options: GetUserFeedArticlesInput
 ): Promise<GetUserFeedArticlesOutput> => {
-  console.log(options.data);
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/get-articles`, {
     requestOptions: {
       method: "POST",

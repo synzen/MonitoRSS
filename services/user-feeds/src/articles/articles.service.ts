@@ -356,7 +356,10 @@ export class ArticlesService {
 
         resolve({
           articles: rawArticles.map((rawArticle) => ({
-            ...this.articleParserService.flatten(rawArticle as never),
+            ...this.articleParserService.flatten(
+              rawArticle as never,
+              options.formatOptions
+            ),
             id: ArticleIDResolver.getIDTypeValue(rawArticle as never, idType),
           })),
         });

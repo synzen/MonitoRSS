@@ -142,6 +142,7 @@ export class UserFeedsController {
         options: {
           ...formatter.options,
           dateFormat: feed.formatOptions?.dateFormat,
+          dateTimezone: feed.formatOptions?.dateTimezone,
         },
       },
     };

@@ -313,6 +313,7 @@ export class UserFeedsService {
             formatTables: false,
             stripImages: false,
             dateFormat: undefined,
+            dateTimezone: undefined,
           },
         },
       });

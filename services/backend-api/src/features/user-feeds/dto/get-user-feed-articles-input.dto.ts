@@ -8,6 +8,7 @@ import {
   IsString,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { GetFeedArticlesFilterReturnType } from "../types";
@@ -29,6 +30,14 @@ class FormatterOptionsDto {
   @IsBoolean()
   @Type(() => Boolean)
   stripImages: boolean;
+
+  @IsString()
+  @ValidateIf((o) => !o.dateFormat)
+  dateFormat?: string;
+
+  @IsString()
+  @ValidateIf((o) => !o.dateTimezone)
+  dateTimezone?: string;
 }
 
 class FormatterDto {
