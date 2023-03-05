@@ -97,6 +97,7 @@
       "newBadge": "NEW",
       "backToLegacyFeedsButton": "Back to legacy feeds",
       "tabLogs": "Logs",
+      "settings": "Misc Settings",
       "tabComparisons": "Comparisons",
       "tabConnections": "Connections"
     },
@@ -469,6 +470,18 @@
           "blockingComparisonsTitle": "Blocking Comparison",
           "blockingComparisonsDescription": "Article properties that will be checked to attempt to block an article from sending after default algorithms mark an article as new.",
           "errorFailedToGetPropertiesTitle": "Failed to get article properties to add"
+        },
+        "userFeedSettingsTabSection": {
+          "title": "Misc Settings",
+          "description": "Adjust miscellaneous settings for this feed.",
+          "dateSettingsTitle": "Date Settings",
+          "placeholdersDescription": "Change how some placeholders are displayed.",
+          "dateFormatInputLabel": "Format",
+          "dateFormatInputDescription": "This will dictate how date placeholders will be formatted.",
+          "dateTimezoneInputLabel": "Timezone",
+          "dateTimezoneInputDescription": "This will dictate what timezone date placeholders will use. For a list of valid timezones, <0>click here and see the \"TZ database name\" column</0>.",
+          "invalidTimezone": "Invalid timezone",
+          "dateSettingsPreviewTitle": "Preview"
         }
       }
     },

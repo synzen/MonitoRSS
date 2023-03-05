@@ -15,6 +15,10 @@ export const UserFeedSchema = object({
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
   connections: array(FeedConnectionSchema).required(),
   refreshRateSeconds: number().required(),
+  formatOptions: object({
+    dateFormat: string().optional().default(undefined),
+    dateTimezone: string().optional().default(undefined),
+  }).default(undefined),
 });
 
 export type UserFeed = InferType<typeof UserFeedSchema>;

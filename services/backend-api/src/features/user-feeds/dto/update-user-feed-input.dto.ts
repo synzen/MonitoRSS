@@ -7,6 +7,7 @@ import {
   IsString,
   IsUrl,
   Validate,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { IsValidTimezone } from "../../../common/validations/is-valid-timezone";
@@ -20,6 +21,7 @@ class FormatOptions {
   @IsString()
   @IsOptional()
   @Validate(IsValidTimezone)
+  @ValidateIf((o) => !!o.dateTimezone)
   dateTimezone?: string;
 }
 

@@ -10,6 +10,10 @@ export interface UpdateUserFeedInput {
     disabledCode?: UserFeedDisabledCode.Manual | null;
     passingComparisons?: string[];
     blockingComparisons?: string[];
+    formatOptions?: {
+      dateFormat?: string;
+      dateTimezone?: string;
+    };
   };
 }
 

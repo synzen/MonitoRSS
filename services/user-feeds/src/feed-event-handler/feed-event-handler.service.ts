@@ -272,6 +272,7 @@ export class FeedEventHandlerService {
           passingComparisons,
           formatOptions: {
             dateFormat: event.data.feed.formatOptions?.dateFormat,
+            dateTimezone: event.data.feed.formatOptions?.dateTimezone,
           },
         }
       );

@@ -44,7 +44,11 @@ import {
 } from "../features/feed";
 import RouteParams from "../types/RouteParams";
 import { DashboardContentV2 } from "../components/DashboardContentV2";
-import { AddConnectionDialog, ComparisonsTabSection } from "../features/feedConnections";
+import {
+  AddConnectionDialog,
+  ComparisonsTabSection,
+  UserFeedSettingsTabSection,
+} from "../features/feedConnections";
 import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
@@ -56,6 +60,7 @@ enum TabSearchParam {
   Connections = "?view=connections",
   Comparisons = "?view=comparisons",
   Logs = "?view=logs",
+  Settings = "?view=settings",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
@@ -333,6 +338,15 @@ export const UserFeed: React.FC = () => {
                   })
                 }
               >
+                {t("pages.userFeeds.settings")}
+              </Tab>
+              <Tab
+                onClick={() =>
+                  navigate({
+                    search: TabSearchParam.Settings,
+                  })
+                }
+              >
                 {t("pages.userFeeds.tabLogs")}
               </Tab>
             </TabList>
@@ -427,6 +441,13 @@ export const UserFeed: React.FC = () => {
                     })
                   }
                 />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <UserFeedSettingsTabSection feedId={feedId as string} />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>

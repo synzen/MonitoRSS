@@ -19,6 +19,16 @@ export const useUpdateFeed = () => {
         ],
         data
       );
+
+      return queryClient.invalidateQueries({
+        predicate: (query) => {
+          return (
+            query.queryKey[0] === "user-feed-articles" &&
+            // @ts-ignore
+            query.queryKey[1]?.feedId === inputData.feedId
+          );
+        },
+      });
     },
   });
 

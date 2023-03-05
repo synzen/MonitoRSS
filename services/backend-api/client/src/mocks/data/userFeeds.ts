@@ -14,6 +14,10 @@ const mockUserFeeds: UserFeed[] = [
     updatedAt: new Date().toISOString(),
     blockingComparisons: ["title", "description"],
     passingComparisons: ["author"],
+    formatOptions: {
+      dateFormat: undefined,
+      dateTimezone: "UTC",
+    },
     connections: [
       {
         details: {
@@ -67,6 +71,10 @@ const mockUserFeeds: UserFeed[] = [
     connections: [],
     disabledCode: UserFeedDisabledCode.Manual,
     refreshRateSeconds: 60,
+    formatOptions: {
+      dateFormat: undefined,
+      dateTimezone: "UTC",
+    },
   },
   {
     id: "3",
@@ -78,6 +86,10 @@ const mockUserFeeds: UserFeed[] = [
     connections: [],
     disabledCode: undefined,
     refreshRateSeconds: 60,
+    formatOptions: {
+      dateFormat: undefined,
+      dateTimezone: "UTC",
+    },
   },
 ];
 
