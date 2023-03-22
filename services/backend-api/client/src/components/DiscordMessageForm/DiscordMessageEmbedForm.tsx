@@ -154,7 +154,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.author.name`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {authorNameError && <FormErrorMessage>{authorNameError}</FormErrorMessage>}
               </FormControl>
@@ -163,7 +164,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.author.url`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {authorUrlError && <FormErrorMessage>{authorUrlError}</FormErrorMessage>}
               </FormControl>
@@ -172,7 +174,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.author.iconUrl`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {authorIconUrlError && <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>}
               </FormControl>
@@ -192,7 +195,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.title`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {titleError && <FormErrorMessage>{titleError}</FormErrorMessage>}
               </FormControl>
@@ -201,7 +205,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.url`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {urlError && <FormErrorMessage>{urlError}</FormErrorMessage>}
               </FormControl>
@@ -221,7 +226,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.description`}
                   control={control}
-                  render={({ field }) => <Textarea {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Textarea {...field} value={field.value || ""} />}
                 />
                 {descriptionError && <FormErrorMessage>{descriptionError}</FormErrorMessage>}
               </FormControl>
@@ -241,7 +247,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.image.url`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {imageUrlError && <FormErrorMessage>{imageUrlError}</FormErrorMessage>}
               </FormControl>
@@ -261,7 +268,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.thumbnail.url`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {thumbnailUrlError && <FormErrorMessage>{thumbnailUrlError}</FormErrorMessage>}
               </FormControl>
@@ -281,7 +289,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.footer.text`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {footerTextError && <FormErrorMessage>{footerTextError}</FormErrorMessage>}
               </FormControl>
@@ -290,7 +299,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 <Controller
                   name={`embeds.${index}.footer.iconUrl`}
                   control={control}
-                  render={({ field }) => <Input {...field} />}
+                  defaultValue=""
+                  render={({ field }) => <Input {...field} value={field.value || ""} />}
                 />
                 {footerIconUrlError && <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>}
               </FormControl>
