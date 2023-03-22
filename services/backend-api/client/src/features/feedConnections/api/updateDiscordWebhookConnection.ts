@@ -20,21 +20,21 @@ export interface UpdateDiscordWebhookConnectionInput {
       expression: Record<string, any>;
     } | null;
     embeds?: Array<{
-      color?: string;
+      color?: string | null;
       author?: {
-        name?: string;
-        url?: string;
-        iconUrl?: string;
+        name?: string | null;
+        url?: string | null;
+        iconUrl?: string | null;
       } | null;
       thumbnail?: {
-        url?: string;
+        url?: string | null;
       } | null;
       image?: {
-        url?: string;
+        url?: string | null;
       } | null;
       footer?: {
-        text?: string;
-        iconUrl?: string;
+        text?: string | null;
+        iconUrl?: string | null;
       } | null;
       title?: string | null;
       url?: string | null;

@@ -24,24 +24,24 @@ export interface UpdateFeedInput {
     ncomparisons?: string[];
     pcomparisons?: string[];
     embeds?: Array<{
-      title?: string;
-      description?: string;
-      url?: string;
-      color?: string;
+      title?: string | null;
+      description?: string | null;
+      url?: string | null;
+      color?: string | null;
       footer?: {
-        text?: string;
-        iconUrl?: string;
+        text?: string | null;
+        iconUrl?: string | null;
       } | null;
       author?: {
-        name?: string;
-        url?: string;
-        iconUrl?: string;
+        name?: string | null;
+        url?: string | null;
+        iconUrl?: string | null;
       } | null;
       thumbnail?: {
-        url?: string;
+        url?: string | null;
       } | null;
       image?: {
-        url?: string;
+        url?: string | null;
       } | null;
       timestamp?: "now" | "article";
     }>;

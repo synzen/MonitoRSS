@@ -16,7 +16,7 @@ export interface UpdateDiscordChannelConnectionInput {
     passingComparisons?: string[];
     blockingComparisons?: string[];
     embeds?: Array<{
-      color?: string;
+      color?: string | null;
       authorTitle?: string | null;
       authorUrl?: string | null;
       authorIconUrl?: string | null;
