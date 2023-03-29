@@ -117,9 +117,9 @@ export class ArticleFiltersService {
       return false;
     }
 
-    let valueToCompareAgainst = references.ARTICLE[left.value];
+    let valueToCompareAgainst = references.ARTICLE.flattened[left.value];
 
-    if (!Object.keys(references.ARTICLE).includes(left.value)) {
+    if (!Object.keys(references.ARTICLE.flattened).includes(left.value)) {
       valueToCompareAgainst = "";
     }
 

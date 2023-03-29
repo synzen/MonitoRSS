@@ -6,6 +6,7 @@ import {
   FeedRequestParseException,
 } from "../feed-fetcher/exceptions";
 import {
+  Article,
   DiscordMediumTestPayloadDetails,
   GetFeedArticlesRequestStatus,
 } from "../shared";
@@ -107,6 +108,12 @@ describe("FeedController", () => {
       random: false,
       url: encodeURIComponent(url),
       skip: 0,
+      formatter: {
+        options: {
+          formatTables: false,
+          stripImages: true,
+        },
+      },
     };
 
     it("returns an empty array of results if request is pending", async () => {
@@ -150,9 +157,12 @@ describe("FeedController", () => {
         ...sampleInput,
       };
 
-      const fetchedArticles = [
+      const fetchedArticles: Article[] = [
         {
-          id: "1",
+          flattened: {
+            id: "1",
+          },
+          raw: {} as never,
         },
       ];
 
@@ -171,12 +181,18 @@ describe("FeedController", () => {
         totalArticles: 1,
       });
 
+      jest
+        .spyOn(articleFormatterService, "formatArticleForDiscord")
+        .mockImplementation((article) => article);
+
       const result = await controller.getFeedArticles(input);
 
       expect(result.result.requestStatus).toEqual(
         GetFeedArticlesRequestStatus.Success
       );
-      expect(result.result.articles).toEqual(fetchedArticles);
+      expect(result.result.articles).toEqual(
+        fetchedArticles.map((a) => a.flattened)
+      );
       expect(result.result.filterStatuses).toEqual([
         {
           passed: true,

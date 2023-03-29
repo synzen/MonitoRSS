@@ -1,4 +1,7 @@
+import FeedParser from "feedparser";
+import { FlattenedArticle } from "./flattened-article.type";
+
 export interface Article {
-  id: string;
-  [key: string]: string;
+  flattened: FlattenedArticle;
+  raw: FeedParser.Item;
 }

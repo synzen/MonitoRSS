@@ -87,19 +87,28 @@ describe("FeedsService", () => {
   describe("queryForArticles", () => {
     const articles = [
       {
-        id: "1",
-        title: "title1",
-        description: "description1",
+        flattened: {
+          id: "1",
+          title: "title1",
+          description: "description1",
+        },
+        raw: {} as never,
       },
       {
-        id: "2",
-        title: "title2",
-        description: "description2",
+        flattened: {
+          id: "2",
+          title: "title2",
+          description: "description2",
+        },
+        raw: {} as never,
       },
       {
-        id: "3",
-        title: "title3",
-        description: "description3",
+        flattened: {
+          id: "3",
+          title: "title3",
+          description: "description3",
+        },
+        raw: {} as never,
       },
     ];
     const sampleInput: QueryForArticlesInput = {
@@ -137,8 +146,8 @@ describe("FeedsService", () => {
 
       expect(result.articles.length).toEqual(2);
 
-      expect(result.articles[0].id).toEqual("1");
-      expect(result.articles[1].id).toEqual("2");
+      expect(result.articles[0].flattened.id).toEqual("1");
+      expect(result.articles[1].flattened.id).toEqual("2");
       expect(result.totalArticles).toEqual(input.articles.length);
     });
 
@@ -152,8 +161,8 @@ describe("FeedsService", () => {
       const result = await service.queryForArticles(input);
 
       expect(result.articles.length).toEqual(2);
-      expect(result.articles[0].id).toEqual("2");
-      expect(result.articles[1].id).toEqual("3");
+      expect(result.articles[0].flattened.id).toEqual("2");
+      expect(result.articles[1].flattened.id).toEqual("3");
       expect(result.totalArticles).toEqual(input.articles.length);
     });
 
@@ -167,7 +176,7 @@ describe("FeedsService", () => {
       const result = await service.queryForArticles(input);
 
       expect(result.articles.length).toEqual(1);
-      expect(result.articles[0].id).toEqual("2");
+      expect(result.articles[0].flattened.id).toEqual("2");
       expect(result.totalArticles).toEqual(input.articles.length);
     });
 
@@ -181,13 +190,25 @@ describe("FeedsService", () => {
       const result = await service.queryForArticles(input);
       const expected = [
         {
-          title: "title1",
+          flattened: {
+            id: "1",
+            title: "title1",
+          },
+          raw: {},
         },
         {
-          title: "title2",
+          flattened: {
+            id: "2",
+            title: "title2",
+          },
+          raw: {},
         },
         {
-          title: "title3",
+          flattened: {
+            id: "3",
+            title: "title3",
+          },
+          raw: {},
         },
       ];
 
@@ -205,16 +226,25 @@ describe("FeedsService", () => {
       const result = await service.queryForArticles(input);
       const expected = [
         {
-          id: "1",
-          title: "title1",
+          flattened: {
+            id: "1",
+            title: "title1",
+          },
+          raw: {},
         },
         {
-          id: "2",
-          title: "title2",
+          flattened: {
+            id: "2",
+            title: "title2",
+          },
+          raw: {},
         },
         {
-          id: "3",
-          title: "title3",
+          flattened: {
+            id: "3",
+            title: "title3",
+          },
+          raw: {},
         },
       ];
 
@@ -231,20 +261,32 @@ describe("FeedsService", () => {
           selectProperties: [],
           limit: articles.length,
           articles: sampleInput.articles.map((article) => ({
-            id: article.id,
+            flattened: {
+              id: article.flattened.id,
+            },
+            raw: {} as never,
           })),
         };
 
         const result = await service.queryForArticles(input);
         const expected = [
           {
-            id: "1",
+            flattened: {
+              id: "1",
+            },
+            raw: {},
           },
           {
-            id: "2",
+            flattened: {
+              id: "2",
+            },
+            raw: {},
           },
           {
-            id: "3",
+            flattened: {
+              id: "3",
+            },
+            raw: {},
           },
         ];
 
@@ -258,21 +300,30 @@ describe("FeedsService", () => {
         ...sampleInput,
         articles: [
           {
-            id: "1",
-            title: "title1",
-            description: "description1",
+            flattened: {
+              id: "1",
+              title: "title1",
+              description: "description1",
+            },
+            raw: {} as never,
           },
           {
-            id: "2",
-            title: "title2",
-            description: "description2",
-            author: "author2",
+            flattened: {
+              id: "2",
+              title: "title2",
+              description: "description2",
+              author: "author2",
+            },
+            raw: {} as never,
           },
           {
-            id: "3",
-            title: "title3",
-            description: "description3",
-            image: "image3",
+            flattened: {
+              id: "3",
+              title: "title3",
+              description: "description3",
+              image: "image3",
+            },
+            raw: {} as never,
           },
         ],
         selectProperties: ["*"],
@@ -282,25 +333,34 @@ describe("FeedsService", () => {
       const result = await service.queryForArticles(input);
       const expected = [
         {
-          id: "1",
-          title: "title1",
-          description: "description1",
-          author: "",
-          image: "",
+          flattened: {
+            id: "1",
+            title: "title1",
+            description: "description1",
+            author: "",
+            image: "",
+          },
+          raw: {},
         },
         {
-          id: "2",
-          title: "title2",
-          description: "description2",
-          author: "author2",
-          image: "",
+          flattened: {
+            id: "2",
+            title: "title2",
+            description: "description2",
+            author: "author2",
+            image: "",
+          },
+          raw: {},
         },
         {
-          id: "3",
-          title: "title3",
-          description: "description3",
-          author: "",
-          image: "image3",
+          flattened: {
+            id: "3",
+            title: "title3",
+            description: "description3",
+            author: "",
+            image: "image3",
+          },
+          raw: {},
         },
       ];
 

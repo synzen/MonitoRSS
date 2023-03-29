@@ -143,14 +143,19 @@ export class FeedsController {
         random,
       });
 
-      const formattedArticles = await Promise.all(
-        matchedArticles.map(async (article) => {
-          return this.articleFormatterService.formatArticleForDiscord(article, {
-            formatTables: formatter?.options.formatTables,
-            stripImages: formatter?.options.stripImages,
-          });
-        })
-      );
+      const formattedArticles = (
+        await Promise.all(
+          matchedArticles.map(async (article) => {
+            return this.articleFormatterService.formatArticleForDiscord(
+              article,
+              {
+                formatTables: formatter?.options.formatTables,
+                stripImages: formatter?.options.stripImages,
+              }
+            );
+          })
+        )
+      ).map(({ flattened }) => flattened);
 
       return {
         result: {

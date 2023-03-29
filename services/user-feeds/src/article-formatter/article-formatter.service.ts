@@ -10,13 +10,18 @@ export class ArticleFormatterService {
     options: FormatOptions
   ): Promise<Article> {
     const newRecord: Article = {
-      ...article,
+      flattened: {
+        ...article.flattened,
+      },
+      raw: {
+        ...article.raw,
+      },
     };
 
     await Promise.all(
-      Object.keys(newRecord).map(async (key) => {
-        newRecord[key] = await this.formatValueForDiscord(
-          newRecord[key],
+      Object.keys(newRecord.flattened).map(async (key) => {
+        newRecord.flattened[key] = await this.formatValueForDiscord(
+          newRecord.flattened[key],
           options
         );
       })

@@ -84,8 +84,11 @@ describe("ArticleFiltersService", () => {
       await expect(
         service.evaluateExpression(expression as never, {
           ARTICLE: {
-            id: "1",
-            title: "1",
+            flattened: {
+              id: "1",
+              title: "1",
+            },
+            raw: {} as never,
           },
         })
       ).rejects.toThrow(InvalidExpressionException);
@@ -114,8 +117,11 @@ describe("ArticleFiltersService", () => {
       await expect(
         service.evaluateExpression(expression as never, {
           ARTICLE: {
-            id: "1",
-            title: "1",
+            flattened: {
+              id: "1",
+              title: "1",
+            },
+            raw: {} as never,
           },
         })
       ).rejects.toThrow(InvalidExpressionException);
@@ -159,8 +165,11 @@ describe("ArticleFiltersService", () => {
 
           const reference = {
             [RelationalExpressionLeft.Article]: {
-              id: "1",
-              [articleProperty]: articleValue,
+              flattened: {
+                id: "1",
+                [articleProperty]: articleValue,
+              },
+              raw: {} as never,
             },
           };
 
@@ -186,7 +195,10 @@ describe("ArticleFiltersService", () => {
 
         const reference = {
           [RelationalExpressionLeft.Article]: {
-            id: "1",
+            flattened: {
+              id: "1",
+            },
+            raw: {} as never,
           },
         };
 
@@ -220,8 +232,11 @@ describe("ArticleFiltersService", () => {
 
           const reference = {
             [RelationalExpressionLeft.Article]: {
-              id: "1",
-              title: articleValue,
+              flattened: {
+                id: "1",
+                title: articleValue,
+              },
+              raw: {} as never,
             },
           };
 
@@ -260,8 +275,11 @@ describe("ArticleFiltersService", () => {
 
           const reference = {
             [RelationalExpressionLeft.Article]: {
-              id: "1",
-              title: articleValue,
+              flattened: {
+                id: "1",
+                title: articleValue,
+              },
+              raw: {} as never,
             },
           };
 
@@ -300,8 +318,11 @@ describe("ArticleFiltersService", () => {
 
           const reference = {
             [RelationalExpressionLeft.Article]: {
-              id: "1",
-              title: articleValue,
+              flattened: {
+                id: "1",
+                title: articleValue,
+              },
+              raw: {} as never,
             },
           };
 
@@ -340,8 +361,11 @@ describe("ArticleFiltersService", () => {
 
           const reference = {
             [RelationalExpressionLeft.Article]: {
-              id: "1",
-              title: articleValue,
+              flattened: {
+                id: "1",
+                title: articleValue,
+              },
+              raw: {} as never,
             },
           };
 
@@ -376,8 +400,11 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -419,9 +446,12 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
-                description: "b",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                  description: "b",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -463,9 +493,12 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
-                description: "b",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                  description: "b",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -509,9 +542,12 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
-                description: "b",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                  description: "b",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -553,9 +589,12 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
-                description: "b",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                  description: "b",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -597,7 +636,10 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
+                flattened: {
+                  id: "1",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -667,8 +709,11 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                },
+                raw: {} as never,
               },
             }
           )
@@ -698,9 +743,12 @@ describe("ArticleFiltersService", () => {
             },
             {
               ARTICLE: {
-                id: "1",
-                title: "a",
-                description: "b",
+                flattened: {
+                  id: "1",
+                  title: "a",
+                  description: "b",
+                },
+                raw: {} as never,
               },
             }
           )

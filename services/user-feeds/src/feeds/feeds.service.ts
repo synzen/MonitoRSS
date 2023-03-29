@@ -77,11 +77,14 @@ export class FeedsService {
 
     const matchedArticlesWithProperties = matchedArticles.map((article) => {
       const trimmed: Article = {
-        id: article.id,
+        flattened: {
+          id: article.flattened.id,
+        },
+        raw: article.raw,
       };
 
       properties.forEach((property) => {
-        trimmed[property] = article[property] || "";
+        trimmed.flattened[property] = article.flattened[property] || "";
       });
 
       return trimmed;
@@ -125,12 +128,15 @@ export class FeedsService {
 
     if (properties.includes("*")) {
       properties = Array.from(
-        new Set(articles.flatMap((article) => Object.keys(article)))
+        new Set(articles.flatMap((article) => Object.keys(article.flattened)))
       );
     }
 
     // Prefer title
-    if (!properties.length && articles.some((article) => article.title)) {
+    if (
+      !properties.length &&
+      articles.some((article) => article.flattened.title)
+    ) {
       properties = ["id", "title"];
     }
 

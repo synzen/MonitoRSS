@@ -9,19 +9,19 @@ import utc from "dayjs/plugin/utc";
 dayjs.extend(timezone);
 dayjs.extend(utc);
 
-type ArticleWithoutId = Omit<Article, "id">;
+type FlattenedArticleWithoutId = Omit<Article["flattened"], "id">;
 
 @Injectable()
 export class ArticleParserService {
   flatten(
     input: Record<string, unknown>,
     formatOptions?: UserFeedFormatOptions
-  ): ArticleWithoutId {
+  ): FlattenedArticleWithoutId {
     const flattened = flatten(input, {
       delimiter: ARTICLE_FIELD_DELIMITER,
     }) as Record<string, unknown>;
 
-    const newRecord: ArticleWithoutId = {};
+    const newRecord: FlattenedArticleWithoutId = {};
 
     Object.entries(flattened).forEach(([key, value]) => {
       if (!value) {

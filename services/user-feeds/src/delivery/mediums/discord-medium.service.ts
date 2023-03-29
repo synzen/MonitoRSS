@@ -144,7 +144,7 @@ export class DiscordMediumService implements DeliveryMedium {
     } catch (err) {
       logger.error(
         `Failed to deliver article ${
-          article.id
+          article.flattened.id
         } to Discord webook/channel. Webhook: ${JSON.stringify(
           webhook
         )}, channel: ${JSON.stringify(channel)}`,
@@ -188,7 +188,7 @@ export class DiscordMediumService implements DeliveryMedium {
       },
       {
         id: details.deliveryId,
-        articleID: article.id,
+        articleID: article.flattened.id,
         feedURL: url,
         channel: channelId,
         feedId: id,
@@ -241,7 +241,7 @@ export class DiscordMediumService implements DeliveryMedium {
       },
       {
         id: details.deliveryId,
-        articleID: article.id,
+        articleID: article.flattened.id,
         feedURL: url,
         webhookId,
         feedId: id,
@@ -268,47 +268,70 @@ export class DiscordMediumService implements DeliveryMedium {
     }
   ): DiscordMessageApiPayload {
     const payload: DiscordMessageApiPayload = {
-      content: replaceTemplateString(article, content),
+      content: replaceTemplateString(article.flattened, content),
       embeds: embeds?.map((embed) => ({
-        title: replaceTemplateString(article, embed.title),
-        description: replaceTemplateString(article, embed.description),
+        title: replaceTemplateString(article.flattened, embed.title),
+        description: replaceTemplateString(
+          article.flattened,
+          embed.description
+        ),
         author: !embed.author?.name
           ? undefined
           : {
-              name: replaceTemplateString(article, embed.author.name) as string,
+              name: replaceTemplateString(
+                article.flattened,
+                embed.author.name
+              ) as string,
               icon_url:
-                replaceTemplateString(article, embed.author.iconUrl) || null,
+                replaceTemplateString(
+                  article.flattened,
+                  embed.author.iconUrl
+                ) || null,
             },
         color: embed.color,
         footer: !embed.footer?.text
           ? undefined
           : {
-              text: replaceTemplateString(article, embed.footer.text) as string,
+              text: replaceTemplateString(
+                article.flattened,
+                embed.footer.text
+              ) as string,
               icon_url:
-                replaceTemplateString(article, embed.footer.iconUrl) || null,
+                replaceTemplateString(
+                  article.flattened,
+                  embed.footer.iconUrl
+                ) || null,
             },
         image: !embed.image?.url
           ? undefined
           : {
               url:
-                (replaceTemplateString(article, embed.image.url) as string) ||
-                null,
+                (replaceTemplateString(
+                  article.flattened,
+                  embed.image.url
+                ) as string) || null,
             },
         thumbnail: !embed.thumbnail?.url
           ? undefined
           : {
               url:
                 (replaceTemplateString(
-                  article,
+                  article.flattened,
                   embed.thumbnail.url
                 ) as string) || null,
             },
-        url: replaceTemplateString(article, embed.url) || null,
+        url: replaceTemplateString(article.flattened, embed.url) || null,
         fields: embed.fields
           ?.filter((field) => field.name && field.value)
           .map((field) => ({
-            name: replaceTemplateString(article, field.name) as string,
-            value: replaceTemplateString(article, field.value) as string,
+            name: replaceTemplateString(
+              article.flattened,
+              field.name
+            ) as string,
+            value: replaceTemplateString(
+              article.flattened,
+              field.value
+            ) as string,
             inline: field.inline,
           })),
       })),

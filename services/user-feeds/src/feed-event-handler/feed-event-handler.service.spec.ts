@@ -125,6 +125,10 @@ describe("FeedEventHandlerService", () => {
               guildId: "1",
               channel: { id: "channel 1" },
               webhook: null,
+              formatter: {
+                formatTables: false,
+                stripImages: false,
+              },
             },
           },
         ],
@@ -220,10 +224,16 @@ describe("FeedEventHandlerService", () => {
     describe("when there are articles to deliver", () => {
       const articles: Article[] = [
         {
-          id: "1",
+          flattened: {
+            id: "1",
+          },
+          raw: {} as never,
         },
         {
-          id: "2",
+          flattened: {
+            id: "2",
+          },
+          raw: {} as never,
         },
       ];
 

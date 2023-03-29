@@ -13,6 +13,7 @@ export interface DiscordEmbed {
   thumbnail?: DiscordEmbedThumbnail;
   author?: DiscordEmbedAuthor;
   fields?: DiscordEmbedField[];
+  timestamp?: string;
 }
 
 export interface DiscordEmbedFooter {

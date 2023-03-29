@@ -105,10 +105,16 @@ describe("DeliveryService", () => {
     };
     const articles: Article[] = [
       {
-        id: "article 1",
+        flattened: {
+          id: "article 1",
+        },
+        raw: {} as never,
       },
       {
-        id: "article 2",
+        flattened: {
+          id: "article 2",
+        },
+        raw: {} as never,
       },
     ];
 
@@ -238,7 +244,10 @@ describe("DeliveryService", () => {
         };
         const articles: Article[] = [
           {
-            id: "article 1",
+            flattened: {
+              id: "article 1",
+            },
+            raw: {} as never,
           },
         ];
 
@@ -287,7 +296,10 @@ describe("DeliveryService", () => {
         };
         const articles: Article[] = [
           {
-            id: "article 1",
+            flattened: {
+              id: "article 1",
+            },
+            raw: {} as never,
           },
         ];
 
@@ -341,7 +353,10 @@ describe("DeliveryService", () => {
         };
         const articles: Article[] = [
           {
-            id: "article 1",
+            flattened: {
+              id: "article 1",
+            },
+            raw: {} as never,
           },
         ];
 

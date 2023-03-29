@@ -52,7 +52,10 @@ describe("DiscordMediumService", () => {
 
   describe("deliverTestArticle", () => {
     const article = {
-      id: "1",
+      flattened: {
+        id: "1",
+      },
+      raw: {} as never,
     };
 
     const deliveryDetails: TestDiscordDeliveryDetails = {
@@ -63,6 +66,10 @@ describe("DiscordMediumService", () => {
           token: "webhook-token-1",
         },
         content: "content",
+        formatter: {
+          formatTables: false,
+          stripImages: false,
+        },
       },
     };
 
@@ -89,8 +96,11 @@ describe("DiscordMediumService", () => {
 
       it("sends messages with replaced template strings", async () => {
         const article = {
-          id: "1",
-          title: "some-title-here",
+          flattened: {
+            id: "1",
+            title: "some-title-here",
+          },
+          raw: {} as never,
         };
         const details: TestDiscordDeliveryDetails = {
           ...deliveryDetails,
@@ -133,8 +143,11 @@ describe("DiscordMediumService", () => {
 
       it("sends messages with replaced template strings", async () => {
         const article = {
-          id: "1",
-          title: "some-title-here",
+          flattened: {
+            id: "1",
+            title: "some-title-here",
+          },
+          raw: {} as never,
         };
         const details: TestDiscordDeliveryDetails = {
           ...deliveryDetails,
@@ -159,7 +172,10 @@ describe("DiscordMediumService", () => {
 
   describe("deliverArticle", () => {
     const article = {
-      id: "1",
+      flattened: {
+        id: "1",
+      },
+      raw: {} as never,
     };
 
     const deliveryDetails: DeliveryDetails = {
@@ -173,6 +189,10 @@ describe("DiscordMediumService", () => {
           token: "webhook-token-1",
         },
         content: "content",
+        formatter: {
+          formatTables: false,
+          stripImages: false,
+        },
       },
       feedDetails: {
         id: "feed-id",
@@ -295,8 +315,11 @@ describe("DiscordMediumService", () => {
 
       it("sends messages with replaced template strings", async () => {
         const article = {
-          id: "1",
-          title: "some-title-here",
+          flattened: {
+            id: "1",
+            title: "some-title-here",
+          },
+          raw: {} as never,
         };
         const details: DeliveryDetails = {
           ...deliveryDetails,
@@ -349,8 +372,11 @@ describe("DiscordMediumService", () => {
 
       it("sends messages with replaced template strings", async () => {
         const article = {
-          id: "1",
-          title: "some-title-here",
+          flattened: {
+            id: "1",
+            title: "some-title-here",
+          },
+          raw: {} as never,
         };
         const details: DeliveryDetails = {
           ...deliveryDetails,

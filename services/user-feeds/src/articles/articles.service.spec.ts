@@ -83,6 +83,10 @@ describe("ArticlesService", () => {
       id: feedId,
       passingComparisons: ["pass-1"],
       blockingComparisons: ["block-1"],
+      formatOptions: {
+        dateFormat: undefined,
+        dateTimezone: undefined,
+      },
     };
 
     it("returns empty array if there are no articles in xml", async () => {
@@ -101,7 +105,10 @@ describe("ArticlesService", () => {
     it("stores the new articles if they were not stored before", async () => {
       const articlesFromXml = [
         {
-          id: randomUUID(),
+          flattened: {
+            id: randomUUID(),
+          },
+          raw: {} as never,
         },
       ];
       jest.spyOn(service, "getArticlesFromXml").mockResolvedValue({
@@ -125,13 +132,19 @@ describe("ArticlesService", () => {
       expect(articlesToDeliver).toHaveLength(0);
     });
 
-    it("stores the new articles if stored prior, and returns them", async () => {
+    it("stores the new articles if some were previosuly stored, and returns them", async () => {
       const articlesFromXml = [
         {
-          id: "article id",
+          flattened: {
+            id: "article id",
+          },
+          raw: {} as never,
         },
         {
-          id: "article id 2",
+          flattened: {
+            id: "article id 2",
+          },
+          raw: {} as never,
         },
       ];
       jest.spyOn(service, "getArticlesFromXml").mockResolvedValue({
@@ -144,7 +157,10 @@ describe("ArticlesService", () => {
 
       jest.spyOn(service, "filterForNewArticles").mockResolvedValue([
         {
-          id: articlesFromXml[1].id,
+          flattened: {
+            id: articlesFromXml[1].flattened.id,
+          },
+          raw: {} as never,
         },
       ]);
 
@@ -159,19 +175,28 @@ describe("ArticlesService", () => {
       );
 
       expect(storeArticles).toHaveBeenCalledWith(feedId, [articlesFromXml[1]], {
-        comparisonFields: expect.arrayContaining(["pass-1", "block-1"]),
+        comparisonFields: [],
+        skipIdStorage: true,
       });
       expect(articlesToDeliver).toHaveLength(1);
-      expect(articlesToDeliver[0].id).toEqual(articlesFromXml[1].id);
+      expect(articlesToDeliver[0].flattened.id).toEqual(
+        articlesFromXml[1].flattened.id
+      );
     });
 
     it("returns the new articles in reverse order", async () => {
       const articlesFromXml = [
         {
-          id: "article id",
+          flattened: {
+            id: "article id",
+          },
+          raw: {} as never,
         },
         {
-          id: "article id 2",
+          flattened: {
+            id: "article id 2",
+          },
+          raw: {} as never,
         },
       ];
       jest.spyOn(service, "getArticlesFromXml").mockResolvedValue({
@@ -181,7 +206,10 @@ describe("ArticlesService", () => {
 
       jest.spyOn(service, "filterForNewArticles").mockResolvedValue([
         {
-          id: articlesFromXml[1].id,
+          flattened: {
+            id: articlesFromXml[1].flattened.id,
+          },
+          raw: {} as never,
         },
       ]);
 
@@ -198,8 +226,12 @@ describe("ArticlesService", () => {
       );
 
       expect(articlesToDeliver).toHaveLength(2);
-      expect(articlesToDeliver[0].id).toEqual(articlesFromXml[1].id);
-      expect(articlesToDeliver[1].id).toEqual(articlesFromXml[0].id);
+      expect(articlesToDeliver[0].flattened.id).toEqual(
+        articlesFromXml[1].flattened.id
+      );
+      expect(articlesToDeliver[1].flattened.id).toEqual(
+        articlesFromXml[0].flattened.id
+      );
     });
   });
 
@@ -226,30 +258,42 @@ describe("ArticlesService", () => {
   });
 
   describe("getArticlesFromXml", () => {
+    const options = {
+      formatOptions: {
+        dateFormat: undefined,
+        dateTimezone: undefined,
+      },
+    };
+
     it("returns no articles for an empty feed", async () => {
-      const result = await service.getArticlesFromXml(emptyFeed);
+      const result = await service.getArticlesFromXml(emptyFeed, options);
 
       expect(result.articles).toHaveLength(0);
     });
     it("returns the articles", async () => {
-      const result = await service.getArticlesFromXml(feedText);
+      const result = await service.getArticlesFromXml(feedText, options);
 
       expect(result.articles).toHaveLength(28);
     });
 
     it("adds id to every article", async () => {
-      const result = await service.getArticlesFromXml(feedText);
+      const result = await service.getArticlesFromXml(feedText, options);
 
-      const ids = result.articles.map(({ id }) => id);
+      const ids = result.articles.map(({ flattened }) => flattened.id);
 
       expect(ids.every((id) => typeof id === "string")).toEqual(true);
       expect(ids.every((id) => id.length > 0)).toEqual(true);
     });
 
     it("rejects if it is an invalid feed", async () => {
-      await expect(service.getArticlesFromXml(invalidFeed)).rejects.toThrow(
-        InvalidFeedException
-      );
+      await expect(
+        service.getArticlesFromXml(invalidFeed, {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).rejects.toThrow(InvalidFeedException);
     });
   });
 
@@ -258,10 +302,16 @@ describe("ArticlesService", () => {
       const feedId = "feed-id";
       const articles: Article[] = [
         {
-          id: "id-1",
+          flattened: {
+            id: "id-1",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
+          flattened: {
+            id: "id-2",
+          },
+          raw: {} as never,
         },
       ];
 
@@ -271,7 +321,7 @@ describe("ArticlesService", () => {
       const fieldValues = found.map((f) => f.field_value);
       expect(fieldValues).toHaveLength(2);
       expect(fieldValues).toEqual(
-        expect.arrayContaining(articles.map((a) => a.id))
+        expect.arrayContaining(articles.map((a) => a.flattened.id))
       );
     });
 
@@ -279,15 +329,24 @@ describe("ArticlesService", () => {
       const feedId = "feed-id";
       const articles: Article[] = [
         {
-          id: "id-1",
-          title: "foo",
+          flattened: {
+            id: "id-1",
+            title: "foo",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
-          title: "bar",
+          flattened: {
+            id: "id-2",
+            title: "bar",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
+          flattened: {
+            id: "id-2",
+          },
+          raw: {} as never,
         },
       ];
 
@@ -301,12 +360,12 @@ describe("ArticlesService", () => {
           expect.objectContaining({
             feed_id: feedId,
             field_name: "title",
-            field_value: articles[0].title,
+            field_value: articles[0].flattened.title,
           }),
           expect.objectContaining({
             feed_id: feedId,
             field_name: "title",
-            field_value: articles[1].title,
+            field_value: articles[1].flattened.title,
           }),
         ])
       );
@@ -316,16 +375,25 @@ describe("ArticlesService", () => {
       const feedId = "feed-id";
       const articles: Article[] = [
         {
-          id: "id-1",
-          title: "foo",
-          description: "bar",
+          flattened: {
+            id: "id-1",
+            title: "foo",
+            description: "bar",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
-          title: "bar",
+          flattened: {
+            id: "id-2",
+            title: "bar",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
+          flattened: {
+            id: "id-2",
+          },
+          raw: {} as never,
         },
       ];
 
@@ -355,16 +423,25 @@ describe("ArticlesService", () => {
       const feedId = "feed-id";
       const articles: Article[] = [
         {
-          id: "id-1",
-          title: "foo",
-          description: "bar",
+          flattened: {
+            id: "id-1",
+            title: "foo",
+            description: "bar",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
-          title: "bar",
+          flattened: {
+            id: "id-2",
+            title: "bar",
+          },
+          raw: {} as never,
         },
         {
-          id: "id-2",
+          flattened: {
+            id: "id-2",
+          },
+          raw: {} as never,
         },
       ];
 
@@ -408,12 +485,18 @@ describe("ArticlesService", () => {
       ]);
 
       const articles = ["1", "2", "3", "4"].map((id) => ({
-        id,
+        flattened: {
+          id,
+        },
+        raw: {} as never,
       }));
 
       const newArticles = await service.filterForNewArticles(feedId, articles);
 
-      expect(newArticles).toEqual([{ id: "3" }, { id: "4" }]);
+      expect(newArticles).toEqual([
+        { flattened: { id: "3" }, raw: {} as never },
+        { flattened: { id: "4" }, raw: {} as never },
+      ]);
     });
   });
 
@@ -454,7 +537,10 @@ describe("ArticlesService", () => {
         field_value: "foobaz",
       });
 
-      const article: Article = { id: "1", title: "foobar", description: "baz" };
+      const article: Article = {
+        flattened: { id: "1", title: "foobar", description: "baz" },
+        raw: {} as never,
+      };
 
       const result = await service.articleFieldsSeenBefore(feedId, article, [
         "title",
@@ -477,7 +563,10 @@ describe("ArticlesService", () => {
         field_value: "foobaz",
       });
 
-      const article: Article = { id: "1", title: "title", description: "baz" };
+      const article: Article = {
+        flattened: { id: "1", title: "title", description: "baz" },
+        raw: {} as never,
+      };
 
       const result = await service.articleFieldsSeenBefore(feedId, article, [
         "title",
@@ -494,7 +583,10 @@ describe("ArticlesService", () => {
         field_value: "foobar",
       });
 
-      const article: Article = { id: "1", author: "hi" };
+      const article: Article = {
+        flattened: { id: "1", author: "hi" },
+        raw: {} as never,
+      };
 
       const result = await service.articleFieldsSeenBefore(feedId, article, [
         "title",
@@ -509,8 +601,8 @@ describe("ArticlesService", () => {
       passingComparisons: ["title"],
     };
     const articles = [
-      { id: "1", title: "foo" },
-      { id: "2", title: "bar" },
+      { flattened: { id: "1", title: "foo" }, raw: {} as never },
+      { flattened: { id: "2", title: "bar" }, raw: {} as never },
     ];
 
     it("returns an empty array if there were no seen articles", async () => {

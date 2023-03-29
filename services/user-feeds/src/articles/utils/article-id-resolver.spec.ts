@@ -1,4 +1,3 @@
-import { Article } from "../../shared/types";
 import { ArticleIDResolver } from "./article-id-resolver";
 
 describe("ArticleIDResolver", () => {
@@ -66,12 +65,12 @@ describe("ArticleIDResolver", () => {
 
   describe("static getIDTypeValue()", () => {
     it("returns the article value for non-merged id type", () => {
-      const article: Article = { id: "id", a: "b", dingus: "berry" };
+      const article = { id: "id", a: "b", dingus: "berry" };
       expect(ArticleIDResolver.getIDTypeValue(article, "a")).toEqual(article.a);
     });
 
     it("returns the article values joined for a merged id type", () => {
-      const article: Article = { id: "id", joe: "poe", doe: "koe" };
+      const article = { id: "id", joe: "poe", doe: "koe" };
       expect(ArticleIDResolver.getIDTypeValue(article, "doe,joe")).toEqual(
         "koepoe"
       );

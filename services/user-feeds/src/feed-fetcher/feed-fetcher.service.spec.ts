@@ -167,7 +167,7 @@ describe("FeedFetcherService", () => {
           method: "POST",
         })
         .reply(200, {
-          requestStatus: "success",
+          requestStatus: FeedResponseRequestStatus.Success,
           response: {
             body: feedText,
           },
@@ -194,7 +194,14 @@ describe("FeedFetcherService", () => {
     it("returns null if request is pending", async () => {
       jest.spyOn(service, "fetch").mockResolvedValue(null);
 
-      await expect(service.fetchFeedArticles("url")).resolves.toEqual(null);
+      await expect(
+        service.fetchFeedArticles("url", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual(null);
     });
 
     it("returns the result", async () => {
@@ -205,7 +212,14 @@ describe("FeedFetcherService", () => {
         articles: [],
       });
 
-      await expect(service.fetchFeedArticles("url")).resolves.toEqual({
+      await expect(
+        service.fetchFeedArticles("url", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual({
         articles: [],
       });
     });
@@ -216,7 +230,12 @@ describe("FeedFetcherService", () => {
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue(null);
 
       await expect(
-        service.fetchFeedArticle("url", "id")
+        service.fetchFeedArticle("url", "id", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
       ).rejects.toThrowError();
     });
 
@@ -225,35 +244,59 @@ describe("FeedFetcherService", () => {
         articles: [],
       });
 
-      await expect(service.fetchFeedArticle("url", "id")).resolves.toEqual(
-        null
-      );
+      await expect(
+        service.fetchFeedArticle("url", "id", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual(null);
     });
 
     it("throws if article ID was not found", async () => {
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
         articles: [
           {
-            id: "2",
+            flattened: {
+              id: "2",
+            },
+            raw: {} as never,
           },
         ],
       });
 
-      await expect(service.fetchFeedArticle("url", "1")).rejects.toThrowError(
-        FeedArticleNotFoundException
-      );
+      await expect(
+        service.fetchFeedArticle("url", "1", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).rejects.toThrowError(FeedArticleNotFoundException);
     });
 
     it("returns the article with the correct id", async () => {
-      const article1 = { id: "1", title: "title", link: "link" };
-      const article2 = { id: "2", title: "title", link: "link" };
+      const article1 = {
+        flattened: { id: "1", title: "title", link: "link" },
+        raw: {} as never,
+      };
+      const article2 = {
+        flattened: { id: "2", title: "title", link: "link" },
+        raw: {} as never,
+      };
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
         articles: [article1, article2],
       });
 
-      await expect(service.fetchFeedArticle("url", "2")).resolves.toEqual(
-        article2
-      );
+      await expect(
+        service.fetchFeedArticle("url", "2", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual(article2);
     });
   });
 
@@ -262,7 +305,12 @@ describe("FeedFetcherService", () => {
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue(null);
 
       await expect(
-        service.fetchRandomFeedArticle("url")
+        service.fetchRandomFeedArticle("url", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
       ).rejects.toThrowError();
     });
 
@@ -271,32 +319,60 @@ describe("FeedFetcherService", () => {
         articles: [],
       });
 
-      await expect(service.fetchRandomFeedArticle("url")).resolves.toEqual(
-        null
-      );
+      await expect(
+        service.fetchRandomFeedArticle("url", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual(null);
     });
 
     it("returns the first article if there is only 1 article", async () => {
-      const article = { id: "1", title: "title", link: "link" };
+      const article = {
+        flattened: { id: "1", title: "title", link: "link" },
+        raw: {} as never,
+      };
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
         articles: [article],
       });
 
-      await expect(service.fetchRandomFeedArticle("url")).resolves.toEqual(
-        article
-      );
+      await expect(
+        service.fetchRandomFeedArticle("url", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual(article);
     });
 
     it("returns a random article if there are more than 1 article", async () => {
-      const article1 = { id: "1", title: "title", link: "link" };
-      const article2 = { id: "2", title: "title", link: "link" };
+      const article1 = {
+        flattened: { id: "1", title: "title", link: "link" },
+        raw: {} as never,
+      };
+      const article2 = {
+        flattened: { id: "2", title: "title", link: "link" },
+        raw: {} as never,
+      };
       jest.spyOn(service, "fetchFeedArticles").mockResolvedValue({
         articles: [article1, article2],
       });
 
-      await expect(service.fetchRandomFeedArticle("url")).resolves.toEqual(
+      await expect(
+        service.fetchRandomFeedArticle("url", {
+          formatOptions: {
+            dateFormat: undefined,
+            dateTimezone: undefined,
+          },
+        })
+      ).resolves.toEqual(
         expect.objectContaining({
-          id: expect.any(String),
+          flattened: expect.objectContaining({
+            id: expect.any(String),
+          }),
         })
       );
     });

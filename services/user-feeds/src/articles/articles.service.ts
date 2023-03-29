@@ -61,7 +61,8 @@ export class ArticlesService {
 
     const newArticles = await this.filterForNewArticles(id, articles);
     const seenArticles = articles.filter(
-      (article) => !newArticles.find((a) => a.id === article.id)
+      (article) =>
+        !newArticles.find((a) => a.flattened.id === article.flattened.id)
     );
 
     const allComparisons = [...blockingComparisons, ...passingComparisons];
@@ -148,7 +149,7 @@ export class ArticlesService {
         new FeedArticleField({
           feed_id: feedId,
           field_name: "id",
-          field_value: article.id,
+          field_value: article.flattened.id,
         })
       );
     }
@@ -206,7 +207,7 @@ export class ArticlesService {
       const article = articles[i];
 
       comparisonFields.forEach((field) => {
-        const fieldValue = getNestedPrimitiveValue(article, field);
+        const fieldValue = getNestedPrimitiveValue(article.flattened, field);
 
         if (fieldValue) {
           fieldsToSave.push(
@@ -228,7 +229,7 @@ export class ArticlesService {
     articles: Article[]
   ): Promise<Article[]> {
     const mapOfArticles = new Map(
-      articles.map((article) => [article.id, article])
+      articles.map((article) => [article.flattened.id, article])
     );
     const articleIds = Array.from(mapOfArticles.keys());
     const foundFieldVals = await this.articleFieldRepo.find(
@@ -283,7 +284,7 @@ export class ArticlesService {
     >[] = [];
 
     for (const key of fieldKeys) {
-      const value = getNestedPrimitiveValue(article, key);
+      const value = getNestedPrimitiveValue(article.flattened, key);
 
       if (value) {
         queries.push({
@@ -318,7 +319,9 @@ export class ArticlesService {
     const idResolver = new ArticleIDResolver();
     const rawArticles: FeedParser.Item[] = [];
 
-    const promise = new Promise<{ articles: Article[] }>((resolve, reject) => {
+    const promise = new Promise<{
+      articles: Article[];
+    }>((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new FeedParseTimeoutException());
       }, options?.timeout || 10000);
@@ -354,14 +357,19 @@ export class ArticlesService {
         clearTimeout(timeout);
         const idType = idResolver.getIDType();
 
-        resolve({
-          articles: rawArticles.map((rawArticle) => ({
+        const mappedArticles = rawArticles.map((rawArticle) => ({
+          flattened: {
             ...this.articleParserService.flatten(
               rawArticle as never,
               options.formatOptions
             ),
             id: ArticleIDResolver.getIDTypeValue(rawArticle as never, idType),
-          })),
+          },
+          raw: rawArticle,
+        }));
+
+        resolve({
+          articles: mappedArticles,
         });
       });
     });

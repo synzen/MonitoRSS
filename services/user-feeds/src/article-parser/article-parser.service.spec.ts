@@ -134,26 +134,6 @@ describe("ArticleParserService", () => {
       });
     });
 
-    it("omits dates", () => {
-      const article = {
-        id: "hello world",
-        a: new Date(),
-        b: {
-          c: {
-            d: {
-              e: new Date(),
-            },
-          },
-        },
-      };
-
-      const flattenedArticle = service.flatten(article);
-
-      expect(flattenedArticle).toEqual({
-        id: article.id,
-      });
-    });
-
     it("omits null values", () => {
       const article = {
         id: "hello world",

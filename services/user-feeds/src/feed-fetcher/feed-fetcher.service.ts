@@ -161,7 +161,7 @@ export class FeedFetcherService {
       return null;
     }
 
-    const article = articles.find((article) => article.id === id);
+    const article = articles.find((article) => article.flattened.id === id);
 
     if (!article) {
       throw new FeedArticleNotFoundException(

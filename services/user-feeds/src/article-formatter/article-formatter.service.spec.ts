@@ -22,6 +22,7 @@ describe("ArticleFormatterService", () => {
 
       const result = await service.formatValueForDiscord(value, {
         stripImages: true,
+        formatTables: false,
       });
 
       expect(result).toEqual("Hello World");
@@ -94,6 +95,7 @@ describe("ArticleFormatterService", () => {
 
       const result = await service.formatValueForDiscord(value, {
         formatTables: true,
+        stripImages: false,
       });
 
       expect(result).toEqual(
