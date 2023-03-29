@@ -405,7 +405,13 @@
         },
         "embedForm": {
           "errorOneOfRequiredFields": "One of the following fields that are title, description, author, image, thumbnail, footer is required",
-          "deleteButtonText": "Delete embed"
+          "deleteButtonText": "Delete embed",
+          "timestampNone": "None",
+          "timestampArticle": "Article's published date",
+          "timestampNow": "Delivery date and time",
+          "timestampNoneHelperText": "Do not set a timestamp.",
+          "timestampArticleHelperText": "Set the timestamp as article's publish date if the article has the publish date available.",
+          "timestampNowHelperText": "Set the timestamp as the current date and time of when the article was delivered. Useful if article has no published date."
         },
         "filtersForm": {
           "addNewFiltersButtonText": "Add new filters",

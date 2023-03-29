@@ -2,11 +2,14 @@ import {
   Box,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
   Heading,
   HStack,
   IconButton,
   Input,
+  Radio,
+  RadioGroup,
   Stack,
   StackDivider,
   Textarea,
@@ -304,6 +307,56 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 />
                 {footerIconUrlError && <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>}
               </FormControl>
+            </Stack>
+          </Stack>
+        </Box>
+        <Box>
+          <Stack
+            direction={{ base: "column", md: "row" }}
+            spacing={{ base: "1.5", md: "8" }}
+            justify="space-between"
+          >
+            <Heading size="sm">Timestamp</Heading>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+              <Controller
+                name={`embeds.${index}.timestamp`}
+                control={control}
+                render={({ field }) => (
+                  <FormControl>
+                    <RadioGroup {...field} value={field.value || ""}>
+                      <Stack spacing={4}>
+                        <Radio value="" defaultChecked>
+                          {t("features.feedConnections.components.embedForm.timestampNone")}
+                          <br />
+                          <FormHelperText margin="0">
+                            {t(
+                              "features.feedConnections.components.embedForm.timestampNoneHelperText"
+                            )}
+                          </FormHelperText>
+                        </Radio>
+                        <Radio value="article">
+                          {t("features.feedConnections.components.embedForm.timestampArticle")}
+                          <br />
+                          <FormHelperText margin="0">
+                            {t(
+                              "features.feedConnections.components.embedForm.timestampArticleHelperText"
+                            )}
+                          </FormHelperText>
+                        </Radio>
+                        <Radio value="now">
+                          {t("features.feedConnections.components.embedForm.timestampNow")}
+                          <br />
+                          <FormHelperText margin="0">
+                            {t(
+                              "features.feedConnections.components.embedForm.timestampNowHelperText"
+                            )}
+                          </FormHelperText>
+                        </Radio>
+                      </Stack>
+                    </RadioGroup>
+                  </FormControl>
+                )}
+              />
             </Stack>
           </Stack>
         </Box>

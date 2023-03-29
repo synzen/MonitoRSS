@@ -67,7 +67,11 @@ export const discordMediumPayloadDetailsSchema = object().shape(
             inline: boolean().optional(),
           }).required()
         ).optional(),
-        useTimestamp: boolean().optional().default(undefined),
+        timestamp: string()
+          .oneOf(["now", "article", ""])
+          .optional()
+          .nullable()
+          .default(undefined),
       }).required()
     ),
     formatter: object({

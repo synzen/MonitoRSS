@@ -68,6 +68,7 @@ export const discordMessageEmbedFormSchema = object().shape({
   })
     .optional()
     .nullable(),
+  timestamp: string().oneOf(["article", "now", "", undefined]).optional().nullable(),
 });
 
 export const discordMessageFormSchema = object({

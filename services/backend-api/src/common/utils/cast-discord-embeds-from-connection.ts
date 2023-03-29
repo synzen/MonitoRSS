@@ -48,5 +48,6 @@ export const castDiscordEmbedsForMedium = (
         value: field.value,
         inline: field.inline,
       })) || [],
+    timestamp: embed.timestamp as "now" | "article",
   }));
 };

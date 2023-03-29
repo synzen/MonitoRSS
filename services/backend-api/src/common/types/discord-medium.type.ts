@@ -38,6 +38,7 @@ export interface DiscordMediumEvent {
         value: string;
         inline?: boolean;
       }>;
+      timestamp?: "article" | "now";
     }>;
     formatter: {
       stripImages?: boolean;

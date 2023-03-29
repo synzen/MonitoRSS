@@ -4,7 +4,7 @@ export const FeedEmbedSchema = object({
   title: string().optional(),
   description: string().optional(),
   url: string().optional(),
-  timestamp: string().oneOf(["now", "article"]).optional(),
+  timestamp: string().oneOf(["now", "article", ""]).optional(),
   footer: object({
     text: string().optional(),
     iconUrl: string().optional(),

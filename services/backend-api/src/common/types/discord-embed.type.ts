@@ -108,6 +108,6 @@ export class DiscordEmbed {
 
   @IsString()
   @IsOptional()
-  @IsIn(["now", "article"])
+  @IsIn(["now", "article", ""])
   timestamp?: string;
 }
