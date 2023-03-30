@@ -5,6 +5,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { DiscordEmbed } from "../../../common";
@@ -13,6 +14,20 @@ import { FeedConnectionDisabledCode } from "../../feeds/constants";
 class FiltersDto {
   @IsObject()
   expression: Record<string, unknown>;
+}
+
+class SplitOptions {
+  @IsString()
+  @IsOptional()
+  appendChar?: string;
+
+  @IsString()
+  @IsOptional()
+  prependChar?: string;
+
+  @IsString()
+  @IsOptional()
+  splitChar?: string;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {
@@ -43,4 +58,11 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsIn([FeedConnectionDisabledCode.Manual, null])
   @IsOptional()
   disabledCode?: FeedConnectionDisabledCode.Manual | null;
+
+  @IsOptional()
+  @Type(() => SplitOptions)
+  @ValidateNested()
+  @IsObject()
+  @ValidateIf((v) => v !== null)
+  splitOptions?: SplitOptions | null;
 }

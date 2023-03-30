@@ -118,6 +118,7 @@ export class FeedConnectionsDiscordWebhooksController {
       name,
       webhook,
       disabledCode,
+      splitOptions,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -165,6 +166,7 @@ export class FeedConnectionsDiscordWebhooksController {
           name,
           filters,
           disabledCode: useDisableCode,
+          splitOptions,
           details: {
             content,
             embeds: convertToFlatDiscordEmbeds(embeds),

@@ -821,6 +821,7 @@ describe("UserFeedsService", () => {
           formatTables: false,
           stripImages: false,
           dateFormat: "foo",
+          dateTimezone: "bar",
         },
       },
     };

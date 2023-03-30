@@ -42,6 +42,29 @@ class Webhook {
 const WebhookSchema = SchemaFactory.createForClass(Webhook);
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+class SplitOptions {
+  @Prop({
+    required: false,
+  })
+  splitChar?: string;
+
+  @Prop({
+    required: false,
+  })
+  appendChar?: string;
+
+  @Prop({
+    required: false,
+  })
+  prependChar?: string;
+}
+
+const SplitOptionsSchema = SchemaFactory.createForClass(SplitOptions);
+
+@Schema({
   _id: false,
   timestamps: false,
   versionKey: false,
@@ -123,6 +146,12 @@ export class DiscordWebhookConnection {
     default: {},
   })
   details: Details;
+
+  @Prop({
+    required: false,
+    schema: SplitOptionsSchema,
+  })
+  splitOptions?: SplitOptions;
 
   createdAt: Date;
   updatedAt: Date;

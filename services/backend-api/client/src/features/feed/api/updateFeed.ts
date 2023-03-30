@@ -43,7 +43,7 @@ export interface UpdateFeedInput {
       image?: {
         url?: string | null;
       } | null;
-      timestamp?: "now" | "article";
+      timestamp?: "now" | "article" | "" | null;
     }>;
   };
 }

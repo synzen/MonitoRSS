@@ -27,6 +27,29 @@ class Channel {
 const ChannelSchema = SchemaFactory.createForClass(Channel);
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+class SplitOptions {
+  @Prop({
+    required: false,
+  })
+  splitChar?: string;
+
+  @Prop({
+    required: false,
+  })
+  appendChar?: string;
+
+  @Prop({
+    required: false,
+  })
+  prependChar?: string;
+}
+
+const SplitOptionsSchema = SchemaFactory.createForClass(SplitOptions);
+
+@Schema({
   _id: false,
   versionKey: false,
   timestamps: false,
@@ -108,6 +131,12 @@ export class DiscordChannelConnection {
     required: true,
   })
   details: Details;
+
+  @Prop({
+    required: false,
+    schema: SplitOptionsSchema,
+  })
+  splitOptions?: SplitOptions;
 
   createdAt: Date;
   updatedAt: Date;

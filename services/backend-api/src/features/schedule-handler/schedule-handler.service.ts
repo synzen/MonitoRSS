@@ -186,6 +186,7 @@ export class ScheduleHandlerService {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,
           },
+          splitOptions: con.splitOptions,
         },
       }));
 
@@ -210,6 +211,7 @@ export class ScheduleHandlerService {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,
           },
+          splitOptions: con.splitOptions,
         },
       }));
 

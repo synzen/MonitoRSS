@@ -202,6 +202,10 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         },
       },
       name: "new-name",
+      splitOptions: {
+        prependChar: "p",
+        appendChar: "a",
+      },
       details: {
         embeds: [
           {
@@ -236,6 +240,11 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
                 expression: {
                   foo: "bar",
                 },
+              },
+              splitOptions: {
+                prependChar: "1",
+                appendChar: "2",
+                splitChar: "3",
               },
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -280,6 +289,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
         filters: updateDetails.filters,
+        splitOptions: updateDetails.splitOptions,
         details: {
           embeds: updateDetails.details.embeds,
           webhook: {
@@ -308,6 +318,7 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
         updates: {
           filters: null,
           disabledCode: null,
+          splitOptions: null,
         },
         accessToken,
       });
@@ -320,6 +331,9 @@ describe("FeedConnectionsDiscordWebhooksService", () => {
       );
       expect(updatedFeed?.connections.discordWebhooks[0]).not.toHaveProperty(
         "disabledCode"
+      );
+      expect(updatedFeed?.connections.discordWebhooks[0]).not.toHaveProperty(
+        "splitOptions"
       );
     });
 

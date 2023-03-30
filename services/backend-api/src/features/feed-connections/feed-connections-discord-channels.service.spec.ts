@@ -133,6 +133,10 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             foo: "bar",
           },
         },
+        splitOptions: {
+          splitChar: "s",
+          appendChar: "a",
+        },
         details: {
           channel: {
             id: "updatedChannelId",
@@ -167,6 +171,11 @@ describe("FeedConnectionsDiscordChannelsService", () => {
                 expression: {
                   foo: "bar",
                 },
+              },
+              splitOptions: {
+                splitChar: "1",
+                appendChar: "2",
+                prependChar: "3",
               },
               details: {
                 channel: {
@@ -237,6 +246,27 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       });
     });
 
+    it("updates split options", async () => {
+      await service.updateDiscordChannelConnection(
+        createdFeed._id.toHexString(),
+        connectionIdToUse.toHexString(),
+        {
+          accessToken: updateInput.accessToken,
+          updates: {
+            splitOptions: updateInput.updates.splitOptions,
+          },
+        }
+      );
+
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordChannels).toHaveLength(1);
+      expect(updatedFeed?.connections.discordChannels[0]).toMatchObject({
+        id: connectionIdToUse,
+        splitOptions: updateInput.updates.splitOptions,
+      });
+    });
+
     it("allows nullable properties to be cleared", async () => {
       await service.updateDiscordChannelConnection(
         createdFeed._id.toHexString(),
@@ -246,6 +276,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           updates: {
             filters: null,
             disabledCode: null,
+            splitOptions: null,
           },
         }
       );
@@ -258,6 +289,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       );
       expect(updatedFeed?.connections.discordChannels[0]).not.toHaveProperty(
         "disabledCode"
+      );
+      expect(updatedFeed?.connections.discordChannels[0]).not.toHaveProperty(
+        "splitOptions"
       );
     });
 

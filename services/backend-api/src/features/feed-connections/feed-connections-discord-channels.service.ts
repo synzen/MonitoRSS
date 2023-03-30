@@ -27,6 +27,7 @@ export interface UpdateDiscordChannelConnectionInput {
     filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
+    splitOptions?: DiscordChannelConnection["splitOptions"] | null;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       channel?: {
@@ -128,6 +129,12 @@ export class FeedConnectionsDiscordChannelsService {
       };
     }
 
+    if (!!updates.splitOptions) {
+      // @ts-ignore
+      setRecordDetails["connections.discordChannels.$.splitOptions"] =
+        updates.splitOptions;
+    }
+
     if (updates.filters) {
       const { errors } = await this.feedHandlerService.validateFilters({
         expression: updates.filters.expression,
@@ -164,6 +171,9 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.disabledCode === null && {
           [`connections.discordChannels.$.disabledCode`]: "",
+        }),
+        ...(updates.splitOptions === null && {
+          [`connections.discordChannels.$.splitOptions`]: "",
         }),
       },
     };

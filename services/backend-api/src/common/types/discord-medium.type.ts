@@ -44,5 +44,10 @@ export interface DiscordMediumEvent {
       stripImages?: boolean;
       formatTables?: boolean;
     };
+    splitOptions?: {
+      splitChar?: string;
+      appendChar?: string;
+      prependChar?: string;
+    };
   };
 }

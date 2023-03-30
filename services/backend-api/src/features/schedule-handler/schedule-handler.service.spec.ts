@@ -1194,6 +1194,11 @@ describe("handle-schedule", () => {
         formatOptions: {
           dateFormat: "MMMM Do YYYY, h:mm:ss a",
         },
+        splitOptions: {
+          splitChar: "a",
+          appendChar: "append",
+          prependChar: "prepend",
+        },
         connections: {
           discordChannels: [
             {
@@ -1305,6 +1310,11 @@ describe("handle-schedule", () => {
                     formatTables: true,
                     stripImages: true,
                   },
+                  splitOptions: {
+                    splitChar: "a",
+                    appendChar: "append",
+                    prependChar: "prepend",
+                  },
                 },
               },
             ],
@@ -1325,6 +1335,11 @@ describe("handle-schedule", () => {
         },
         formatOptions: {
           dateFormat: "MMMM Do YYYY, h:mm:ss a",
+        },
+        splitOptions: {
+          splitChar: "a",
+          appendChar: "append",
+          prependChar: "prepend",
         },
         connections: {
           discordWebhooks: [
@@ -1442,6 +1457,11 @@ describe("handle-schedule", () => {
                   formatter: {
                     formatTables: true,
                     stripImages: true,
+                  },
+                  splitOptions: {
+                    splitChar: "a",
+                    appendChar: "append",
+                    prependChar: "prepend",
                   },
                 },
               },

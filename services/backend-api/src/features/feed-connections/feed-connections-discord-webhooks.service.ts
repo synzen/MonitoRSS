@@ -29,6 +29,7 @@ export interface UpdateDiscordWebhookConnectionInput {
     filters?: DiscordWebhookConnection["filters"] | null;
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
+    splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
     details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
@@ -112,7 +113,7 @@ export class FeedConnectionsDiscordWebhooksService {
   async updateDiscordWebhookConnection({
     feedId,
     connectionId,
-    updates: { details, filters, name, disabledCode },
+    updates: { details, filters, name, disabledCode, splitOptions },
     accessToken,
   }: UpdateDiscordWebhookConnectionInput) {
     let webhookUpdates:
@@ -184,6 +185,9 @@ export class FeedConnectionsDiscordWebhooksService {
         ...(disabledCode && {
           "connections.discordWebhooks.$.disabledCode": disabledCode,
         }),
+        ...(splitOptions && {
+          "connections.discordWebhooks.$.splitOptions": splitOptions,
+        }),
       },
       $unset: {
         ...(filters === null && {
@@ -191,6 +195,9 @@ export class FeedConnectionsDiscordWebhooksService {
         }),
         ...(disabledCode === null && {
           "connections.discordWebhooks.$.disabledCode": "",
+        }),
+        ...(splitOptions === null && {
+          "connections.discordWebhooks.$.splitOptions": "",
         }),
       },
     };
