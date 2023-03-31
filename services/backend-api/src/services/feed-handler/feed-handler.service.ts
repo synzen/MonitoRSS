@@ -182,8 +182,6 @@ export class FeedHandlerService {
       formatter,
     };
 
-    console.log(body);
-
     const res = await fetch(`${this.host}/v1/user-feeds/get-articles`, {
       method: "POST",
       body: JSON.stringify(body),

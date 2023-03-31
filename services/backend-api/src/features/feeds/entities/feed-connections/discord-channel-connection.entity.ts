@@ -29,7 +29,6 @@ const ChannelSchema = SchemaFactory.createForClass(Channel);
 @Schema({
   timestamps: false,
   _id: false,
-  minimize: false,
 })
 class SplitOptions {
   @Prop({

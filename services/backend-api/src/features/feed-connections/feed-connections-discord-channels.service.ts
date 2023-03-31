@@ -129,8 +129,6 @@ export class FeedConnectionsDiscordChannelsService {
       };
     }
 
-    console.log("Service split optino", updates.splitOptions);
-
     if (updates.filters) {
       const { errors } = await this.feedHandlerService.validateFilters({
         expression: updates.filters.expression,

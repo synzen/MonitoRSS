@@ -6,21 +6,25 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 
 class SplitOptions {
   @IsString()
   @IsOptional()
-  splitChar?: string;
+  @ValidateIf((v) => v !== null)
+  splitChar?: string | null;
 
   @IsString()
   @IsOptional()
-  appendChar?: string;
+  @ValidateIf((v) => v !== null)
+  appendChar?: string | null;
 
   @IsString()
   @IsOptional()
-  prependChar?: string;
+  @ValidateIf((v) => v !== null)
+  prependChar?: string | null;
 
   @IsInt()
   @IsPositive()

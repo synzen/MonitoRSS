@@ -116,10 +116,8 @@ export class ArticleFormatterService {
   applySplit(text: string, splitOptions?: FormatOptions["split"]) {
     const limit = splitOptions?.limit || 2000;
     const splitChar = splitOptions?.splitChar || ".";
-    const appendChar = splitOptions?.appendChar ?? "...";
+    const appendChar = splitOptions?.appendChar ?? "";
     const prependChar = splitOptions?.prependChar ?? "";
-
-    console.log(splitOptions, appendChar);
 
     const split = this.splitText(text, {
       splitChar,
@@ -130,15 +128,15 @@ export class ArticleFormatterService {
 
     if (splitOptions?.isEnabled) {
       if (split.length === 1) {
-        return [prependChar + split[0] + appendChar];
+        return [prependChar + split[0].trim() + appendChar];
       } else if (split.length === 2) {
-        const firstPart = split[0];
-        const lastPart = split[1];
+        const firstPart = split[0].trimStart();
+        const lastPart = split[1].trimEnd();
 
         return [prependChar + firstPart, lastPart + appendChar];
       } else {
-        const firstPart = split[0];
-        const lastPart = split[split.length - 1];
+        const firstPart = split[0].trimStart();
+        const lastPart = split[split.length - 1].trimEnd();
 
         return [
           prependChar + firstPart,
@@ -147,7 +145,7 @@ export class ArticleFormatterService {
         ];
       }
     } else {
-      return [split[0]];
+      return [split[0].trim()];
     }
   }
 
@@ -162,17 +160,12 @@ export class ArticleFormatterService {
   ) {
     const initialSplit = text
       .trim()
-      .split("\n")
+      .split(/(\n)/) // Split without removing the new line char
       .filter((item) => item.length > 0);
     const useLimit =
       options.limit - options.appendChar.length - options.prependChar.length;
 
     let i = 0;
-
-    // Add the char back to the end of the split
-    initialSplit.forEach((item, index) => {
-      initialSplit[index] = item + "\n";
-    });
 
     while (i < initialSplit.length) {
       const item = initialSplit[i];
@@ -181,6 +174,7 @@ export class ArticleFormatterService {
         // Some will be empty spaces since "hello." will split into ["hello", ""]
         const splitByPeriod = item
           .split(options.splitChar)
+          .map((i) => i.trim())
           .filter((item) => item.length > 0);
 
         // Add the char back to the end of the split
@@ -193,6 +187,7 @@ export class ArticleFormatterService {
         } else {
           const splitBySpace = item
             .split(" ")
+            .map((i) => i.trim())
             .filter((item) => item.length > 0);
 
           // Add the char back to the end of the split

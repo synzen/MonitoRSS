@@ -99,6 +99,7 @@ export class DiscordMediumService implements DeliveryMedium {
       const apiPayloads = this.generateApiPayloads(article, {
         embeds: details.mediumDetails.embeds,
         content: details.mediumDetails.content,
+        splitOptions,
       });
 
       const results = await Promise.all(
@@ -187,6 +188,7 @@ export class DiscordMediumService implements DeliveryMedium {
     const bodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
+      splitOptions: details.deliverySettings.splitOptions,
     });
 
     await Promise.all(
@@ -242,6 +244,7 @@ export class DiscordMediumService implements DeliveryMedium {
     const bodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
+      splitOptions: details.deliverySettings.splitOptions,
     }).map((payload) => ({
       ...payload,
       username: webhookUsername,
@@ -285,22 +288,16 @@ export class DiscordMediumService implements DeliveryMedium {
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
-      splitOptions?: DeliveryDetails["deliverySettings"]["splitOptions"];
+      splitOptions: DeliveryDetails["deliverySettings"]["splitOptions"];
     }
   ): DiscordMessageApiPayload[] {
-    let payloadContent = [
+    const payloadContent = this.articleFormatterService.applySplit(
       replaceTemplateString(article.flattened, content) || "",
-    ];
-
-    if (splitOptions) {
-      payloadContent = this.articleFormatterService.applySplit(
-        payloadContent[0],
-        {
-          ...splitOptions,
-          isEnabled: true,
-        }
-      );
-    }
+      {
+        ...splitOptions,
+        isEnabled: !!splitOptions,
+      }
+    );
 
     const payloads: DiscordMessageApiPayload[] = payloadContent.map(
       (contentPart) => ({

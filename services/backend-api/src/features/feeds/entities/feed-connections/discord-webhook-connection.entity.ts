@@ -44,7 +44,6 @@ const WebhookSchema = SchemaFactory.createForClass(Webhook);
 @Schema({
   timestamps: false,
   _id: false,
-  minimize: false,
 })
 class SplitOptions {
   @Prop({

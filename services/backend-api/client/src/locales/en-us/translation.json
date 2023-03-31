@@ -256,6 +256,7 @@
       "splitContentSectionTitle": "Split Content",
       "splitContentCheckboxLabel": "Enable",
       "splitContentCheckboxDescription": "If enabled, the message will be split into multiple messages if it is too long. Otherwise, it will attempt to be sent as one message with the maximum possible number of characters.",
+      "splitContentSettingsLabel": "Split Settings",
       "splitContentSplitCharLabel": "Split character",
       "splitContentSplitCharDescription": "The character to split the text content with. Defaults to '.' (a period).",
       "splitContentAppendCharLabel": "Append character",

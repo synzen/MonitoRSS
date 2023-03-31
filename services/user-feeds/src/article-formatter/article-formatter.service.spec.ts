@@ -256,5 +256,26 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
         "ocious!",
       ]);
     });
+
+    it("does not create create duplicate split chars with multiple new lines", () => {
+      const result = service.applySplit(
+        "hello world.\n\n\nhello world.\n\n\n",
+        {
+          limit: 5,
+          isEnabled: true,
+        }
+      );
+
+      expect(result).toEqual(["hello", "world", ".", "hello", "world", "."]);
+    });
+
+    it("should preserve double new lines when possible", () => {
+      const result = service.applySplit(`a\n\na\n\nb`.trim(), {
+        limit: 4,
+        isEnabled: true,
+      });
+
+      expect(result).toEqual(["a\n\na", "b"]);
+    });
   });
 });
