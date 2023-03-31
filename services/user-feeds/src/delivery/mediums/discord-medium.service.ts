@@ -240,7 +240,11 @@ export class DiscordMediumService implements DeliveryMedium {
     const bodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
-    });
+    }).map((payload) => ({
+      ...payload,
+      username: webhookUsername,
+      avatar_url: webhookIconUrl,
+    }));
 
     await Promise.all(
       bodies.map((body) =>
