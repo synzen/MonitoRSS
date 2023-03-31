@@ -78,6 +78,11 @@ export const discordMediumPayloadDetailsSchema = object().shape(
       stripImages: boolean().optional().default(false),
       formatTables: boolean().optional().default(false),
     }).required(),
+    splitOptions: object({
+      splitChar: string().optional(),
+      appendChar: string().optional(),
+      prependChar: string().optional(),
+    }).optional(),
   },
   [["channel", "webhook"]]
 );

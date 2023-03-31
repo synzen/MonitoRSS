@@ -70,39 +70,47 @@ export class DiscordMediumService implements DeliveryMedium {
       const { id: webhookId, token: webhookToken, name, iconUrl } = webhook;
 
       const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
-      const apiPayload = {
-        ...this.generateApiPayload(article, {
-          embeds,
-          content,
-        }),
+      const apiPayloads = this.generateApiPayloads(article, {
+        embeds,
+        content,
+      }).map((payload) => ({
+        ...payload,
         username: name,
         avatar_url: iconUrl,
-      };
+      }));
 
-      const result = await this.producer.fetch(apiUrl, {
-        method: "POST",
-        body: JSON.stringify(apiPayload),
-      });
+      const results = await Promise.all(
+        apiPayloads.map((payload) =>
+          this.producer.fetch(apiUrl, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          })
+        )
+      );
 
       return {
-        apiPayload,
-        result,
+        apiPayload: apiPayloads[0],
+        result: results[0],
       };
     } else if (channelId) {
       const apiUrl = this.getChannelApiUrl(channelId);
-      const apiPayload = this.generateApiPayload(article, {
+      const apiPayloads = this.generateApiPayloads(article, {
         embeds: details.mediumDetails.embeds,
         content: details.mediumDetails.content,
       });
 
-      const result = await this.producer.fetch(apiUrl, {
-        method: "POST",
-        body: JSON.stringify(apiPayload),
-      });
+      const results = await Promise.all(
+        apiPayloads.map((payload) =>
+          this.producer.fetch(apiUrl, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          })
+        )
+      );
 
       return {
-        apiPayload: apiPayload as Record<string, unknown>,
-        result,
+        apiPayload: apiPayloads[0] as Record<string, unknown>,
+        result: results[0],
       };
     } else {
       throw new Error("No channel or webhook specified for Discord medium");
@@ -174,27 +182,30 @@ export class DiscordMediumService implements DeliveryMedium {
       feedDetails: { id, url },
     } = details;
     const apiUrl = this.getChannelApiUrl(channelId);
+    const bodies = this.generateApiPayloads(article, {
+      embeds: details.deliverySettings.embeds,
+      content: details.deliverySettings.content,
+    });
 
-    await this.producer.enqueue(
-      apiUrl,
-      {
-        method: "POST",
-        body: JSON.stringify(
-          this.generateApiPayload(article, {
-            embeds: details.deliverySettings.embeds,
-            content: details.deliverySettings.content,
-          })
-        ),
-      },
-      {
-        id: details.deliveryId,
-        articleID: article.flattened.id,
-        feedURL: url,
-        channel: channelId,
-        feedId: id,
-        guildId,
-        emitDeliveryResult: true,
-      }
+    await Promise.all(
+      bodies.map((body) =>
+        this.producer.enqueue(
+          apiUrl,
+          {
+            method: "POST",
+            body: JSON.stringify(body),
+          },
+          {
+            id: details.deliveryId,
+            articleID: article.flattened.id,
+            feedURL: url,
+            channel: channelId,
+            feedId: id,
+            guildId,
+            emitDeliveryResult: true,
+          }
+        )
+      )
     );
 
     return {
@@ -226,28 +237,30 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
 
-    await this.producer.enqueue(
-      apiUrl,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          ...this.generateApiPayload(article, {
-            embeds: details.deliverySettings.embeds,
-            content: details.deliverySettings.content,
-          }),
-          username: webhookUsername,
-          avatar_url: webhookIconUrl,
-        }),
-      },
-      {
-        id: details.deliveryId,
-        articleID: article.flattened.id,
-        feedURL: url,
-        webhookId,
-        feedId: id,
-        guildId,
-        emitDeliveryResult: true,
-      }
+    const bodies = this.generateApiPayloads(article, {
+      embeds: details.deliverySettings.embeds,
+      content: details.deliverySettings.content,
+    });
+
+    await Promise.all(
+      bodies.map((body) =>
+        this.producer.enqueue(
+          apiUrl,
+          {
+            method: "POST",
+            body: JSON.stringify(body),
+          },
+          {
+            id: details.deliveryId,
+            articleID: article.flattened.id,
+            feedURL: url,
+            webhookId,
+            feedId: id,
+            guildId,
+            emitDeliveryResult: true,
+          }
+        )
+      )
     );
 
     return {
@@ -257,97 +270,115 @@ export class DiscordMediumService implements DeliveryMedium {
     };
   }
 
-  private generateApiPayload(
+  private generateApiPayloads(
     article: Article,
     {
       embeds,
       content,
+      splitOptions,
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
+      splitOptions?: DeliveryDetails["deliverySettings"]["splitOptions"];
     }
-  ): DiscordMessageApiPayload {
-    const payload: DiscordMessageApiPayload = {
-      content: replaceTemplateString(article.flattened, content),
-      embeds: embeds?.map((embed) => {
-        let timestamp: string | undefined = undefined;
+  ): DiscordMessageApiPayload[] {
+    let payloadContent = [
+      replaceTemplateString(article.flattened, content) || "",
+    ];
 
-        if (embed.timestamp === "now") {
-          timestamp = new Date().toISOString();
-        } else if (embed.timestamp === "article") {
-          timestamp = article.raw.date?.toISOString();
+    if (splitOptions) {
+      payloadContent = this.articleFormatterService.applySplit(
+        payloadContent[0],
+        {
+          ...splitOptions,
+          isEnabled: true,
         }
+      );
+    }
 
-        return {
-          title: replaceTemplateString(article.flattened, embed.title),
-          description: replaceTemplateString(
-            article.flattened,
-            embed.description
-          ),
-          author: !embed.author?.name
-            ? undefined
-            : {
+    const payloads: DiscordMessageApiPayload[] = payloadContent.map(
+      (contentPart) => ({
+        content: contentPart,
+        embeds: embeds?.map((embed) => {
+          let timestamp: string | undefined = undefined;
+
+          if (embed.timestamp === "now") {
+            timestamp = new Date().toISOString();
+          } else if (embed.timestamp === "article") {
+            timestamp = article.raw.date?.toISOString();
+          }
+
+          return {
+            title: replaceTemplateString(article.flattened, embed.title),
+            description: replaceTemplateString(
+              article.flattened,
+              embed.description
+            ),
+            author: !embed.author?.name
+              ? undefined
+              : {
+                  name: replaceTemplateString(
+                    article.flattened,
+                    embed.author.name
+                  ) as string,
+                  icon_url:
+                    replaceTemplateString(
+                      article.flattened,
+                      embed.author.iconUrl
+                    ) || null,
+                },
+            color: embed.color,
+            footer: !embed.footer?.text
+              ? undefined
+              : {
+                  text: replaceTemplateString(
+                    article.flattened,
+                    embed.footer.text
+                  ) as string,
+                  icon_url:
+                    replaceTemplateString(
+                      article.flattened,
+                      embed.footer.iconUrl
+                    ) || null,
+                },
+            image: !embed.image?.url
+              ? undefined
+              : {
+                  url:
+                    (replaceTemplateString(
+                      article.flattened,
+                      embed.image.url
+                    ) as string) || null,
+                },
+            thumbnail: !embed.thumbnail?.url
+              ? undefined
+              : {
+                  url:
+                    (replaceTemplateString(
+                      article.flattened,
+                      embed.thumbnail.url
+                    ) as string) || null,
+                },
+            url: replaceTemplateString(article.flattened, embed.url) || null,
+            fields: embed.fields
+              ?.filter((field) => field.name && field.value)
+              .map((field) => ({
                 name: replaceTemplateString(
                   article.flattened,
-                  embed.author.name
+                  field.name
                 ) as string,
-                icon_url:
-                  replaceTemplateString(
-                    article.flattened,
-                    embed.author.iconUrl
-                  ) || null,
-              },
-          color: embed.color,
-          footer: !embed.footer?.text
-            ? undefined
-            : {
-                text: replaceTemplateString(
+                value: replaceTemplateString(
                   article.flattened,
-                  embed.footer.text
+                  field.value
                 ) as string,
-                icon_url:
-                  replaceTemplateString(
-                    article.flattened,
-                    embed.footer.iconUrl
-                  ) || null,
-              },
-          image: !embed.image?.url
-            ? undefined
-            : {
-                url:
-                  (replaceTemplateString(
-                    article.flattened,
-                    embed.image.url
-                  ) as string) || null,
-              },
-          thumbnail: !embed.thumbnail?.url
-            ? undefined
-            : {
-                url:
-                  (replaceTemplateString(
-                    article.flattened,
-                    embed.thumbnail.url
-                  ) as string) || null,
-              },
-          url: replaceTemplateString(article.flattened, embed.url) || null,
-          fields: embed.fields
-            ?.filter((field) => field.name && field.value)
-            .map((field) => ({
-              name: replaceTemplateString(
-                article.flattened,
-                field.name
-              ) as string,
-              value: replaceTemplateString(
-                article.flattened,
-                field.value
-              ) as string,
-              inline: field.inline,
-            })),
-          timestamp,
-        };
-      }),
-    };
+                inline: field.inline,
+              })),
+            timestamp,
+          };
+        }),
+      })
+    );
 
-    return payload;
+    return payloads;
   }
 }

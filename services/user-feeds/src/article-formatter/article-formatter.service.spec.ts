@@ -8,73 +8,74 @@ describe("ArticleFormatterService", () => {
     service = new ArticleFormatterService();
   });
 
-  describe("img", () => {
-    it("returns the image link", async () => {
-      const value = '<img src="https://example.com/image.png" />';
+  describe("formatValueForDiscord", () => {
+    describe("img", () => {
+      it("returns the image link", async () => {
+        const value = '<img src="https://example.com/image.png" />';
 
-      const result = await service.formatValueForDiscord(value);
+        const result = await service.formatValueForDiscord(value);
 
-      expect(result).toEqual("https://example.com/image.png");
-    });
-
-    it("excludes the image is strip image optin is true", async () => {
-      const value = 'Hello <img src="https://example.com/image.png" /> World';
-
-      const result = await service.formatValueForDiscord(value, {
-        stripImages: true,
-        formatTables: false,
+        expect(result).toEqual("https://example.com/image.png");
       });
 
-      expect(result).toEqual("Hello World");
-    });
-  });
+      it("excludes the image is strip image optin is true", async () => {
+        const value = 'Hello <img src="https://example.com/image.png" /> World';
 
-  describe("heading", () => {
-    it.each(["h1", "h2", "h3", "h4", "h5", "h6"])(
-      `returns the text bolded for %s`,
-      async (elem) => {
-        const result = await service.formatValueForDiscord(
-          `<${elem}>hello world</${elem}>`
-        );
+        const result = await service.formatValueForDiscord(value, {
+          stripImages: true,
+          formatTables: false,
+        });
+
+        expect(result).toEqual("Hello World");
+      });
+    });
+
+    describe("heading", () => {
+      it.each(["h1", "h2", "h3", "h4", "h5", "h6"])(
+        `returns the text bolded for %s`,
+        async (elem) => {
+          const result = await service.formatValueForDiscord(
+            `<${elem}>hello world</${elem}>`
+          );
+
+          expect(result).toEqual("**hello world**");
+        }
+      );
+    });
+
+    describe("strong", () => {
+      it("returns the text bolded", async () => {
+        const value = "<strong>hello world</strong>";
+
+        const result = await service.formatValueForDiscord(value);
 
         expect(result).toEqual("**hello world**");
-      }
-    );
-  });
-
-  describe("strong", () => {
-    it("returns the text bolded", async () => {
-      const value = "<strong>hello world</strong>";
-
-      const result = await service.formatValueForDiscord(value);
-
-      expect(result).toEqual("**hello world**");
+      });
     });
-  });
 
-  describe("em", () => {
-    it("returns the text italicized", async () => {
-      const value = "<em>hello world</em>";
+    describe("em", () => {
+      it("returns the text italicized", async () => {
+        const value = "<em>hello world</em>";
 
-      const result = await service.formatValueForDiscord(value);
+        const result = await service.formatValueForDiscord(value);
 
-      expect(result).toEqual("*hello world*");
+        expect(result).toEqual("*hello world*");
+      });
     });
-  });
 
-  describe("u", () => {
-    it("returns the text underlined", async () => {
-      const value = "<u>hello world</u>";
+    describe("u", () => {
+      it("returns the text underlined", async () => {
+        const value = "<u>hello world</u>";
 
-      const result = await service.formatValueForDiscord(value);
+        const result = await service.formatValueForDiscord(value);
 
-      expect(result).toEqual("__hello world__");
+        expect(result).toEqual("__hello world__");
+      });
     });
-  });
 
-  describe("table", () => {
-    it("returns tables correctly with table formatting", async () => {
-      const value = `
+    describe("table", () => {
+      it("returns tables correctly with table formatting", async () => {
+        const value = `
       <table>
         <tr>
           <th>Company</th>
@@ -93,22 +94,22 @@ describe("ArticleFormatterService", () => {
         </tr>
       </table>`;
 
-      const result = await service.formatValueForDiscord(value, {
-        formatTables: true,
-        stripImages: false,
-      });
+        const result = await service.formatValueForDiscord(value, {
+          formatTables: true,
+          stripImages: false,
+        });
 
-      expect(result).toEqual(
-        `
+        expect(result).toEqual(
+          `
 COMPANY                      CONTACT           COUNTRY
 Alfreds Futterkiste          Maria Anders      Germany
 Centro comercial Moctezuma   Francisco Chang   Mexico`.trim()
-      );
+        );
+      });
     });
-  });
 
-  it("works", async () => {
-    const val = `
+    it("works", async () => {
+      const val = `
     <table>
       <tr>
         <td>
@@ -127,13 +128,133 @@ Centro comercial Moctezuma   Francisco Chang   Mexico`.trim()
       </tr>
     </table>`;
 
-    const result = await service.formatValueForDiscord(val);
+      const result = await service.formatValueForDiscord(val);
 
-    expect(result).toEqual(
-      `
+      expect(result).toEqual(
+        `
 Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/FortniteStatusBot to r/FORTnITE
 [link] [comments]
 `.trim()
-    );
+      );
+    });
+  });
+
+  describe("applySplit", () => {
+    it("does not apply split if split is not enabled", () => {
+      const result = service.applySplit("hello world", {
+        isEnabled: false,
+      });
+
+      expect(result).toEqual(["hello world"]);
+    });
+
+    it("applies split with a low limit", () => {
+      const result = service.applySplit("hello world", {
+        limit: 4,
+        isEnabled: true,
+        appendChar: "",
+        prependChar: "",
+      });
+
+      expect(result).toEqual(["hell", "o", "worl", "d"]);
+    });
+
+    it("applies split with a high limit", () => {
+      const result = service.applySplit("hello world", {
+        limit: 100,
+        isEnabled: true,
+        appendChar: "",
+        prependChar: "",
+      });
+
+      expect(result).toEqual(["hello world"]);
+    });
+
+    it("applies split with a high limit and append char", () => {
+      const result = service.applySplit("hello world", {
+        limit: 100,
+        isEnabled: true,
+        appendChar: "!",
+        prependChar: "",
+      });
+
+      expect(result).toEqual(["hello world!"]);
+    });
+
+    it("applies split with a high limit and prepend char", () => {
+      const result = service.applySplit("hello world", {
+        limit: 100,
+        isEnabled: true,
+        appendChar: "",
+        prependChar: "!",
+      });
+
+      expect(result).toEqual(["!hello world"]);
+    });
+
+    it("applies split with a high limit and append and prepend char", () => {
+      const result = service.applySplit("hello world", {
+        limit: 100,
+        isEnabled: true,
+        appendChar: "!",
+        prependChar: "!",
+      });
+
+      expect(result).toEqual(["!hello world!"]);
+    });
+
+    it("applies split with a high limit and append and prepend char and multiple lines", () => {
+      const result = service.applySplit("hello world\nhello world", {
+        limit: 16,
+        isEnabled: true,
+        appendChar: "!",
+        prependChar: "!",
+      });
+
+      expect(result).toEqual(["!hello world", "hello world!"]);
+    });
+
+    it("applies split with a high limit and append and prepend char and multiple lines and a long word", () => {
+      const result = service.applySplit(
+        "hello world\nhello world\nsupercalifragilisticexpialidocious",
+        {
+          limit: 16,
+          isEnabled: true,
+          appendChar: "!",
+          prependChar: "!",
+        }
+      );
+
+      expect(result).toEqual([
+        "!hello world",
+        "hello world",
+        "supercalifragi",
+        "listicexpialid",
+        "ocious!",
+      ]);
+    });
+
+    it("applies split with a high limit and append and prepend char and multiple lines and a long word and a long word at the end", () => {
+      const result = service.applySplit(
+        "hello world\nhello world\nsupercalifragilisticexpialidocious\nsupercalifragilisticexpialidocious",
+        {
+          limit: 16,
+          isEnabled: true,
+          appendChar: "!",
+          prependChar: "!",
+        }
+      );
+
+      expect(result).toEqual([
+        "!hello world",
+        "hello world",
+        "supercalifragi",
+        "listicexpialid",
+        "ocious",
+        "supercalifragi",
+        "listicexpialid",
+        "ocious!",
+      ]);
+    });
   });
 });

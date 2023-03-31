@@ -1,17 +1,37 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
-  IsNumber,
+  IsInt,
   IsObject,
   IsOptional,
-  Min,
+  IsPositive,
+  IsString,
   ValidateNested,
 } from "class-validator";
 
 class SplitOptions {
-  @IsNumber()
-  @Min(100)
-  maxCharacters: number;
+  @IsString()
+  @IsOptional()
+  splitChar?: string;
+
+  @IsString()
+  @IsOptional()
+  appendChar?: string;
+
+  @IsString()
+  @IsOptional()
+  prependChar?: string;
+
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isEnabled?: boolean;
 }
 
 export class FormatOptions {
