@@ -75,9 +75,9 @@ export const discordMessageFormSchema = object({
   content: string().max(2000),
   embeds: array().of(discordMessageEmbedFormSchema),
   splitOptions: object({
-    splitChar: string().max(10).nullable().default(null),
-    appendChar: string().max(10).nullable().default(null),
-    prependChar: string().max(10).nullable().default(null),
+    splitChar: string().max(10).optional().nullable(),
+    appendChar: string().max(10).optional().nullable(),
+    prependChar: string().max(10).optional().nullable(),
   })
     .optional()
     .nullable()

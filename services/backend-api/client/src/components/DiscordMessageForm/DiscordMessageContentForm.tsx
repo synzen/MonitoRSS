@@ -35,12 +35,12 @@ export const DiscordMessageContentForm = ({ control, errors }: Props) => {
     name: `splitOptions`,
   });
   const { t } = useTranslation();
-  const [accordionIndexes, setAccordionIndexes] = useState<number[]>([]);
+  const [accordionIndex, setAccordionIndex] = useState<number>(-1);
   const isSplitOptionsEnabled = !!splitOptions;
 
   useEffect(() => {
     if (!isSplitOptionsEnabled) {
-      setAccordionIndexes([]);
+      setAccordionIndex(-1);
     }
   }, [isSplitOptionsEnabled]);
 
@@ -49,12 +49,12 @@ export const DiscordMessageContentForm = ({ control, errors }: Props) => {
       return;
     }
 
-    if (accordionIndexes.includes(0)) {
-      setAccordionIndexes([]);
+    if (accordionIndex === 0) {
+      setAccordionIndex(-1);
     } else {
-      setAccordionIndexes([0]);
+      setAccordionIndex(0);
     }
-  }, [isSplitOptionsEnabled]);
+  }, [isSplitOptionsEnabled, accordionIndex]);
 
   return (
     <Stack spacing={8} divider={<StackDivider />}>
@@ -117,7 +117,7 @@ export const DiscordMessageContentForm = ({ control, errors }: Props) => {
                 {t("components.discordMessageForm.splitContentCheckboxDescription")}
               </FormHelperText>
             </FormControl>
-            <Accordion allowToggle index={accordionIndexes}>
+            <Accordion allowToggle index={accordionIndex}>
               <AccordionItem isDisabled={!isSplitOptionsEnabled}>
                 <AccordionButton onClick={onClickSplitSettingsAccordion}>
                   <HStack textAlign="left" spacing={4} flex="1">
