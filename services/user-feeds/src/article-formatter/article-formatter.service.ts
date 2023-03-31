@@ -7,7 +7,7 @@ import { FormatOptions } from "./types";
 export class ArticleFormatterService {
   async formatArticleForDiscord(
     article: Article,
-    options: FormatOptions
+    options: Omit<FormatOptions, "split">
   ): Promise<Article> {
     const newRecord: Article = {
       flattened: {

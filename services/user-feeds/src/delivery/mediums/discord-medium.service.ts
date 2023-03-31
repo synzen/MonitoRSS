@@ -62,7 +62,8 @@ export class DiscordMediumService implements DeliveryMedium {
     apiPayload: Record<string, unknown>;
     result: JobResponse<unknown> | JobResponseError;
   }> {
-    const { channel, webhook, embeds, content } = details.mediumDetails;
+    const { channel, webhook, embeds, content, splitOptions } =
+      details.mediumDetails;
     const channelId = channel?.id;
     const webhookId = webhook?.id;
 
@@ -73,6 +74,7 @@ export class DiscordMediumService implements DeliveryMedium {
       const apiPayloads = this.generateApiPayloads(article, {
         embeds,
         content,
+        splitOptions,
       }).map((payload) => ({
         ...payload,
         username: name,

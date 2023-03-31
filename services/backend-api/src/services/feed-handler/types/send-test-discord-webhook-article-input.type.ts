@@ -21,6 +21,15 @@ export interface SendTestDiscordWebhookArticleInput {
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];
+      formatter?: {
+        stripImages?: boolean;
+        formatTables?: boolean;
+      };
+      splitOptions?: {
+        splitChar?: string;
+        appendChar?: string;
+        prependChar?: string;
+      };
     };
   };
 }

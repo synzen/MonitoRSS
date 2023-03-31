@@ -239,6 +239,8 @@ export class FeedConnectionsDiscordChannelsService {
         },
         content: castDiscordContentForMedium(connection.details.content),
         embeds: castDiscordEmbedsForMedium(connection.details.embeds),
+        formatter: connection.details.formatter,
+        splitOptions: connection.splitOptions,
       },
     } as const;
 

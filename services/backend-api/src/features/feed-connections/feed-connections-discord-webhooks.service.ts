@@ -271,6 +271,8 @@ export class FeedConnectionsDiscordWebhooksService {
           iconUrl: connection.details.webhook.iconUrl,
           token: connection.details.webhook.token,
         },
+        formatter: connection.details.formatter,
+        splitOptions: connection.splitOptions,
       },
     } as const;
 
