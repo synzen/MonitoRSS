@@ -40,6 +40,9 @@ describe("FeedConnectionsDiscordChannelsController", () => {
         filters: {
           expression: {},
         },
+        splitOptions: {
+          splitChar: "s",
+        },
         details: {
           formatter: {
             formatTables: true,
@@ -82,6 +85,9 @@ describe("FeedConnectionsDiscordChannelsController", () => {
         key: FeedConnectionType.DiscordChannel,
         filters: {
           expression: {},
+        },
+        splitOptions: {
+          splitChar: "s",
         },
         details: {
           channel: {
@@ -142,6 +148,9 @@ describe("FeedConnectionsDiscordChannelsController", () => {
       name,
       filters: {
         expression: {},
+      },
+      splitOptions: {
+        splitChar: "s",
       },
       details: {
         formatter: {

@@ -39,6 +39,20 @@ class DetailsDto {
   embeds: DiscordEmbed[];
 }
 
+class SplitOptions {
+  @IsString()
+  @IsOptional()
+  appendChar?: string;
+
+  @IsString()
+  @IsOptional()
+  prependChar?: string;
+
+  @IsString()
+  @IsOptional()
+  splitChar?: string;
+}
+
 export class CreateDiscordChannelConnectionOutputDto {
   @IsString()
   id: string;
@@ -70,4 +84,10 @@ export class CreateDiscordChannelConnectionOutputDto {
   @Type(() => DetailsDto)
   @ValidateNested()
   details: DetailsDto;
+
+  @IsObject()
+  @Type(() => SplitOptions)
+  @ValidateNested()
+  @IsOptional()
+  splitOptions?: SplitOptions;
 }

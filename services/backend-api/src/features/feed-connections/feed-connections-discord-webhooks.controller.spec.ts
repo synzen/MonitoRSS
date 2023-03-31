@@ -38,6 +38,9 @@ describe("FeedConnectionsController", () => {
         filters: {
           expression: {},
         },
+        splitOptions: {
+          splitChar: "s",
+        },
         details: {
           type: FeedConnectionType.DiscordWebhook,
           webhook: {
@@ -84,6 +87,9 @@ describe("FeedConnectionsController", () => {
         key: FeedConnectionType.DiscordWebhook,
         filters: {
           expression: {},
+        },
+        splitOptions: {
+          splitChar: "s",
         },
         details: {
           webhook: {
@@ -134,6 +140,9 @@ describe("FeedConnectionsController", () => {
       name,
       filters: {
         expression: {},
+      },
+      splitOptions: {
+        splitChar: "s",
       },
       details: {
         type: FeedConnectionType.DiscordWebhook,
@@ -190,6 +199,9 @@ describe("FeedConnectionsController", () => {
         key: FeedConnectionType.DiscordWebhook,
         filters: {
           expression: {},
+        },
+        splitOptions: {
+          splitChar: "s",
         },
         details: {
           webhook: {

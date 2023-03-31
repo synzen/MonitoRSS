@@ -75,6 +75,7 @@ export class FeedConnectionsDiscordWebhooksController {
       name: createdConnection.name,
       key: FeedConnectionType.DiscordWebhook,
       filters: createdConnection.filters,
+      splitOptions: createdConnection.splitOptions,
       details: {
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
@@ -187,6 +188,7 @@ export class FeedConnectionsDiscordWebhooksController {
       name: updatedConnection.name,
       key: FeedConnectionType.DiscordWebhook,
       filters: updatedConnection.filters,
+      splitOptions: updatedConnection.splitOptions,
       details: {
         embeds: updatedConnection.details.embeds,
         content: updatedConnection.details.content,

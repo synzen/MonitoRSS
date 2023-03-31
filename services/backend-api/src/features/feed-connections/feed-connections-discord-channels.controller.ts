@@ -79,6 +79,7 @@ export class FeedConnectionsDiscordChannelsController {
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
       },
+      splitOptions: createdConnection.splitOptions,
     };
   }
 
@@ -191,6 +192,7 @@ export class FeedConnectionsDiscordChannelsController {
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
       },
+      splitOptions: createdConnection.splitOptions,
     };
   }
 
