@@ -28,6 +28,11 @@ export interface UpdateDiscordChannelConnectionInput {
       footerText?: string | null;
       footerIconUrl?: string | null;
     }>;
+    splitOptions?: {
+      splitChar?: string;
+      appendChar?: string;
+      prependChar?: string;
+    } | null;
   };
 }
 

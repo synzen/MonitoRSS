@@ -291,6 +291,7 @@ export class UserFeedsController {
         },
         filters: con.filters,
         disabledCode: con.disabledCode,
+        splitOptions: con.splitOptions,
       }));
 
     const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
@@ -307,6 +308,7 @@ export class UserFeedsController {
         },
         filters: con.filters,
         disabledCode: con.disabledCode,
+        splitOptions: con.splitOptions,
       }));
 
     const { refreshRateSeconds } =

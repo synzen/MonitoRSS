@@ -268,15 +268,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <BoxConstrained.Container>
                 <MessageTabSection
                   feedId={feedId}
-                  onMessageUpdated={({ content, embeds }) =>
-                    onUpdate({
-                      content,
-                      embeds,
-                    })
-                  }
+                  onMessageUpdated={(data) => onUpdate(data)}
                   defaultMessageValues={{
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
+                    splitOptions: connection?.splitOptions || null,
                   }}
                   articleFormatter={{
                     options: {

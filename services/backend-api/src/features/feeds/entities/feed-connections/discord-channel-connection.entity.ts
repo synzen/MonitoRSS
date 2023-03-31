@@ -29,22 +29,29 @@ const ChannelSchema = SchemaFactory.createForClass(Channel);
 @Schema({
   timestamps: false,
   _id: false,
+  minimize: false,
 })
 class SplitOptions {
   @Prop({
     required: false,
+    default: null,
+    type: String,
   })
-  splitChar?: string;
+  splitChar?: string | null;
 
   @Prop({
     required: false,
+    default: null,
+    type: String,
   })
-  appendChar?: string;
+  appendChar?: string | null;
 
   @Prop({
     required: false,
+    default: null,
+    type: String,
   })
-  prependChar?: string;
+  prependChar?: string | null;
 }
 
 const SplitOptionsSchema = SchemaFactory.createForClass(SplitOptions);

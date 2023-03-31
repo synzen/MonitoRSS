@@ -97,7 +97,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Color</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Color
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!colorError}>
                 <FormLabel variant="inline">Color</FormLabel>
@@ -150,7 +152,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Author</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Author
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!authorNameError}>
                 <FormLabel variant="inline">Name</FormLabel>
@@ -191,7 +195,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Title</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Title
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!titleError}>
                 <FormLabel variant="inline">Text</FormLabel>
@@ -222,7 +228,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Description</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Description
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!descriptionError}>
                 <FormLabel variant="inline">Text</FormLabel>
@@ -243,7 +251,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Image</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Image
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!imageUrlError}>
                 <FormLabel variant="inline">Image URL</FormLabel>
@@ -264,7 +274,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Thumbnail</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Thumbnail
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!thumbnailUrlError}>
                 <FormLabel variant="inline">Image URL</FormLabel>
@@ -285,7 +297,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Footer</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Footer
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <FormControl isInvalid={!!footerTextError}>
                 <FormLabel variant="inline">Text</FormLabel>
@@ -316,7 +330,9 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm">Timestamp</Heading>
+            <Heading size="sm" fontWeight={600}>
+              Timestamp
+            </Heading>
             <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
               <Controller
                 name={`embeds.${index}.timestamp`}

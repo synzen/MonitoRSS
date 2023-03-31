@@ -40,6 +40,11 @@ export interface UpdateDiscordWebhookConnectionInput {
       url?: string | null;
       description?: string | null;
     }>;
+    splitOptions?: {
+      splitChar?: string;
+      appendChar?: string;
+      prependChar?: string;
+    } | null;
   };
 }
 

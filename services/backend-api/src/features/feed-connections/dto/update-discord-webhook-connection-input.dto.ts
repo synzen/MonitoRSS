@@ -32,15 +32,18 @@ class FiltersDto {
 class SplitOptions {
   @IsString()
   @IsOptional()
-  appendChar?: string;
+  @ValidateIf((v) => v !== null)
+  appendChar?: string | null;
 
   @IsString()
   @IsOptional()
-  prependChar?: string;
+  @ValidateIf((v) => v !== null)
+  prependChar?: string | null;
 
   @IsString()
   @IsOptional()
-  splitChar?: string;
+  @ValidateIf((v) => v !== null)
+  splitChar?: string | null;
 }
 
 export class UpdateDiscordWebhookConnectionInputDto {

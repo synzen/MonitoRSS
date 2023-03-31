@@ -40,17 +40,11 @@ class DetailsDto {
 }
 
 class SplitOptions {
-  @IsString()
-  @IsOptional()
-  appendChar?: string;
+  appendChar?: string | null;
 
-  @IsString()
-  @IsOptional()
-  prependChar?: string;
+  prependChar?: string | null;
 
-  @IsString()
-  @IsOptional()
-  splitChar?: string;
+  splitChar?: string | null;
 }
 
 export class CreateDiscordChannelConnectionOutputDto {

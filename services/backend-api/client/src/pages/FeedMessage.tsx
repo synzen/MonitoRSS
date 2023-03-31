@@ -51,6 +51,7 @@ const FeedMessage: React.FC = () => {
               defaultValues={{
                 content: feed?.text || "",
                 embeds: feed?.embeds,
+                splitOptions: null,
               }}
               onClickSave={onFormSaved}
             />

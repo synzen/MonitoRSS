@@ -23,9 +23,9 @@ export interface SendTestDiscordChannelArticleInput {
         formatTables?: boolean;
       };
       splitOptions?: {
-        splitChar?: string;
-        appendChar?: string;
-        prependChar?: string;
+        splitChar?: string | null;
+        appendChar?: string | null;
+        prependChar?: string | null;
       };
     };
   };

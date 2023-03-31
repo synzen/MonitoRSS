@@ -219,7 +219,7 @@
       "formatTables": "Format tables",
       "formatTablesDescription": "If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing (wrap text with triple backticks, ```text here``` for exmple).",
       "splitMessage": "Split message",
-      "splitMessageDescription": "If enabled, messages will be split into multiple messages if they are too long. Otherwise, it will attempt to be sent as one message with truncated text.",
+      "splitMessageDescription": "If enabled, messages will be split into multiple messages if they are too long. Otherwise, it will attempt to be sent as one message with truncated text with the maximum possible number of characters.",
       "resetButton": "Reset",
       "saveButton": "Save"
     },
@@ -251,7 +251,17 @@
       "textSectionTitle": "Text",
       "embedSectionTitle": "Embeds",
       "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {{empty}}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
-      "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field)."
+      "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field).",
+      "contentSectionTitle": "Content",
+      "splitContentSectionTitle": "Split Content",
+      "splitContentCheckboxLabel": "Enable",
+      "splitContentCheckboxDescription": "If enabled, the message will be split into multiple messages if it is too long. Otherwise, it will attempt to be sent as one message with the maximum possible number of characters.",
+      "splitContentSplitCharLabel": "Split character",
+      "splitContentSplitCharDescription": "The character to split the text content with. Defaults to '.' (a period).",
+      "splitContentAppendCharLabel": "Append character",
+      "splitContentAppendCharDescription": "The character to append to the end of the last message after the initial message has been split. Default is nothing.",
+      "splitContentPrependCharLabel": "Prepend character",
+      "splitContentPrependCharDescription": "The character to prepend to the beginning of the first message after the initial message has been split. Default is nothing."
     },
     "pageContentV2": {
       "logout": "Logout"

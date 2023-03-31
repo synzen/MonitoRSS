@@ -129,11 +129,7 @@ export class FeedConnectionsDiscordChannelsService {
       };
     }
 
-    if (!!updates.splitOptions) {
-      // @ts-ignore
-      setRecordDetails["connections.discordChannels.$.splitOptions"] =
-        updates.splitOptions;
-    }
+    console.log("Service split optino", updates.splitOptions);
 
     if (updates.filters) {
       const { errors } = await this.feedHandlerService.validateFilters({
@@ -163,6 +159,9 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.disabledCode && {
           [`connections.discordChannels.$.disabledCode`]: updates.disabledCode,
+        }),
+        ...(updates.splitOptions && {
+          [`connections.discordChannels.$.splitOptions`]: updates.splitOptions,
         }),
       },
       $unset: {

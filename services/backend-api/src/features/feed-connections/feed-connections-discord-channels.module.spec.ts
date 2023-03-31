@@ -224,6 +224,10 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
           },
           embeds: [],
           content: "content",
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
         },
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -540,6 +544,10 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
           },
           embeds: [],
           content: "content",
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
         },
         createdAt: new Date(),
         updatedAt: new Date(),

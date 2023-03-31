@@ -533,6 +533,33 @@ describe("UserFeedsModule", () => {
       });
       expect(statusCode).toBe(HttpStatus.OK);
     });
+
+    it("works with split", async () => {
+      const { statusCode, body } = await app.inject({
+        method: "PATCH",
+        url: `/user-feeds/${feed._id.toHexString()}`,
+        payload: {
+          splitOptions: {
+            splitChar: null,
+            appendChar: null,
+            prependChar: null,
+          },
+        },
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.OK);
+
+      expect(JSON.parse(body)).toMatchObject({
+        result: {
+          splitOptions: {
+            splitChar: null,
+            appendChar: null,
+            prependChar: null,
+          },
+        },
+      });
+    });
   });
 
   describe("GET /", () => {

@@ -74,6 +74,14 @@ export const discordMessageEmbedFormSchema = object().shape({
 export const discordMessageFormSchema = object({
   content: string().max(2000),
   embeds: array().of(discordMessageEmbedFormSchema),
+  splitOptions: object({
+    splitChar: string().max(10).nullable().default(null),
+    appendChar: string().max(10).nullable().default(null),
+    prependChar: string().max(10).nullable().default(null),
+  })
+    .optional()
+    .nullable()
+    .default(undefined),
 });
 
 export type DiscordMessageFormData = InferType<typeof discordMessageFormSchema>;

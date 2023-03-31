@@ -86,6 +86,7 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
       const toSubmit = {
         content: formData.content?.trim(),
         embeds: embedsWithoutEmptyObjects,
+        splitOptions: formData.splitOptions || null,
       };
 
       await onClickSave(toSubmit);
@@ -115,7 +116,7 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
   return (
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={12}>
+        <Stack spacing={24}>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
             <Text>{t("components.discordMessageForm.textSectionDescription")}</Text>

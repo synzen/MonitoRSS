@@ -46,6 +46,14 @@ export const FeedConnectionSchema = object({
   name: string().required(),
   key: string().oneOf(Object.values(FeedConnectionType)).required(),
   disabledCode: string().oneOf(Object.values(FeedConnectionDisabledCode)).optional(),
+  splitOptions: object({
+    splitChar: string().nullable(),
+    appendChar: string().nullable(),
+    prependChar: string().nullable(),
+  })
+    .optional()
+    .nullable()
+    .default(null),
   filters: object({
     expression: object(),
   })

@@ -298,6 +298,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                   defaultMessageValues={{
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
+                    splitOptions: connection?.splitOptions || null,
                   }}
                   articleFormatter={{
                     options: {
