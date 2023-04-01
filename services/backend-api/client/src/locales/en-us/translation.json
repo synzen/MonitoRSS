@@ -250,11 +250,10 @@
     "discordMessageForm": {
       "textSectionTitle": "Text",
       "embedSectionTitle": "Embeds",
-      "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {{empty}}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field).",
       "contentSectionTitle": "Content",
+      "contentSectionDescription": "You can use the placeholders listed above. A special placeholder, {{empty}}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "splitContentSectionTitle": "Split Content",
-      "splitContentCheckboxLabel": "Enable",
       "splitContentCheckboxDescription": "If enabled, the message will be split into multiple messages if it is too long. Otherwise, it will attempt to be sent as one message with the maximum possible number of characters.",
       "splitContentSettingsLabel": "Split Settings",
       "splitContentSplitCharLabel": "Split character",
@@ -262,7 +261,11 @@
       "splitContentAppendCharLabel": "Append character",
       "splitContentAppendCharDescription": "The character to append to the end of the last message after the initial message has been split. Default is nothing.",
       "splitContentPrependCharLabel": "Prepend character",
-      "splitContentPrependCharDescription": "The character to prepend to the beginning of the first message after the initial message has been split. Default is nothing."
+      "splitContentPrependCharDescription": "The character to prepend to the beginning of the first message after the initial message has been split. Default is nothing.",
+      "formatTablesSectionTitle": "Format Tables",
+      "formatTablesCheckboxDescription": "If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping the table with triple backticks (```table here``` for example).",
+      "stripImagesSectionTitle": "Strip Images",
+      "stripImagesCheckboxDescription": "If enabled, all images with \"src\" attributes found in the message content will be removed."
     },
     "pageContentV2": {
       "logout": "Logout"

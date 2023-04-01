@@ -83,10 +83,11 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
         return newEmbed;
       });
 
-      const toSubmit = {
+      const toSubmit: DiscordMessageFormData = {
         content: formData.content?.trim(),
         embeds: embedsWithoutEmptyObjects,
         splitOptions: formData.splitOptions || null,
+        formatter: formData.formatter,
       };
 
       await onClickSave(toSubmit);
@@ -119,7 +120,6 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
         <Stack spacing={24}>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
-            <Text>{t("components.discordMessageForm.textSectionDescription")}</Text>
             <DiscordMessageContentForm control={control} errors={errors} />
           </Stack>
           <Stack spacing={4}>
@@ -144,17 +144,19 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
               <TabPanels>
                 {embeds?.map((embed, index) => (
                   <TabPanel key={embed.id}>
-                    <Flex justifyContent="flex-end">
-                      <Button
-                        colorScheme="red"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onRemoveEmbed(index)}
-                      >
-                        {t("features.feedConnections.components.embedForm.deleteButtonText")}
-                      </Button>
-                    </Flex>
-                    <DiscordMessageEmbedForm index={index} />
+                    <Stack spacing={8}>
+                      <Flex justifyContent="flex-end">
+                        <Button
+                          colorScheme="red"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRemoveEmbed(index)}
+                        >
+                          {t("features.feedConnections.components.embedForm.deleteButtonText")}
+                        </Button>
+                      </Flex>
+                      <DiscordMessageEmbedForm index={index} />
+                    </Stack>
                   </TabPanel>
                 ))}
               </TabPanels>

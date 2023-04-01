@@ -33,6 +33,10 @@ export interface UpdateDiscordChannelConnectionInput {
       appendChar?: string | null;
       prependChar?: string | null;
     } | null;
+    formatter?: {
+      formatTables?: boolean | null;
+      stripImages?: boolean | null;
+    } | null;
   };
 }
 

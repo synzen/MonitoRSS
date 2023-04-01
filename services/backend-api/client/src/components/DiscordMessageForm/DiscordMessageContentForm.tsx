@@ -5,16 +5,15 @@ import {
   AccordionItem,
   AccordionPanel,
   Box,
-  Checkbox,
   FormControl,
   FormErrorMessage,
   FormHelperText,
   FormLabel,
-  Heading,
   HStack,
   Input,
   Stack,
   StackDivider,
+  Switch,
   Text,
   Textarea,
 } from "@chakra-ui/react";
@@ -38,6 +37,8 @@ export const DiscordMessageContentForm = ({ control, errors }: Props) => {
   const [accordionIndex, setAccordionIndex] = useState<number>(-1);
   const isSplitOptionsEnabled = !!splitOptions;
 
+  console.log(splitOptions);
+
   useEffect(() => {
     if (!isSplitOptionsEnabled) {
       setAccordionIndex(-1);
@@ -58,158 +59,217 @@ export const DiscordMessageContentForm = ({ control, errors }: Props) => {
 
   return (
     <Stack spacing={8} divider={<StackDivider />}>
-      <Box>
+      <FormControl isInvalid={!!errors.content}>
         <Stack
           direction={{ base: "column", md: "row" }}
           spacing={{ base: "1.5", md: "8" }}
           justify="space-between"
         >
-          <Heading size="sm" fontWeight={600}>
-            {t("components.discordMessageForm.contentSectionTitle")}
-          </Heading>
-          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
-            <FormControl isInvalid={!!errors.content}>
-              <Controller
-                name="content"
-                control={control}
-                render={({ field }) => (
-                  <Textarea aria-label="Text content" spellCheck={false} {...field} />
-                )}
-              />
-              {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
-            </FormControl>
+          <Box>
+            <FormLabel>{t("components.discordMessageForm.contentSectionTitle")}</FormLabel>
+            <FormHelperText>
+              {t("components.discordMessageForm.contentSectionDescription")}
+            </FormHelperText>
+          </Box>
+          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Controller
+              name="content"
+              control={control}
+              render={({ field }) => (
+                <Textarea size="sm" aria-label="Text content" spellCheck={false} {...field} />
+              )}
+            />
+            {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
           </Stack>
         </Stack>
-      </Box>
-      <Box>
-        <Stack
-          direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
-          justify="space-between"
-        >
-          <Heading size="sm" fontWeight={600}>
+      </FormControl>
+      <Stack
+        direction={{ base: "column", md: "row" }}
+        spacing={{ base: "1.5", md: "8" }}
+        justify="space-between"
+      >
+        <FormControl>
+          <FormLabel htmlFor="splitCheckbox">
             {t("components.discordMessageForm.splitContentSectionTitle")}
-          </Heading>
-          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
-            <FormControl>
-              <Controller
-                name="splitOptions"
-                control={control}
-                render={({ field }) => {
-                  return (
-                    <Checkbox
-                      name={field.name}
-                      isChecked={!!field.value}
-                      onChange={(e) => {
-                        if (e.currentTarget.checked) {
-                          field.onChange({});
-                        } else {
-                          field.onChange(null);
-                        }
-                      }}
-                    >
-                      {t("components.discordMessageForm.splitContentCheckboxLabel")}
-                    </Checkbox>
-                  );
-                }}
-              />
-              <FormHelperText>
-                {t("components.discordMessageForm.splitContentCheckboxDescription")}
-              </FormHelperText>
-            </FormControl>
-            <Accordion allowToggle index={accordionIndex}>
-              <AccordionItem isDisabled={!isSplitOptionsEnabled}>
-                <AccordionButton onClick={onClickSplitSettingsAccordion}>
-                  <HStack textAlign="left" spacing={4} flex="1">
-                    <SettingsIcon />
-                    <Text>{t("components.discordMessageForm.splitContentSettingsLabel")}</Text>
-                  </HStack>
-                  <AccordionIcon />
-                </AccordionButton>
-                <AccordionPanel>
-                  <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
-                    <FormControl>
-                      <FormLabel>
-                        {t("components.discordMessageForm.splitContentSplitCharLabel")}
-                      </FormLabel>
-                      <Controller
-                        name="splitOptions.splitChar"
-                        control={control}
-                        render={({ field }) => (
-                          <Input
-                            {...field}
-                            size="sm"
-                            aria-label="Split character"
-                            spellCheck={false}
-                            disabled={!splitOptions}
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              field.onChange(e.target.value || null);
-                            }}
-                          />
-                        )}
-                      />
-                      <FormHelperText>
-                        {t("components.discordMessageForm.splitContentSplitCharDescription")}
-                      </FormHelperText>
-                    </FormControl>
-                    <FormControl>
-                      <FormLabel>
-                        {t("components.discordMessageForm.splitContentAppendCharLabel")}
-                      </FormLabel>
-                      <Controller
-                        name="splitOptions.appendChar"
-                        control={control}
-                        render={({ field }) => (
-                          <Input
-                            {...field}
-                            size="sm"
-                            aria-label="Append character"
-                            spellCheck={false}
-                            value={field.value || ""}
-                            disabled={!splitOptions}
-                            onChange={(e) => {
-                              field.onChange(e.target.value || null);
-                            }}
-                          />
-                        )}
-                      />
-                      <FormHelperText>
-                        {t("components.discordMessageForm.splitContentAppendCharDescription")}
-                      </FormHelperText>
-                    </FormControl>
-                    <FormControl>
-                      <FormLabel>
-                        {t("components.discordMessageForm.splitContentPrependCharLabel")}
-                      </FormLabel>
-                      <Controller
-                        name="splitOptions.prependChar"
-                        control={control}
-                        render={({ field }) => (
-                          <Input
-                            {...field}
-                            size="sm"
-                            aria-label="Prepend character"
-                            spellCheck={false}
-                            value={field.value || ""}
-                            disabled={!splitOptions}
-                            onChange={(e) => {
-                              field.onChange(e.target.value || null);
-                            }}
-                          />
-                        )}
-                      />
-                      <FormHelperText>
-                        {t("components.discordMessageForm.splitContentPrependCharDescription")}
-                      </FormHelperText>
-                    </FormControl>
-                  </Stack>
-                </AccordionPanel>
-              </AccordionItem>
-            </Accordion>
+          </FormLabel>
+          <FormHelperText>
+            {t("components.discordMessageForm.splitContentCheckboxDescription")}
+          </FormHelperText>
+        </FormControl>
+        <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <FormControl id="splitCheckbox">
+            <Controller
+              name="splitOptions"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Switch
+                    name={field.name}
+                    isChecked={!!field.value}
+                    onChange={(e) => {
+                      if (e.currentTarget.checked) {
+                        field.onChange({});
+                      } else {
+                        field.onChange(null);
+                      }
+                    }}
+                  />
+                );
+              }}
+            />
+          </FormControl>
+          <Accordion allowToggle index={accordionIndex}>
+            <AccordionItem isDisabled={!isSplitOptionsEnabled}>
+              <AccordionButton onClick={onClickSplitSettingsAccordion}>
+                <HStack textAlign="left" spacing={4} flex="1">
+                  <SettingsIcon />
+                  <Text>{t("components.discordMessageForm.splitContentSettingsLabel")}</Text>
+                </HStack>
+                <AccordionIcon />
+              </AccordionButton>
+              <AccordionPanel>
+                <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+                  <FormControl>
+                    <FormLabel>
+                      {t("components.discordMessageForm.splitContentSplitCharLabel")}
+                    </FormLabel>
+                    <Controller
+                      name="splitOptions.splitChar"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          size="sm"
+                          aria-label="Split character"
+                          spellCheck={false}
+                          disabled={!splitOptions}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            field.onChange(e.target.value || null);
+                          }}
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      {t("components.discordMessageForm.splitContentSplitCharDescription")}
+                    </FormHelperText>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>
+                      {t("components.discordMessageForm.splitContentAppendCharLabel")}
+                    </FormLabel>
+                    <Controller
+                      name="splitOptions.appendChar"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          size="sm"
+                          aria-label="Append character"
+                          spellCheck={false}
+                          value={field.value || ""}
+                          disabled={!splitOptions}
+                          onChange={(e) => {
+                            field.onChange(e.target.value || null);
+                          }}
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      {t("components.discordMessageForm.splitContentAppendCharDescription")}
+                    </FormHelperText>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>
+                      {t("components.discordMessageForm.splitContentPrependCharLabel")}
+                    </FormLabel>
+                    <Controller
+                      name="splitOptions.prependChar"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          size="sm"
+                          aria-label="Prepend character"
+                          spellCheck={false}
+                          value={field.value || ""}
+                          disabled={!splitOptions}
+                          onChange={(e) => {
+                            field.onChange(e.target.value || null);
+                          }}
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      {t("components.discordMessageForm.splitContentPrependCharDescription")}
+                    </FormHelperText>
+                  </FormControl>
+                </Stack>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+        </Stack>
+      </Stack>
+      <FormControl>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: "1.5", md: "8" }}
+          justify="space-between"
+        >
+          <Box>
+            <FormLabel>{t("components.discordMessageForm.formatTablesSectionTitle")}</FormLabel>
+            <FormHelperText>
+              {t("components.discordMessageForm.formatTablesCheckboxDescription")}
+            </FormHelperText>
+          </Box>
+          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Controller
+              name="formatter.formatTables"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Switch
+                    {...field}
+                    isChecked={!!field.value}
+                    value=""
+                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  />
+                );
+              }}
+            />
           </Stack>
         </Stack>
-      </Box>
+      </FormControl>
+      <FormControl>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: "1.5", md: "8" }}
+          justify="space-between"
+        >
+          <Box>
+            <FormLabel>{t("components.discordMessageForm.stripImagesSectionTitle")}</FormLabel>
+            <FormHelperText>
+              {t("components.discordMessageForm.stripImagesCheckboxDescription")}
+            </FormHelperText>
+          </Box>
+          <Stack spacing={8} flexGrow="1" width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Controller
+              name="formatter.stripImages"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Switch
+                    {...field}
+                    isChecked={!!field.value}
+                    value=""
+                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  />
+                );
+              }}
+            />
+          </Stack>
+        </Stack>
+      </FormControl>
     </Stack>
   );
 };

@@ -4,7 +4,6 @@ import {
   FormErrorMessage,
   FormHelperText,
   FormLabel,
-  Heading,
   HStack,
   IconButton,
   Input,
@@ -13,6 +12,7 @@ import {
   Stack,
   StackDivider,
   Textarea,
+  Text,
 } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { Controller, FieldError, useFormContext, useWatch } from "react-hook-form";
@@ -91,78 +91,73 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
   return (
     <Stack spacing={8}>
       <Stack spacing={8} divider={<StackDivider />}>
-        <Box>
+        <FormControl isInvalid={!!colorError}>
           <Stack
             direction={{ base: "column", md: "row" }}
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
-              Color
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!colorError}>
-                <FormLabel variant="inline">Color</FormLabel>
-                <Controller
-                  name={`embeds.${index}.color`}
-                  control={control}
-                  render={({ field }) => {
-                    const hexValue = field.value
-                      ? `#${Number(field.value).toString(16).padStart(6, "0")}`
-                      : "";
+            <FormLabel>Color</FormLabel>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Controller
+                name={`embeds.${index}.color`}
+                control={control}
+                render={({ field }) => {
+                  const hexValue = field.value
+                    ? `#${Number(field.value).toString(16).padStart(6, "0")}`
+                    : "";
 
-                    return (
-                      <HStack>
-                        <input
-                          type="color"
-                          {...field}
-                          value={hexValue}
-                          onChange={(e) => {
-                            const hexColorAsNumberString = parseInt(
-                              e.target.value.replace("#", ""),
-                              16
-                            ).toString();
+                  return (
+                    <HStack>
+                      <input
+                        type="color"
+                        {...field}
+                        value={hexValue}
+                        onChange={(e) => {
+                          const hexColorAsNumberString = parseInt(
+                            e.target.value.replace("#", ""),
+                            16
+                          ).toString();
 
-                            field.onChange(hexColorAsNumberString);
-                          }}
-                          style={{
-                            cursor: "pointer",
-                            width: "100%",
-                          }}
-                        />
-                        <IconButton
-                          size="xs"
-                          aria-label="Clear color"
-                          icon={<CloseIcon />}
-                          disabled={!field.value}
-                          onClick={() => field.onChange("")}
-                        />
-                      </HStack>
-                    );
-                  }}
-                />
-                {colorError && <FormErrorMessage>{colorError}</FormErrorMessage>}
-              </FormControl>
+                          field.onChange(hexColorAsNumberString);
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          width: "100%",
+                        }}
+                      />
+                      <IconButton
+                        size="xs"
+                        aria-label="Clear color"
+                        icon={<CloseIcon />}
+                        disabled={!field.value}
+                        onClick={() => field.onChange("")}
+                      />
+                    </HStack>
+                  );
+                }}
+              />
+              {colorError && <FormErrorMessage>{colorError}</FormErrorMessage>}
             </Stack>
           </Stack>
-        </Box>
+        </FormControl>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Author
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <FormControl isInvalid={!!authorNameError}>
                 <FormLabel variant="inline">Name</FormLabel>
                 <Controller
                   name={`embeds.${index}.author.name`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {authorNameError && <FormErrorMessage>{authorNameError}</FormErrorMessage>}
               </FormControl>
@@ -172,7 +167,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                   name={`embeds.${index}.author.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {authorUrlError && <FormErrorMessage>{authorUrlError}</FormErrorMessage>}
               </FormControl>
@@ -182,7 +177,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                   name={`embeds.${index}.author.iconUrl`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {authorIconUrlError && <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>}
               </FormControl>
@@ -195,17 +190,17 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Title
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <FormControl isInvalid={!!titleError}>
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
                   name={`embeds.${index}.title`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {titleError && <FormErrorMessage>{titleError}</FormErrorMessage>}
               </FormControl>
@@ -215,7 +210,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                   name={`embeds.${index}.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {urlError && <FormErrorMessage>{urlError}</FormErrorMessage>}
               </FormControl>
@@ -228,17 +223,19 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Description
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <FormControl isInvalid={!!descriptionError}>
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
                   name={`embeds.${index}.description`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Textarea {...field} value={field.value || ""} />}
+                  render={({ field }) => (
+                    <Textarea size="sm" {...field} value={field.value || ""} />
+                  )}
                 />
                 {descriptionError && <FormErrorMessage>{descriptionError}</FormErrorMessage>}
               </FormControl>
@@ -251,17 +248,17 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Image
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <FormControl isInvalid={!!imageUrlError}>
                 <FormLabel variant="inline">Image URL</FormLabel>
                 <Controller
                   name={`embeds.${index}.image.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {imageUrlError && <FormErrorMessage>{imageUrlError}</FormErrorMessage>}
               </FormControl>
@@ -274,17 +271,17 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Thumbnail
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <FormControl isInvalid={!!thumbnailUrlError}>
                 <FormLabel variant="inline">Image URL</FormLabel>
                 <Controller
                   name={`embeds.${index}.thumbnail.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {thumbnailUrlError && <FormErrorMessage>{thumbnailUrlError}</FormErrorMessage>}
               </FormControl>
@@ -297,17 +294,17 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Footer
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <FormControl isInvalid={!!footerTextError}>
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
                   name={`embeds.${index}.footer.text`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {footerTextError && <FormErrorMessage>{footerTextError}</FormErrorMessage>}
               </FormControl>
@@ -317,7 +314,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                   name={`embeds.${index}.footer.iconUrl`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
                 {footerIconUrlError && <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>}
               </FormControl>
@@ -330,10 +327,10 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             spacing={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Heading size="sm" fontWeight={600}>
+            <Text size="sm" fontWeight={400}>
               Timestamp
-            </Heading>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }}>
+            </Text>
+            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <Controller
                 name={`embeds.${index}.timestamp`}
                 control={control}

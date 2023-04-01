@@ -1,4 +1,4 @@
-import { array, InferType, object, string } from "yup";
+import { array, boolean, InferType, object, string } from "yup";
 
 export const discordMessageEmbedFormSchema = object().shape({
   color: string()
@@ -81,7 +81,13 @@ export const discordMessageFormSchema = object({
   })
     .optional()
     .nullable()
-    .default(undefined),
+    .default(null),
+  formatter: object({
+    stripImages: boolean().optional().nullable(),
+    formatTables: boolean().optional().nullable(),
+  })
+    .optional()
+    .nullable(),
 });
 
 export type DiscordMessageFormData = InferType<typeof discordMessageFormSchema>;
