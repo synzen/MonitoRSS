@@ -33,7 +33,7 @@ export class ArticleFormatterService {
   async formatValueForDiscord(value: string, options?: FormatOptions) {
     const tableSelector: SelectorDefinition = {
       selector: "table",
-      format: "dataTable",
+      format: "codedDataTable",
       options: {
         maxColumnWidth: 60,
       },
@@ -87,10 +87,22 @@ export class ArticleFormatterService {
         },
         underline: (elem, walk, builder, options) => {
           builder.openBlock(options);
+          builder.options.formatters.dataTable;
           builder.addInline("__");
           walk(elem.children, builder);
           builder.addInline("__");
           builder.closeBlock(options);
+        },
+        codedDataTable: (elem, walk, builder, options) => {
+          const dataTableFormatter = builder.options.formatters.dataTable;
+
+          if (dataTableFormatter) {
+            builder.openBlock(options);
+            builder.addInline("```");
+            dataTableFormatter(elem, walk, builder, options);
+            builder.addInline("```");
+            builder.closeBlock(options);
+          }
         },
       },
       selectors: [

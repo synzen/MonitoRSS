@@ -101,9 +101,13 @@ describe("ArticleFormatterService", () => {
 
         expect(result).toEqual(
           `
+\`\`\`
+
 COMPANY                      CONTACT           COUNTRY
 Alfreds Futterkiste          Maria Anders      Germany
-Centro comercial Moctezuma   Francisco Chang   Mexico`.trim()
+Centro comercial Moctezuma   Francisco Chang   Mexico
+
+\`\`\``.trim()
         );
       });
     });
