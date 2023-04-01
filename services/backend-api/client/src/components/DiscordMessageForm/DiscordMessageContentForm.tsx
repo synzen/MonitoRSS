@@ -34,7 +34,7 @@ export const DiscordMessageContentForm = () => {
   });
   const { t } = useTranslation();
   const [accordionIndex, setAccordionIndex] = useState<number>(-1);
-  const isSplitOptionsEnabled = !!splitOptions;
+  const isSplitOptionsEnabled = !!splitOptions?.isEnabled;
 
   useEffect(() => {
     if (!isSplitOptionsEnabled) {
