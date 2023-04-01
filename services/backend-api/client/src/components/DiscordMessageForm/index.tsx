@@ -120,7 +120,7 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
         <Stack spacing={24}>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
-            <DiscordMessageContentForm control={control} errors={errors} />
+            <DiscordMessageContentForm />
           </Stack>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>

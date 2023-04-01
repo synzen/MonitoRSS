@@ -17,18 +17,17 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { Control, Controller, FieldErrorsImpl, useWatch } from "react-hook-form";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { useCallback, useEffect, useState } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
 
-interface Props {
-  control: Control<DiscordMessageFormData>;
-  errors: FieldErrorsImpl<DiscordMessageFormData>;
-}
-
-export const DiscordMessageContentForm = ({ control, errors }: Props) => {
+export const DiscordMessageContentForm = () => {
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<DiscordMessageFormData>();
   const splitOptions = useWatch({
     control,
     name: `splitOptions`,
@@ -36,8 +35,6 @@ export const DiscordMessageContentForm = ({ control, errors }: Props) => {
   const { t } = useTranslation();
   const [accordionIndex, setAccordionIndex] = useState<number>(-1);
   const isSplitOptionsEnabled = !!splitOptions;
-
-  console.log(splitOptions);
 
   useEffect(() => {
     if (!isSplitOptionsEnabled) {

@@ -14,7 +14,7 @@
     "@chakra-ui/react": "^2.4.6",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
-    "@hookform/resolvers": "^2.8.8",
+    "@hookform/resolvers": "^3.0.0",
     "@sentry/react": "^6.18.2",
     "@sentry/tracing": "^6.18.2",
     "@tanstack/react-query": "^4.16.1",
@@ -29,14 +29,14 @@
     "qs": "^6.10.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-hook-form": "^7.27.1",
+    "react-hook-form": "^7.43.9",
     "react-i18next": "^11.15.5",
     "react-icons": "^4.3.1",
     "react-router-dom": "^6.2.1",
     "react-select": "^5.2.2",
     "react-table": "^7.8.0",
     "react-textarea-autosize": "^8.3.3",
-    "yup": "^1.0.0-beta.7"
+    "yup": "^1.0.2"
   },
   "devDependencies": {
     "@testing-library/dom": "^8.18.1",
