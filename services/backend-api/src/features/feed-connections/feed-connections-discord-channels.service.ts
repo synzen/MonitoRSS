@@ -30,6 +30,7 @@ export interface UpdateDiscordChannelConnectionInput {
     splitOptions?: DiscordChannelConnection["splitOptions"] | null;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
+      formatter?: DiscordChannelConnection["details"]["formatter"] | null;
       channel?: {
         id: string;
       };

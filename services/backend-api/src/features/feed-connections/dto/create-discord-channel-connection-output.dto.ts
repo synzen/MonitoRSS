@@ -23,6 +23,12 @@ class DetailsChannelDto {
   guildId: string;
 }
 
+class FormatterDto {
+  formatTables?: boolean | null;
+
+  stripImages?: boolean | null;
+}
+
 class DetailsDto {
   @IsString()
   @IsOptional()
@@ -37,6 +43,8 @@ class DetailsDto {
   @ValidateNested({ each: true })
   @Type(() => DiscordEmbed)
   embeds: DiscordEmbed[];
+
+  formatter?: FormatterDto | null;
 }
 
 class SplitOptions {

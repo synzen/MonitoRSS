@@ -118,6 +118,7 @@ export class FeedConnectionsDiscordChannelsController {
       filters,
       disabledCode,
       splitOptions,
+      formatter,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -174,6 +175,7 @@ export class FeedConnectionsDiscordChannelsController {
               : undefined,
             embeds: convertToFlatDiscordEmbeds(embeds),
             content,
+            formatter,
           },
         },
       }

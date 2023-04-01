@@ -33,6 +33,7 @@ export interface UpdateDiscordWebhookConnectionInput {
     details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
+      formatter?: DiscordWebhookConnection["details"]["formatter"] | null;
       webhook?: {
         id?: string;
         name?: string;

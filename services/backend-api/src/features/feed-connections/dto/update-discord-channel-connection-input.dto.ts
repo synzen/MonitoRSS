@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsIn,
   IsObject,
   IsOptional,
@@ -31,6 +32,18 @@ class SplitOptions {
   @IsOptional()
   @ValidateIf((v) => v !== null)
   splitChar?: string | null;
+}
+
+class FormatterDto {
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  formatTables?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  stripImages: boolean;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {
@@ -68,4 +81,11 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   splitOptions?: SplitOptions | null;
+
+  @IsOptional()
+  @Type(() => FormatterDto)
+  @ValidateNested()
+  @IsObject()
+  @ValidateIf((v) => v !== null)
+  formatter?: FormatterDto | null;
 }

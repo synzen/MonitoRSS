@@ -7,16 +7,16 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 })
 export class DiscordFormatter {
   @Prop({
-    required: true,
+    required: false,
     default: false,
   })
-  formatTables: boolean;
+  formatTables?: boolean;
 
   @Prop({
-    required: true,
+    required: false,
     default: false,
   })
-  stripImages: boolean;
+  stripImages?: boolean;
 }
 
 export const DiscordFormatterSchema =

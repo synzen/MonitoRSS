@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsIn,
   IsObject,
   IsOptional,
@@ -46,6 +47,18 @@ class SplitOptions {
   splitChar?: string | null;
 }
 
+class FormatterDto {
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  formatTables?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  stripImages: boolean;
+}
+
 export class UpdateDiscordWebhookConnectionInputDto {
   @IsString()
   @IsOptional()
@@ -83,4 +96,11 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   splitOptions?: SplitOptions | null;
+
+  @IsOptional()
+  @Type(() => FormatterDto)
+  @ValidateNested()
+  @IsObject()
+  @ValidateIf((v) => v !== null)
+  formatter?: FormatterDto | null;
 }
