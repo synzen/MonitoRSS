@@ -33,6 +33,13 @@ const ChannelSchema = SchemaFactory.createForClass(Channel);
 class SplitOptions {
   @Prop({
     required: false,
+    default: false,
+    type: Boolean,
+  })
+  isEnabled?: boolean | null;
+
+  @Prop({
+    required: false,
     default: null,
     type: String,
   })

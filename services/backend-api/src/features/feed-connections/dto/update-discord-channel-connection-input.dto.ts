@@ -18,6 +18,11 @@ class FiltersDto {
 }
 
 class SplitOptions {
+  @IsBoolean()
+  @IsOptional()
+  @ValidateIf((v) => v !== null)
+  isEnabled?: boolean | null;
+
   @IsString()
   @IsOptional()
   @ValidateIf((v) => v !== null)

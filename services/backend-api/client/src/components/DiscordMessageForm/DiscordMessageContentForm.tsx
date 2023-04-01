@@ -96,20 +96,14 @@ export const DiscordMessageContentForm = () => {
         <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
           <FormControl id="splitCheckbox">
             <Controller
-              name="splitOptions"
+              name="splitOptions.isEnabled"
               control={control}
               render={({ field }) => {
                 return (
                   <Switch
                     name={field.name}
                     isChecked={!!field.value}
-                    onChange={(e) => {
-                      if (e.currentTarget.checked) {
-                        field.onChange({});
-                      } else {
-                        field.onChange(null);
-                      }
-                    }}
+                    onChange={(e) => field.onChange(e.currentTarget.checked)}
                   />
                 );
               }}

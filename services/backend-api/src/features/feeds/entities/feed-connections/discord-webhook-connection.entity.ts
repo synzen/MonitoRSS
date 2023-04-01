@@ -48,6 +48,13 @@ const WebhookSchema = SchemaFactory.createForClass(Webhook);
 class SplitOptions {
   @Prop({
     required: false,
+    default: false,
+    type: Boolean,
+  })
+  isEnabled?: boolean | null;
+
+  @Prop({
+    required: false,
     default: null,
     type: String,
   })
