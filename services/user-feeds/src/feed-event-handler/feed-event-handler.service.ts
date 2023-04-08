@@ -19,7 +19,7 @@ import {
   AmqpConnection,
   Nack,
 } from "@golevelup/nestjs-rabbitmq";
-import { MikroORM, UseRequestContext } from "@mikro-orm/core";
+import { MikroORM, NotFoundError, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
@@ -81,7 +81,10 @@ export class FeedEventHandlerService {
         err: (err as Error).stack,
       });
 
-      return new Nack(true);
+      if (err instanceof NotFoundError) {
+        // Record may still be in the process of being persisted, retry again later
+        return new Nack(true);
+      }
     }
   }
 
