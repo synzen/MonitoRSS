@@ -8,6 +8,7 @@ interface ChannelPermissionOverwrite {
 export enum DiscordChannelType {
   GUILD_TEXT = 0,
   GUILD_CATEGORY = 4,
+  GUILD_ANNOUNCEMENT = 5,
 }
 
 export interface DiscordGuildChannel {

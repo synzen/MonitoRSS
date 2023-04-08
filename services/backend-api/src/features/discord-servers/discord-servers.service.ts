@@ -231,7 +231,11 @@ export class DiscordServersService {
         );
 
       return channels
-        .filter((c) => c.type === DiscordChannelType.GUILD_TEXT)
+        .filter(
+          (c) =>
+            c.type === DiscordChannelType.GUILD_TEXT ||
+            c.type === DiscordChannelType.GUILD_ANNOUNCEMENT
+        )
         .map((channel) => {
           const parentChannel =
             channel.parent_id &&

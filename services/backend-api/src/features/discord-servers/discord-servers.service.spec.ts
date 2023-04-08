@@ -430,6 +430,14 @@ describe("DiscordServersService", () => {
           type: DiscordChannelType.GUILD_TEXT,
           parent_id: "",
         },
+        {
+          id: "id-6",
+          name: "channel-4",
+          guild_id: serverId,
+          permission_overwrites: [],
+          type: DiscordChannelType.GUILD_ANNOUNCEMENT,
+          parent_id: "",
+        },
       ];
       jest
         .spyOn(discordApiService, "executeBotRequest")
@@ -463,6 +471,13 @@ describe("DiscordServersService", () => {
           name: "channel-3",
           guild_id: serverId,
           type: DiscordChannelType.GUILD_TEXT,
+          category: null,
+        },
+        {
+          id: "id-6",
+          name: "channel-4",
+          guild_id: serverId,
+          type: DiscordChannelType.GUILD_ANNOUNCEMENT,
           category: null,
         },
       ]);
