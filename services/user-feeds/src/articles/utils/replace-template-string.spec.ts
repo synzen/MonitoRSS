@@ -10,6 +10,18 @@ describe("replaceTemplateString", () => {
     );
     expect(str).toEqual(undefined);
   });
+
+  it("replaces {{empty}} with empty text", () => {
+    const object = {
+      title: "hello world",
+    };
+
+    const str = "{{empty}}";
+    const outputStr = replaceTemplateString(object, str);
+
+    expect(outputStr).toEqual("");
+  });
+
   it("replaces top-level values", () => {
     const object = {
       foo: "1",

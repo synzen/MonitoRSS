@@ -163,6 +163,12 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
       expect(result).toEqual(["hell", "o", "worl", "d"]);
     });
 
+    it("returns an empty string if input text is empty", async () => {
+      const result = await service.applySplit("");
+
+      expect(result).toEqual([""]);
+    });
+
     it("applies split with a high limit", () => {
       const result = service.applySplit("hello world", {
         limit: 100,

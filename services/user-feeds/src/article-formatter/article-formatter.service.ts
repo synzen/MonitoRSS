@@ -157,7 +157,7 @@ export class ArticleFormatterService {
         ];
       }
     } else {
-      return [split[0].trim()];
+      return [split[0]?.trim() || ""];
     }
   }
 
