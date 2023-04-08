@@ -268,6 +268,21 @@ export const UserFeed: React.FC = () => {
                 </Alert>
                 <Alert
                   status="error"
+                  hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.InvalidFeed}
+                  borderRadius="md"
+                >
+                  <Box>
+                    <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
+                    <AlertDescription display="block">
+                      {t("pages.userFeed.invalidFeedFailureText")}
+                      <Box marginTop="1rem">
+                        {feedId && <RefreshUserFeedButton feedId={feedId} />}
+                      </Box>
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+                <Alert
+                  status="error"
                   hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.FailedRequests}
                   borderRadius="md"
                 >

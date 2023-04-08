@@ -4,4 +4,5 @@ export enum MessageBrokerQueue {
   FeedRejectedArticleDisableConnection = "feed.rejected-article.disable-connection",
   FeedDeliverArticles = "feed.deliver-articles",
   FeedDeleted = "feed.deleted",
+  FeedRejectedDisableFeed = "feed.rejected.disable-feed",
 }

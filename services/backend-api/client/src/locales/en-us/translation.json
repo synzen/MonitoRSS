@@ -135,7 +135,9 @@
       "disableFeedConfirmTitle": "Are you sure?",
       "disableFeedConfirmDescription": "Articles will not be delivered until it is re-enabled.",
       "connectionFailureTitle": "Disabled due to too many connection failures",
-      "connectionFailureText": "There has been too many connection failures within a short period of time. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled."
+      "connectionFailureText": "There has been too many connection failures within a short period of time. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
+      "invalidFeedFailureTitle": "Disabled due to invalid feed",
+      "invalidFeedFailureText": "The feed contents could not be read. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled."
     },
     "message": {
       "title": "Message",

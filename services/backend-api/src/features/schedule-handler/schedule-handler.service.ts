@@ -22,8 +22,11 @@ import {
   castDiscordEmbedsForMedium,
 } from "../../common/utils";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
-import { ArticleRejectCode } from "./constants";
-import { getConnectionDisableCodeByArticleRejectCode } from "./utils";
+import { ArticleRejectCode, FeedRejectCode } from "./constants";
+import {
+  getConnectionDisableCodeByArticleRejectCode,
+  getUserFeedDisableCodeByFeedRejectCode,
+} from "./utils";
 
 interface PublishFeedDeliveryArticlesData {
   data: {
@@ -78,6 +81,48 @@ export class ScheduleHandlerService {
         $set: {
           disabledCode: UserFeedDisabledCode.FailedRequests,
           healthStatus: UserFeedHealthStatus.Failed,
+        },
+      }
+    );
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.FeedRejectedDisableFeed,
+  })
+  async handleFeedRejectedDisableFeed({
+    data: {
+      feed: { id: feedId },
+      rejectedCode,
+    },
+  }: {
+    data: {
+      rejectedCode: FeedRejectCode;
+      feed: {
+        id: string;
+      };
+    };
+  }) {
+    const foundFeed = await this.userFeedModel.findById(feedId).lean();
+
+    if (!foundFeed) {
+      logger.warn(
+        `No feed with ID ${feedId} was found when attempting to` +
+          ` handle message from ${MessageBrokerQueue.FeedRejectedDisableFeed}`
+      );
+
+      return;
+    }
+
+    const disabledCode = getUserFeedDisableCodeByFeedRejectCode(rejectedCode);
+
+    await this.userFeedModel.updateOne(
+      {
+        _id: feedId,
+      },
+      {
+        $set: {
+          disabledCode,
         },
       }
     );

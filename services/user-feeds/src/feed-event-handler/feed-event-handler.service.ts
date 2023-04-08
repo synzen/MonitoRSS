@@ -12,6 +12,7 @@ import {
   MessageBrokerQueue,
   FeedV2Event,
   feedV2EventSchema,
+  FeedRejectedDisabledCode,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM, UseRequestContext } from "@mikro-orm/core";
@@ -25,6 +26,7 @@ import {
 } from "../feed-fetcher/exceptions";
 import { FeedDeletedEvent } from "./types";
 import { feedDeletedEventSchema } from "./schemas";
+import { InvalidFeedException } from "../articles/exceptions";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -299,14 +301,34 @@ export class FeedEventHandlerService {
         });
       }
     } catch (err) {
-      logger.error(
-        `Error while handling feed event: ${(err as Error).message}`,
-        {
-          err,
+      if (err instanceof InvalidFeedException) {
+        logger.debug(`Ignoring feed event due to invalid feed`, {
           event,
           stack: (err as Error).stack,
-        }
-      );
+        });
+
+        this.amqpConnection.publish(
+          "",
+          MessageBrokerQueue.FeedRejectedDisableFeed,
+          {
+            data: {
+              rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
+              feed: {
+                id: event.data.feed.id,
+              },
+            },
+          }
+        );
+      } else {
+        logger.error(
+          `Error while handling feed event: ${(err as Error).message}`,
+          {
+            err,
+            event,
+            stack: (err as Error).stack,
+          }
+        );
+      }
     }
   }
 
