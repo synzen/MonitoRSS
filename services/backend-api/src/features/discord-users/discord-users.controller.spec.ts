@@ -1,3 +1,5 @@
+import { HttpStatus } from "@nestjs/common";
+import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { DiscordUsersController } from "./discord-users.controller";
 import { GetMeOutputDto } from "./dto";
@@ -82,6 +84,44 @@ describe("DiscordUsersController", () => {
       await expect(controller.getMe(discordAccessToken)).resolves.toEqual(
         expectedResponse
       );
+    });
+  });
+
+  describe("getAuthStatus", () => {
+    it("returns the response when authenticated", async () => {
+      const expectedResponse = {
+        authenticated: true,
+      };
+
+      discordUsersService.getUser.mockResolvedValue({});
+
+      await expect(
+        controller.getAuthStatus(discordAccessToken)
+      ).resolves.toEqual(expectedResponse);
+    });
+
+    it("returns the response when not authenticated", async () => {
+      const expectedResponse = {
+        authenticated: false,
+      };
+
+      discordUsersService.getUser.mockRejectedValue(
+        new DiscordAPIError("fake message", HttpStatus.FORBIDDEN)
+      );
+
+      await expect(
+        controller.getAuthStatus(discordAccessToken)
+      ).resolves.toEqual(expectedResponse);
+    });
+
+    it("throws on unexpected errors", async () => {
+      discordUsersService.getUser.mockRejectedValue(
+        new DiscordAPIError("fake message", HttpStatus.INTERNAL_SERVER_ERROR)
+      );
+
+      await expect(
+        controller.getAuthStatus(discordAccessToken)
+      ).rejects.toThrow(DiscordAPIError);
     });
   });
 

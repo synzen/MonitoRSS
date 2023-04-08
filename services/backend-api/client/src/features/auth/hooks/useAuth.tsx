@@ -1,4 +1,4 @@
-import { DiscordUser, useDiscordUserMe } from "@/features/discordUser";
+import { DiscordUser, useDiscordAuthStatus, useDiscordUserMe } from "@/features/discordUser";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 
 interface UseAuthOutput {
@@ -9,9 +9,12 @@ interface UseAuthOutput {
 }
 
 export const useAuth = (): UseAuthOutput => {
-  const { status, data, error } = useDiscordUserMe();
+  const { data: authStatusData } = useDiscordAuthStatus();
+  const { status, data } = useDiscordUserMe({
+    enabled: !!authStatusData && authStatusData.authenticated,
+  });
 
-  if (error instanceof ApiAdapterError && error?.statusCode === 401) {
+  if (authStatusData && !authStatusData.authenticated) {
     return {
       status,
       authenticated: false,

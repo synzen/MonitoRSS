@@ -7,12 +7,17 @@ import {
   Patch,
   UseGuards,
 } from "@nestjs/common";
+import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { DiscordUsersService } from "./discord-users.service";
-import { GetMeOutputDto, UpdateSupporterInputDto } from "./dto";
+import {
+  GetMeAuthStatusOutputDto,
+  GetMeOutputDto,
+  UpdateSupporterInputDto,
+} from "./dto";
 import { GetBotOutputDto } from "./dto/GetBotOutput.dto";
 import { GetMyServersOutputDto } from "./dto/GetMyServersOutput.dto";
 import { DiscordUserIsSupporterGuard } from "./guards/DiscordUserIsSupporter";
@@ -45,6 +50,30 @@ export class DiscordUsersController {
       maxFeeds: user.maxFeeds,
       maxUserFeeds: user.maxUserFeeds,
     };
+  }
+
+  @Get("@me/auth-status")
+  async getAuthStatus(
+    @DiscordAccessToken() accessToken: SessionAccessToken
+  ): Promise<GetMeAuthStatusOutputDto> {
+    try {
+      await this.discordUsersService.getUser(accessToken.access_token);
+
+      return {
+        authenticated: true,
+      };
+    } catch (err) {
+      if (
+        err instanceof DiscordAPIError &&
+        err.statusCode === HttpStatus.FORBIDDEN
+      ) {
+        return {
+          authenticated: false,
+        };
+      }
+
+      throw err;
+    }
   }
 
   @Patch("@me/supporter")
