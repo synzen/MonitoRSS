@@ -241,7 +241,10 @@ export class UserFeedsService {
       );
     }
 
-    if (feed.healthStatus !== UserFeedHealthStatus.Failed) {
+    if (
+      feed.healthStatus !== UserFeedHealthStatus.Failed &&
+      feed.disabledCode !== UserFeedDisabledCode.InvalidFeed
+    ) {
       throw new FeedNotFailedException(
         `Feed ${feedId} is not in a failed state, cannot retry it`
       );
