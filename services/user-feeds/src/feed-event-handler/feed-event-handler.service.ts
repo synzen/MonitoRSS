@@ -14,7 +14,11 @@ import {
   feedV2EventSchema,
   FeedRejectedDisabledCode,
 } from "../shared";
-import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import {
+  RabbitSubscribe,
+  AmqpConnection,
+  Nack,
+} from "@golevelup/nestjs-rabbitmq";
 import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
@@ -69,13 +73,15 @@ export class FeedEventHandlerService {
     },
     allowNonJsonMessages: true,
   })
-  async onArticleDeliveryResult(result: ArticleDeliveryResult): Promise<void> {
+  async onArticleDeliveryResult(result: ArticleDeliveryResult) {
     try {
       await this.handleArticleDeliveryResult(result);
     } catch (err) {
       logger.error(`Failed to handle article delivery result`, {
         err: (err as Error).stack,
       });
+
+      return new Nack(true);
     }
   }
 
