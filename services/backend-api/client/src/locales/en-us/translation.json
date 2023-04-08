@@ -405,7 +405,8 @@
         "articleSelectPrompt": {
           "title": "Select an article",
           "loadingArticles": "Loading articles...",
-          "selectRandom": "Select random"
+          "selectRandom": "Select random",
+          "mayBeDelayWarning": "There may be a delay before new articles are listed depending on your refresh rate."
         }
       }
     },

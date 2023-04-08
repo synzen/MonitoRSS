@@ -12,7 +12,7 @@ export const useUserFeedArticlesWithPagination = ({ feedId, limit, data: inputDa
   const [skip, setSkip] = useState(0);
   const useLimit = limit || 10;
 
-  const { error, data, status, fetchStatus } = useUserFeedArticles({
+  const { error, data, status, fetchStatus, refetch } = useUserFeedArticles({
     feedId,
     data: {
       ...inputData,
@@ -38,5 +38,6 @@ export const useUserFeedArticlesWithPagination = ({ feedId, limit, data: inputDa
     prevPage,
     skip,
     limit: useLimit,
+    refetch,
   };
 };

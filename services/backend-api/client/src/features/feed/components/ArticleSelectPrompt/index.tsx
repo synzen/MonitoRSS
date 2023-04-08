@@ -1,5 +1,6 @@
 import {
   Alert,
+  AlertDescription,
   AlertIcon,
   Box,
   Button,
@@ -7,6 +8,7 @@ import {
   Divider,
   Flex,
   HStack,
+  IconButton,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -58,6 +60,7 @@ export const ArticleSelectPrompt = ({
     prevPage,
     skip,
     limit,
+    refetch,
   } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
@@ -153,6 +156,12 @@ export const ArticleSelectPrompt = ({
                             onChange={onChangeFeedArticleProperty}
                           />
                         </Box>
+                        <IconButton
+                          aria-label="Reload"
+                          icon={<RepeatIcon />}
+                          isLoading={fetchStatus === "fetching"}
+                          onClick={() => refetch()}
+                        />
                       </HStack>
                     </Flex>
                     <Stack spacing={8}>
@@ -213,6 +222,13 @@ export const ArticleSelectPrompt = ({
                   </Stack>
                 )}
               </Box>
+              <Alert>
+                <AlertDescription>
+                  <Text fontSize="sm">
+                    {t("features.userFeeds.components.articleSelectPrompt.mayBeDelayWarning")}
+                  </Text>
+                </AlertDescription>
+              </Alert>
               <Divider />
               <Button onClick={() => onClickArticle()} leftIcon={<RepeatIcon />}>
                 {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
