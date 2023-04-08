@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -71,6 +72,7 @@ export class GetUserFeedArticlesInputDto {
    * Properties of each article to send back in the response
    */
   @IsString({ each: true })
+  @IsArray()
   @IsOptional()
   selectProperties?: string[];
 

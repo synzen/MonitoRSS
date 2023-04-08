@@ -61,7 +61,14 @@ export const ArticleSelectPrompt = ({
   } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
-      selectProperties: selectedArticleProperty ? [selectedArticleProperty, "id"] : ["id"],
+      selectProperties: selectedArticleProperty
+        ? [selectedArticleProperty, "id"]
+        : ([
+            feedArticlePropertiesResult?.result.properties.find((p) => p === "title") ||
+              feedArticlePropertiesResult?.result.properties[0],
+          ]
+            .concat(["id"])
+            .filter((i) => i) as string[]),
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
       },
