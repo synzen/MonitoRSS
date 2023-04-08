@@ -3,7 +3,7 @@ import { Button, Center, Heading, Stack, Text } from "@chakra-ui/react";
 import { useAuth } from "@/features/auth";
 
 const Home: React.FC = () => {
-  const { status, authenticated } = useAuth();
+  const { authenticated, authCheckStatus } = useAuth();
 
   const onClickLogin = () => {
     window.location.href = "/api/v1/discord/login";
@@ -21,7 +21,12 @@ const Home: React.FC = () => {
         <br />
         <br />
         <br />
-        <Button marginTop="8" size="lg" isLoading={status === "loading"} onClick={onClickLogin}>
+        <Button
+          marginTop="8"
+          size="lg"
+          isLoading={authCheckStatus === "loading"}
+          onClick={onClickLogin}
+        >
           Login
         </Button>
       </Stack>

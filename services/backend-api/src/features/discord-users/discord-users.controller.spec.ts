@@ -96,7 +96,11 @@ describe("DiscordUsersController", () => {
       discordUsersService.getUser.mockResolvedValue({});
 
       await expect(
-        controller.getAuthStatus(discordAccessToken)
+        controller.getAuthStatus({
+          session: {
+            get: () => "token",
+          },
+        } as never)
       ).resolves.toEqual(expectedResponse);
     });
 
@@ -110,7 +114,25 @@ describe("DiscordUsersController", () => {
       );
 
       await expect(
-        controller.getAuthStatus(discordAccessToken)
+        controller.getAuthStatus({
+          session: {
+            get: () => "token",
+          },
+        } as never)
+      ).resolves.toEqual(expectedResponse);
+    });
+
+    it("returns the response when not logged in", async () => {
+      const expectedResponse = {
+        authenticated: false,
+      };
+
+      await expect(
+        controller.getAuthStatus({
+          session: {
+            get: () => undefined,
+          },
+        } as never)
       ).resolves.toEqual(expectedResponse);
     });
 
@@ -120,7 +142,11 @@ describe("DiscordUsersController", () => {
       );
 
       await expect(
-        controller.getAuthStatus(discordAccessToken)
+        controller.getAuthStatus({
+          session: {
+            get: () => "token",
+          },
+        } as never)
       ).rejects.toThrow(DiscordAPIError);
     });
   });

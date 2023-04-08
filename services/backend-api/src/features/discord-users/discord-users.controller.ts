@@ -5,13 +5,16 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Req,
   UseGuards,
 } from "@nestjs/common";
+import { FastifyRequest } from "fastify";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import { getAccessTokenFromRequest } from "../discord-auth/utils/get-access-token-from-session";
 import { DiscordUsersService } from "./discord-users.service";
 import {
   GetMeAuthStatusOutputDto,
@@ -23,11 +26,11 @@ import { GetMyServersOutputDto } from "./dto/GetMyServersOutput.dto";
 import { DiscordUserIsSupporterGuard } from "./guards/DiscordUserIsSupporter";
 
 @Controller("discord-users")
-@UseGuards(DiscordOAuth2Guard)
 export class DiscordUsersController {
   constructor(private readonly discordUsersService: DiscordUsersService) {}
 
   @Get("bot")
+  @UseGuards(DiscordOAuth2Guard)
   async getBot(): Promise<GetBotOutputDto> {
     const bot = await this.discordUsersService.getBot();
 
@@ -35,6 +38,7 @@ export class DiscordUsersController {
   }
 
   @Get("@me")
+  @UseGuards(DiscordOAuth2Guard)
   async getMe(
     @DiscordAccessToken() accessToken: SessionAccessToken
   ): Promise<GetMeOutputDto> {
@@ -54,15 +58,25 @@ export class DiscordUsersController {
 
   @Get("@me/auth-status")
   async getAuthStatus(
-    @DiscordAccessToken() accessToken: SessionAccessToken
+    @Req() request: FastifyRequest
   ): Promise<GetMeAuthStatusOutputDto> {
     try {
+      const accessToken = getAccessTokenFromRequest(request);
+
+      if (!accessToken) {
+        return {
+          authenticated: false,
+        };
+      }
+
       await this.discordUsersService.getUser(accessToken.access_token);
 
       return {
         authenticated: true,
       };
     } catch (err) {
+      console.log(err);
+
       if (
         err instanceof DiscordAPIError &&
         err.statusCode === HttpStatus.FORBIDDEN
@@ -77,6 +91,7 @@ export class DiscordUsersController {
   }
 
   @Patch("@me/supporter")
+  @UseGuards(DiscordOAuth2Guard)
   @UseGuards(DiscordUserIsSupporterGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateSupporter(
@@ -89,6 +104,7 @@ export class DiscordUsersController {
   }
 
   @Get("@me/servers")
+  @UseGuards(DiscordOAuth2Guard)
   async getMyServers(
     @DiscordAccessToken() accessToken: SessionAccessToken
   ): Promise<GetMyServersOutputDto> {

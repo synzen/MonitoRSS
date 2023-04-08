@@ -1,22 +1,23 @@
-import { DiscordUser, useDiscordAuthStatus, useDiscordUserMe } from "@/features/discordUser";
+import { DiscordUser, useDiscordUserMe } from "@/features/discordUser";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 
 interface UseAuthOutput {
   status: "loading" | "idle" | "error" | "success";
+  authCheckStatus: "loading" | "idle" | "error" | "success";
   discordUser?: DiscordUser;
   error?: ApiAdapterError | null;
   authenticated?: boolean;
 }
 
 export const useAuth = (): UseAuthOutput => {
-  const { data: authStatusData } = useDiscordAuthStatus();
-  const { status, data } = useDiscordUserMe({
-    enabled: !!authStatusData && authStatusData.authenticated,
-  });
+  const { status, data, authCheck } = useDiscordUserMe();
 
-  if (authStatusData && !authStatusData.authenticated) {
+  const authCheckStatus = authCheck.status;
+
+  if (authCheck.isAuthenticated === false) {
     return {
       status,
+      authCheckStatus,
       authenticated: false,
     };
   }
@@ -24,6 +25,7 @@ export const useAuth = (): UseAuthOutput => {
   if (data) {
     return {
       status,
+      authCheckStatus,
       authenticated: true,
       discordUser: data,
     };
@@ -31,5 +33,6 @@ export const useAuth = (): UseAuthOutput => {
 
   return {
     status,
+    authCheckStatus,
   };
 };
