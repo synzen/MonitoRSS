@@ -1,3 +1,5 @@
+import { Alert, AlertDescription, AlertTitle, Box, Stack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import { ThemedSelect } from "@/components";
 import { useDiscordServerChannels } from "../../hooks";
 
@@ -17,6 +19,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
   isDisabled,
 }) => {
   const { data, error, status } = useDiscordServerChannels({ serverId });
+  const { t } = useTranslation();
 
   const loading = status === "loading";
 
@@ -27,13 +30,25 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
     })) || [];
 
   return (
-    <ThemedSelect
-      loading={loading}
-      isDisabled={isDisabled || loading || !!error}
-      options={options}
-      onChange={onChange}
-      onBlur={onBlur}
-      value={value}
-    />
+    <Stack>
+      <ThemedSelect
+        loading={loading}
+        isDisabled={isDisabled || loading || !!error}
+        options={options}
+        onChange={onChange}
+        onBlur={onBlur}
+        value={value}
+      />
+      {serverId && error && (
+        <Alert status="error">
+          <Box>
+            <AlertTitle>
+              {t("features.feed.components.addDiscordChannelConnectionDialog.failedToGetChannels")}
+            </AlertTitle>
+            <AlertDescription>{error?.message}</AlertDescription>
+          </Box>
+        </Alert>
+      )}
+    </Stack>
   );
 };

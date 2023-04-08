@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   StreamableFile,
+  UseFilters,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -25,6 +26,7 @@ import { GetServerStatusOutputDto } from "./dto/GetServerStatusOutput.dto";
 import { GetServerOutputDto } from "./dto/GetServerOutput.dto";
 import { UpdateServerOutputDto } from "./dto/UpdateServerOutput.dto";
 import { UpdateServerInputDto } from "./dto/UpdateServerInput.dto";
+import { GetDiscordServerChannelsFilter } from "./filters";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
@@ -125,10 +127,10 @@ export class DiscordServersController {
   }
 
   @Get(":serverId/channels")
-  @UseGuards(BotHasServerGuard)
   @UseGuards(UserManagesServerGuard)
   @UseInterceptors(HttpCacheInterceptor)
-  @CacheTTL(60)
+  @UseFilters(GetDiscordServerChannelsFilter)
+  @CacheTTL(1)
   async getServerChannels(
     @Param("serverId") serverId: string
   ): Promise<GetServerChannelsOutputDto> {

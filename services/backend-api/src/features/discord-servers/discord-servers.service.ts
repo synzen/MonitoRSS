@@ -29,6 +29,7 @@ import {
   ProfileSettings,
   ServerBackup,
 } from "./types";
+import { DiscordServerNotFoundException } from "./exceptions";
 
 @Injectable()
 export class DiscordServersService {
@@ -223,33 +224,46 @@ export class DiscordServersService {
   async getTextChannelsOfServer(
     serverId: string
   ): Promise<DiscordGuildChannelFormatted[]> {
-    const channels: DiscordGuildChannel[] =
-      await this.discordApiService.executeBotRequest(
-        `/guilds/${serverId}/channels`
-      );
+    try {
+      const channels: DiscordGuildChannel[] =
+        await this.discordApiService.executeBotRequest(
+          `/guilds/${serverId}/channels`
+        );
 
-    return channels
-      .filter((c) => c.type === DiscordChannelType.GUILD_TEXT)
-      .map((channel) => {
-        const parentChannel =
-          channel.parent_id &&
-          (channels.find((c) => c.id === channel.parent_id) as
-            | DiscordGuildChannel
-            | undefined);
+      return channels
+        .filter((c) => c.type === DiscordChannelType.GUILD_TEXT)
+        .map((channel) => {
+          const parentChannel =
+            channel.parent_id &&
+            (channels.find((c) => c.id === channel.parent_id) as
+              | DiscordGuildChannel
+              | undefined);
 
-        return {
-          id: channel.id,
-          guild_id: channel.guild_id,
-          name: channel.name,
-          type: channel.type,
-          category: parentChannel
-            ? {
-                id: parentChannel.id,
-                name: parentChannel.name,
-              }
-            : null,
-        };
-      });
+          return {
+            id: channel.id,
+            guild_id: channel.guild_id,
+            name: channel.name,
+            type: channel.type,
+            category: parentChannel
+              ? {
+                  id: parentChannel.id,
+                  name: parentChannel.name,
+                }
+              : null,
+          };
+        });
+    } catch (err) {
+      if (
+        err instanceof DiscordAPIError &&
+        [404, 403].includes(err.statusCode)
+      ) {
+        throw new DiscordServerNotFoundException(
+          `Discord server ${serverId} does not exist`
+        );
+      }
+
+      throw err;
+    }
   }
 
   async getRolesOfServer(serverId: string) {

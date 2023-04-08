@@ -53,7 +53,8 @@
       "feedNotFound": "Feed does not exist",
       "feedFilterInvalidExpression": "Invalid filter expression",
       "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically",
-      "feedArticleNotFound": "Article does not exist. Try selecting another article or refreshing the page."
+      "feedArticleNotFound": "Article does not exist. Try selecting another article or refreshing the page.",
+      "discordServerNotFound": "The bot does not access to this server. Make sure the bot is in the server."
     }
   },
   "pages": {
@@ -326,7 +327,8 @@
           "formServerLabel": "Server",
           "formNameLabel": "Connection name",
           "formNameDescription": "This is only for your reference.",
-          "formChannelLabel": "Channel"
+          "formChannelLabel": "Channel",
+          "failedToGetChannels": "Failed to get server channels"
         },
         "updateDiscordChannelConnectionDialog": {
           "title": "Update Discord channel connection"
