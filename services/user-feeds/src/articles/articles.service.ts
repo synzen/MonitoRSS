@@ -6,7 +6,11 @@ import FeedParser from "feedparser";
 import { ArticleIDResolver } from "./utils";
 import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
 import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
-import { EntityManager, MikroORM } from "@mikro-orm/core";
+import {
+  EntityManager,
+  MikroORM,
+  UniqueConstraintViolationException,
+} from "@mikro-orm/core";
 import { Article, UserFeedFormatOptions } from "../shared/types";
 import { ArticleParserService } from "../article-parser/article-parser.service";
 
@@ -154,15 +158,26 @@ export class ArticlesService {
       );
     }
 
-    await this.orm.em.transactional(async (em) => {
-      em.persist(fieldsToSave);
-      await this.storeArticleComparisons(
-        em,
-        feedId,
-        articles,
-        options?.comparisonFields || []
-      );
-    });
+    try {
+      await this.orm.em.transactional(async (em) => {
+        em.persist(fieldsToSave);
+        await this.storeArticleComparisons(
+          em,
+          feedId,
+          articles,
+          options?.comparisonFields || []
+        );
+      });
+    } catch (err) {
+      if (
+        err instanceof UniqueConstraintViolationException &&
+        err.code === "23505"
+      ) {
+        return;
+      }
+
+      throw err;
+    }
   }
 
   private async storeArticleComparisons(
