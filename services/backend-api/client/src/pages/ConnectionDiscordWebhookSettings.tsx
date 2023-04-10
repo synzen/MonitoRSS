@@ -288,7 +288,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <MessageTabSection
-                  feedId={feedId}
+                  feedId={feedId as string}
                   onMessageUpdated={({ content, embeds }) =>
                     onUpdate({
                       content,
@@ -307,6 +307,10 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                     },
+                  }}
+                  connection={{
+                    id: connectionId as string,
+                    type: FeedConnectionType.DiscordWebhook,
                   }}
                 />
               </BoxConstrained.Container>

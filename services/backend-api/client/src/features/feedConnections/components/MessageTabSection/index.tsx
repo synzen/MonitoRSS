@@ -11,7 +11,6 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { DiscordMessageForm } from "../../../../components";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
@@ -19,12 +18,18 @@ import { useUserFeedArticles } from "../../../feed/hooks";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
+import { FeedConnectionType } from "../../../../types";
+import { DiscordMessageForm } from "../DiscordMessageForm";
 
 interface Props {
-  feedId?: string;
+  feedId: string;
   defaultMessageValues?: DiscordMessageFormData;
   onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>;
   articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
+  connection: {
+    id: string;
+    type: FeedConnectionType;
+  };
 }
 
 export const MessageTabSection = ({
@@ -32,6 +37,7 @@ export const MessageTabSection = ({
   defaultMessageValues,
   onMessageUpdated,
   articleFormatter,
+  connection,
 }: Props) => {
   const {
     data: userFeedArticles,
@@ -48,6 +54,10 @@ export const MessageTabSection = ({
       formatter: articleFormatter,
     },
   });
+
+  const firstArticle = userFeedArticles?.result.articles[0];
+  const requestStatus = userFeedArticles?.result.requestStatus;
+
   const { t } = useTranslation();
 
   const onClickRandomFeedArticle = async () => {
@@ -57,9 +67,6 @@ export const MessageTabSection = ({
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
-
-  const firstArticle = userFeedArticles?.result.articles[0];
-  const requestStatus = userFeedArticles?.result.requestStatus;
 
   const fetchErrorAlert = userFeedArticlesStatus === "error" && (
     <Alert status="error">
@@ -127,7 +134,13 @@ export const MessageTabSection = ({
         </Box>
       </Stack>
       <Stack spacing={4}>
-        <DiscordMessageForm onClickSave={onMessageUpdated} defaultValues={defaultMessageValues} />
+        <DiscordMessageForm
+          onClickSave={onMessageUpdated}
+          defaultValues={defaultMessageValues}
+          connection={connection}
+          feedId={feedId}
+          articleIdToPreview={firstArticle?.id}
+        />
       </Stack>
     </Stack>
   );

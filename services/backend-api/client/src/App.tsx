@@ -1,4 +1,5 @@
 import "./App.css";
+import "./discord.css";
 import { Box, Alert, AlertTitle } from "@chakra-ui/react";
 import Pages from "./pages";
 

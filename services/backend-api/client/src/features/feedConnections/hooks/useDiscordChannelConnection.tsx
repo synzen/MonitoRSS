@@ -7,7 +7,7 @@ interface Props {
 }
 
 export const useDiscordChannelConnection = ({ feedId, connectionId }: Props) => {
-  const { feed, status, error } = useUserFeed({
+  const { feed, status, error, fetchStatus } = useUserFeed({
     feedId,
   });
 
@@ -19,5 +19,6 @@ export const useDiscordChannelConnection = ({ feedId, connectionId }: Props) => 
     connection,
     status,
     error,
+    fetchStatus,
   };
 };

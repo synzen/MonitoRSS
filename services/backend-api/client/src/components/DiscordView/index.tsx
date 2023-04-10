@@ -1,0 +1,197 @@
+/* eslint-disable react/no-array-index-key */
+import React from "react";
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import relativeTime from "dayjs/plugin/relativeTime";
+// @ts-ignore
+import { parse, parseAllowLinks, jumboify } from "./utils/markdown";
+import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
+import Embed from "./Embed";
+
+dayjs.extend(relativeTime);
+dayjs.extend(localizedFormat);
+
+const MessageTimestamp = (
+  {
+    compactMode,
+  }: {
+    compactMode?: boolean;
+  } = {
+    compactMode: false,
+  }
+) => {
+  const m = dayjs();
+
+  const computed = compactMode ? m.format("LT") : m.fromNow();
+
+  return <span className="timestamp">{computed}</span>;
+};
+
+const MessageBody = ({
+  compactMode,
+  username,
+  content,
+  webhookMode,
+}: {
+  compactMode?: boolean;
+  username?: string;
+  content?: string;
+  webhookMode?: boolean;
+}) => {
+  if (compactMode) {
+    return (
+      <div className="markup">
+        <MessageTimestamp compactMode={compactMode} />
+        <span className="username-wrapper v-btm">
+          <strong className="user-name">{username}</strong>
+          <span className="bot-tag">BOT</span>
+        </span>
+        <span className="highlight-separator"> - </span>
+        <span className="message-content">{content && parse(content, true, {}, jumboify)}</span>
+      </div>
+    );
+  }
+
+  if (content) {
+    if (webhookMode) {
+      return <div className="markup">{parseAllowLinks(content, true, {}, jumboify)}</div>;
+    }
+
+    return <div className="markup">{parse(content, true, {}, jumboify)}</div>;
+  }
+
+  return null;
+};
+
+const CozyMessageHeader = ({
+  compactMode,
+  username,
+}: {
+  compactMode?: boolean;
+  username?: string;
+}) => {
+  if (compactMode) {
+    return null;
+  }
+
+  return (
+    <h2 style={{ lineHeight: "16px" }}>
+      <span className="username-wrapper v-btm">
+        <strong className="user-name">{username}</strong>
+        <span className="bot-tag">BOT</span>
+      </span>
+      <span className="highlight-separator"> - </span>
+      <MessageTimestamp compactMode={compactMode} />
+    </h2>
+  );
+};
+
+const Avatar = ({ compactMode, url }: { compactMode?: boolean; url?: string }) => {
+  if (compactMode) {
+    return null;
+  }
+
+  return <div className="avatar-large animate" style={{ backgroundImage: `url('${url}')` }} />;
+};
+
+const ErrorHeader = ({ error }: { error?: string }) => {
+  if (!error) {
+    return null;
+  }
+
+  return <header className="f6 bg-red br2 pa2 br--top w-100 code pre-wrap">{error}</header>;
+};
+
+const DiscordViewWrapper = ({
+  darkTheme,
+  children,
+}: {
+  darkTheme?: boolean;
+  children: React.ReactNode;
+}) => {
+  // yikes
+  // we could actually just flatten the styling out on the respective elements,
+  // but copying directly from discord is a lot easier than that
+  return (
+    <div className="w-100 h-100 overflow-auto pa2 discord-view">
+      <div className={`flex-vertical whitney ${darkTheme && "theme-dark"}`}>
+        <div className="chat flex-vertical flex-spacer">
+          <div className="content flex-spacer flex-horizontal">
+            <div className="flex-spacer flex-vertical messages-wrapper">
+              <div className="scroller-wrap">
+                <div className="scroller messages">{children}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DiscordView = ({
+  compactMode,
+  darkTheme,
+  username,
+  avatar_url,
+  error,
+  messages,
+}: {
+  compactMode?: boolean;
+  darkTheme?: boolean;
+  webhookMode?: boolean;
+  username?: string;
+  avatar_url?: string;
+  error?: string;
+  messages: Array<{
+    content?: string;
+    embeds?: DiscordViewEmbed[];
+  }>;
+}) => {
+  const bgColor = darkTheme ? "bg-discord-dark" : "bg-discord-light";
+  const cls = `w-100 h-100 br2 flex flex-column white overflow-hidden ${bgColor}`;
+
+  return (
+    <div className={cls}>
+      <ErrorHeader error={error} />
+      <DiscordViewWrapper darkTheme={darkTheme}>
+        <div className={`message-group hide-overflow ${compactMode ? "compact" : ""}`}>
+          <Avatar url={avatar_url} compactMode={compactMode} />
+          <div className="comment">
+            <div className="message first">
+              <CozyMessageHeader username={username} compactMode={compactMode} />
+              {messages.map(({ content: thisContent, embeds: thisEmbeds }) => (
+                <div className="message-text">
+                  <MessageBody
+                    content={thisContent}
+                    username={username}
+                    compactMode={compactMode}
+                    webhookMode
+                  />
+                  {thisEmbeds?.map((e, i) => (
+                    <Embed key={i} {...e} />
+                  ))}
+                </div>
+              ))}
+              {/* <div className="message-text">
+                <MessageBody
+                  content={content}
+                  username={username}
+                  compactMode={compactMode}
+                  webhookMode={webhookMode}
+                />
+              </div>
+              {embed ? (
+                <Embed {...embed} />
+              ) : (
+                embeds && embeds.map((e, i) => <Embed key={i} {...e} />)
+              )} */}
+            </div>
+          </div>
+        </div>
+      </DiscordViewWrapper>
+    </div>
+  );
+};
+
+export default DiscordView;

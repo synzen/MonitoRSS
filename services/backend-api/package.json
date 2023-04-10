@@ -55,7 +55,8 @@
     "qs": "6.10.3",
     "reflect-metadata": "0.1.13",
     "rimraf": "3.0.2",
-    "rxjs": "7.2.0"
+    "rxjs": "7.2.0",
+    "simple-markdown": "^0.7.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.1.3",

@@ -1,6 +1,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { rest } from "msw";
-import { GetDiscordBotOutput, GetDiscordMeOutput } from "@/features/discordUser";
+import {
+  GetDiscordAuthStatusOutput,
+  GetDiscordBotOutput,
+  GetDiscordMeOutput,
+} from "@/features/discordUser";
 import { GetServersOutput } from "../features/discordServers/api/getServer";
 import {
   CloneFeedOutput,
@@ -40,8 +44,10 @@ import { generateMockApiErrorResponse } from "./generateMockApiErrorResponse";
 import mockDiscordBot from "./data/discordBot";
 import {
   CreateDiscordChannelConnectionOutput,
+  CreateDiscordChannelConnectionPreviewOutput,
   CreateDiscordChannelConnectionTestArticleOutput,
   CreateDiscordWebhookConnectionOutput,
+  CreateDiscordWebhookConnectionPreviewOutput,
   CreateDiscordWebhookConnectionTestArticleOutput,
   UpdateDiscordChannelConnectionOutput,
   UpdateDiscordWebhookConnectionOutput,
@@ -53,6 +59,7 @@ import { mockSendTestArticleResult } from "./data/testArticleResult";
 import { mockUserFeedArticles } from "./data/userFeedArticles";
 import { GetUserFeedRequestsOutput } from "../features/feed/api/getUserFeedRequests";
 import { mockUserFeedRequests } from "./data/userFeedRequests";
+import { mockCreatePreviewResult } from "./data/createPreview";
 
 const handlers = [
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
@@ -64,6 +71,14 @@ const handlers = [
   ),
   rest.get("/api/v1/discord-users/@me", (req, res, ctx) =>
     res(ctx.json<GetDiscordMeOutput>(mockDiscordUser))
+  ),
+
+  rest.get("/api/v1/discord-users/@me/auth-status", (req, res, ctx) =>
+    res(
+      ctx.json<GetDiscordAuthStatusOutput>({
+        authenticated: true,
+      })
+    )
   ),
 
   rest.patch("/api/v1/discord-users/@me/supporter", (req, res, ctx) => res(ctx.status(204))),
@@ -402,6 +417,18 @@ const handlers = [
     )
   ),
 
+  rest.post(
+    "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/preview",
+    (req, res, ctx) => {
+      return res(
+        ctx.delay(500),
+        ctx.json<CreateDiscordChannelConnectionPreviewOutput>({
+          result: mockCreatePreviewResult,
+        })
+      );
+    }
+  ),
+
   rest.patch("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) => {
     return res(
       ctx.delay(500),
@@ -431,6 +458,17 @@ const handlers = [
         result: mockSendTestArticleResult,
       })
     )
+  ),
+
+  rest.post(
+    "/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id/preview",
+    (req, res, ctx) =>
+      res(
+        ctx.delay(500),
+        ctx.json<CreateDiscordWebhookConnectionPreviewOutput>({
+          result: mockCreatePreviewResult,
+        })
+      )
   ),
 
   rest.patch("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id", (req, res, ctx) => {

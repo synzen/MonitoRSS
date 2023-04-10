@@ -23,6 +23,7 @@
     "dayjs": "^1.11.7",
     "eslint-config-airbnb-typescript": "^16.1.0",
     "framer-motion": "^5.5.6",
+    "highlight.js": "^11.7.0",
     "i18next": "^21.6.12",
     "lodash": "^4.17.21",
     "moment-timezone": "^0.5.34",
@@ -36,6 +37,8 @@
     "react-select": "^5.2.2",
     "react-table": "^7.8.0",
     "react-textarea-autosize": "^8.3.3",
+    "simple-markdown": "^0.7.3",
+    "twemoji": "^14.0.2",
     "yup": "^1.0.2"
   },
   "devDependencies": {
@@ -46,6 +49,7 @@
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
     "@types/react-table": "^7.7.12",
+    "@types/twemoji": "^13.1.2",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "@vitejs/plugin-react": "^3.0.1",

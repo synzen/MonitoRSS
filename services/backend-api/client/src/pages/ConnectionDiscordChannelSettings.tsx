@@ -267,7 +267,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <MessageTabSection
-                  feedId={feedId}
+                  feedId={feedId as string}
                   onMessageUpdated={(data) => onUpdate(data)}
                   defaultMessageValues={{
                     content: connection?.details.content,
@@ -281,6 +281,10 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                     },
+                  }}
+                  connection={{
+                    id: connectionId as string,
+                    type: FeedConnectionType.DiscordChannel,
                   }}
                 />
               </BoxConstrained.Container>

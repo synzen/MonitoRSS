@@ -17,29 +17,29 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { DiscordMessageFormData, discordMessageFormSchema } from "@/types/discord";
+import { DiscordMessageContentFormLegacy } from "./DiscordMessageContentFormLegacy";
+import { DiscordMessageEmbedFormLegacy } from "./DiscordMessageEmbedFormLegacy";
+import { notifyError } from "../../../../utils/notifyError";
 import {
-  DiscordMessageEmbedFormData,
-  DiscordMessageFormData,
-  discordMessageFormSchema,
-} from "@/types/discord";
-import { notifyError } from "../../utils/notifyError";
-import { DiscordMessageContentForm } from "./DiscordMessageContentForm";
-import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
+  DiscordMessageEmbedFormDataLegacy,
+  DiscordMessageFormDataLegacy,
+} from "../../../../types/discord/DiscordMessageFormDataLegacy";
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
-  onClickSave: (data: DiscordMessageFormData) => Promise<void>;
+  onClickSave: (data: DiscordMessageFormDataLegacy) => Promise<void>;
 }
 
-const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({});
+const templateEmbed: DiscordMessageEmbedFormDataLegacy = Object.freeze({});
 
-export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
+export const DiscordMessageFormLegacy = ({ defaultValues, onClickSave }: Props) => {
   const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
 
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
 
-  const formMethods = useForm<DiscordMessageFormData>({
+  const formMethods = useForm<DiscordMessageFormDataLegacy>({
     resolver: yupResolver(discordMessageFormSchema),
     defaultValues,
     mode: "all",
@@ -59,7 +59,7 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
     name: "embeds",
   });
 
-  const onSubmit = async (formData: DiscordMessageFormData) => {
+  const onSubmit = async (formData: DiscordMessageFormDataLegacy) => {
     try {
       const embedsWithoutEmptyObjects = formData.embeds?.map((embed) => {
         const newEmbed = { ...embed };
@@ -83,11 +83,9 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
         return newEmbed;
       });
 
-      const toSubmit: DiscordMessageFormData = {
+      const toSubmit: DiscordMessageFormDataLegacy = {
         content: formData.content?.trim(),
         embeds: embedsWithoutEmptyObjects,
-        splitOptions: formData.splitOptions || null,
-        formatter: formData.formatter,
       };
 
       await onClickSave(toSubmit);
@@ -120,7 +118,7 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
         <Stack spacing={24}>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
-            <DiscordMessageContentForm />
+            <DiscordMessageContentFormLegacy />
           </Stack>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
@@ -155,7 +153,7 @@ export const DiscordMessageForm = ({ defaultValues, onClickSave }: Props) => {
                           {t("features.feedConnections.components.embedForm.deleteButtonText")}
                         </Button>
                       </Flex>
-                      <DiscordMessageEmbedForm index={index} />
+                      <DiscordMessageEmbedFormLegacy index={index} />
                     </Stack>
                   </TabPanel>
                 ))}

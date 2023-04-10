@@ -11,3 +11,4 @@ export * from "./ArticleFilterResultsTable";
 export * from "./ConnectionDisabledAlert";
 export * from "./ComparisonsTabSection";
 export * from "./UserFeedSettingsTabSection";
+export * from "./DiscordMessageForm";

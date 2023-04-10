@@ -6,3 +6,4 @@ export * from "./useDiscordChannelConnection";
 export * from "./useDiscordWebhookConnection";
 export * from "./useDeleteConnection";
 export * from "./useCreateConnectionTestArticle";
+export * from "./useCreateConnectionPreview";

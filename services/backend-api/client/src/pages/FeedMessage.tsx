@@ -1,12 +1,13 @@
 import { Heading, Stack, Text } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { DashboardContent, DiscordMessageForm } from "@/components";
+import { DashboardContent } from "@/components";
 import { FeedArticlesPlaceholders, useFeed } from "../features/feed";
 import RouteParams from "../types/RouteParams";
-import { DiscordMessageFormData } from "../types/discord";
 import { useUpdateFeed } from "../features/feed/hooks/useUpdateFeed";
 import { notifySuccess } from "../utils/notifySuccess";
+import { DiscordMessageFormLegacy } from "../features/feedConnections/components/LegacyDiscordMessageForm";
+import { DiscordMessageFormDataLegacy } from "../types/discord/DiscordMessageFormDataLegacy";
 
 const FeedMessage: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
@@ -20,7 +21,7 @@ const FeedMessage: React.FC = () => {
   const { mutateAsync } = useUpdateFeed();
   const { t } = useTranslation();
 
-  const onFormSaved = async (data: DiscordMessageFormData) => {
+  const onFormSaved = async (data: DiscordMessageFormDataLegacy) => {
     if (!feedId) {
       return;
     }
@@ -47,7 +48,7 @@ const FeedMessage: React.FC = () => {
             <FeedArticlesPlaceholders feedId={feedId} />
           </Stack>
           <Stack spacing="4">
-            <DiscordMessageForm
+            <DiscordMessageFormLegacy
               defaultValues={{
                 content: feed?.text || "",
                 embeds: feed?.embeds,
