@@ -63,7 +63,7 @@ export const AddFilterDialog: React.FC<Props> = ({ onSubmit }) => {
 
   return (
     <>
-      <Button colorScheme="blue" disabled={saving} isLoading={saving} onClick={onOpen}>
+      <Button colorScheme="blue" isDisabled={saving} isLoading={saving} onClick={onOpen}>
         {t("components.addFilterDialog.addButton")}
       </Button>
       <Modal isOpen={isOpen} onClose={onClose}>
@@ -91,10 +91,15 @@ export const AddFilterDialog: React.FC<Props> = ({ onSubmit }) => {
           </ModalBody>
           <ModalFooter>
             <HStack>
-              <Button onClick={onClose} disabled={saving} variant="ghost">
+              <Button onClick={onClose} isDisabled={saving} variant="ghost">
                 {t("components.addFilterDialog.cancel")}
               </Button>
-              <Button colorScheme="blue" disabled={saving} onClick={onClickSave} isLoading={saving}>
+              <Button
+                colorScheme="blue"
+                isDisabled={saving}
+                onClick={onClickSave}
+                isLoading={saving}
+              >
                 {t("components.addFilterDialog.save")}
               </Button>
             </HStack>

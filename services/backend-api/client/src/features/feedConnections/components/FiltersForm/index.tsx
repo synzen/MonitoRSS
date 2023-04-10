@@ -104,7 +104,7 @@ export const FiltersForm = ({ expression = null, onSave, data }: Props) => {
                 colorScheme="blue"
                 type="submit"
                 isLoading={isSubmitting}
-                disabled={!isDirty || isSubmitting}
+                isDisabled={!isDirty || isSubmitting}
               >
                 {t("common.buttons.save")}
               </Button>
@@ -129,7 +129,7 @@ export const FiltersForm = ({ expression = null, onSave, data }: Props) => {
             <Button
               colorScheme="blue"
               isLoading={isSubmitting}
-              disabled={!isDirty || isSubmitting}
+              isDisabled={!isDirty || isSubmitting}
               type="submit"
             >
               {t("common.buttons.save")}

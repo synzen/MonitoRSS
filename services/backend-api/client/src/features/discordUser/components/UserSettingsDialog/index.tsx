@@ -115,14 +115,14 @@ export const UserSettingsDialog: React.FC<Props> = ({ isOpen, onClose }) => {
         </ModalBody>
         <ModalFooter>
           <HStack>
-            <Button onClick={onReset} variant="ghost" disabled={formState.isSubmitting}>
+            <Button onClick={onReset} variant="ghost" isDisabled={formState.isSubmitting}>
               Cancel
             </Button>
             <Button
               colorScheme="blue"
               form="supporter-servers"
               type="submit"
-              disabled={!formState.isDirty || formState.isSubmitting}
+              isDisabled={!formState.isDirty || formState.isSubmitting}
               isLoading={formState.isSubmitting}
             >
               Save

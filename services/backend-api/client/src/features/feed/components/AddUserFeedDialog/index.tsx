@@ -81,7 +81,7 @@ export const AddUserFeedDialog: React.FC = () => {
         label={t("features.userFeeds.components.addUserFeedDialog.overLimitHint")}
         hidden={isUnderLimit === true}
       >
-        <Button colorScheme="blue" onClick={onOpen} disabled={!isUnderLimit}>
+        <Button colorScheme="blue" onClick={onOpen} isDisabled={!isUnderLimit}>
           {t("features.userFeeds.components.addUserFeedDialog.addButton")}
         </Button>
       </Tooltip>
@@ -101,7 +101,7 @@ export const AddUserFeedDialog: React.FC = () => {
                     name="title"
                     control={control}
                     render={({ field }) => (
-                      <Input disabled={isSubmitting} {...field} value={field.value || ""} />
+                      <Input isDisabled={isSubmitting} {...field} value={field.value || ""} />
                     )}
                   />
                   <FormHelperText>
@@ -117,7 +117,7 @@ export const AddUserFeedDialog: React.FC = () => {
                     name="url"
                     control={control}
                     render={({ field }) => (
-                      <Input disabled={isSubmitting} {...field} value={field.value || ""} />
+                      <Input isDisabled={isSubmitting} {...field} value={field.value || ""} />
                     )}
                   />
                   <FormHelperText>
@@ -128,7 +128,7 @@ export const AddUserFeedDialog: React.FC = () => {
               </Stack>
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+              <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
                 {t("common.buttons.cancel")}
               </Button>
               <Button

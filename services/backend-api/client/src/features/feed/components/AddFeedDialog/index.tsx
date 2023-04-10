@@ -97,7 +97,7 @@ export const AddFeedDialog: React.FC = () => {
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => <Input disabled={isSubmitting} {...field} />}
+                    render={({ field }) => <Input isDisabled={isSubmitting} {...field} />}
                   />
                   <FormHelperText>
                     {t("features.feed.components.addFeedDialog.formTitleDescription")}
@@ -128,7 +128,7 @@ export const AddFeedDialog: React.FC = () => {
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => <Input disabled={isSubmitting} {...field} />}
+                    render={({ field }) => <Input isDisabled={isSubmitting} {...field} />}
                   />
                   <FormHelperText>
                     {t("features.feed.components.addFeedDialog.formLinkDescription")}
@@ -139,7 +139,7 @@ export const AddFeedDialog: React.FC = () => {
             </form>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+            <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
               {t("features.feed.components.addFeedDialog.cancelButton")}
             </Button>
             <Button

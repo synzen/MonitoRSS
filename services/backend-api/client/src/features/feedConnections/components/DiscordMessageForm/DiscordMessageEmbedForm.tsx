@@ -130,7 +130,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                         size="xs"
                         aria-label="Clear color"
                         icon={<CloseIcon />}
-                        disabled={!field.value}
+                        isDisabled={!field.value}
                         onClick={() => field.onChange("")}
                       />
                     </HStack>

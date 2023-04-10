@@ -102,7 +102,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
           </form>
         </ModalBody>
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+          <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
             {t("common.buttons.cancel")}
           </Button>
           <Button

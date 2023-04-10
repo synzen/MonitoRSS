@@ -188,7 +188,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                                     ".manualDisableConfirmDescription"
                                 )}
                                 trigger={
-                                  <MenuItem disabled={updateStatus === "loading"}>
+                                  <MenuItem isDisabled={updateStatus === "loading"}>
                                     {t("common.buttons.disable")}
                                   </MenuItem>
                                 }

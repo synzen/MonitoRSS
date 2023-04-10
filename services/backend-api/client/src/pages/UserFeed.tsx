@@ -209,7 +209,7 @@ export const UserFeed: React.FC = () => {
                           title={t("pages.userFeed.disableFeedConfirmTitle")}
                           description={t("pages.userFeed.disableFeedConfirmDescription")}
                           trigger={
-                            <MenuItem disabled={updatingStatus === "loading"}>
+                            <MenuItem isDisabled={updatingStatus === "loading"}>
                               {t("pages.userFeed.disableFeedButtonText")}
                             </MenuItem>
                           }
@@ -229,7 +229,7 @@ export const UserFeed: React.FC = () => {
                           title={t("pages.userFeed.deleteConfirmTitle")}
                           description={t("pages.userFeed.deleteConfirmDescription")}
                           trigger={
-                            <MenuItem disabled={deleteingStatus === "loading"}>
+                            <MenuItem isDisabled={deleteingStatus === "loading"}>
                               {t("common.buttons.delete")}
                             </MenuItem>
                           }

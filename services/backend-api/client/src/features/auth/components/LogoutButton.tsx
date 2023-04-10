@@ -39,7 +39,7 @@ export const LogoutButton = ({ trigger }: Props) => {
       mx="6"
       minHeight="40px"
       isLoading={loggingOut}
-      disabled={loggingOut}
+      isDisabled={loggingOut}
       onClick={onClickLogout}
     >
       Logout

@@ -163,14 +163,18 @@ export const DiscordMessageFormLegacy = ({ defaultValues, onClickSave }: Props) 
           <Flex direction="row-reverse">
             <HStack>
               {isDirty && (
-                <Button onClick={() => reset()} variant="ghost" disabled={!isDirty || isSubmitting}>
+                <Button
+                  onClick={() => reset()}
+                  variant="ghost"
+                  isDisabled={!isDirty || isSubmitting}
+                >
                   {t("features.feed.components.sidebar.resetButton")}
                 </Button>
               )}
               <Button
                 type="submit"
                 colorScheme="blue"
-                disabled={isSubmitting || !isDirty || errorsExist}
+                isDisabled={isSubmitting || !isDirty || errorsExist}
                 isLoading={isSubmitting}
               >
                 {t("features.feed.components.sidebar.saveButton")}

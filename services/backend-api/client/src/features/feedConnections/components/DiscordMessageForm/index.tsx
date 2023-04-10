@@ -244,7 +244,11 @@ export const DiscordMessageForm = ({
           <Flex direction="row-reverse">
             <HStack>
               {isDirty && (
-                <Button onClick={() => reset()} variant="ghost" disabled={!isDirty || isSubmitting}>
+                <Button
+                  onClick={() => reset()}
+                  variant="ghost"
+                  isDisabled={!isDirty || isSubmitting}
+                >
                   {t("features.feed.components.sidebar.resetButton")}
                 </Button>
               )}
@@ -252,7 +256,6 @@ export const DiscordMessageForm = ({
                 type="submit"
                 colorScheme="blue"
                 isDisabled={isSubmitting || !isDirty || errorsExist}
-                // disabled={isSubmitting || !isDirty || errorsExist}
                 isLoading={isSubmitting}
               >
                 {t("features.feed.components.sidebar.saveButton")}

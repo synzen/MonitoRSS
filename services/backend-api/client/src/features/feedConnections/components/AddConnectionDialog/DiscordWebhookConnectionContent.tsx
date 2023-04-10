@@ -284,7 +284,7 @@ export const DiscordWebhookConnectionContent: React.FC<Props> = ({ isOpen, onClo
           </ModalBody>
           <ModalFooter>
             <HStack>
-              <Button onClick={onClose} variant="ghost" disabled={isSubmitting}>
+              <Button onClick={onClose} variant="ghost" isDisabled={isSubmitting}>
                 {t("common.buttons.cancel")}
               </Button>
               <Button

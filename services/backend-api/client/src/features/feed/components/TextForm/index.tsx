@@ -66,7 +66,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
         />
         <HStack justifyContent="flex-end">
           <Button
-            disabled={!isDirty || isSubmitting}
+            isDisabled={!isDirty || isSubmitting}
             onClick={() => reset(defaultValues)}
             variant="ghost"
           >
@@ -76,7 +76,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
             type="submit"
             colorScheme="blue"
             isLoading={isSubmitting}
-            disabled={isSubmitting || !isDirty}
+            isDisabled={isSubmitting || !isDirty}
           >
             {t("pages.message.textSectionSaveButton")}
           </Button>

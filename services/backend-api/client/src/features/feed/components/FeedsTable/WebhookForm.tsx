@@ -200,13 +200,13 @@ export const WebhookForm: React.FC<Props> = ({ feedId, serverId, onUpdated }) =>
           </FormControl>
           <Flex justifyContent="flex-end">
             <HStack>
-              <Button onClick={() => reset()} variant="ghost" disabled={!isDirty || isSubmitting}>
+              <Button onClick={() => reset()} variant="ghost" isDisabled={!isDirty || isSubmitting}>
                 {t("features.feed.components.sidebar.resetButton")}
               </Button>
               <Button
                 type="submit"
                 colorScheme="blue"
-                disabled={isSubmitting || !isDirty}
+                isDisabled={isSubmitting || !isDirty}
                 isLoading={isSubmitting}
               >
                 {t("features.feed.components.sidebar.saveButton")}

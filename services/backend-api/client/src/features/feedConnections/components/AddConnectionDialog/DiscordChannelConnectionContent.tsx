@@ -154,7 +154,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
         </ModalBody>
         <ModalFooter>
           <HStack>
-            <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+            <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
               {t("common.buttons.cancel")}
             </Button>
             <Button

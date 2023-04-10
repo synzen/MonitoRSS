@@ -166,7 +166,7 @@ const FeedMiscOptions: React.FC = () => {
               ))}
             </Stack>
             <HStack justifyContent="flex-end">
-              <Button variant="ghost" onClick={resetForm} disabled={!isDirty || isSubmitting}>
+              <Button variant="ghost" onClick={resetForm} isDisabled={!isDirty || isSubmitting}>
                 {t("pages.miscOptions.resetButton")}
               </Button>
               <Button

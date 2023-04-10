@@ -253,7 +253,7 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
             icon={<ChevronRightIcon />}
             aria-label="Next page"
             onClick={nextPage}
-            disabled={isFetchingNewPage || !canNextPage}
+            isDisabled={isFetchingNewPage || !canNextPage}
             isLoading={isFetchingNewPage}
           />
         </ButtonGroup>

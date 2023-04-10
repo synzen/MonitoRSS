@@ -165,7 +165,7 @@ const FeedClone: React.FC = () => {
           <Button
             onClick={onSubmit}
             isLoading={saving}
-            disabled={!selectedFeedId || !properties.length || loadingFeeds || saving}
+            isDisabled={!selectedFeedId || !properties.length || loadingFeeds || saving}
             colorScheme="blue"
           >
             {t("pages.cloneFeed.cloneButtonLabel")}

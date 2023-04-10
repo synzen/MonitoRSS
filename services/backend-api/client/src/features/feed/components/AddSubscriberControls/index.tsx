@@ -65,7 +65,7 @@ export const AddSubscriberControls: React.FC<Props> = ({ feedId, roles, loading 
         alignSelf="flex-end"
         minWidth="100"
         colorScheme="blue"
-        disabled={!currentRoleId || status === "loading" || roles.length === 0}
+        isDisabled={!currentRoleId || status === "loading" || roles.length === 0}
         onClick={onClickAdd}
         isLoading={status === "loading"}
       >

@@ -170,12 +170,12 @@ export const ServerSettings: React.FC<Props> = () => {
                   <FormErrorMessage>{errors.timezone?.message}</FormErrorMessage>
                 </FormControl>
                 <HStack justifyContent="flex-end">
-                  <Button variant="ghost" disabled={!isDirty || isSubmitting} onClick={resetForm}>
+                  <Button variant="ghost" isDisabled={!isDirty || isSubmitting} onClick={resetForm}>
                     {t("pages.serverSettings.resetButton")}
                   </Button>
                   <Button
                     colorScheme="blue"
-                    disabled={!isDirty || isSubmitting}
+                    isDisabled={!isDirty || isSubmitting}
                     isLoading={isSubmitting}
                     type="submit"
                   >

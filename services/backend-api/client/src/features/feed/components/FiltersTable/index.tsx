@@ -110,7 +110,7 @@ export const FiltersTable: React.FC<Props> = ({
       <Stack>
         <Flex justifyContent="space-between" flexWrap="wrap">
           <Button
-            disabled={selectedFlatRows.length === 0 || isUpdating || isLoading}
+            isDisabled={selectedFlatRows.length === 0 || isUpdating || isLoading}
             isLoading={isUpdating}
             colorScheme="red"
             variant="outline"

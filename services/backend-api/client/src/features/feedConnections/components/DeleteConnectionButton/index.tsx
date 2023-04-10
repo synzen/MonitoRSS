@@ -45,7 +45,7 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
             disabled: status === "loading",
           })
         ) : (
-          <Button variant="outline" disabled={status === "loading"} leftIcon={<DeleteIcon />}>
+          <Button variant="outline" isDisabled={status === "loading"} leftIcon={<DeleteIcon />}>
             {t("common.buttons.delete")}
           </Button>
         )
