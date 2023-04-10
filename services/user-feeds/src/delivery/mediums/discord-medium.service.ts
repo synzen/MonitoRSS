@@ -302,85 +302,87 @@ export class DiscordMediumService implements DeliveryMedium {
     const payloads: DiscordMessageApiPayload[] = payloadContent.map(
       (contentPart) => ({
         content: contentPart,
-        embeds: embeds?.map((embed) => {
-          let timestamp: string | undefined = undefined;
-
-          if (embed.timestamp === "now") {
-            timestamp = new Date().toISOString();
-          } else if (embed.timestamp === "article") {
-            timestamp = article.raw.date?.toISOString();
-          }
-
-          return {
-            title: replaceTemplateString(article.flattened, embed.title),
-            description: replaceTemplateString(
-              article.flattened,
-              embed.description
-            ),
-            author: !embed.author?.name
-              ? undefined
-              : {
-                  name: replaceTemplateString(
-                    article.flattened,
-                    embed.author.name
-                  ) as string,
-                  icon_url:
-                    replaceTemplateString(
-                      article.flattened,
-                      embed.author.iconUrl
-                    ) || null,
-                },
-            color: embed.color,
-            footer: !embed.footer?.text
-              ? undefined
-              : {
-                  text: replaceTemplateString(
-                    article.flattened,
-                    embed.footer.text
-                  ) as string,
-                  icon_url:
-                    replaceTemplateString(
-                      article.flattened,
-                      embed.footer.iconUrl
-                    ) || null,
-                },
-            image: !embed.image?.url
-              ? undefined
-              : {
-                  url:
-                    (replaceTemplateString(
-                      article.flattened,
-                      embed.image.url
-                    ) as string) || null,
-                },
-            thumbnail: !embed.thumbnail?.url
-              ? undefined
-              : {
-                  url:
-                    (replaceTemplateString(
-                      article.flattened,
-                      embed.thumbnail.url
-                    ) as string) || null,
-                },
-            url: replaceTemplateString(article.flattened, embed.url) || null,
-            fields: embed.fields
-              ?.filter((field) => field.name && field.value)
-              .map((field) => ({
-                name: replaceTemplateString(
-                  article.flattened,
-                  field.name
-                ) as string,
-                value: replaceTemplateString(
-                  article.flattened,
-                  field.value
-                ) as string,
-                inline: field.inline,
-              })),
-            timestamp,
-          };
-        }),
+        embeds: [],
       })
     );
+
+    payloads[payloads.length - 1].embeds = (embeds || [])?.map((embed) => {
+      let timestamp: string | undefined = undefined;
+
+      if (embed.timestamp === "now") {
+        timestamp = new Date().toISOString();
+      } else if (embed.timestamp === "article") {
+        timestamp = article.raw.date?.toISOString();
+      }
+
+      return {
+        title: replaceTemplateString(article.flattened, embed.title),
+        description: replaceTemplateString(
+          article.flattened,
+          embed.description
+        ),
+        author: !embed.author?.name
+          ? undefined
+          : {
+              name: replaceTemplateString(
+                article.flattened,
+                embed.author.name
+              ) as string,
+              icon_url:
+                replaceTemplateString(
+                  article.flattened,
+                  embed.author.iconUrl
+                ) || null,
+            },
+        color: embed.color,
+        footer: !embed.footer?.text
+          ? undefined
+          : {
+              text: replaceTemplateString(
+                article.flattened,
+                embed.footer.text
+              ) as string,
+              icon_url:
+                replaceTemplateString(
+                  article.flattened,
+                  embed.footer.iconUrl
+                ) || null,
+            },
+        image: !embed.image?.url
+          ? undefined
+          : {
+              url:
+                (replaceTemplateString(
+                  article.flattened,
+                  embed.image.url
+                ) as string) || null,
+            },
+        thumbnail: !embed.thumbnail?.url
+          ? undefined
+          : {
+              url:
+                (replaceTemplateString(
+                  article.flattened,
+                  embed.thumbnail.url
+                ) as string) || null,
+            },
+        url: replaceTemplateString(article.flattened, embed.url) || null,
+        fields: embed.fields
+          ?.filter((field) => field.name && field.value)
+          .map((field) => ({
+            name: replaceTemplateString(
+              article.flattened,
+              field.name
+            ) as string,
+            value: replaceTemplateString(
+              article.flattened,
+              field.value
+            ) as string,
+            inline: field.inline,
+          })),
+        timestamp,
+      };
+    });
 
     return payloads;
   }

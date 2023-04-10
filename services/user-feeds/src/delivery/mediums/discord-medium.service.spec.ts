@@ -70,6 +70,7 @@ describe("DiscordMediumService", () => {
           formatTables: false,
           stripImages: false,
         },
+        splitOptions: {},
       },
     };
 
@@ -193,6 +194,7 @@ describe("DiscordMediumService", () => {
           formatTables: false,
           stripImages: false,
         },
+        splitOptions: {},
       },
       feedDetails: {
         id: "feed-id",
