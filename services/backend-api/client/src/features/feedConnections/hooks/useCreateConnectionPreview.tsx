@@ -28,7 +28,10 @@ export const useCreateConnectionPreview = (
   type: FeedConnectionType,
   inputData: CreateConnectionPreviewInput
 ) => {
-  const { status, data, fetchStatus } = useQuery<CreateConnectionPreviewOutput, ApiAdapterError>(
+  const { status, data, fetchStatus, error } = useQuery<
+    CreateConnectionPreviewOutput,
+    ApiAdapterError
+  >(
     ["connection-preview", { type, inputData }],
     () => {
       const method = methodsByType[type];
@@ -45,5 +48,6 @@ export const useCreateConnectionPreview = (
     data,
     status,
     fetchStatus,
+    error,
   };
 };

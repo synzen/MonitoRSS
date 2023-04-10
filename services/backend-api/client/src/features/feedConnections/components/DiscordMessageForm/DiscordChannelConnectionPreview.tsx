@@ -1,4 +1,5 @@
 import { Box, Spinner } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
 import DiscordView from "../../../../components/DiscordView";
 import { FeedConnectionType } from "../../../../types";
 import { useUserFeed } from "../../../feed/hooks";
@@ -6,6 +7,7 @@ import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { useCreateConnectionPreview, useDiscordChannelConnection } from "../../hooks";
 import { useDebounce } from "../../../../hooks";
 import { useDiscordBot } from "../../../discordUser";
+import { InlineErrorAlert } from "../../../../components";
 
 type Props = CreateDiscordChannelConnectionPreviewInput;
 
@@ -14,6 +16,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
     feed,
     fetchStatus: feedFetchStatus,
     status: feedStatus,
+    error: feedError,
   } = useUserFeed({
     feedId,
   });
@@ -21,6 +24,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
     connection,
     fetchStatus: connectionFetchStatus,
     status: connectionStatus,
+    error: connectionError,
   } = useDiscordChannelConnection({
     connectionId,
     feedId,
@@ -31,6 +35,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
     data: connectionPreview,
     fetchStatus,
     status,
+    error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
     enabled: !!(feed && connection && debouncedData.article?.id),
     data: {
@@ -45,6 +50,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
     },
   });
   const { data: bot } = useDiscordBot();
+  const { t } = useTranslation();
 
   const isLoading =
     feedStatus === "loading" || connectionStatus === "loading" || status === "loading";
@@ -54,6 +60,17 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
     feedFetchStatus === "fetching" ||
     connectionFetchStatus === "fetching" ||
     fetchStatus === "fetching";
+
+  const useError = feedError || connectionError || error;
+
+  if (useError) {
+    return (
+      <InlineErrorAlert
+        title={t("common.errors.somethingWentWrong")}
+        description={useError.message}
+      />
+    );
+  }
 
   return (
     <Box position="relative" borderRadius="md" overflow="hidden" zIndex={10}>
