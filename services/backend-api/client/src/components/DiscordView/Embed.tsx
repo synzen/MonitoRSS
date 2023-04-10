@@ -1,3 +1,7 @@
+/**
+ * Code is used and modified from https://github.com/leovoel/embed-visualizer
+ */
+
 /* eslint-disable react/no-array-index-key */
 import React from "react";
 import dayjs from "dayjs";

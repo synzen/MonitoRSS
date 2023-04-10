@@ -1,3 +1,7 @@
+/**
+ * Code is used and modified from https://github.com/leovoel/embed-visualizer
+ */
+
 /* eslint-disable no-useless-escape */
 import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
