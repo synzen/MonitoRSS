@@ -20,6 +20,7 @@ import {
   castDiscordContentForMedium,
   castDiscordEmbedsForMedium,
 } from "../../common/utils";
+import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -41,6 +42,19 @@ export interface UpdateDiscordWebhookConnectionInput {
       };
     };
   };
+}
+
+interface CreatePreviewInput {
+  userFeed: UserFeed;
+  connection: DiscordWebhookConnection;
+  splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
+  content?: string;
+  embeds?: DiscordPreviewEmbed[];
+  feedFormatOptions: UserFeed["formatOptions"] | null;
+  connectionFormatOptions?:
+    | DiscordWebhookConnection["details"]["formatter"]
+    | null;
+  articleId?: string;
 }
 
 @Injectable()
@@ -278,6 +292,69 @@ export class FeedConnectionsDiscordWebhooksService {
     } as const;
 
     return this.feedHandlerService.sendTestArticle({
+      details: payload,
+    });
+  }
+
+  async createPreview({
+    connection,
+    feedFormatOptions,
+    userFeed,
+    articleId,
+    connectionFormatOptions,
+    content,
+    embeds,
+    splitOptions,
+  }: CreatePreviewInput): Promise<SendTestArticleResult> {
+    const payload = {
+      type: "discord",
+      feed: {
+        url: userFeed.url,
+        formatOptions: {
+          dateFormat: feedFormatOptions?.dateFormat,
+          ...feedFormatOptions,
+        },
+      },
+      article: articleId ? { id: articleId } : undefined,
+      mediumDetails: {
+        content: castDiscordContentForMedium(content),
+        embeds: castDiscordEmbedsForMedium(
+          embeds?.map((e) => ({
+            title: e.title || undefined,
+            description: e.description || undefined,
+            url: e.url || undefined,
+            imageURL: e.image?.url || undefined,
+            thumbnailURL: e.thumbnail?.url || undefined,
+            authorIconURL: e.author?.iconUrl || undefined,
+            authorName: e.author?.name || undefined,
+            authorURL: e.author?.url || undefined,
+            color: e.color || undefined,
+            fields:
+              e.fields
+                ?.map((f) => ({
+                  name: f.name || "",
+                  value: f.value || "",
+                  inline: f.inline || false,
+                }))
+                .filter((v) => v.name) || [],
+            footerIconURL: e.footer?.iconUrl || undefined,
+            footerText: e.footer?.text || undefined,
+            timestamp: e.timestamp || undefined,
+          }))
+        ),
+        webhook: {
+          id: connection.details.webhook.id,
+          name: connection.details.webhook.name,
+          iconUrl: connection.details.webhook.iconUrl,
+          token: connection.details.webhook.token,
+        },
+        guildId: connection.details.webhook.guildId,
+        formatter: connectionFormatOptions || undefined,
+        splitOptions: splitOptions || undefined,
+      },
+    } as const;
+
+    return this.feedHandlerService.createPreview({
       details: payload,
     });
   }

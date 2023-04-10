@@ -23,9 +23,11 @@ import {
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
-  CreateDiscordChannelConnectionTestArticleInputDto,
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
+  CreateDiscordWebhookConnectionPreviewInputDto,
+  CreateDiscordWebhookConnectionPreviewOutputDto,
+  CreateDiscordWebhookConnectionTestArticleInputDto,
   CreateDiscordWebhookConnectionTestArticleOutputDto,
   UpdateDiscordWebhookConnectionInputDto,
   UpdateDiscordWebhookConnectionOutputDto,
@@ -95,10 +97,41 @@ export class FeedConnectionsDiscordWebhooksController {
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
-    { article }: CreateDiscordChannelConnectionTestArticleInputDto
+    { article }: CreateDiscordWebhookConnectionTestArticleInputDto
   ): Promise<CreateDiscordWebhookConnectionTestArticleOutputDto> {
     const result = await this.service.sendTestArticle(feed, connection, {
       article,
+    });
+
+    return {
+      result,
+    };
+  }
+
+  @Post("/discord-webhooks/:connectionId/preview")
+  @UseFilters(CreateDiscordWebhookTestArticleFilter)
+  async createPreview(
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
+    @Body(ValidationPipe)
+    {
+      article,
+      content,
+      embeds,
+      userFeedFormatOptions,
+      connectionFormatOptions,
+      splitOptions,
+    }: CreateDiscordWebhookConnectionPreviewInputDto
+  ): Promise<CreateDiscordWebhookConnectionPreviewOutputDto> {
+    const result = await this.service.createPreview({
+      connection,
+      userFeed: feed,
+      feedFormatOptions: userFeedFormatOptions,
+      connectionFormatOptions,
+      articleId: article?.id,
+      content,
+      embeds,
+      splitOptions,
     });
 
     return {

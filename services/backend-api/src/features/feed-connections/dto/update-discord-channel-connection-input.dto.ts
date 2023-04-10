@@ -1,7 +1,6 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
-  IsBoolean,
   IsIn,
   IsObject,
   IsOptional,
@@ -9,46 +8,16 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { DiscordEmbed } from "../../../common";
+import {
+  DiscordEmbed,
+  DiscordConnectionFormatterOptions,
+  DiscordSplitOptions,
+} from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class FiltersDto {
   @IsObject()
   expression: Record<string, unknown>;
-}
-
-class SplitOptions {
-  @IsBoolean()
-  @IsOptional()
-  @ValidateIf((v) => v !== null)
-  isEnabled?: boolean | null;
-
-  @IsString()
-  @IsOptional()
-  @ValidateIf((v) => v !== null)
-  appendChar?: string | null;
-
-  @IsString()
-  @IsOptional()
-  @ValidateIf((v) => v !== null)
-  prependChar?: string | null;
-
-  @IsString()
-  @IsOptional()
-  @ValidateIf((v) => v !== null)
-  splitChar?: string | null;
-}
-
-class FormatterDto {
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  formatTables?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  stripImages: boolean;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {
@@ -81,16 +50,16 @@ export class UpdateDiscordChannelConnectionInputDto {
   disabledCode?: FeedConnectionDisabledCode.Manual | null;
 
   @IsOptional()
-  @Type(() => SplitOptions)
+  @Type(() => DiscordSplitOptions)
   @ValidateNested()
   @IsObject()
   @ValidateIf((v) => v !== null)
-  splitOptions?: SplitOptions | null;
+  splitOptions?: DiscordSplitOptions | null;
 
   @IsOptional()
-  @Type(() => FormatterDto)
+  @Type(() => DiscordConnectionFormatterOptions)
   @ValidateNested()
   @IsObject()
   @ValidateIf((v) => v !== null)
-  formatter?: FormatterDto | null;
+  formatter?: DiscordConnectionFormatterOptions | null;
 }

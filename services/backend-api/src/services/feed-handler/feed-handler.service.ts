@@ -13,12 +13,14 @@ import {
   CreateFilterValidationInput,
   CreateFilterValidationOutput,
   CreateFilterValidationResponse,
+  CreatePreviewInput,
   GetArticlesInput,
   GetArticlesOutput,
   GetArticlesResponse,
   SendTestArticleInput,
   SendTestArticleResult,
 } from "./types";
+import { CreatePreviewOutput } from "./types/create-preview-output.type";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -159,6 +161,43 @@ export class FeedHandlerService {
     const json = await res.json();
 
     const result = await this.validateResponseJson(SendTestArticleResult, json);
+
+    return result;
+  }
+
+  async createPreview({
+    details,
+  }: CreatePreviewInput): Promise<CreatePreviewOutput> {
+    let res: Response;
+    const body = JSON.stringify(details);
+
+    try {
+      res = await fetch(`${this.host}/v1/user-feeds/preview`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+        body,
+      });
+    } catch (err) {
+      // Fetch may have some obscure errors
+      throw new Error(
+        `Failed to create preview through user feeds API: ${
+          err.constructor.name
+        }: ${(err as Error).message}`
+      );
+    }
+
+    if (res.status === 404) {
+      throw new FeedArticleNotFoundException("Feed article not found");
+    }
+
+    await this.validateResponseStatus(res);
+
+    const json = await res.json();
+
+    const result = await this.validateResponseJson(CreatePreviewOutput, json);
 
     return result;
   }

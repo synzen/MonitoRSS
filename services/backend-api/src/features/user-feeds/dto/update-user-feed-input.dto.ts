@@ -6,24 +6,10 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  Validate,
-  ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { IsValidTimezone } from "../../../common/validations/is-valid-timezone";
+import { UserFeedFormatOptions } from "../../../common";
 import { UserFeedDisabledCode } from "../types";
-
-class FormatOptions {
-  @IsString()
-  @IsOptional()
-  dateFormat?: string;
-
-  @IsString()
-  @IsOptional()
-  @Validate(IsValidTimezone)
-  @ValidateIf((o) => !!o.dateTimezone)
-  dateTimezone?: string;
-}
 
 export class UpdateUserFeedInputDto {
   @IsString()
@@ -52,8 +38,8 @@ export class UpdateUserFeedInputDto {
   blockingComparisons?: string[];
 
   @IsOptional()
-  @Type(() => FormatOptions)
+  @Type(() => UserFeedFormatOptions)
   @ValidateNested()
   @IsObject()
-  formatOptions?: FormatOptions;
+  formatOptions?: UserFeedFormatOptions;
 }

@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { InvalidFilterExpressionException } from "../../common/exceptions";
+import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
 import {
   castDiscordContentForMedium,
   castDiscordEmbedsForMedium,
@@ -37,6 +38,19 @@ export interface UpdateDiscordChannelConnectionInput {
       content?: string;
     };
   };
+}
+
+interface CreatePreviewInput {
+  userFeed: UserFeed;
+  connection: DiscordChannelConnection;
+  splitOptions?: DiscordChannelConnection["splitOptions"] | null;
+  content?: string;
+  embeds?: DiscordPreviewEmbed[];
+  feedFormatOptions: UserFeed["formatOptions"] | null;
+  connectionFormatOptions?:
+    | DiscordChannelConnection["details"]["formatter"]
+    | null;
+  articleId?: string;
 }
 
 @Injectable()
@@ -243,6 +257,66 @@ export class FeedConnectionsDiscordChannelsService {
     } as const;
 
     return this.feedHandlerService.sendTestArticle({
+      details: payload,
+    });
+  }
+
+  async createPreview({
+    connection,
+    userFeed,
+    content,
+    embeds,
+    feedFormatOptions,
+    connectionFormatOptions,
+    splitOptions,
+    articleId,
+  }: CreatePreviewInput) {
+    const payload = {
+      type: "discord",
+      feed: {
+        url: userFeed.url,
+        formatOptions: {
+          dateFormat: feedFormatOptions?.dateFormat,
+          ...feedFormatOptions,
+        },
+      },
+      article: articleId ? { id: articleId } : undefined,
+      mediumDetails: {
+        channel: {
+          id: connection.details.channel.id,
+        },
+        guildId: connection.details.channel.guildId,
+        content: castDiscordContentForMedium(content),
+        embeds: castDiscordEmbedsForMedium(
+          embeds?.map((e) => ({
+            title: e.title || undefined,
+            description: e.description || undefined,
+            url: e.url || undefined,
+            imageURL: e.image?.url || undefined,
+            thumbnailURL: e.thumbnail?.url || undefined,
+            authorIconURL: e.author?.iconUrl || undefined,
+            authorName: e.author?.name || undefined,
+            authorURL: e.author?.url || undefined,
+            color: e.color || undefined,
+            fields:
+              e.fields
+                ?.map((f) => ({
+                  name: f.name || "",
+                  value: f.value || "",
+                  inline: f.inline || false,
+                }))
+                .filter((v) => v.name) || [],
+            footerIconURL: e.footer?.iconUrl || undefined,
+            footerText: e.footer?.text || undefined,
+            timestamp: e.timestamp || undefined,
+          }))
+        ),
+        formatter: connectionFormatOptions || undefined,
+        splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
+      },
+    } as const;
+
+    return this.feedHandlerService.createPreview({
       details: payload,
     });
   }

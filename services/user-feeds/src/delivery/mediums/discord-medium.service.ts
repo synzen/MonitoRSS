@@ -279,7 +279,7 @@ export class DiscordMediumService implements DeliveryMedium {
     };
   }
 
-  private generateApiPayloads(
+  generateApiPayloads(
     article: Article,
     {
       embeds,

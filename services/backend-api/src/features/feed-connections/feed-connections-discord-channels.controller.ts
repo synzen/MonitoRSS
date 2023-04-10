@@ -24,6 +24,8 @@ import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionOutputDto,
+  CreateDiscordChannelConnectionPreviewInputDto,
+  CreateDiscordChannelConnectionPreviewOutputDto,
   CreateDiscordChannelConnectionTestArticleInputDto,
   CreateDiscordChannelConnectionTestArticleOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
@@ -100,6 +102,40 @@ export class FeedConnectionsDiscordChannelsController {
         status: result.status,
         apiPayload: result.apiPayload,
         apiResponse: result.apiResponse,
+      },
+    };
+  }
+
+  @Post("/discord-channels/:connectionId/preview")
+  @UseFilters(CreateDiscordChannelTestArticleFilter)
+  async createPreview(
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Body(ValidationPipe)
+    {
+      article,
+      content,
+      embeds,
+      userFeedFormatOptions,
+      connectionFormatOptions,
+      splitOptions,
+    }: CreateDiscordChannelConnectionPreviewInputDto
+  ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
+    const result = await this.service.createPreview({
+      connection,
+      userFeed: feed,
+      feedFormatOptions: userFeedFormatOptions,
+      connectionFormatOptions,
+      articleId: article?.id,
+      content,
+      embeds,
+      splitOptions,
+    });
+
+    return {
+      result: {
+        status: result.status,
+        messages: result.messages,
       },
     };
   }

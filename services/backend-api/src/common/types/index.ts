@@ -5,3 +5,6 @@ export * from "./discord-guild-channel.type";
 export * from "./session";
 export * from "./discord-embed.type";
 export * from "./discord-medium.type";
+export * from "./discord-split-options.type";
+export * from "./discord-connection-formatter-options.type";
+export * from "./user-feed-format-options.type";

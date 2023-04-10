@@ -15,6 +15,7 @@ import {
   CreateFilterValidationInput,
   CreateFilterValidationOutput,
   CreateFilterValidationResponse,
+  CreatePreviewInput,
   GetArticlesInput,
   GetArticlesOutput,
   GetArticlesResponse,
@@ -200,6 +201,75 @@ describe("FeedHandlerService", () => {
     });
   });
 
+  describe("createPreview", () => {
+    const endpoint = `/v1/user-feeds/preview`;
+    const validPayload: CreatePreviewInput = {
+      details: {
+        type: "discord" as const,
+        feed: {
+          url: "url",
+          formatOptions: {
+            dateFormat: 'yyyy-MM-dd "at" HH:mm:ss',
+          },
+        },
+        mediumDetails: {
+          channel: {
+            id: "channel-id",
+          },
+          guildId: "",
+          content: "content",
+          embeds: [],
+        },
+      },
+    };
+
+    it("returns the result on success", async () => {
+      const mockResponse = { status: TestDeliveryStatus.Success, messages: [] };
+      nock(host)
+        .post(endpoint)
+        .matchHeader("Content-Type", "application/json")
+        .matchHeader("api-key", apiKey)
+        .reply(200, mockResponse);
+
+      const result = await service.createPreview(validPayload);
+
+      expect(result).toEqual({
+        status: TestDeliveryStatus.Success,
+        messages: [],
+      });
+    });
+
+    it("throws a special exception on 404", async () => {
+      nock(host).post(endpoint).reply(404, {});
+
+      await expect(service.createPreview(validPayload)).rejects.toThrow(
+        FeedArticleNotFoundException
+      );
+    });
+
+    it("throws if status code is 400", async () => {
+      nock(host).post(endpoint).reply(400, {});
+
+      await expect(service.createPreview(validPayload)).rejects.toThrow(
+        FeedFetcherStatusException
+      );
+    });
+
+    it("throws if the status code is >= 500", async () => {
+      nock(host).post(endpoint).reply(500, {});
+
+      await expect(service.createPreview(validPayload)).rejects.toThrow();
+    });
+
+    it("throws if the response payload is unexpected", async () => {
+      nock(host).post(endpoint).reply(200, { status: "unexpected" });
+
+      await expect(service.createPreview(validPayload)).rejects.toThrow(
+        UnexpectedApiResponseException
+      );
+    });
+  });
+
   describe("getArticles", () => {
     const endpoint = `/v1/user-feeds/get-articles`;
     const validPayload: GetArticlesInput = {
@@ -212,6 +282,7 @@ describe("FeedHandlerService", () => {
           formatTables: false,
           stripImages: false,
           dateFormat: "yyyy-MM-dd",
+          dateTimezone: undefined,
         },
       },
     };

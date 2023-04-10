@@ -21,6 +21,7 @@ import {
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
   Article,
+  discordMediumPayloadDetailsSchema,
   discordMediumTestPayloadDetailsSchema,
   GetFeedArticlesRequestStatus,
   TransformValidationPipe,
@@ -32,6 +33,7 @@ import {
   CreateFeedFilterValidationInputDto,
   CreateFeedFilterValidationOutputDto,
   CreateFeedInputDto,
+  CreatePreviewOutputDto,
   CreateTestArticleOutputDto,
   GetUserFeedArticlesInputDto,
   GetUserFeedArticlesOutputDto,
@@ -333,6 +335,99 @@ export class FeedsController {
             `Unhandled Discord API status code when sending test article: ${result.status}`
           );
         }
+      } else {
+        throw new Error(`Unhandled medium type: ${type}`);
+      }
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        throw new BadRequestException(err.errors);
+      }
+
+      if (err instanceof FeedArticleNotFoundException) {
+        throw new NotFoundException(err.message);
+      }
+
+      throw err;
+    }
+  }
+
+  @Post("preview")
+  @UseGuards(ApiGuard)
+  async createPreview(
+    @Body() payload: Record<string, unknown>
+  ): Promise<CreatePreviewOutputDto> {
+    try {
+      const withType = await object()
+        .shape({
+          type: string().oneOf(Object.values(TestDeliveryMedium)).required(),
+          feed: object()
+            .shape({
+              url: string().required(),
+              formatOptions: object()
+                .shape({
+                  dateFormat: string().optional().default(undefined),
+                  dateTimezone: string().optional().default(undefined),
+                })
+                .optional()
+                .default(undefined),
+            })
+            .required(),
+          article: object()
+            .shape({
+              id: string().required(),
+            })
+            .required(),
+        })
+        .required()
+        .validate(payload);
+
+      const formatOptions: UserFeedFormatOptions = {
+        dateFormat: withType.feed.formatOptions?.dateFormat,
+        dateTimezone: withType.feed.formatOptions?.dateTimezone,
+      };
+
+      const article = await this.feedFetcherService.fetchFeedArticle(
+        withType.feed.url,
+        withType.article.id,
+        {
+          formatOptions,
+        }
+      );
+
+      if (!article) {
+        return {
+          status: TestDeliveryStatus.NoArticles,
+        };
+      }
+
+      const type = withType.type;
+
+      if (type === TestDeliveryMedium.Discord) {
+        const { mediumDetails } = await object({
+          mediumDetails: discordMediumPayloadDetailsSchema.required(),
+        })
+          .required()
+          .validate(payload);
+
+        const formattedArticle =
+          await this.articleFormatterService.formatArticleForDiscord(article, {
+            formatTables: mediumDetails.formatter.formatTables,
+            stripImages: mediumDetails.formatter.stripImages,
+          });
+
+        const payloads = this.discordMediumService.generateApiPayloads(
+          formattedArticle,
+          {
+            embeds: mediumDetails.embeds,
+            splitOptions: mediumDetails.splitOptions,
+            content: mediumDetails.content,
+          }
+        );
+
+        return {
+          status: TestDeliveryStatus.Success,
+          messages: payloads,
+        };
       } else {
         throw new Error(`Unhandled medium type: ${type}`);
       }

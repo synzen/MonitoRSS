@@ -18,5 +18,5 @@ export class CreateDiscordWebhookConnectionTestArticleInputDto {
   @Type(() => Article)
   @IsOptional()
   @ValidateNested()
-  result: Article;
+  article?: Article;
 }
