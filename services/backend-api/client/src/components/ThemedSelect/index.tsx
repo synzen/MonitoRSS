@@ -5,28 +5,29 @@ import { REACT_SELECT_STYLES } from "@/constants/reactSelectStyles";
 
 const { Option } = components;
 
-interface SelectOption {
+interface SelectOption<T> {
   value: string;
   label: string | React.ReactNode;
   icon?: string | React.ReactNode;
+  data: T;
 }
-type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
+type SelectStyles<T> = StylesConfig<SelectOption<T>, false, GroupBase<SelectOption<T>>> | undefined;
 
-interface Props {
+interface Props<T> {
   value?: string;
-  options: SelectOption[];
+  options: SelectOption<T>[];
   loading?: boolean;
   isDisabled?: boolean;
   id?: string;
   onBlur?: () => void;
-  onChange: (value: string) => void;
+  onChange: (value: string, data: T) => void;
   name?: string;
   isClearable?: boolean;
   onInputChange?: (value: string) => void;
   placeholder?: string | React.ReactNode;
 }
 
-export const ThemedSelect: React.FC<Props> = ({
+export const ThemedSelect = <T,>({
   value,
   options,
   loading,
@@ -38,7 +39,7 @@ export const ThemedSelect: React.FC<Props> = ({
   isClearable,
   placeholder,
   onInputChange,
-}) => {
+}: Props<T>) => {
   // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
 
@@ -47,7 +48,6 @@ export const ThemedSelect: React.FC<Props> = ({
   return (
     <Select
       id={id}
-      inputV
       isDisabled={isDisabled}
       isLoading={loading}
       options={options}
@@ -59,10 +59,10 @@ export const ThemedSelect: React.FC<Props> = ({
       styles={styles}
       value={selectedOption || ""}
       onChange={(option) => {
-        onChange((option as SelectOption)?.value || "");
+        onChange((option as SelectOption<T>)?.value || "", (option as SelectOption<T>)?.data);
       }}
       components={{
-        Option: IconOption,
+        Option: IconOption as never,
         NoOptionsMessage: (props) => (
           <components.NoOptionsMessage {...props}>
             <span>No results found</span>
@@ -76,10 +76,10 @@ export const ThemedSelect: React.FC<Props> = ({
 
 type IconOptionProps = Parameters<typeof Option>[0];
 
-const IconOption: React.FC<IconOptionProps> = (props) => {
+const IconOption = <T,>(props: IconOptionProps) => {
   const { data } = props;
 
-  const castedData = data as SelectOption;
+  const castedData = data as SelectOption<T>;
 
   return (
     // eslint-disable-next-line react/jsx-props-no-spreading

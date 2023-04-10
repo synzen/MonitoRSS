@@ -5,7 +5,7 @@ import { useDiscordServerChannels } from "../../hooks";
 
 interface Props {
   serverId?: string;
-  onChange: (value: string) => void;
+  onChange: (channelId: string, channelName: string) => void;
   onBlur: () => void;
   value?: string;
   isDisabled?: boolean;
@@ -27,6 +27,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
     data?.results.map((channel) => ({
       label: `${channel.category ? `[${channel.category.name}] ` : ""}${channel.name}`,
       value: channel.id,
+      data: channel,
     })) || [];
 
   return (
@@ -35,7 +36,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
         loading={loading}
         isDisabled={isDisabled || loading || !!error}
         options={options}
-        onChange={onChange}
+        onChange={(val, optionData) => onChange(val, optionData.name)}
         onBlur={onBlur}
         value={value}
       />

@@ -11,7 +11,9 @@ interface Props {
 export const useDiscordWebhooks = ({ serverId, isWebhooksEnabled }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
 
-  const { data, status, error } = useQuery<GetDiscordWebhooksOutput, ApiAdapterError>(
+  const enabled = !!serverId && isWebhooksEnabled && !hasErrored;
+
+  const { data, status, error, fetchStatus } = useQuery<GetDiscordWebhooksOutput, ApiAdapterError>(
     [
       "discord-server-webhooks",
       {
@@ -28,7 +30,7 @@ export const useDiscordWebhooks = ({ serverId, isWebhooksEnabled }: Props) => {
       });
     },
     {
-      enabled: !!serverId && isWebhooksEnabled && !hasErrored,
+      enabled,
       onError: () => {
         setHasErrored(true);
       },
@@ -38,6 +40,7 @@ export const useDiscordWebhooks = ({ serverId, isWebhooksEnabled }: Props) => {
   return {
     data: data?.results,
     status,
+    fetchStatus,
     error,
   };
 };

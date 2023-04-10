@@ -48,6 +48,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
     reset,
     formState: { errors, isSubmitting, isValid },
     watch,
+    setValue,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
@@ -89,6 +90,48 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
         <ModalBody>
           <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
             <Stack spacing={4}>
+              <FormControl isInvalid={!!errors.serverId}>
+                <FormLabel>
+                  {t("features.feed.components.addDiscordChannelConnectionDialog.formServerLabel")}
+                </FormLabel>
+                <Controller
+                  name="serverId"
+                  control={control}
+                  render={({ field }) => (
+                    <DiscordServerSearchSelectv2
+                      {...field}
+                      onChange={field.onChange}
+                      value={field.value}
+                    />
+                  )}
+                />
+              </FormControl>
+              <FormControl isInvalid={!!errors.channelId}>
+                <FormLabel>
+                  {t("features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel")}
+                </FormLabel>
+                <Controller
+                  name="channelId"
+                  control={control}
+                  render={({ field }) => (
+                    <DiscordChannelDropdown
+                      value={field.value}
+                      onChange={(value, name) => {
+                        field.onChange(value);
+                        setValue("name", name, {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        });
+                      }}
+                      onBlur={field.onBlur}
+                      isDisabled={isSubmitting}
+                      serverId={serverId}
+                    />
+                  )}
+                />
+                <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
+              </FormControl>
               <FormControl isInvalid={!!errors.name}>
                 <FormLabel>
                   {t("features.feed.components.addDiscordChannelConnectionDialog.formNameLabel")}
@@ -105,41 +148,6 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
                       ".addDiscordChannelConnectionDialog.formNameDescription"
                   )}
                 </FormHelperText>
-              </FormControl>
-              <FormControl isInvalid={!!errors.serverId}>
-                <FormLabel>
-                  {t("features.feed.components.addDiscordChannelConnectionDialog.formServerLabel")}
-                </FormLabel>
-                <Controller
-                  name="serverId"
-                  control={control}
-                  render={({ field }) => (
-                    <DiscordServerSearchSelectv2
-                      {...field}
-                      onChange={(id) => field.onChange(id)}
-                      value={field.value}
-                    />
-                  )}
-                />
-              </FormControl>
-              <FormControl isInvalid={!!errors.channelId}>
-                <FormLabel>
-                  {t("features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel")}
-                </FormLabel>
-                <Controller
-                  name="channelId"
-                  control={control}
-                  render={({ field }) => (
-                    <DiscordChannelDropdown
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      isDisabled={isSubmitting}
-                      serverId={serverId}
-                    />
-                  )}
-                />
-                <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
               </FormControl>
             </Stack>
           </form>
