@@ -25,6 +25,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({ onChange, value }
           value: server.id,
           label: server.name,
           icon: server.iconUrl,
+          data: server,
         })) || []
       }
     />

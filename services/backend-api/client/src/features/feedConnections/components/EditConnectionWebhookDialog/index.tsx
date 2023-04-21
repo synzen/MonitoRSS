@@ -200,6 +200,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                             ),
                             value: webhook.id,
                             icon: webhook.avatarUrl,
+                            data: webhook,
                           })) || []
                         }
                         onChange={field.onChange}

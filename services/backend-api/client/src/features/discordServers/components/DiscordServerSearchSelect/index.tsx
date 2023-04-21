@@ -32,6 +32,7 @@ export const DiscordServerSearchSelect: React.FC<Props> = ({ onClick }) => {
           value: server.id,
           label: server.name,
           icon: server.iconUrl,
+          data: server,
         })) || []
       }
     />

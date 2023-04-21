@@ -5,6 +5,7 @@ import { HStack, Text } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { ThemedSelect } from "@/components";
 import { useFeeds } from "../../hooks/useFeeds";
+import { FeedSummary } from "../../types";
 
 interface Props {}
 
@@ -31,13 +32,14 @@ export const FeedSearchSelect: React.FC<Props> = () => {
     setSearch(value);
   }, 500);
 
-  let options: Array<{ value: string; label: string }> = [];
+  let options: Array<{ value: string; label: string; data: FeedSummary }> = [];
 
   if (search) {
     options =
       data?.results.map((feed) => ({
         value: feed.id,
         label: feed.title,
+        data: feed,
       })) || [];
   }
 
@@ -48,6 +50,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
         .map((feed) => ({
           value: feed.id,
           label: feed.title,
+          data: feed,
         })) || [];
   }
 

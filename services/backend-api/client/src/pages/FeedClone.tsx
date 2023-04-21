@@ -114,6 +114,7 @@ const FeedClone: React.FC = () => {
       .map((f) => ({
         label: f.title,
         value: f.id,
+        data: {},
       })) || [];
 
   return (

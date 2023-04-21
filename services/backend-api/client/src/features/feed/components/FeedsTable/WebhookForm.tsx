@@ -144,6 +144,7 @@ export const WebhookForm: React.FC<Props> = ({ feedId, serverId, onUpdated }) =>
                       ),
                       value: webhook.id,
                       icon: webhook.avatarUrl,
+                      data: webhook,
                     })) || []
                   }
                   onChange={field.onChange}

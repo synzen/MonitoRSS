@@ -148,6 +148,7 @@ export const ArticleSelectPrompt = ({
                               feedArticlePropertiesResult?.result.properties.map((property) => ({
                                 value: property,
                                 label: property,
+                                data: property,
                               })) || []
                             }
                             isDisabled={feedArticlePropertiesStatus === "loading"}

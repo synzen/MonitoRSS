@@ -56,6 +56,7 @@ export const AddSubscriberControls: React.FC<Props> = ({ feedId, roles, loading 
               label: role.name,
               value: role.id,
               icon: <Box width={6} borderRadius="50%" height={6} bg={role.color} />,
+              data: role,
             }))}
           />
         </Box>
