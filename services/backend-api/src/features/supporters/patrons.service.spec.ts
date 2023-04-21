@@ -5,13 +5,15 @@ import dayjs from "dayjs";
 describe("PatronsService", () => {
   let patronsService: PatronsService;
   const defaultMaxFeeds = 5;
+  const defaultMaxUserFeeds = 10;
   const configsService = {
-    get: jest.fn(),
+    getOrThrow: jest.fn(),
   };
 
   beforeEach(async () => {
     patronsService = new PatronsService(configsService as never);
     patronsService.defaultMaxFeeds = defaultMaxFeeds;
+    patronsService.defaultMaxUserFeeds = defaultMaxUserFeeds;
   });
 
   describe("getMaxBenefitsFromPatrons", () => {
@@ -26,6 +28,7 @@ describe("PatronsService", () => {
 
       expect(patronsService.getMaxBenefitsFromPatrons([samplePatron])).toEqual({
         maxFeeds: defaultMaxFeeds,
+        maxUserFeeds: defaultMaxUserFeeds,
         maxGuilds: 0,
         allowWebhooks: false,
         refreshRateSeconds: undefined,
@@ -38,12 +41,14 @@ describe("PatronsService", () => {
         .spyOn(patronsService, "getBenefitsFromPatron")
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 10,
+          maxUserFeeds: 10,
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
@@ -54,6 +59,7 @@ describe("PatronsService", () => {
       ).toEqual(
         expect.objectContaining({
           maxFeeds: 10,
+          maxUserFeeds: 10,
         })
       );
     });
@@ -64,12 +70,14 @@ describe("PatronsService", () => {
         .spyOn(patronsService, "getBenefitsFromPatron")
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 10,
           allowWebhooks: true,
           refreshRateSeconds: 1,
@@ -89,12 +97,14 @@ describe("PatronsService", () => {
         .spyOn(patronsService, "getBenefitsFromPatron")
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: false,
           refreshRateSeconds: 1,
@@ -115,12 +125,14 @@ describe("PatronsService", () => {
         .spyOn(patronsService, "getBenefitsFromPatron")
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
+          maxUserFeeds: 5,
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 10,

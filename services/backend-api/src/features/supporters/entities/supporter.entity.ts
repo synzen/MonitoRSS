@@ -23,6 +23,9 @@ export class Supporter {
   @Prop()
   maxFeeds?: number;
 
+  @Prop()
+  maxUserFeeds?: number;
+
   @Prop({
     type: [String],
     required: true,

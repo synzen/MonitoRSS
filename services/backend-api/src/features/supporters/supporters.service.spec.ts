@@ -23,6 +23,7 @@ describe("SupportersService", () => {
     getAllSubscriptions: jest.fn(),
   } as never;
   const defaultMaxFeeds = 5;
+  const defaultMaxUserFeeds = 6;
   const defaultRefreshRateSeconds = 60;
 
   beforeAll(async () => {
@@ -34,6 +35,7 @@ describe("SupportersService", () => {
     );
 
     supportersService.defaultMaxFeeds = defaultMaxFeeds;
+    supportersService.defaultMaxUserFeeds = defaultMaxUserFeeds;
     supportersService.defaultRefreshRateSeconds = defaultRefreshRateSeconds;
   });
 
@@ -95,6 +97,7 @@ describe("SupportersService", () => {
     };
     const patronBenefits = {
       maxFeeds: 10,
+      maxUserFeeds: 10,
       allowWebhooks: true,
       maxGuilds: 15,
       refreshRateSeconds: 2,
@@ -113,6 +116,7 @@ describe("SupportersService", () => {
 
       expect(result).toEqual({
         maxFeeds: defaultMaxFeeds,
+        maxUserFeeds: defaultMaxUserFeeds,
         maxGuilds: 0,
         isSupporter: false,
         webhooks: false,
@@ -151,12 +155,26 @@ describe("SupportersService", () => {
           expect(result.maxFeeds).toEqual(patronBenefits.maxFeeds);
         });
 
+        it("returns the patron max user feeds if patron max user feeds is larger", () => {
+          jest
+            .spyOn(supportersService, "isValidSupporter")
+            .mockReturnValue(true);
+
+          const result = supportersService.getBenefitsFromSupporter({
+            ...supporter,
+            maxFeeds: patronBenefits.maxUserFeeds - 5,
+          });
+
+          expect(result.maxFeeds).toEqual(patronBenefits.maxUserFeeds);
+        });
+
         it("returns the supporter max feeds if supporter max feeds is larger", () => {
           jest
             .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
@@ -173,12 +191,36 @@ describe("SupportersService", () => {
           expect(result.maxFeeds).toEqual(patronBenefits.maxFeeds + 5);
         });
 
+        it("returns the supporter max user feeds if supporter max user feeds is larger", () => {
+          jest
+            .spyOn(supportersService, "isValidSupporter")
+            .mockReturnValue(true);
+          const patronBenefits = {
+            maxFeeds: 10,
+            maxUserFeeds: 10,
+            allowWebhooks: true,
+            maxGuilds: 15,
+            refreshRateSeconds: 2,
+          };
+          jest
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
+            .mockReturnValue(patronBenefits);
+
+          const result = supportersService.getBenefitsFromSupporter({
+            ...supporter,
+            maxUserFeeds: patronBenefits.maxUserFeeds + 5,
+          });
+
+          expect(result.maxUserFeeds).toEqual(patronBenefits.maxUserFeeds + 5);
+        });
+
         it("returns default max feeds if supporter max feeds does not exist and is larger than patron max feeds", () => {
           jest
             .spyOn(supportersService, "isValidSupporter")
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: defaultMaxFeeds - 10,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
@@ -194,6 +236,29 @@ describe("SupportersService", () => {
 
           expect(result.maxFeeds).toEqual(defaultMaxFeeds);
         });
+
+        it("returns default max user feeds if supporter max user feeds does not exist and is larger than patron max user feeds", () => {
+          jest
+            .spyOn(supportersService, "isValidSupporter")
+            .mockReturnValue(true);
+          const patronBenefits = {
+            maxFeeds: defaultMaxFeeds - 10,
+            maxUserFeeds: defaultMaxUserFeeds - defaultMaxUserFeeds - 1,
+            allowWebhooks: true,
+            maxGuilds: 15,
+            refreshRateSeconds: 2,
+          };
+          jest
+            .spyOn(patronsService, "getMaxBenefitsFromPatrons")
+            .mockReturnValue(patronBenefits);
+
+          const result = supportersService.getBenefitsFromSupporter({
+            ...supporter,
+            maxUserFeeds: undefined,
+          });
+
+          expect(result.maxUserFeeds).toEqual(defaultMaxUserFeeds);
+        });
       });
 
       describe("maxGuilds", () => {
@@ -203,6 +268,7 @@ describe("SupportersService", () => {
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 5,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 10,
             refreshRateSeconds: 2,
@@ -225,6 +291,7 @@ describe("SupportersService", () => {
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
@@ -247,6 +314,7 @@ describe("SupportersService", () => {
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 0,
             refreshRateSeconds: 2,
@@ -271,6 +339,7 @@ describe("SupportersService", () => {
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 5,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 10,
             refreshRateSeconds: 1,
@@ -301,6 +370,7 @@ describe("SupportersService", () => {
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 8,
@@ -330,6 +400,7 @@ describe("SupportersService", () => {
             .mockReturnValue(true);
           const patronBenefits = {
             maxFeeds: 10,
+            maxUserFeeds: 10,
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: undefined,

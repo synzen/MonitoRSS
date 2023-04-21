@@ -30,6 +30,7 @@ interface ServerBenefits {
 
 interface SupportPatronAggregateResult {
   maxFeeds?: number;
+  maxUserFeeds?: number;
   maxGuilds?: number;
   slowRate?: boolean;
   patrons: Array<{
@@ -138,9 +139,7 @@ export class SupportersService {
       maxDailyArticles: benefits.isSupporter
         ? this.maxDailyArticlesSupporter
         : this.maxDailyArticlesDefault,
-      maxUserFeeds: benefits.isSupporter
-        ? this.defaultMaxSupporterUserFeeds
-        : this.defaultMaxUserFeeds,
+      maxUserFeeds: benefits.maxUserFeeds,
     };
   }
 
@@ -374,6 +373,7 @@ export class SupportersService {
         maxGuilds: 0,
         webhooks: false,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
+        maxUserFeeds: this.defaultMaxUserFeeds,
       };
     }
 
@@ -381,6 +381,7 @@ export class SupportersService {
 
     const {
       maxFeeds: patronMaxFeeds,
+      maxUserFeeds: patronMaxUserFeeds,
       maxGuilds: patronMaxGuilds,
       refreshRateSeconds: patronRefreshRateSeconds,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
@@ -401,6 +402,10 @@ export class SupportersService {
       maxFeeds: Math.max(
         supporter.maxFeeds ?? this.defaultMaxFeeds,
         patronMaxFeeds
+      ),
+      maxUserFeeds: Math.max(
+        supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
+        patronMaxUserFeeds
       ),
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,

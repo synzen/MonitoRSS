@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 
 interface PatronBenefits {
   maxFeeds: number;
+  maxUserFeeds: number;
   maxGuilds: number;
   allowWebhooks: boolean;
   refreshRateSeconds?: number;
@@ -21,10 +22,16 @@ interface PatronDetails {
 export class PatronsService {
   defaultMaxFeeds: number;
 
+  defaultMaxUserFeeds: number;
+
   constructor(private readonly configsService: ConfigService) {
-    this.defaultMaxFeeds = this.configsService.get<number>(
+    this.defaultMaxFeeds = this.configsService.getOrThrow<number>(
       "BACKEND_API_DEFAULT_MAX_FEEDS"
     ) as number;
+
+    this.defaultMaxUserFeeds = +this.configsService.getOrThrow<number>(
+      "BACKEND_API_DEFAULT_MAX_USER_FEEDS"
+    );
   }
 
   getMaxBenefitsFromPatrons(patrons: Array<PatronDetails>): PatronBenefits {
@@ -37,6 +44,7 @@ export class PatronsService {
         maxFeeds: this.defaultMaxFeeds,
         maxGuilds: 0,
         allowWebhooks: false,
+        maxUserFeeds: this.defaultMaxUserFeeds,
       };
     }
 
@@ -48,6 +56,9 @@ export class PatronsService {
       refreshRateSeconds: allBenefits.find(
         (benefits) => benefits.refreshRateSeconds !== undefined
       )?.refreshRateSeconds,
+      maxUserFeeds: Math.max(
+        ...allBenefits.map((benefits) => benefits.maxUserFeeds)
+      ),
     };
   }
 
@@ -92,10 +103,35 @@ export class PatronsService {
 
     return {
       maxFeeds: this.getMaxFeedsFromPledge(usePledge),
+      maxUserFeeds: this.getMaxUserFeedsFromPledge(usePledge),
       maxGuilds: this.getMaxServersFromPledgeLifetime(pledgeLifetime),
       refreshRateSeconds: this.getRefreshRateSecondsFromPledge(usePledge),
       allowWebhooks: true,
     };
+  }
+
+  getMaxUserFeedsFromPledge(pledge: number): number {
+    if (pledge >= 2000) {
+      return 140;
+    }
+
+    if (pledge >= 1500) {
+      return 105;
+    }
+
+    if (pledge >= 1000) {
+      return 70;
+    }
+
+    if (pledge >= 500) {
+      return 35;
+    }
+
+    if (pledge >= 250) {
+      return 15;
+    }
+
+    return this.defaultMaxUserFeeds;
   }
 
   getMaxFeedsFromPledge(pledge: number): number {
