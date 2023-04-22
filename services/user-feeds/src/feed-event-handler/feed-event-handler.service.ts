@@ -31,6 +31,7 @@ import {
 import { FeedDeletedEvent } from "./types";
 import { feedDeletedEventSchema } from "./schemas";
 import { InvalidFeedException } from "../articles/exceptions";
+import pRetry from "p-retry";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -75,16 +76,13 @@ export class FeedEventHandlerService {
   })
   async onArticleDeliveryResult(result: ArticleDeliveryResult) {
     try {
-      await this.handleArticleDeliveryResult(result);
+      await pRetry(async () => {
+        await this.handleArticleDeliveryResult(result);
+      });
     } catch (err) {
       logger.error(`Failed to handle article delivery result`, {
         err: (err as Error).stack,
       });
-
-      if (err instanceof NotFoundError) {
-        // Record may still be in the process of being persisted, retry again later
-        return new Nack(true);
-      }
     }
   }
 
