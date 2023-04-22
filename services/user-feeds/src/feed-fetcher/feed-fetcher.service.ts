@@ -14,6 +14,7 @@ import {
   FeedRequestServerStatusException,
 } from "./exceptions";
 import { FeedResponse } from "./types";
+import pRetry from "p-retry";
 
 interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
@@ -45,18 +46,26 @@ export class FeedFetcherService {
     let body: BodyReadable & Dispatcher.BodyMixin;
 
     try {
-      ({ statusCode, body } = await request(serviceUrl, {
-        method: "POST",
-        body: JSON.stringify({
-          url,
-          executeFetchIfNotInCache: options?.executeFetchIfNotInCache ?? false,
-        }),
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json",
-          "api-key": this.API_KEY,
-        },
-      }));
+      ({ statusCode, body } = await pRetry(
+        async () =>
+          request(serviceUrl, {
+            method: "POST",
+            body: JSON.stringify({
+              url,
+              executeFetchIfNotInCache:
+                options?.executeFetchIfNotInCache ?? false,
+            }),
+            headers: {
+              "content-type": "application/json",
+              accept: "application/json",
+              "api-key": this.API_KEY,
+            },
+          }),
+        {
+          retries: 5,
+          randomize: true,
+        }
+      ));
     } catch (err) {
       throw new FeedRequestNetworkException(
         `Failed to execute request to feed requests API: ${

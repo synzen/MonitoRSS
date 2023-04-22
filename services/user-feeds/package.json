@@ -44,6 +44,7 @@
     "flat": "^5.0.2",
     "html-to-text": "^9.0.3",
     "object-path": "^0.11.8",
+    "p-retry": "^4.6.2",
     "qs": "^6.11.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
