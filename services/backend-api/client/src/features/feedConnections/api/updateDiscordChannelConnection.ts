@@ -17,16 +17,24 @@ export interface UpdateDiscordChannelConnectionInput {
     blockingComparisons?: string[];
     embeds?: Array<{
       color?: string | null;
-      authorTitle?: string | null;
-      authorUrl?: string | null;
-      authorIconUrl?: string | null;
+      author?: {
+        name?: string | null;
+        url?: string | null;
+        iconUrl?: string | null;
+      } | null;
       title?: string | null;
       url?: string | null;
       description?: string | null;
-      thumbnailUrl?: string | null;
-      imageUrl?: string | null;
-      footerText?: string | null;
-      footerIconUrl?: string | null;
+      thumbnail?: {
+        url?: string | null;
+      } | null;
+      image?: {
+        url?: string | null;
+      } | null;
+      footer?: {
+        text?: string | null;
+        iconUrl?: string | null;
+      } | null;
     }>;
     splitOptions?: {
       splitChar?: string | null;

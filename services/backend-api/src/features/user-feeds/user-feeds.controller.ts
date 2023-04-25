@@ -16,6 +16,7 @@ import {
 } from "@nestjs/common";
 import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
+import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 
@@ -284,6 +285,7 @@ export class UserFeedsController {
         key: FeedConnectionType.DiscordChannel,
         details: {
           ...con.details,
+          embeds: convertToNestedDiscordEmbed(con.details.embeds),
           formatter: {
             formatTables: con.details.formatter?.formatTables || false,
             stripImages: con.details.formatter?.stripImages || false,
@@ -301,6 +303,7 @@ export class UserFeedsController {
         key: FeedConnectionType.DiscordWebhook,
         details: {
           ...con.details,
+          embeds: convertToNestedDiscordEmbed(con.details.embeds),
           formatter: {
             formatTables: con.details.formatter?.formatTables || false,
             stripImages: con.details.formatter?.stripImages || false,
