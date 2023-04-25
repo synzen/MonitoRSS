@@ -106,10 +106,6 @@ export class FeedsService {
         userAccessToken,
       });
     } catch (err) {
-      logger.info(`Error while getting channel ${channelId} of feed addition`, {
-        stack: err.stack,
-      });
-
       if (err instanceof DiscordAPIError) {
         if (err.statusCode === HttpStatus.NOT_FOUND) {
           throw new MissingChannelException();
