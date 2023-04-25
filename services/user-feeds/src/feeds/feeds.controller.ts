@@ -12,6 +12,7 @@ import {
 import { object, string, ValidationError } from "yup";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
+import { DiscordEmbed, DiscordMessageApiPayload } from "../delivery/types";
 import {
   FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,
@@ -424,9 +425,27 @@ export class FeedsController {
           }
         );
 
+        const cleanedPayloads = payloads.map((payload) => ({
+          ...payload,
+          embeds: payload?.embeds?.map((embed) => ({
+            ...embed,
+            author: !embed.author ? undefined : embed.author,
+            footer: !embed.footer ? undefined : embed.footer,
+            thumbnail: !embed.thumbnail ? undefined : embed.thumbnail,
+            image: !embed.image ? undefined : embed.image,
+            fields: embed?.fields
+              ?.map((field) =>
+                !field.name || !field.value ? undefined : field
+              )
+              ?.filter(
+                (field) => field !== undefined
+              ) as DiscordEmbed["fields"],
+          })),
+        }));
+
         return {
           status: TestDeliveryStatus.Success,
-          messages: payloads,
+          messages: cleanedPayloads,
         };
       } else {
         throw new Error(`Unhandled medium type: ${type}`);
