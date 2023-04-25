@@ -156,7 +156,9 @@ export class FeedHandlerService {
       throw new FeedArticleNotFoundException("Feed article not found");
     }
 
-    await this.validateResponseStatus(res);
+    await this.validateResponseStatus(res, {
+      requestBody: details,
+    });
 
     const json = await res.json();
 
@@ -193,7 +195,9 @@ export class FeedHandlerService {
       throw new FeedArticleNotFoundException("Feed article not found");
     }
 
-    await this.validateResponseStatus(res);
+    await this.validateResponseStatus(res, {
+      requestBody: details,
+    });
 
     const json = await res.json();
 
@@ -230,7 +234,9 @@ export class FeedHandlerService {
       },
     });
 
-    await this.validateResponseStatus(res);
+    await this.validateResponseStatus(res, {
+      requestBody: body,
+    });
 
     const json = await res.json();
 
@@ -253,7 +259,11 @@ export class FeedHandlerService {
       }),
     });
 
-    await this.validateResponseStatus(res);
+    await this.validateResponseStatus(res, {
+      requestBody: {
+        expression,
+      },
+    });
 
     const json = await res.json();
 
@@ -267,10 +277,17 @@ export class FeedHandlerService {
     };
   }
 
-  private async validateResponseStatus(res: Response) {
+  private async validateResponseStatus(
+    res: Response,
+    meta: {
+      requestBody: Record<string, unknown>;
+    }
+  ) {
     if (res.status >= 500) {
       throw new FeedFetcherStatusException(
-        `Failed to get articles: >= 500 status code (${res.status}) from User feeds api`
+        `Failed to get articles: >= 500 status code (${
+          res.status
+        }) from User feeds api. Meta: ${JSON.stringify(meta)}`
       );
     }
 
