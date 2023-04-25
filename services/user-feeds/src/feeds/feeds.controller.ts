@@ -429,10 +429,10 @@ export class FeedsController {
           ...payload,
           embeds: payload?.embeds?.map((embed) => ({
             ...embed,
-            author: !embed.author ? undefined : embed.author,
-            footer: !embed.footer ? undefined : embed.footer,
-            thumbnail: !embed.thumbnail ? undefined : embed.thumbnail,
-            image: !embed.image ? undefined : embed.image,
+            author: !embed.author?.name ? undefined : embed.author,
+            footer: !embed.footer?.text ? undefined : embed.footer,
+            thumbnail: !embed.thumbnail?.url ? undefined : embed.thumbnail,
+            image: !embed.image?.url ? undefined : embed.image,
             fields: embed?.fields
               ?.map((field) =>
                 !field.name || !field.value ? undefined : field
