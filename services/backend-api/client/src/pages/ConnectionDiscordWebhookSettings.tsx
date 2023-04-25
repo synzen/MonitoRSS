@@ -299,6 +299,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
                     splitOptions: connection?.splitOptions || null,
+                    formatter: connection?.details.formatter,
                   }}
                   articleFormatter={{
                     options: {
