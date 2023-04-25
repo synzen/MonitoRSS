@@ -178,6 +178,10 @@ export class ArticleFormatterService {
       prependChar: string;
     }
   ) {
+    if (!text) {
+      return [""];
+    }
+
     const initialSplit = text
       .trim()
       .split(/(\n)/) // Split without removing the new line char
