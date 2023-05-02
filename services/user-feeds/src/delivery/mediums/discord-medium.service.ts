@@ -306,83 +306,119 @@ export class DiscordMediumService implements DeliveryMedium {
       })
     );
 
-    payloads[payloads.length - 1].embeds = (embeds || [])?.map((embed) => {
-      let timestamp: string | undefined = undefined;
+    payloads[payloads.length - 1].embeds = (embeds || [])
+      ?.map((embed) => {
+        let timestamp: string | undefined = undefined;
 
-      if (embed.timestamp === "now") {
-        timestamp = new Date().toISOString();
-      } else if (embed.timestamp === "article") {
-        timestamp = article.raw.date?.toISOString();
-      }
+        if (embed.timestamp === "now") {
+          timestamp = new Date().toISOString();
+        } else if (embed.timestamp === "article") {
+          timestamp = article.raw.date?.toISOString();
+        }
 
-      return {
-        title: replaceTemplateString(article.flattened, embed.title),
-        description: replaceTemplateString(
-          article.flattened,
-          embed.description
-        ),
-        author: !embed.author?.name
+        const embedTitle = this.articleFormatterService.applySplit(
+          replaceTemplateString(article.flattened, embed.title) || "",
+          {
+            limit: 256,
+          }
+        )[0];
+
+        const embedUrl =
+          replaceTemplateString(article.flattened, embed.url) || null;
+
+        const embedDescription = this.articleFormatterService.applySplit(
+          replaceTemplateString(article.flattened, embed.description) || "",
+          {
+            limit: 2048,
+          }
+        )[0];
+
+        const embedFields = (embed.fields || [])
+          ?.filter((field) => field.name && field.value)
+          .map((field) => ({
+            name: this.articleFormatterService.applySplit(
+              replaceTemplateString(article.flattened, field.name) || "",
+              {
+                limit: 256,
+              }
+            )[0],
+            value: this.articleFormatterService.applySplit(
+              replaceTemplateString(article.flattened, field.value) || "",
+              {
+                limit: 1024,
+              }
+            )[0],
+            inline: field.inline,
+          }));
+
+        const embedFooter = !embed.footer?.text
           ? undefined
           : {
-              name: replaceTemplateString(
-                article.flattened,
-                embed.author.name
-              ) as string,
-              icon_url:
-                replaceTemplateString(
-                  article.flattened,
-                  embed.author.iconUrl
-                ) || null,
-            },
-        color: embed.color,
-        footer: !embed.footer?.text
-          ? undefined
-          : {
-              text: replaceTemplateString(
-                article.flattened,
-                embed.footer.text
-              ) as string,
+              text: this.articleFormatterService.applySplit(
+                replaceTemplateString(article.flattened, embed.footer.text) ||
+                  "",
+                {
+                  limit: 2048,
+                }
+              )[0],
               icon_url:
                 replaceTemplateString(
                   article.flattened,
                   embed.footer.iconUrl
                 ) || null,
-            },
-        image: !embed.image?.url
+            };
+
+        const embedImage = !embed.image?.url
           ? undefined
           : {
-              url:
-                (replaceTemplateString(
-                  article.flattened,
-                  embed.image.url
-                ) as string) || null,
-            },
-        thumbnail: !embed.thumbnail?.url
+              url: replaceTemplateString(
+                article.flattened,
+                embed.image.url
+              ) as string,
+            };
+
+        const embedThumbnail = !embed.thumbnail?.url
           ? undefined
           : {
-              url:
-                (replaceTemplateString(
+              url: replaceTemplateString(
+                article.flattened,
+                embed.thumbnail.url
+              ) as string,
+            };
+
+        const embedAuthor = !embed.author?.name
+          ? undefined
+          : {
+              name: this.articleFormatterService.applySplit(
+                replaceTemplateString(article.flattened, embed.author.name) ||
+                  "",
+                {
+                  limit: 256,
+                }
+              )[0],
+              url: replaceTemplateString(article.flattened, embed.author.url),
+              icon_url:
+                replaceTemplateString(
                   article.flattened,
-                  embed.thumbnail.url
-                ) as string) || null,
-            },
-        url: replaceTemplateString(article.flattened, embed.url) || null,
-        fields: embed.fields
-          ?.filter((field) => field.name && field.value)
-          .map((field) => ({
-            name: replaceTemplateString(
-              article.flattened,
-              field.name
-            ) as string,
-            value: replaceTemplateString(
-              article.flattened,
-              field.value
-            ) as string,
-            inline: field.inline,
-          })),
-        timestamp,
-      };
-    });
+                  embed.author.iconUrl
+                ) || null,
+            };
+
+        return {
+          title: embedTitle,
+          description: embedDescription,
+          author: embedAuthor,
+          color: embed.color,
+          footer: embedFooter,
+          image: embedImage,
+          thumbnail: embedThumbnail,
+          url: embedUrl,
+          fields: embedFields,
+          timestamp,
+        };
+      })
+      // Discord only allows 10 embeds per message
+      .slice(0, 10);
 
     return payloads;
   }
