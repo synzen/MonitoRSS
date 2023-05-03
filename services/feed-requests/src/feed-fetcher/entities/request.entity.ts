@@ -10,6 +10,7 @@ import {
 } from '@mikro-orm/core';
 
 @Entity()
+@Index({ properties: ['url', 'createdAt'], name: 'url_created_at_index' })
 export class Request {
   @PrimaryKey({
     autoincrement: true,
@@ -28,9 +29,6 @@ export class Request {
 
   @Property({
     type: 'text',
-  })
-  @Index({
-    name: 'url_index',
   })
   url!: string;
 
