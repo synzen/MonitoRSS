@@ -1,6 +1,13 @@
 import { RequestFetchOptions, RequestStatus } from '../constants';
 import { Response } from './response.entity';
-import { Entity, PrimaryKey, Enum, Property, OneToOne } from '@mikro-orm/core';
+import {
+  Entity,
+  PrimaryKey,
+  Enum,
+  Property,
+  OneToOne,
+  Index,
+} from '@mikro-orm/core';
 
 @Entity()
 export class Request {
@@ -21,6 +28,9 @@ export class Request {
 
   @Property({
     type: 'text',
+  })
+  @Index({
+    name: 'url_index',
   })
   url!: string;
 
