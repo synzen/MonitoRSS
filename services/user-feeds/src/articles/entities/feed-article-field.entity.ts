@@ -1,6 +1,10 @@
-import { Entity, Property, PrimaryKey } from "@mikro-orm/core";
+import { Entity, Property, PrimaryKey, Index } from "@mikro-orm/core";
 
 @Entity()
+@Index({
+  properties: ["feed_id", "field_name", "field_value"],
+  name: "article_property_index",
+})
 export class FeedArticleField {
   @PrimaryKey()
   id: number;
