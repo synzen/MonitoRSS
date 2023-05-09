@@ -1,7 +1,11 @@
-import { Entity, Property, PrimaryKey, Enum } from "@mikro-orm/core";
+import { Entity, Property, PrimaryKey, Enum, Index } from "@mikro-orm/core";
 import { ArticleDeliveryStatus } from "../../shared";
 
 @Entity()
+@Index({
+  properties: ["feed_id", "status", "created_at"],
+  name: "delivery_timeframe_count_index",
+})
 export class DeliveryRecord {
   @PrimaryKey()
   id: string;
