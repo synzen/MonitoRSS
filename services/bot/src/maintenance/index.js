@@ -26,7 +26,7 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
     ScheduleStats.deleteAll(),
     pruneProfiles(guildIdsByShard)
   ])
-  await pruneFeeds(feeds, guildIdsByShard, channelIdsByShard)
+  // await pruneFeeds(feeds, guildIdsByShard, channelIdsByShard)
   await Promise.all([
     pruneFilteredFormats(feeds),
     pruneFailRecords(feeds)
