@@ -12,6 +12,7 @@ import {
   FeedTooManyRequestsException,
   FeedUnauthorizedException,
   InvalidFeedException,
+  FeedFetchTimeoutException,
 } from "../../../services/feed-fetcher/exceptions";
 import { FeedLimitReachedException } from "../exceptions";
 
@@ -20,6 +21,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [InvalidFeedException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_INVALID,
+    },
+    [FeedFetchTimeoutException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_REQUEST_TIMEOUT,
     },
     [FeedParseException.name]: {
       status: HttpStatus.BAD_REQUEST,

@@ -17,6 +17,7 @@ import {
   FeedForbiddenException,
   FeedInternalErrorException,
   FeedNotFoundException,
+  FeedFetchTimeoutException,
 } from "./exceptions";
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import { Readable } from "stream";
@@ -106,6 +107,10 @@ export class FeedFetcherService {
       throw new FeedParseException(
         `Feed host failed to return a valid, parseable feed`
       );
+    }
+
+    if (result.requestStatus === FeedFetcherFetchStatus.FetchTimeout) {
+      throw new FeedFetchTimeoutException(`Feed fetch timed out`);
     }
 
     if (result.requestStatus === FeedFetcherFetchStatus.Success) {

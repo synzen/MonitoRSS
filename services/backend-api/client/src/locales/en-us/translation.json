@@ -33,10 +33,10 @@
       "missingBotAccessMessage": "The bot is either not in this server or does not have permission to read this server."
     },
     "apiErrors": {
-      "feedInvalid": "Invalid feed",
-      "feedParseFailed": "Failed to parse feed",
-      "feedParseTimeout": "Parsing the feed took too long",
-      "feedRequestTimeout": "Request to the feed timed out.",
+      "feedInvalid": "Invalid feed. Ensure that the URL links to a valid RSS feed.",
+      "feedParseFailed": "Failed to parse feed. The feed may be incorrectly formatted.",
+      "feedParseTimeout": "Parsing the feed took too long.",
+      "feedRequestTimeout": "Requesting the feed took too long. The feed may be too slow to respond, or may be facing issues. Try again later.",
       "feedRequestFailed": "Request to the feed failed. Please try again later.",
       "feedRequestForbidden": "The feed host has explicitly blocked the request for the feed.",
       "feedRequestInternalError": "Feed host is currently experiencing issues",

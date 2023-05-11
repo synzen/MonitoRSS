@@ -96,6 +96,12 @@ export class FeedFetcherController {
       }
     }
 
+    if (latestRequest.status === RequestStatus.FETCH_TIMEOUT) {
+      return {
+        requestStatus: 'FETCH_TIMEOUT',
+      };
+    }
+
     if (
       latestRequest.status === RequestStatus.FETCH_ERROR ||
       !latestRequest.response

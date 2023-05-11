@@ -2,6 +2,7 @@ export enum FeedFetcherFetchStatus {
   Success = "SUCCESS",
   ParseError = "PARSE_ERROR",
   FetchError = "FETCH_ERROR",
+  FetchTimeout = "FETCH_TIMEOUT",
   InteralError = "INTERNAL_ERROR",
   BadStatusCode = "BAD_STATUS_CODE",
   Pending = "PENDING",
@@ -33,8 +34,13 @@ interface FeedFetchResponseParseError {
   };
 }
 
+interface FeedFetchResponseFetchTimeout {
+  requestStatus: FeedFetcherFetchStatus.FetchTimeout;
+}
+
 export type FeedFetcherFetchFeedResponse =
   | FetchFeedResponseSuccess
   | FetchFeedResponseBadStatus
   | FetchFeedResponsePending
-  | FeedFetchResponseParseError;
+  | FeedFetchResponseParseError
+  | FeedFetchResponseFetchTimeout;

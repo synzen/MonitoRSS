@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import fetch from 'node-fetch';
+import fetch, { FetchError } from 'node-fetch';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
@@ -258,8 +258,14 @@ export class FeedFetcherService {
       logger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
       });
-      request.status = RequestStatus.FETCH_ERROR;
-      request.errorMessage = (err as Error).message;
+
+      if (err instanceof FetchError && err.type === 'request-timeout') {
+        request.status = RequestStatus.FETCH_TIMEOUT;
+        request.errorMessage = err.message;
+      } else {
+        request.status = RequestStatus.FETCH_ERROR;
+        request.errorMessage = (err as Error).message;
+      }
 
       await this.requestRepo.persist(request);
 
