@@ -77,8 +77,8 @@ export class DiscordMediumService implements DeliveryMedium {
         splitOptions,
       }).map((payload) => ({
         ...payload,
-        username: name,
-        avatar_url: iconUrl,
+        username: name ? name : undefined,
+        avatar_url: iconUrl ? iconUrl : undefined,
       }));
 
       const results = await Promise.all(
@@ -247,8 +247,8 @@ export class DiscordMediumService implements DeliveryMedium {
       splitOptions: details.deliverySettings.splitOptions,
     }).map((payload) => ({
       ...payload,
-      username: webhookUsername,
-      avatar_url: webhookIconUrl,
+      username: webhookUsername ? webhookUsername : undefined,
+      avatar_url: webhookIconUrl ? webhookIconUrl : undefined,
     }));
 
     await Promise.all(
