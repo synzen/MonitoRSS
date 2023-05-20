@@ -45,6 +45,10 @@ export interface UpdateDiscordWebhookConnectionInput {
       appendChar?: string | null;
       prependChar?: string | null;
     } | null;
+    formatter?: {
+      formatTables?: boolean | null;
+      stripImages?: boolean | null;
+    } | null;
   };
 }
 

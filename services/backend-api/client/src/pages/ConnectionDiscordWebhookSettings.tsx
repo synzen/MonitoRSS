@@ -289,10 +289,12 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               <BoxConstrained.Container>
                 <MessageTabSection
                   feedId={feedId as string}
-                  onMessageUpdated={({ content, embeds }) =>
+                  onMessageUpdated={({ content, embeds, splitOptions, formatter }) =>
                     onUpdate({
                       content,
                       embeds,
+                      splitOptions,
+                      formatter,
                     })
                   }
                   defaultMessageValues={{
