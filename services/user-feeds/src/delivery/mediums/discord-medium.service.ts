@@ -45,6 +45,10 @@ export class DiscordMediumService implements DeliveryMedium {
     return `${DiscordMediumService.BASE_API_URL}/webhooks/${webhookId}/${webhookToken}`;
   }
 
+  private getForumApiUrl(channelId: string) {
+    return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/threads`;
+  }
+
   async formatArticle(
     article: Article,
     options: FormatOptions
@@ -62,9 +66,16 @@ export class DiscordMediumService implements DeliveryMedium {
     apiPayload: Record<string, unknown>;
     result: JobResponse<unknown> | JobResponseError;
   }> {
-    const { channel, webhook, embeds, content, splitOptions } =
-      details.mediumDetails;
+    const {
+      channel,
+      webhook,
+      embeds,
+      content,
+      splitOptions,
+      forumThreadTitle,
+    } = details.mediumDetails;
     const channelId = channel?.id;
+    const isForum = channel?.type === "forum";
     const webhookId = webhook?.id;
 
     if (webhookId) {
@@ -93,6 +104,53 @@ export class DiscordMediumService implements DeliveryMedium {
       return {
         apiPayload: apiPayloads[0],
         result: results[0],
+      };
+    } else if (channelId && isForum) {
+      const forumApiUrl = this.getForumApiUrl(channelId);
+      const bodies = this.generateApiPayloads(article, {
+        embeds: details.mediumDetails.embeds,
+        content: details.mediumDetails.content,
+        splitOptions: details.mediumDetails.splitOptions,
+      });
+
+      const threadBody = {
+        name:
+          this.generateApiPayloads(article, {
+            content: forumThreadTitle || "{{title}}",
+            embeds: [],
+            splitOptions: {},
+          })[0].content || "New Article",
+        message: bodies[0],
+      };
+
+      const firstResponse = await this.producer.fetch(forumApiUrl, {
+        method: "POST",
+        body: JSON.stringify(threadBody),
+      });
+
+      if (firstResponse.state === "error") {
+        throw new Error(
+          `Failed to create initial thread for forum channel ${channelId}: ${firstResponse.message}`
+        );
+      }
+
+      const threadId = (firstResponse.body as Record<string, unknown>)
+        .id as string;
+
+      const channelApiUrl = this.getChannelApiUrl(threadId);
+
+      await Promise.all(
+        bodies.slice(1, bodies.length).map((body) =>
+          this.producer.fetch(channelApiUrl, {
+            method: "POST",
+            body: JSON.stringify(body),
+          })
+        )
+      );
+
+      return {
+        apiPayload: threadBody,
+        result: firstResponse,
       };
     } else if (channelId) {
       const apiUrl = this.getChannelApiUrl(channelId);
@@ -146,6 +204,10 @@ export class DiscordMediumService implements DeliveryMedium {
           details
         );
       } else if (channel) {
+        if (channel.type === "forum") {
+          return await this.deliverArticleToForum(article, channel.id, details);
+        }
+
         const channelId = channel.id;
 
         return await this.deliverArticleToChannel(article, channelId, details);
@@ -173,6 +235,88 @@ export class DiscordMediumService implements DeliveryMedium {
         internalMessage: (err as Error).message,
       };
     }
+  }
+
+  private async deliverArticleToForum(
+    article: Article,
+    channelId: string,
+    details: DeliveryDetails
+  ): Promise<ArticleDeliveryState> {
+    const {
+      deliverySettings: { guildId, forumThreadTitle },
+      feedDetails: { id, url },
+    } = details;
+
+    const forumApiUrl = this.getForumApiUrl(channelId);
+    const bodies = this.generateApiPayloads(article, {
+      embeds: details.deliverySettings.embeds,
+      content: details.deliverySettings.content,
+      splitOptions: details.deliverySettings.splitOptions,
+    });
+
+    const threadBody = {
+      name:
+        this.generateApiPayloads(article, {
+          content: forumThreadTitle || "{{title}}",
+          embeds: [],
+          splitOptions: {},
+        })[0].content || "New Article",
+      message: bodies[0],
+    };
+
+    const res = await this.producer.fetch(
+      forumApiUrl,
+      {
+        method: "POST",
+        body: JSON.stringify(threadBody),
+      },
+      {
+        id: details.deliveryId,
+        articleID: article.flattened.id,
+        feedURL: url,
+        channel: channelId,
+        feedId: id,
+        guildId,
+        emitDeliveryResult: bodies.length === 1,
+      }
+    );
+
+    if (res.state === "error") {
+      throw new Error(
+        `Failed to create initial thread for forum channel ${channelId}: ${res.message}`
+      );
+    }
+
+    const threadId = (res.body as Record<string, unknown>).id as string;
+
+    const channelApiUrl = this.getChannelApiUrl(threadId);
+
+    await Promise.all(
+      bodies.slice(1, bodies.length).map((body, index) =>
+        this.producer.enqueue(
+          channelApiUrl,
+          {
+            method: "POST",
+            body: JSON.stringify(body),
+          },
+          {
+            id: details.deliveryId,
+            articleID: article.flattened.id,
+            feedURL: url,
+            channel: threadId,
+            feedId: id,
+            guildId,
+            emitDeliveryResult: index === bodies.length - 1,
+          }
+        )
+      )
+    );
+
+    return {
+      id: details.deliveryId,
+      status: ArticleDeliveryStatus.PendingDelivery,
+      mediumId: details.mediumId,
+    };
   }
 
   private async deliverArticleToChannel(

@@ -222,7 +222,10 @@ export class DiscordServersService {
   }
 
   async getTextChannelsOfServer(
-    serverId: string
+    serverId: string,
+    options?: {
+      include?: Array<string>;
+    }
   ): Promise<DiscordGuildChannelFormatted[]> {
     try {
       const channels: DiscordGuildChannel[] =
@@ -231,11 +234,18 @@ export class DiscordServersService {
         );
 
       return channels
-        .filter(
-          (c) =>
+        .filter((c) => {
+          if (
             c.type === DiscordChannelType.GUILD_TEXT ||
             c.type === DiscordChannelType.GUILD_ANNOUNCEMENT
-        )
+          ) {
+            return true;
+          }
+
+          if (c.type === DiscordChannelType.GUILD_FORUM) {
+            return options?.include?.includes("forum");
+          }
+        })
         .map((channel) => {
           const parentChannel =
             channel.parent_id &&

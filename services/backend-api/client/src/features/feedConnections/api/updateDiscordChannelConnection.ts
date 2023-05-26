@@ -9,6 +9,7 @@ export interface UpdateDiscordChannelConnectionInput {
     name?: string;
     channelId?: string;
     content?: string | null;
+    forumThreadTitle?: string | null;
     filters?: {
       expression: Record<string, any>;
     } | null;

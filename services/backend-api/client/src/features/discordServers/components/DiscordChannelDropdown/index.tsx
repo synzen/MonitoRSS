@@ -1,7 +1,10 @@
 import { Alert, AlertDescription, AlertTitle, Box, Stack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { FiHash, FiMessageCircle } from "react-icons/fi";
+import { BsMegaphoneFill } from "react-icons/bs";
 import { ThemedSelect } from "@/components";
 import { useDiscordServerChannels } from "../../hooks";
+import { GetDiscordChannelType } from "../../constants";
 
 interface Props {
   serverId?: string;
@@ -9,7 +12,14 @@ interface Props {
   onBlur: () => void;
   value?: string;
   isDisabled?: boolean;
+  include?: GetDiscordChannelType[];
 }
+
+const iconsByChannelType: Record<GetDiscordChannelType, React.ReactNode> = {
+  text: <FiHash />,
+  forum: <FiMessageCircle />,
+  announcement: <BsMegaphoneFill />,
+};
 
 export const DiscordChannelDropdown: React.FC<Props> = ({
   serverId,
@@ -17,8 +27,9 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
   onBlur,
   value,
   isDisabled,
+  include,
 }) => {
-  const { data, error, status } = useDiscordServerChannels({ serverId });
+  const { data, error, status } = useDiscordServerChannels({ serverId, include });
   const { t } = useTranslation();
 
   const loading = status === "loading";
@@ -28,6 +39,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
       label: `${channel.category ? `[${channel.category.name}] ` : ""}${channel.name}`,
       value: channel.id,
       data: channel,
+      icon: channel.type ? iconsByChannelType[channel.type] : iconsByChannelType.text,
     })) || [];
 
   return (

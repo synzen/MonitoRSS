@@ -12,7 +12,7 @@ import {
 import { object, string, ValidationError } from "yup";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
-import { DiscordEmbed, DiscordMessageApiPayload } from "../delivery/types";
+import { DiscordEmbed } from "../delivery/types";
 import {
   FeedArticleNotFoundException,
   FeedRequestBadStatusCodeException,

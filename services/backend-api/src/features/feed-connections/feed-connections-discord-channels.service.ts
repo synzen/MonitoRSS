@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
+import { DiscordChannelType } from "../../common";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { InvalidFilterExpressionException } from "../../common/exceptions";
 import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
@@ -12,6 +13,7 @@ import { FeedHandlerService } from "../../services/feed-handler/feed-handler.ser
 import { SendTestArticleResult } from "../../services/feed-handler/types";
 import {
   FeedConnectionDisabledCode,
+  FeedConnectionDiscordChannelType,
   FeedConnectionType,
 } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
@@ -36,6 +38,7 @@ export interface UpdateDiscordChannelConnectionInput {
         id: string;
       };
       content?: string;
+      forumThreadTitle?: string;
     };
   };
 }
@@ -92,6 +95,10 @@ export class FeedConnectionsDiscordChannelsService {
               type: FeedConnectionType.DiscordChannel,
               channel: {
                 id: channelId,
+                type:
+                  channel.type === DiscordChannelType.GUILD_FORUM
+                    ? FeedConnectionDiscordChannelType.Forum
+                    : undefined,
                 guildId: channel.guild_id,
               },
               embeds: [],
@@ -248,7 +255,9 @@ export class FeedConnectionsDiscordChannelsService {
       mediumDetails: {
         channel: {
           id: connection.details.channel.id,
+          type: connection.details.channel.type,
         },
+        forumThreadTitle: connection.details.forumThreadTitle,
         content: castDiscordContentForMedium(connection.details.content),
         embeds: castDiscordEmbedsForMedium(connection.details.embeds),
         formatter: connection.details.formatter,

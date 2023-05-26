@@ -21,7 +21,11 @@ import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
 import { useEffect } from "react";
-import { DiscordChannelDropdown, DiscordServerSearchSelectv2 } from "@/features/discordServers";
+import {
+  DiscordChannelDropdown,
+  DiscordServerSearchSelectv2,
+  GetDiscordChannelType,
+} from "@/features/discordServers";
 import RouteParams from "../../../../types/RouteParams";
 import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordChannelConnection } from "../../hooks";
@@ -124,6 +128,7 @@ export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOp
                           shouldValidate: true,
                         });
                       }}
+                      include={[GetDiscordChannelType.Forum]}
                       onBlur={field.onBlur}
                       isDisabled={isSubmitting}
                       serverId={serverId}

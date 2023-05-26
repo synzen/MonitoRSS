@@ -224,9 +224,11 @@ export class ScheduleHandlerService {
           guildId: con.details.channel.guildId,
           channel: {
             id: con.details.channel.id,
+            type: con.details.channel.type,
           },
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          forumThreadTitle: con.details.forumThreadTitle,
           formatter: {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,

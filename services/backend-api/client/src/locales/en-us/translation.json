@@ -273,6 +273,11 @@
       "previewSectionDescription": "This is only an approximation of how the message will look like. It is not guaranteed to be accurate.",
       "previewSectionUnsavedWarning": "You are currently previewing unsaved changes"
     },
+    "discordMessageForumThreadForm": {
+      "title": "Forum Thread",
+      "threadTitleLabel": "Thread Title",
+      "threadTitleDescription": "The title of the thread that will be created per new article. You may use placeholders. The default is {{title}}."
+    },
     "pageContentV2": {
       "logout": "Logout"
     },

@@ -9,6 +9,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     guildId: string().required(),
     channel: object({
       id: string().required(),
+      type: string().optional().oneOf(["forum"]).default(undefined).nullable(),
     })
       .nullable()
       .default(null)
@@ -30,6 +31,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
         then: (schema) => schema.required(),
         otherwise: (schema) => schema.optional(),
       }),
+    forumThreadTitle: string().nullable().default(undefined),
     content: string(),
     embeds: array(
       object({

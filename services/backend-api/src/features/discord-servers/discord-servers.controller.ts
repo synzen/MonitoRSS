@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   StreamableFile,
   UseFilters,
   UseGuards,
@@ -132,10 +133,14 @@ export class DiscordServersController {
   @UseFilters(GetDiscordServerChannelsFilter)
   @CacheTTL(1)
   async getServerChannels(
-    @Param("serverId") serverId: string
+    @Param("serverId") serverId: string,
+    @Query("include") include?: string
   ): Promise<GetServerChannelsOutputDto> {
     const channels = await this.discordServersService.getTextChannelsOfServer(
-      serverId
+      serverId,
+      {
+        include: include?.split(","),
+      }
     );
 
     return GetServerChannelsOutputDto.fromEntities(channels);

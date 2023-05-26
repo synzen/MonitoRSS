@@ -30,6 +30,9 @@ interface Props {
     id: string;
     type: FeedConnectionType;
   };
+  include?: {
+    forumThreadTitle?: boolean;
+  };
 }
 
 export const MessageTabSection = ({
@@ -38,6 +41,7 @@ export const MessageTabSection = ({
   onMessageUpdated,
   articleFormatter,
   connection,
+  include,
 }: Props) => {
   const {
     data: userFeedArticles,
@@ -140,6 +144,7 @@ export const MessageTabSection = ({
           connection={connection}
           feedId={feedId}
           articleIdToPreview={firstArticle?.id}
+          include={include}
         />
       </Stack>
     </Stack>

@@ -86,6 +86,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       return;
     }
 
+    console.log(
+      "🚀 ~ file: ConnectionDiscordChannelSettings.tsx:85 ~ onUpdate ~ details:",
+      details
+    );
+
     try {
       await mutateAsync({
         feedId,
@@ -274,6 +279,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     embeds: connection?.details.embeds,
                     splitOptions: connection?.splitOptions || null,
                     formatter: connection?.details.formatter,
+                    forumThreadTitle: connection?.details.forumThreadTitle,
                   }}
                   articleFormatter={{
                     options: {
@@ -286,6 +292,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   connection={{
                     id: connectionId as string,
                     type: FeedConnectionType.DiscordChannel,
+                  }}
+                  include={{
+                    forumThreadTitle: connection?.details.channel.type === "forum",
                   }}
                 />
               </BoxConstrained.Container>

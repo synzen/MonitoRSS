@@ -18,8 +18,10 @@ const DiscordChannelConnectionDetailsSchema = object({
   channel: object({
     id: string().required(),
     guildId: string().required(),
+    type: string().optional().nullable().oneOf(["forum"]),
   }).required(),
   content: string().optional(),
+  forumThreadTitle: string().optional(),
   formatter: object({
     formatTables: boolean().required(),
     stripImages: boolean().required(),

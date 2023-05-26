@@ -9,6 +9,7 @@ export enum DiscordChannelType {
   GUILD_TEXT = 0,
   GUILD_CATEGORY = 4,
   GUILD_ANNOUNCEMENT = 5,
+  GUILD_FORUM = 15,
 }
 
 export interface DiscordGuildChannel {

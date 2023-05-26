@@ -5,6 +5,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
@@ -32,6 +33,11 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsString()
   @IsOptional()
   content?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  forumThreadTitle?: string;
 
   @IsObject()
   @IsOptional()

@@ -1,13 +1,16 @@
+import { DiscordChannelType } from "../../../common";
+import { DiscordGuildChannelFormatted } from "../types";
 import { GetServerChannelsOutputDto } from "./GetServerChannelsOutput.dto";
 
 describe("GetServerChannelsOutputDto", () => {
   it("returns the mapped entities from discord channels", () => {
-    const channels = [
+    const channels: DiscordGuildChannelFormatted[] = [
       {
         id: "channel_id",
         name: "test",
         guild_id: "guild_id",
-        permission_overwrites: [],
+        category: null,
+        type: DiscordChannelType.GUILD_TEXT,
       },
     ];
     const output = GetServerChannelsOutputDto.fromEntities(channels);
@@ -16,6 +19,8 @@ describe("GetServerChannelsOutputDto", () => {
       {
         id: channels[0].id,
         name: channels[0].name,
+        category: null,
+        type: "text",
       },
     ]);
     expect(output.total).toBe(channels.length);

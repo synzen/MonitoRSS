@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types, Schema as MongooseSchema } from "mongoose";
-import { FeedConnectionDisabledCode } from "../../constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionDiscordChannelType,
+} from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
 import {
   DiscordFormatter,
@@ -17,6 +20,13 @@ class Channel {
     required: true,
   })
   id: string;
+
+  @Prop({
+    enum: Object.values(FeedConnectionDiscordChannelType),
+    required: false,
+    type: String,
+  })
+  type?: FeedConnectionDiscordChannelType | null;
 
   @Prop({
     required: true,
@@ -79,6 +89,11 @@ class Details {
     required: true,
   })
   channel: Channel;
+
+  @Prop({
+    required: false,
+  })
+  forumThreadTitle?: string;
 
   @Prop({
     type: String,

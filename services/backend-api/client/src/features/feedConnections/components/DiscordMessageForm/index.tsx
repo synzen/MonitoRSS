@@ -29,6 +29,7 @@ import { notifyError } from "../../../../utils/notifyError";
 import { FeedConnectionType } from "../../../../types";
 import { DiscordChannelConnectionPreview } from "./DiscordChannelConnectionPreview";
 import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPreview";
+import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
@@ -38,6 +39,9 @@ interface Props {
   connection: {
     id: string;
     type: FeedConnectionType;
+  };
+  include?: {
+    forumThreadTitle?: boolean;
   };
 }
 
@@ -49,6 +53,7 @@ export const DiscordMessageForm = ({
   articleIdToPreview,
   connection,
   feedId,
+  include,
 }: Props) => {
   const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
 
@@ -108,6 +113,7 @@ export const DiscordMessageForm = ({
         embeds: embedsWithoutEmptyObjects,
         splitOptions: formData.splitOptions || null,
         formatter: formData.formatter,
+        forumThreadTitle: formData.forumThreadTitle,
       };
 
       await onClickSave(toSubmit);
@@ -197,6 +203,12 @@ export const DiscordMessageForm = ({
               />
             )}
           </Stack>
+          {include?.forumThreadTitle && (
+            <Stack spacing={4}>
+              <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
+              <DiscordMessageForumThreadForm />
+            </Stack>
+          )}
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
             <DiscordMessageContentForm />
