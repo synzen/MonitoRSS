@@ -118,7 +118,9 @@ export class DiscordMediumService implements DeliveryMedium {
           this.generateApiPayloads(article, {
             content: forumThreadTitle || "{{title}}",
             embeds: [],
-            splitOptions: {},
+            splitOptions: {
+              limit: 100,
+            },
           })[0].content || "New Article",
         message: bodies[0],
       };
@@ -259,7 +261,9 @@ export class DiscordMediumService implements DeliveryMedium {
         this.generateApiPayloads(article, {
           content: forumThreadTitle || "{{title}}",
           embeds: [],
-          splitOptions: {},
+          splitOptions: {
+            limit: 100,
+          },
         })[0].content || "New Article",
       message: bodies[0],
     };
@@ -432,7 +436,9 @@ export class DiscordMediumService implements DeliveryMedium {
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
-      splitOptions: DeliveryDetails["deliverySettings"]["splitOptions"];
+      splitOptions: DeliveryDetails["deliverySettings"]["splitOptions"] & {
+        limit?: number;
+      };
     }
   ): DiscordMessageApiPayload[] {
     const payloadContent = this.articleFormatterService.applySplit(
