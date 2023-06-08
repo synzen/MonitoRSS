@@ -30,6 +30,8 @@ import {
   ServerBackup,
 } from "./types";
 import { DiscordServerNotFoundException } from "./exceptions";
+import { DiscordPermissionsService } from "../discord-auth/discord-permissions.service";
+import { MANAGE_THREADS } from "../discord-auth/constants/permissions";
 
 @Injectable()
 export class DiscordServersService {
@@ -48,7 +50,8 @@ export class DiscordServersService {
     private readonly feedFilteredFormatModel: FeedFilteredFormatModel,
     private readonly configService: ConfigService,
     private readonly discordApiService: DiscordAPIService,
-    private readonly feedsService: FeedsService
+    private readonly feedsService: FeedsService,
+    private readonly discordPermissionsService: DiscordPermissionsService
   ) {
     this.defaultDateFormat = this.configService.get<string>(
       "BACKEND_API_DEFAULT_DATE_FORMAT"
@@ -233,39 +236,60 @@ export class DiscordServersService {
           `/guilds/${serverId}/channels`
         );
 
-      return channels
-        .filter((c) => {
-          if (
-            c.type === DiscordChannelType.GUILD_TEXT ||
-            c.type === DiscordChannelType.GUILD_ANNOUNCEMENT
-          ) {
-            return true;
-          }
+      const relevantChannels = channels.filter((c) => {
+        if (
+          c.type === DiscordChannelType.GUILD_TEXT ||
+          c.type === DiscordChannelType.GUILD_ANNOUNCEMENT
+        ) {
+          return true;
+        }
 
-          if (c.type === DiscordChannelType.GUILD_FORUM) {
-            return options?.include?.includes("forum");
-          }
-        })
-        .map((channel) => {
-          const parentChannel =
-            channel.parent_id &&
-            (channels.find((c) => c.id === channel.parent_id) as
-              | DiscordGuildChannel
-              | undefined);
+        if (c.type === DiscordChannelType.GUILD_FORUM) {
+          return options?.include?.includes("forum");
+        }
+      });
 
-          return {
-            id: channel.id,
-            guild_id: channel.guild_id,
-            name: channel.name,
-            type: channel.type,
-            category: parentChannel
-              ? {
-                  id: parentChannel.id,
-                  name: parentChannel.name,
-                }
-              : null,
-          };
-        });
+      let botCanUseModeratedTags: boolean | undefined = undefined;
+
+      if (
+        relevantChannels.some((c) => c.available_tags?.find((t) => t.moderated))
+      ) {
+        botCanUseModeratedTags =
+          await this.discordPermissionsService.botHasPermissionInServer(
+            serverId,
+            [MANAGE_THREADS]
+          );
+      }
+
+      const formattedChannels = relevantChannels.map((channel) => {
+        const parentChannel =
+          channel.parent_id &&
+          (channels.find((c) => c.id === channel.parent_id) as
+            | DiscordGuildChannel
+            | undefined);
+
+        return {
+          id: channel.id,
+          guild_id: channel.guild_id,
+          name: channel.name,
+          type: channel.type,
+          category: parentChannel
+            ? {
+                id: parentChannel.id,
+                name: parentChannel.name,
+              }
+            : null,
+          availableTags: channel.available_tags?.map((t) => ({
+            id: t.id,
+            name: t.name,
+            emojiId: t.emoji_id,
+            emojiName: t.emoji_name,
+            hasPermissionToUse: botCanUseModeratedTags || false,
+          })),
+        };
+      });
+
+      return formattedChannels;
     } catch (err) {
       if (
         err instanceof DiscordAPIError &&

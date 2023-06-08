@@ -19,4 +19,11 @@ export interface DiscordGuildChannel {
   permission_overwrites: ChannelPermissionOverwrite[];
   type: DiscordChannelType;
   parent_id: string | null;
+  available_tags?: Array<{
+    id: string;
+    name: string;
+    moderated: boolean;
+    emoji_id: string | null;
+    emoji_name: string | null;
+  }>;
 }

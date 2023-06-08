@@ -8,6 +8,13 @@ interface ServerChannelOutputDto {
     id: string;
     name: string;
   };
+  availableTags?: Array<{
+    id: string;
+    name: string;
+    emojiId: string | null;
+    emojiName: string | null;
+    hasPermissionToUse: boolean;
+  }>;
 }
 
 const mappedTypes: Record<DiscordChannelType, string> = {
@@ -30,6 +37,7 @@ export class GetServerChannelsOutputDto {
         name: channel.name,
         category: channel.category,
         type: mappedTypes[channel.type],
+        availableTags: channel.availableTags,
       })),
       total: channels.length,
     };

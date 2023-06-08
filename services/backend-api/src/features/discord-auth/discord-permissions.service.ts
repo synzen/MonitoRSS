@@ -46,6 +46,27 @@ export class DiscordPermissionsService {
     return this.userHasPermissionInChannel(botUserId, channel, permissions);
   }
 
+  async botHasPermissionInServer(guildId: string, permissions: bigint[]) {
+    const userId = this.configService.get<string>(
+      "BACKEND_API_DISCORD_CLIENT_ID"
+    ) as string;
+
+    const [guild, guildMember] = await Promise.all([
+      this.discordApiService.getGuild(guildId),
+      this.discordApiService.getGuildMember(guildId, userId),
+    ]);
+
+    const basePermissions = this.computeBasePermissions(guildMember, guild);
+
+    if ((basePermissions & ADMINISTRATOR) === ADMINISTRATOR) {
+      return true;
+    }
+
+    return permissions.every(
+      (permission) => (basePermissions & permission) === permission
+    );
+  }
+
   async userHasPermissionInChannel(
     userId: string,
     channel: ChannelPermissionDetails,

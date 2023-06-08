@@ -9,4 +9,11 @@ export interface DiscordGuildChannelFormatted {
     id: string;
     name: string;
   };
+  availableTags?: Array<{
+    id: string;
+    name: string;
+    emojiId: string | null;
+    emojiName: string | null;
+    hasPermissionToUse: boolean;
+  }>;
 }
