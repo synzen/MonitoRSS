@@ -123,6 +123,7 @@ export class DiscordMediumService implements DeliveryMedium {
             },
           })[0].content || "New Article",
         message: bodies[0],
+        appliedTags: details.mediumDetails.forumTags?.map((tag) => tag.id),
       };
 
       const firstResponse = await this.producer.fetch(forumApiUrl, {
@@ -266,6 +267,7 @@ export class DiscordMediumService implements DeliveryMedium {
           },
         })[0].content || "New Article",
       message: bodies[0],
+      appliedTags: details.deliverySettings.forumTags?.map((tag) => tag.id),
     };
 
     const res = await this.producer.fetch(

@@ -14,12 +14,8 @@ import {
   feedV2EventSchema,
   FeedRejectedDisabledCode,
 } from "../shared";
-import {
-  RabbitSubscribe,
-  AmqpConnection,
-  Nack,
-} from "@golevelup/nestjs-rabbitmq";
-import { MikroORM, NotFoundError, UseRequestContext } from "@mikro-orm/core";
+import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {

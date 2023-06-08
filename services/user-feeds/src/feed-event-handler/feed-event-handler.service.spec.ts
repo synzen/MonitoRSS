@@ -129,6 +129,7 @@ describe("FeedEventHandlerService", () => {
                 formatTables: false,
                 stripImages: false,
               },
+              splitOptions: {},
             },
           },
         ],

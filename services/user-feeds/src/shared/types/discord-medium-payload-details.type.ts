@@ -32,6 +32,13 @@ export const discordMediumPayloadDetailsSchema = object().shape(
         otherwise: (schema) => schema.optional(),
       }),
     forumThreadTitle: string().nullable().default(undefined),
+    forumTags: array(
+      object({
+        id: string().required(),
+      }).required()
+    )
+      .nullable()
+      .default(undefined),
     content: string(),
     embeds: array(
       object({
