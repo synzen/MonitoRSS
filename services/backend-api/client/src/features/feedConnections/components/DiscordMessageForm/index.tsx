@@ -1,8 +1,9 @@
-import { AddIcon, WarningIcon } from "@chakra-ui/icons";
+import { AddIcon } from "@chakra-ui/icons";
 import {
   Button,
   Flex,
   Heading,
+  Highlight,
   HStack,
   IconButton,
   Stack,
@@ -12,7 +13,6 @@ import {
   TabPanels,
   Tabs,
   Text,
-  Tooltip,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
@@ -152,22 +152,22 @@ export const DiscordMessageForm = ({
                   {t("components.discordMessageForm.previewSectionTitle")}
                 </Heading>
                 {isDirty && (
-                  <Tooltip
-                    label={t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                    hasArrow
-                    bg="orange.200"
-                  >
-                    <WarningIcon boxSize={5} color="orange.200" />
-                  </Tooltip>
+                  <Text fontSize="sm" fontWeight={600}>
+                    <Highlight
+                      query={t("components.discordMessageForm.previewSectionUnsavedWarning")}
+                      styles={{
+                        bg: "orange.200",
+                        rounded: "full",
+                        px: "2",
+                        py: "1",
+                      }}
+                    >
+                      {t("components.discordMessageForm.previewSectionUnsavedWarning")}
+                    </Highlight>
+                  </Text>
                 )}
               </HStack>
               <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
-              {/* <Alert status="warning">
-                <AlertIcon />
-                <AlertDescription>
-                  {t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                </AlertDescription>
-              </Alert> */}
             </Stack>
             {connection.type === FeedConnectionType.DiscordChannel && (
               <DiscordChannelConnectionPreview

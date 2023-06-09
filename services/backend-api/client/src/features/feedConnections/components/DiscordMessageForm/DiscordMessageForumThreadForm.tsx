@@ -139,7 +139,7 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
                 control={control}
                 render={({ field }) => {
                   return (
-                    <Flex gap={8} flexWrap="wrap">
+                    <Flex gap={4} flexWrap="wrap">
                       {availableTags?.map(({ id, name, hasPermissionToUse, emojiName }) => (
                         <TagCheckbox
                           key={id}

@@ -271,7 +271,7 @@
       "stripImagesCheckboxDescription": "If enabled, all images with \"src\" attributes found in the message content will be removed.",
       "previewSectionTitle": "Preview",
       "previewSectionDescription": "This is only an approximation of how the message will look like. It is not guaranteed to be accurate.",
-      "previewSectionUnsavedWarning": "You are currently previewing unsaved changes"
+      "previewSectionUnsavedWarning": "You are previewing unsaved changes"
     },
     "discordMessageForumThreadForm": {
       "title": "Forum Thread",
