@@ -53,6 +53,7 @@ const FeedMessage: React.FC = () => {
                 content: feed?.text || "",
                 embeds: feed?.embeds,
                 splitOptions: null,
+                forumThreadTags: null,
               }}
               onClickSave={onFormSaved}
             />
