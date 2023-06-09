@@ -73,6 +73,20 @@ class SplitOptions {
 const SplitOptionsSchema = SchemaFactory.createForClass(SplitOptions);
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+class ForumThreadTag {
+  @Prop({
+    required: true,
+    type: String,
+  })
+  id: string;
+}
+
+const ForumThreadTagSchema = SchemaFactory.createForClass(ForumThreadTag);
+
+@Schema({
   _id: false,
   versionKey: false,
   timestamps: false,
@@ -94,6 +108,13 @@ class Details {
     required: false,
   })
   forumThreadTitle?: string;
+
+  @Prop({
+    type: [ForumThreadTagSchema],
+    required: false,
+    default: [],
+  })
+  forumThreadTags?: ForumThreadTag[];
 
   @Prop({
     type: String,

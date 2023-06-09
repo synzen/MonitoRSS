@@ -40,6 +40,25 @@ const mockUserFeeds: UserFeed[] = [
       },
       {
         details: {
+          channel: {
+            id: mockDiscordChannels[3].id,
+            guildId: mockDiscordServers[0].id,
+            type: "forum",
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        id: "2",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord Forum 1",
+      },
+      {
+        details: {
           embeds: [],
           webhook: {
             id: mockDiscordWebhooks[0].id,
@@ -54,7 +73,7 @@ const mockUserFeeds: UserFeed[] = [
         },
         splitOptions: null,
         filters: null,
-        id: "2",
+        id: "3",
         key: FeedConnectionType.DiscordWebhook,
         name: "Discord Webhook 1",
       },

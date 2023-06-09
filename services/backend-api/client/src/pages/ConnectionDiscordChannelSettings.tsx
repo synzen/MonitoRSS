@@ -86,11 +86,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       return;
     }
 
-    console.log(
-      "🚀 ~ file: ConnectionDiscordChannelSettings.tsx:85 ~ onUpdate ~ details:",
-      details
-    );
-
     try {
       await mutateAsync({
         feedId,
@@ -116,9 +111,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             name: connection.name,
             serverId,
           }}
-          onUpdate={({ channelId, name }) =>
+          onUpdate={({ channelId: updatedChannelId, name }) =>
             onUpdate({
-              channelId,
+              channelId: updatedChannelId,
               name,
             })
           }
@@ -280,6 +275,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     splitOptions: connection?.splitOptions || null,
                     formatter: connection?.details.formatter,
                     forumThreadTitle: connection?.details.forumThreadTitle,
+                    forumThreadTags: connection?.details.forumThreadTags || [],
                   }}
                   articleFormatter={{
                     options: {

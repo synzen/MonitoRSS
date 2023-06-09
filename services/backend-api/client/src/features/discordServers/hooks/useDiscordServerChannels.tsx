@@ -34,7 +34,7 @@ export const useDiscordServerChannels = ({ serverId, include }: Props) => {
       });
     },
     {
-      enabled: accessData?.result.authorized && !hadError && !!serverId,
+      enabled: !!accessData?.result.authorized && !hadError && !!serverId,
       onError: () => setHadError(true),
     }
   );

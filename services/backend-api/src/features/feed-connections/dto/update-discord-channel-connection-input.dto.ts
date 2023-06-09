@@ -2,6 +2,7 @@ import { Type } from "class-transformer";
 import {
   IsArray,
   IsIn,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -21,6 +22,12 @@ class FiltersDto {
   expression: Record<string, unknown>;
 }
 
+class ForumThreadTagDto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+}
+
 export class UpdateDiscordChannelConnectionInputDto {
   @IsString()
   @IsOptional()
@@ -38,6 +45,12 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsOptional()
   @MaxLength(100)
   forumThreadTitle?: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ForumThreadTagDto)
+  forumThreadTags?: ForumThreadTagDto[];
 
   @IsObject()
   @IsOptional()

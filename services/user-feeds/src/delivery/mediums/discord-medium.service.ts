@@ -73,6 +73,7 @@ export class DiscordMediumService implements DeliveryMedium {
       content,
       splitOptions,
       forumThreadTitle,
+      forumThreadTags,
     } = details.mediumDetails;
     const channelId = channel?.id;
     const isForum = channel?.type === "forum";
@@ -108,9 +109,9 @@ export class DiscordMediumService implements DeliveryMedium {
     } else if (channelId && isForum) {
       const forumApiUrl = this.getForumApiUrl(channelId);
       const bodies = this.generateApiPayloads(article, {
-        embeds: details.mediumDetails.embeds,
-        content: details.mediumDetails.content,
-        splitOptions: details.mediumDetails.splitOptions,
+        embeds: embeds,
+        content: content,
+        splitOptions: splitOptions,
       });
 
       const threadBody = {
@@ -123,7 +124,7 @@ export class DiscordMediumService implements DeliveryMedium {
             },
           })[0].content || "New Article",
         message: bodies[0],
-        appliedTags: details.mediumDetails.forumTags?.map((tag) => tag.id),
+        applied_tags: forumThreadTags?.map((tag) => tag.id),
       };
 
       const firstResponse = await this.producer.fetch(forumApiUrl, {
@@ -267,7 +268,9 @@ export class DiscordMediumService implements DeliveryMedium {
           },
         })[0].content || "New Article",
       message: bodies[0],
-      appliedTags: details.deliverySettings.forumTags?.map((tag) => tag.id),
+      applied_tags: details.deliverySettings.forumThreadTags?.map(
+        (tag) => tag.id
+      ),
     };
 
     const res = await this.producer.fetch(

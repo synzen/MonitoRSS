@@ -276,7 +276,10 @@
     "discordMessageForumThreadForm": {
       "title": "Forum Thread",
       "threadTitleLabel": "Thread Title",
-      "threadTitleDescription": "The title of the thread that will be created per new article. You may use placeholders. The default is {{title}}."
+      "threadTitleDescription": "The title of the thread that will be created per new article. You may use placeholders. The default is {{title}}.",
+      "threadTagsLabel": "Thread Tags",
+      "threadTagsDescription": "The tags that will be attached to the the thread.",
+      "threadTagMissingPermissions": "Only moderators are allowed to apply this tag. Either remove this restriction from the tag, or ensure the bot has the MANAGE_THREADS server permission."
     },
     "pageContentV2": {
       "logout": "Logout"

@@ -75,6 +75,14 @@ export const discordMessageFormSchema = object({
   content: string().max(2000),
   embeds: array().of(discordMessageEmbedFormSchema),
   forumThreadTitle: string().optional().max(100),
+  forumThreadTags: array(
+    object({
+      id: string().required(),
+    }).required()
+  )
+    .optional()
+    .nullable()
+    .default([]),
   splitOptions: object({
     isEnabled: boolean().optional().nullable(),
     splitChar: string().max(10).optional().nullable(),

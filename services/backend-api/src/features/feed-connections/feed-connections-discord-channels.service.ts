@@ -39,6 +39,9 @@ export interface UpdateDiscordChannelConnectionInput {
       };
       content?: string;
       forumThreadTitle?: string;
+      forumThreadTags?: {
+        id: string;
+      }[];
     };
   };
 }
@@ -258,6 +261,7 @@ export class FeedConnectionsDiscordChannelsService {
           type: connection.details.channel.type,
         },
         forumThreadTitle: connection.details.forumThreadTitle,
+        forumThreadTags: connection.details.forumThreadTags,
         content: castDiscordContentForMedium(connection.details.content),
         embeds: castDiscordEmbedsForMedium(connection.details.embeds),
         formatter: connection.details.formatter,

@@ -114,6 +114,7 @@ export const DiscordMessageForm = ({
         splitOptions: formData.splitOptions || null,
         formatter: formData.formatter,
         forumThreadTitle: formData.forumThreadTitle,
+        forumThreadTags: formData.forumThreadTags || [],
       };
 
       await onClickSave(toSubmit);
@@ -206,7 +207,7 @@ export const DiscordMessageForm = ({
           {include?.forumThreadTitle && (
             <Stack spacing={4}>
               <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
-              <DiscordMessageForumThreadForm />
+              <DiscordMessageForumThreadForm connectionId={connection.id} feedId={feedId} />
             </Stack>
           )}
           <Stack spacing={4}>

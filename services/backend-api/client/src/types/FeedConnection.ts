@@ -22,6 +22,13 @@ const DiscordChannelConnectionDetailsSchema = object({
   }).required(),
   content: string().optional(),
   forumThreadTitle: string().optional(),
+  forumThreadTags: array(
+    object({
+      id: string().required(),
+    }).required()
+  )
+    .optional()
+    .nullable(),
   formatter: object({
     formatTables: boolean().required(),
     stripImages: boolean().required(),

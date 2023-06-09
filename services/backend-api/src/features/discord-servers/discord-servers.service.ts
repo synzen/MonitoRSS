@@ -249,10 +249,10 @@ export class DiscordServersService {
         }
       });
 
-      let botCanUseModeratedTags: boolean | undefined = undefined;
+      let botCanUseModeratedTags = true;
 
       if (
-        relevantChannels.some((c) => c.available_tags?.find((t) => t.moderated))
+        relevantChannels.some((c) => c.available_tags?.some((t) => t.moderated))
       ) {
         botCanUseModeratedTags =
           await this.discordPermissionsService.botHasPermissionInServer(
@@ -279,13 +279,15 @@ export class DiscordServersService {
                 name: parentChannel.name,
               }
             : null,
-          availableTags: channel.available_tags?.map((t) => ({
-            id: t.id,
-            name: t.name,
-            emojiId: t.emoji_id,
-            emojiName: t.emoji_name,
-            hasPermissionToUse: botCanUseModeratedTags || false,
-          })),
+          availableTags: channel.available_tags
+            ?.map((t) => ({
+              id: t.id,
+              name: t.name,
+              emojiId: t.emoji_id,
+              emojiName: t.emoji_name,
+              hasPermissionToUse: t.moderated ? botCanUseModeratedTags : true,
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name)),
         };
       });
 

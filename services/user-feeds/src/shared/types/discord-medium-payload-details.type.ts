@@ -32,7 +32,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
         otherwise: (schema) => schema.optional(),
       }),
     forumThreadTitle: string().nullable().default(undefined),
-    forumTags: array(
+    forumThreadTags: array(
       object({
         id: string().required(),
       }).required()
