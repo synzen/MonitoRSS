@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { GetDiscordWebhooksOutput, getDiscordWebhooks } from "../api";
 
@@ -9,9 +8,7 @@ interface Props {
 }
 
 export const useDiscordWebhooks = ({ serverId, isWebhooksEnabled }: Props) => {
-  const [hasErrored, setHasErrored] = useState(false);
-
-  const enabled = !!serverId && isWebhooksEnabled && !hasErrored;
+  const enabled = !!serverId && isWebhooksEnabled;
 
   const { data, status, error, fetchStatus } = useQuery<GetDiscordWebhooksOutput, ApiAdapterError>(
     [
@@ -31,9 +28,6 @@ export const useDiscordWebhooks = ({ serverId, isWebhooksEnabled }: Props) => {
     },
     {
       enabled,
-      onError: () => {
-        setHasErrored(true);
-      },
     }
   );
 

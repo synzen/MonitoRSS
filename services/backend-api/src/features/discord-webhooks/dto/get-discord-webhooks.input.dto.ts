@@ -1,4 +1,5 @@
-import { IsString, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
+import { IsObject, IsString, ValidateNested } from "class-validator";
 
 class GetDiscordWebhooksInputFiltersDto {
   @IsString()
@@ -6,6 +7,8 @@ class GetDiscordWebhooksInputFiltersDto {
 }
 
 export class GetDiscordWebhooksInputDto {
+  @IsObject()
   @ValidateNested()
+  @Type(() => GetDiscordWebhooksInputFiltersDto)
   filters: GetDiscordWebhooksInputFiltersDto;
 }
