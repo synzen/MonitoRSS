@@ -12,6 +12,7 @@ import {
   FeedRequestNetworkException,
   FeedRequestParseException,
   FeedRequestServerStatusException,
+  FeedRequestTimedOutException,
 } from "./exceptions";
 import { FeedResponse } from "./types";
 import pRetry from "p-retry";
@@ -121,6 +122,10 @@ export class FeedFetcherService {
 
     if (requestStatus === FeedResponseRequestStatus.Success) {
       return response.response.body;
+    }
+
+    if (requestStatus === FeedResponseRequestStatus.FetchTimeout) {
+      throw new FeedRequestTimedOutException(`Feed request timed out`);
     }
 
     throw new Error(

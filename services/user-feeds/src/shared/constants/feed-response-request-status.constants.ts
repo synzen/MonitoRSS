@@ -5,4 +5,5 @@ export enum FeedResponseRequestStatus {
   Success = "SUCCESS",
   BadStatusCode = "BAD_STATUS_CODE",
   FetchError = "FETCH_ERROR",
+  FetchTimeout = "FETCH_TIMEOUT",
 }

@@ -23,6 +23,7 @@ import {
   FeedRequestFetchException,
   FeedRequestInternalException,
   FeedRequestParseException,
+  FeedRequestTimedOutException,
 } from "../feed-fetcher/exceptions";
 import { FeedDeletedEvent } from "./types";
 import { feedDeletedEventSchema } from "./schemas";
@@ -249,7 +250,8 @@ export class FeedEventHandlerService {
           err instanceof FeedRequestInternalException ||
           err instanceof FeedRequestParseException ||
           err instanceof FeedRequestBadStatusCodeException ||
-          err instanceof FeedRequestFetchException
+          err instanceof FeedRequestFetchException ||
+          err instanceof FeedRequestTimedOutException
         ) {
           logger.debug(`Ignoring feed event due to expected exception`, {
             exceptionName: (err as Error).name,
