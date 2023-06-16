@@ -77,8 +77,9 @@ export class FeedEventHandlerService {
         await this.handleArticleDeliveryResult(result);
       });
     } catch (err) {
-      logger.error(`Failed to handle article delivery result`, {
+      logger.warn(`Failed to handle article delivery result`, {
         err: (err as Error).stack,
+        result,
       });
     }
   }
