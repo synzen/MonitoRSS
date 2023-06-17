@@ -30,6 +30,8 @@ interface ArticleDeliverySentState {
   id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.Sent;
+  parent?: string;
+  contentType?: ArticleDeliveryContentType;
 }
 
 interface ArticleDeliveryRateLimitState {

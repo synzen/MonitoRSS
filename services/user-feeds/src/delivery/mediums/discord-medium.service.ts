@@ -299,7 +299,7 @@ export class DiscordMediumService implements DeliveryMedium {
         channel: channelId,
         feedId: id,
         guildId,
-        emitDeliveryResult: bodies.length === 1,
+        emitDeliveryResult: false,
       }
     );
 
@@ -330,7 +330,7 @@ export class DiscordMediumService implements DeliveryMedium {
             channel: threadId,
             feedId: id,
             guildId,
-            emitDeliveryResult: index === bodies.length - 1,
+            emitDeliveryResult: true,
           }
         );
 
@@ -347,7 +347,7 @@ export class DiscordMediumService implements DeliveryMedium {
     return [
       {
         id: details.deliveryId,
-        status: ArticleDeliveryStatus.PendingDelivery,
+        status: ArticleDeliveryStatus.Sent,
         mediumId: details.mediumId,
         contentType: ArticleDeliveryContentType.DiscordThreadCreation,
       },

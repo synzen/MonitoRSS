@@ -26,6 +26,10 @@ export class DeliveryRecordService {
           feed_id: feedId,
           status: articleStatus,
           medium_id: articleState.mediumId,
+          content_type: articleState.contentType,
+          parent: articleState.parent
+            ? ({ id: articleState.parent } as never)
+            : null,
         });
       } else if (articleStatus === Failed || articleStatus === Rejected) {
         record = new DeliveryRecord({
