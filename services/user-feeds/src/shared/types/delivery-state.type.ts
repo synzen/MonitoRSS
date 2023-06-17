@@ -2,6 +2,7 @@ import {
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
 } from "../constants";
+import { ArticleDeliveryContentType } from "./article-delivery-content-type.type";
 
 export enum ArticleDeliveryStatus {
   // The article is being delivered
@@ -11,7 +12,7 @@ export enum ArticleDeliveryStatus {
   Failed = "failed",
   // Discord returns a 400 for example. Requires user action.
   Rejected = "rejected",
-  // Filters blocked the article fromg getting delivered
+  // Filters blocked the article from getting delivered
   FilteredOut = "filtered-out",
   // Rate limit enforced by this service
   RateLimited = "rate-limited",
@@ -19,6 +20,7 @@ export enum ArticleDeliveryStatus {
 
 interface ArticleDeliveryPendingDeliveryState {
   id: string;
+  contentType: ArticleDeliveryContentType;
   mediumId: string;
   status: ArticleDeliveryStatus.PendingDelivery;
 }

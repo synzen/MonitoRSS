@@ -1,6 +1,10 @@
 import { DeliveryMedium } from "./delivery-medium.interface";
 import { Injectable } from "@nestjs/common";
-import { Article, ArticleDeliveryErrorCode } from "../../shared";
+import {
+  Article,
+  ArticleDeliveryContentType,
+  ArticleDeliveryErrorCode,
+} from "../../shared";
 import { JobResponse, RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
@@ -15,6 +19,7 @@ import { ConfigService } from "@nestjs/config";
 import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
 import { FormatOptions } from "../../article-formatter/types";
+import { randomUUID } from "node:crypto";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -300,16 +305,18 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const channelApiUrl = this.getChannelApiUrl(threadId);
 
-    await Promise.all(
-      bodies.slice(1, bodies.length).map((body, index) =>
-        this.producer.enqueue(
+    const additionalIds = await Promise.all(
+      bodies.slice(1, bodies.length).map(async (body, index) => {
+        const additionalDeliveryId = randomUUID();
+
+        await this.producer.enqueue(
           channelApiUrl,
           {
             method: "POST",
             body: JSON.stringify(body),
           },
           {
-            id: details.deliveryId,
+            id: additionalDeliveryId,
             articleID: article.flattened.id,
             feedURL: url,
             channel: threadId,
@@ -317,14 +324,18 @@ export class DiscordMediumService implements DeliveryMedium {
             guildId,
             emitDeliveryResult: index === bodies.length - 1,
           }
-        )
-      )
+        );
+
+        return additionalDeliveryId;
+      })
     );
 
     return {
       id: details.deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
+      additionalIds,
+      contentType: ArticleDeliveryContentType.DiscordArticleMessage,
     };
   }
 
@@ -369,6 +380,7 @@ export class DiscordMediumService implements DeliveryMedium {
       id: details.deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
+      contentType: ArticleDeliveryContentType.DiscordArticleMessage,
     };
   }
 
@@ -429,6 +441,7 @@ export class DiscordMediumService implements DeliveryMedium {
       id: details.deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
+      contentType: ArticleDeliveryContentType.DiscordArticleMessage,
     };
   }
 

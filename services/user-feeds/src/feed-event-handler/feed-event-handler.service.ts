@@ -300,11 +300,14 @@ export class FeedEventHandlerService {
           deliveryStates
         );
       } catch (err) {
-        logger.error(`Failed to store delivery states`, {
-          event,
-          deliveryStates,
-          error: (err as Error).stack,
-        });
+        logger.error(
+          `Failed to store delivery states while handling feed event`,
+          {
+            event,
+            deliveryStates,
+            error: (err as Error).stack,
+          }
+        );
       }
     } catch (err) {
       if (err instanceof InvalidFeedException) {

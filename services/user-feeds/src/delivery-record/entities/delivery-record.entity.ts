@@ -1,5 +1,13 @@
-import { Entity, Property, PrimaryKey, Enum, Index } from "@mikro-orm/core";
+import {
+  Entity,
+  Property,
+  PrimaryKey,
+  Enum,
+  Index,
+  OneToOne,
+} from "@mikro-orm/core";
 import { ArticleDeliveryStatus } from "../../shared";
+import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-content-type.type";
 
 @Entity()
 @Index({
@@ -21,6 +29,19 @@ export class DeliveryRecord {
 
   @Enum(() => ArticleDeliveryStatus)
   status: ArticleDeliveryStatus;
+
+  @Enum({
+    nullable: true,
+    items: () => ArticleDeliveryContentType,
+  })
+  content_type?: ArticleDeliveryContentType | null;
+
+  @OneToOne({
+    nullable: true,
+    default: null,
+    entity: () => DeliveryRecord,
+  })
+  parent?: DeliveryRecord | null;
 
   @Property({
     nullable: true,
