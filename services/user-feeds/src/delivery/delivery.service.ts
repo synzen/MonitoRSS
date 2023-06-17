@@ -75,7 +75,7 @@ export class DeliveryService {
     for (let i = 0; i < articles.length; ++i) {
       const article = articles[i];
 
-      const articleState = await this.sendArticleToMedium(
+      const articleStates = await this.sendArticleToMedium(
         event,
         article,
         medium,
@@ -83,7 +83,7 @@ export class DeliveryService {
         randomUUID()
       );
 
-      results.push(articleState);
+      results.push(...articleStates);
     }
 
     return results;
@@ -95,14 +95,16 @@ export class DeliveryService {
     medium: MediumPayload,
     limitState: LimitState,
     deliveryId: string
-  ): Promise<ArticleDeliveryState> {
+  ): Promise<ArticleDeliveryState[]> {
     try {
       if (limitState.remaining <= 0) {
-        return {
-          id: deliveryId,
-          mediumId: medium.id,
-          status: ArticleDeliveryStatus.RateLimited,
-        };
+        return [
+          {
+            id: deliveryId,
+            mediumId: medium.id,
+            status: ArticleDeliveryStatus.RateLimited,
+          },
+        ];
       }
 
       const mediumService = this.mediumServices[medium.key];
@@ -124,14 +126,16 @@ export class DeliveryService {
           );
 
       if (!passesFilters) {
-        return {
-          id: deliveryId,
-          mediumId: medium.id,
-          status: ArticleDeliveryStatus.FilteredOut,
-        };
+        return [
+          {
+            id: deliveryId,
+            mediumId: medium.id,
+            status: ArticleDeliveryStatus.FilteredOut,
+          },
+        ];
       }
 
-      const articleState = await mediumService.deliverArticle(
+      const articleStates = await mediumService.deliverArticle(
         formattedArticle,
         {
           deliveryId,
@@ -143,20 +147,22 @@ export class DeliveryService {
 
       limitState.remaining--;
 
-      return articleState;
+      return articleStates;
     } catch (err) {
       logger.error(`Failed to deliver article to medium ${medium.key}`, {
         event,
         error: (err as Error).stack,
       });
 
-      return {
-        id: deliveryId,
-        mediumId: medium.id,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.Internal,
-        internalMessage: (err as Error).message,
-      };
+      return [
+        {
+          id: deliveryId,
+          mediumId: medium.id,
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.Internal,
+          internalMessage: (err as Error).message,
+        },
+      ];
     }
   }
 }

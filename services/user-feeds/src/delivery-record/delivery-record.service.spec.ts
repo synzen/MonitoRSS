@@ -1,6 +1,7 @@
 import { getRepositoryToken } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import {
+  ArticleDeliveryContentType,
   ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
@@ -160,7 +161,43 @@ describe("DeliveryRecordService", () => {
       );
     });
 
-    it("stores other article states correctly correctly", async () => {
+    it("stores pending delivery states correctly", async () => {
+      const feedId = "feed-id";
+      const articleStates: ArticleDeliveryState[] = [
+        {
+          id: "id-1",
+          mediumId: "medium-id",
+          status: ArticleDeliveryStatus.PendingDelivery,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+        },
+        {
+          id: "id-2",
+          mediumId: "medium-id",
+          status: ArticleDeliveryStatus.PendingDelivery,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          parent: "id-1",
+        },
+      ];
+      await service.store(feedId, articleStates);
+
+      const records = await deliveryRecordRepo.findAll();
+
+      expect(records).toHaveLength(2);
+      expect(records).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "id-1",
+            status: ArticleDeliveryStatus.PendingDelivery,
+          }),
+          expect.objectContaining({
+            id: "id-2",
+            status: ArticleDeliveryStatus.PendingDelivery,
+          }),
+        ])
+      );
+    });
+
+    it("stores other article states correctly", async () => {
       const feedId = "feed-id";
       const articleStates: ArticleDeliveryState[] = [
         {

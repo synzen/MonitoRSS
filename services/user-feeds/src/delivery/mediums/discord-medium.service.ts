@@ -190,28 +190,32 @@ export class DiscordMediumService implements DeliveryMedium {
   async deliverArticle(
     article: Article,
     details: DeliveryDetails
-  ): Promise<ArticleDeliveryState> {
+  ): Promise<ArticleDeliveryState[]> {
     const { channel, webhook } = details.deliverySettings;
 
     if (!channel && !webhook) {
-      return {
-        id: details.deliveryId,
-        mediumId: details.mediumId,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-        internalMessage: "No channel or webhook specified",
-      };
+      return [
+        {
+          id: details.deliveryId,
+          mediumId: details.mediumId,
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          internalMessage: "No channel or webhook specified",
+        },
+      ];
     }
 
     try {
       if (webhook) {
         const { id, token, name, iconUrl } = webhook;
 
-        return await this.deliverArticleToWebhook(
-          article,
-          { id, token, name, iconUrl },
-          details
-        );
+        return [
+          await this.deliverArticleToWebhook(
+            article,
+            { id, token, name, iconUrl },
+            details
+          ),
+        ];
       } else if (channel) {
         if (channel.type === "forum") {
           return await this.deliverArticleToForum(article, channel.id, details);
@@ -219,7 +223,9 @@ export class DiscordMediumService implements DeliveryMedium {
 
         const channelId = channel.id;
 
-        return await this.deliverArticleToChannel(article, channelId, details);
+        return [
+          await this.deliverArticleToChannel(article, channelId, details),
+        ];
       } else {
         throw new Error("No channel or webhook specified for Discord medium");
       }
@@ -236,13 +242,15 @@ export class DiscordMediumService implements DeliveryMedium {
         }
       );
 
-      return {
-        id: details.deliveryId,
-        mediumId: details.mediumId,
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.Internal,
-        internalMessage: (err as Error).message,
-      };
+      return [
+        {
+          id: details.deliveryId,
+          mediumId: details.mediumId,
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.Internal,
+          internalMessage: (err as Error).message,
+        },
+      ];
     }
   }
 
@@ -250,7 +258,7 @@ export class DiscordMediumService implements DeliveryMedium {
     article: Article,
     channelId: string,
     details: DeliveryDetails
-  ): Promise<ArticleDeliveryState> {
+  ): Promise<ArticleDeliveryState[]> {
     const {
       deliverySettings: { guildId, forumThreadTitle },
       feedDetails: { id, url },
@@ -305,7 +313,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const channelApiUrl = this.getChannelApiUrl(threadId);
 
-    const additionalIds = await Promise.all(
+    const additionalDeliveryStates: ArticleDeliveryState[] = await Promise.all(
       bodies.slice(1, bodies.length).map(async (body, index) => {
         const additionalDeliveryId = randomUUID();
 
@@ -326,16 +334,25 @@ export class DiscordMediumService implements DeliveryMedium {
           }
         );
 
-        return additionalDeliveryId;
+        return {
+          id: additionalDeliveryId,
+          status: ArticleDeliveryStatus.PendingDelivery,
+          mediumId: details.mediumId,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          parent: details.deliveryId,
+        };
       })
     );
 
-    return {
-      id: details.deliveryId,
-      status: ArticleDeliveryStatus.PendingDelivery,
-      mediumId: details.mediumId,
-      contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-    };
+    return [
+      {
+        id: details.deliveryId,
+        status: ArticleDeliveryStatus.PendingDelivery,
+        mediumId: details.mediumId,
+        contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+      },
+      ...additionalDeliveryStates,
+    ];
   }
 
   private async deliverArticleToChannel(

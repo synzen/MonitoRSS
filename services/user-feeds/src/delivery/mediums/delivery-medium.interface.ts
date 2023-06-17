@@ -11,6 +11,6 @@ export interface DeliveryMedium {
       feedDetails: FeedV2Event["data"]["feed"];
       deliverySettings: MediumPayload["details"];
     }
-  ): Promise<ArticleDeliveryState>;
+  ): Promise<ArticleDeliveryState[]>;
   formatArticle(article: Article, options: FormatOptions): Promise<Article>;
 }

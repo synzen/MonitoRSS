@@ -23,6 +23,7 @@ interface ArticleDeliveryPendingDeliveryState {
   contentType: ArticleDeliveryContentType;
   mediumId: string;
   status: ArticleDeliveryStatus.PendingDelivery;
+  parent?: string;
 }
 
 interface ArticleDeliverySentState {

@@ -5,7 +5,7 @@ import { ArticleDeliveryState, ArticleDeliveryStatus } from "../shared";
 import { DeliveryRecord } from "./entities";
 import dayjs from "dayjs";
 
-const { Failed, Rejected, Sent } = ArticleDeliveryStatus;
+const { Failed, Rejected, Sent, PendingDelivery } = ArticleDeliveryStatus;
 
 @Injectable()
 export class DeliveryRecordService {
@@ -35,6 +35,19 @@ export class DeliveryRecordService {
           error_code: articleState.errorCode,
           internal_message: articleState.internalMessage,
           medium_id: articleState.mediumId,
+        });
+      } else if (articleStatus === PendingDelivery) {
+        record = new DeliveryRecord({
+          id: articleState.id,
+          feed_id: feedId,
+          status: articleStatus,
+          medium_id: articleState.mediumId,
+          parent: articleState.parent
+            ? ({
+                id: articleState.parent,
+              } as never)
+            : null,
+          content_type: articleState.contentType,
         });
       } else {
         record = new DeliveryRecord({

@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
+import { ArticleDeliveryContentType } from "../../shared";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -25,6 +26,7 @@ describe("DiscordMediumService", () => {
   };
   const articleFormatterService = {
     formatArticleForDiscord: jest.fn(),
+    applySplit: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -48,6 +50,9 @@ describe("DiscordMediumService", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    articleFormatterService.applySplit.mockImplementation((content) => [
+      content,
+    ]);
   });
 
   describe("deliverTestArticle", () => {
@@ -90,6 +95,7 @@ describe("DiscordMediumService", () => {
             method: "POST",
             body: JSON.stringify({
               content: "content",
+              embeds: [],
             }),
           }
         );
@@ -118,6 +124,7 @@ describe("DiscordMediumService", () => {
           expect.objectContaining({
             body: JSON.stringify({
               content: "content some-title-here",
+              embeds: [],
             }),
           })
         );
@@ -137,6 +144,7 @@ describe("DiscordMediumService", () => {
             method: "POST",
             body: JSON.stringify({
               content: "content",
+              embeds: [],
             }),
           }
         );
@@ -164,6 +172,7 @@ describe("DiscordMediumService", () => {
           expect.objectContaining({
             body: JSON.stringify({
               content: "content some-title-here",
+              embeds: [],
             }),
           })
         );
@@ -206,11 +215,14 @@ describe("DiscordMediumService", () => {
 
     it("returns the status of the result", async () => {
       const result = await service.deliverArticle(article, deliveryDetails);
-      expect(result).toEqual({
-        id: deliveryDetails.deliveryId,
-        mediumId: deliveryDetails.mediumId,
-        status: ArticleDeliveryStatus.PendingDelivery,
-      });
+      expect(result).toEqual([
+        {
+          id: deliveryDetails.deliveryId,
+          mediumId: deliveryDetails.mediumId,
+          status: ArticleDeliveryStatus.PendingDelivery,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+        },
+      ]);
     });
 
     it("sends embeds", async () => {
@@ -301,6 +313,7 @@ describe("DiscordMediumService", () => {
             method: "POST",
             body: JSON.stringify({
               content: "content",
+              embeds: [],
             }),
           },
           {
@@ -338,6 +351,7 @@ describe("DiscordMediumService", () => {
           expect.objectContaining({
             body: JSON.stringify({
               content: "content some-title-here",
+              embeds: [],
             }),
           }),
           expect.anything()
@@ -358,6 +372,7 @@ describe("DiscordMediumService", () => {
             method: "POST",
             body: JSON.stringify({
               content: "content",
+              embeds: [],
             }),
           },
           {
@@ -394,6 +409,7 @@ describe("DiscordMediumService", () => {
           expect.objectContaining({
             body: JSON.stringify({
               content: "content some-title-here",
+              embeds: [],
             }),
           }),
           expect.anything()
@@ -403,11 +419,14 @@ describe("DiscordMediumService", () => {
       it("returns the correct result for job response %o", () => {
         return expect(
           service.deliverArticle(article, deliveryDetails)
-        ).resolves.toEqual({
-          id: deliveryDetails.deliveryId,
-          status: ArticleDeliveryStatus.PendingDelivery,
-          mediumId: deliveryDetails.mediumId,
-        } as ArticleDeliveryState);
+        ).resolves.toEqual([
+          {
+            id: deliveryDetails.deliveryId,
+            status: ArticleDeliveryStatus.PendingDelivery,
+            mediumId: deliveryDetails.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          } as ArticleDeliveryState,
+        ]);
       });
     });
   });

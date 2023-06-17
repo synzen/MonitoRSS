@@ -57,6 +57,7 @@ describe("DeliveryService", () => {
     articleRateLimitService.getUnderLimitCheck.mockResolvedValue({
       remaining: Number.MAX_SAFE_INTEGER,
     });
+    discordMediumService.deliverArticle.mockResolvedValue([]);
   });
 
   it("should be defined", () => {
@@ -85,6 +86,7 @@ describe("DeliveryService", () => {
                 formatTables: false,
                 stripImages: false,
               },
+              splitOptions: {},
             },
           },
           {
@@ -98,6 +100,7 @@ describe("DeliveryService", () => {
                 formatTables: false,
                 stripImages: false,
               },
+              splitOptions: {},
             },
           },
         ],
@@ -124,6 +127,7 @@ describe("DeliveryService", () => {
         .mockResolvedValueOnce(articles[1])
         .mockResolvedValueOnce(articles[0])
         .mockResolvedValueOnce(articles[1]);
+
       await service.deliver(event, articles);
 
       expect(discordMediumService.deliverArticle).toHaveBeenCalledTimes(4);
@@ -202,6 +206,7 @@ describe("DeliveryService", () => {
                   formatTables: false,
                   stripImages: false,
                 },
+                splitOptions: {},
               },
             },
           ],
@@ -230,6 +235,7 @@ describe("DeliveryService", () => {
                 id: "1",
                 key: MediumKey.Discord,
                 details: {
+                  splitOptions: {},
                   guildId: "1",
                   channel: { id: "channel 1" },
                   webhook: null,
@@ -251,17 +257,19 @@ describe("DeliveryService", () => {
           },
         ];
 
-        const resolvedState: ArticleDeliveryState = {
-          mediumId: "1",
-          status: ArticleDeliveryStatus.Sent,
-          id: "delivery id",
-        };
+        const resolvedState: ArticleDeliveryState[] = [
+          {
+            mediumId: "1",
+            status: ArticleDeliveryStatus.Sent,
+            id: "delivery id",
+          },
+        ];
 
         discordMediumService.deliverArticle.mockResolvedValue(resolvedState);
 
         const result = await service.deliver(event, articles);
 
-        expect(result).toEqual([resolvedState]);
+        expect(result).toEqual(resolvedState);
       });
 
       it("returns failed states", async () => {
@@ -281,6 +289,7 @@ describe("DeliveryService", () => {
                   expression: {} as never,
                 },
                 details: {
+                  splitOptions: {},
                   guildId: "1",
                   channel: { id: "channel 1" },
                   webhook: null,
@@ -339,6 +348,7 @@ describe("DeliveryService", () => {
                   expression: {} as never,
                 },
                 details: {
+                  splitOptions: {},
                   guildId: "1",
                   channel: { id: "channel 1" },
                   webhook: null,
