@@ -334,7 +334,6 @@ export class DiscordMediumService implements DeliveryMedium {
       id: details.deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
-      additionalIds,
       contentType: ArticleDeliveryContentType.DiscordArticleMessage,
     };
   }
