@@ -41,6 +41,9 @@ export interface UpdateDiscordChannelConnectionInput {
       forumThreadTitle?: string;
       forumThreadTags?: {
         id: string;
+        filters?: {
+          expression: Record<string, unknown>;
+        };
       }[];
     };
   };

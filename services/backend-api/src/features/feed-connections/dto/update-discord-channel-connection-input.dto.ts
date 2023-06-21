@@ -26,6 +26,12 @@ class ForumThreadTagDto {
   @IsString()
   @IsNotEmpty()
   id: string;
+
+  @IsObject()
+  @IsOptional()
+  @Type(() => FiltersDto)
+  @ValidateNested({ each: true })
+  filters?: FiltersDto;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {

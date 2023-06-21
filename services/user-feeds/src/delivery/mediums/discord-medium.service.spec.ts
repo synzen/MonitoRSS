@@ -1,7 +1,8 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
+import { ArticleFiltersService } from "../../article-filters/article-filters.service";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
-import { ArticleDeliveryContentType } from "../../shared";
+import { Article, ArticleDeliveryContentType } from "../../shared";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -28,6 +29,10 @@ describe("DiscordMediumService", () => {
     formatArticleForDiscord: jest.fn(),
     applySplit: jest.fn(),
   };
+  const articleFiltersService = {
+    buildReferences: jest.fn(),
+    getArticleFilterResults: jest.fn(),
+  };
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,6 +45,10 @@ describe("DiscordMediumService", () => {
         {
           provide: ArticleFormatterService,
           useValue: articleFormatterService,
+        },
+        {
+          provide: ArticleFiltersService,
+          useValue: articleFiltersService,
         },
       ],
     }).compile();
@@ -428,6 +437,80 @@ describe("DiscordMediumService", () => {
           } as ArticleDeliveryState,
         ]);
       });
+    });
+  });
+
+  describe("getForumTagsToSend", () => {
+    it("returns tags without filters", async () => {
+      const article = {} as Article;
+      const inputTags = [
+        {
+          id: "1",
+          filters: null,
+        },
+        {
+          id: "2",
+          filters: null,
+        },
+      ];
+
+      const res = await service.getForumTagsToSend(article, inputTags);
+
+      expect(res).toEqual(
+        expect.arrayContaining(inputTags.map((tag) => tag.id))
+      );
+    });
+
+    it("does not return tags of filters that do not match the article", async () => {
+      const article = {
+        raw: {
+          title: "some-title",
+        },
+      } as Article;
+      const inputTags = [
+        {
+          id: "1",
+          filters: {},
+        },
+        {
+          id: "2",
+          filters: {},
+        },
+      ];
+
+      articleFiltersService.getArticleFilterResults
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true);
+
+      const res = await service.getForumTagsToSend(article, inputTags as never);
+
+      expect(res).not.toEqual(expect.arrayContaining(["1"]));
+    });
+
+    it("returns tags of filters that match the article", async () => {
+      const article = {
+        raw: {
+          title: "some-title",
+        },
+      } as Article;
+      const inputTags = [
+        {
+          id: "1",
+          filters: {},
+        },
+        {
+          id: "2",
+          filters: {},
+        },
+      ];
+
+      articleFiltersService.getArticleFilterResults
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+
+      const res = await service.getForumTagsToSend(article, inputTags as never);
+
+      expect(res).toEqual(expect.arrayContaining(["1"]));
     });
   });
 });

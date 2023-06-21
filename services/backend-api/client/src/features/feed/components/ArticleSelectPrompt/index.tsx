@@ -223,7 +223,7 @@ export const ArticleSelectPrompt = ({
                   </Stack>
                 )}
               </Box>
-              <Alert>
+              <Alert borderRadius="md">
                 <AlertDescription>
                   <Text fontSize="sm">
                     {t("features.userFeeds.components.articleSelectPrompt.mayBeDelayWarning")}

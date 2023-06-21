@@ -16,7 +16,7 @@
     "@bull-board/express": "^3.9.1",
     "@mikro-orm/core": "^4.5.5",
     "@mikro-orm/mongodb": "^4.5.5",
-    "@synzen/discord-rest": "^0.7.0-beta.7",
+    "@synzen/discord-rest": "^0.7.0-beta.9",
     "amqp-connection-manager": "^4.1.9",
     "amqplib": "^0.10.3",
     "dayjs": "^1.11.2",

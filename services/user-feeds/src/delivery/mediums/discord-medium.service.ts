@@ -20,6 +20,8 @@ import { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
 import { FormatOptions } from "../../article-formatter/types";
 import { randomUUID } from "node:crypto";
+import { ArticleFiltersService } from "../../article-filters/article-filters.service";
+import { LogicalExpression } from "../../article-filters/types";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -28,7 +30,8 @@ export class DiscordMediumService implements DeliveryMedium {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly articleFormatterService: ArticleFormatterService
+    private readonly articleFormatterService: ArticleFormatterService,
+    private readonly articleFiltersService: ArticleFiltersService
   ) {
     const rabbitmqUri = configService.getOrThrow(
       "USER_FEEDS_DISCORD_RABBITMQ_URI"
@@ -129,7 +132,7 @@ export class DiscordMediumService implements DeliveryMedium {
             },
           })[0].content || "New Article",
         message: bodies[0],
-        applied_tags: forumThreadTags?.map((tag) => tag.id),
+        applied_tags: await this.getForumTagsToSend(article, forumThreadTags),
       };
 
       const firstResponse = await this.producer.fetch(forumApiUrl, {
@@ -281,8 +284,9 @@ export class DiscordMediumService implements DeliveryMedium {
           },
         })[0].content || "New Article",
       message: bodies[0],
-      applied_tags: details.deliverySettings.forumThreadTags?.map(
-        (tag) => tag.id
+      applied_tags: await this.getForumTagsToSend(
+        article,
+        details.deliverySettings.forumThreadTags
       ),
     };
 
@@ -314,7 +318,7 @@ export class DiscordMediumService implements DeliveryMedium {
     const channelApiUrl = this.getChannelApiUrl(threadId);
 
     const additionalDeliveryStates: ArticleDeliveryState[] = await Promise.all(
-      bodies.slice(1, bodies.length).map(async (body, index) => {
+      bodies.slice(1, bodies.length).map(async (body) => {
         const additionalDeliveryId = randomUUID();
 
         await this.producer.enqueue(
@@ -459,6 +463,34 @@ export class DiscordMediumService implements DeliveryMedium {
       mediumId: details.mediumId,
       contentType: ArticleDeliveryContentType.DiscordArticleMessage,
     };
+  }
+
+  async getForumTagsToSend(
+    article: Article,
+    inputTags: DeliveryDetails["deliverySettings"]["forumThreadTags"]
+  ): Promise<string[]> {
+    if (!inputTags) {
+      return [];
+    }
+
+    const reference = this.articleFiltersService.buildReferences({ article });
+
+    const results = await Promise.all(
+      inputTags.map(async ({ filters, id }) => {
+        if (!filters) {
+          return id;
+        }
+
+        const result = await this.articleFiltersService.getArticleFilterResults(
+          filters.expression as LogicalExpression,
+          reference
+        );
+
+        return result ? id : null;
+      })
+    );
+
+    return results.filter((result) => !!result) as string[];
   }
 
   generateApiPayloads(

@@ -64,6 +64,14 @@ export const FiltersForm = ({ expression = null, onSave, data }: Props) => {
     });
   };
 
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // By default, this submit will also trigger wrapping forms to submit.
+    e.stopPropagation();
+
+    return handleSubmit(onSaveExpression)(e);
+  };
+
   const addInitialExpression = () => {
     setValue(
       "expression",
@@ -94,7 +102,7 @@ export const FiltersForm = ({ expression = null, onSave, data }: Props) => {
   if (!watchedExpression) {
     return (
       <FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(onSaveExpression)}>
+        <form onSubmit={onSubmit}>
           <Stack>
             <Button onClick={addInitialExpression}>
               {t("features.feedConnections.components.filtersForm.addNewFiltersButtonText")}
@@ -117,7 +125,7 @@ export const FiltersForm = ({ expression = null, onSave, data }: Props) => {
 
   return (
     <FormProvider {...formMethods}>
-      <form onSubmit={handleSubmit(onSaveExpression)}>
+      <form onSubmit={onSubmit}>
         <Stack>
           <LogicalExpressionForm onDeleted={onDeletedExpression} prefix="expression." data={data} />
           <HStack justifyContent="flex-end">

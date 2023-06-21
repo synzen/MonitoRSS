@@ -2,12 +2,14 @@ import {
   Box,
   Center,
   Checkbox,
+  Divider,
   Flex,
   FormControl,
   FormErrorMessage,
   FormHelperText,
   FormLabel,
   HStack,
+  IconButton,
   Input,
   Spinner,
   Stack,
@@ -18,8 +20,11 @@ import {
 } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { FiFilter } from "react-icons/fi";
 import { DiscordMessageFormData } from "@/types/discord";
 import { useDiscordChannelConnection, useDiscordChannelForumTags } from "../../hooks";
+import { DiscordForumTagFiltersDialog } from "./DiscordForumTagFiltersDialog";
+import { LogicalFilterExpression } from "../../types";
 
 interface Props {
   feedId: string;
@@ -31,15 +36,19 @@ const TagCheckbox = ({
   hasPermissionToUse,
   id,
   isChecked,
+  filters,
   name,
   onChange,
+  feedId,
 }: {
   id: string;
   isChecked: boolean;
-  onChange: (e: boolean) => void;
+  filters: { expression: LogicalFilterExpression } | null;
+  onChange: (e: boolean, filters: { expression: LogicalFilterExpression } | null) => void;
   emojiName: string | null;
   name: string;
   hasPermissionToUse: boolean;
+  feedId: string;
 }) => {
   const { t } = useTranslation();
 
@@ -49,19 +58,41 @@ const TagCheckbox = ({
       label={t("components.discordMessageForumThreadForm.threadTagMissingPermissions")}
     >
       <Tag key={id} borderRadius="full" variant="solid" size="lg" paddingX="4" paddingY="2">
-        <Checkbox
-          value={id}
-          isDisabled={!isChecked && !hasPermissionToUse}
-          isChecked={isChecked}
-          onChange={(e) => {
-            onChange(e.target.checked);
-          }}
-        >
-          <HStack>
-            <Box>{emojiName}</Box>
-            <Text>{name}</Text>
-          </HStack>
-        </Checkbox>
+        <HStack divider={<Divider orientation="vertical" height="5" />}>
+          <Checkbox
+            value={id}
+            isDisabled={!isChecked && !hasPermissionToUse}
+            isChecked={isChecked}
+            onChange={(e) => {
+              onChange(e.target.checked, filters);
+            }}
+          >
+            <HStack>
+              <Box>{emojiName}</Box>
+              <Text>{name}</Text>
+            </HStack>
+          </Checkbox>
+          {isChecked && (
+            <DiscordForumTagFiltersDialog
+              tagName={`${emojiName || ""} ${name || ""}`.trim()}
+              feedId={feedId}
+              onFiltersUpdated={async (newFilters) => {
+                onChange(isChecked, newFilters);
+              }}
+              filters={filters}
+              trigger={
+                <IconButton
+                  icon={<FiFilter />}
+                  aria-label="Tag filters"
+                  size="xs"
+                  borderRadius="full"
+                  variant="ghost"
+                  isDisabled={!hasPermissionToUse || !isChecked}
+                />
+              }
+            />
+          )}
+        </HStack>
       </Tag>
     </Tooltip>
   );
@@ -131,7 +162,7 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
               </Center>
             )}
             {status === "success" && !availableTags?.length && (
-              <Text>There are no tags in this channel.</Text>
+              <Text>{t("components.discordMessageForumThreadForm.threadTagsNoTagsFound")}</Text>
             )}
             {status === "success" && availableTags && availableTags.length > 0 && (
               <Controller
@@ -140,31 +171,65 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
                 render={({ field }) => {
                   return (
                     <Flex gap={4} flexWrap="wrap">
-                      {availableTags?.map(({ id, name, hasPermissionToUse, emojiName }) => (
-                        <TagCheckbox
-                          key={id}
-                          emojiName={emojiName}
-                          hasPermissionToUse={hasPermissionToUse}
-                          id={id}
-                          name={name}
-                          isChecked={!!field.value?.find((v) => v.id === id)}
-                          onChange={(isChecked) => {
-                            if (isChecked) {
-                              field.onChange(
-                                [...(field.value || []), { id, name }].filter(
-                                  (v) => !deletedTagIds.has(v.id)
-                                )
+                      {availableTags?.map(({ id, name, hasPermissionToUse, emojiName }) => {
+                        const filters =
+                          (field.value?.find((v) => v.id === id)?.filters as {
+                            expression: LogicalFilterExpression;
+                          } | null) || null;
+
+                        return (
+                          <TagCheckbox
+                            key={id}
+                            feedId={feedId}
+                            filters={filters || null}
+                            emojiName={emojiName}
+                            hasPermissionToUse={hasPermissionToUse}
+                            id={id}
+                            name={name}
+                            isChecked={!!field.value?.find((v) => v.id === id)}
+                            onChange={(isChecked, newFilters) => {
+                              const useNewFilters =
+                                Object.keys(newFilters?.expression || {}).length > 0
+                                  ? newFilters
+                                  : null;
+
+                              const fieldsWithoutDeletedTags =
+                                field.value?.filter((v) => !deletedTagIds.has(v.id)) || [];
+
+                              if (!isChecked) {
+                                const newVal = fieldsWithoutDeletedTags.filter((v) => v.id !== id);
+
+                                field.onChange(newVal);
+
+                                return;
+                              }
+
+                              const existingFieldIndex = fieldsWithoutDeletedTags.findIndex(
+                                (v) => v.id === id
                               );
-                            } else {
-                              field.onChange(
-                                field.value
-                                  ?.filter((v) => v.id !== id)
-                                  .filter((v) => !deletedTagIds.has(v.id)) || []
-                              );
-                            }
-                          }}
-                        />
-                      ))}
+
+                              if (existingFieldIndex === -1) {
+                                const newVal = fieldsWithoutDeletedTags.concat([
+                                  { id, filters: useNewFilters },
+                                ]);
+
+                                field.onChange(newVal);
+
+                                return;
+                              }
+
+                              const newVal = [...fieldsWithoutDeletedTags];
+
+                              newVal.splice(existingFieldIndex, 1, {
+                                id,
+                                filters: useNewFilters,
+                              });
+
+                              field.onChange(newVal);
+                            }}
+                          />
+                        );
+                      })}
                     </Flex>
                   );
                 }}

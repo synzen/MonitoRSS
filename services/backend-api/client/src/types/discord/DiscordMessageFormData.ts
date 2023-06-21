@@ -78,6 +78,11 @@ export const discordMessageFormSchema = object({
   forumThreadTags: array(
     object({
       id: string().required(),
+      filters: object({
+        expression: object().required(),
+      })
+        .nullable()
+        .default(null),
     }).required()
   )
     .optional()

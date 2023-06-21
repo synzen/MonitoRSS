@@ -35,6 +35,12 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     forumThreadTags: array(
       object({
         id: string().required(),
+        filters: object({
+          expression: object(),
+        })
+          .optional()
+          .nullable()
+          .default(null),
       }).required()
     )
       .nullable()

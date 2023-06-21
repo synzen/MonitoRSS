@@ -12,6 +12,20 @@ import {
 
 @Schema({
   _id: false,
+  versionKey: false,
+  timestamps: false,
+})
+class Filters {
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+  })
+  expression: Record<string, unknown>;
+}
+
+const FiltersSchema = SchemaFactory.createForClass(Filters);
+
+@Schema({
+  _id: false,
   timestamps: false,
   versionKey: false,
 })
@@ -82,6 +96,12 @@ class ForumThreadTag {
     type: String,
   })
   id: string;
+
+  @Prop({
+    type: FiltersSchema,
+    required: false,
+  })
+  filters?: Filters;
 }
 
 const ForumThreadTagSchema = SchemaFactory.createForClass(ForumThreadTag);
@@ -131,20 +151,6 @@ class Details {
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);
-
-@Schema({
-  _id: false,
-  versionKey: false,
-  timestamps: false,
-})
-class Filters {
-  @Prop({
-    type: MongooseSchema.Types.Mixed,
-  })
-  expression: Record<string, unknown>;
-}
-
-const FiltersSchema = SchemaFactory.createForClass(Filters);
 
 @Schema({
   _id: false,
