@@ -17,7 +17,7 @@ interface ServerChannelOutputDto {
   }>;
 }
 
-const mappedTypes: Record<DiscordChannelType, string> = {
+const mappedTypes: Partial<Record<DiscordChannelType, string>> = {
   [DiscordChannelType.GUILD_TEXT]: "text",
   [DiscordChannelType.GUILD_CATEGORY]: "category",
   [DiscordChannelType.GUILD_ANNOUNCEMENT]: "announcement",

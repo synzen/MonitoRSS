@@ -54,7 +54,8 @@
       "feedFilterInvalidExpression": "Invalid filter expression",
       "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically",
       "feedArticleNotFound": "Article does not exist. Try selecting another article or refreshing the page.",
-      "discordServerNotFound": "The bot does not access to this server. Make sure the bot is in the server."
+      "discordServerNotFound": "The bot does not access to this server. Make sure the bot is in the server.",
+      "discordChannelInvalid": "That is an unacceptable channel. Try another one."
     }
   },
   "pages": {
@@ -118,6 +119,7 @@
       "comparisonsTab": "Comparisons",
       "addConnectionButtonText": "Add new",
       "discordChannelMenuItem": "Discord Channel",
+      "discordThreadMenuItem": "Discord Thread",
       "discordWebhookMenuItem": "Discord Webhook",
       "articleDailyLimit": "Article Daily Limit",
       "connectionSectionDescription": "Each connection is a channel to deliver your feed articles to. You may add as many connections as you want, but every article that is delivered to a channel counts towards the article limit.",
@@ -228,7 +230,13 @@
     },
     "discordChannelConnection": {
       "manualDisableConfirmTitle": "Are you sure you want to disable this connection?",
-      "manualDisableConfirmDescription": "This will disable the connection and prevent any further messages from being sent to this channel. You may re-enable it at any time."
+      "manualDisableConfirmDescription": "This will disable the connection and prevent any further messages from being sent to this channel. You may re-enable it at any time.",
+      "channelTypeThread": "Thread",
+      "channelTypeForum": "Forum",
+      "channelTypeTextChannel": "Text Channel",
+      "channelTypeLabel": "Channel Type",
+      "channelNameLabel": "Channel Name",
+      "serverLabel": "Server"
     },
     "discordWebhookConnection": {
       "manualDisableConfirmTitle": "Are you sure you want to disable this connection?",
@@ -336,6 +344,12 @@
         },
         "updateUserFeedDialog": {
           "title": "Update feed"
+        },
+        "addDiscordChannelThreadConnectionDialog": {
+          "title": "Add a Discord thread connection",
+          "formNameLabel": "Connection name",
+          "formNameDescription": "This is only for your reference.",
+          "formTheadIdLabel": "Thread ID"
         },
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",

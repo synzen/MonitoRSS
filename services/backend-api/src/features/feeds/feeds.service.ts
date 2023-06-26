@@ -24,11 +24,12 @@ import {
   FeedLimitReachedException,
   MissingChannelException,
   MissingChannelPermissionsException,
+  NoDiscordChannelPermissionOverwritesException,
   UserMissingManageGuildException,
 } from "./exceptions";
 import { SupportersService } from "../supporters/supporters.service";
 import { BannedFeed, BannedFeedModel } from "./entities/banned-feed.entity";
-import { DiscordGuildChannel } from "../../common";
+import { DiscordChannelType, DiscordGuildChannel } from "../../common";
 import { DiscordPermissionsService } from "../discord-auth/discord-permissions.service";
 import {
   SEND_CHANNEL_MESSAGE,
@@ -189,6 +190,14 @@ export class FeedsService {
 
     if (!userManagesGuild) {
       throw new UserMissingManageGuildException();
+    }
+
+    if (channel.type === DiscordChannelType.PUBLIC_THREAD) {
+      return channel;
+    }
+
+    if (!channel.permission_overwrites) {
+      throw new NoDiscordChannelPermissionOverwritesException();
     }
 
     if (

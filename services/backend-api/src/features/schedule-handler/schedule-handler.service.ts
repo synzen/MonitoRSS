@@ -225,6 +225,7 @@ export class ScheduleHandlerService {
           channel: {
             id: con.details.channel.id,
             type: con.details.channel.type,
+            guildId: con.details.channel.guildId,
           },
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),

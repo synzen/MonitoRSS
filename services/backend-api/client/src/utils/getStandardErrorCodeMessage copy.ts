@@ -26,6 +26,7 @@ enum ApiErrorCode {
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = "FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED",
   FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
+  DISCORD_CAHNNEL_INVALID = "DISCORD_CAHNNEL_INVALID",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -54,6 +55,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   ),
   FEED_ARTICLE_NOT_FOUND: t("common.apiErrors.feedArticleNotFound"),
   DISCORD_SERVER_NOT_FOUND: t("common.apiErrors.discordServerNotFound"),
+  DISCORD_CAHNNEL_INVALID: t("common.apiErrors.discordChannelInvalid"),
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

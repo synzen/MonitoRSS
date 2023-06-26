@@ -1,3 +1,5 @@
+import { FeedConnectionDiscordChannelType } from "../../features/feeds/constants";
+
 export interface DiscordMediumEvent {
   key: "discord";
   filters: {
@@ -7,6 +9,8 @@ export interface DiscordMediumEvent {
     guildId: string;
     channel?: {
       id: string;
+      type?: FeedConnectionDiscordChannelType | null;
+      guildId: string;
     };
     webhook?: {
       id: string;

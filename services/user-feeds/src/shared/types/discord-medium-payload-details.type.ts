@@ -9,7 +9,11 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     guildId: string().required(),
     channel: object({
       id: string().required(),
-      type: string().optional().oneOf(["forum"]).default(undefined).nullable(),
+      type: string()
+        .optional()
+        .oneOf(["forum", "thread"])
+        .default(undefined)
+        .nullable(),
     })
       .nullable()
       .default(null)

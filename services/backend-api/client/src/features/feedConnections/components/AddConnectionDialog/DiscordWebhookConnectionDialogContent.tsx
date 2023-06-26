@@ -53,7 +53,7 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
-export const DiscordWebhookConnectionContent: React.FC<Props> = ({ isOpen, onClose }) => {
+export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen, onClose }) => {
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const {

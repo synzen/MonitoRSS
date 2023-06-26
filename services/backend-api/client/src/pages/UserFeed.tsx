@@ -49,7 +49,12 @@ import {
   ComparisonsTabSection,
   UserFeedSettingsTabSection,
 } from "../features/feedConnections";
-import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+  FeedDiscordChannelConnection,
+  FeedDiscordWebhookConnection,
+} from "../types";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { pages } from "../constants";
@@ -69,10 +74,31 @@ const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Logs, 2],
 ]);
 
-const PRETTY_CONNECTION_NAMES: Record<FeedConnectionType, string> = {
-  [FeedConnectionType.DiscordChannel]: "Discord Channel",
-  [FeedConnectionType.DiscordWebhook]: "Discord Webhook",
-};
+function getPrettyConnectionName(
+  connection: FeedDiscordChannelConnection | FeedDiscordWebhookConnection
+) {
+  const { key } = connection;
+
+  if (key === FeedConnectionType.DiscordChannel) {
+    const casted = connection as FeedDiscordChannelConnection;
+
+    if (casted.details.channel.type === "thread") {
+      return "Discord Thread";
+    }
+
+    if (casted.details.channel.type === "forum") {
+      return "Discord Forum";
+    }
+
+    return "Discord Channel";
+  }
+
+  if (key === FeedConnectionType.DiscordWebhook) {
+    return "Discord Webhook";
+  }
+
+  return "Unknown";
+}
 
 export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
@@ -82,9 +108,9 @@ export const UserFeed: React.FC = () => {
   const { search: urlSearch } = useLocation();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const [addConnectionType, setAddConnectionType] = useState<FeedConnectionType | undefined>(
-    undefined
-  );
+  const [addConnectionType, setAddConnectionType] = useState<
+    { type: FeedConnectionType; isChannelThread?: boolean } | undefined
+  >(undefined);
   const { data: dailyLimit } = useArticleDailyLimit({
     feedId,
   });
@@ -95,8 +121,8 @@ export const UserFeed: React.FC = () => {
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
 
-  const onAddConnection = (type: FeedConnectionType) => {
-    setAddConnectionType(type);
+  const onAddConnection = (type: FeedConnectionType, isChannelThread?: boolean) => {
+    setAddConnectionType({ type, isChannelThread });
     onOpen();
   };
 
@@ -140,7 +166,12 @@ export const UserFeed: React.FC = () => {
 
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
-      <AddConnectionDialog isOpen={isOpen} type={addConnectionType} onClose={onClose} />
+      <AddConnectionDialog
+        isOpen={isOpen}
+        type={addConnectionType?.type}
+        isChannelThread={addConnectionType?.isChannelThread}
+        onClose={onClose}
+      />
       <EditUserFeedDialog
         onCloseRef={menuButtonRef}
         isOpen={editIsOpen}
@@ -388,6 +419,11 @@ export const UserFeed: React.FC = () => {
                             {t("pages.feed.discordChannelMenuItem")}
                           </MenuItem>
                           <MenuItem
+                            onClick={() => onAddConnection(FeedConnectionType.DiscordChannel, true)}
+                          >
+                            {t("pages.feed.discordThreadMenuItem")}
+                          </MenuItem>
+                          <MenuItem
                             onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
                           >
                             {t("pages.feed.discordWebhookMenuItem")}
@@ -422,7 +458,7 @@ export const UserFeed: React.FC = () => {
                         >
                           <Stack spacing="1">
                             <Text color="gray.500" fontSize="sm">
-                              {PRETTY_CONNECTION_NAMES[connection.key]}
+                              {getPrettyConnectionName(connection as never)}
                             </Text>
                             <Stack spacing="0">
                               <HStack alignItems="flex-end">

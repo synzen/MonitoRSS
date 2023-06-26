@@ -18,6 +18,7 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  Text,
   useDisclosure,
 } from "@chakra-ui/react";
 import { useRef } from "react";
@@ -39,7 +40,11 @@ import {
   EditConnectionChannelDialog,
   UpdateDiscordChannelConnectionInput,
 } from "../features/feedConnections";
-import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+  FeedDiscordChannelConnection,
+} from "../types";
 import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
@@ -53,6 +58,22 @@ const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Message, 0],
   [TabSearchParam.Filters, 1],
 ]);
+
+const getPrettyChannelType = (
+  type?: FeedDiscordChannelConnection["details"]["channel"]["type"]
+) => {
+  const { t } = useTranslation();
+
+  if (type === "thread") {
+    return t("pages.discordChannelConnection.channelTypeThread");
+  }
+
+  if (type === "forum") {
+    return t("pages.discordChannelConnection.channelTypeForum");
+  }
+
+  return t("pages.discordChannelConnection.channelTypeTextChannel");
+};
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -229,14 +250,17 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 columnGap="20"
                 rowGap={{ base: "8", lg: "14" }}
               >
-                <CategoryText title="Server">
+                <CategoryText title={t("pages.discordChannelConnection.serverLabel")}>
                   <DiscordServerName serverId={serverId} />
                 </CategoryText>
-                <CategoryText title="Channel">
+                <CategoryText title={t("pages.discordChannelConnection.channelNameLabel")}>
                   <DiscordChannelName
                     serverId={serverId}
                     channelId={connection?.details.channel.id as string}
                   />
+                </CategoryText>
+                <CategoryText title={t("pages.discordChannelConnection.channelTypeLabel")}>
+                  <Text>{getPrettyChannelType(connection?.details.channel.type)}</Text>
                 </CategoryText>
               </Grid>
             </Stack>

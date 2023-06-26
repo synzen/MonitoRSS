@@ -8,6 +8,7 @@ import {
 } from "../../feeds/exceptions";
 import {
   DiscordChannelPermissionsException,
+  InvalidDiscordChannelException,
   MissingDiscordChannelException,
 } from "../exceptions";
 
@@ -28,6 +29,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [MissingChannelPermissionsException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+    },
+    [InvalidDiscordChannelException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.DISCORD_CAHNNEL_INVALID,
     },
   };
 

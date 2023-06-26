@@ -43,7 +43,7 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
-export const DiscordChannelConnectionContent: React.FC<Props> = ({ onClose, isOpen }) => {
+export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose, isOpen }) => {
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const {

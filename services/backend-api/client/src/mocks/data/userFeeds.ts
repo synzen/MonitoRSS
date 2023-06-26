@@ -77,6 +77,25 @@ const mockUserFeeds: UserFeed[] = [
         key: FeedConnectionType.DiscordWebhook,
         name: "Discord Webhook 1",
       },
+      {
+        details: {
+          channel: {
+            id: mockDiscordChannels[4].id,
+            guildId: mockDiscordServers[0].id,
+            type: "thread",
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        id: "5",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord Thread 1",
+      },
     ],
     healthStatus: UserFeedHealthStatus.Failed,
     disabledCode: UserFeedDisabledCode.FailedRequests,

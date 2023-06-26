@@ -426,13 +426,21 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           type: "discord",
           feed: {
             url: userFeed.url,
+            formatOptions: {
+              dateFormat: undefined,
+            },
           },
           mediumDetails: {
             channel: {
               id: targetConnection.details.channel.id,
+              type: undefined,
             },
             content: expect.any(String),
             embeds: targetConnection.details.embeds,
+            formatter: undefined,
+            forumThreadTags: undefined,
+            forumThreadTitle: undefined,
+            splitOptions: undefined,
           },
         },
       });
@@ -452,6 +460,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           type: "discord",
           feed: {
             url: userFeed.url,
+            formatOptions: {
+              dateFormat: undefined,
+            },
           },
           article: {
             id: "1",
@@ -459,9 +470,14 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           mediumDetails: {
             channel: {
               id: targetConnection.details.channel.id,
+              type: undefined,
             },
             content: expect.any(String),
             embeds: targetConnection.details.embeds,
+            formatter: undefined,
+            forumThreadTags: undefined,
+            forumThreadTitle: undefined,
+            splitOptions: undefined,
           },
         },
       });

@@ -23,6 +23,7 @@ export enum ApiErrorCode {
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
   BANNED_FEED = "BANNED_FEED",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
+  DISCORD_CAHNNEL_INVALID = "DISCORD_CAHNNEL_INVALID",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = "FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED",
   FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
@@ -56,6 +57,7 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   BANNED_FEED: "Feed is banned",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD:
     "Channel is not owned by the current guild",
+  DISCORD_CAHNNEL_INVALID: "Selected channel is not accepted",
   FEED_NOT_FAILED:
     "The feed is not in a failed state. It must be in a failed state for it to be retried.",
   FEED_NOT_FOUND: "Feed does not exist",

@@ -17,10 +17,12 @@ import {
   FeedConnectionType,
 } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
+import { NoDiscordChannelPermissionOverwritesException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {
   DiscordChannelPermissionsException,
+  InvalidDiscordChannelException,
   MissingDiscordChannelException,
 } from "./exceptions";
 
@@ -81,7 +83,7 @@ export class FeedConnectionsDiscordChannelsService {
     channelId: string;
     userAccessToken: string;
   }): Promise<DiscordChannelConnection> {
-    const channel = await this.assertDiscordChannelCanBeUsed(
+    const { channel, type } = await this.assertDiscordChannelCanBeUsed(
       userAccessToken,
       channelId
     );
@@ -101,10 +103,7 @@ export class FeedConnectionsDiscordChannelsService {
               type: FeedConnectionType.DiscordChannel,
               channel: {
                 id: channelId,
-                type:
-                  channel.type === DiscordChannelType.GUILD_FORUM
-                    ? FeedConnectionDiscordChannelType.Forum
-                    : undefined,
+                type,
                 guildId: channel.guild_id,
               },
               embeds: [],
@@ -145,7 +144,7 @@ export class FeedConnectionsDiscordChannelsService {
       );
 
     if (updates.details?.channel?.id) {
-      const channel = await this.assertDiscordChannelCanBeUsed(
+      const { channel, type } = await this.assertDiscordChannelCanBeUsed(
         accessToken,
         updates.details.channel.id
       );
@@ -154,6 +153,7 @@ export class FeedConnectionsDiscordChannelsService {
       setRecordDetails["connections.discordChannels.$.details.channel"] = {
         id: updates.details.channel.id,
         guildId: channel.guild_id,
+        type,
       };
     }
 
@@ -347,7 +347,18 @@ export class FeedConnectionsDiscordChannelsService {
         userAccessToken: accessToken,
       });
 
-      return channel;
+      let type: FeedConnectionDiscordChannelType | undefined = undefined;
+
+      if (channel.type === DiscordChannelType.GUILD_FORUM) {
+        type = FeedConnectionDiscordChannelType.Forum;
+      } else if (channel.type === DiscordChannelType.PUBLIC_THREAD) {
+        type = FeedConnectionDiscordChannelType.Thread;
+      }
+
+      return {
+        channel,
+        type,
+      };
     } catch (err) {
       if (err instanceof DiscordAPIError) {
         if (err.statusCode === HttpStatus.NOT_FOUND) {
@@ -357,6 +368,8 @@ export class FeedConnectionsDiscordChannelsService {
         if (err.statusCode === HttpStatus.FORBIDDEN) {
           throw new DiscordChannelPermissionsException();
         }
+      } else if (err instanceof NoDiscordChannelPermissionOverwritesException) {
+        throw new InvalidDiscordChannelException();
       }
 
       throw err;

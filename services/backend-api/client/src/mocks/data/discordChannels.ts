@@ -48,6 +48,12 @@ const mockDiscordChannels: DiscordServerChannel[] = [
       },
     ],
   },
+  {
+    id: "thread",
+    name: "thread",
+    category: null,
+    availableTags: [],
+  },
 ];
 
 export default mockDiscordChannels;
