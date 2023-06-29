@@ -64,6 +64,41 @@ export class DiscordServersService {
     ) as string;
   }
 
+  async getActiveThreads(
+    guildId: string,
+    options?: {
+      includePrivate?: boolean;
+      parentChannelId?: string;
+    }
+  ): Promise<DiscordGuildChannelFormatted[]> {
+    const { threads }: { threads: DiscordGuildChannel[] } =
+      await this.discordApiService.executeBotRequest(
+        `/guilds/${guildId}/threads/active`,
+        {
+          method: "GET",
+        }
+      );
+
+    return threads
+      .filter((thread) => {
+        if (options?.includePrivate) {
+          return true;
+        }
+
+        if (options?.parentChannelId) {
+          return thread.parent_id === options.parentChannelId;
+        }
+      })
+      .map((channel) => ({
+        id: channel.id,
+        category: null,
+        guild_id: channel.guild_id,
+        name: channel.name,
+        type: channel.type,
+        availableTags: [],
+      }));
+  }
+
   async createBackup(serverId: string): Promise<ServerBackup> {
     const [profile, feeds] = await Promise.all([
       this.getServerProfile(serverId),

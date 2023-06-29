@@ -10,7 +10,7 @@ interface Props {
 export const useDiscordServerAccessStatus = ({ serverId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
 
-  const { data, error, status } = useQuery<GetServerStatusOutput, ApiAdapterError>(
+  const { data, error, status, isFetching } = useQuery<GetServerStatusOutput, ApiAdapterError>(
     ["server-status", serverId],
     async () => {
       if (!serverId) {
@@ -31,5 +31,6 @@ export const useDiscordServerAccessStatus = ({ serverId }: Props) => {
     data,
     error,
     status,
+    isFetching,
   };
 };

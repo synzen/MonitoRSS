@@ -21,6 +21,7 @@ import { FeedFeature } from "../feeds/entities/feed.entity";
 import { FeedSubscriberFeature } from "../feeds/entities/feed-subscriber.entity";
 import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-format.entity";
 import config from "../../config/config";
+import { DiscordPermissionsService } from "../discord-auth/discord-permissions.service";
 
 const configValues: Partial<ReturnType<typeof config>> = {
   BACKEND_API_DEFAULT_DATE_FORMAT: "YYYY-MM-DD",
@@ -42,6 +43,9 @@ describe("DiscordServersService", () => {
     getServerFeeds: jest.fn(),
     countServerFeeds: jest.fn(),
   };
+  const discordPermissionsService = {
+    botHasPermissionInServer: jest.fn(),
+  };
 
   beforeAll(async () => {
     jest.spyOn(configService, "get").mockImplementation((key: string) => {
@@ -49,7 +53,14 @@ describe("DiscordServersService", () => {
       return configValues[key];
     });
     const { uncompiledModule, init } = await setupIntegrationTests({
-      providers: [DiscordServersService, DiscordAPIService],
+      providers: [
+        DiscordServersService,
+        DiscordAPIService,
+        {
+          provide: DiscordPermissionsService,
+          useValue: discordPermissionsService,
+        },
+      ],
       imports: [
         FeedsModule,
         MongooseTestModule.forRoot(),
@@ -89,6 +100,118 @@ describe("DiscordServersService", () => {
 
   it("should be defined", () => {
     expect(service).toBeDefined();
+  });
+
+  describe("getActiveThreads", () => {
+    const guildId = "guildId";
+    const threadsResponse: { threads: DiscordGuildChannel[] } = {
+      threads: [
+        {
+          id: "1",
+          type: DiscordChannelType.PRIVATE_THREAD,
+          guild_id: guildId,
+          name: "thread1",
+          parent_id: null,
+          permission_overwrites: [],
+        },
+        {
+          id: "2",
+          type: DiscordChannelType.PUBLIC_THREAD,
+          guild_id: guildId,
+          name: "thread2",
+          parent_id: null,
+          permission_overwrites: [],
+        },
+      ],
+    };
+
+    it("should return the active threads, excluding private by default", async () => {
+      discordApiService.executeBotRequest.mockResolvedValueOnce({
+        ...threadsResponse,
+      });
+
+      const result = await service.getActiveThreads(guildId);
+
+      expect(result).toEqual([
+        {
+          id: "2",
+          type: DiscordChannelType.PUBLIC_THREAD,
+          guild_id: guildId,
+          name: "thread2",
+          availableTags: [],
+          category: null,
+        },
+      ]);
+    });
+
+    it("should return the active threads, including private if specified", async () => {
+      discordApiService.executeBotRequest.mockResolvedValueOnce(
+        threadsResponse
+      );
+
+      const result = await service.getActiveThreads(guildId, {
+        includePrivate: true,
+      });
+
+      expect(result).toEqual([
+        {
+          id: "1",
+          type: DiscordChannelType.PRIVATE_THREAD,
+          guild_id: guildId,
+          name: "thread1",
+          availableTags: [],
+          category: null,
+        },
+        {
+          id: "2",
+          type: DiscordChannelType.PUBLIC_THREAD,
+          guild_id: guildId,
+          name: "thread2",
+          availableTags: [],
+          category: null,
+        },
+      ]);
+    });
+
+    it("should return the active threads under the parent channel id if specified", async () => {
+      const parentChannelId = "parent-1";
+      const thisResponse: { threads: DiscordGuildChannel[] } = {
+        threads: [
+          {
+            id: "1",
+            type: DiscordChannelType.PUBLIC_THREAD,
+            guild_id: guildId,
+            name: "thread1",
+            parent_id: null,
+            permission_overwrites: [],
+          },
+          {
+            id: "2",
+            type: DiscordChannelType.PUBLIC_THREAD,
+            guild_id: guildId,
+            name: "thread2",
+            parent_id: parentChannelId,
+            permission_overwrites: [],
+          },
+        ],
+      };
+      discordApiService.executeBotRequest.mockResolvedValueOnce(thisResponse);
+
+      const result = await service.getActiveThreads(guildId, {
+        parentChannelId: parentChannelId,
+      });
+
+      expect(result).toEqual([
+        {
+          id: "2",
+          type: DiscordChannelType.PUBLIC_THREAD,
+          guild_id: guildId,
+          name: "thread2",
+          availableTags: [],
+          category: null,
+        },
+      ]);
+    });
   });
 
   describe("createBackup", () => {

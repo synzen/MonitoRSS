@@ -31,9 +31,9 @@ import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordChannelConnection } from "../../hooks";
 
 const formSchema = object({
-  name: string().required(),
-  channelId: string().required(),
-  serverId: string().required(),
+  name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
+  channelId: string().required("Channel ID is required"),
+  serverId: string().required("Server ID is required"),
 });
 
 interface Props {

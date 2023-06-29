@@ -29,6 +29,7 @@ import mockFeeds from "./data/feed";
 import mockFeedArticles from "./data/feedArticles";
 import mockDiscordUser from "./data/discordUser";
 import {
+  GetServerActiveThreadsOutput,
   GetServerChannelsOutput,
   GetServerRolesOutput,
   GetServerSettingsOutput,
@@ -60,6 +61,7 @@ import { mockUserFeedArticles } from "./data/userFeedArticles";
 import { GetUserFeedRequestsOutput } from "../features/feed/api/getUserFeedRequests";
 import { mockUserFeedRequests } from "./data/userFeedRequests";
 import { mockCreatePreviewResult } from "./data/createPreview";
+import mockDiscordThreads from "./data/discordThreads";
 
 const handlers = [
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
@@ -159,6 +161,16 @@ const handlers = [
       })
     );
   }),
+
+  rest.get("/api/v1/discord-servers/:serverId/active-threads", (req, res, ctx) =>
+    res(
+      ctx.delay(1000),
+      ctx.json<GetServerActiveThreadsOutput>({
+        total: mockDiscordThreads.length,
+        results: mockDiscordThreads,
+      })
+    )
+  ),
 
   rest.get("/api/v1/discord-servers/:serverId/channels", (req, res, ctx) =>
     res(

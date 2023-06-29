@@ -11,7 +11,9 @@ interface Props {
 }
 
 export const useDiscordServerChannels = ({ serverId, include }: Props) => {
-  const { data: accessData } = useDiscordServerAccessStatus({ serverId });
+  const { data: accessData, isFetching: isFetchingAccessData } = useDiscordServerAccessStatus({
+    serverId,
+  });
   const [hadError, setHadError] = useState(false);
   const queryKey = [
     "server-channels",
@@ -21,7 +23,7 @@ export const useDiscordServerChannels = ({ serverId, include }: Props) => {
     },
   ];
 
-  const { data, status, error } = useQuery<GetServerChannelsOutput, ApiAdapterError>(
+  const { data, status, error, isFetching } = useQuery<GetServerChannelsOutput, ApiAdapterError>(
     queryKey,
     async () => {
       if (!serverId) {
@@ -43,5 +45,6 @@ export const useDiscordServerChannels = ({ serverId, include }: Props) => {
     data,
     status,
     error,
+    isFetching: isFetchingAccessData || isFetching,
   };
 };

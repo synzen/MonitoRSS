@@ -28,6 +28,7 @@ import { GetServerOutputDto } from "./dto/GetServerOutput.dto";
 import { UpdateServerOutputDto } from "./dto/UpdateServerOutput.dto";
 import { UpdateServerInputDto } from "./dto/UpdateServerInput.dto";
 import { GetDiscordServerChannelsFilter } from "./filters";
+import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInput.dto";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
@@ -60,6 +61,24 @@ export class DiscordServersController {
     const buffer = Buffer.from(JSON.stringify(backupJson, null, 2));
 
     return new StreamableFile(buffer);
+  }
+
+  @Get(":serverId/active-threads")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getActiveThreads(
+    @Param("serverId") serverId: string,
+    @NestedQuery(TransformValidationPipe)
+    { parentChannelId }: GetServerActiveThreadsInputDto
+  ): Promise<GetServerChannelsOutputDto> {
+    const channels = await this.discordServersService.getActiveThreads(
+      serverId,
+      {
+        parentChannelId,
+      }
+    );
+
+    return GetServerChannelsOutputDto.fromEntities(channels);
   }
 
   @Patch(":serverId")

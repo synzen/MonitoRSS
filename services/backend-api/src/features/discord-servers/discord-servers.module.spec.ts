@@ -8,7 +8,6 @@ import {
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { DiscordServersModule } from "./discord-servers.module";
-import nock from "nock";
 import { CACHE_MANAGER, HttpStatus } from "@nestjs/common";
 import { DISCORD_API_BASE_URL } from "../../constants/discord";
 import {
@@ -16,10 +15,18 @@ import {
   DiscordGuildRole,
   DiscordGuildChannel,
   Session,
+  DiscordChannelType,
 } from "../../common";
 import { PartialUserGuild } from "../discord-users/types/PartialUserGuild.type";
 import { Cache } from "cache-manager";
 import { createTestDiscordGuildRole } from "../../test/data/discord-guild-role.test-data";
+import { MockAgent, setGlobalDispatcher } from "undici";
+
+const mockAgent = new MockAgent();
+mockAgent.disableNetConnect();
+setGlobalDispatcher(mockAgent);
+
+const mockPool = mockAgent.get(DISCORD_API_BASE_URL.replace("/api/v9", ""));
 
 jest.mock("../../utils/logger");
 
@@ -49,7 +56,6 @@ describe("DiscordServersModule", () => {
   });
 
   afterEach(async () => {
-    nock.cleanAll();
     await feedModel.deleteMany({});
 
     const cacheManager = app.get<Cache>(CACHE_MANAGER);
@@ -61,8 +67,11 @@ describe("DiscordServersModule", () => {
   });
 
   const mockGetServer = () => {
-    nock(DISCORD_API_BASE_URL)
-      .get(`/guilds/${serverId}`)
+    mockPool
+      .intercept({
+        path: `/api/v9/guilds/${serverId}`,
+        method: "GET",
+      })
       .reply(200, {
         id: serverId,
         name: "Test Guild",
@@ -73,8 +82,11 @@ describe("DiscordServersModule", () => {
   };
 
   const mockGetUserGuilds = (partialGuild?: Partial<PartialUserGuild>) => {
-    nock(DISCORD_API_BASE_URL)
-      .get(`/users/@me/guilds`)
+    mockPool
+      .intercept({
+        path: `/api/v9/users/@me/guilds`,
+        method: "GET",
+      })
       .reply(200, [
         {
           id: serverId,
@@ -86,25 +98,51 @@ describe("DiscordServersModule", () => {
   };
 
   const mockGetServerChannels = (channels: DiscordGuildChannel[]) => {
-    nock(DISCORD_API_BASE_URL)
-      .get(`/guilds/${serverId}/channels`)
+    mockPool
+      .intercept({
+        path: `/api/v9/guilds/${serverId}/channels`,
+        method: "GET",
+      })
       .reply(200, channels);
   };
 
   const mockGetServerRoles = (roles: DiscordGuildRole[]) => {
-    nock(DISCORD_API_BASE_URL)
-      .get(`/guilds/${serverId}/roles`)
+    mockPool
+      .intercept({
+        path: `/api/v9/guilds/${serverId}/roles`,
+        method: "GET",
+      })
       .reply(200, roles);
+  };
+
+  const mockGetServerActiveThreads = (threads: DiscordGuildChannel[]) => {
+    mockPool
+      .intercept({
+        path: `/api/v9/guilds/${serverId}/threads/active`,
+        method: "GET",
+      })
+      .reply(200, { threads });
   };
 
   const mockAllDiscordEndpoints = (data?: {
     channels?: DiscordGuildChannel[];
     roles?: DiscordGuildRole[];
+    threads?: DiscordGuildChannel[];
   }) => {
     mockGetServer();
     mockGetUserGuilds();
-    mockGetServerChannels(data?.channels || []);
-    mockGetServerRoles(data?.roles || []);
+
+    if (data?.channels) {
+      mockGetServerChannels(data?.channels || []);
+    }
+
+    if (data?.roles) {
+      mockGetServerRoles(data?.roles || []);
+    }
+
+    if (data?.threads) {
+      mockGetServerActiveThreads(data?.threads || []);
+    }
   };
 
   describe("GET /discord-servers/:serverId", () => {
@@ -117,7 +155,12 @@ describe("DiscordServersModule", () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
     it("returns 400 if bot has no access to discord server", async () => {
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
@@ -131,7 +174,12 @@ describe("DiscordServersModule", () => {
 
     it("returns forbidden if user does not own server", async () => {
       mockGetServer();
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -148,7 +196,12 @@ describe("DiscordServersModule", () => {
         permissions: "0",
         owner: false,
       });
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -199,7 +252,12 @@ describe("DiscordServersModule", () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
     it("returns 400 if bot has no access to discord server", async () => {
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
@@ -214,7 +272,12 @@ describe("DiscordServersModule", () => {
 
     it("returns forbidden if user does not own server", async () => {
       mockGetServer();
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "PATCH",
@@ -232,7 +295,12 @@ describe("DiscordServersModule", () => {
         permissions: "0",
         owner: false,
       });
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "PATCH",
@@ -311,9 +379,14 @@ describe("DiscordServersModule", () => {
 
     it("returns the correct response bot is forbidden from accessing discord server", async () => {
       mockGetUserGuilds();
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(403, {
-        message: "Forbidden",
-      });
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(403, {
+          message: "Forbidden",
+        });
 
       const { statusCode, body } = await app.inject({
         method: "GET",
@@ -332,9 +405,14 @@ describe("DiscordServersModule", () => {
 
     it("returns the correct response if discord server does not exist", async () => {
       mockGetUserGuilds();
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {
-        message: "Not found",
-      });
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {
+          message: "Not found",
+        });
 
       const { statusCode, body } = await app.inject({
         method: "GET",
@@ -381,7 +459,12 @@ describe("DiscordServersModule", () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
     it("returns 400 if bot has no access to discord server", async () => {
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
@@ -395,7 +478,12 @@ describe("DiscordServersModule", () => {
 
     it("returns forbidden if user does not own server", async () => {
       mockGetServer();
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -412,7 +500,12 @@ describe("DiscordServersModule", () => {
         permissions: "0",
         owner: false,
       });
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -430,12 +523,16 @@ describe("DiscordServersModule", () => {
           name: "name1",
           guild_id: "guildId1",
           permission_overwrites: [],
+          parent_id: null,
+          type: DiscordChannelType.GUILD_TEXT,
         },
         {
           id: "id2",
           name: "name2",
           guild_id: "guildId1",
           permission_overwrites: [],
+          parent_id: null,
+          type: DiscordChannelType.GUILD_TEXT,
         },
       ];
       mockAllDiscordEndpoints({
@@ -460,6 +557,119 @@ describe("DiscordServersModule", () => {
     });
   });
 
+  describe("GET /discord-servers/:serverId/active-threads", () => {
+    it("returns 401 if user is not authorized", async () => {
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/discord-servers/${serverId}/active-threads`,
+      });
+
+      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    });
+    it("returns 400 if bot has no access to discord server", async () => {
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
+      mockGetUserGuilds();
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/discord-servers/${serverId}/active-threads`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it("returns forbidden if user does not own server", async () => {
+      mockGetServer();
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/discord-servers/${serverId}/active-threads`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    // Next test will fail because intercept within this test is interfering with the next test
+    it.skip("returns forbidden if user does not manage server", async () => {
+      mockGetServer();
+      mockGetUserGuilds({
+        permissions: "0",
+        owner: false,
+      });
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
+
+      const { statusCode } = await app.inject({
+        method: "GET",
+        url: `/discord-servers/${serverId}/active-threads`,
+        ...standardRequestOptions,
+      });
+
+      expect(statusCode).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it("returns the active threads", async () => {
+      const serverChannels: DiscordGuildChannel[] = [
+        {
+          id: "id1",
+          name: "name1",
+          guild_id: "guildId1",
+          permission_overwrites: [],
+          parent_id: null,
+          type: DiscordChannelType.PUBLIC_THREAD,
+        },
+        {
+          id: "id2",
+          name: "name2",
+          guild_id: "guildId1",
+          permission_overwrites: [],
+          parent_id: null,
+          type: DiscordChannelType.PUBLIC_THREAD,
+        },
+      ];
+      mockAllDiscordEndpoints({
+        threads: serverChannels,
+      });
+
+      const { statusCode, body } = await app.inject({
+        method: "GET",
+        url: `/discord-servers/${serverId}/active-threads`,
+        ...standardRequestOptions,
+      });
+
+      const parsedBody = JSON.parse(body);
+      expect(parsedBody).toEqual(
+        expect.objectContaining({
+          results: serverChannels.map((channel) =>
+            expect.objectContaining({
+              id: channel.id,
+              name: channel.name,
+            })
+          ),
+          total: serverChannels.length,
+        })
+      );
+      expect(statusCode).toBe(HttpStatus.OK);
+    });
+  });
+
   describe("GET /discord-servers/:serverId/roles", () => {
     it("returns 401 if user is not authorized", async () => {
       const { statusCode } = await app.inject({
@@ -470,7 +680,12 @@ describe("DiscordServersModule", () => {
       expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
     });
     it("returns 400 if bot has no access to discord server", async () => {
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
@@ -484,7 +699,12 @@ describe("DiscordServersModule", () => {
 
     it("returns forbidden if user does not own server", async () => {
       mockGetServer();
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -501,7 +721,12 @@ describe("DiscordServersModule", () => {
         permissions: "0",
         owner: false,
       });
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -556,7 +781,12 @@ describe("DiscordServersModule", () => {
 
   describe("GET /discord-servers/:serverId/feeds", () => {
     it("returns 401 if user is not authenticated", async () => {
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
@@ -568,7 +798,12 @@ describe("DiscordServersModule", () => {
     });
 
     it("returns 400 if bot has no access to discord server", async () => {
-      nock(DISCORD_API_BASE_URL).get(`/guilds/${serverId}`).reply(404, {});
+      mockPool
+        .intercept({
+          path: `/api/v9/guilds/${serverId}`,
+          method: "GET",
+        })
+        .reply(404, {});
       mockGetUserGuilds();
 
       const { statusCode } = await app.inject({
@@ -582,7 +817,12 @@ describe("DiscordServersModule", () => {
 
     it("returns forbidden if user does own server", async () => {
       mockGetServer();
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",
@@ -599,7 +839,12 @@ describe("DiscordServersModule", () => {
         permissions: "0",
         owner: false,
       });
-      nock(DISCORD_API_BASE_URL).get(`/users/@me/guilds`).reply(200, []);
+      mockPool
+        .intercept({
+          path: `/api/v9/users/@me/guilds`,
+          method: "GET",
+        })
+        .reply(200, []);
 
       const { statusCode } = await app.inject({
         method: "GET",

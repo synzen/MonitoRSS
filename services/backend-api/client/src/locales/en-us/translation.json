@@ -349,7 +349,9 @@
           "title": "Add a Discord thread connection",
           "formNameLabel": "Connection name",
           "formNameDescription": "This is only for your reference.",
-          "formTheadIdLabel": "Thread ID"
+          "formThreadLabel": "Thread",
+          "formThreadDescripton": "Only unlocked (unarchived) threads are listed.",
+          "failedToGetThreads": "Failed to get threads"
         },
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
