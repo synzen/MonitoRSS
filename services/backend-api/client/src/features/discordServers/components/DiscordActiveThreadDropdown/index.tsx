@@ -1,43 +1,36 @@
 import { Alert, AlertDescription, AlertTitle, Box, Stack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FiHash, FiMessageCircle } from "react-icons/fi";
-import { BsMegaphoneFill } from "react-icons/bs";
 import { ThemedSelect } from "@/components";
-import { useDiscordServerChannels } from "../../hooks";
-import { GetDiscordChannelType } from "../../constants";
+import { useDiscordServerActiveThreads } from "../../hooks";
 
 interface Props {
   serverId?: string;
-  onChange: (channelId: string, channelName: string) => void;
+  parentChannelId?: string;
+  onChange: (threadId: string, threadName: string) => void;
   onBlur: () => void;
   value?: string;
   isDisabled?: boolean;
-  include?: GetDiscordChannelType[];
 }
 
-const iconsByChannelType: Record<GetDiscordChannelType, React.ReactNode> = {
-  text: <FiHash />,
-  forum: <FiMessageCircle />,
-  announcement: <BsMegaphoneFill />,
-};
-
-export const DiscordChannelDropdown: React.FC<Props> = ({
+export const DiscordActiveThreadDropdown: React.FC<Props> = ({
   serverId,
+  parentChannelId,
   onChange,
   onBlur,
   value,
   isDisabled,
-  include,
 }) => {
-  const { data, error, status, isFetching } = useDiscordServerChannels({ serverId, include });
+  const { data, error, isFetching } = useDiscordServerActiveThreads({
+    serverId,
+    options: { parentChannelId },
+  });
   const { t } = useTranslation();
 
   const options =
     data?.results.map((channel) => ({
-      label: `${channel.category ? `[${channel.category.name}] ` : ""}${channel.name}`,
+      label: channel.name,
       value: channel.id,
       data: channel,
-      icon: channel.type ? iconsByChannelType[channel.type] : iconsByChannelType.text,
     })) || [];
 
   return (
@@ -54,7 +47,9 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
         <Alert status="error">
           <Box>
             <AlertTitle>
-              {t("features.feed.components.addDiscordChannelConnectionDialog.failedToGetChannels")}
+              {t(
+                "features.feed.components.addDiscordChannelThreadConnectionDialog.failedToGetThreads"
+              )}
             </AlertTitle>
             <AlertDescription>{error?.message}</AlertDescription>
           </Box>

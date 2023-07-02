@@ -13,6 +13,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import {
+  BsChatFill,
   BsClockFill,
   BsCursorFill,
   BsFillPencilFill,
@@ -134,7 +135,7 @@ const UserFeedsFAQ: React.FC = () => {
                   {
                     icon: <Icon as={BsFillPencilFill} boxSize={10} color="blue.500" />,
                     name: "Filter-Customized Messages",
-                    description: "Customize messages of a single feed based on filters.",
+                    description: "Create custom messages based on article content.",
                   },
                   {
                     icon: <Icon as={BsCursorFill} boxSize={10} color="blue.500" />,
@@ -147,6 +148,12 @@ const UserFeedsFAQ: React.FC = () => {
                     name: "Longer Retry Times",
                     description:
                       "Feeds will get disabled much less often after request failures using an exponential backoff retry strategy, retrying for up to 1 week.",
+                  },
+                  {
+                    icon: <Icon as={BsChatFill} boxSize={10} color="blue.500" />,
+                    name: "Forum/Thread Support",
+                    description:
+                      "Create new threads per article in forum channels, or create new messages per article within an existing thread.",
                   },
                 ]}
               />
@@ -197,17 +204,6 @@ const UserFeedsFAQ: React.FC = () => {
                     ),
                   },
                   {
-                    q: "Why is my personal feed limit so low?",
-                    a: (
-                      <Text>
-                        Personal feeds are in beta, and starting limitss are low to be conservative.
-                        The limit will eventually increase to match your regular/legacy feed limit.
-                        While in beta, your personal feed limit is <i>on top</i> of your legacy feed
-                        limit. So you&apos;re basically getting extra feeds for free!
-                      </Text>
-                    ),
-                  },
-                  {
                     q: "Can I add my feeds to any server?",
                     a: (
                       <Text>
@@ -221,18 +217,19 @@ const UserFeedsFAQ: React.FC = () => {
                     q: "The current limits are too low. Can I increase them?",
                     a: (
                       <Text>
-                        If you find that the current limits are too restricting, let us know in the
-                        support server at{" "}
+                        If you find that the current limits are too restricting, you may create a
+                        pledge on{" "}
                         <Link
                           target="_blank"
-                          href="https://discord.gg/pudv7Rx"
+                          href="https://www.patreon.com/monitorss"
                           rel="noreferrer noopener"
                           isExternal
                           color="blue.200"
                         >
-                          https://discord.gg/pudv7Rx
-                        </Link>
-                        .
+                          Patreon
+                        </Link>{" "}
+                        to increase your limits. Legacy and personal feed limits are the same per
+                        tier.
                       </Text>
                     ),
                   },
