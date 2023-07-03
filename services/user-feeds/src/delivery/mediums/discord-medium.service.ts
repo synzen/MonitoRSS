@@ -97,8 +97,13 @@ export class DiscordMediumService implements DeliveryMedium {
         splitOptions,
       }).map((payload) => ({
         ...payload,
-        username: name ? name : undefined,
-        avatar_url: iconUrl ? iconUrl : undefined,
+        username: this.generateApiTextPayload(article, {
+          content: name,
+          limit: 256,
+        }),
+        avatar_url: this.generateApiTextPayload(article, {
+          content: iconUrl,
+        }),
       }));
 
       const results = await Promise.all(
@@ -432,8 +437,13 @@ export class DiscordMediumService implements DeliveryMedium {
       splitOptions: details.deliverySettings.splitOptions,
     }).map((payload) => ({
       ...payload,
-      username: webhookUsername ? webhookUsername : undefined,
-      avatar_url: webhookIconUrl ? webhookIconUrl : undefined,
+      username: this.generateApiTextPayload(article, {
+        content: webhookUsername,
+        limit: 256,
+      }),
+      avatar_url: this.generateApiTextPayload(article, {
+        content: webhookIconUrl,
+      }),
     }));
 
     await Promise.all(
@@ -491,6 +501,27 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     return results.filter((result) => !!result) as string[];
+  }
+
+  generateApiTextPayload<T extends string | undefined>(
+    article: Article,
+    {
+      content,
+      limit,
+    }: {
+      content: T;
+      limit?: number;
+    }
+  ): T {
+    const payloads = this.generateApiPayloads(article, {
+      embeds: [],
+      content,
+      splitOptions: {
+        limit,
+      },
+    });
+
+    return (payloads[0].content || undefined) as T;
   }
 
   generateApiPayloads(
