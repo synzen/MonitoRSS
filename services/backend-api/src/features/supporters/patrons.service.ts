@@ -112,7 +112,7 @@ export class PatronsService {
 
   getMaxUserFeedsFromPledge(pledge: number): number {
     if (pledge >= 2000) {
-      return 140;
+      return 3;
     }
 
     if (pledge >= 1500) {
