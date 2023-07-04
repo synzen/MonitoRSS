@@ -7,6 +7,7 @@ import {
   DiscordGuildMember,
   DiscordGuildChannel,
   DiscordGuild,
+  DiscordWebhook,
 } from "../../../common";
 import { DiscordUser } from "../../../features/discord-users/types/DiscordUser.type";
 import { FetchResponse } from "@synzen/discord-rest/dist/types/FetchResponse";
@@ -101,7 +102,7 @@ export class DiscordAPIService {
     return this.executeBotRequest(`/guilds/${guildId}`);
   }
 
-  async getWebhook(webhookId: string) {
+  async getWebhook(webhookId: string): Promise<DiscordWebhook> {
     return this.executeBotRequest(`/webhooks/${webhookId}`);
   }
 

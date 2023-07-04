@@ -18,6 +18,7 @@ import { ScheduleEmitterModule } from "./features/schedule-emitter/schedule-emit
 import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connections/feed-connections-discord-channels.module";
 import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
 import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
+import { LegacyFeedConversionModule } from "./features/legacy-feed-conversion/legacy-feed-conversion.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-hand
     FeedsModule,
     DiscordWebhooksModule,
     SupportersModule,
+    LegacyFeedConversionModule,
     ScheduleEmitterModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),

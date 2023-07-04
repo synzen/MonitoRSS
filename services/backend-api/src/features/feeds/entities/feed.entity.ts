@@ -140,7 +140,7 @@ export class Feed {
     required: false,
     default: {},
   })
-  connections: FeedConnections;
+  connections?: FeedConnections;
 
   createdAt?: Date;
 

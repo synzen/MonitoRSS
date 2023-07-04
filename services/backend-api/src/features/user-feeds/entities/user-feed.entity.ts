@@ -1,5 +1,5 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types, Model } from "mongoose";
+import { Document, Types, Model, Schema as MongooseSchema } from "mongoose";
 import {
   FeedConnections,
   FeedConnectionSchema,
@@ -70,6 +70,12 @@ export class UserFeed {
     schema: UserFeedFormatOptionsSchema,
   })
   formatOptions?: UserFeedFormatOptions;
+
+  @Prop({
+    required: false,
+    type: MongooseSchema.Types.ObjectId,
+  })
+  legacyFeedId?: Types.ObjectId;
 
   createdAt: Date;
   updatedAt: Date;
