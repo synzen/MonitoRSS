@@ -686,6 +686,53 @@ describe("ArticleFiltersService", () => {
     });
 
     describe("NOT operand", () => {
+      it("throws if there is more than one child", async () => {
+        await expect(
+          service.evaluateExpression(
+            {
+              type: ExpressionType.Logical,
+              op: LogicalExpressionOperator.Not,
+              children: [
+                {
+                  type: ExpressionType.Relational,
+                  op: RelationalExpressionOperator.Eq,
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "title",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "a-different",
+                  },
+                },
+                {
+                  type: ExpressionType.Relational,
+                  op: RelationalExpressionOperator.Eq,
+                  left: {
+                    type: RelationalExpressionLeft.Article,
+                    value: "description",
+                  },
+                  right: {
+                    type: RelationalExpressionRight.String,
+                    value: "b-different",
+                  },
+                },
+              ],
+            },
+            {
+              ARTICLE: {
+                flattened: {
+                  id: "1",
+                  title: "a",
+                  description: "b",
+                },
+                raw: {} as never,
+              },
+            }
+          )
+        ).rejects.toThrowError(InvalidExpressionException);
+      });
+
       it("returns true correctly", async () => {
         await expect(
           service.evaluateExpression(

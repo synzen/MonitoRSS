@@ -92,6 +92,14 @@ export class ArticleFiltersService {
       }
 
       case LogicalExpressionOperator.Not: {
+        if (children.length !== 1) {
+          throw new InvalidExpressionException(
+            `Not operator must have exactly one child. Expression: ${JSON.stringify(
+              expression
+            )}`
+          );
+        }
+
         const result = await this.evaluateExpression(children[0], references);
 
         return !result;
