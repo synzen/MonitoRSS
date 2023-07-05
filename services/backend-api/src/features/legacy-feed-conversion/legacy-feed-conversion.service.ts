@@ -68,6 +68,7 @@ export class LegacyFeedConversionService {
     private readonly discordApiService: DiscordAPIService
   ) {}
 
+  // TODO: Fallback images, suscribers placeholder
   async getUserFeedEquivalent(
     feed: Feed,
     data: {
@@ -251,13 +252,13 @@ export class LegacyFeedConversionService {
 
       orExpression.children.push({
         type: ExpressionType.Relational,
-        op: RelationalExpressionOperator.Contains,
+        op: RelationalExpressionOperator.Matches,
         left: {
           type: RelationalExpressionLeft.Article,
           value: cleanedCategory,
         },
         right: {
-          type: RelationalExpressionRight.RegExp,
+          type: RelationalExpressionRight.String,
           value: filterVal,
         },
       });

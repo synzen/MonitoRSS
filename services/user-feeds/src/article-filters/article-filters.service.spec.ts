@@ -94,40 +94,37 @@ describe("ArticleFiltersService", () => {
       ).rejects.toThrow(InvalidExpressionException);
     });
 
-    it("throws if relational expression operator for regex operand is invalid", async () => {
-      const expression: LogicalExpression = {
-        type: ExpressionType.Logical,
-        op: LogicalExpressionOperator.And,
-        children: [
-          {
-            left: {
-              type: RelationalExpressionLeft.Article,
-              value: "title",
-            },
-            op: RelationalExpressionOperator.Eq,
-            right: {
-              type: RelationalExpressionRight.RegExp as never,
-              value: "s",
-            },
-            type: ExpressionType.Relational,
+    describe("relational", () => {
+      it("returns the inverse of the expected value when NOT is true", async () => {
+        const expression: RelationalExpression = {
+          left: {
+            type: RelationalExpressionLeft.Article,
+            value: "title",
           },
-        ],
-      };
+          op: RelationalExpressionOperator.Eq,
+          right: {
+            type: RelationalExpressionRight.String,
+            value: "s",
+          },
+          type: ExpressionType.Relational,
+          not: true,
+        };
 
-      await expect(
-        service.evaluateExpression(expression as never, {
-          ARTICLE: {
+        const reference = {
+          [RelationalExpressionLeft.Article]: {
             flattened: {
               id: "1",
-              title: "1",
+              title: "s",
             },
             raw: {} as never,
           },
-        })
-      ).rejects.toThrow(InvalidExpressionException);
-    });
+        };
 
-    describe("relational", () => {
+        await expect(
+          service.evaluateExpression(expression, reference)
+        ).resolves.toEqual(false);
+      });
+
       it.each([
         {
           value: "s",
@@ -680,124 +677,6 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {} as never
-          )
-        ).resolves.toBe(false);
-      });
-    });
-
-    describe("NOT operand", () => {
-      it("throws if there is more than one child", async () => {
-        await expect(
-          service.evaluateExpression(
-            {
-              type: ExpressionType.Logical,
-              op: LogicalExpressionOperator.Not,
-              children: [
-                {
-                  type: ExpressionType.Relational,
-                  op: RelationalExpressionOperator.Eq,
-                  left: {
-                    type: RelationalExpressionLeft.Article,
-                    value: "title",
-                  },
-                  right: {
-                    type: RelationalExpressionRight.String,
-                    value: "a-different",
-                  },
-                },
-                {
-                  type: ExpressionType.Relational,
-                  op: RelationalExpressionOperator.Eq,
-                  left: {
-                    type: RelationalExpressionLeft.Article,
-                    value: "description",
-                  },
-                  right: {
-                    type: RelationalExpressionRight.String,
-                    value: "b-different",
-                  },
-                },
-              ],
-            },
-            {
-              ARTICLE: {
-                flattened: {
-                  id: "1",
-                  title: "a",
-                  description: "b",
-                },
-                raw: {} as never,
-              },
-            }
-          )
-        ).rejects.toThrowError(InvalidExpressionException);
-      });
-
-      it("returns true correctly", async () => {
-        await expect(
-          service.evaluateExpression(
-            {
-              type: ExpressionType.Logical,
-              op: LogicalExpressionOperator.Not,
-              children: [
-                {
-                  type: ExpressionType.Relational,
-                  op: RelationalExpressionOperator.Eq,
-                  left: {
-                    type: RelationalExpressionLeft.Article,
-                    value: "title",
-                  },
-                  right: {
-                    type: RelationalExpressionRight.String,
-                    value: "a-different",
-                  },
-                },
-              ],
-            },
-            {
-              ARTICLE: {
-                flattened: {
-                  id: "1",
-                  title: "a",
-                },
-                raw: {} as never,
-              },
-            }
-          )
-        ).resolves.toBe(true);
-      });
-
-      it("returns false correctly", async () => {
-        await expect(
-          service.evaluateExpression(
-            {
-              type: ExpressionType.Logical,
-              op: LogicalExpressionOperator.Not,
-              children: [
-                {
-                  type: ExpressionType.Relational,
-                  op: RelationalExpressionOperator.Eq,
-                  left: {
-                    type: RelationalExpressionLeft.Article,
-                    value: "title",
-                  },
-                  right: {
-                    type: RelationalExpressionRight.String,
-                    value: "a",
-                  },
-                },
-              ],
-            },
-            {
-              ARTICLE: {
-                flattened: {
-                  id: "1",
-                  title: "a",
-                  description: "b",
-                },
-                raw: {} as never,
-              },
-            }
           )
         ).resolves.toBe(false);
       });

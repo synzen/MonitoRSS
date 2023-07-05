@@ -91,20 +91,6 @@ export class ArticleFiltersService {
         return false;
       }
 
-      case LogicalExpressionOperator.Not: {
-        if (children.length !== 1) {
-          throw new InvalidExpressionException(
-            `Not operator must have exactly one child. Expression: ${JSON.stringify(
-              expression
-            )}`
-          );
-        }
-
-        const result = await this.evaluateExpression(children[0], references);
-
-        return !result;
-      }
-
       default:
         throw new InvalidExpressionException(
           `Unknown operator ${
@@ -132,32 +118,59 @@ export class ArticleFiltersService {
     }
 
     if (right.type === RelationalExpressionRight.String) {
+      let val = false;
+
       switch (expression.op) {
-        case RelationalExpressionOperator.Eq:
-          return valueToCompareAgainst === right.value;
-        case RelationalExpressionOperator.Contains:
-          return valueToCompareAgainst
+        case RelationalExpressionOperator.Eq: {
+          val = valueToCompareAgainst === right.value;
+
+          break;
+        }
+
+        case RelationalExpressionOperator.Contains: {
+          val = valueToCompareAgainst
             .toLowerCase()
             .includes(right.value.toLowerCase());
-        case RelationalExpressionOperator.NotContain:
-          return !valueToCompareAgainst
+
+          break;
+        }
+
+        case RelationalExpressionOperator.NotContain: {
+          val = !valueToCompareAgainst
             .toLowerCase()
             .includes(right.value.toLowerCase());
-        case RelationalExpressionOperator.NotEq:
-          return valueToCompareAgainst !== right.value;
-        case RelationalExpressionOperator.Matches:
-          return this.testRegex(right.value, valueToCompareAgainst);
-        default:
+
+          break;
+        }
+
+        case RelationalExpressionOperator.NotEq: {
+          val = valueToCompareAgainst !== right.value;
+
+          break;
+        }
+
+        case RelationalExpressionOperator.Matches: {
+          val = this.testRegex(right.value, valueToCompareAgainst);
+
+          break;
+        }
+
+        default: {
           throw new InvalidExpressionException(
             `Unknown right operator "${
               expression.op
             }" of string-type right operand in relational expression ${JSON.stringify(
               expression
-            )}. Only "${RelationalExpressionOperator.Eq}" and "${
-              RelationalExpressionOperator.Contains
-            }" are supported.`
+            )}.`
           );
+        }
       }
+
+      if (expression.not) {
+        return !val;
+      }
+
+      return val;
     } else {
       throw new InvalidExpressionException(
         `Unknown right type ${

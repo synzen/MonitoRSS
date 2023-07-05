@@ -11,6 +11,7 @@ export interface RelationalStringExpression {
     | RelationalExpressionOperator.Contains
     | RelationalExpressionOperator.NotContain
     | RelationalExpressionOperator.Matches;
+  not?: boolean;
   left: {
     type: RelationalExpressionLeft;
     value: string;

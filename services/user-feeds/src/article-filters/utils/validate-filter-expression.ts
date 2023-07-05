@@ -46,12 +46,6 @@ export function validateRelationalRight(
         `Expected ${currentPath}value to be a string but got ${right.value}`,
       ];
     }
-  } else if (right.type === RelationalExpressionRight.RegExp) {
-    if (typeof right.value !== "string") {
-      return [
-        `Expected ${currentPath}value to be a string but got ${right.value}`,
-      ];
-    }
   } else {
     return [
       `Expected ${currentPath}type to be one of ${Object.values(
