@@ -34,7 +34,32 @@ async function bootstrap() {
   const port = configService.getOrThrow<number>('FEED_REQUESTS_API_PORT');
 
   await app.listen(port, '0.0.0.0');
+
+  setInterval(() => {
+    tryDbConnection(orm).catch(() => process.exit(1));
+  }, 60000);
+
   logger.info(`Application is running on port ${port}`);
+}
+
+async function tryDbConnection(orm: MikroORM, currentTries = 0) {
+  if (currentTries >= 10) {
+    logger.error('Failed to connect to database after 10 tries. Exiting...');
+
+    process.exit(1);
+  }
+
+  await orm.em
+    .getDriver()
+    .getConnection()
+    .execute('SELECT 1')
+    .catch((err) => {
+      logger.error('Failed to ping database', {
+        error: (err as Error).stack,
+      });
+
+      return tryDbConnection(orm, currentTries + 1);
+    });
 }
 
 bootstrap();
