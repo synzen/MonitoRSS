@@ -1,4 +1,4 @@
-import { CloseButton, FormControl, HStack, Select } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, FormControl, HStack, Select } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,7 +9,7 @@ import {
 import { ArticlePropertySelect } from "./ArticlePropertySelect";
 import { ConditionInput } from "./ConditionInput";
 
-const { Equals, Contains, Matches, NotContain, NotEqual } = RelationalExpressionOperator;
+const { Equals, Contains, Matches } = RelationalExpressionOperator;
 
 interface Props {
   onDelete: () => void;
@@ -51,29 +51,51 @@ export const Condition = ({ onDelete, prefix = "", deletable, data }: Props) => 
     <HStack width="100%" alignItems="flex-start">
       <HStack width="100%" spacing={8} alignItems="flex-start">
         {leftOperandElement}
+        <FormControl width="min-content">
+          <Controller
+            name={`${prefix}not`}
+            control={control}
+            render={({ field }) => {
+              return (
+                <ButtonGroup isAttached variant="outline">
+                  <Button
+                    onClick={() => field.onChange(false)}
+                    colorScheme={!field.value ? "blue" : undefined}
+                    variant={!field.value ? "solid" : "outline"}
+                  >
+                    {t("features.feedConnections.components.filtersForm.relationalOpDoes")}
+                  </Button>
+                  <Button
+                    onClick={() => field.onChange(true)}
+                    colorScheme={field.value ? "blue" : undefined}
+                    variant={field.value ? "solid" : "outline"}
+                  >
+                    {t("features.feedConnections.components.filtersForm.relationalOpDoesNot")}
+                  </Button>
+                </ButtonGroup>
+              );
+            }}
+          />
+        </FormControl>
         <FormControl>
           <Controller
             name={`${prefix}op`}
             control={control}
-            render={({ field }) => (
-              <Select flexShrink={1} {...field}>
-                <option value={Equals}>
-                  {t("features.feedConnections.components.filtersForm.relationalOpEquals")}
-                </option>
-                <option value={NotEqual}>
-                  {t("features.feedConnections.components.filtersForm.relationalOpNotEqual")}
-                </option>
-                <option value={Contains}>
-                  {t("features.feedConnections.components.filtersForm.relationalOpContains")}
-                </option>
-                <option value={NotContain}>
-                  {t("features.feedConnections.components.filtersForm.relationalOpDoesNotContain")}
-                </option>
-                <option value={Matches}>
-                  {t("features.feedConnections.components.filtersForm.relationalOpMatches")}
-                </option>
-              </Select>
-            )}
+            render={({ field }) => {
+              return (
+                <Select flexShrink={1} {...field}>
+                  <option value={Equals}>
+                    {t("features.feedConnections.components.filtersForm.relationalOpEquals")}
+                  </option>
+                  <option value={Contains}>
+                    {t("features.feedConnections.components.filtersForm.relationalOpContains")}
+                  </option>
+                  <option value={Matches}>
+                    {t("features.feedConnections.components.filtersForm.relationalOpMatches")}
+                  </option>
+                </Select>
+              );
+            }}
           />
         </FormControl>
         <ConditionInput

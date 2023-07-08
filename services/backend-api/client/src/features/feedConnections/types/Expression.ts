@@ -17,6 +17,7 @@ export interface RelationalFilterExpression {
     value: string;
   };
   op: RelationalExpressionOperator;
+  not?: boolean;
   right: {
     type: RelationalExpressionRightOperandType;
     value: string;

@@ -1,8 +1,6 @@
 export enum RelationalExpressionOperator {
   Equals = "EQ",
   Contains = "CONTAINS",
-  NotContain = "NOT_CONTAIN",
-  NotEqual = "NOT_EQ",
   Matches = "MATCHES",
 }
 
@@ -12,7 +10,6 @@ export enum RelationalExpressionLeftOperandType {
 
 export enum RelationalExpressionRightOperandType {
   String = "STRING",
-  RegExp = "REGEXP",
 }
 
 export enum LogicalExpressionOperator {
