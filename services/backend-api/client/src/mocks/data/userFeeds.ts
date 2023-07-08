@@ -32,7 +32,26 @@ const mockUserFeeds: UserFeed[] = [
           },
         },
         splitOptions: null,
-        filters: null,
+        filters: {
+          expression: {
+            type: "LOGICAL",
+            op: "AND",
+            children: [
+              {
+                type: "RELATIONAL",
+                op: "NOT_EQ",
+                left: {
+                  type: "ARTICLE",
+                  value: "title",
+                },
+                right: {
+                  type: "STRING",
+                  value: "test",
+                },
+              },
+            ],
+          },
+        },
         id: "1",
         disabledCode: FeedConnectionDisabledCode.MissingPermissions,
         key: FeedConnectionType.DiscordChannel,

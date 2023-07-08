@@ -7,9 +7,7 @@ export interface RelationalStringExpression {
   type: ExpressionType.Relational;
   op:
     | RelationalExpressionOperator.Eq
-    | RelationalExpressionOperator.NotEq
     | RelationalExpressionOperator.Contains
-    | RelationalExpressionOperator.NotContain
     | RelationalExpressionOperator.Matches;
   not?: boolean;
   left: {
@@ -21,18 +19,5 @@ export interface RelationalStringExpression {
     value: string;
   };
 }
-
-// export interface RelationalRegExpExpression {
-//   type: ExpressionType.Relational;
-//   op: RelationalExpressionOperator.Matches;
-//   left: {
-//     type: RelationalExpressionLeft;
-//     value: string;
-//   };
-//   right: {
-//     type: RelationalExpressionRight.RegExp;
-//     value: string;
-//   };
-// }
 
 export type RelationalExpression = RelationalStringExpression;

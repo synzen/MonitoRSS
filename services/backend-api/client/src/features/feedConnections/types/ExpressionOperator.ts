@@ -1,6 +1,8 @@
 export enum RelationalExpressionOperator {
   Equals = "EQ",
   Contains = "CONTAINS",
+  NotContain = "NOT_CONTAIN",
+  NotEqual = "NOT_EQ",
   Matches = "MATCHES",
 }
 

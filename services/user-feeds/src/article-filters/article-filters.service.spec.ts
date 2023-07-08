@@ -175,74 +175,6 @@ describe("ArticleFiltersService", () => {
           ).resolves.toEqual(expected);
         }
       );
-
-      it("uses empty string as default if the article property does not exist", () => {
-        const expression: RelationalExpression = {
-          left: {
-            type: RelationalExpressionLeft.Article,
-            value: "title",
-          },
-          op: RelationalExpressionOperator.NotContain,
-          right: {
-            type: RelationalExpressionRight.String,
-            value: "s",
-          },
-          type: ExpressionType.Relational,
-        };
-
-        const reference = {
-          [RelationalExpressionLeft.Article]: {
-            flattened: {
-              id: "1",
-            },
-            raw: {} as never,
-          },
-        };
-
-        return expect(
-          service.evaluateExpression(expression, reference)
-        ).resolves.toEqual(true);
-      });
-
-      it.each([
-        { value: "s", articleValue: "s", expected: false },
-        {
-          value: "s",
-          articleValue: "sticks",
-          expected: true,
-        },
-      ])(
-        "supports NotEq when expected is $expected",
-        async ({ value, articleValue, expected }) => {
-          const expression: RelationalExpression = {
-            left: {
-              type: RelationalExpressionLeft.Article,
-              value: "title",
-            },
-            op: RelationalExpressionOperator.NotEq,
-            right: {
-              type: RelationalExpressionRight.String,
-              value,
-            },
-            type: ExpressionType.Relational,
-          };
-
-          const reference = {
-            [RelationalExpressionLeft.Article]: {
-              flattened: {
-                id: "1",
-                title: articleValue,
-              },
-              raw: {} as never,
-            },
-          };
-
-          await expect(
-            service.evaluateExpression(expression, reference)
-          ).resolves.toEqual(expected);
-        }
-      );
-
       it.each([
         {
           value: "s",
@@ -263,49 +195,6 @@ describe("ArticleFiltersService", () => {
               value: "title",
             },
             op: RelationalExpressionOperator.Contains,
-            right: {
-              type: RelationalExpressionRight.String,
-              value: value,
-            },
-            type: ExpressionType.Relational,
-          };
-
-          const reference = {
-            [RelationalExpressionLeft.Article]: {
-              flattened: {
-                id: "1",
-                title: articleValue,
-              },
-              raw: {} as never,
-            },
-          };
-
-          await expect(
-            service.evaluateExpression(expression, reference)
-          ).resolves.toEqual(expected);
-        }
-      );
-
-      it.each([
-        {
-          value: "s",
-          articleValue: "sticks",
-          expected: false,
-        },
-        {
-          value: "s",
-          articleValue: "top gun",
-          expected: true,
-        },
-      ])(
-        "supports NotContains when expected is $expected",
-        async ({ value, articleValue, expected }) => {
-          const expression: RelationalExpression = {
-            left: {
-              type: RelationalExpressionLeft.Article,
-              value: "title",
-            },
-            op: RelationalExpressionOperator.NotContain,
             right: {
               type: RelationalExpressionRight.String,
               value: value,

@@ -135,20 +135,6 @@ export class ArticleFiltersService {
           break;
         }
 
-        case RelationalExpressionOperator.NotContain: {
-          val = !valueToCompareAgainst
-            .toLowerCase()
-            .includes(right.value.toLowerCase());
-
-          break;
-        }
-
-        case RelationalExpressionOperator.NotEq: {
-          val = valueToCompareAgainst !== right.value;
-
-          break;
-        }
-
         case RelationalExpressionOperator.Matches: {
           val = this.testRegex(right.value, valueToCompareAgainst);
 
