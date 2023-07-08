@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { DiscordApiModule } from "../../services/apis/discord/discord-api.module";
 import { DiscordServerProfileFeature } from "../discord-servers/entities";
 import { FailRecordFeature } from "../feeds/entities/fail-record.entity";
 import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-format.entity";
@@ -18,9 +19,10 @@ import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
       FeedFilteredFormatFeature,
       FailRecordFeature,
     ]),
+    DiscordApiModule,
   ],
   controllers: [],
   providers: [LegacyFeedConversionService],
-  exports: [],
+  exports: [LegacyFeedConversionService],
 })
 export class LegacyFeedConversionModule {}
