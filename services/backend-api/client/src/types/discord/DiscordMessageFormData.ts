@@ -88,6 +88,17 @@ export const discordMessageFormSchema = object({
     .optional()
     .nullable()
     .default([]),
+  mentions: object({
+    targets: array(
+      object({
+        type: string().oneOf(["role", "user"]).required(),
+        id: string().required(),
+        filters: object({
+          expression: object().required(),
+        }).nullable(),
+      }).required()
+    ).nullable(),
+  }).nullable(),
   splitOptions: object({
     isEnabled: boolean().optional().nullable(),
     splitChar: string().max(10).optional().nullable(),

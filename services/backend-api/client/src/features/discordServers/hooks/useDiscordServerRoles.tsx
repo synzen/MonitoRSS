@@ -1,16 +1,14 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getServerRoles, GetServerRolesOutput } from "../api";
 
 interface Props {
   serverId?: string;
+  disabled?: boolean;
 }
 
-export const useDiscordServerRoles = ({ serverId }: Props) => {
-  const [hasErrored, setHasErrored] = useState(false);
-
-  const { data, status, error } = useQuery<GetServerRolesOutput, ApiAdapterError>(
+export const useDiscordServerRoles = ({ serverId, disabled }: Props) => {
+  const { data, status, error, isFetching } = useQuery<GetServerRolesOutput, ApiAdapterError>(
     [
       "server-roles",
       {
@@ -27,8 +25,7 @@ export const useDiscordServerRoles = ({ serverId }: Props) => {
       });
     },
     {
-      enabled: !!serverId && !hasErrored,
-      onError: () => setHasErrored(true),
+      enabled: !!serverId && !disabled,
     }
   );
 
@@ -45,5 +42,6 @@ export const useDiscordServerRoles = ({ serverId }: Props) => {
     status,
     error,
     getRolebyId,
+    isFetching,
   };
 };

@@ -30,6 +30,7 @@ import { FeedConnectionType } from "../../../../types";
 import { DiscordChannelConnectionPreview } from "./DiscordChannelConnectionPreview";
 import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPreview";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
+import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
@@ -79,9 +80,9 @@ export const DiscordMessageForm = ({
     control,
     name: "embeds",
   });
-  const [splitOptions, content, formatOptions, watchedEmbeds] = useWatch({
+  const [splitOptions, content, formatOptions, watchedEmbeds, watchedMentions] = useWatch({
     control,
-    name: ["splitOptions", "content", "formatter", "embeds"],
+    name: ["splitOptions", "content", "formatter", "embeds", "mentions"],
   });
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
@@ -115,6 +116,7 @@ export const DiscordMessageForm = ({
         formatter: formData.formatter,
         forumThreadTitle: formData.forumThreadTitle,
         forumThreadTags: formData.forumThreadTags || [],
+        mentions: formData.mentions,
       };
 
       await onClickSave(toSubmit);
@@ -182,6 +184,7 @@ export const DiscordMessageForm = ({
                   content,
                   splitOptions,
                   connectionFormatOptions: formatOptions,
+                  mentions: watchedMentions,
                 }}
                 feedId={feedId}
               />
@@ -253,6 +256,10 @@ export const DiscordMessageForm = ({
                 ))}
               </TabPanels>
             </Tabs>
+          </Stack>
+          <Stack spacing={4}>
+            <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
+            <DiscordMessageMentionForm connectionId={connection.id} feedId={feedId} />
           </Stack>
           <Flex direction="row-reverse">
             <HStack>

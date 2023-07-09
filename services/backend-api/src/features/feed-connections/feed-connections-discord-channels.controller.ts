@@ -119,6 +119,7 @@ export class FeedConnectionsDiscordChannelsController {
       userFeedFormatOptions,
       connectionFormatOptions,
       splitOptions,
+      mentions,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -130,6 +131,7 @@ export class FeedConnectionsDiscordChannelsController {
       content,
       embeds,
       splitOptions,
+      mentions,
     });
 
     return {

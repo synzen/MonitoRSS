@@ -10,7 +10,8 @@
       "actions": "Actions",
       "close": "Close",
       "disable": "Disable",
-      "reEnable": "Re-enable"
+      "reEnable": "Re-enable",
+      "confirm": "Confirm"
     },
     "table": {
       "results": "Showing {{start}}-{{end}} of {{total}} results"
@@ -148,7 +149,6 @@
       "placeholdersRawSectionDescription": "To see a more comprehensive list of available placeholders, download the file below. Note that all placeholders in the file must be prepended with \"raw:\".",
       "failedToRetrieveArticlesError": "Failed to retrieve feed articles",
       "textSectionTitle": "Text",
-      "textSectionDescription": "You can use the placeholders listed above. A special placeholder, {empty}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "textSectionResetButton": "Reset",
       "textSectionSaveButton": "Save"
     },
@@ -263,7 +263,7 @@
       "embedSectionTitle": "Embeds",
       "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field).",
       "contentSectionTitle": "Content",
-      "contentSectionDescription": "You can use the placeholders listed above. A special placeholder, {{empty}}, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
+      "contentSectionDescription": "You can use the placeholders listed above. A special placeholder, <0>{{empty}}</0>, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "splitContentSectionTitle": "Split Content",
       "splitContentCheckboxDescription": "If enabled, the message will be split into multiple messages if it is too long. Otherwise, it will attempt to be sent as one message with the maximum possible number of characters.",
       "splitContentSettingsLabel": "Split Settings",
@@ -274,7 +274,7 @@
       "splitContentPrependCharLabel": "Prepend character",
       "splitContentPrependCharDescription": "The character to prepend to the beginning of the first message after the initial message has been split. Default is nothing.",
       "formatTablesSectionTitle": "Format Tables",
-      "formatTablesCheckboxDescription": "If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping the table with triple backticks (```table here``` for example).",
+      "formatTablesCheckboxDescription": "If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping the table with triple backticks (<0>```table here```</0> for example).",
       "stripImagesSectionTitle": "Strip Images",
       "stripImagesCheckboxDescription": "If enabled, all images with \"src\" attributes found in the message content will be removed.",
       "previewSectionTitle": "Preview",
@@ -291,6 +291,19 @@
       "threadTagMissingPermissions": "Only moderators are allowed to apply this tag. Either remove this restriction from the tag, or ensure the bot has the MANAGE_THREADS server permission.",
       "threadTagFiltersTitle": "Tag Filters",
       "threadTagFiltersDescription": "Filters ensure that this tag will only be applied to articles that match these filters. If no filters are added, this tag will be applied to all articles."
+    },
+    "discordMessageMentionForm": {
+      "title": "Mentions",
+      "description": "Roles and users that will be mentioned in the <0>{{discord::mentions}}</0> placeholder. The placeholder must be explicitly placed somewhere in the message for it to show up.",
+      "mentionSettingsTitle": "Mention Settings",
+      "mentionFiltersTitle": "Filters",
+      "mentionFiltersDescription": "Filters ensure that this mention will only be added to articles that match these filters. If no filters are added, this mention will be added to all articles that have the mention placeholder.",
+      "addMentionTitle": "Add a new mention",
+      "addMentionDescription": "You may add a role or user mention. Filters can be applied after the mention has been added.",
+      "addRoleButton": "Role",
+      "addUserButton": "User",
+      "addMentionButton": "Add",
+      "removeMentionButton":"Remove Mention"
     },
     "pageContentV2": {
       "logout": "Logout"

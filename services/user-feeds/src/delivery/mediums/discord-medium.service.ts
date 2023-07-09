@@ -201,6 +201,8 @@ export class DiscordMediumService implements DeliveryMedium {
         filterReferences,
       });
 
+      console.log("sending", JSON.stringify(apiPayloads, null, 2));
+
       const results = await Promise.all(
         apiPayloads.map((payload) =>
           this.producer.fetch(apiUrl, {

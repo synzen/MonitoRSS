@@ -25,6 +25,15 @@ export interface CreateDiscordChannelConnectionPreviewInput {
       dateFormat?: string | null;
       dateTimezone?: string | null;
     } | null;
+    mentions?: {
+      targets?: Array<{
+        type: "role" | "user";
+        id: string;
+        filters?: {
+          expression: Record<string, any>;
+        } | null;
+      }> | null;
+    } | null;
   };
 }
 

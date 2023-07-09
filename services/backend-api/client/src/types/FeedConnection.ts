@@ -74,6 +74,21 @@ export const FeedConnectionSchema = object({
     .optional()
     .default(undefined)
     .nullable(),
+  mentions: object({
+    targets: array(
+      object({
+        type: string().oneOf(["role", "user"]).required(),
+        id: string().required(),
+        filters: object({
+          expression: object().required(),
+        }).nullable(),
+      }).required()
+    )
+      .nullable()
+      .default(undefined),
+  })
+    .nullable()
+    .default(undefined),
   details: object().when("key", ([key]) => {
     if (key === FeedConnectionType.DiscordWebhook) {
       return DiscordWebhookConnectionDetailsSchema;

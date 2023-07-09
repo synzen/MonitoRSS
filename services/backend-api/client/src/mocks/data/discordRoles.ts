@@ -14,7 +14,7 @@ const mockDiscordRoles: DiscordRole[] = [
   {
     id: "3",
     name: "NPR",
-    color: "#333333",
+    color: "#fff",
   },
 ];
 

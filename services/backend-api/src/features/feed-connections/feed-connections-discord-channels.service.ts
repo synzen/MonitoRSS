@@ -63,6 +63,7 @@ interface CreatePreviewInput {
     | DiscordChannelConnection["details"]["formatter"]
     | null;
   articleId?: string;
+  mentions?: DiscordChannelConnection["mentions"] | null;
 }
 
 @Injectable()
@@ -272,6 +273,7 @@ export class FeedConnectionsDiscordChannelsService {
         content: castDiscordContentForMedium(connection.details.content),
         embeds: castDiscordEmbedsForMedium(connection.details.embeds),
         formatter: connection.details.formatter,
+        mentions: connection.mentions,
         splitOptions: connection.splitOptions,
       },
     } as const;
@@ -290,6 +292,7 @@ export class FeedConnectionsDiscordChannelsService {
     connectionFormatOptions,
     splitOptions,
     articleId,
+    mentions,
   }: CreatePreviewInput) {
     const payload = {
       type: "discord",
@@ -333,6 +336,7 @@ export class FeedConnectionsDiscordChannelsService {
         ),
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
+        mentions: mentions,
       },
     } as const;
 

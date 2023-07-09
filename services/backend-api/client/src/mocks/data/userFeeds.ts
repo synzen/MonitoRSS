@@ -5,6 +5,27 @@ import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
 
+const sampleFilters = {
+  expression: {
+    type: "LOGICAL",
+    op: "AND",
+    children: [
+      {
+        type: "RELATIONAL",
+        op: "EQ",
+        left: {
+          type: "ARTICLE",
+          value: "title",
+        },
+        right: {
+          type: "STRING",
+          value: "test",
+        },
+      },
+    ],
+  },
+};
+
 const mockUserFeeds: UserFeed[] = [
   {
     id: "1",
@@ -32,26 +53,16 @@ const mockUserFeeds: UserFeed[] = [
           },
         },
         splitOptions: null,
-        filters: {
-          expression: {
-            type: "LOGICAL",
-            op: "AND",
-            children: [
-              {
-                type: "RELATIONAL",
-                op: "NOT_EQ",
-                left: {
-                  type: "ARTICLE",
-                  value: "title",
-                },
-                right: {
-                  type: "STRING",
-                  value: "test",
-                },
-              },
-            ],
-          },
+        mentions: {
+          targets: [
+            {
+              id: "1",
+              type: "role",
+              filters: sampleFilters,
+            },
+          ],
         },
+        filters: sampleFilters,
         id: "1",
         disabledCode: FeedConnectionDisabledCode.MissingPermissions,
         key: FeedConnectionType.DiscordChannel,
@@ -70,6 +81,7 @@ const mockUserFeeds: UserFeed[] = [
             stripImages: false,
           },
         },
+        mentions: null,
         splitOptions: null,
         filters: null,
         id: "2",
@@ -92,6 +104,7 @@ const mockUserFeeds: UserFeed[] = [
         },
         splitOptions: null,
         filters: null,
+        mentions: null,
         id: "3",
         key: FeedConnectionType.DiscordWebhook,
         name: "Discord Webhook 1",
@@ -111,6 +124,7 @@ const mockUserFeeds: UserFeed[] = [
         },
         splitOptions: null,
         filters: null,
+        mentions: null,
         id: "5",
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Thread 1",

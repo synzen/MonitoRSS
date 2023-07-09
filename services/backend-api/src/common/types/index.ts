@@ -9,3 +9,5 @@ export * from "./discord-split-options.type";
 export * from "./discord-connection-formatter-options.type";
 export * from "./user-feed-format-options.type";
 export * from "./discord-webhook.type";
+export * from "./filters.type";
+export * from "./discord-mention-options.type";

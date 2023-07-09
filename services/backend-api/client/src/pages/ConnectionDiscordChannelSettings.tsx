@@ -300,6 +300,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     formatter: connection?.details.formatter,
                     forumThreadTitle: connection?.details.forumThreadTitle,
                     forumThreadTags: connection?.details.forumThreadTags || [],
+                    mentions: connection?.mentions,
                   }}
                   articleFormatter={{
                     options: {

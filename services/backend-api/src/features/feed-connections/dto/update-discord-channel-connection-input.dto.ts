@@ -14,16 +14,10 @@ import {
   DiscordEmbed,
   DiscordConnectionFormatterOptions,
   DiscordSplitOptions,
+  FiltersDto,
+  MentionsOptionsDto,
 } from "../../../common";
-import {
-  FeedConnectionDisabledCode,
-  FeedConnectionMentionType,
-} from "../../feeds/constants";
-
-class FiltersDto {
-  @IsObject()
-  expression: Record<string, unknown>;
-}
+import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class ForumThreadTagDto {
   @IsString()
@@ -35,29 +29,6 @@ class ForumThreadTagDto {
   @Type(() => FiltersDto)
   @ValidateNested({ each: true })
   filters?: FiltersDto;
-}
-
-class MentionTargetDto {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @IsIn(Object.values(FeedConnectionMentionType))
-  type: FeedConnectionMentionType;
-
-  @IsObject()
-  @IsOptional()
-  @Type(() => FiltersDto)
-  @ValidateNested({ each: true })
-  filters?: FiltersDto;
-}
-
-class MentionsDto {
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => MentionTargetDto)
-  targets?: MentionTargetDto[] | null;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {
@@ -92,9 +63,9 @@ export class UpdateDiscordChannelConnectionInputDto {
 
   @IsObject()
   @IsOptional()
-  @Type(() => MentionsDto)
+  @Type(() => MentionsOptionsDto)
   @ValidateNested({ each: true })
-  mentions?: MentionsDto;
+  mentions?: MentionsOptionsDto;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionPanel,
   Box,
+  Code,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -18,7 +19,7 @@ import {
   Textarea,
 } from "@chakra-ui/react";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { useCallback, useEffect, useState } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
@@ -65,7 +66,11 @@ export const DiscordMessageContentForm = () => {
           <Box>
             <FormLabel>{t("components.discordMessageForm.contentSectionTitle")}</FormLabel>
             <FormHelperText>
-              {t("components.discordMessageForm.contentSectionDescription")}
+              <Trans
+                t={t}
+                i18nKey="components.discordMessageForm.contentSectionDescription"
+                components={[<Code />]}
+              />
             </FormHelperText>
           </Box>
           <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
@@ -210,7 +215,11 @@ export const DiscordMessageContentForm = () => {
           <Box>
             <FormLabel>{t("components.discordMessageForm.formatTablesSectionTitle")}</FormLabel>
             <FormHelperText>
-              {t("components.discordMessageForm.formatTablesCheckboxDescription")}
+              <Trans
+                t={t}
+                i18nKey="components.discordMessageForm.formatTablesCheckboxDescription"
+                components={[<Code />]}
+              />
             </FormHelperText>
           </Box>
           <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
