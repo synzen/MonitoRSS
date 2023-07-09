@@ -15,7 +15,10 @@ import {
   DiscordConnectionFormatterOptions,
   DiscordSplitOptions,
 } from "../../../common";
-import { FeedConnectionDisabledCode } from "../../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionMentionType,
+} from "../../feeds/constants";
 
 class FiltersDto {
   @IsObject()
@@ -32,6 +35,29 @@ class ForumThreadTagDto {
   @Type(() => FiltersDto)
   @ValidateNested({ each: true })
   filters?: FiltersDto;
+}
+
+class MentionTargetDto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @IsIn(Object.values(FeedConnectionMentionType))
+  type: FeedConnectionMentionType;
+
+  @IsObject()
+  @IsOptional()
+  @Type(() => FiltersDto)
+  @ValidateNested({ each: true })
+  filters?: FiltersDto;
+}
+
+class MentionsDto {
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => MentionTargetDto)
+  targets?: MentionTargetDto[] | null;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {
@@ -63,6 +89,12 @@ export class UpdateDiscordChannelConnectionInputDto {
   @Type(() => FiltersDto)
   @ValidateNested({ each: true })
   filters?: FiltersDto;
+
+  @IsObject()
+  @IsOptional()
+  @Type(() => MentionsDto)
+  @ValidateNested({ each: true })
+  mentions?: MentionsDto;
 
   @IsArray()
   @ValidateNested({ each: true })

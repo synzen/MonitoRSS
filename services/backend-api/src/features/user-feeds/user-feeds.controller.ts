@@ -294,6 +294,7 @@ export class UserFeedsController {
         filters: con.filters,
         disabledCode: con.disabledCode,
         splitOptions: con.splitOptions,
+        mentions: con.mentions,
       }));
 
     const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =

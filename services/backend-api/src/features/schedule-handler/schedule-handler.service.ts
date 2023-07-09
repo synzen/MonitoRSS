@@ -231,6 +231,7 @@ export class ScheduleHandlerService {
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
+          mentions: con.mentions,
           formatter: {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,

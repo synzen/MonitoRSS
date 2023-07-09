@@ -142,6 +142,7 @@ export class DeliveryService {
           mediumId: medium.id,
           deliverySettings: medium.details,
           feedDetails: event.data.feed,
+          filterReferences: filterReferences,
         }
       );
 

@@ -3,6 +3,7 @@ import { Types, Schema as MongooseSchema } from "mongoose";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionDiscordChannelType,
+  FeedConnectionMentionType,
 } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
 import {
@@ -23,6 +24,48 @@ class Filters {
 }
 
 const FiltersSchema = SchemaFactory.createForClass(Filters);
+
+@Schema({
+  _id: false,
+  timestamps: false,
+  versionKey: false,
+})
+class MentionTarget {
+  @Prop({
+    required: true,
+  })
+  id: string;
+
+  @Prop({
+    enum: Object.values(FeedConnectionMentionType),
+    required: true,
+    type: String,
+  })
+  type: FeedConnectionMentionType;
+
+  @Prop({
+    required: false,
+    type: FiltersSchema,
+  })
+  filters?: Filters | null;
+}
+
+const MentionTargetSchema = SchemaFactory.createForClass(MentionTarget);
+
+@Schema({
+  _id: false,
+  timestamps: false,
+  versionKey: false,
+})
+class Mentions {
+  @Prop({
+    required: false,
+    type: [MentionTargetSchema],
+  })
+  targets?: MentionTarget[] | null;
+}
+
+const MentionsSchema = SchemaFactory.createForClass(Mentions);
 
 @Schema({
   _id: false,
@@ -180,6 +223,12 @@ export class DiscordChannelConnection {
     required: false,
   })
   filters?: Filters;
+
+  @Prop({
+    type: MentionsSchema,
+    required: false,
+  })
+  mentions?: Mentions | null;
 
   @Prop({
     type: DetailsSchema,

@@ -1,4 +1,7 @@
-import { DeliveryMedium } from "./delivery-medium.interface";
+import {
+  DeliverArticleDetails,
+  DeliveryMedium,
+} from "./delivery-medium.interface";
 import { Injectable } from "@nestjs/common";
 import {
   Article,
@@ -21,7 +24,10 @@ import { ArticleFormatterService } from "../../article-formatter/article-formatt
 import { FormatOptions } from "../../article-formatter/types";
 import { randomUUID } from "node:crypto";
 import { ArticleFiltersService } from "../../article-filters/article-filters.service";
-import { LogicalExpression } from "../../article-filters/types";
+import {
+  FilterExpressionReference,
+  LogicalExpression,
+} from "../../article-filters/types";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -75,14 +81,18 @@ export class DiscordMediumService implements DeliveryMedium {
     result: JobResponse<unknown> | JobResponseError;
   }> {
     const {
-      channel,
-      webhook,
-      embeds,
-      content,
-      splitOptions,
-      forumThreadTitle,
-      forumThreadTags,
-    } = details.mediumDetails;
+      mediumDetails: {
+        channel,
+        webhook,
+        embeds,
+        content,
+        splitOptions,
+        forumThreadTitle,
+        forumThreadTags,
+        mentions,
+      },
+      filterReferences,
+    } = details;
     const channelId = channel?.id;
     const isForum = channel?.type === "forum";
     const webhookId = webhook?.id;
@@ -91,18 +101,26 @@ export class DiscordMediumService implements DeliveryMedium {
       const { id: webhookId, token: webhookToken, name, iconUrl } = webhook;
 
       const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
-      const apiPayloads = this.generateApiPayloads(article, {
+      const initialApiPayloads = this.generateApiPayloads(article, {
         embeds,
         content,
         splitOptions,
-      }).map((payload) => ({
+        filterReferences,
+        mentions,
+      });
+
+      const apiPayloads = initialApiPayloads.map((payload) => ({
         ...payload,
         username: this.generateApiTextPayload(article, {
           content: name,
           limit: 256,
+          filterReferences,
+          mentions,
         }),
         avatar_url: this.generateApiTextPayload(article, {
           content: iconUrl,
+          filterReferences,
+          mentions,
         }),
       }));
 
@@ -125,19 +143,23 @@ export class DiscordMediumService implements DeliveryMedium {
         embeds: embeds,
         content: content,
         splitOptions: splitOptions,
+        mentions,
+        filterReferences,
       });
 
       const threadBody = {
         name:
-          this.generateApiPayloads(article, {
+          this.generateApiTextPayload(article, {
             content: forumThreadTitle || "{{title}}",
-            embeds: [],
-            splitOptions: {
-              limit: 100,
-            },
-          })[0].content || "New Article",
+            limit: 100,
+            mentions,
+            filterReferences,
+          }) || "New Article",
         message: bodies[0],
-        applied_tags: await this.getForumTagsToSend(article, forumThreadTags),
+        applied_tags: this.getForumTagsToSend(
+          forumThreadTags,
+          filterReferences
+        ),
       };
 
       const firstResponse = await this.producer.fetch(forumApiUrl, {
@@ -175,6 +197,8 @@ export class DiscordMediumService implements DeliveryMedium {
         embeds: details.mediumDetails.embeds,
         content: details.mediumDetails.content,
         splitOptions,
+        mentions,
+        filterReferences,
       });
 
       const results = await Promise.all(
@@ -197,9 +221,11 @@ export class DiscordMediumService implements DeliveryMedium {
 
   async deliverArticle(
     article: Article,
-    details: DeliveryDetails
+    details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState[]> {
-    const { channel, webhook } = details.deliverySettings;
+    const {
+      deliverySettings: { channel, webhook },
+    } = details;
 
     if (!channel && !webhook) {
       return [
@@ -265,11 +291,12 @@ export class DiscordMediumService implements DeliveryMedium {
   private async deliverArticleToForum(
     article: Article,
     channelId: string,
-    details: DeliveryDetails
+    details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState[]> {
     const {
-      deliverySettings: { guildId, forumThreadTitle },
+      deliverySettings: { guildId, forumThreadTitle, mentions },
       feedDetails: { id, url },
+      filterReferences,
     } = details;
 
     const forumApiUrl = this.getForumApiUrl(channelId);
@@ -277,21 +304,22 @@ export class DiscordMediumService implements DeliveryMedium {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
       splitOptions: details.deliverySettings.splitOptions,
+      filterReferences,
+      mentions,
     });
 
     const threadBody = {
       name:
-        this.generateApiPayloads(article, {
+        this.generateApiTextPayload(article, {
           content: forumThreadTitle || "{{title}}",
-          embeds: [],
-          splitOptions: {
-            limit: 100,
-          },
-        })[0].content || "New Article",
+          limit: 100,
+          filterReferences,
+          mentions,
+        }) || "New Article",
       message: bodies[0],
-      applied_tags: await this.getForumTagsToSend(
-        article,
-        details.deliverySettings.forumThreadTags
+      applied_tags: this.getForumTagsToSend(
+        details.deliverySettings.forumThreadTags,
+        filterReferences
       ),
     };
 
@@ -367,17 +395,20 @@ export class DiscordMediumService implements DeliveryMedium {
   private async deliverArticleToChannel(
     article: Article,
     channelId: string,
-    details: DeliveryDetails
+    details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState> {
     const {
-      deliverySettings: { guildId },
+      deliverySettings: { guildId, mentions },
       feedDetails: { id, url },
+      filterReferences,
     } = details;
     const apiUrl = this.getChannelApiUrl(channelId);
     const bodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
       splitOptions: details.deliverySettings.splitOptions,
+      filterReferences,
+      mentions,
     });
 
     await Promise.all(
@@ -422,27 +453,36 @@ export class DiscordMediumService implements DeliveryMedium {
       name?: string;
       iconUrl?: string;
     },
-    details: DeliveryDetails
+    details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState> {
     const {
-      deliverySettings: { guildId },
+      deliverySettings: { guildId, mentions },
       feedDetails: { id, url },
+      filterReferences,
     } = details;
 
     const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
 
-    const bodies = this.generateApiPayloads(article, {
+    const initialBodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
       splitOptions: details.deliverySettings.splitOptions,
-    }).map((payload) => ({
+      filterReferences,
+      mentions,
+    });
+
+    const bodies = initialBodies.map((payload) => ({
       ...payload,
       username: this.generateApiTextPayload(article, {
         content: webhookUsername,
         limit: 256,
+        filterReferences,
+        mentions,
       }),
       avatar_url: this.generateApiTextPayload(article, {
         content: webhookIconUrl,
+        filterReferences,
+        mentions,
       }),
     }));
 
@@ -475,30 +515,26 @@ export class DiscordMediumService implements DeliveryMedium {
     };
   }
 
-  async getForumTagsToSend(
-    article: Article,
-    inputTags: DeliveryDetails["deliverySettings"]["forumThreadTags"]
-  ): Promise<string[]> {
+  getForumTagsToSend(
+    inputTags: DeliveryDetails["deliverySettings"]["forumThreadTags"],
+    filterReferences: FilterExpressionReference
+  ): string[] {
     if (!inputTags) {
       return [];
     }
 
-    const reference = this.articleFiltersService.buildReferences({ article });
+    const results = inputTags.map(({ filters, id }) => {
+      if (!filters) {
+        return id;
+      }
 
-    const results = await Promise.all(
-      inputTags.map(async ({ filters, id }) => {
-        if (!filters) {
-          return id;
-        }
+      const result = this.articleFiltersService.getArticleFilterResults(
+        filters.expression as LogicalExpression,
+        filterReferences
+      );
 
-        const result = await this.articleFiltersService.getArticleFilterResults(
-          filters.expression as LogicalExpression,
-          reference
-        );
-
-        return result ? id : null;
-      })
-    );
+      return result ? id : null;
+    });
 
     return results.filter((result) => !!result) as string[];
   }
@@ -508,9 +544,13 @@ export class DiscordMediumService implements DeliveryMedium {
     {
       content,
       limit,
+      filterReferences,
+      mentions,
     }: {
       content: T;
       limit?: number;
+      filterReferences: FilterExpressionReference;
+      mentions: DeliveryDetails["deliverySettings"]["mentions"];
     }
   ): T {
     const payloads = this.generateApiPayloads(article, {
@@ -519,6 +559,8 @@ export class DiscordMediumService implements DeliveryMedium {
       splitOptions: {
         limit,
       },
+      filterReferences,
+      mentions,
     });
 
     return (payloads[0].content || undefined) as T;
@@ -530,21 +572,33 @@ export class DiscordMediumService implements DeliveryMedium {
       embeds,
       content,
       splitOptions,
+      mentions,
+      filterReferences,
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
       splitOptions: DeliveryDetails["deliverySettings"]["splitOptions"] & {
         limit?: number;
       };
+      mentions: DeliveryDetails["deliverySettings"]["mentions"];
+      filterReferences: FilterExpressionReference;
     }
   ): DiscordMessageApiPayload[] {
     const payloadContent = this.articleFormatterService.applySplit(
-      replaceTemplateString(article.flattened, content) || "",
+      this.replacePlaceholdersInString(article, content, {
+        mentions,
+        filterReferences,
+      }),
       {
         ...splitOptions,
         isEnabled: !!splitOptions,
       }
     );
+
+    const replacePlaceholderStringArgs = {
+      mentions,
+      filterReferences,
+    };
 
     const payloads: DiscordMessageApiPayload[] = payloadContent.map(
       (contentPart) => ({
@@ -564,17 +618,28 @@ export class DiscordMediumService implements DeliveryMedium {
         }
 
         const embedTitle = this.articleFormatterService.applySplit(
-          replaceTemplateString(article.flattened, embed.title) || "",
+          this.replacePlaceholdersInString(
+            article,
+            embed.title,
+            replacePlaceholderStringArgs
+          ),
           {
             limit: 256,
           }
         )[0];
 
         const embedUrl =
-          replaceTemplateString(article.flattened, embed.url) || null;
+          this.replacePlaceholdersInString(article, embed.url, {
+            mentions,
+            filterReferences,
+          }) || null;
 
         const embedDescription = this.articleFormatterService.applySplit(
-          replaceTemplateString(article.flattened, embed.description) || "",
+          this.replacePlaceholdersInString(
+            article,
+            embed.description,
+            replacePlaceholderStringArgs
+          ),
           {
             limit: 2048,
           }
@@ -584,13 +649,21 @@ export class DiscordMediumService implements DeliveryMedium {
           ?.filter((field) => field.name && field.value)
           .map((field) => ({
             name: this.articleFormatterService.applySplit(
-              replaceTemplateString(article.flattened, field.name) || "",
+              this.replacePlaceholdersInString(
+                article,
+                field.name,
+                replacePlaceholderStringArgs
+              ),
               {
                 limit: 256,
               }
             )[0],
             value: this.articleFormatterService.applySplit(
-              replaceTemplateString(article.flattened, field.value) || "",
+              this.replacePlaceholdersInString(
+                article,
+                field.value,
+                replacePlaceholderStringArgs
+              ),
               {
                 limit: 1024,
               }
@@ -602,34 +675,40 @@ export class DiscordMediumService implements DeliveryMedium {
           ? undefined
           : {
               text: this.articleFormatterService.applySplit(
-                replaceTemplateString(article.flattened, embed.footer.text) ||
-                  "",
+                this.replacePlaceholdersInString(
+                  article,
+                  embed.footer.text,
+                  replacePlaceholderStringArgs
+                ),
                 {
                   limit: 2048,
                 }
               )[0],
               icon_url:
-                replaceTemplateString(
-                  article.flattened,
-                  embed.footer.iconUrl
+                this.replacePlaceholdersInString(
+                  article,
+                  embed.footer.iconUrl,
+                  replacePlaceholderStringArgs
                 ) || null,
             };
 
         const embedImage = !embed.image?.url
           ? undefined
           : {
-              url: replaceTemplateString(
-                article.flattened,
-                embed.image.url
+              url: this.replacePlaceholdersInString(
+                article,
+                embed.image.url,
+                replacePlaceholderStringArgs
               ) as string,
             };
 
         const embedThumbnail = !embed.thumbnail?.url
           ? undefined
           : {
-              url: replaceTemplateString(
-                article.flattened,
-                embed.thumbnail.url
+              url: this.replacePlaceholdersInString(
+                article,
+                embed.thumbnail.url,
+                replacePlaceholderStringArgs
               ) as string,
             };
 
@@ -637,17 +716,25 @@ export class DiscordMediumService implements DeliveryMedium {
           ? undefined
           : {
               name: this.articleFormatterService.applySplit(
-                replaceTemplateString(article.flattened, embed.author.name) ||
-                  "",
+                this.replacePlaceholdersInString(
+                  article,
+                  embed.author.name,
+                  replacePlaceholderStringArgs
+                ),
                 {
                   limit: 256,
                 }
               )[0],
-              url: replaceTemplateString(article.flattened, embed.author.url),
+              url: this.replacePlaceholdersInString(
+                article,
+                embed.author.url,
+                replacePlaceholderStringArgs
+              ),
               icon_url:
-                replaceTemplateString(
-                  article.flattened,
-                  embed.author.iconUrl
+                this.replacePlaceholdersInString(
+                  article,
+                  embed.author.iconUrl,
+                  replacePlaceholderStringArgs
                 ) || null,
             };
 
@@ -668,5 +755,50 @@ export class DiscordMediumService implements DeliveryMedium {
       .slice(0, 10);
 
     return payloads;
+  }
+
+  private replacePlaceholdersInString(
+    article: Article,
+    str: string | undefined,
+    {
+      filterReferences,
+      mentions: inputMentions,
+    }: {
+      filterReferences: FilterExpressionReference;
+      mentions: DeliveryDetails["deliverySettings"]["mentions"];
+    }
+  ): string {
+    const referenceObject = {
+      ...article.flattened,
+    };
+
+    if (inputMentions) {
+      const mentions =
+        inputMentions.targets
+          ?.map((mention) => {
+            if (mention.filters?.expression) {
+              const result = this.articleFiltersService.getArticleFilterResults(
+                mention.filters.expression as unknown as LogicalExpression,
+                filterReferences
+              );
+
+              if (!result) {
+                return null;
+              }
+            }
+
+            if (mention.type === "role") {
+              return `<@&${mention.id}>`;
+            } else if (mention.type === "user") {
+              return `<@${mention.id}>`;
+            }
+          })
+          ?.filter((s) => s)
+          ?.join(" ") || "";
+
+      referenceObject["discord::mentions"] = mentions;
+    }
+
+    return replaceTemplateString(referenceObject, str) || "";
   }
 }

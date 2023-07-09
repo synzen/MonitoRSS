@@ -33,6 +33,7 @@ export interface UpdateDiscordChannelConnectionInput {
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordChannelConnection["splitOptions"] | null;
+    mentions?: DiscordChannelConnection["mentions"] | null;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       formatter?: DiscordChannelConnection["details"]["formatter"] | null;
@@ -188,6 +189,9 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.splitOptions && {
           [`connections.discordChannels.$.splitOptions`]: updates.splitOptions,
+        }),
+        ...(updates.mentions && {
+          [`connections.discordChannels.$.mentions`]: updates.mentions,
         }),
       },
       $unset: {

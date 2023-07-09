@@ -49,6 +49,22 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     )
       .nullable()
       .default(undefined),
+    mentions: object({
+      targets: array(
+        object({
+          id: string().required(),
+          type: string().required().oneOf(["user", "role"]),
+          filters: object({
+            expression: object(),
+          })
+            .optional()
+            .nullable()
+            .default(null),
+        }).required()
+      ),
+    })
+      .nullable()
+      .default(undefined),
     content: string(),
     embeds: array(
       object({

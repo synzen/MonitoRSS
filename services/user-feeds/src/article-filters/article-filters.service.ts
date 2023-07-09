@@ -18,7 +18,7 @@ const REGEX_TIMEOUT_MS = 5000;
 
 @Injectable()
 export class ArticleFiltersService {
-  async getArticleFilterResults(
+  getArticleFilterResults(
     expression: LogicalExpression,
     references: FilterExpressionReference
   ) {
@@ -37,10 +37,10 @@ export class ArticleFiltersService {
     return validateLogicalExpression(expression);
   }
 
-  async evaluateExpression(
+  evaluateExpression(
     expression: LogicalExpression | RelationalExpression,
     references: FilterExpressionReference
-  ): Promise<boolean> {
+  ): boolean {
     if (!expression) {
       return true;
     }
@@ -58,17 +58,17 @@ export class ArticleFiltersService {
     }
   }
 
-  private async evaluateLogicalExpression(
+  private evaluateLogicalExpression(
     expression: LogicalExpression,
     references: FilterExpressionReference
-  ): Promise<boolean> {
+  ): boolean {
     const children = expression.children;
 
     switch (expression.op) {
       case LogicalExpressionOperator.And: {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
-          const result = await this.evaluateExpression(child, references);
+          const result = this.evaluateExpression(child, references);
 
           if (!result) {
             return false;
@@ -81,7 +81,7 @@ export class ArticleFiltersService {
       case LogicalExpressionOperator.Or: {
         for (let i = 0; i < children.length; ++i) {
           const child = children[i];
-          const result = await this.evaluateExpression(child, references);
+          const result = this.evaluateExpression(child, references);
 
           if (result) {
             return true;
@@ -100,10 +100,10 @@ export class ArticleFiltersService {
     }
   }
 
-  private async evaluateRelationalExpression(
+  private evaluateRelationalExpression(
     expression: RelationalExpression,
     references: FilterExpressionReference
-  ): Promise<boolean> {
+  ): boolean {
     const { left, right } = expression;
     const referenceObject = references[left.type];
 

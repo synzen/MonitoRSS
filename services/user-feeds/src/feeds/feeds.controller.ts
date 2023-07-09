@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
+import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { DiscordEmbed } from "../delivery/types";
@@ -50,7 +51,8 @@ export class FeedsController {
     private readonly feedsService: FeedsService,
     private readonly discordMediumService: DiscordMediumService,
     private readonly feedFetcherService: FeedFetcherService,
-    private readonly articleFormatterService: ArticleFormatterService
+    private readonly articleFormatterService: ArticleFormatterService,
+    private readonly articleFiltersService: ArticleFiltersService
   ) {}
 
   @Post("initialize")
@@ -287,9 +289,15 @@ export class FeedsController {
             stripImages: mediumDetails.formatter.stripImages,
           });
 
+        const filterReferences =
+          await this.articleFiltersService.buildReferences({
+            article,
+          });
+
         const { result, apiPayload } =
           await this.discordMediumService.deliverTestArticle(formattedArticle, {
             mediumDetails,
+            filterReferences,
           });
 
         if (result.state !== "success") {
@@ -416,12 +424,19 @@ export class FeedsController {
             stripImages: mediumDetails.formatter.stripImages,
           });
 
+        const filterReferences =
+          await this.articleFiltersService.buildReferences({
+            article,
+          });
+
         const payloads = this.discordMediumService.generateApiPayloads(
           formattedArticle,
           {
             embeds: mediumDetails.embeds,
             splitOptions: mediumDetails.splitOptions,
             content: mediumDetails.content,
+            filterReferences,
+            mentions: mediumDetails.mentions,
           }
         );
 

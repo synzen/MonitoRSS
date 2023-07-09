@@ -157,6 +157,7 @@ export class FeedConnectionsDiscordChannelsController {
       formatter,
       forumThreadTitle,
       forumThreadTags,
+      mentions,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -205,6 +206,7 @@ export class FeedConnectionsDiscordChannelsController {
           name,
           disabledCode: useDisableCode,
           splitOptions,
+          mentions,
           details: {
             channel: useChannelId
               ? {

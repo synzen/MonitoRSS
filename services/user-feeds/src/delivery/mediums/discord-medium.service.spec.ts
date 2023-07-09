@@ -1,14 +1,15 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "../../article-filters/article-filters.service";
+import { FilterExpressionReference } from "../../article-filters/types";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
 import { Article, ArticleDeliveryContentType } from "../../shared";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
-  DeliveryDetails,
   TestDiscordDeliveryDetails,
 } from "../types";
+import { DeliverArticleDetails } from "./delivery-medium.interface";
 import { DiscordMediumService } from "./discord-medium.service";
 
 jest.mock("@synzen/discord-rest", () => ({
@@ -18,6 +19,13 @@ jest.mock("@synzen/discord-rest", () => ({
 const producer = {
   enqueue: jest.fn(),
   fetch: jest.fn(),
+};
+
+const mockFilterReference: FilterExpressionReference = {
+  ARTICLE: {
+    flattened: { id: "1" },
+    raw: {} as never,
+  },
 };
 
 describe("DiscordMediumService", () => {
@@ -73,12 +81,14 @@ describe("DiscordMediumService", () => {
     };
 
     const deliveryDetails: TestDiscordDeliveryDetails = {
+      filterReferences: mockFilterReference,
       mediumDetails: {
         channel: { id: "channel-1" },
         webhook: {
           id: "webhook-id-1",
           token: "webhook-token-1",
         },
+        mentions: {},
         content: "content",
         formatter: {
           formatTables: false,
@@ -197,10 +207,12 @@ describe("DiscordMediumService", () => {
       raw: {} as never,
     };
 
-    const deliveryDetails: DeliveryDetails = {
+    const deliveryDetails: DeliverArticleDetails = {
+      filterReferences: mockFilterReference,
       deliveryId: "delivery-id",
       mediumId: "medium-id",
       deliverySettings: {
+        mentions: {},
         guildId: "guild-id",
         channel: { id: "channel-1" },
         webhook: {
@@ -235,7 +247,7 @@ describe("DiscordMediumService", () => {
     });
 
     it("sends embeds", async () => {
-      const detailsWithEmbeds: DeliveryDetails = {
+      const detailsWithEmbeds: DeliverArticleDetails = {
         ...deliveryDetails,
         deliverySettings: {
           ...deliveryDetails.deliverySettings,
@@ -345,7 +357,7 @@ describe("DiscordMediumService", () => {
           },
           raw: {} as never,
         };
-        const details: DeliveryDetails = {
+        const details: DeliverArticleDetails = {
           ...deliveryDetails,
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
@@ -404,7 +416,7 @@ describe("DiscordMediumService", () => {
           },
           raw: {} as never,
         };
-        const details: DeliveryDetails = {
+        const details: DeliverArticleDetails = {
           ...deliveryDetails,
           deliverySettings: {
             ...deliveryDetails.deliverySettings,
@@ -442,7 +454,6 @@ describe("DiscordMediumService", () => {
 
   describe("getForumTagsToSend", () => {
     it("returns tags without filters", async () => {
-      const article = {} as Article;
       const inputTags = [
         {
           id: "1",
@@ -454,7 +465,10 @@ describe("DiscordMediumService", () => {
         },
       ];
 
-      const res = await service.getForumTagsToSend(article, inputTags);
+      const res = await service.getForumTagsToSend(
+        inputTags,
+        mockFilterReference
+      );
 
       expect(res).toEqual(
         expect.arrayContaining(inputTags.map((tag) => tag.id))
@@ -462,11 +476,6 @@ describe("DiscordMediumService", () => {
     });
 
     it("does not return tags of filters that do not match the article", async () => {
-      const article = {
-        raw: {
-          title: "some-title",
-        },
-      } as Article;
       const inputTags = [
         {
           id: "1",
@@ -479,20 +488,18 @@ describe("DiscordMediumService", () => {
       ];
 
       articleFiltersService.getArticleFilterResults
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true);
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
 
-      const res = await service.getForumTagsToSend(article, inputTags as never);
+      const res = await service.getForumTagsToSend(
+        inputTags as never,
+        mockFilterReference
+      );
 
       expect(res).not.toEqual(expect.arrayContaining(["1"]));
     });
 
     it("returns tags of filters that match the article", async () => {
-      const article = {
-        raw: {
-          title: "some-title",
-        },
-      } as Article;
       const inputTags = [
         {
           id: "1",
@@ -505,12 +512,50 @@ describe("DiscordMediumService", () => {
       ];
 
       articleFiltersService.getArticleFilterResults
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(false);
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false);
 
-      const res = await service.getForumTagsToSend(article, inputTags as never);
+      const res = await service.getForumTagsToSend(
+        inputTags as never,
+        mockFilterReference
+      );
 
       expect(res).toEqual(expect.arrayContaining(["1"]));
+    });
+  });
+
+  describe("generateApiTextPayload", () => {
+    it("replaces discord::mentions", () => {
+      const article: Article = {
+        flattened: {
+          id: "1",
+          title: "hello",
+        },
+        raw: {} as never,
+      };
+
+      const result = service.generateApiTextPayload(article, {
+        content: "hello {{discord::mentions}}",
+        filterReferences: {
+          ARTICLE: article,
+        },
+        mentions: {
+          targets: [
+            {
+              id: "role-1-id",
+              type: "role",
+              filters: null,
+            },
+            {
+              id: "user-1-id",
+              type: "user",
+              filters: null,
+            },
+          ],
+        },
+      });
+
+      expect(result).toEqual("hello <@&role-1-id> <@user-1-id>");
     });
   });
 });
