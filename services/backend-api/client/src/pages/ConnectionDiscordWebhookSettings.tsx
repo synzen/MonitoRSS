@@ -303,6 +303,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     splitOptions: connection?.splitOptions || null,
                     formatter: connection?.details.formatter,
                     forumThreadTags: null,
+                    mentions: null,
                   }}
                   articleFormatter={{
                     options: {

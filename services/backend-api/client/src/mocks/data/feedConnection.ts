@@ -21,6 +21,7 @@ export const mockFeedChannelConnections: FeedConnection[] = [
     },
     splitOptions: {},
     key: FeedConnectionType.DiscordChannel,
+    mentions: null,
   },
 ];
 
@@ -44,5 +45,6 @@ export const mockFeedWebhookConnections: FeedConnection[] = [
     },
     splitOptions: {},
     key: FeedConnectionType.DiscordWebhook,
+    mentions: null,
   },
 ];
