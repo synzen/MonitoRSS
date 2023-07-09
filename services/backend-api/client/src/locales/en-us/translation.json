@@ -303,7 +303,9 @@
       "addRoleButton": "Role",
       "addUserButton": "User",
       "addMentionButton": "Add",
-      "removeMentionButton":"Remove Mention"
+      "removeMentionButton":"Remove Mention",
+      "searchRolePlaceholder": "Search for a role...",
+      "searchUserPlaceholder": "Search for a user..."
     },
     "pageContentV2": {
       "logout": "Logout"

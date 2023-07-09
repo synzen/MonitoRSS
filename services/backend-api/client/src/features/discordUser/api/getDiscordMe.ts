@@ -1,8 +1,8 @@
 import { InferType } from "yup";
 import fetchRest from "../../../utils/fetchRest";
-import { DiscordUserSchema } from "../types";
+import { DiscordMeUserSchema } from "../types";
 
-const GetDiscordMeOutputSchema = DiscordUserSchema;
+const GetDiscordMeOutputSchema = DiscordMeUserSchema;
 
 export type GetDiscordMeOutput = InferType<typeof GetDiscordMeOutputSchema>;
 

@@ -15,6 +15,7 @@ import {
   DiscordGuildRole,
   DiscordGuildChannel,
   DiscordChannelType,
+  DiscordGuildMember,
 } from "../../common";
 import {
   FeedSubscriber,
@@ -32,6 +33,7 @@ import {
 import { DiscordServerNotFoundException } from "./exceptions";
 import { DiscordPermissionsService } from "../discord-auth/discord-permissions.service";
 import { MANAGE_THREADS } from "../discord-auth/constants/permissions";
+import { URLSearchParams } from "url";
 
 @Injectable()
 export class DiscordServersService {
@@ -348,6 +350,28 @@ export class DiscordServersService {
       );
 
     return roles;
+  }
+
+  async searchMembersOfServer(
+    serverId: string,
+    data: {
+      search?: string;
+      limit?: number;
+    }
+  ) {
+    const params = new URLSearchParams();
+    params.set("query", data.search || "");
+    params.set("limit", String(data.limit || 10));
+
+    const res: DiscordGuildMember[] =
+      await this.discordApiService.executeBotRequest(
+        `/guilds/${serverId}/members/search?${params.toString()}`,
+        {
+          method: "GET",
+        }
+      );
+
+    return res;
   }
 
   private getProfileSettingsWithDefaults(

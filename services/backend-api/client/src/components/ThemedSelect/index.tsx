@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { Avatar, HStack, Text, useColorModeValue } from "@chakra-ui/react";
 import Select, { GroupBase, StylesConfig, components } from "react-select";
+import { FilterOptionOption } from "react-select/dist/declarations/src/filters";
 import { REACT_SELECT_STYLES } from "@/constants/reactSelectStyles";
 
 const { Option } = components;
@@ -25,6 +26,7 @@ interface Props<T> {
   isClearable?: boolean;
   onInputChange?: (value: string) => void;
   placeholder?: string | React.ReactNode;
+  filterFunction?: (option: FilterOptionOption<string | SelectOption<T>>, input: string) => boolean;
 }
 
 export const ThemedSelect = <T,>({
@@ -39,6 +41,7 @@ export const ThemedSelect = <T,>({
   isClearable,
   placeholder,
   onInputChange,
+  filterFunction,
 }: Props<T>) => {
   // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
@@ -55,6 +58,7 @@ export const ThemedSelect = <T,>({
       name={name}
       placeholder={placeholder}
       isClearable={isClearable}
+      filterOption={filterFunction}
       // @ts-ignore
       styles={styles}
       value={selectedOption || ""}

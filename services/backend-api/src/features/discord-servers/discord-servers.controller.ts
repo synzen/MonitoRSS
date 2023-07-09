@@ -29,6 +29,8 @@ import { UpdateServerOutputDto } from "./dto/UpdateServerOutput.dto";
 import { UpdateServerInputDto } from "./dto/UpdateServerInput.dto";
 import { GetDiscordServerChannelsFilter } from "./filters";
 import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInput.dto";
+import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
+import { GetServerMembersOutputDto } from "./dto/GetServerMembersOutput.dto";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
@@ -176,5 +178,23 @@ export class DiscordServersController {
     const roles = await this.discordServersService.getRolesOfServer(serverId);
 
     return GetServerRolesOutputDto.fromEntities(roles);
+  }
+
+  @Get(":serverId/members")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getServerMembers(
+    @Param("serverId") serverId: string,
+    @NestedQuery(ValidationPipe) { limit, search }: GetServerMembersInputDto
+  ) {
+    const res = await this.discordServersService.searchMembersOfServer(
+      serverId,
+      {
+        limit,
+        search,
+      }
+    );
+
+    return GetServerMembersOutputDto.fromEntities(res);
   }
 }

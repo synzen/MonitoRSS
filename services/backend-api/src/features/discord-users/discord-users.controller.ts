@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Req,
   UseGuards,
@@ -19,6 +20,7 @@ import { DiscordUsersService } from "./discord-users.service";
 import {
   GetMeAuthStatusOutputDto,
   GetMeOutputDto,
+  GetUserOutputDto,
   UpdateSupporterInputDto,
 } from "./dto";
 import { GetBotOutputDto } from "./dto/GetBotOutput.dto";
@@ -28,6 +30,20 @@ import { DiscordUserIsSupporterGuard } from "./guards/DiscordUserIsSupporter";
 @Controller("discord-users")
 export class DiscordUsersController {
   constructor(private readonly discordUsersService: DiscordUsersService) {}
+
+  @Get("/:id")
+  @UseGuards(DiscordOAuth2Guard)
+  async getUser(@Param("id") id: string): Promise<GetUserOutputDto> {
+    const user = await this.discordUsersService.getUserById(id);
+
+    return {
+      result: {
+        id: user.id,
+        username: user.username,
+        avatarUrl: user.avatar,
+      },
+    };
+  }
 
   @Get("bot")
   @UseGuards(DiscordOAuth2Guard)

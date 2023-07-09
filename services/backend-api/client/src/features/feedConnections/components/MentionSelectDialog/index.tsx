@@ -1,7 +1,8 @@
 import {
-  Box,
+  Avatar,
   Button,
   ButtonGroup,
+  Flex,
   FormControl,
   HStack,
   Modal,
@@ -12,14 +13,23 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Tag,
+  TagLabel,
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AddIcon } from "@chakra-ui/icons";
-import { useDiscordServerRoles } from "../../../discordServers";
+import { useDiscordServerMembers, useDiscordServerRoles } from "../../../discordServers";
 import { InlineErrorAlert, ThemedSelect } from "../../../../components";
+import { useDebounce } from "../../../../hooks";
+
+interface OptionData {
+  id: string;
+  name: string;
+  icon?: React.ReactElement | null;
+}
 
 interface Props {
   guildId?: string;
@@ -29,9 +39,8 @@ interface Props {
 export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<"user" | "role">("role");
-  const [selectedMention, setSelectedMention] = useState<{
-    id: string;
-  }>();
+  const [currentInput, setCurrentInput] = useState("");
+  const [selectedMention, setSelectedMention] = useState<OptionData>();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     data: roles,
@@ -40,6 +49,19 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
   } = useDiscordServerRoles({
     serverId: guildId,
     disabled: selectedType !== "role" || !isOpen,
+  });
+  const debouncedSearch = useDebounce(currentInput, 500);
+  const {
+    data: users,
+    error: usersError,
+    isFetching: isFetchingUsers,
+  } = useDiscordServerMembers({
+    serverId: guildId,
+    disabled: selectedType !== "user" || !isOpen || !debouncedSearch,
+    data: {
+      limit: 25,
+      search: debouncedSearch,
+    },
   });
 
   const onClickType = (type: "user" | "role") => () => {
@@ -51,8 +73,12 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
     setSelectedMention(undefined);
   };
 
-  const onSelected = (id: string) => {
-    setSelectedMention({ id });
+  const onSelected = (data: { label: string; value: string; icon?: React.ReactElement | null }) => {
+    setSelectedMention({
+      id: data.value,
+      name: data.label,
+      icon: data.icon,
+    });
   };
 
   const onClickSave = () => {
@@ -61,6 +87,43 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
       onClose();
     }
   };
+
+  let options: Array<{
+    label: string;
+    value: string;
+    icon?: React.ReactElement | null;
+    data: OptionData;
+  }> = [];
+
+  if (selectedType === "role") {
+    options =
+      roles?.results.map((r) => ({
+        data: {
+          id: r.id,
+          name: r.name,
+          icon: <Avatar size="sm" name={r.name} backgroundColor={r.color} />,
+        },
+        label: r.name,
+        value: r.id,
+        icon: <Avatar size="sm" name={r.name} backgroundColor={r.color} />,
+      })) || [];
+  } else if (selectedType === "user") {
+    options =
+      users?.results.map((u) => {
+        const icon = u.avatarUrl ? <Avatar name={u.username} size="sm" src={u.avatarUrl} /> : null;
+
+        return {
+          data: {
+            id: u.id,
+            name: u.username,
+            icon,
+          },
+          label: u.username,
+          value: u.id,
+          icon,
+        };
+      }) || [];
+  }
 
   return (
     <>
@@ -92,45 +155,54 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
                       width="100%"
                       colorScheme={selectedType === "user" ? "blue" : undefined}
                       aria-label="User type"
-                      isDisabled
                     >
                       {t("components.discordMessageMentionForm.addUserButton")}
                     </Button>
                   </ButtonGroup>
                 </FormControl>
                 <FormControl>
-                  {selectedType === "role" && (
-                    <ThemedSelect
-                      loading={isFetching}
-                      value={selectedMention?.id || ""}
-                      options={
-                        roles?.results.map((r) => ({
-                          data: r,
-                          label: r.name,
-                          value: r.id,
-                          icon: (
-                            <Box
-                              borderRadius="full"
-                              height="16px"
-                              width="16px"
-                              backgroundColor={r.color}
-                            />
-                          ),
-                        })) || []
-                      }
-                      onChange={(roleId) => onSelected(roleId)}
-                    />
-                  )}
+                  <ThemedSelect
+                    loading={isFetching || isFetchingUsers}
+                    onInputChange={(value) => setCurrentInput(value)}
+                    options={options}
+                    onChange={(id, option) =>
+                      onSelected({
+                        value: id,
+                        label: option.name,
+                        icon: option.icon,
+                      })
+                    }
+                    filterFunction={selectedType === "user" ? () => true : undefined}
+                    placeholder={
+                      selectedType === "role"
+                        ? t("components.discordMessageMentionForm.searchRolePlaceholder")
+                        : t("components.discordMessageMentionForm.searchUserPlaceholder")
+                    }
+                  />
                 </FormControl>
-                {rolesError && (
+                {selectedMention && (
+                  <Flex justifyContent="center">
+                    <Tag size="lg">
+                      {selectedMention.icon &&
+                        React.cloneElement(selectedMention.icon, { size: "xs" })}
+                      <TagLabel ml={2}>{selectedMention.name}</TagLabel>
+                    </Tag>
+                  </Flex>
+                )}
+                {selectedType === "role" && rolesError && (
                   <InlineErrorAlert title="Failed to get roles" description={rolesError.message} />
+                )}
+                {selectedType === "user" && usersError && (
+                  <InlineErrorAlert title="Failed to get users" description={usersError.message} />
                 )}
               </Stack>
             </Stack>
           </ModalBody>
           <ModalFooter>
             <HStack>
-              <Button variant="ghost">{t("common.buttons.cancel")}</Button>
+              <Button variant="ghost" onClick={onClose}>
+                {t("common.buttons.cancel")}
+              </Button>
               <Button colorScheme="blue" mr={3} onClick={onClickSave} isDisabled={!selectedMention}>
                 {t("common.buttons.save")}
               </Button>

@@ -1,4 +1,14 @@
-import { Code, Flex, HStack, IconButton, Spinner, Stack, Tag, Text } from "@chakra-ui/react";
+import {
+  Avatar,
+  Code,
+  Flex,
+  HStack,
+  IconButton,
+  Spinner,
+  Stack,
+  Tag,
+  Text,
+} from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
@@ -8,6 +18,7 @@ import { LogicalFilterExpression } from "../../types";
 import { MentionSelectDialog } from "../MentionSelectDialog";
 import { useDiscordServerRoles } from "../../../discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
+import { useDiscordUser } from "../../../discordUser";
 
 interface Props {
   feedId: string;
@@ -35,12 +46,29 @@ const MentionCheckbox = ({
     serverId: guildId,
     disabled: type !== "role",
   });
+  const { data: userData, isFetching: isFetchingUser } = useDiscordUser({
+    userId: id,
+    disabled: type !== "user",
+  });
 
-  const roleName = getRolebyId(id)?.name || id;
+  const role = getRolebyId(id);
+  const roleName = role?.name || id;
+  const userName = userData?.result.username || id;
 
   return (
     <Flex>
       <Tag key={id} variant="solid" size="lg" paddingRight={0}>
+        {type === "user" && userData?.result.avatarUrl && (
+          <Avatar
+            src={userData.result.avatarUrl}
+            name={userData.result.username}
+            size="xs"
+            marginRight={2}
+          />
+        )}
+        {type === "role" && (
+          <Avatar size="xs" marginRight={2} name={role?.name} background={role?.color} />
+        )}
         <HStack width="100%">
           <Flex
             flex={1}
@@ -49,9 +77,10 @@ const MentionCheckbox = ({
             height="100%"
             padding="2px 4px"
           >
-            {/* <Text>{type === "role" && !isFetchingRoles && roleName}</Text> */}
             {type === "role" && isFetchingRoles && <Spinner size="xs" />}
+            {type === "user" && isFetchingUser && <Spinner size="xs" />}
             {type === "role" && !isFetchingRoles && <Text height="100%">{roleName}</Text>}
+            {type === "user" && !isFetchingUser && <Text height="100%">{userName}</Text>}
           </Flex>
           <DiscordMentionSettingsDialog
             onRemoved={onDelete}

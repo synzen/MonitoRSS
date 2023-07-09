@@ -4,6 +4,7 @@ import {
   GetDiscordAuthStatusOutput,
   GetDiscordBotOutput,
   GetDiscordMeOutput,
+  GetDiscordUserOutput,
 } from "@/features/discordUser";
 import { GetServersOutput } from "../features/discordServers/api/getServer";
 import {
@@ -27,10 +28,11 @@ import {
 import mockDiscordServers from "./data/discordServers";
 import mockFeeds from "./data/feed";
 import mockFeedArticles from "./data/feedArticles";
-import mockDiscordUser from "./data/discordUser";
+import mockDiscordUserMe from "./data/discordUserMe";
 import {
   GetServerActiveThreadsOutput,
   GetServerChannelsOutput,
+  GetServerMembersOutput,
   GetServerRolesOutput,
   GetServerSettingsOutput,
   GetServerStatusOutput,
@@ -62,6 +64,8 @@ import { GetUserFeedRequestsOutput } from "../features/feed/api/getUserFeedReque
 import { mockUserFeedRequests } from "./data/userFeedRequests";
 import { mockCreatePreviewResult } from "./data/createPreview";
 import mockDiscordThreads from "./data/discordThreads";
+import mockDiscordServerMembers from "./data/discordServerMembers";
+import mockDiscordUser from "./data/discordUser";
 
 const handlers = [
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
@@ -72,7 +76,16 @@ const handlers = [
     )
   ),
   rest.get("/api/v1/discord-users/@me", (req, res, ctx) =>
-    res(ctx.json<GetDiscordMeOutput>(mockDiscordUser))
+    res(ctx.json<GetDiscordMeOutput>(mockDiscordUserMe))
+  ),
+
+  rest.get("/api/v1/discord-users/:id", (req, res, ctx) =>
+    res(
+      ctx.delay(1000),
+      ctx.json<GetDiscordUserOutput>({
+        result: mockDiscordUser,
+      })
+    )
   ),
 
   rest.get("/api/v1/discord-users/@me/auth-status", (req, res, ctx) =>
@@ -188,6 +201,16 @@ const handlers = [
       ctx.json<GetServerRolesOutput>({
         total: mockDiscordRoles.length,
         results: mockDiscordRoles,
+      })
+    )
+  ),
+
+  rest.get("/api/v1/discord-servers/:serverId/members", (req, res, ctx) =>
+    res(
+      ctx.delay(1000),
+      ctx.json<GetServerMembersOutput>({
+        total: mockDiscordServerMembers.length,
+        results: mockDiscordServerMembers,
       })
     )
   ),

@@ -2,16 +2,8 @@ import { DiscordUser } from "@/features/discordUser";
 
 const mockDiscordUser: DiscordUser = {
   id: "1",
-  username: "My name".padEnd(1000, "nasd"),
-  iconUrl: undefined,
-  maxFeeds: 10,
-  maxUserFeeds: 5,
-  supporter: {
-    expireAt: new Date().toISOString(),
-    guilds: [],
-    maxFeeds: 10,
-    maxGuilds: 10,
-  },
+  username: "My name",
+  avatarUrl: "https://placehold.co/600x400/EEE/31343C",
 };
 
 export default mockDiscordUser;

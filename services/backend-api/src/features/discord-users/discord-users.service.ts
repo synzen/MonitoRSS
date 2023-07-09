@@ -37,6 +37,34 @@ export class DiscordUsersService {
     };
   }
 
+  async getUserById(userId: string): Promise<DiscordUser> {
+    const url = `${this.BASE_ENDPOINT}/${userId}`;
+    const user: DiscordUser = await this.discordApiService.executeBotRequest(
+      url,
+      {
+        method: "GET",
+      }
+    );
+    let avatarUrl: string | null = null;
+
+    if (user.avatar) {
+      let extension = ".png";
+
+      if (user.avatar.startsWith("a_")) {
+        extension = ".gif";
+      }
+
+      avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}${extension}`;
+    }
+
+    return {
+      username: user.username,
+      id: user.id,
+      avatar: avatarUrl,
+      discriminator: user.discriminator,
+    };
+  }
+
   /**
    * Get a user's guilds.
    *

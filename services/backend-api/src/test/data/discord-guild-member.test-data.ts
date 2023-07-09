@@ -4,6 +4,7 @@ const boilerplate: DiscordGuildMember = {
   roles: [],
   user: {
     id: "1",
+    username: "username",
   },
 };
 
