@@ -49,6 +49,15 @@ export interface UpdateDiscordWebhookConnectionInput {
       formatTables?: boolean | null;
       stripImages?: boolean | null;
     } | null;
+    mentions?: {
+      targets?: Array<{
+        id: string;
+        type: "role" | "user";
+        filters?: {
+          expression: Record<string, any>;
+        } | null;
+      }> | null;
+    } | null;
   };
 }
 

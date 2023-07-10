@@ -4,7 +4,10 @@ import { DiscordAPIService } from "../../services/apis/discord/discord-api.servi
 import { DiscordServerProfileModel } from "../discord-servers/entities";
 import { FailRecordModel } from "../feeds/entities/fail-record.entity";
 import { FeedFilteredFormatModel } from "../feeds/entities/feed-filtered-format.entity";
-import { FeedSubscriberModel } from "../feeds/entities/feed-subscriber.entity";
+import {
+  FeedSubscriber,
+  FeedSubscriberModel,
+} from "../feeds/entities/feed-subscriber.entity";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { UserFeedHealthStatus } from "../user-feeds/types";
 import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
@@ -51,6 +54,12 @@ describe("LegacyFeedConversionService", () => {
     });
     const data = {
       discordUserId: "123",
+      subscribers: [
+        {
+          id: "1",
+          type: "role",
+        } as FeedSubscriber,
+      ],
     };
 
     beforeEach(() => {
@@ -234,6 +243,31 @@ describe("LegacyFeedConversionService", () => {
               {
                 splitOptions: {
                   isEnabled: true,
+                },
+              },
+            ],
+          },
+        });
+      });
+
+      it("sets mentions correctly", async () => {
+        const feed: Feed = {
+          ...baseFeed,
+        };
+
+        const result = await service.getUserFeedEquivalent(feed, data);
+
+        expect(result).toMatchObject({
+          connections: {
+            discordChannels: [
+              {
+                mentions: {
+                  targets: [
+                    {
+                      id: "1",
+                      type: "role",
+                    },
+                  ],
                 },
               },
             ],
@@ -453,6 +487,31 @@ describe("LegacyFeedConversionService", () => {
               {
                 splitOptions: {
                   isEnabled: true,
+                },
+              },
+            ],
+          },
+        });
+      });
+
+      it("sets mentions correctly", async () => {
+        const feed: Feed = {
+          ...baseWebhookFeed,
+        };
+
+        const result = await service.getUserFeedEquivalent(feed, data);
+
+        expect(result).toMatchObject({
+          connections: {
+            discordWebhooks: [
+              {
+                mentions: {
+                  targets: [
+                    {
+                      id: "1",
+                      type: "role",
+                    },
+                  ],
                 },
               },
             ],

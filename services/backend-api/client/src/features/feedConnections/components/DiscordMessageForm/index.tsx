@@ -37,6 +37,7 @@ interface Props {
   onClickSave: (data: DiscordMessageFormData) => Promise<void>;
   articleIdToPreview?: string;
   feedId: string;
+  guildId: string | undefined;
   connection: {
     id: string;
     type: FeedConnectionType;
@@ -54,6 +55,7 @@ export const DiscordMessageForm = ({
   articleIdToPreview,
   connection,
   feedId,
+  guildId,
   include,
 }: Props) => {
   const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
@@ -259,7 +261,7 @@ export const DiscordMessageForm = ({
           </Stack>
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
-            <DiscordMessageMentionForm connectionId={connection.id} feedId={feedId} />
+            <DiscordMessageMentionForm guildId={guildId} feedId={feedId} />
           </Stack>
           <Flex direction="row-reverse">
             <HStack>

@@ -11,6 +11,7 @@ import {
 import {
   DiscordConnectionFormatterOptions,
   DiscordSplitOptions,
+  MentionsOptionsDto,
   UserFeedFormatOptions,
 } from "../../../common";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
@@ -44,6 +45,13 @@ export class CreateDiscordWebhookConnectionPreviewInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   splitOptions?: DiscordSplitOptions | null;
+
+  @IsOptional()
+  @Type(() => MentionsOptionsDto)
+  @ValidateNested()
+  @IsObject()
+  @ValidateIf((v) => v !== null)
+  mentions?: MentionsOptionsDto | null;
 
   @IsOptional()
   @Type(() => DiscordConnectionFormatterOptions)

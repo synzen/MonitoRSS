@@ -33,6 +33,7 @@ interface Props {
   include?: {
     forumThreadTitle?: boolean;
   };
+  guildId: string | undefined;
 }
 
 export const MessageTabSection = ({
@@ -42,6 +43,7 @@ export const MessageTabSection = ({
   articleFormatter,
   connection,
   include,
+  guildId,
 }: Props) => {
   const {
     data: userFeedArticles,
@@ -145,6 +147,7 @@ export const MessageTabSection = ({
           feedId={feedId}
           articleIdToPreview={firstArticle?.id}
           include={include}
+          guildId={guildId}
         />
       </Stack>
     </Stack>

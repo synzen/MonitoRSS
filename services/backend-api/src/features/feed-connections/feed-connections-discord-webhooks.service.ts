@@ -31,6 +31,7 @@ export interface UpdateDiscordWebhookConnectionInput {
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
+    mentions?: DiscordWebhookConnection["mentions"] | null;
     details?: {
       content?: string;
       embeds?: DiscordWebhookConnection["details"]["embeds"];
@@ -48,6 +49,7 @@ interface CreatePreviewInput {
   userFeed: UserFeed;
   connection: DiscordWebhookConnection;
   splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
+  mentions?: DiscordWebhookConnection["mentions"] | null;
   content?: string;
   embeds?: DiscordPreviewEmbed[];
   feedFormatOptions: UserFeed["formatOptions"] | null;
@@ -128,7 +130,7 @@ export class FeedConnectionsDiscordWebhooksService {
   async updateDiscordWebhookConnection({
     feedId,
     connectionId,
-    updates: { details, filters, name, disabledCode, splitOptions },
+    updates: { details, filters, name, disabledCode, splitOptions, mentions },
     accessToken,
   }: UpdateDiscordWebhookConnectionInput) {
     let webhookUpdates:
@@ -202,6 +204,9 @@ export class FeedConnectionsDiscordWebhooksService {
         }),
         ...(splitOptions && {
           "connections.discordWebhooks.$.splitOptions": splitOptions,
+        }),
+        ...(mentions && {
+          "connections.discordWebhooks.$.mentions": mentions,
         }),
       },
       $unset: {
@@ -288,6 +293,7 @@ export class FeedConnectionsDiscordWebhooksService {
         },
         formatter: connection.details.formatter,
         splitOptions: connection.splitOptions,
+        mentions: connection.mentions,
       },
     } as const;
 
@@ -305,6 +311,7 @@ export class FeedConnectionsDiscordWebhooksService {
     content,
     embeds,
     splitOptions,
+    mentions,
   }: CreatePreviewInput): Promise<SendTestArticleResult> {
     const payload = {
       type: "discord",
@@ -351,6 +358,7 @@ export class FeedConnectionsDiscordWebhooksService {
         guildId: connection.details.webhook.guildId,
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions || undefined,
+        mentions: mentions || undefined,
       },
     } as const;
 

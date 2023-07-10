@@ -292,6 +292,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <BoxConstrained.Container>
                 <MessageTabSection
                   feedId={feedId as string}
+                  guildId={serverId}
                   onMessageUpdated={(data) => onUpdate(data)}
                   defaultMessageValues={{
                     content: connection?.details.content,

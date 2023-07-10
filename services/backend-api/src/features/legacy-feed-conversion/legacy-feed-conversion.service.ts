@@ -243,6 +243,15 @@ export class LegacyFeedConversionService {
         splitOptions: {
           isEnabled: feed.split?.enabled || false,
         },
+        mentions: {
+          targets: subscribers?.map((s) => ({
+            id: s.id,
+            type: s.type as unknown as FeedConnectionMentionType,
+            filters: s.rfilters
+              ? this.convertRegexFilters(s.rfilters)
+              : this.convertRegularFilters(s.filters),
+          })),
+        },
         details: {
           webhook: {
             id: feed.webhook.id,

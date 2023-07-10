@@ -9,7 +9,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { DiscordEmbed } from "../../../common";
+import { DiscordEmbed, MentionsOptionsDto } from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class Webhook {
@@ -84,6 +84,12 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @Type(() => FiltersDto)
   @ValidateNested({ each: true })
   filters?: FiltersDto;
+
+  @IsObject()
+  @IsOptional()
+  @Type(() => MentionsOptionsDto)
+  @ValidateNested({ each: true })
+  mentions?: MentionsOptionsDto;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -13,7 +13,6 @@ import { Controller, useFormContext } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { DiscordMessageFormData } from "@/types/discord";
-import { useDiscordChannelConnection } from "../../hooks";
 import { LogicalFilterExpression } from "../../types";
 import { MentionSelectDialog } from "../MentionSelectDialog";
 import { useDiscordServerRoles } from "../../../discordServers";
@@ -22,7 +21,7 @@ import { useDiscordUser } from "../../../discordUser";
 
 interface Props {
   feedId: string;
-  connectionId: string;
+  guildId: string | undefined;
 }
 
 const MentionCheckbox = ({
@@ -105,12 +104,8 @@ const MentionCheckbox = ({
   );
 };
 
-export const DiscordMessageMentionForm = ({ feedId, connectionId }: Props) => {
+export const DiscordMessageMentionForm = ({ feedId, guildId }: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
-  const { connection } = useDiscordChannelConnection({
-    feedId,
-    connectionId,
-  });
   const { t } = useTranslation();
 
   return (
@@ -139,7 +134,7 @@ export const DiscordMessageMentionForm = ({ feedId, connectionId }: Props) => {
                     filters={target.filters as any}
                     id={target.id}
                     type={target.type}
-                    guildId={connection?.details.channel.guildId}
+                    guildId={guildId}
                     feedId={feedId}
                     onChangeFilters={(newFilters) => {
                       const copyTargets = [...(field.value?.targets || [])];
@@ -168,7 +163,7 @@ export const DiscordMessageMentionForm = ({ feedId, connectionId }: Props) => {
                 );
               })}
               <MentionSelectDialog
-                guildId={connection?.details?.channel.guildId}
+                guildId={guildId}
                 onAdded={(added) => {
                   field.onChange({
                     ...field.value,

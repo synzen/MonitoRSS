@@ -29,6 +29,7 @@ export const DiscordWebhookConnectionPreview = ({ connectionId, data, feedId }: 
           splitOptions: connection?.splitOptions,
           connectionFormatOptions: connection?.details.formatter,
           userFeedFormatOptions: feed?.formatOptions,
+          mentions: connection?.mentions,
           ...debouncedData,
         },
       },

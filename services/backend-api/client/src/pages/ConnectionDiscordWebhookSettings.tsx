@@ -289,12 +289,14 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               <BoxConstrained.Container>
                 <MessageTabSection
                   feedId={feedId as string}
-                  onMessageUpdated={({ content, embeds, splitOptions, formatter }) =>
+                  guildId={connection?.details.webhook.guildId}
+                  onMessageUpdated={({ content, embeds, splitOptions, formatter, mentions }) =>
                     onUpdate({
                       content,
                       embeds,
                       splitOptions,
                       formatter,
+                      mentions,
                     })
                   }
                   defaultMessageValues={{
@@ -303,7 +305,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     splitOptions: connection?.splitOptions || null,
                     formatter: connection?.details.formatter,
                     forumThreadTags: null,
-                    mentions: null,
+                    mentions: connection?.mentions || null,
                   }}
                   articleFormatter={{
                     options: {

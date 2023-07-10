@@ -121,6 +121,7 @@ export class FeedConnectionsDiscordWebhooksController {
       userFeedFormatOptions,
       connectionFormatOptions,
       splitOptions,
+      mentions,
     }: CreateDiscordWebhookConnectionPreviewInputDto
   ): Promise<CreateDiscordWebhookConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -132,6 +133,7 @@ export class FeedConnectionsDiscordWebhooksController {
       content,
       embeds,
       splitOptions,
+      mentions,
     });
 
     return {
@@ -154,6 +156,7 @@ export class FeedConnectionsDiscordWebhooksController {
       disabledCode,
       splitOptions,
       formatter,
+      mentions,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -202,6 +205,7 @@ export class FeedConnectionsDiscordWebhooksController {
           filters,
           disabledCode: useDisableCode,
           splitOptions,
+          mentions,
           details: {
             formatter,
             content,

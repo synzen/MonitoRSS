@@ -266,6 +266,7 @@ export class ScheduleHandlerService {
           splitOptions: con.splitOptions?.isEnabled
             ? con.splitOptions
             : undefined,
+          mentions: con.mentions,
         },
       }));
 
