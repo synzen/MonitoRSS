@@ -7,6 +7,7 @@ import {
   DiscordServerProfile,
   DiscordServerProfileModel,
 } from "../discord-servers/entities";
+import { FeedConnectionMentionType } from "../feeds/constants";
 import {
   FailRecord,
   FailRecordModel,
@@ -68,28 +69,109 @@ export class LegacyFeedConversionService {
     private readonly discordApiService: DiscordAPIService
   ) {}
 
-  // TODO: Fallback images, suscribers placeholder
-  async getUserFeedEquivalent(
-    feed: Feed,
-    data: {
-      discordUserId: string;
-    }
+  async convertToUserFeeds(
+    feeds: Feed[],
+    { discordUserId }: { discordUserId: string }
   ) {
-    const guildId = feed.guild;
-    const [profile, subscribers, filteredFormats, failRecord] =
+    const [profiles, subscribers, filteredFormats, failRecords] =
       await Promise.all([
-        this.profileModel.findById(guildId),
+        this.profileModel.find({
+          _id: {
+            $in: feeds.map((feed) => feed.guild),
+          },
+        }),
         this.feedSubscriberModel.find({
-          feed: feed._id,
+          feed: {
+            $in: feeds.map((feed) => feed._id),
+          },
         }),
         this.feedFilteredFormatModel.find({
-          feed: feed._id,
+          feed: {
+            $in: feeds.map((feed) => feed._id),
+          },
         }),
-        this.failRecordModel.findOne({
-          _id: feed.url,
+        this.failRecordModel.find({
+          _id: {
+            $in: Array.from(new Set(feeds.map((feed) => feed.url))),
+          },
         }),
       ]);
 
+    const profilesByGuild = new Map<string, DiscordServerProfile>();
+    profiles.forEach((profile) => {
+      profilesByGuild.set(profile._id.toHexString(), profile);
+    });
+
+    const subscribersByFeed = new Map<string, FeedSubscriber[]>();
+    subscribers.forEach((subscriber) => {
+      const feedId = subscriber.feed.toHexString();
+
+      if (!subscribersByFeed.has(feedId)) {
+        subscribersByFeed.set(feedId, []);
+      }
+
+      subscribersByFeed.get(feedId)?.push(subscriber);
+    });
+
+    const filteredFormatsByFeed = new Map<string, FeedFilteredFormat[]>();
+    filteredFormats.forEach((filteredFormat) => {
+      const feedId = filteredFormat.feed.toHexString();
+
+      if (!filteredFormatsByFeed.has(feedId)) {
+        filteredFormatsByFeed.set(feedId, []);
+      }
+
+      filteredFormatsByFeed.get(feedId)?.push(filteredFormat);
+    });
+
+    const failRecordsByUrl = new Map<string, FailRecord>();
+    failRecords.forEach((failRecord) => {
+      failRecordsByUrl.set(failRecord._id, failRecord);
+    });
+
+    return Promise.all(
+      feeds.map(async (f) => {
+        try {
+          const converted = await this.getUserFeedEquivalent(f, {
+            discordUserId,
+            failRecord: failRecordsByUrl.get(f.url),
+            profile: profilesByGuild.get(f.guild),
+            subscribers: subscribersByFeed.get(f._id.toHexString()),
+            filteredFormats: filteredFormatsByFeed.get(f._id.toHexString()),
+          });
+
+          return {
+            state: "success",
+            result: converted,
+          };
+        } catch (err) {
+          return {
+            state: "error",
+            error: err as Error,
+          };
+        }
+      })
+    );
+  }
+
+  // TODO: Fallback images
+  async getUserFeedEquivalent(
+    feed: Feed,
+    {
+      discordUserId,
+      failRecord,
+      filteredFormats,
+      profile,
+      subscribers,
+    }: {
+      discordUserId: string;
+      profile?: DiscordServerProfile | null;
+      subscribers?: FeedSubscriber[] | null;
+      filteredFormats?: FeedFilteredFormat[] | null;
+      failRecord?: FailRecord | null;
+    }
+  ) {
+    const guildId = feed.guild;
     const convertedFilters = feed.rfilters
       ? this.convertRegexFilters(feed.rfilters)
       : this.convertRegularFilters(feed.filters);
@@ -108,7 +190,7 @@ export class LegacyFeedConversionService {
       title: feed.title,
       url: feed.url,
       user: {
-        discordUserId: data.discordUserId,
+        discordUserId,
       },
       blockingComparisons: feed.ncomparisons,
       passingComparisons: feed.pcomparisons,
@@ -126,6 +208,15 @@ export class LegacyFeedConversionService {
         name: feed.title,
         splitOptions: {
           isEnabled: feed.split?.enabled || false,
+        },
+        mentions: {
+          targets: subscribers?.map((s) => ({
+            id: s.id,
+            type: s.type as unknown as FeedConnectionMentionType,
+            filters: s.rfilters
+              ? this.convertRegexFilters(s.rfilters)
+              : this.convertRegularFilters(s.filters),
+          })),
         },
         details: {
           channel: {
@@ -201,7 +292,9 @@ export class LegacyFeedConversionService {
 
     const regex = /\{([^\{\}]*)\}/g;
 
-    return text.replace(regex, "{{$1}}") as T;
+    return text
+      .replace(/\{subscriptions\}/g, "{discord::mentions}")
+      .replace(regex, "{{$1}}") as T;
   }
 
   convertEmbeds(

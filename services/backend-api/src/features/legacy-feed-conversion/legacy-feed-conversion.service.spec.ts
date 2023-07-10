@@ -640,7 +640,13 @@ describe("LegacyFeedConversionService", () => {
   });
 
   describe("convertPlaceholders", () => {
-    it("converts single-brace placehodlers to double brace", () => {
+    it("converts subscriptions placeholders", () => {
+      expect(service.convertPlaceholders("test {subscriptions}")).toEqual(
+        "test {{discord::mentions}}"
+      );
+    });
+
+    it("converts single-brace placeholders to double brace", () => {
       expect(
         service.convertPlaceholders(
           "test {placeholder}\n\n{placeholder2} {{placehodler3}}"
@@ -654,7 +660,7 @@ describe("LegacyFeedConversionService", () => {
   });
 
   describe("convertEmbeds", () => {
-    it("converts embeds including placehodlers", () => {
+    it("converts embeds including placeholders", () => {
       const input: Feed["embeds"] = [
         {
           title: "title {placeholder}",
