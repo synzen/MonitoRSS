@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import dayjs from "dayjs";
@@ -22,7 +23,8 @@ import {
   FeedSubscriberModel,
 } from "../feeds/entities/feed-subscriber.entity";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
-import { UserFeed } from "../user-feeds/entities";
+import { SupportersService } from "../supporters/supporters.service";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { UserFeedHealthStatus } from "../user-feeds/types";
 
 enum ExpressionType {
@@ -66,7 +68,10 @@ export class LegacyFeedConversionService {
     private readonly feedFilteredFormatModel: FeedFilteredFormatModel,
     @InjectModel(FailRecord.name)
     private readonly failRecordModel: FailRecordModel,
-    private readonly discordApiService: DiscordAPIService
+    @InjectModel(UserFeed.name)
+    private readonly userFeedModel: UserFeedModel,
+    private readonly discordApiService: DiscordAPIService,
+    private readonly supportersService: SupportersService
   ) {}
 
   async convertToUserFeeds(
@@ -129,8 +134,24 @@ export class LegacyFeedConversionService {
       failRecordsByUrl.set(failRecord._id, failRecord);
     });
 
-    return Promise.all(
-      feeds.map(async (f) => {
+    const [{ maxUserFeeds }, currentUserFeedCount] = await Promise.all([
+      this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+      this.userFeedModel.countDocuments({
+        "user.discordUserId": discordUserId,
+      }),
+    ]);
+
+    const results = await Promise.all(
+      feeds.map(async (f, index) => {
+        if (currentUserFeedCount + index + 1 > maxUserFeeds) {
+          return {
+            state: "error",
+            error: new Error(
+              `Reached the maximum number of user feeds (${maxUserFeeds})`
+            ),
+          };
+        }
+
         try {
           const converted = await this.getUserFeedEquivalent(f, {
             discordUserId,
@@ -143,15 +164,49 @@ export class LegacyFeedConversionService {
           return {
             state: "success",
             result: converted,
+            feedId: f._id,
           };
         } catch (err) {
           return {
             state: "error",
             error: err as Error,
+            feedId: f._id,
           };
         }
       })
     );
+
+    const session = await this.feedModel.startSession();
+
+    await session.withTransaction(async () => {
+      const userFeedsToCreate = results
+        .filter((r) => r.state === "success")
+        .map(({ result }) => result);
+
+      await this.userFeedModel.create(userFeedsToCreate, { session });
+
+      const feedIdsToUpdate = results
+        .filter((r) => r.state === "success")
+        .map(({ feedId }) => feedId);
+
+      await this.feedModel.updateMany(
+        {
+          _id: {
+            $in: feedIdsToUpdate,
+          },
+        },
+        {
+          $set: {
+            disabled: "CONVERTED_USER_FEED",
+          },
+        },
+        { session }
+      );
+    });
+
+    await session.endSession();
+
+    return results;
   }
 
   // TODO: Fallback images

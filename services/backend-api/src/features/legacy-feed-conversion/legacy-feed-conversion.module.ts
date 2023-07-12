@@ -6,6 +6,7 @@ import { FailRecordFeature } from "../feeds/entities/fail-record.entity";
 import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-format.entity";
 import { FeedSubscriberFeature } from "../feeds/entities/feed-subscriber.entity";
 import { FeedFeature } from "../feeds/entities/feed.entity";
+import { SupportersModule } from "../supporters/supporters.module";
 import { UserFeedFeature } from "../user-feeds/entities";
 import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
 
@@ -18,8 +19,10 @@ import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
       DiscordServerProfileFeature,
       FeedFilteredFormatFeature,
       FailRecordFeature,
+      UserFeedFeature,
     ]),
     DiscordApiModule,
+    SupportersModule,
   ],
   controllers: [],
   providers: [LegacyFeedConversionService],

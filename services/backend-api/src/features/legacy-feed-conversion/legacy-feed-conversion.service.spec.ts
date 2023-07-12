@@ -9,6 +9,8 @@ import {
   FeedSubscriberModel,
 } from "../feeds/entities/feed-subscriber.entity";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { SupportersService } from "../supporters/supporters.service";
+import { UserFeedModel } from "../user-feeds/entities";
 import { UserFeedHealthStatus } from "../user-feeds/types";
 import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
 
@@ -27,8 +29,15 @@ describe("LegacyFeedConversionService", () => {
   const failRecordModel: FailRecordModel = {
     findOne: jest.fn(),
   } as never;
+  const userFeedModel: UserFeedModel = {
+    countDocuments: jest.fn(),
+    create: jest.fn(),
+  } as never;
   const discordApiService: DiscordAPIService = {
     getWebhook: jest.fn(),
+  } as never;
+  const supportersService: SupportersService = {
+    getBenefitsOfDiscordUser: jest.fn(),
   } as never;
 
   beforeEach(async () => {
@@ -38,7 +47,9 @@ describe("LegacyFeedConversionService", () => {
       feedSubscriberModel,
       feedFilteredFormatModel,
       failRecordModel,
-      discordApiService
+      userFeedModel,
+      discordApiService,
+      supportersService
     );
   });
 
@@ -113,12 +124,13 @@ describe("LegacyFeedConversionService", () => {
 
     describe("date format", () => {
       it("sets date format when defined", async () => {
-        jest.spyOn(profileModel, "findById").mockResolvedValue({
-          dateFormat: "dateFormat",
-        } as never);
-
         await expect(
-          service.getUserFeedEquivalent(baseFeed, data)
+          service.getUserFeedEquivalent(baseFeed, {
+            ...data,
+            profile: {
+              dateFormat: "dateFormat",
+            },
+          } as never)
         ).resolves.toMatchObject({
           formatOptions: {
             dateFormat: "dateFormat",
@@ -127,10 +139,6 @@ describe("LegacyFeedConversionService", () => {
       });
 
       it("sets date format to undefined when not defined", async () => {
-        jest.spyOn(profileModel, "findById").mockResolvedValue({
-          dateFormat: undefined,
-        } as never);
-
         await expect(
           service.getUserFeedEquivalent(baseFeed, data)
         ).resolves.toMatchObject({
@@ -143,12 +151,13 @@ describe("LegacyFeedConversionService", () => {
 
     describe("date timezone", () => {
       it("sets correctly when defined", async () => {
-        jest.spyOn(profileModel, "findById").mockResolvedValue({
-          timezone: "timezone",
-        } as never);
-
         await expect(
-          service.getUserFeedEquivalent(baseFeed, data)
+          service.getUserFeedEquivalent(baseFeed, {
+            ...data,
+            profile: {
+              timezone: "timezone",
+            },
+          } as never)
         ).resolves.toMatchObject({
           formatOptions: {
             dateTimezone: "timezone",
@@ -157,10 +166,6 @@ describe("LegacyFeedConversionService", () => {
       });
 
       it("sets to undefined when not defined", async () => {
-        jest.spyOn(profileModel, "findById").mockResolvedValue({
-          timezone: undefined,
-        } as never);
-
         await expect(
           service.getUserFeedEquivalent(baseFeed, data)
         ).resolves.toMatchObject({
@@ -787,9 +792,9 @@ describe("LegacyFeedConversionService", () => {
                 type: "ARTICLE",
                 value: "title",
               },
-              op: "CONTAINS",
+              op: "MATCHES",
               right: {
-                type: "REGEXP",
+                type: "STRING",
                 value: "myregex",
               },
             },
@@ -798,9 +803,9 @@ describe("LegacyFeedConversionService", () => {
                 type: "ARTICLE",
                 value: "description",
               },
-              op: "CONTAINS",
+              op: "MATCHES",
               right: {
-                type: "REGEXP",
+                type: "STRING",
                 value: "myregex2",
               },
             },
@@ -824,9 +829,9 @@ describe("LegacyFeedConversionService", () => {
                 type: "ARTICLE",
                 value: "category",
               },
-              op: "CONTAINS",
+              op: "MATCHES",
               right: {
-                type: "REGEXP",
+                type: "STRING",
                 value: "myregex",
               },
             },
