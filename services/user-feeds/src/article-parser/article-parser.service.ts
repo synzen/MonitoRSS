@@ -88,7 +88,7 @@ export class ArticleParserService {
         for (let i = 0; i < imageList.length; i++) {
           const image = imageList[i];
 
-          newRecord[`extracted::${key}::image::${i + 1}`] = image;
+          newRecord[`extracted::${key}::image${i + 1}`] = image;
         }
       }
 
@@ -96,7 +96,7 @@ export class ArticleParserService {
         for (let i = 0; i < anchorList.length; i++) {
           const anchor = anchorList[i];
 
-          newRecord[`extracted::${key}::anchor::${i + 1}`] = anchor;
+          newRecord[`extracted::${key}::anchor${i + 1}`] = anchor;
         }
       }
     });
