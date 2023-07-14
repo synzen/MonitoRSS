@@ -230,7 +230,10 @@ export class LegacyFeedConversionService {
     const convertedFilters = feed.rfilters
       ? this.convertRegexFilters(feed.rfilters)
       : this.convertRegularFilters(feed.filters);
-    const convertedEmbeds = this.convertEmbeds(feed.embeds);
+    const isYoutube = feed.url.toLowerCase().includes("www.youtube.com/feeds");
+    const convertedEmbeds = this.convertEmbeds(feed.embeds, {
+      isYoutube,
+    });
 
     const converted: UserFeed = {
       _id: new Types.ObjectId(),
@@ -278,7 +281,9 @@ export class LegacyFeedConversionService {
             id: feed.channel,
             guildId,
           },
-          content: this.convertPlaceholders(feed.text),
+          content: this.convertPlaceholders(feed.text, {
+            isYoutube,
+          }),
           embeds: convertedEmbeds,
           formatter: {
             formatTables: feed.formatTables,
@@ -311,11 +316,17 @@ export class LegacyFeedConversionService {
           webhook: {
             id: feed.webhook.id,
             guildId,
-            name: this.convertPlaceholders(feed.webhook.name),
-            iconUrl: this.convertPlaceholders(feed.webhook.avatar),
+            name: this.convertPlaceholders(feed.webhook.name, {
+              isYoutube,
+            }),
+            iconUrl: this.convertPlaceholders(feed.webhook.avatar, {
+              isYoutube,
+            }),
             token: webhook.token,
           },
-          content: this.convertPlaceholders(feed.text),
+          content: this.convertPlaceholders(feed.text, {
+            isYoutube,
+          }),
           embeds: convertedEmbeds,
           formatter: {
             formatTables: feed.formatTables,
@@ -349,7 +360,12 @@ export class LegacyFeedConversionService {
     return UserFeedHealthStatus.Ok;
   }
 
-  convertPlaceholders<T extends string | undefined>(text: T): T {
+  convertPlaceholders<T extends string | undefined>(
+    text: T,
+    meta: {
+      isYoutube: boolean;
+    }
+  ): T {
     if (!text) {
       return undefined as T;
     }
@@ -359,10 +375,18 @@ export class LegacyFeedConversionService {
     let replacedWithKnownPlaceholders = text
       .replace(/\{subscriptions\}/g, "{discord::mentions}")
       .replace(/\{subscribers\}/g, "{discord::mentions}")
+      .replace(/\{date\}/g, "{pubdate}")
       .replace(
         /\{(description|summary|title):(anchor|image)(\d+)\}/g,
         "{extracted::$1::$2$3}"
       );
+
+    if (meta?.isYoutube) {
+      replacedWithKnownPlaceholders = replacedWithKnownPlaceholders.replace(
+        /\{description\}/g,
+        "{media:group__media:description__#}"
+      );
+    }
 
     const rawPlaceholderRegex = /{raw:([^{]+)}/g;
 
@@ -393,7 +417,10 @@ export class LegacyFeedConversionService {
   }
 
   convertEmbeds(
-    embeds: Feed["embeds"]
+    embeds: Feed["embeds"],
+    meta: {
+      isYoutube: boolean;
+    }
   ): DiscordChannelConnection["details"]["embeds"] {
     if (!embeds || embeds.length === 0) {
       return [];
@@ -401,22 +428,22 @@ export class LegacyFeedConversionService {
 
     return embeds.map((embed) => {
       return {
-        title: this.convertPlaceholders(embed.title),
-        authorIconURL: this.convertPlaceholders(embed.authorIconURL),
-        authorName: this.convertPlaceholders(embed.authorName),
-        authorURL: this.convertPlaceholders(embed.authorURL),
-        color: this.convertPlaceholders(embed.color),
-        description: this.convertPlaceholders(embed.description),
-        footerIconURL: this.convertPlaceholders(embed.footerIconURL),
-        footerText: this.convertPlaceholders(embed.footerText),
-        imageURL: this.convertPlaceholders(embed.imageURL),
-        thumbnailURL: this.convertPlaceholders(embed.thumbnailURL),
-        timestamp: this.convertPlaceholders(embed.timestamp),
-        url: this.convertPlaceholders(embed.url),
+        title: this.convertPlaceholders(embed.title, meta),
+        authorIconURL: this.convertPlaceholders(embed.authorIconURL, meta),
+        authorName: this.convertPlaceholders(embed.authorName, meta),
+        authorURL: this.convertPlaceholders(embed.authorURL, meta),
+        color: this.convertPlaceholders(embed.color, meta),
+        description: this.convertPlaceholders(embed.description, meta),
+        footerIconURL: this.convertPlaceholders(embed.footerIconURL, meta),
+        footerText: this.convertPlaceholders(embed.footerText, meta),
+        imageURL: this.convertPlaceholders(embed.imageURL, meta),
+        thumbnailURL: this.convertPlaceholders(embed.thumbnailURL, meta),
+        timestamp: this.convertPlaceholders(embed.timestamp, meta),
+        url: this.convertPlaceholders(embed.url, meta),
         fields: embed.fields?.map((field) => {
           return {
-            name: this.convertPlaceholders(field.name) as string,
-            value: this.convertPlaceholders(field.value) as string,
+            name: this.convertPlaceholders(field.name, meta) as string,
+            value: this.convertPlaceholders(field.value, meta) as string,
             inline: field.inline,
           };
         }),

@@ -705,32 +705,53 @@ describe("LegacyFeedConversionService", () => {
 
   describe("convertPlaceholders", () => {
     it("converts subscriptions placeholders", () => {
-      expect(service.convertPlaceholders("test {subscriptions}")).toEqual(
-        "test {{discord::mentions}}"
-      );
+      expect(
+        service.convertPlaceholders("test {subscriptions}", {
+          isYoutube: false,
+        })
+      ).toEqual("test {{discord::mentions}}");
     });
 
     it("converts subscribers placeholders", () => {
-      expect(service.convertPlaceholders("test {subscribers}")).toEqual(
-        "test {{discord::mentions}}"
-      );
+      expect(
+        service.convertPlaceholders("test {subscribers}", {
+          isYoutube: false,
+        })
+      ).toEqual("test {{discord::mentions}}");
+    });
+
+    it("converts date placeholders", () => {
+      expect(
+        service.convertPlaceholders("test {date}", {
+          isYoutube: false,
+        })
+      ).toEqual("test {{pubdate}}");
     });
 
     it("converts single-brace placeholders to double brace", () => {
       expect(
         service.convertPlaceholders(
-          "test {placeholder}\n\n{placeholder2} {{placehodler3}}"
+          "test {placeholder}\n\n{placeholder2} {{placehodler3}}",
+          {
+            isYoutube: false,
+          }
         )
       ).toEqual("test {{placeholder}}\n\n{{placeholder2}} {{{placehodler3}}}");
     });
 
     it("returns undefined if undefined is passed", () => {
-      expect(service.convertPlaceholders(undefined)).toBeUndefined();
+      expect(
+        service.convertPlaceholders(undefined, {
+          isYoutube: false,
+        })
+      ).toBeUndefined();
     });
 
     it("converts summary images", () => {
       expect(
-        service.convertPlaceholders("test {summary:image1} {summary:image2}")
+        service.convertPlaceholders("test {summary:image1} {summary:image2}", {
+          isYoutube: false,
+        })
       ).toEqual(
         "test {{extracted::summary::image1}} {{extracted::summary::image2}}"
       );
@@ -738,7 +759,12 @@ describe("LegacyFeedConversionService", () => {
 
     it("converts summary anchors", () => {
       expect(
-        service.convertPlaceholders("test {summary:anchor1} {summary:anchor2}")
+        service.convertPlaceholders(
+          "test {summary:anchor1} {summary:anchor2}",
+          {
+            isYoutube: false,
+          }
+        )
       ).toEqual(
         "test {{extracted::summary::anchor1}} {{extracted::summary::anchor2}}"
       );
@@ -747,7 +773,10 @@ describe("LegacyFeedConversionService", () => {
     it("converts description anchors", () => {
       expect(
         service.convertPlaceholders(
-          "test {description:anchor1} {description:anchor2}"
+          "test {description:anchor1} {description:anchor2}",
+          {
+            isYoutube: false,
+          }
         )
       ).toEqual(
         "test {{extracted::description::anchor1}} {{extracted::description::anchor2}}"
@@ -757,7 +786,10 @@ describe("LegacyFeedConversionService", () => {
     it("converts description images", () => {
       expect(
         service.convertPlaceholders(
-          "test {description:image1} {description:image2}"
+          "test {description:image1} {description:image2}",
+          {
+            isYoutube: false,
+          }
         )
       ).toEqual(
         "test {{extracted::description::image1}} {{extracted::description::image2}}"
@@ -766,7 +798,9 @@ describe("LegacyFeedConversionService", () => {
 
     it("converts title anchors", () => {
       expect(
-        service.convertPlaceholders("test {title:anchor1} {title:anchor2}")
+        service.convertPlaceholders("test {title:anchor1} {title:anchor2}", {
+          isYoutube: false,
+        })
       ).toEqual(
         "test {{extracted::title::anchor1}} {{extracted::title::anchor2}}"
       );
@@ -774,54 +808,79 @@ describe("LegacyFeedConversionService", () => {
 
     it("converts title images", () => {
       expect(
-        service.convertPlaceholders("test {title:image1} {title:image2}")
+        service.convertPlaceholders("test {title:image1} {title:image2}", {
+          isYoutube: false,
+        })
       ).toEqual(
         "test {{extracted::title::image1}} {{extracted::title::image2}}"
       );
     });
 
     it("converts raw placeholders", () => {
-      expect(service.convertPlaceholders("test {raw:description}")).toEqual(
-        "test {{description}}"
-      );
+      expect(
+        service.convertPlaceholders("test {raw:description}", {
+          isYoutube: false,
+        })
+      ).toEqual("test {{description}}");
     });
 
     it("converts raw placeholders that are multiple levels deep", () => {
       expect(
-        service.convertPlaceholders("test {raw:description_level1_level2}")
+        service.convertPlaceholders("test {raw:description_level1_level2}", {
+          isYoutube: false,
+        })
       ).toEqual("test {{description__level1__level2}}");
     });
 
     it("converts raw placeholders with dashes", () => {
       expect(
-        service.convertPlaceholders("test {raw:description-is-here}")
+        service.convertPlaceholders("test {raw:description-is-here}", {
+          isYoutube: false,
+        })
       ).toEqual("test {{description:is:here}}");
     });
 
     it("converts raw placeholders with array indices", () => {
-      expect(service.convertPlaceholders("test {raw:description[1]}")).toEqual(
-        "test {{description__1}}"
-      );
+      expect(
+        service.convertPlaceholders("test {raw:description[1]}", {
+          isYoutube: false,
+        })
+      ).toEqual("test {{description__1}}");
     });
 
     it("converts raw placeholders with array indices multiple levels deep", () => {
       expect(
-        service.convertPlaceholders("test {raw:description_level1[1]_level2}")
+        service.convertPlaceholders("test {raw:description_level1[1]_level2}", {
+          isYoutube: false,
+        })
       ).toEqual("test {{description__level1__1__level2}}");
     });
 
     it("converts raw placeholders with array indices and dashes", () => {
       expect(
-        service.convertPlaceholders("test {raw:description-is-here[1]}")
+        service.convertPlaceholders("test {raw:description-is-here[1]}", {
+          isYoutube: false,
+        })
       ).toEqual("test {{description:is:here__1}}");
     });
 
     it("converts raw placeholders with array indices and dashes multiple levels deep", () => {
       expect(
         service.convertPlaceholders(
-          "test {raw:description_level1-is-here[1]_level2}"
+          "test {raw:description_level1-is-here[1]_level2}",
+          {
+            isYoutube: false,
+          }
         )
       ).toEqual("test {{description__level1:is:here__1__level2}}");
+    });
+
+    it("converts descriptions for youtube feeds", () => {
+      expect(
+        service.convertPlaceholders("test {description}", {
+          isYoutube: true,
+        })
+      ).toEqual("test {{media:group__media:description__#}}");
     });
   });
 
@@ -851,7 +910,11 @@ describe("LegacyFeedConversionService", () => {
         },
       ];
 
-      expect(service.convertEmbeds(input)).toEqual([
+      expect(
+        service.convertEmbeds(input, {
+          isYoutube: false,
+        })
+      ).toEqual([
         {
           title: "title {{placeholder}}",
           description: "description {{placeholder}}",
