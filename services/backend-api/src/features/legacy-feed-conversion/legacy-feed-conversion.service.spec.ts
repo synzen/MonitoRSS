@@ -710,6 +710,12 @@ describe("LegacyFeedConversionService", () => {
       );
     });
 
+    it("converts subscribers placeholders", () => {
+      expect(service.convertPlaceholders("test {subscribers}")).toEqual(
+        "test {{discord::mentions}}"
+      );
+    });
+
     it("converts single-brace placeholders to double brace", () => {
       expect(
         service.convertPlaceholders(
@@ -720,6 +726,102 @@ describe("LegacyFeedConversionService", () => {
 
     it("returns undefined if undefined is passed", () => {
       expect(service.convertPlaceholders(undefined)).toBeUndefined();
+    });
+
+    it("converts summary images", () => {
+      expect(
+        service.convertPlaceholders("test {summary:image1} {summary:image2}")
+      ).toEqual(
+        "test {{extracted::summary::image1}} {{extracted::summary::image2}}"
+      );
+    });
+
+    it("converts summary anchors", () => {
+      expect(
+        service.convertPlaceholders("test {summary:anchor1} {summary:anchor2}")
+      ).toEqual(
+        "test {{extracted::summary::anchor1}} {{extracted::summary::anchor2}}"
+      );
+    });
+
+    it("converts description anchors", () => {
+      expect(
+        service.convertPlaceholders(
+          "test {description:anchor1} {description:anchor2}"
+        )
+      ).toEqual(
+        "test {{extracted::description::anchor1}} {{extracted::description::anchor2}}"
+      );
+    });
+
+    it("converts description images", () => {
+      expect(
+        service.convertPlaceholders(
+          "test {description:image1} {description:image2}"
+        )
+      ).toEqual(
+        "test {{extracted::description::image1}} {{extracted::description::image2}}"
+      );
+    });
+
+    it("converts title anchors", () => {
+      expect(
+        service.convertPlaceholders("test {title:anchor1} {title:anchor2}")
+      ).toEqual(
+        "test {{extracted::title::anchor1}} {{extracted::title::anchor2}}"
+      );
+    });
+
+    it("converts title images", () => {
+      expect(
+        service.convertPlaceholders("test {title:image1} {title:image2}")
+      ).toEqual(
+        "test {{extracted::title::image1}} {{extracted::title::image2}}"
+      );
+    });
+
+    it("converts raw placeholders", () => {
+      expect(service.convertPlaceholders("test {raw:description}")).toEqual(
+        "test {{description}}"
+      );
+    });
+
+    it("converts raw placeholders that are multiple levels deep", () => {
+      expect(
+        service.convertPlaceholders("test {raw:description_level1_level2}")
+      ).toEqual("test {{description__level1__level2}}");
+    });
+
+    it("converts raw placeholders with dashes", () => {
+      expect(
+        service.convertPlaceholders("test {raw:description-is-here}")
+      ).toEqual("test {{description:is:here}}");
+    });
+
+    it("converts raw placeholders with array indices", () => {
+      expect(service.convertPlaceholders("test {raw:description[1]}")).toEqual(
+        "test {{description__1}}"
+      );
+    });
+
+    it("converts raw placeholders with array indices multiple levels deep", () => {
+      expect(
+        service.convertPlaceholders("test {raw:description_level1[1]_level2}")
+      ).toEqual("test {{description__level1__1__level2}}");
+    });
+
+    it("converts raw placeholders with array indices and dashes", () => {
+      expect(
+        service.convertPlaceholders("test {raw:description-is-here[1]}")
+      ).toEqual("test {{description:is:here__1}}");
+    });
+
+    it("converts raw placeholders with array indices and dashes multiple levels deep", () => {
+      expect(
+        service.convertPlaceholders(
+          "test {raw:description_level1-is-here[1]_level2}"
+        )
+      ).toEqual("test {{description__level1:is:here__1__level2}}");
     });
   });
 

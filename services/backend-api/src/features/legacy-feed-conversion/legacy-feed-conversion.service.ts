@@ -356,9 +356,40 @@ export class LegacyFeedConversionService {
 
     const regex = /\{([^\{\}]*)\}/g;
 
-    return text
+    let replacedWithKnownPlaceholders = text
       .replace(/\{subscriptions\}/g, "{discord::mentions}")
-      .replace(regex, "{{$1}}") as T;
+      .replace(/\{subscribers\}/g, "{discord::mentions}")
+      .replace(
+        /\{(description|summary|title):(anchor|image)(\d+)\}/g,
+        "{extracted::$1::$2$3}"
+      );
+
+    const rawPlaceholderRegex = /{raw:([^{]+)}/g;
+
+    let results = rawPlaceholderRegex.exec(replacedWithKnownPlaceholders);
+
+    while (results) {
+      const rawPlaceholder = results[0];
+
+      const replaceWith = this.convertRawPlaceholderField(rawPlaceholder);
+
+      replacedWithKnownPlaceholders = replacedWithKnownPlaceholders.replace(
+        rawPlaceholder,
+        replaceWith
+      );
+
+      results = rawPlaceholderRegex.exec(replacedWithKnownPlaceholders);
+    }
+
+    return replacedWithKnownPlaceholders.replace(regex, "{{$1}}") as T;
+  }
+
+  convertRawPlaceholderField(rawPlaceholder: string): string {
+    return rawPlaceholder
+      .replace("raw:", "")
+      .replace(/_/g, "__")
+      .replace(/\[(\d+)\]/g, `__$1`)
+      .replace(/-/g, ":");
   }
 
   convertEmbeds(
@@ -452,7 +483,7 @@ export class LegacyFeedConversionService {
         const isBlockingBroad =
           filterVal.startsWith("!~") || filterVal.startsWith("~!");
 
-        const cleanedCategory = category.replace("raw:", "");
+        const cleanedCategory = this.convertRawPlaceholderField(category);
 
         if (isBlockingBroad) {
           expression.children.push({
