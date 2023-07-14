@@ -9,3 +9,4 @@ export * from "./discord-medium-test-payload-details.type";
 export * from "./user-feed-format-options.type";
 export * from "./flattened-article.type";
 export * from "./article-delivery-content-type.type";
+export * from "./article-discord-formatted.type";

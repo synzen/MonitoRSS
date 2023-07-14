@@ -32,9 +32,9 @@ describe("ArticleFiltersService", () => {
         type: "invalid",
       } as never;
 
-      await expect(
+      expect(() =>
         service.getArticleFilterResults(expression, {} as never)
-      ).rejects.toThrow(InvalidExpressionException);
+      ).toThrow(InvalidExpressionException);
     });
   });
 
@@ -44,9 +44,9 @@ describe("ArticleFiltersService", () => {
         type: "invalid",
       } as never;
 
-      await expect(
-        service.evaluateExpression(expression, {} as never)
-      ).rejects.toThrow(InvalidExpressionException);
+      expect(() => service.evaluateExpression(expression, {} as never)).toThrow(
+        InvalidExpressionException
+      );
     });
 
     it("throws if logical operand is not supported", async () => {
@@ -56,9 +56,9 @@ describe("ArticleFiltersService", () => {
         children: [],
       };
 
-      await expect(
+      expect(() =>
         service.evaluateExpression(expression as never, {} as never)
-      ).rejects.toThrow(InvalidExpressionException);
+      ).toThrow(InvalidExpressionException);
     });
 
     it("throws if relational expression operator for string operand is invalid", async () => {
@@ -81,7 +81,7 @@ describe("ArticleFiltersService", () => {
         ],
       };
 
-      await expect(
+      expect(() =>
         service.evaluateExpression(expression as never, {
           ARTICLE: {
             flattened: {
@@ -91,7 +91,7 @@ describe("ArticleFiltersService", () => {
             raw: {} as never,
           },
         })
-      ).rejects.toThrow(InvalidExpressionException);
+      ).toThrow(InvalidExpressionException);
     });
 
     describe("relational", () => {
@@ -120,9 +120,9 @@ describe("ArticleFiltersService", () => {
           },
         };
 
-        await expect(
-          service.evaluateExpression(expression, reference)
-        ).resolves.toEqual(false);
+        expect(service.evaluateExpression(expression, reference)).toEqual(
+          false
+        );
       });
 
       it.each([
@@ -170,9 +170,9 @@ describe("ArticleFiltersService", () => {
             },
           };
 
-          await expect(
-            service.evaluateExpression(expression, reference)
-          ).resolves.toEqual(expected);
+          expect(service.evaluateExpression(expression, reference)).toEqual(
+            expected
+          );
         }
       );
       it.each([
@@ -212,9 +212,9 @@ describe("ArticleFiltersService", () => {
             },
           };
 
-          await expect(
-            service.evaluateExpression(expression, reference)
-          ).resolves.toEqual(expected);
+          expect(service.evaluateExpression(expression, reference)).toEqual(
+            expected
+          );
         }
       );
 
@@ -255,16 +255,16 @@ describe("ArticleFiltersService", () => {
             },
           };
 
-          await expect(
-            service.evaluateExpression(expression, reference)
-          ).resolves.toEqual(expected);
+          expect(service.evaluateExpression(expression, reference)).toEqual(
+            expected
+          );
         }
       );
     });
 
     describe("AND operand", () => {
-      it("returns true correctly with 1 child", async () => {
-        await expect(
+      it("returns true correctly with 1 child", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -294,11 +294,11 @@ describe("ArticleFiltersService", () => {
               },
             }
           )
-        ).resolves.toBe(true);
+        ).toBe(true);
       });
 
-      it("returns true correctly with 2 children", async () => {
-        await expect(
+      it("returns true correctly with 2 children", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -341,11 +341,11 @@ describe("ArticleFiltersService", () => {
               },
             }
           )
-        ).resolves.toBe(true);
+        ).toBe(true);
       });
 
-      it("returns false correctly", async () => {
-        await expect(
+      it("returns false correctly", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -388,13 +388,13 @@ describe("ArticleFiltersService", () => {
               },
             }
           )
-        ).resolves.toBe(false);
+        ).toBe(false);
       });
     });
 
     describe("OR operand", () => {
-      it("returns true correctly", async () => {
-        await expect(
+      it("returns true correctly", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -437,11 +437,11 @@ describe("ArticleFiltersService", () => {
               },
             }
           )
-        ).resolves.toBe(true);
+        ).toBe(true);
       });
 
-      it("returns false correctly", async () => {
-        await expect(
+      it("returns false correctly", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -484,11 +484,11 @@ describe("ArticleFiltersService", () => {
               },
             }
           )
-        ).resolves.toBe(false);
+        ).toBe(false);
       });
 
-      it("returns false if reference contains no value", async () => {
-        await expect(
+      it("returns false if reference contains no value", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -529,11 +529,11 @@ describe("ArticleFiltersService", () => {
               },
             }
           )
-        ).resolves.toBe(false);
+        ).toBe(false);
       });
 
-      it("returns false if reference object does not exist", async () => {
-        await expect(
+      it("returns false if reference object does not exist", () => {
+        expect(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -567,7 +567,7 @@ describe("ArticleFiltersService", () => {
             },
             {} as never
           )
-        ).resolves.toBe(false);
+        ).toBe(false);
       });
     });
   });

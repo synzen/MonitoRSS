@@ -71,7 +71,7 @@ describe("validateRelationalRight", () => {
     expect(errors).toEqual(["Expected root.right to be an object but got 123"]);
   });
 
-  it("should return an error if type is not String or RegExp", () => {
+  it("should return an error if type is not String", () => {
     const right = {
       type: "notStringOrRegExp",
       value: "value",
@@ -80,7 +80,7 @@ describe("validateRelationalRight", () => {
     const errors = validateRelationalRight(right);
 
     expect(errors).toEqual([
-      "Expected root.type to be one of STRING,REGEXP but got notStringOrRegExp",
+      "Expected root.type to be one of STRING but got notStringOrRegExp",
     ]);
   });
 
@@ -101,32 +101,6 @@ describe("validateRelationalRight", () => {
     it("should return an empty array if type is String and value is a string", () => {
       const right = {
         type: RelationalExpressionRight.String,
-        value: "value",
-      };
-
-      const errors = validateRelationalRight(right);
-
-      expect(errors).toEqual([]);
-    });
-  });
-
-  describe("REGEXP type", () => {
-    it("should return an error if value is not a string", () => {
-      const right = {
-        type: RelationalExpressionRight.RegExp,
-        value: 123,
-      };
-
-      const errors = validateRelationalRight(right);
-
-      expect(errors).toEqual([
-        "Expected root.value to be a string but got 123",
-      ]);
-    });
-
-    it("should return an empty array if type is RegExp and value is a string", () => {
-      const right = {
-        type: RelationalExpressionRight.RegExp,
         value: "value",
       };
 

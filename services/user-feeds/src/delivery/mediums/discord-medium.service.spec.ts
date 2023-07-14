@@ -3,7 +3,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "../../article-filters/article-filters.service";
 import { FilterExpressionReference } from "../../article-filters/types";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
-import { Article, ArticleDeliveryContentType } from "../../shared";
+import {
+  Article,
+  ArticleDeliveryContentType,
+  ArticleDiscordFormatted,
+} from "../../shared";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -73,11 +77,13 @@ describe("DiscordMediumService", () => {
   });
 
   describe("deliverTestArticle", () => {
-    const article = {
+    const article: ArticleDiscordFormatted = {
       flattened: {
         id: "1",
       },
       raw: {} as never,
+      anchors: {},
+      images: {},
     };
 
     const deliveryDetails: TestDiscordDeliveryDetails = {
@@ -200,11 +206,13 @@ describe("DiscordMediumService", () => {
   });
 
   describe("deliverArticle", () => {
-    const article = {
+    const article: ArticleDiscordFormatted = {
       flattened: {
         id: "1",
       },
       raw: {} as never,
+      anchors: {},
+      images: {},
     };
 
     const deliveryDetails: DeliverArticleDetails = {
@@ -350,12 +358,14 @@ describe("DiscordMediumService", () => {
       });
 
       it("sends messages with replaced template strings", async () => {
-        const article = {
+        const article: ArticleDiscordFormatted = {
           flattened: {
             id: "1",
             title: "some-title-here",
           },
           raw: {} as never,
+          anchors: {},
+          images: {},
         };
         const details: DeliverArticleDetails = {
           ...deliveryDetails,
@@ -409,12 +419,14 @@ describe("DiscordMediumService", () => {
       });
 
       it("sends messages with replaced template strings", async () => {
-        const article = {
+        const article: ArticleDiscordFormatted = {
           flattened: {
             id: "1",
             title: "some-title-here",
           },
           raw: {} as never,
+          anchors: {},
+          images: {},
         };
         const details: DeliverArticleDetails = {
           ...deliveryDetails,

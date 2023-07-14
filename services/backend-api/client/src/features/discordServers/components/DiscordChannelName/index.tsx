@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Text, Tooltip } from "@chakra-ui/react";
 import { Loading } from "@/components";
 import { useDiscordServerChannels } from "../../hooks";
+import { GetDiscordChannelType } from "../../constants";
 
 interface Props {
   serverId?: string;
@@ -10,7 +11,14 @@ interface Props {
 }
 
 export const DiscordChannelName: React.FC<Props> = ({ serverId, channelId }) => {
-  const { data, status, error } = useDiscordServerChannels({ serverId });
+  const { data, status, error } = useDiscordServerChannels({
+    serverId,
+    include: [
+      GetDiscordChannelType.Forum,
+      GetDiscordChannelType.Announcement,
+      GetDiscordChannelType.Text,
+    ],
+  });
   const channelNamesById = useMemo(() => {
     const map = new Map<string, string>();
 

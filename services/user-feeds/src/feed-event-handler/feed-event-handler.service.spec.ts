@@ -130,6 +130,7 @@ describe("FeedEventHandlerService", () => {
                 stripImages: false,
               },
               splitOptions: {},
+              mentions: {},
             },
           },
         ],

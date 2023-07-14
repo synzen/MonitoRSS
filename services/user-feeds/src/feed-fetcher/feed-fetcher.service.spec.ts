@@ -65,9 +65,11 @@ describe("FeedFetcherService", () => {
         })
         .replyWithError(thrownError);
 
-      await expect(service.fetch("url")).rejects.toThrowError(
-        FeedRequestNetworkException
-      );
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError(FeedRequestNetworkException);
     });
 
     it("throws the correct error if status code is not ok", async () => {
@@ -78,9 +80,11 @@ describe("FeedFetcherService", () => {
         })
         .reply(400, {});
 
-      await expect(service.fetch("url")).rejects.toThrowError(
-        FeedRequestServerStatusException
-      );
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError(FeedRequestServerStatusException);
     });
 
     it("throws the correct error if request status in body is internal error", async () => {
@@ -93,9 +97,11 @@ describe("FeedFetcherService", () => {
           requestStatus: FeedResponseRequestStatus.InternalError,
         });
 
-      await expect(service.fetch("url")).rejects.toThrowError(
-        FeedRequestInternalException
-      );
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError(FeedRequestInternalException);
     });
 
     it("throws the correct error if request status in body is parse error", async () => {
@@ -108,9 +114,11 @@ describe("FeedFetcherService", () => {
           requestStatus: FeedResponseRequestStatus.ParseError,
         });
 
-      await expect(service.fetch("url")).rejects.toThrowError(
-        FeedRequestParseException
-      );
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError(FeedRequestParseException);
     });
 
     it("throws the correct error if request status in body is bad status code", async () => {
@@ -126,9 +134,11 @@ describe("FeedFetcherService", () => {
           },
         });
 
-      await expect(service.fetch("url")).rejects.toThrowError(
-        FeedRequestBadStatusCodeException
-      );
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError(FeedRequestBadStatusCodeException);
     });
 
     it("throws the correct error if request status in body is a fetch network error", async () => {
@@ -141,9 +151,11 @@ describe("FeedFetcherService", () => {
           requestStatus: FeedResponseRequestStatus.FetchError,
         });
 
-      await expect(service.fetch("url")).rejects.toThrowError(
-        FeedRequestFetchException
-      );
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError(FeedRequestFetchException);
     });
 
     it("returns null if request status is pending", async () => {
@@ -156,7 +168,11 @@ describe("FeedFetcherService", () => {
           requestStatus: FeedResponseRequestStatus.Pending,
         });
 
-      await expect(service.fetch("url")).resolves.toEqual(null);
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).resolves.toEqual(null);
     });
 
     it("returns the response body if request status is success", async () => {
@@ -173,7 +189,11 @@ describe("FeedFetcherService", () => {
           },
         });
 
-      await expect(service.fetch("url")).resolves.toEqual(feedText);
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).resolves.toEqual(feedText);
     });
 
     it("throws an error if feed status is unrecognized", async () => {
@@ -186,7 +206,11 @@ describe("FeedFetcherService", () => {
           requestStatus: "unknown",
         });
 
-      await expect(service.fetch("url")).rejects.toThrowError();
+      await expect(
+        service.fetch("url", {
+          retries: 0,
+        })
+      ).rejects.toThrowError();
     });
   });
 

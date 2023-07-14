@@ -372,16 +372,20 @@ export class ArticlesService {
         clearTimeout(timeout);
         const idType = idResolver.getIDType();
 
-        const mappedArticles = rawArticles.map((rawArticle) => ({
-          flattened: {
-            ...this.articleParserService.flatten(
-              rawArticle as never,
-              options.formatOptions
-            ),
-            id: ArticleIDResolver.getIDTypeValue(rawArticle as never, idType),
-          },
-          raw: rawArticle,
-        }));
+        const mappedArticles: Article[] = rawArticles.map((rawArticle) => {
+          const { flattened } = this.articleParserService.flatten(
+            rawArticle as never,
+            options.formatOptions
+          );
+
+          return {
+            flattened: {
+              ...flattened,
+              id: ArticleIDResolver.getIDTypeValue(rawArticle as never, idType),
+            },
+            raw: rawArticle,
+          };
+        });
 
         resolve({
           articles: mappedArticles,

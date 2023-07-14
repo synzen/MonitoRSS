@@ -7,6 +7,7 @@ import {
   Article,
   ArticleDeliveryContentType,
   ArticleDeliveryErrorCode,
+  ArticleDiscordFormatted,
 } from "../../shared";
 import { JobResponse, RESTProducer } from "@synzen/discord-rest";
 import {
@@ -66,7 +67,7 @@ export class DiscordMediumService implements DeliveryMedium {
   async formatArticle(
     article: Article,
     options: FormatOptions
-  ): Promise<Article> {
+  ): Promise<ArticleDiscordFormatted> {
     return this.articleFormatterService.formatArticleForDiscord(
       article,
       options
@@ -201,8 +202,6 @@ export class DiscordMediumService implements DeliveryMedium {
         filterReferences,
       });
 
-      console.log("sending", JSON.stringify(apiPayloads, null, 2));
-
       const results = await Promise.all(
         apiPayloads.map((payload) =>
           this.producer.fetch(apiUrl, {
@@ -222,7 +221,7 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   async deliverArticle(
-    article: Article,
+    article: ArticleDiscordFormatted,
     details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState[]> {
     const {

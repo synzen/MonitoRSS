@@ -40,6 +40,7 @@ export class FeedFetcherService {
     url: string,
     options?: {
       executeFetchIfNotInCache?: boolean;
+      retries?: number;
     }
   ) {
     const serviceUrl = this.SERVICE_HOST;
@@ -63,7 +64,7 @@ export class FeedFetcherService {
             },
           }),
         {
-          retries: 5,
+          retries: options?.retries ?? 5,
           randomize: true,
         }
       ));

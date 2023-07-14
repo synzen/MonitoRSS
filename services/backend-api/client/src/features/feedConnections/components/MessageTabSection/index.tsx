@@ -162,7 +162,7 @@ export const MessageTabSection = ({
           )}
         </HStack>
         <Stack>
-          <HStack justifyContent="space-between">
+          <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
             <InputGroup maxWidth={["100%", "100%", "400px"]}>
               <InputLeftElement pointerEvents="none">
                 <SearchIcon color="gray.300" />
@@ -176,9 +176,11 @@ export const MessageTabSection = ({
               />
             </InputGroup>
             <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
-              {t(
-                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
-              )}
+              <Text whiteSpace="nowrap">
+                {t(
+                  "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
+                )}
+              </Text>
             </Checkbox>
           </HStack>
           <Box marginBottom="8">

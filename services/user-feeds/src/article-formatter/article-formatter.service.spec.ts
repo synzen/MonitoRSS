@@ -13,20 +13,20 @@ describe("ArticleFormatterService", () => {
       it("returns the image link", async () => {
         const value = '<img src="https://example.com/image.png" />';
 
-        const result = await service.formatValueForDiscord(value);
+        const result = service.formatValueForDiscord(value);
 
-        expect(result).toEqual("https://example.com/image.png");
+        expect(result.value).toEqual("https://example.com/image.png");
       });
 
       it("excludes the image is strip image optin is true", async () => {
         const value = 'Hello <img src="https://example.com/image.png" /> World';
 
-        const result = await service.formatValueForDiscord(value, {
+        const result = service.formatValueForDiscord(value, {
           stripImages: true,
           formatTables: false,
         });
 
-        expect(result).toEqual("Hello World");
+        expect(result.value).toEqual("Hello World");
       });
     });
 
@@ -34,11 +34,11 @@ describe("ArticleFormatterService", () => {
       it.each(["h1", "h2", "h3", "h4", "h5", "h6"])(
         `returns the text bolded for %s`,
         async (elem) => {
-          const result = await service.formatValueForDiscord(
+          const result = service.formatValueForDiscord(
             `<${elem}>hello world</${elem}>`
           );
 
-          expect(result).toEqual("**hello world**");
+          expect(result.value).toEqual("**hello world**");
         }
       );
     });
@@ -47,9 +47,9 @@ describe("ArticleFormatterService", () => {
       it("returns the text bolded", async () => {
         const value = "<strong>hello world</strong>";
 
-        const result = await service.formatValueForDiscord(value);
+        const result = service.formatValueForDiscord(value);
 
-        expect(result).toEqual("**hello world**");
+        expect(result.value).toEqual("**hello world**");
       });
     });
 
@@ -57,9 +57,9 @@ describe("ArticleFormatterService", () => {
       it("returns the text italicized", async () => {
         const value = "<em>hello world</em>";
 
-        const result = await service.formatValueForDiscord(value);
+        const result = service.formatValueForDiscord(value);
 
-        expect(result).toEqual("*hello world*");
+        expect(result.value).toEqual("*hello world*");
       });
     });
 
@@ -67,9 +67,9 @@ describe("ArticleFormatterService", () => {
       it("returns the text underlined", async () => {
         const value = "<u>hello world</u>";
 
-        const result = await service.formatValueForDiscord(value);
+        const result = service.formatValueForDiscord(value);
 
-        expect(result).toEqual("__hello world__");
+        expect(result.value).toEqual("__hello world__");
       });
     });
 
@@ -94,12 +94,12 @@ describe("ArticleFormatterService", () => {
         </tr>
       </table>`;
 
-        const result = await service.formatValueForDiscord(value, {
+        const result = service.formatValueForDiscord(value, {
           formatTables: true,
           stripImages: false,
         });
 
-        expect(result).toEqual(
+        expect(result.value).toEqual(
           `
 \`\`\`
 
@@ -114,11 +114,11 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
     describe("unordered list", () => {
       it("overrides the prefix", async () => {
-        const result = await service.formatValueForDiscord(
+        const result = service.formatValueForDiscord(
           "<ul><li>1</li><li>2</li></ul>"
         );
 
-        expect(result).toEqual("• 1\n• 2");
+        expect(result.value).toEqual("• 1\n• 2");
       });
     });
 
@@ -142,9 +142,9 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
       </tr>
     </table>`;
 
-      const result = await service.formatValueForDiscord(val);
+      const result = service.formatValueForDiscord(val);
 
-      expect(result).toEqual(
+      expect(result.value).toEqual(
         `
 Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/FortniteStatusBot to r/FORTnITE
 [link] [comments]

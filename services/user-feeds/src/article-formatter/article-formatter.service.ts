@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { convert, HtmlToTextOptions, SelectorDefinition } from "html-to-text";
-import { Article } from "../shared";
+import { Article, ArticleDiscordFormatted } from "../shared";
 import { FormatOptions } from "./types";
 
 @Injectable()
@@ -8,29 +8,32 @@ export class ArticleFormatterService {
   async formatArticleForDiscord(
     article: Article,
     options: Omit<FormatOptions, "split">
-  ): Promise<Article> {
-    const newRecord: Article = {
-      flattened: {
-        ...article.flattened,
-      },
+  ): Promise<ArticleDiscordFormatted> {
+    const flattened: Article["flattened"] = {
+      ...article.flattened,
+    };
+
+    Object.keys(flattened).map((key) => {
+      const { value } = this.formatValueForDiscord(flattened[key], options);
+
+      flattened[key] = value;
+    });
+
+    return {
+      flattened,
       raw: {
         ...article.raw,
       },
     };
-
-    await Promise.all(
-      Object.keys(newRecord.flattened).map(async (key) => {
-        newRecord.flattened[key] = await this.formatValueForDiscord(
-          newRecord.flattened[key],
-          options
-        );
-      })
-    );
-
-    return newRecord;
   }
 
-  async formatValueForDiscord(value: string, options?: FormatOptions) {
+  formatValueForDiscord(
+    value: string,
+    options?: FormatOptions
+  ): { value: string } {
+    const images: string[] = [];
+    const anchors: string[] = [];
+
     const tableSelector: SelectorDefinition = {
       selector: "table",
       format: "codedDataTable",
@@ -41,6 +44,7 @@ export class ArticleFormatterService {
 
     const imageSelector: SelectorDefinition = {
       selector: "img",
+      format: "images",
       options: {
         linkBrackets: false,
       },
@@ -63,6 +67,7 @@ export class ArticleFormatterService {
 
     const anchorSelector: SelectorDefinition = {
       selector: "a",
+      format: "anchors",
       options: {
         ignoreHref: true,
       },
@@ -111,6 +116,28 @@ export class ArticleFormatterService {
             builder.closeBlock(options);
           }
         },
+        images: (elem, walk, builder, options) => {
+          const imagesFormatter = builder.options.formatters.image;
+
+          if (imagesFormatter) {
+            imagesFormatter(elem, walk, builder, options);
+
+            if (elem.attribs.src) {
+              images.push(elem.attribs.src);
+            }
+          }
+        },
+        anchors: (elem, walk, builder, options) => {
+          const anchorsFormatter = builder.options.formatters.anchor;
+
+          if (anchorsFormatter) {
+            anchorsFormatter(elem, walk, builder, options);
+
+            if (elem.attribs.href) {
+              anchors.push(elem.attribs.href);
+            }
+          }
+        },
       },
       selectors: [
         imageSelector,
@@ -130,7 +157,9 @@ export class ArticleFormatterService {
       imageSelector.format = "skip";
     }
 
-    return convert(value, htmlToTextOptions);
+    return {
+      value: convert(value, htmlToTextOptions),
+    };
   }
 
   applySplit(text: string, splitOptions?: FormatOptions["split"]) {

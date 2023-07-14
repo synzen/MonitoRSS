@@ -64,6 +64,9 @@ describe("ArticlesService", () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
+    articleParserService.flatten.mockReturnValue({
+      flattened: {},
+    });
   });
 
   beforeEach(async () => {

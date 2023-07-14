@@ -25,8 +25,10 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        [`author${DL}name${DL}tag`]: article.author.name.tag,
+        flattened: {
+          id: article.id,
+          [`author${DL}name${DL}tag`]: article.author.name.tag,
+        },
       });
     });
 
@@ -39,9 +41,11 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        [`tags${DL}0`]: article.tags[0],
-        [`tags${DL}1`]: article.tags[1],
+        flattened: {
+          id: article.id,
+          [`tags${DL}0`]: article.tags[0],
+          [`tags${DL}1`]: article.tags[1],
+        },
       });
     });
 
@@ -61,9 +65,11 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        [`tags${DL}0${DL}name`]: article.tags[0].name,
-        [`tags${DL}1${DL}name`]: article.tags[1].name,
+        flattened: {
+          id: article.id,
+          [`tags${DL}0${DL}name`]: article.tags[0].name,
+          [`tags${DL}1${DL}name`]: article.tags[1].name,
+        },
       });
     });
 
@@ -85,13 +91,15 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        [`tags${DL}0${DL}name`]: article.tags[0].name,
-        [`tags${DL}0${DL}aliases${DL}0`]: article.tags[0].aliases[0],
-        [`tags${DL}0${DL}aliases${DL}1`]: article.tags[0].aliases[1],
-        [`tags${DL}1${DL}name`]: article.tags[1].name,
-        [`tags${DL}1${DL}aliases${DL}0`]: article.tags[1].aliases[0],
-        [`tags${DL}1${DL}aliases${DL}1`]: article.tags[1].aliases[1],
+        flattened: {
+          id: article.id,
+          [`tags${DL}0${DL}name`]: article.tags[0].name,
+          [`tags${DL}0${DL}aliases${DL}0`]: article.tags[0].aliases[0],
+          [`tags${DL}0${DL}aliases${DL}1`]: article.tags[0].aliases[1],
+          [`tags${DL}1${DL}name`]: article.tags[1].name,
+          [`tags${DL}1${DL}aliases${DL}0`]: article.tags[1].aliases[0],
+          [`tags${DL}1${DL}aliases${DL}1`]: article.tags[1].aliases[1],
+        },
       });
     });
 
@@ -106,8 +114,10 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        [`a${DL}${DL}b`]: article.a[`${DL}b`],
+        flattened: {
+          id: article.id,
+          [`a${DL}${DL}b`]: article.a[`${DL}b`],
+        },
       });
     });
 
@@ -130,7 +140,9 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
+        flattened: {
+          id: article.id,
+        },
       });
     });
 
@@ -150,7 +162,9 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
+        flattened: {
+          id: article.id,
+        },
       });
     });
 
@@ -170,7 +184,9 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
+        flattened: {
+          id: article.id,
+        },
       });
     });
 
@@ -190,7 +206,9 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
+        flattened: {
+          id: article.id,
+        },
       });
     });
 
@@ -210,9 +228,49 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        a: "1",
-        [`b${DL}c${DL}d${DL}e`]: "2",
+        flattened: {
+          id: article.id,
+          a: "1",
+          [`b${DL}c${DL}d${DL}e`]: "2",
+        },
+      });
+    });
+
+    it("extracts images", () => {
+      const article = {
+        id: "123",
+        description:
+          'hello <img src="https://example.com/image.jpg" />' +
+          ' world <img src="https://example.com/image2.jpg" />',
+        summary: "hello world <img src='https://example.com/image3.jpg' />",
+      };
+
+      const flattenedArticle = service.flatten(article);
+
+      expect(flattenedArticle).toMatchObject({
+        flattened: {
+          [`extracted::description::image::1`]: "https://example.com/image.jpg",
+          [`extracted::description::image::2`]:
+            "https://example.com/image2.jpg",
+          [`extracted::summary::image::1`]: "https://example.com/image3.jpg",
+        },
+      });
+    });
+
+    it("extracts anchors", () => {
+      const article = {
+        id: "123",
+        description: 'hello <a href="https://example.com">world</a>',
+        summary: 'hello world <a href="https://example.com">world</a>',
+      };
+
+      const flattenedArticle = service.flatten(article);
+
+      expect(flattenedArticle).toMatchObject({
+        flattened: {
+          [`extracted::description::anchor::1`]: "https://example.com",
+          [`extracted::summary::anchor::1`]: "https://example.com",
+        },
       });
     });
   });
@@ -234,9 +292,11 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article);
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        a: dayjs(article.a).tz("UTC").format(),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e).tz("UTC").format(),
+        flattened: {
+          id: article.id,
+          a: dayjs(article.a).tz("UTC").format(),
+          [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e).tz("UTC").format(),
+        },
       });
     });
 
@@ -261,11 +321,13 @@ describe("ArticleParserService", () => {
       });
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        a: dayjs(article.a).tz("UTC").format(dateFormat),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-          .tz("UTC")
-          .format(dateFormat),
+        flattened: {
+          id: article.id,
+          a: dayjs(article.a).tz("UTC").format(dateFormat),
+          [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+            .tz("UTC")
+            .format(dateFormat),
+        },
       });
     });
 
@@ -290,11 +352,13 @@ describe("ArticleParserService", () => {
       });
 
       expect(flattenedArticle).toEqual({
-        id: article.id,
-        a: dayjs(article.a).tz(dateTimezone).format(),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-          .tz(dateTimezone)
-          .format(),
+        flattened: {
+          id: article.id,
+          a: dayjs(article.a).tz(dateTimezone).format(),
+          [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+            .tz(dateTimezone)
+            .format(),
+        },
       });
     });
   });
