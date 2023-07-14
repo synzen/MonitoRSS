@@ -66,14 +66,22 @@ export class FeedsService {
       ? Math.min(articles.length - 1, skip + limit - 1)
       : articles.length - 1;
 
-    const matchedArticles = getNumbersInRange({
-      min: skip,
-      max,
-      countToGet: limit,
-      random,
-    }).map((index) => {
-      return articles[index];
-    });
+    let matchedArticles: Article[];
+
+    if (filters?.articleId) {
+      matchedArticles = articles.filter(
+        (article) => article.flattened.id === filters.articleId
+      );
+    } else {
+      matchedArticles = getNumbersInRange({
+        min: skip,
+        max,
+        countToGet: limit,
+        random,
+      }).map((index) => {
+        return articles[index];
+      });
+    }
 
     const matchedArticlesWithProperties = matchedArticles.map((article) => {
       const trimmed: Article = {

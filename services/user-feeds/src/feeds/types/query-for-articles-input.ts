@@ -10,5 +10,6 @@ export interface QueryForArticlesInput {
   filters?: {
     expression?: Record<string, unknown>;
     returnType: GetUserFeedArticlesFilterReturnType;
+    articleId?: string;
   };
 }

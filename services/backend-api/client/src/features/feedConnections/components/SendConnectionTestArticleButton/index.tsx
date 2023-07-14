@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FiPlay } from "react-icons/fi";
 import { FeedConnectionType, SendTestArticleDeliveryStatus } from "../../../../types";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { notifyError } from "../../../../utils/notifyError";
@@ -209,7 +210,12 @@ export const SendConnectionTestArticleButton = ({
       <ArticleSelectPrompt
         feedId={feedId}
         trigger={
-          <Button variant="solid" colorScheme="blue" isLoading={status === "loading"}>
+          <Button
+            variant="solid"
+            colorScheme="blue"
+            isLoading={status === "loading"}
+            leftIcon={<FiPlay />}
+          >
             {t("features.feedConnections.components.sendTestArticleButton.text")}
           </Button>
         }

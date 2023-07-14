@@ -12,7 +12,8 @@ export interface GetUserFeedArticlesInput {
     selectProperties?: string[];
     filters?: {
       expression?: Record<string, any>;
-      returnType: GetArticlesFilterReturnType;
+      returnType?: GetArticlesFilterReturnType;
+      articleId?: string;
     };
     formatter: {
       options: {

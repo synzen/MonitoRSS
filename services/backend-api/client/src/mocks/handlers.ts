@@ -318,12 +318,20 @@ const handlers = [
   }),
 
   rest.post("/api/v1/user-feeds/:feedId/get-articles", async (req, res, ctx) => {
-    const { skip, limit } = await req.json();
+    const { skip, limit, filters } = await req.json();
 
     const useSkip = skip || 0;
     const useLimit = limit || 10;
 
-    const articles = mockUserFeedArticles.slice(useSkip, useSkip + useLimit);
+    const articles = mockUserFeedArticles
+      .filter((article) => {
+        if (filters.articleId) {
+          return article.id === filters.articleId;
+        }
+
+        return true;
+      })
+      .slice(useSkip, useSkip + useLimit);
 
     return res(
       ctx.delay(500),

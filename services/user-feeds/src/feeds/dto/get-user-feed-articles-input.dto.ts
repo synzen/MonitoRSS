@@ -29,6 +29,10 @@ class FiltersDto {
   @IsObject()
   @IsOptional()
   expression?: Record<string, unknown>;
+
+  @IsString()
+  @IsOptional()
+  articleId?: string;
 }
 
 export class GetUserFeedArticlesInputDto {

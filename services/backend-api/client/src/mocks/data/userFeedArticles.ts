@@ -9,7 +9,7 @@ export const mockUserFeedArticles = [
   {
     id: "2",
     title: "Meteor Shower Tonight: How to Watch the Geminids",
-    description: "The Geminids are one of the most reliable meteor showers of the year",
+    description: "The Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the yearThe Geminids are one of the most reliable meteor showers of the year",
   },
   {
     id: "3",

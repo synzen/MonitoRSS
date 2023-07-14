@@ -1,16 +1,22 @@
-import { RepeatIcon } from "@chakra-ui/icons";
+import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import {
   Alert,
   AlertIcon,
   Box,
   Button,
-  Flex,
+  Checkbox,
+  HStack,
   Heading,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { FiMousePointer } from "react-icons/fi";
+import { useState } from "react";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
@@ -20,6 +26,7 @@ import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { FeedConnectionType } from "../../../../types";
 import { DiscordMessageForm } from "../DiscordMessageForm";
+import { ArticleSelectPrompt } from "../../../feed/components";
 
 interface Props {
   feedId: string;
@@ -45,6 +52,9 @@ export const MessageTabSection = ({
   include,
   guildId,
 }: Props) => {
+  const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
+  const [placeholderTableSearch, setPlaceholderTableSearch] = useState<string>("");
+  const [hideEmptyPlaceholders, setHideEmptyPlaceholders] = useState<boolean>(false);
   const {
     data: userFeedArticles,
     refetch: refetchUserFeedArticle,
@@ -58,6 +68,9 @@ export const MessageTabSection = ({
       skip: 0,
       selectProperties: ["*"],
       formatter: articleFormatter,
+      filters: {
+        articleId: selectedArticleId,
+      },
     },
   });
 
@@ -68,10 +81,15 @@ export const MessageTabSection = ({
 
   const onClickRandomFeedArticle = async () => {
     try {
+      setSelectedArticleId(undefined);
       await refetchUserFeedArticle();
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
+  };
+
+  const onSelectedArticle = async (articleId: string) => {
+    setSelectedArticleId(articleId);
   };
 
   const fetchErrorAlert = userFeedArticlesStatus === "error" && (
@@ -106,7 +124,7 @@ export const MessageTabSection = ({
   return (
     <Stack spacing={12}>
       <Stack spacing={4}>
-        <Flex justifyContent="space-between" alignItems="center">
+        <HStack alignItems="center" spacing={4}>
           <Heading as="h2" size="md">
             {t(
               "features.feedConnections.components." +
@@ -114,30 +132,76 @@ export const MessageTabSection = ({
             )}
           </Heading>
           {!hasAlert && (
-            <Button
-              size="sm"
-              leftIcon={<RepeatIcon />}
-              isLoading={userFeedArticlesFetchStatus === "fetching"}
-              onClick={onClickRandomFeedArticle}
-            >
-              {t("features.feedConnections.components.articlePlaceholderTable.randomButton")}
-            </Button>
+            <HStack alignItems="center">
+              <ArticleSelectPrompt
+                trigger={
+                  <Button
+                    size="sm"
+                    leftIcon={<FiMousePointer />}
+                    isLoading={!!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
+                    isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                  >
+                    {t("features.feedConnections.components.articlePlaceholderTable.selectArticle")}
+                  </Button>
+                }
+                feedId={feedId}
+                articleFormatter={articleFormatter}
+                onArticleSelected={onSelectedArticle}
+                onClickRandomArticle={onClickRandomFeedArticle}
+              />
+              <Button
+                size="sm"
+                leftIcon={<RepeatIcon />}
+                isLoading={!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
+                isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                onClick={onClickRandomFeedArticle}
+              >
+                {t("features.feedConnections.components.articlePlaceholderTable.randomButton")}
+              </Button>
+            </HStack>
           )}
-        </Flex>
-        <Box marginBottom="8">
-          {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
-          {userFeedArticlesStatus === "loading" && (
-            <Stack alignItems="center">
-              <Spinner size="xl" />
-              <Text>
-                {t("features.feedConnections.components.articlePlaceholderTable.loadingArticle")}
-              </Text>
-            </Stack>
-          )}
-          {!hasAlert && firstArticle && (
-            <ArticlePlaceholderTable asPlaceholders article={userFeedArticles.result.articles[0]} />
-          )}
-        </Box>
+        </HStack>
+        <Stack>
+          <HStack justifyContent="space-between">
+            <InputGroup maxWidth={["100%", "100%", "400px"]}>
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.300" />
+              </InputLeftElement>
+              <Input
+                isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                placeholder={t(
+                  "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder"
+                )}
+                onChange={(e) => setPlaceholderTableSearch(e.target.value.toLowerCase())}
+              />
+            </InputGroup>
+            <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
+              {t(
+                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
+              )}
+            </Checkbox>
+          </HStack>
+          <Box marginBottom="8">
+            {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
+            {userFeedArticlesStatus === "loading" && (
+              <Stack alignItems="center">
+                <Spinner size="xl" />
+                <Text>
+                  {t("features.feedConnections.components.articlePlaceholderTable.loadingArticle")}
+                </Text>
+              </Stack>
+            )}
+            {!hasAlert && firstArticle && (
+              <ArticlePlaceholderTable
+                asPlaceholders
+                article={userFeedArticles.result.articles[0]}
+                searchText={placeholderTableSearch}
+                hideEmptyPlaceholders={hideEmptyPlaceholders}
+                isFetching={userFeedArticlesFetchStatus === "fetching"}
+              />
+            )}
+          </Box>
+        </Stack>
       </Stack>
       <Stack spacing={4}>
         <DiscordMessageForm
