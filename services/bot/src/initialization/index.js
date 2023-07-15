@@ -9,5 +9,5 @@ module.exports = {
   populateSchedules,
   setupCommands,
   setupModels,
-  setupRateLimiters,
+  setupRateLimiters
 }

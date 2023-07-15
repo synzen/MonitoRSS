@@ -46,7 +46,7 @@ async function inputMaxLengthFn (message, data) {
     feed.split.maxLength = num
     await feed.save()
     log.info({
-      guild: guild,
+      guild,
       user: author
     }, `Message splitting maxLength for ${feed.url} setting to ${content}`)
   }

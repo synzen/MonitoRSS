@@ -17,9 +17,11 @@ function selectWebhookVisual (data) {
   const { profile, selectedFeed: feed } = data
   const translate = Translator.createProfileTranslator(profile)
   const webhook = feed.webhook
-  return new MessageVisual(`${webhook ? translate('commands.webhook.existingFound', {
+  return new MessageVisual(`${webhook
+? translate('commands.webhook.existingFound', {
     webhookMention: `<@${webhook.id}>`
-  }) : ''}${translate('commands.webhook.prompt')}`)
+  })
+: ''}${translate('commands.webhook.prompt')}`)
 }
 
 /**

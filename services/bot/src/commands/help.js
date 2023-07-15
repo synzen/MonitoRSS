@@ -9,9 +9,11 @@ module.exports = async (message, command) => {
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const localeToUse = profile ? profile.locale : config.bot.locale
   const translate = Translator.createLocaleTranslator(localeToUse)
-  const webInfo = config.webURL ? ` ${translate('commands.help.controlPanelLink', {
+  const webInfo = config.webURL
+    ? ` ${translate('commands.help.controlPanelLink', {
     url: config.webURL
-  })}` : ''
+  })}`
+    : ''
   let msg = `${webInfo} ${translate('commands.help.description', { prefix: config.bot.prefix })}\n\n`
   const commandDescriptions = Translator.getCommandDescriptions(localeToUse)
   for (const name in commandDescriptions) {

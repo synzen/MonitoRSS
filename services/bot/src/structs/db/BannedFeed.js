@@ -36,7 +36,7 @@ class BannedFeed extends Base {
    */
   static async findForUrl (url, guildId) {
     return BannedFeed.getByQuery({
-      url: url,
+      url,
       $or: [{
         guildIds: guildId
       }, {

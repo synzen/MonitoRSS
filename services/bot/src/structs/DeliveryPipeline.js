@@ -7,16 +7,6 @@ const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
 const { Webhook } = require('discord.js')
 
-const stripNullsOut = obj => {
-  const newObj = {}
-  for (const key in obj) {
-    if (obj[key] !== null) {
-      newObj[key] = obj[key]
-    }
-  }
-  return newObj
-}
-
 /**
  * Core delivery pipeline
  */

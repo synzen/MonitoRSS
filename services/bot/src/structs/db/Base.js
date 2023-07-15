@@ -257,6 +257,7 @@ class Base {
         return JSON.parse(contents)
       } catch (err) {
         log.warn(err, `Failed to parse json at ${folderPath} ${fileNames[index]}`)
+        return null
       }
     })
     return jsons
@@ -309,7 +310,7 @@ class Base {
       return []
     }
 
-    let allResults = []
+    const allResults = []
     let latestResults = []
 
     do {
@@ -320,13 +321,13 @@ class Base {
       }).sort({
         _id: -1
       }).limit(npp).exec()
-  
+
       if (results.length > 0) {
         largestId = results[results.length - 1]._id
       } else {
         largestId = null
       }
-      
+
       latestResults = results
       allResults.push(...results)
     } while (latestResults.length === npp && largestId)

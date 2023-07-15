@@ -266,7 +266,7 @@ class ClientManager extends EventEmitter {
       this.scheduleManager.beginTimers()
       this.log.info('Started fetch intervals')
     } else {
-      this.log.info('Feed cycles disabled, either due to dev levels or config.disableFeedCycles');
+      this.log.info('Feed cycles disabled, either due to dev levels or config.disableFeedCycles')
     }
   }
 

@@ -10,7 +10,7 @@ const logSchema = Joi.object({
   unfiltered: Joi.bool().strict().default(true),
   failedFeeds: Joi.bool().strict().default(true),
   rateLimitHits: Joi.bool().strict().default(true),
-  datadogApikey: Joi.string().allow('').default(''),
+  datadogApikey: Joi.string().allow('').default('')
 })
 
 const botSchema = Joi.object({

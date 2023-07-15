@@ -45,7 +45,7 @@ async function inputSplitCharacterFn (message, data) {
     feed.split.char = content
     await feed.save()
     log.info({
-      guild: guild,
+      guild,
       user: author
     }, `Message splitting split character for ${feed.url} setting to ${content}`)
   }

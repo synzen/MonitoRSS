@@ -43,7 +43,7 @@ async function enableFn (message, data) {
   await feed.save()
   const log = createLogger(client.shard.ids[0])
   log.info({
-    guild: guild,
+    guild,
     user: author
   }, `Enabled message splitting for ${feed.url}`)
   return data

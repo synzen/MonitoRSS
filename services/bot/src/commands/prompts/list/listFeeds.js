@@ -34,6 +34,8 @@ function queryFeeds (feeds, query) {
         return true
       }
     }
+
+    return false
   })
 }
 

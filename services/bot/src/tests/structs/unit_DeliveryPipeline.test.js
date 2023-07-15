@@ -208,7 +208,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       const newArticle = NewArticle()
       const articleMessage = {
         foo: 'baz',
-        getMedium: jest.fn().mockResolvedValue({}),
+        getMedium: jest.fn().mockResolvedValue({})
       }
 
       await pipeline.sendNewArticle(newArticle, articleMessage)
@@ -221,7 +221,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       const newArticle = NewArticle()
       const articleMessage = {
         foo: 'baz',
-        getMedium: jest.fn().mockResolvedValue(null),
+        getMedium: jest.fn().mockResolvedValue(null)
       }
 
       await pipeline.sendNewArticle(newArticle, articleMessage)

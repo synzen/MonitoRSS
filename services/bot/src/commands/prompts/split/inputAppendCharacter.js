@@ -40,7 +40,7 @@ async function inputAppendCharacterFn (message, data) {
     feed.split.append = content
     await feed.save()
     log.info({
-      guild: guild,
+      guild,
       user: author
     }, `Message splitting append character for ${feed.url} setting to ${content}`)
   }

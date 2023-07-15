@@ -36,7 +36,7 @@ describe('Int::structs/db/BannedFeed Database', function () {
     it('does not return a record for a url that matches but for a guild that does not apply', async () => {
       const url = 'https://www.reddit.com/r/'
       await collection.insertOne({
-        url: url,
+        url,
         guildIds: ['123']
       })
       const record = await BannedFeed.findForUrl(url, '456')
@@ -58,7 +58,7 @@ describe('Int::structs/db/BannedFeed Database', function () {
       const url = 'https://www.reddit.com/r/'
       const guildId = 'guild-id'
       await collection.insertOne({
-        url: url,
+        url,
         guildIds: [guildId]
       })
       const record = await BannedFeed.findForUrl(url, guildId)

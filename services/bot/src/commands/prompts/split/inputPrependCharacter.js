@@ -40,7 +40,7 @@ async function inputPrependCharacterFn (message, data) {
     feed.split.prepend = content
     await feed.save()
     log.info({
-      guild: guild,
+      guild,
       user: author
     }, `Message splitting prepend character for ${feed.url} setting to ${content}`)
   }
