@@ -15,6 +15,8 @@ export async function setupHttpApi() {
     AppModule.forRoot(),
     new FastifyAdapter()
   );
+  app.enableShutdownHooks();
+
   const configService = app.get(ConfigService);
   const httpAdapterHost = app.get(HttpAdapterHost);
 

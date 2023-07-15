@@ -8,6 +8,8 @@ export async function setupFeedListener() {
     AppModule.forFeedListenerService()
   );
 
+  app.enableShutdownHooks();
+
   const orm = app.get(MikroORM);
 
   setInterval(() => {

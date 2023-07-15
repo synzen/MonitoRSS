@@ -1,8 +1,7 @@
 import { MikroOrmModule } from "@mikro-orm/nestjs";
-import { DynamicModule, Module } from "@nestjs/common";
+import { DynamicModule, Module, OnApplicationShutdown } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
 import { config } from "./config";
 import { FeedFetcherModule } from "./feed-fetcher/feed-fetcher.module";
 import { ArticlesModule } from "./articles/articles.module";
@@ -11,6 +10,8 @@ import { ArticleFiltersModule } from "./article-filters/article-filters.module";
 import { DeliveryRecordModule } from "./delivery-record/delivery-record.module";
 import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.module";
 import { FeedsModule } from "./feeds/feeds.module";
+import { MikroORM } from "@mikro-orm/core";
+import logger from "./shared/utils/logger";
 
 @Module({
   imports: [
@@ -22,9 +23,9 @@ import { FeedsModule } from "./feeds/feeds.module";
     FeedsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
-export class AppModule {
+export class AppModule implements OnApplicationShutdown {
   static forRoot(): DynamicModule {
     const configVals = config();
 
@@ -40,6 +41,9 @@ export class AppModule {
           type: "postgresql",
           forceUtcTimezone: true,
           timezone: "UTC",
+          pool: {
+            min: 0,
+          },
         }),
         ConfigModule.forRoot({
           isGlobal: true,
@@ -60,5 +64,20 @@ export class AppModule {
         FeedEventHandlerModule.forFeedListenerService(),
       ],
     };
+  }
+
+  constructor(private readonly orm: MikroORM) {}
+
+  async onApplicationShutdown(signal?: string | undefined) {
+    logger.info(`Received ${signal}. Shutting down db connection...`);
+
+    try {
+      await this.orm.close();
+      logger.info(`Successfully closed db connection`);
+    } catch (err) {
+      logger.error("Failed to close database connection", {
+        error: (err as Error).stack,
+      });
+    }
   }
 }
