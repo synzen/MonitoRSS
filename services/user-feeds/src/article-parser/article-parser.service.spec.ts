@@ -249,10 +249,9 @@ describe("ArticleParserService", () => {
 
       expect(flattenedArticle).toMatchObject({
         flattened: {
-          [`extracted::description::image::1`]: "https://example.com/image.jpg",
-          [`extracted::description::image::2`]:
-            "https://example.com/image2.jpg",
-          [`extracted::summary::image::1`]: "https://example.com/image3.jpg",
+          [`extracted::description::image1`]: "https://example.com/image.jpg",
+          [`extracted::description::image2`]: "https://example.com/image2.jpg",
+          [`extracted::summary::image1`]: "https://example.com/image3.jpg",
         },
       });
     });
@@ -268,8 +267,8 @@ describe("ArticleParserService", () => {
 
       expect(flattenedArticle).toMatchObject({
         flattened: {
-          [`extracted::description::anchor::1`]: "https://example.com",
-          [`extracted::summary::anchor::1`]: "https://example.com",
+          [`extracted::description::anchor1`]: "https://example.com",
+          [`extracted::summary::anchor1`]: "https://example.com",
         },
       });
     });

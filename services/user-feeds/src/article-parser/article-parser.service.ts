@@ -5,7 +5,7 @@ import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
 import { Article, UserFeedFormatOptions } from "../shared";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { convert, HtmlToTextOptions, SelectorDefinition } from "html-to-text";
+import { parse, valid } from "node-html-parser";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
@@ -80,7 +80,11 @@ export class ArticleParserService {
       newRecord[key] = String(value);
     });
 
-    Object.entries(newRecord).forEach(([key, value]) => {
+    const entries = Object.entries(newRecord);
+
+    for (let i = 0; i < entries.length; i++) {
+      const [key, value] = entries[i];
+
       const { images: imageList, anchors: anchorList } =
         this.extractExtraInfo(value);
 
@@ -99,7 +103,7 @@ export class ArticleParserService {
           newRecord[`extracted::${key}::anchor${i + 1}`] = anchor;
         }
       }
-    });
+    }
 
     return {
       flattened: newRecord,
@@ -110,51 +114,26 @@ export class ArticleParserService {
     images: string[];
     anchors: string[];
   } {
-    const images: string[] = [];
-    const anchors: string[] = [];
+    const isValid = valid(inputString);
 
-    const imageSelector: SelectorDefinition = {
-      selector: "img",
-      format: "images",
-    };
+    if (!isValid) {
+      return {
+        images: [],
+        anchors: [],
+      };
+    }
 
-    const anchorSelector: SelectorDefinition = {
-      selector: "a",
-      format: "anchors",
-      options: {
-        ignoreHref: true,
-      },
-    };
+    const root = parse(inputString);
 
-    const htmlToTextOptions: HtmlToTextOptions = {
-      formatters: {
-        images: (elem, walk, builder, options) => {
-          const imagesFormatter = builder.options.formatters.image;
+    const images = root
+      .getElementsByTagName("img")
+      .map((e) => e.getAttribute("src"))
+      .filter((e): e is string => !!e);
 
-          if (imagesFormatter) {
-            imagesFormatter(elem, walk, builder, options);
-
-            if (elem.attribs.src) {
-              images.push(elem.attribs.src);
-            }
-          }
-        },
-        anchors: (elem, walk, builder, options) => {
-          const anchorsFormatter = builder.options.formatters.anchor;
-
-          if (anchorsFormatter) {
-            anchorsFormatter(elem, walk, builder, options);
-
-            if (elem.attribs.href) {
-              anchors.push(elem.attribs.href);
-            }
-          }
-        },
-      },
-      selectors: [imageSelector, anchorSelector],
-    };
-
-    convert(inputString, htmlToTextOptions);
+    const anchors = root
+      .querySelectorAll("a")
+      .map((e) => e.getAttribute("href"))
+      .filter((e): e is string => !!e);
 
     return {
       images,
