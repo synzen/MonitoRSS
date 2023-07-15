@@ -1,4 +1,3 @@
-import './utils/dd-tracer';
 import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
@@ -17,6 +16,8 @@ async function bootstrap() {
     AppModule.forRoot(),
     new FastifyAdapter(),
   );
+  app.enableShutdownHooks();
+
   const orm = app.get(MikroORM);
   const httpAdapterHost = app.get(HttpAdapterHost);
 
