@@ -38,6 +38,8 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, guildId }: Props) 
     name: "placeholderLimits",
   });
 
+  const currentPlaceholders = fields.map((f) => f.placeholder);
+
   return (
     <Stack spacing={4}>
       <HStack justifyContent="space-between">
@@ -46,6 +48,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, guildId }: Props) 
         </Text>
         <PlaceholderLimitDialog
           feedId={feedId}
+          excludePlaceholders={currentPlaceholders}
           trigger={
             <Button leftIcon={<AddIcon fontSize="xs" />} size="sm">
               {t("common.buttons.add")}
@@ -106,6 +109,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, guildId }: Props) 
                           />
                           <MenuList>
                             <PlaceholderLimitDialog
+                              excludePlaceholders={currentPlaceholders}
                               mode="update"
                               trigger={<MenuItem>{t("common.buttons.edit")}</MenuItem>}
                               onSubmit={(limit) => {
