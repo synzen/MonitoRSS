@@ -93,7 +93,14 @@ export const ArticlePlaceholderTable = ({
                     return (
                       <Tr key={key}>
                         <Td>{placeholderKey}</Td>
-                        <Td whiteSpace="normal">{value}</Td>
+                        <Td whiteSpace="normal">
+                          {value.split("\n").map((line, idx) => (
+                            // eslint-disable-next-line react/no-array-index-key
+                            <span key={idx}>
+                              {line} <br />
+                            </span>
+                          ))}
+                        </Td>
                       </Tr>
                     );
                   })}
