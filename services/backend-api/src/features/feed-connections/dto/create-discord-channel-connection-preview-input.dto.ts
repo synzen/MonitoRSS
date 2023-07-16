@@ -13,6 +13,7 @@ import {
   DiscordConnectionFormatterOptions,
   UserFeedFormatOptions,
   MentionsOptionsDto,
+  DiscordPlaceholderLimitOptions,
 } from "../../../common";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
 
@@ -52,6 +53,12 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   mentions?: MentionsOptionsDto | null;
+
+  @IsOptional()
+  @Type(() => DiscordPlaceholderLimitOptions)
+  @ValidateNested({ each: true })
+  @IsArray()
+  placeholderLimits?: DiscordPlaceholderLimitOptions[];
 
   @IsOptional()
   @Type(() => DiscordConnectionFormatterOptions)

@@ -8,7 +8,7 @@ export function replaceTemplateString(
         options: { appendString?: string | null; limit: number }
       ) => string;
       limits?: Array<{
-        limit: number;
+        characterCount: number;
         key: string;
         appendString?: string | null;
       }> | null;
@@ -40,7 +40,7 @@ export function replaceTemplateString(
 
       if (limit) {
         value = options.split.func(value, {
-          limit: limit.limit,
+          limit: limit.characterCount,
           appendString: limit.appendString,
         });
       }

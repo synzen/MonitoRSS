@@ -37,6 +37,9 @@ export interface UpdateDiscordChannelConnectionInput {
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       formatter?: DiscordChannelConnection["details"]["formatter"] | null;
+      placeholderLimits?:
+        | DiscordChannelConnection["details"]["placeholderLimits"]
+        | null;
       channel?: {
         id: string;
       };
@@ -64,6 +67,9 @@ interface CreatePreviewInput {
     | null;
   articleId?: string;
   mentions?: DiscordChannelConnection["mentions"] | null;
+  placeholderLimits?:
+    | DiscordChannelConnection["details"]["placeholderLimits"]
+    | null;
 }
 
 @Injectable()
@@ -275,6 +281,7 @@ export class FeedConnectionsDiscordChannelsService {
         formatter: connection.details.formatter,
         mentions: connection.mentions,
         splitOptions: connection.splitOptions,
+        placeholderLimits: connection.details.placeholderLimits,
       },
     } as const;
 
@@ -293,6 +300,7 @@ export class FeedConnectionsDiscordChannelsService {
     splitOptions,
     articleId,
     mentions,
+    placeholderLimits,
   }: CreatePreviewInput) {
     const payload = {
       type: "discord",
@@ -337,6 +345,7 @@ export class FeedConnectionsDiscordChannelsService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
         mentions: mentions,
+        placeholderLimits,
       },
     } as const;
 

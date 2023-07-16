@@ -41,6 +41,9 @@ export interface UpdateDiscordWebhookConnectionInput {
         name?: string;
         iconUrl?: string;
       };
+      placeholderLimits:
+        | DiscordWebhookConnection["details"]["placeholderLimits"]
+        | null;
     };
   };
 }
@@ -55,6 +58,9 @@ interface CreatePreviewInput {
   feedFormatOptions: UserFeed["formatOptions"] | null;
   connectionFormatOptions?:
     | DiscordWebhookConnection["details"]["formatter"]
+    | null;
+  placeholderLimits?:
+    | DiscordWebhookConnection["details"]["placeholderLimits"]
     | null;
   articleId?: string;
 }
@@ -294,6 +300,7 @@ export class FeedConnectionsDiscordWebhooksService {
         formatter: connection.details.formatter,
         splitOptions: connection.splitOptions,
         mentions: connection.mentions,
+        placeholderLimits: connection.details.placeholderLimits,
       },
     } as const;
 
@@ -312,6 +319,7 @@ export class FeedConnectionsDiscordWebhooksService {
     embeds,
     splitOptions,
     mentions,
+    placeholderLimits,
   }: CreatePreviewInput): Promise<SendTestArticleResult> {
     const payload = {
       type: "discord",
@@ -359,6 +367,7 @@ export class FeedConnectionsDiscordWebhooksService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions || undefined,
         mentions: mentions || undefined,
+        placeholderLimits,
       },
     } as const;
 

@@ -81,6 +81,29 @@ class SplitOptions {
 const SplitOptionsSchema = SchemaFactory.createForClass(SplitOptions);
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+class PlaceholderLimit {
+  @Prop({
+    required: true,
+  })
+  placeholder: string;
+
+  @Prop({
+    required: true,
+  })
+  characterCount: number;
+
+  @Prop({
+    required: false,
+  })
+  appendString?: string | null;
+}
+
+const PlaceholderLimitSchema = SchemaFactory.createForClass(PlaceholderLimit);
+
+@Schema({
   _id: false,
   timestamps: false,
   versionKey: false,
@@ -109,6 +132,13 @@ class Details {
     required: false,
   })
   formatter?: DiscordFormatter;
+
+  @Prop({
+    type: [PlaceholderLimitSchema],
+    required: false,
+    default: [],
+  })
+  placeholderLimits?: PlaceholderLimit[];
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);

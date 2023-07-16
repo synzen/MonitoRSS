@@ -11,3 +11,4 @@ export * from "./user-feed-format-options.type";
 export * from "./discord-webhook.type";
 export * from "./filters.type";
 export * from "./discord-mention-options.type";
+export * from "./discord-placeholder-limit-options.type";

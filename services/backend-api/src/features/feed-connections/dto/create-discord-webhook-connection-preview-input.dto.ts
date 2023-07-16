@@ -10,6 +10,7 @@ import {
 } from "class-validator";
 import {
   DiscordConnectionFormatterOptions,
+  DiscordPlaceholderLimitOptions,
   DiscordSplitOptions,
   MentionsOptionsDto,
   UserFeedFormatOptions,
@@ -52,6 +53,12 @@ export class CreateDiscordWebhookConnectionPreviewInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   mentions?: MentionsOptionsDto | null;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordPlaceholderLimitOptions)
+  placeholderLimits?: DiscordPlaceholderLimitOptions[];
 
   @IsOptional()
   @Type(() => DiscordConnectionFormatterOptions)

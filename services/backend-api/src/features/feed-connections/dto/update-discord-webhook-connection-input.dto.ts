@@ -9,7 +9,11 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { DiscordEmbed, MentionsOptionsDto } from "../../../common";
+import {
+  DiscordEmbed,
+  DiscordPlaceholderLimitOptions,
+  MentionsOptionsDto,
+} from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class Webhook {
@@ -90,6 +94,12 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @Type(() => MentionsOptionsDto)
   @ValidateNested({ each: true })
   mentions?: MentionsOptionsDto;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordPlaceholderLimitOptions)
+  placeholderLimits?: DiscordPlaceholderLimitOptions[];
 
   @IsArray()
   @ValidateNested({ each: true })

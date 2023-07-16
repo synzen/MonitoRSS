@@ -69,7 +69,7 @@ describe("replaceTemplateString", () => {
           limits: [
             {
               key: "foo",
-              limit: 1,
+              characterCount: 1,
               appendString: "...",
             },
           ],

@@ -239,6 +239,7 @@ export class ScheduleHandlerService {
           splitOptions: con.splitOptions?.isEnabled
             ? con.splitOptions
             : undefined,
+          placeholderLimits: con.details.placeholderLimits,
         },
       }));
 
@@ -267,6 +268,7 @@ export class ScheduleHandlerService {
             ? con.splitOptions
             : undefined,
           mentions: con.mentions,
+          placeholderLimits: con.details.placeholderLimits,
         },
       }));
 

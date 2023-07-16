@@ -16,6 +16,7 @@ import {
   DiscordSplitOptions,
   FiltersDto,
   MentionsOptionsDto,
+  DiscordPlaceholderLimitOptions,
 } from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
@@ -66,6 +67,12 @@ export class UpdateDiscordChannelConnectionInputDto {
   @Type(() => MentionsOptionsDto)
   @ValidateNested({ each: true })
   mentions?: MentionsOptionsDto;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordPlaceholderLimitOptions)
+  placeholderLimits?: DiscordPlaceholderLimitOptions[];
 
   @IsArray()
   @ValidateNested({ each: true })

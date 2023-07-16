@@ -120,6 +120,7 @@ export class FeedConnectionsDiscordChannelsController {
       connectionFormatOptions,
       splitOptions,
       mentions,
+      placeholderLimits,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -132,6 +133,7 @@ export class FeedConnectionsDiscordChannelsController {
       embeds,
       splitOptions,
       mentions,
+      placeholderLimits,
     });
 
     return {
@@ -160,6 +162,7 @@ export class FeedConnectionsDiscordChannelsController {
       forumThreadTitle,
       forumThreadTags,
       mentions,
+      placeholderLimits,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -210,6 +213,7 @@ export class FeedConnectionsDiscordChannelsController {
           splitOptions,
           mentions,
           details: {
+            placeholderLimits,
             channel: useChannelId
               ? {
                   id: useChannelId,

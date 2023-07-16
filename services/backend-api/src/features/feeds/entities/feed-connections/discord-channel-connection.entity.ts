@@ -150,6 +150,29 @@ class ForumThreadTag {
 const ForumThreadTagSchema = SchemaFactory.createForClass(ForumThreadTag);
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+class PlaceholderLimit {
+  @Prop({
+    required: true,
+  })
+  placeholder: string;
+
+  @Prop({
+    required: true,
+  })
+  characterCount: number;
+
+  @Prop({
+    required: false,
+  })
+  appendString?: string | null;
+}
+
+const PlaceholderLimitSchema = SchemaFactory.createForClass(PlaceholderLimit);
+
+@Schema({
   _id: false,
   versionKey: false,
   timestamps: false,
@@ -178,6 +201,13 @@ class Details {
     default: [],
   })
   forumThreadTags?: ForumThreadTag[];
+
+  @Prop({
+    type: [PlaceholderLimitSchema],
+    required: false,
+    default: [],
+  })
+  placeholderLimits?: PlaceholderLimit[];
 
   @Prop({
     type: String,

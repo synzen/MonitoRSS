@@ -123,7 +123,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     placeholderLimits: array(
       object({
         placeholder: string().required(),
-        limit: number().required(),
+        characterCount: number().required(),
         appendString: string().optional().nullable().default(undefined),
       }).required()
     )
