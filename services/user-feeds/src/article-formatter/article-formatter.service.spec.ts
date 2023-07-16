@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import { ArticleFormatterService } from "./article-formatter.service";
+import { InvalidLimitException } from "./exceptions";
 
 describe("ArticleFormatterService", () => {
   let service: ArticleFormatterService;
@@ -296,6 +297,27 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
       });
 
       expect(result).toEqual(["a\n\na", "b"]);
+    });
+
+    it("uses limit of 1 if input limit is under the length of append/prepend chars", () => {
+      const str = `hello world`;
+      const limit = 1;
+      const appendChar = "ad";
+      const prependChar = "ad";
+
+      const result = service.applySplit(str, {
+        limit,
+        isEnabled: true,
+        appendChar,
+        prependChar,
+      });
+
+      expect(result[0]).toEqual(`${prependChar}h`);
+      result.slice(1, result.length - 1).map((r) => {
+        // The new input limit is assumed to be 4
+        expect(r.length).toEqual(1);
+      });
+      expect(result[result.length - 1]).toEqual(`d${appendChar}`);
     });
   });
 });

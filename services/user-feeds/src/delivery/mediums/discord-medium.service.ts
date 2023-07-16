@@ -796,6 +796,8 @@ export class DiscordMediumService implements DeliveryMedium {
       ...article.flattened,
     };
 
+    console.log("replacing");
+
     if (inputMentions) {
       const mentions =
         inputMentions.targets
@@ -827,10 +829,13 @@ export class DiscordMediumService implements DeliveryMedium {
       replaceTemplateString(referenceObject, str, {
         split: {
           func: (str, { limit, appendString }) => {
+            console.log(str, limit, appendString);
+
             return this.articleFormatterService.applySplit(str, {
               appendChar: appendString,
               limit,
               isEnabled: true,
+              includeAppendInFirstPart: true,
             })[0];
           },
           limits: placeholderLimits?.map((r) => ({

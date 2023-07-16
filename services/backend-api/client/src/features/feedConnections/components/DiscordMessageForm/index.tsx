@@ -31,6 +31,7 @@ import { DiscordChannelConnectionPreview } from "./DiscordChannelConnectionPrevi
 import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPreview";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
+import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
@@ -82,10 +83,11 @@ export const DiscordMessageForm = ({
     control,
     name: "embeds",
   });
-  const [splitOptions, content, formatOptions, watchedEmbeds, watchedMentions] = useWatch({
-    control,
-    name: ["splitOptions", "content", "formatter", "embeds", "mentions"],
-  });
+  const [splitOptions, content, formatOptions, watchedEmbeds, watchedMentions, placeholderLimits] =
+    useWatch({
+      control,
+      name: ["splitOptions", "content", "formatter", "embeds", "mentions", "placeholderLimits"],
+    });
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
     try {
@@ -119,6 +121,7 @@ export const DiscordMessageForm = ({
         forumThreadTitle: formData.forumThreadTitle,
         forumThreadTags: formData.forumThreadTags || [],
         mentions: formData.mentions,
+        placeholderLimits: formData.placeholderLimits,
       };
 
       await onClickSave(toSubmit);
@@ -187,6 +190,7 @@ export const DiscordMessageForm = ({
                   splitOptions,
                   connectionFormatOptions: formatOptions,
                   mentions: watchedMentions,
+                  placeholderLimits,
                 }}
                 feedId={feedId}
               />
@@ -204,6 +208,7 @@ export const DiscordMessageForm = ({
                   content,
                   splitOptions,
                   connectionFormatOptions: formatOptions,
+                  placeholderLimits,
                 }}
                 feedId={feedId}
               />
@@ -262,6 +267,10 @@ export const DiscordMessageForm = ({
           <Stack spacing={4}>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
             <DiscordMessageMentionForm guildId={guildId} feedId={feedId} />
+          </Stack>
+          <Stack spacing={4}>
+            <Heading size="md">Placeholder Limits</Heading>
+            <DiscordMessagePlaceholderLimitsForm guildId={guildId} feedId={feedId} />
           </Stack>
           <Flex direction="row-reverse">
             <HStack>

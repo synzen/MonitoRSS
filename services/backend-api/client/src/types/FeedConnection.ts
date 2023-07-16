@@ -1,4 +1,4 @@
-import { array, boolean, InferType, object, string } from "yup";
+import { array, boolean, InferType, number, object, string } from "yup";
 import { FeedEmbedSchema } from "./FeedEmbed";
 
 export enum FeedConnectionType {
@@ -38,6 +38,16 @@ const DiscordChannelConnectionDetailsSchema = object({
     formatTables: boolean().required(),
     stripImages: boolean().required(),
   }).required(),
+  placeholderLimits: array(
+    object({
+      characterCount: number().min(1).positive().integer().required(),
+      placeholder: string().min(1).required(),
+      appendString: string().optional().nullable(),
+    }).required()
+  )
+    .optional()
+    .nullable()
+    .default(undefined),
 });
 
 const DiscordWebhookConnectionDetailsSchema = object({
@@ -53,6 +63,16 @@ const DiscordWebhookConnectionDetailsSchema = object({
     formatTables: boolean().required(),
     stripImages: boolean().required(),
   }).required(),
+  placeholderLimits: array(
+    object({
+      characterCount: number().min(1).positive().integer().required(),
+      placeholder: string().min(1).required(),
+      appendString: string().optional().nullable(),
+    }).required()
+  )
+    .optional()
+    .nullable()
+    .default(undefined),
 });
 
 export const FeedConnectionSchema = object({

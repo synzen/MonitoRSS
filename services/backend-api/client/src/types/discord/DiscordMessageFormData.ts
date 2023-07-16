@@ -1,4 +1,4 @@
-import { array, boolean, InferType, object, string } from "yup";
+import { array, boolean, InferType, number, object, string } from "yup";
 
 export const discordMessageEmbedFormSchema = object().shape({
   color: string()
@@ -99,6 +99,15 @@ export const discordMessageFormSchema = object({
       }).required()
     ).nullable(),
   }).nullable(),
+  placeholderLimits: array(
+    object({
+      characterCount: number().min(1).positive().integer().required(),
+      placeholder: string().min(1).required(),
+      appendString: string().optional().nullable(),
+    }).required()
+  )
+    .nullable()
+    .default(undefined),
   splitOptions: object({
     isEnabled: boolean().optional().nullable(),
     splitChar: string().max(10).optional().nullable(),

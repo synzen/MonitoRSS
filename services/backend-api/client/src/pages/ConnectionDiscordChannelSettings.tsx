@@ -296,12 +296,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   onMessageUpdated={(data) => onUpdate(data)}
                   defaultMessageValues={{
                     content: connection?.details.content,
-                    embeds: connection?.details.embeds,
                     splitOptions: connection?.splitOptions || null,
-                    formatter: connection?.details.formatter,
                     forumThreadTitle: connection?.details.forumThreadTitle,
                     forumThreadTags: connection?.details.forumThreadTags || [],
                     mentions: connection?.mentions,
+                    ...connection?.details,
                   }}
                   articleFormatter={{
                     options: {

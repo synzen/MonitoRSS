@@ -51,6 +51,18 @@ const mockUserFeeds: UserFeed[] = [
             formatTables: false,
             stripImages: false,
           },
+          placeholderLimits: [
+            {
+              characterCount: 100,
+              placeholder: "description",
+              appendString: "...",
+            },
+            {
+              characterCount: 50,
+              placeholder: "title",
+              appendString: "...",
+            },
+          ],
         },
         splitOptions: null,
         mentions: {

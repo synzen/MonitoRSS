@@ -162,11 +162,18 @@ export class ArticleFormatterService {
     };
   }
 
-  applySplit(text: string, splitOptions?: FormatOptions["split"]) {
+  applySplit(
+    text: string,
+    splitOptions?: FormatOptions["split"] & {
+      includeAppendInFirstPart?: boolean;
+    }
+  ) {
     const limit = splitOptions?.limit || 2000;
     const splitChar = splitOptions?.splitChar || ".";
     const appendChar = splitOptions?.appendChar ?? "";
     const prependChar = splitOptions?.prependChar ?? "";
+    const includeAppendInFirstPart =
+      splitOptions?.includeAppendInFirstPart ?? false;
 
     const split = this.splitText(text, {
       splitChar,
@@ -182,10 +189,22 @@ export class ArticleFormatterService {
         const firstPart = split[0].trimStart();
         const lastPart = split[1].trimEnd();
 
-        return [prependChar + firstPart, lastPart + appendChar];
+        if (includeAppendInFirstPart) {
+          return [prependChar + firstPart + appendChar, lastPart];
+        } else {
+          return [prependChar + firstPart, lastPart + appendChar];
+        }
       } else {
         const firstPart = split[0].trimStart();
         const lastPart = split[split.length - 1].trimEnd();
+
+        if (includeAppendInFirstPart) {
+          return [
+            prependChar + firstPart + appendChar,
+            ...split.slice(1, split.length - 1),
+            lastPart,
+          ];
+        }
 
         return [
           prependChar + firstPart,
@@ -215,8 +234,12 @@ export class ArticleFormatterService {
       .trim()
       .split(/(\n)/) // Split without removing the new line char
       .filter((item) => item.length > 0);
-    const useLimit =
+    let useLimit =
       options.limit - options.appendChar.length - options.prependChar.length;
+
+    if (useLimit <= 0) {
+      useLimit = 1;
+    }
 
     let i = 0;
 

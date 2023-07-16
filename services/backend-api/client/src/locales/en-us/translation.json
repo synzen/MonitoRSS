@@ -11,7 +11,9 @@
       "close": "Close",
       "disable": "Disable",
       "reEnable": "Re-enable",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "edit": "Edit",
+      "add": "Add"
     },
     "table": {
       "results": "Showing {{start}}-{{end}} of {{total}} results"
@@ -457,6 +459,25 @@
     },
     "feedConnections": {
       "components": {
+        "articlePropertySelect": {
+          "placeholder": "Select an article property..."
+        },
+        "placeholderLimitDialog": {
+          "addTitle": "Add placeholder limit",
+          "updateTitle": "Update placeholder limit",
+          "placeholderInputLabel": "Placeholder",
+          "placeholderInputDescription": "The placeholder to limit.",
+          "limitInputLabel": "Character limit",
+          "limitInputDescription": "The maximum number of characters allowed for the placeholder. Content will be trimmed by new lines if they are available. As a result, content may not always be trimmed at exactly this number but it will always be less than this number.",
+          "appendTextInputLabel": "Append text",
+          "appendTextInputDescription": "The text to append to the trimmed content if the limit was reached. If the limit was not reached, this text will not be appended."
+        },
+        "discordMessagePlaceholderLimitsForm": {
+          "placeholderColumnLabel": "Placeholder",
+          "upperCharacterLimitColumnLabel": "Character Limit",
+          "appendTextColumnLabel": "Append Text",
+          "description": "Apply character limits to placeholders to shorten messages."
+        },
         "connectionDisabledAlert": {
           "badFormatTitle": "Disabled due to invalid message format",
           "badFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, please re-set your message format.",

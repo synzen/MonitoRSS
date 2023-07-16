@@ -34,6 +34,11 @@ export interface CreateDiscordChannelConnectionPreviewInput {
         } | null;
       }> | null;
     } | null;
+    placeholderLimits?: Array<{
+      placeholder: string;
+      characterCount: number;
+      appendString?: string | null;
+    }> | null;
   };
 }
 

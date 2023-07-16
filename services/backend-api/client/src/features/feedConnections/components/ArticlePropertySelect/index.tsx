@@ -1,0 +1,47 @@
+import { Select, SelectProps, Stack } from "@chakra-ui/react";
+import { useTranslation } from "react-i18next";
+import { LegacyRef } from "react";
+import { useUserFeedArticleProperties } from "../../../feed/hooks";
+import { InlineErrorAlert } from "../../../../components";
+
+interface Props {
+  feedId: string;
+  selectProps?: SelectProps;
+  excludeProperties?: string[];
+  ref?: LegacyRef<HTMLSelectElement> | null;
+}
+
+export const ArticlePropertySelect = ({ feedId, selectProps, excludeProperties, ref }: Props) => {
+  const { data, error, fetchStatus } = useUserFeedArticleProperties({
+    feedId,
+  });
+  const { t } = useTranslation();
+
+  const options = data?.result.properties
+    .filter((property) => !excludeProperties?.includes(property))
+    ?.map((prop) => (
+      <option key={prop} value={prop}>
+        {prop}
+      </option>
+    ));
+
+  return (
+    <Stack>
+      <Select
+        isDisabled={fetchStatus === "fetching" || !!error}
+        borderColor="gray.600"
+        placeholder={t("features.feedConnections.components.articlePropertySelect.placeholder")}
+        ref={ref}
+        {...selectProps}
+      >
+        {options}
+      </Select>
+      {error && (
+        <InlineErrorAlert
+          title={t("common.errors.somethingWentWrong")}
+          description={error?.message}
+        />
+      )}
+    </Stack>
+  );
+};

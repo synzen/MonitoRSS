@@ -166,6 +166,7 @@ class PlaceholderLimit {
 
   @Prop({
     required: false,
+    type: String,
   })
   appendString?: string | null;
 }
