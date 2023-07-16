@@ -213,6 +213,38 @@ describe("LegacyFeedConversionService", () => {
     });
 
     describe("channel connections", () => {
+      it("adds placeholder limits", async () => {
+        const result = await service.getUserFeedEquivalent(baseFeed, data);
+
+        expect(result).toMatchObject({
+          connections: {
+            discordChannels: [
+              {
+                details: {
+                  placeholderLimits: [
+                    {
+                      characterCount: 790,
+                      placeholder: "summary",
+                      appendString: "...",
+                    },
+                    {
+                      characterCount: 790,
+                      placeholder: "description",
+                      appendString: "...",
+                    },
+                    {
+                      characterCount: 150,
+                      placeholder: "title",
+                      appendString: "...",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        });
+      });
+
       it("creates a channel connection if there is no webhook", async () => {
         const result = await service.getUserFeedEquivalent(baseFeed, data);
 
@@ -446,6 +478,43 @@ describe("LegacyFeedConversionService", () => {
           url: "url",
         },
       };
+
+      it("adds placeholder limits", async () => {
+        const feed: Feed = {
+          ...baseWebhookFeed,
+          text: "hello world",
+        };
+
+        const result = await service.getUserFeedEquivalent(feed, data);
+
+        expect(result).toMatchObject({
+          connections: {
+            discordWebhooks: [
+              {
+                details: {
+                  placeholderLimits: [
+                    {
+                      characterCount: 790,
+                      placeholder: "summary",
+                      appendString: "...",
+                    },
+                    {
+                      characterCount: 790,
+                      placeholder: "description",
+                      appendString: "...",
+                    },
+                    {
+                      characterCount: 150,
+                      placeholder: "title",
+                      appendString: "...",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        });
+      });
 
       it("sets the details correctly if a webhook exists", async () => {
         jest.spyOn(discordApiService, "getWebhook").mockResolvedValue({

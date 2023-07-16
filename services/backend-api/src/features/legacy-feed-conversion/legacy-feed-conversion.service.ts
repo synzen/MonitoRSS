@@ -289,6 +289,23 @@ export class LegacyFeedConversionService {
             formatTables: feed.formatTables,
             stripImages: feed.imgLinksExistence,
           },
+          placeholderLimits: [
+            {
+              characterCount: 790,
+              placeholder: "summary",
+              appendString: "...",
+            },
+            {
+              characterCount: 790,
+              placeholder: "description",
+              appendString: "...",
+            },
+            {
+              characterCount: 150,
+              placeholder: "title",
+              appendString: "...",
+            },
+          ],
         },
         filters: convertedFilters,
       });
@@ -332,6 +349,23 @@ export class LegacyFeedConversionService {
             formatTables: feed.formatTables,
             stripImages: feed.imgLinksExistence,
           },
+          placeholderLimits: [
+            {
+              characterCount: 790,
+              placeholder: "summary",
+              appendString: "...",
+            },
+            {
+              characterCount: 790,
+              placeholder: "description",
+              appendString: "...",
+            },
+            {
+              characterCount: 150,
+              placeholder: "title",
+              appendString: "...",
+            },
+          ],
         },
         filters: convertedFilters,
       });

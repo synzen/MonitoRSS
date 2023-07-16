@@ -30,17 +30,7 @@ const formDataSchema = object({
     .min(1, "This is a required field")
     .required("This is a required field")
     .default(""),
-  characterCount: number()
-    .positive()
-    .integer()
-    .min(1)
-    .required("This is required field")
-    .when(["appendString"], (appendString, schema) => {
-      return schema.min(
-        appendString.length + 1,
-        "Character count must be greater than append string length"
-      );
-    }),
+  characterCount: number().positive().integer().min(1).required("This is required field"),
   appendString: string().optional().default(""),
 });
 
@@ -52,6 +42,7 @@ interface Props {
   onSubmit: (data: FormData) => void;
   mode: "add" | "update";
   feedId: string;
+  excludePlaceholders?: string[];
 }
 
 export const PlaceholderLimitDialog = ({
@@ -60,6 +51,7 @@ export const PlaceholderLimitDialog = ({
   mode,
   onSubmit: parentOnSubmit,
   feedId,
+  excludePlaceholders,
 }: Props) => {
   const {
     handleSubmit,
@@ -129,6 +121,7 @@ export const PlaceholderLimitDialog = ({
                           feedId={feedId}
                           selectProps={{ ...field }}
                           ref={initialRef}
+                          excludeProperties={excludePlaceholders}
                         />
                         {!errors.placeholder && (
                           <FormHelperText>
