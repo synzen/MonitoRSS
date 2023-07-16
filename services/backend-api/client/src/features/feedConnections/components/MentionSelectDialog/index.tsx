@@ -127,7 +127,7 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
 
   return (
     <>
-      <Button onClick={onOpen} leftIcon={<AddIcon fontSize="small" />} variant="ghost">
+      <Button onClick={onOpen} leftIcon={<AddIcon fontSize="sm" />} variant="ghost">
         {t("components.discordMessageMentionForm.addMentionButton")}
       </Button>
       <Modal isOpen={isOpen} onClose={onClose}>

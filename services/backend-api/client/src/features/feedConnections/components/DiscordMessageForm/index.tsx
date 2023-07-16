@@ -5,7 +5,6 @@ import {
   Heading,
   Highlight,
   HStack,
-  IconButton,
   Stack,
   Tab,
   TabList,
@@ -235,12 +234,14 @@ export const DiscordMessageForm = ({
                   ))}
                 </TabList>
                 {(embeds?.length ?? 0) < 10 && (
-                  <IconButton
+                  <Button
                     onClick={onAddEmbed}
                     variant="ghost"
                     aria-label="Add new embed"
-                    icon={<AddIcon />}
-                  />
+                    leftIcon={<AddIcon fontSize="sm" />}
+                  >
+                    Add
+                  </Button>
                 )}
               </HStack>
               <TabPanels>

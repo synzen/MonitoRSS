@@ -120,7 +120,7 @@ export const PlaceholderLimitDialog = ({
                         <ArticlePropertySelect
                           feedId={feedId}
                           selectProps={{ ...field }}
-                          ref={initialRef}
+                          selectRef={initialRef}
                           excludeProperties={excludePlaceholders}
                         />
                         {!errors.placeholder && (

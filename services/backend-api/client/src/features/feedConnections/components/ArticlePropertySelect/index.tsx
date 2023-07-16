@@ -8,10 +8,15 @@ interface Props {
   feedId: string;
   selectProps?: SelectProps;
   excludeProperties?: string[];
-  ref?: LegacyRef<HTMLSelectElement> | null;
+  selectRef?: LegacyRef<HTMLSelectElement> | null;
 }
 
-export const ArticlePropertySelect = ({ feedId, selectProps, excludeProperties, ref }: Props) => {
+export const ArticlePropertySelect = ({
+  feedId,
+  selectProps,
+  excludeProperties,
+  selectRef,
+}: Props) => {
   const { data, error, fetchStatus } = useUserFeedArticleProperties({
     feedId,
   });
@@ -31,8 +36,8 @@ export const ArticlePropertySelect = ({ feedId, selectProps, excludeProperties, 
         isDisabled={fetchStatus === "fetching" || !!error}
         borderColor="gray.600"
         placeholder={t("features.feedConnections.components.articlePropertySelect.placeholder")}
-        ref={ref}
         {...selectProps}
+        ref={selectRef}
       >
         {options}
       </Select>

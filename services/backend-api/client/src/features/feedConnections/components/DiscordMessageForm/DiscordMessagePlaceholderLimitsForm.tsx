@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Code,
+  Flex,
   HStack,
   IconButton,
   Menu,
@@ -40,31 +41,39 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, guildId }: Props) 
 
   const currentPlaceholders = fields.map((f) => f.placeholder);
 
+  const onSubmitNewLimit = (limit: {
+    characterCount: number;
+    placeholder: string;
+    appendString: string;
+  }) => {
+    const existingIndex = fields.findIndex((f) => f.placeholder === limit.placeholder);
+
+    if (existingIndex === -1) {
+      append(limit);
+    } else {
+      update(existingIndex, limit);
+    }
+  };
+
   return (
     <Stack spacing={4}>
       <HStack justifyContent="space-between">
         <Text>
           {t("features.feedConnections.components.discordMessagePlaceholderLimitsForm.description")}
         </Text>
-        <PlaceholderLimitDialog
-          feedId={feedId}
-          excludePlaceholders={currentPlaceholders}
-          trigger={
-            <Button leftIcon={<AddIcon fontSize="xs" />} size="sm">
-              {t("common.buttons.add")}
-            </Button>
-          }
-          onSubmit={(limit) => {
-            const existingIndex = fields.findIndex((f) => f.placeholder === limit.placeholder);
-
-            if (existingIndex === -1) {
-              append(limit);
-            } else {
-              update(existingIndex, limit);
+        {fields.length && (
+          <PlaceholderLimitDialog
+            feedId={feedId}
+            excludePlaceholders={currentPlaceholders}
+            trigger={
+              <Button leftIcon={<AddIcon fontSize="xs" />} size="sm">
+                {t("common.buttons.add")}
+              </Button>
             }
-          }}
-          mode="add"
-        />
+            onSubmit={onSubmitNewLimit}
+            mode="add"
+          />
+        )}
       </HStack>
       {fields.length && (
         <Box borderStyle="solid" borderWidth="1px" borderRadius="md">
@@ -135,6 +144,21 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, guildId }: Props) 
             </Table>
           </TableContainer>
         </Box>
+      )}
+      {!fields.length && (
+        <Flex>
+          <PlaceholderLimitDialog
+            feedId={feedId}
+            excludePlaceholders={currentPlaceholders}
+            trigger={
+              <Button leftIcon={<AddIcon fontSize="sm" />} variant="ghost">
+                {t("common.buttons.add")}
+              </Button>
+            }
+            onSubmit={onSubmitNewLimit}
+            mode="add"
+          />
+        </Flex>
       )}
     </Stack>
   );
