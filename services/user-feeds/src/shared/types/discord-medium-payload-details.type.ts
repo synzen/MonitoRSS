@@ -120,6 +120,16 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     })
       .optional()
       .default(undefined),
+    placeholderLimits: array(
+      object({
+        placeholder: string().required(),
+        limit: number().required(),
+        appendString: string().optional().nullable().default(undefined),
+      }).required()
+    )
+      .optional()
+      .nullable()
+      .default(undefined),
   },
   [["channel", "webhook"]]
 );

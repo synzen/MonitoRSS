@@ -82,8 +82,6 @@ describe("DiscordMediumService", () => {
         id: "1",
       },
       raw: {} as never,
-      anchors: {},
-      images: {},
     };
 
     const deliveryDetails: TestDiscordDeliveryDetails = {
@@ -211,8 +209,6 @@ describe("DiscordMediumService", () => {
         id: "1",
       },
       raw: {} as never,
-      anchors: {},
-      images: {},
     };
 
     const deliveryDetails: DeliverArticleDetails = {
@@ -364,8 +360,6 @@ describe("DiscordMediumService", () => {
             title: "some-title-here",
           },
           raw: {} as never,
-          anchors: {},
-          images: {},
         };
         const details: DeliverArticleDetails = {
           ...deliveryDetails,
@@ -425,8 +419,6 @@ describe("DiscordMediumService", () => {
             title: "some-title-here",
           },
           raw: {} as never,
-          anchors: {},
-          images: {},
         };
         const details: DeliverArticleDetails = {
           ...deliveryDetails,
@@ -565,6 +557,7 @@ describe("DiscordMediumService", () => {
             },
           ],
         },
+        placeholderLimits: [],
       });
 
       expect(result).toEqual("hello <@&role-1-id> <@user-1-id>");

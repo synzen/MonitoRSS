@@ -437,6 +437,7 @@ export class FeedsController {
             content: mediumDetails.content,
             filterReferences,
             mentions: mediumDetails.mentions,
+            placeholderLimits: mediumDetails.placeholderLimits,
           }
         );
 

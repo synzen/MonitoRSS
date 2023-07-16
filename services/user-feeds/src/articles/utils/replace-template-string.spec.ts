@@ -55,4 +55,26 @@ describe("replaceTemplateString", () => {
     const str = "foo: {{foo}}, bar: {{bar}}";
     expect(() => replaceTemplateString(object as never, str)).toThrowError();
   });
+
+  it("works with split options", () => {
+    const object = {
+      foo: "".padEnd(2000, "a"),
+    };
+
+    const str = "foo: {{foo}}";
+    expect(
+      replaceTemplateString(object as never, str, {
+        split: {
+          func: (str, { appendString }) => str.slice(0, 1) + appendString,
+          limits: [
+            {
+              key: "foo",
+              limit: 1,
+              appendString: "...",
+            },
+          ],
+        },
+      })
+    ).toEqual("foo: a...");
+  });
 });
