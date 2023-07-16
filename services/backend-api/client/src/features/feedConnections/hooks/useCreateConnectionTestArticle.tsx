@@ -9,7 +9,11 @@ import {
 interface CreateConnectionTestArticleInput {
   feedId: string;
   connectionId: string;
-  articleId?: string;
+  data: {
+    article?: {
+      id?: string;
+    };
+  };
 }
 
 interface CreateConnectionTestArticleOutput {

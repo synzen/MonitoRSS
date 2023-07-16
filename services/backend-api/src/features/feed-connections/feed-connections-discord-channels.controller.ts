@@ -91,10 +91,16 @@ export class FeedConnectionsDiscordChannelsController {
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
     { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
     @Body(ValidationPipe)
-    { article }: CreateDiscordChannelConnectionTestArticleInputDto
+    data: CreateDiscordChannelConnectionTestArticleInputDto
   ): Promise<CreateDiscordChannelConnectionTestArticleOutputDto> {
     const result = await this.service.sendTestArticle(feed, connection, {
-      article,
+      article: data.article,
+      previewInput: {
+        ...data,
+        userFeed: feed,
+        connection,
+        feedFormatOptions: data.userFeedFormatOptions,
+      },
     });
 
     return {

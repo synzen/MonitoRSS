@@ -15,7 +15,10 @@ import _ from "lodash";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
-import { SendTestArticleResult } from "../../services/feed-handler/types";
+import {
+  SendTestArticleResult,
+  SendTestDiscordWebhookArticleInput,
+} from "../../services/feed-handler/types";
 import {
   castDiscordContentForMedium,
   castDiscordEmbedsForMedium,
@@ -277,30 +280,64 @@ export class FeedConnectionsDiscordWebhooksService {
       article?: {
         id: string;
       };
+      previewInput?: CreatePreviewInput;
     }
   ): Promise<SendTestArticleResult> {
-    const payload = {
+    const previewInput = details?.previewInput;
+    const cleanedPreviewEmbeds = previewInput?.embeds
+      ? previewInput.embeds.map((e) => ({
+          title: e.title || undefined,
+          description: e.description || undefined,
+          url: e.url || undefined,
+          imageURL: e.image?.url || undefined,
+          thumbnailURL: e.thumbnail?.url || undefined,
+          authorIconURL: e.author?.iconUrl || undefined,
+          authorName: e.author?.name || undefined,
+          authorURL: e.author?.url || undefined,
+          color: e.color || undefined,
+          footerIconURL: e.footer?.iconUrl || undefined,
+          footerText: e.footer?.text || undefined,
+          timestamp: e.timestamp || undefined,
+          fields:
+            e.fields?.filter(
+              (f): f is { name: string; value: string; inline?: boolean } =>
+                !!f.name && !!f.value
+            ) || [],
+        }))
+      : undefined;
+
+    const payload: SendTestDiscordWebhookArticleInput["details"] = {
       type: "discord",
       feed: {
         url: userFeed.url,
         formatOptions: {
-          dateFormat: userFeed.formatOptions?.dateFormat,
+          ...userFeed.formatOptions,
+          ...previewInput?.feedFormatOptions,
         },
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {
-        content: castDiscordContentForMedium(connection.details.content),
-        embeds: castDiscordEmbedsForMedium(connection.details.embeds),
+        content: castDiscordContentForMedium(
+          previewInput?.content || connection.details.content
+        ),
+        embeds: castDiscordEmbedsForMedium(
+          cleanedPreviewEmbeds || connection.details.embeds
+        ),
         webhook: {
           id: connection.details.webhook.id,
           name: connection.details.webhook.name,
           iconUrl: connection.details.webhook.iconUrl,
           token: connection.details.webhook.token,
         },
-        formatter: connection.details.formatter,
-        splitOptions: connection.splitOptions,
-        mentions: connection.mentions,
-        placeholderLimits: connection.details.placeholderLimits,
+        formatter:
+          previewInput?.connectionFormatOptions || connection.details.formatter,
+        splitOptions: previewInput?.splitOptions?.isEnabled
+          ? previewInput.splitOptions
+          : connection.splitOptions,
+        mentions: previewInput?.mentions || connection.mentions,
+        placeholderLimits:
+          previewInput?.placeholderLimits ||
+          connection.details.placeholderLimits,
       },
     } as const;
 
@@ -328,6 +365,7 @@ export class FeedConnectionsDiscordWebhooksService {
         formatOptions: {
           dateFormat: feedFormatOptions?.dateFormat,
           ...feedFormatOptions,
+          ...userFeed.formatOptions,
         },
       },
       article: articleId ? { id: articleId } : undefined,

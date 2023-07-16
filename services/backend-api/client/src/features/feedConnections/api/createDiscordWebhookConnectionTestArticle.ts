@@ -1,12 +1,10 @@
 import { InferType, object } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { SendTestArticleResultSchema } from "@/types";
+import { CreateDiscordWebhookConnectionPreviewInput } from "./createDiscordWebhookConnectionPreview";
 
-export interface CreateDiscordWebhookConnectionTestArticleInput {
-  feedId: string;
-  connectionId: string;
-  articleId?: string;
-}
+export interface CreateDiscordWebhookConnectionTestArticleInput
+  extends CreateDiscordWebhookConnectionPreviewInput {}
 
 const CreateDiscordWebhookConnectionTestArticleOutputSchema = object({
   result: SendTestArticleResultSchema,
@@ -26,13 +24,7 @@ export const createDiscordWebhookConnectionTestArticle = async (
       validateSchema: CreateDiscordWebhookConnectionTestArticleOutputSchema,
       requestOptions: {
         method: "POST",
-        body: JSON.stringify({
-          article: options.articleId
-            ? {
-                id: options.articleId,
-              }
-            : undefined,
-        }),
+        body: JSON.stringify(options.data),
       },
     }
   );

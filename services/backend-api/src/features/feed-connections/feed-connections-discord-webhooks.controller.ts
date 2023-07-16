@@ -97,10 +97,16 @@ export class FeedConnectionsDiscordWebhooksController {
     @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
-    { article }: CreateDiscordWebhookConnectionTestArticleInputDto
+    data: CreateDiscordWebhookConnectionTestArticleInputDto
   ): Promise<CreateDiscordWebhookConnectionTestArticleOutputDto> {
     const result = await this.service.sendTestArticle(feed, connection, {
-      article,
+      article: data.article,
+      previewInput: {
+        ...data,
+        userFeed: feed,
+        connection,
+        feedFormatOptions: data.userFeedFormatOptions,
+      },
     });
 
     return {

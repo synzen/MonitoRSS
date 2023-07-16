@@ -10,7 +10,10 @@ import {
   castDiscordEmbedsForMedium,
 } from "../../common/utils";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
-import { SendTestArticleResult } from "../../services/feed-handler/types";
+import {
+  SendTestArticleResult,
+  SendTestDiscordChannelArticleInput,
+} from "../../services/feed-handler/types";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionDiscordChannelType,
@@ -70,6 +73,8 @@ interface CreatePreviewInput {
   placeholderLimits?:
     | DiscordChannelConnection["details"]["placeholderLimits"]
     | null;
+  forumThreadTitle?: DiscordChannelConnection["details"]["forumThreadTitle"];
+  forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
 }
 
 @Injectable()
@@ -258,14 +263,40 @@ export class FeedConnectionsDiscordChannelsService {
       article?: {
         id: string;
       };
+      previewInput?: CreatePreviewInput;
     }
   ): Promise<SendTestArticleResult> {
-    const payload = {
+    const previewInput = details?.previewInput;
+
+    const cleanedPreviewEmbeds = previewInput?.embeds
+      ? previewInput.embeds.map((e) => ({
+          title: e.title || undefined,
+          description: e.description || undefined,
+          url: e.url || undefined,
+          imageURL: e.image?.url || undefined,
+          thumbnailURL: e.thumbnail?.url || undefined,
+          authorIconURL: e.author?.iconUrl || undefined,
+          authorName: e.author?.name || undefined,
+          authorURL: e.author?.url || undefined,
+          color: e.color || undefined,
+          footerIconURL: e.footer?.iconUrl || undefined,
+          footerText: e.footer?.text || undefined,
+          timestamp: e.timestamp || undefined,
+          fields:
+            e.fields?.filter(
+              (f): f is { name: string; value: string; inline?: boolean } =>
+                !!f.name && !!f.value
+            ) || [],
+        }))
+      : undefined;
+
+    const payload: SendTestDiscordChannelArticleInput["details"] = {
       type: "discord",
       feed: {
         url: userFeed.url,
         formatOptions: {
-          dateFormat: userFeed.formatOptions?.dateFormat,
+          ...userFeed.formatOptions,
+          ...previewInput?.feedFormatOptions,
         },
       },
       article: details?.article ? details.article : undefined,
@@ -274,14 +305,25 @@ export class FeedConnectionsDiscordChannelsService {
           id: connection.details.channel.id,
           type: connection.details.channel.type,
         },
-        forumThreadTitle: connection.details.forumThreadTitle,
-        forumThreadTags: connection.details.forumThreadTags,
-        content: castDiscordContentForMedium(connection.details.content),
-        embeds: castDiscordEmbedsForMedium(connection.details.embeds),
-        formatter: connection.details.formatter,
-        mentions: connection.mentions,
-        splitOptions: connection.splitOptions,
-        placeholderLimits: connection.details.placeholderLimits,
+        forumThreadTitle:
+          previewInput?.forumThreadTitle || connection.details.forumThreadTitle,
+        forumThreadTags:
+          previewInput?.forumThreadTags || connection.details.forumThreadTags,
+        content: castDiscordContentForMedium(
+          previewInput?.content || connection.details.content
+        ),
+        embeds: castDiscordEmbedsForMedium(
+          cleanedPreviewEmbeds || connection.details.embeds
+        ),
+        formatter:
+          previewInput?.connectionFormatOptions || connection.details.formatter,
+        mentions: previewInput?.mentions || connection.mentions,
+        splitOptions: previewInput?.splitOptions?.isEnabled
+          ? previewInput.splitOptions
+          : connection.splitOptions,
+        placeholderLimits:
+          previewInput?.placeholderLimits ||
+          connection.details.placeholderLimits,
       },
     } as const;
 
@@ -307,7 +349,6 @@ export class FeedConnectionsDiscordChannelsService {
       feed: {
         url: userFeed.url,
         formatOptions: {
-          dateFormat: feedFormatOptions?.dateFormat,
           ...feedFormatOptions,
         },
       },
@@ -329,17 +370,14 @@ export class FeedConnectionsDiscordChannelsService {
             authorName: e.author?.name || undefined,
             authorURL: e.author?.url || undefined,
             color: e.color || undefined,
-            fields:
-              e.fields
-                ?.map((f) => ({
-                  name: f.name || "",
-                  value: f.value || "",
-                  inline: f.inline || false,
-                }))
-                .filter((v) => v.name) || [],
             footerIconURL: e.footer?.iconUrl || undefined,
             footerText: e.footer?.text || undefined,
             timestamp: e.timestamp || undefined,
+            fields:
+              e.fields?.filter(
+                (f): f is { name: string; value: string; inline?: boolean } =>
+                  !!f.name && !!f.value
+              ) || [],
           }))
         ),
         formatter: connectionFormatOptions || undefined,

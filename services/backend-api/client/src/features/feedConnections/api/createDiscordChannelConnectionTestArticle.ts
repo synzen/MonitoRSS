@@ -1,12 +1,10 @@
 import { InferType, object } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { SendTestArticleResultSchema } from "@/types";
+import { CreateDiscordChannelConnectionPreviewInput } from "./createDiscordChannelConnectionPreview";
 
-export interface CreateDiscordChannelConnectionTestArticleInput {
-  feedId: string;
-  connectionId: string;
-  articleId?: string;
-}
+export interface CreateDiscordChannelConnectionTestArticleInput
+  extends CreateDiscordChannelConnectionPreviewInput {}
 
 const CreateDiscordChannelConnectionTestArticleOutputSchema = object({
   result: SendTestArticleResultSchema,
@@ -26,13 +24,7 @@ export const createDiscordChannelConnectionTestArticle = async (
       validateSchema: CreateDiscordChannelConnectionTestArticleOutputSchema,
       requestOptions: {
         method: "POST",
-        body: JSON.stringify({
-          article: options.articleId
-            ? {
-                id: options.articleId,
-              }
-            : undefined,
-        }),
+        body: JSON.stringify(options.data),
       },
     }
   );

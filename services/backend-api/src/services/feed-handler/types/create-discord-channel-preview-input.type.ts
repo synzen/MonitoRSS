@@ -6,7 +6,7 @@ export interface CreateDiscordChannelPreviewInput {
     feed: {
       url: string;
       formatOptions: {
-        dateFormat: string | undefined;
+        dateFormat?: string | undefined;
       };
     };
     article?: {

@@ -1,4 +1,5 @@
 import { DiscordMediumEvent } from "../../../common";
+import { DiscordWebhookConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface SendTestDiscordWebhookArticleInput {
   details: {
@@ -6,7 +7,7 @@ export interface SendTestDiscordWebhookArticleInput {
     feed: {
       url: string;
       formatOptions: {
-        dateFormat: string | undefined;
+        dateFormat?: string | undefined;
       };
     };
     article?: {
@@ -30,6 +31,8 @@ export interface SendTestDiscordWebhookArticleInput {
         appendChar?: string | null;
         prependChar?: string | null;
       };
+      mentions?: DiscordWebhookConnection["mentions"];
+      placeholderLimits?: DiscordWebhookConnection["details"]["placeholderLimits"];
     };
   };
 }

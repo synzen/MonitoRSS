@@ -1,22 +1,4 @@
-import { Type } from "class-transformer";
-import {
-  IsNotEmpty,
-  IsObject,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from "class-validator";
+/* eslint-disable max-len */
+import { CreateDiscordChannelConnectionPreviewInputDto } from "./create-discord-channel-connection-preview-input.dto";
 
-class Article {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-}
-
-export class CreateDiscordChannelConnectionTestArticleInputDto {
-  @IsObject()
-  @Type(() => Article)
-  @IsOptional()
-  @ValidateNested()
-  article?: Article;
-}
+export class CreateDiscordChannelConnectionTestArticleInputDto extends CreateDiscordChannelConnectionPreviewInputDto {}

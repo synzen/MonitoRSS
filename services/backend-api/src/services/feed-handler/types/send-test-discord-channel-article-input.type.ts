@@ -1,4 +1,6 @@
 import { DiscordMediumEvent } from "../../../common";
+import { FeedConnectionDiscordChannelType } from "../../../features/feeds/constants";
+import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface SendTestDiscordChannelArticleInput {
   details: {
@@ -6,7 +8,8 @@ export interface SendTestDiscordChannelArticleInput {
     feed: {
       url: string;
       formatOptions: {
-        dateFormat: string | undefined;
+        dateFormat?: string | undefined;
+        dateTimezone?: string | undefined;
       };
     };
     article?: {
@@ -15,6 +18,7 @@ export interface SendTestDiscordChannelArticleInput {
     mediumDetails: {
       channel: {
         id: string;
+        type?: FeedConnectionDiscordChannelType | null;
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];
@@ -27,6 +31,10 @@ export interface SendTestDiscordChannelArticleInput {
         appendChar?: string | null;
         prependChar?: string | null;
       };
+      forumThreadTitle?: DiscordChannelConnection["details"]["forumThreadTitle"];
+      forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
+      mentions?: DiscordChannelConnection["mentions"];
+      placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
     };
   };
 }

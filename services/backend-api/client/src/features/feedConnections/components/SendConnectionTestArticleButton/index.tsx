@@ -123,7 +123,11 @@ export const SendConnectionTestArticleButton = ({
       const { result } = await mutateAsync({
         feedId,
         connectionId,
-        articleId,
+        data: {
+          article: {
+            id: articleId,
+          },
+        },
       });
 
       const { title, description, useModal, useNotify } = messagesByStatus[result.status];

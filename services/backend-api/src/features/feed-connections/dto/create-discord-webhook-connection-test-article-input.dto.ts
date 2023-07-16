@@ -1,22 +1,5 @@
-import { Type } from "class-transformer";
-import {
-  IsNotEmpty,
-  IsObject,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from "class-validator";
+/* eslint-disable max-len */
 
-class Article {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-}
+import { CreateDiscordWebhookConnectionPreviewInputDto } from "./create-discord-webhook-connection-preview-input.dto";
 
-export class CreateDiscordWebhookConnectionTestArticleInputDto {
-  @IsObject()
-  @Type(() => Article)
-  @IsOptional()
-  @ValidateNested()
-  article?: Article;
-}
+export class CreateDiscordWebhookConnectionTestArticleInputDto extends CreateDiscordWebhookConnectionPreviewInputDto {}
