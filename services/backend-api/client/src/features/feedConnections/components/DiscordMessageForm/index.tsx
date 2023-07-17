@@ -14,9 +14,10 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { FiPlay } from "react-icons/fi";
 import {
   DiscordMessageEmbedFormData,
   DiscordMessageFormData,
@@ -31,6 +32,8 @@ import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPrevi
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
+import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
+import { SendTestArticleContext } from "../../../../contexts";
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
@@ -62,6 +65,7 @@ export const DiscordMessageForm = ({
 
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
+  const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
 
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
@@ -87,6 +91,24 @@ export const DiscordMessageForm = ({
       control,
       name: ["splitOptions", "content", "formatter", "embeds", "mentions", "placeholderLimits"],
     });
+
+  const previewInput: CreateDiscordChannelConnectionPreviewInput = {
+    connectionId: connection.id,
+    feedId,
+    data: {
+      article: articleIdToPreview
+        ? {
+            id: articleIdToPreview,
+          }
+        : undefined,
+      embeds: watchedEmbeds,
+      content,
+      splitOptions,
+      connectionFormatOptions: formatOptions,
+      mentions: watchedMentions,
+      placeholderLimits,
+    },
+  };
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
     try {
@@ -145,6 +167,17 @@ export const DiscordMessageForm = ({
     setActiveEmbedIndex(index);
   };
 
+  const onClickSendPreviewToDiscord = async () => {
+    try {
+      await sendTestArticle({
+        connectionType: connection.type,
+        previewInput,
+      });
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+  };
+
   const errorsExist = Object.keys(errors).length > 0;
 
   return (
@@ -153,62 +186,50 @@ export const DiscordMessageForm = ({
         <Stack spacing={24}>
           <Stack spacing={4}>
             <Stack spacing={4}>
-              <HStack spacing={4} alignItems="center">
-                <Heading as="h2" size="md">
-                  {t("components.discordMessageForm.previewSectionTitle")}
-                </Heading>
-                {isDirty && (
-                  <Text fontSize="sm" fontWeight={600}>
-                    <Highlight
-                      query={t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                      styles={{
-                        bg: "orange.200",
-                        rounded: "full",
-                        px: "2",
-                        py: "1",
-                      }}
-                    >
-                      {t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                    </Highlight>
-                  </Text>
-                )}
+              <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
+                <HStack spacing={4} alignItems="center">
+                  <Heading as="h2" size="md">
+                    {t("components.discordMessageForm.previewSectionTitle")}
+                  </Heading>
+                  {isDirty && (
+                    <Text fontSize="sm" fontWeight={600}>
+                      <Highlight
+                        query={t("components.discordMessageForm.previewSectionUnsavedWarning")}
+                        styles={{
+                          bg: "orange.200",
+                          rounded: "full",
+                          px: "2",
+                          py: "1",
+                        }}
+                      >
+                        {t("components.discordMessageForm.previewSectionUnsavedWarning")}
+                      </Highlight>
+                    </Text>
+                  )}
+                </HStack>
+                <Button
+                  leftIcon={<FiPlay />}
+                  onClick={onClickSendPreviewToDiscord}
+                  size="sm"
+                  colorScheme="blue"
+                  isLoading={isSendingTestArticle}
+                >
+                  {t("components.discordMessageForm.sendPreviewToDiscordButtonText")}
+                </Button>
               </HStack>
               <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
             </Stack>
             {connection.type === FeedConnectionType.DiscordChannel && (
               <DiscordChannelConnectionPreview
                 connectionId={connection.id}
-                data={{
-                  article: articleIdToPreview
-                    ? {
-                        id: articleIdToPreview,
-                      }
-                    : undefined,
-                  embeds: watchedEmbeds,
-                  content,
-                  splitOptions,
-                  connectionFormatOptions: formatOptions,
-                  mentions: watchedMentions,
-                  placeholderLimits,
-                }}
+                data={previewInput.data}
                 feedId={feedId}
               />
             )}
             {connection.type === FeedConnectionType.DiscordWebhook && (
               <DiscordWebhookConnectionPreview
                 connectionId={connection.id}
-                data={{
-                  article: articleIdToPreview
-                    ? {
-                        id: articleIdToPreview,
-                      }
-                    : undefined,
-                  embeds: watchedEmbeds,
-                  content,
-                  splitOptions,
-                  connectionFormatOptions: formatOptions,
-                  placeholderLimits,
-                }}
+                data={previewInput.data}
                 feedId={feedId}
               />
             )}

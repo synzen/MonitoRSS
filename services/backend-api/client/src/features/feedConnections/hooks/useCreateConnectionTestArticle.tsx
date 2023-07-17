@@ -2,18 +2,14 @@ import { useMutation } from "@tanstack/react-query";
 import { FeedConnectionType, SendTestArticleDeliveryStatus } from "../../../types";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
+  CreateDiscordChannelConnectionPreviewInput,
   createDiscordChannelConnectionTestArticle,
   createDiscordWebhookConnectionTestArticle,
 } from "../api";
 
 interface CreateConnectionTestArticleInput {
-  feedId: string;
-  connectionId: string;
-  data: {
-    article?: {
-      id?: string;
-    };
-  };
+  connectionType: FeedConnectionType;
+  previewInput: CreateDiscordChannelConnectionPreviewInput;
 }
 
 interface CreateConnectionTestArticleOutput {
@@ -26,21 +22,23 @@ interface CreateConnectionTestArticleOutput {
 
 const methodsByType: Record<
   FeedConnectionType,
-  (input: CreateConnectionTestArticleInput) => Promise<CreateConnectionTestArticleOutput>
+  (
+    input: CreateConnectionTestArticleInput["previewInput"]
+  ) => Promise<CreateConnectionTestArticleOutput>
 > = {
   [FeedConnectionType.DiscordChannel]: createDiscordChannelConnectionTestArticle,
   [FeedConnectionType.DiscordWebhook]: createDiscordWebhookConnectionTestArticle,
 };
 
-export const useCreateConnectionTestArticle = (type: FeedConnectionType) => {
+export const useCreateConnectionTestArticle = () => {
   const { mutateAsync, status } = useMutation<
     CreateConnectionTestArticleOutput,
     ApiAdapterError,
     CreateConnectionTestArticleInput
   >((details) => {
-    const method = methodsByType[type];
+    const method = methodsByType[details.connectionType];
 
-    return method(details);
+    return method(details.previewInput);
   });
 
   return {

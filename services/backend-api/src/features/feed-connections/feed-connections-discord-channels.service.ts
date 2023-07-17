@@ -310,7 +310,7 @@ export class FeedConnectionsDiscordChannelsService {
         forumThreadTags:
           previewInput?.forumThreadTags || connection.details.forumThreadTags,
         content: castDiscordContentForMedium(
-          previewInput?.content || connection.details.content
+          previewInput?.content ?? connection.details.content
         ),
         embeds: castDiscordEmbedsForMedium(
           cleanedPreviewEmbeds || connection.details.embeds

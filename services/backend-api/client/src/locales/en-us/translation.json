@@ -262,6 +262,7 @@
     },
     "discordMessageForm": {
       "textSectionTitle": "Text",
+      "sendPreviewToDiscordButtonText": "Send to Discord",
       "embedSectionTitle": "Embeds",
       "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field).",
       "contentSectionTitle": "Content",
