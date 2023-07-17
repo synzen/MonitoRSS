@@ -1,6 +1,5 @@
 /* eslint-disable max-len */
 import { ArticleFormatterService } from "./article-formatter.service";
-import { InvalidLimitException } from "./exceptions";
 
 describe("ArticleFormatterService", () => {
   let service: ArticleFormatterService;
@@ -318,6 +317,54 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
         expect(r.length).toEqual(1);
       });
       expect(result[result.length - 1]).toEqual(`d${appendChar}`);
+    });
+
+    it("splits on periods when available", () => {
+      const str = `hello. world.`;
+      const limit = 7;
+
+      const result = service.applySplit(str, {
+        limit,
+        isEnabled: true,
+      });
+
+      expect(result).toEqual(["hello.", "world."]);
+    });
+
+    it("splits on question marks when available", () => {
+      const str = `hello? world?`;
+      const limit = 7;
+
+      const result = service.applySplit(str, {
+        limit,
+        isEnabled: true,
+      });
+
+      expect(result).toEqual(["hello?", "world?"]);
+    });
+
+    it("splits on exclamation marks when available", () => {
+      const str = `hello! world!`;
+      const limit = 7;
+
+      const result = service.applySplit(str, {
+        limit,
+        isEnabled: true,
+      });
+
+      expect(result).toEqual(["hello!", "world!"]);
+    });
+
+    it("splits on all punctuation when available", () => {
+      const str = `hello! world? fate. codinghere!`;
+      const limit = 7;
+
+      const result = service.applySplit(str, {
+        limit,
+        isEnabled: true,
+      });
+
+      expect(result).toEqual(["hello!", "world?", "fate.", "codingh", "ere!"]);
     });
   });
 });

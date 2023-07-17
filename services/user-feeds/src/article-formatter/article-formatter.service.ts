@@ -169,14 +169,16 @@ export class ArticleFormatterService {
     }
   ) {
     const limit = splitOptions?.limit || 2000;
-    const splitChar = splitOptions?.splitChar || ".";
+    const splitChars = splitOptions?.splitChar
+      ? [splitOptions.splitChar]
+      : [".", "!", "?"];
     const appendChar = splitOptions?.appendChar ?? "";
     const prependChar = splitOptions?.prependChar ?? "";
     const includeAppendInFirstPart =
       splitOptions?.includeAppendInFirstPart ?? false;
 
     const split = this.splitText(text, {
-      splitChar,
+      splitChars: splitChars,
       limit,
       appendChar,
       prependChar,
@@ -220,7 +222,7 @@ export class ArticleFormatterService {
   private splitText(
     text: string,
     options: {
-      splitChar: string;
+      splitChars: string[];
       limit: number;
       appendChar: string;
       prependChar: string;
@@ -249,14 +251,13 @@ export class ArticleFormatterService {
       if (item.length > useLimit) {
         // Some will be empty spaces since "hello." will split into ["hello", ""]
         const splitByPeriod = item
-          .split(options.splitChar)
+          .split(
+            new RegExp(
+              `(${options.splitChars.map(this.escapeRegexString).join("|")})`
+            )
+          )
           .map((i) => i.trim())
           .filter((item) => item.length > 0);
-
-        // Add the char back to the end of the split
-        splitByPeriod.forEach((item, index) => {
-          splitByPeriod[index] = item + options.splitChar;
-        });
 
         if (splitByPeriod.length > 1) {
           initialSplit.splice(i, 1, ...splitByPeriod);
@@ -308,5 +309,9 @@ export class ArticleFormatterService {
     }
 
     return copy;
+  }
+
+  private escapeRegexString(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 }
