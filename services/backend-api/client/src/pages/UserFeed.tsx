@@ -11,6 +11,7 @@ import {
   Grid,
   Heading,
   HStack,
+  Icon,
   Link,
   Menu,
   MenuButton,
@@ -29,7 +30,7 @@ import {
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, WarningIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -433,7 +434,7 @@ export const UserFeed: React.FC = () => {
                     </Flex>
                     <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                   </Stack>
-                  <Stack>
+                  <Stack spacing={2} mb={4}>
                     {feed?.connections?.map((connection) => (
                       <Link
                         key={connection.id}
@@ -443,18 +444,24 @@ export const UserFeed: React.FC = () => {
                           connectionType: connection.key,
                           connectionId: connection.id,
                         })}
+                        border="solid 2px transparent"
+                        borderRadius="md"
                         textDecoration="none"
                         _hover={{
                           textDecoration: "none",
                           color: "blue.300",
+                          border: `solid 2px ${getChakraColor("blue.300")}`,
+                          borderRadius: "md",
                         }}
+                        boxShadow="lg"
                       >
                         <Flex
                           background="gray.700"
                           paddingX={8}
                           paddingY={4}
                           borderRadius="md"
-                          flexDirection="column"
+                          alignItems="center"
+                          justifyContent="space-between"
                         >
                           <Stack spacing="1">
                             <Text color="gray.500" fontSize="sm">
@@ -470,6 +477,14 @@ export const UserFeed: React.FC = () => {
                               </HStack>
                             </Stack>
                           </Stack>
+                          <Icon
+                            as={ChevronRightIcon}
+                            alignSelf="flex-end"
+                            fontSize="xx-large"
+                            style={{
+                              alignSelf: "center",
+                            }}
+                          />
                         </Flex>
                       </Link>
                     ))}
