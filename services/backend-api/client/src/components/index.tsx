@@ -11,3 +11,4 @@ export * from "./ConfirmModal";
 export * from "./BoxConstrainedWidth";
 export * from "./InlineErrorAlert";
 export * from "./HelpDialog";
+export * from "./AnimatedComponent";

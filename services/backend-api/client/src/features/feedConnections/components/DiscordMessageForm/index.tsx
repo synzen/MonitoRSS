@@ -18,6 +18,7 @@ import { useContext, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FiPlay } from "react-icons/fi";
+import { motion } from "framer-motion";
 import {
   DiscordMessageEmbedFormData,
   DiscordMessageFormData,
@@ -34,6 +35,7 @@ import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
+import { AnimatedComponent } from "../../../../components";
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
@@ -196,7 +198,7 @@ export const DiscordMessageForm = ({
   return (
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={24}>
+        <Stack spacing={24} mb={24}>
           <Stack spacing={4}>
             <Stack spacing={4}>
               <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
@@ -307,27 +309,48 @@ export const DiscordMessageForm = ({
             <Heading size="md">Placeholder Limits</Heading>
             <DiscordMessagePlaceholderLimitsForm feedId={feedId} />
           </Stack>
-          <Flex direction="row-reverse">
-            <HStack>
-              {isDirty && (
-                <Button
-                  onClick={() => reset()}
-                  variant="ghost"
-                  isDisabled={!isDirty || isSubmitting}
-                >
-                  {t("features.feed.components.sidebar.resetButton")}
-                </Button>
-              )}
-              <Button
-                type="submit"
-                colorScheme="blue"
-                isDisabled={isSubmitting || !isDirty || errorsExist}
-                isLoading={isSubmitting}
+          <AnimatedComponent>
+            {isDirty && (
+              <Flex
+                as={motion.div}
+                direction="row-reverse"
+                position="fixed"
+                bottom="-100px"
+                left="50%"
+                opacity="0"
+                zIndex={100}
+                transform="translate(-50%, -50%)"
+                width={["90%", "90%", "80%", "80%", "1200px"]}
+                borderRadius="md"
+                paddingX={4}
+                paddingY={2}
+                bg="blue.600"
+                animate={{ opacity: 1, bottom: "0px" }}
+                exit={{ opacity: 0, bottom: "-100px" }}
               >
-                {t("features.feed.components.sidebar.saveButton")}
-              </Button>
-            </HStack>
-          </Flex>
+                <HStack justifyContent="space-between" width="100%">
+                  <Text>You have unsaved changes!</Text>
+                  <HStack>
+                    <Button
+                      onClick={() => reset()}
+                      variant="ghost"
+                      isDisabled={!isDirty || isSubmitting}
+                    >
+                      {t("features.feed.components.sidebar.resetButton")}
+                    </Button>
+                    <Button
+                      type="submit"
+                      colorScheme="blue"
+                      isDisabled={isSubmitting || !isDirty || errorsExist}
+                      isLoading={isSubmitting}
+                    >
+                      {t("features.feed.components.sidebar.saveButton")}
+                    </Button>
+                  </HStack>
+                </HStack>
+              </Flex>
+            )}
+          </AnimatedComponent>
         </Stack>
       </form>
     </FormProvider>

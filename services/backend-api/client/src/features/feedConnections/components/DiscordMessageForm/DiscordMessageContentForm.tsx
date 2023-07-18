@@ -64,6 +64,7 @@ export const DiscordMessageContentForm = () => {
           direction={{ base: "column", md: "row" }}
           spacing={{ base: "1.5", md: "8" }}
           justify="space-between"
+          minW={{ md: "md", lg: "lg", xl: "3xl" }}
         >
           <Box>
             <FormLabel>{t("components.discordMessageForm.contentSectionTitle")}</FormLabel>
@@ -75,7 +76,12 @@ export const DiscordMessageContentForm = () => {
               />
             </FormHelperText>
           </Box>
-          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <Stack
+            spacing={8}
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
             <Controller
               name="content"
               control={control}
@@ -100,7 +106,12 @@ export const DiscordMessageContentForm = () => {
             {t("components.discordMessageForm.splitContentCheckboxDescription")}
           </FormHelperText>
         </FormControl>
-        <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+        <Stack
+          spacing={8}
+          width="100%"
+          maxW={{ md: "3xl" }}
+          minW={{ md: "md", lg: "lg", xl: "3xl" }}
+        >
           <FormControl id="splitCheckbox">
             <Controller
               name="splitOptions.isEnabled"
@@ -126,7 +137,12 @@ export const DiscordMessageContentForm = () => {
                 <AccordionIcon />
               </AccordionButton>
               <AccordionPanel>
-                <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+                <Stack
+                  spacing={8}
+                  width="100%"
+                  maxW={{ md: "3xl" }}
+                  minW={{ md: "md", lg: "lg", xl: "3xl" }}
+                >
                   <FormControl>
                     <FormLabel>
                       {t("components.discordMessageForm.splitContentSplitCharLabel")}
@@ -224,7 +240,12 @@ export const DiscordMessageContentForm = () => {
               />
             </FormHelperText>
           </Box>
-          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <Stack
+            spacing={8}
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
             <Controller
               name="formatter.formatTables"
               control={control}
@@ -254,7 +275,13 @@ export const DiscordMessageContentForm = () => {
               {t("components.discordMessageForm.stripImagesCheckboxDescription")}
             </FormHelperText>
           </Box>
-          <Stack spacing={8} flexGrow="1" width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <Stack
+            spacing={8}
+            flexGrow="1"
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
             <Controller
               name="formatter.stripImages"
               control={control}
@@ -319,7 +346,13 @@ export const DiscordMessageContentForm = () => {
               </Stack>
             </FormHelperText>
           </Box>
-          <Stack spacing={8} flexGrow="1" width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <Stack
+            spacing={8}
+            flexGrow="1"
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
             <Controller
               name="enablePlaceholderFallback"
               control={control}
