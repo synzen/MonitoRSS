@@ -438,6 +438,7 @@ export class FeedsController {
             filterReferences,
             mentions: mediumDetails.mentions,
             placeholderLimits: mediumDetails.placeholderLimits,
+            enablePlaceholderFallback: mediumDetails.enablePlaceholderFallback,
           }
         );
 

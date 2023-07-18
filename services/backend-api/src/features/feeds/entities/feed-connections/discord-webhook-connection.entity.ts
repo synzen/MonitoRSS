@@ -140,6 +140,12 @@ class Details {
     default: [],
   })
   placeholderLimits?: PlaceholderLimit[];
+
+  @Prop({
+    required: false,
+    type: Boolean,
+  })
+  enablePlaceholderFallback?: boolean;
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);

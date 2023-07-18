@@ -92,6 +92,7 @@ export class DiscordMediumService implements DeliveryMedium {
         forumThreadTags,
         mentions,
         placeholderLimits,
+        enablePlaceholderFallback,
       },
       filterReferences,
     } = details;
@@ -110,6 +111,7 @@ export class DiscordMediumService implements DeliveryMedium {
         filterReferences,
         mentions,
         placeholderLimits,
+        enablePlaceholderFallback,
       });
 
       const apiPayloads = initialApiPayloads.map((payload) => ({
@@ -120,12 +122,14 @@ export class DiscordMediumService implements DeliveryMedium {
           filterReferences,
           mentions,
           placeholderLimits,
+          enablePlaceholderFallback,
         }),
         avatar_url: this.generateApiTextPayload(article, {
           content: iconUrl,
           filterReferences,
           mentions,
           placeholderLimits,
+          enablePlaceholderFallback,
         }),
       }));
 
@@ -151,6 +155,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         filterReferences,
         placeholderLimits,
+        enablePlaceholderFallback,
       });
 
       const threadBody = {
@@ -161,6 +166,7 @@ export class DiscordMediumService implements DeliveryMedium {
             mentions,
             filterReferences,
             placeholderLimits,
+            enablePlaceholderFallback,
           }) || "New Article",
         message: bodies[0],
         applied_tags: this.getForumTagsToSend(
@@ -207,6 +213,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         filterReferences,
         placeholderLimits,
+        enablePlaceholderFallback,
       });
 
       const results = await Promise.all(
@@ -302,7 +309,12 @@ export class DiscordMediumService implements DeliveryMedium {
     details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState[]> {
     const {
-      deliverySettings: { guildId, forumThreadTitle, mentions },
+      deliverySettings: {
+        guildId,
+        forumThreadTitle,
+        mentions,
+        enablePlaceholderFallback,
+      },
       feedDetails: { id, url },
       filterReferences,
     } = details;
@@ -315,6 +327,7 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       mentions,
       placeholderLimits: details.deliverySettings.placeholderLimits,
+      enablePlaceholderFallback,
     });
 
     const threadBody = {
@@ -325,6 +338,7 @@ export class DiscordMediumService implements DeliveryMedium {
           filterReferences,
           mentions,
           placeholderLimits: details.deliverySettings.placeholderLimits,
+          enablePlaceholderFallback,
         }) || "New Article",
       message: bodies[0],
       applied_tags: this.getForumTagsToSend(
@@ -408,7 +422,12 @@ export class DiscordMediumService implements DeliveryMedium {
     details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState> {
     const {
-      deliverySettings: { guildId, mentions, placeholderLimits },
+      deliverySettings: {
+        guildId,
+        mentions,
+        placeholderLimits,
+        enablePlaceholderFallback,
+      },
       feedDetails: { id, url },
       filterReferences,
     } = details;
@@ -420,6 +439,7 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     });
 
     await Promise.all(
@@ -467,7 +487,12 @@ export class DiscordMediumService implements DeliveryMedium {
     details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState> {
     const {
-      deliverySettings: { guildId, mentions, placeholderLimits },
+      deliverySettings: {
+        guildId,
+        mentions,
+        placeholderLimits,
+        enablePlaceholderFallback,
+      },
       feedDetails: { id, url },
       filterReferences,
     } = details;
@@ -481,6 +506,7 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     });
 
     const bodies = initialBodies.map((payload) => ({
@@ -491,12 +517,14 @@ export class DiscordMediumService implements DeliveryMedium {
         filterReferences,
         mentions,
         placeholderLimits,
+        enablePlaceholderFallback,
       }),
       avatar_url: this.generateApiTextPayload(article, {
         content: webhookIconUrl,
         filterReferences,
         mentions,
         placeholderLimits,
+        enablePlaceholderFallback,
       }),
     }));
 
@@ -561,12 +589,14 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: {
       content: T;
       limit?: number;
       filterReferences: FilterExpressionReference;
       mentions: DeliveryDetails["deliverySettings"]["mentions"];
       placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
+      enablePlaceholderFallback: boolean;
     }
   ): T {
     const payloads = this.generateApiPayloads(article, {
@@ -578,6 +608,7 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     });
 
     return (payloads[0].content || undefined) as T;
@@ -592,6 +623,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       filterReferences,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
@@ -601,6 +633,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions: DeliveryDetails["deliverySettings"]["mentions"];
       filterReferences: FilterExpressionReference;
       placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
+      enablePlaceholderFallback: boolean;
     }
   ): DiscordMessageApiPayload[] {
     const payloadContent = this.articleFormatterService.applySplit(
@@ -608,6 +641,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         filterReferences,
         placeholderLimits,
+        enablePlaceholderFallback,
       }),
       {
         ...splitOptions,
@@ -619,6 +653,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       filterReferences,
       placeholderLimits,
+      enablePlaceholderFallback,
     };
 
     const payloads: DiscordMessageApiPayload[] = payloadContent.map(
@@ -786,17 +821,17 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       mentions: inputMentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: {
       filterReferences: FilterExpressionReference;
       mentions: DeliveryDetails["deliverySettings"]["mentions"];
       placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
+      enablePlaceholderFallback: boolean;
     }
   ): string {
     const referenceObject = {
       ...article.flattened,
     };
-
-    console.log("replacing");
 
     if (inputMentions) {
       const mentions =
@@ -827,10 +862,9 @@ export class DiscordMediumService implements DeliveryMedium {
 
     return (
       replaceTemplateString(referenceObject, str, {
+        supportFallbacks: enablePlaceholderFallback,
         split: {
           func: (str, { limit, appendString }) => {
-            console.log(str, limit, appendString);
-
             return this.articleFormatterService.applySplit(str, {
               appendChar: appendString,
               limit,

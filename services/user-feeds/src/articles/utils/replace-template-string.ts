@@ -2,6 +2,7 @@ export function replaceTemplateString(
   object: Record<string, string>,
   str: string | undefined,
   options?: {
+    supportFallbacks?: boolean;
     split?: {
       func: (
         str: string,
@@ -26,7 +27,27 @@ export function replaceTemplateString(
 
   while ((result = regex.exec(str)) !== null) {
     const accessor = result[1];
-    let value = object[accessor] || "";
+    let value = "";
+
+    if (options?.supportFallbacks) {
+      const values = accessor.split("||");
+
+      for (const subvalue of values) {
+        if (subvalue.startsWith("text::")) {
+          value = subvalue.replace("text::", "");
+          break;
+        }
+
+        const valueInObject = object[subvalue];
+
+        if (valueInObject) {
+          value = valueInObject;
+          break;
+        }
+      }
+    } else {
+      value = object[accessor] || "";
+    }
 
     if (typeof value !== "string") {
       throw new Error(

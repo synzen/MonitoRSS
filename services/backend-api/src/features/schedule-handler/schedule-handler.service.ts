@@ -240,6 +240,7 @@ export class ScheduleHandlerService {
             ? con.splitOptions
             : undefined,
           placeholderLimits: con.details.placeholderLimits,
+          enablePlaceholderFallback: con.details.enablePlaceholderFallback,
         },
       }));
 
@@ -269,6 +270,7 @@ export class ScheduleHandlerService {
             : undefined,
           mentions: con.mentions,
           placeholderLimits: con.details.placeholderLimits,
+          enablePlaceholderFallback: con.details.enablePlaceholderFallback,
         },
       }));
 

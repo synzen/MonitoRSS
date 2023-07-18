@@ -124,4 +124,9 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   formatter?: FormatterDto | null;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  enablePlaceholderFallback?: boolean;
 }

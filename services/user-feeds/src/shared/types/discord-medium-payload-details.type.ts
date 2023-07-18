@@ -130,6 +130,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
       .optional()
       .nullable()
       .default(undefined),
+    enablePlaceholderFallback: boolean().optional().default(false),
   },
   [["channel", "webhook"]]
 );

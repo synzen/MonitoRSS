@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsIn,
   IsNotEmpty,
   IsObject,
@@ -97,4 +98,9 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   formatter?: DiscordConnectionFormatterOptions | null;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  enablePlaceholderFallback?: boolean;
 }

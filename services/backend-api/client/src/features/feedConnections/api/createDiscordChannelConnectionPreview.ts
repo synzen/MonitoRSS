@@ -39,6 +39,7 @@ export interface CreateDiscordChannelConnectionPreviewInput {
       characterCount: number;
       appendString?: string | null;
     }> | null;
+    enablePlaceholderFallback?: boolean;
   };
 }
 

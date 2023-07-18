@@ -47,6 +47,7 @@ export interface UpdateDiscordWebhookConnectionInput {
       placeholderLimits:
         | DiscordWebhookConnection["details"]["placeholderLimits"]
         | null;
+      enablePlaceholderFallback?: boolean;
     };
   };
 }
@@ -66,6 +67,7 @@ interface CreatePreviewInput {
     | DiscordWebhookConnection["details"]["placeholderLimits"]
     | null;
   articleId?: string;
+  enablePlaceholderFallback?: boolean;
 }
 
 @Injectable()

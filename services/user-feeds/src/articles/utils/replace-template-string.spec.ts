@@ -77,4 +77,80 @@ describe("replaceTemplateString", () => {
       })
     ).toEqual("foo: a...");
   });
+
+  it("works with || when there is no fallback support", () => {
+    const object = {
+      "foo||bar": "2",
+    };
+
+    const str = "foo: {{foo||bar}}";
+    expect(replaceTemplateString(object, str)).toEqual("foo: 2");
+  });
+
+  describe("with fallback support", () => {
+    it("works with fallbacks", () => {
+      const object = {
+        bar: "2",
+      };
+
+      const str = "foo: {{foo||bar}}";
+      expect(
+        replaceTemplateString(object, str, {
+          supportFallbacks: true,
+        })
+      ).toEqual("foo: 2");
+    });
+
+    it("works with multiple fallbacks", () => {
+      const object = {
+        baz: "2",
+      };
+
+      const str = "foo: {{foo||bar||baz}}";
+      expect(
+        replaceTemplateString(object, str, {
+          supportFallbacks: true,
+        })
+      ).toEqual("foo: 2");
+    });
+
+    it("works with text fallback", () => {
+      const object = {};
+
+      const str = "foo: {{foo||bar||text::hello world}}";
+      expect(
+        replaceTemplateString(object, str, {
+          supportFallbacks: true,
+        })
+      ).toEqual("foo: hello world");
+    });
+
+    it("stops at the first available fallback", () => {
+      const object = {
+        bar: "2",
+        baz: "3",
+      };
+
+      const str = "foo: {{foo||bar||baz}}";
+      expect(
+        replaceTemplateString(object, str, {
+          supportFallbacks: true,
+        })
+      ).toEqual("foo: 2");
+    });
+
+    it("stops at the first available fallback", () => {
+      const object = {
+        bar: "2",
+        baz: "3",
+      };
+
+      const str = "foo: {{foo||bar||baz}}";
+      expect(
+        replaceTemplateString(object, str, {
+          supportFallbacks: true,
+        })
+      ).toEqual("foo: 2");
+    });
+  });
 });

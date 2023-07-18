@@ -33,6 +33,7 @@ export interface SendTestDiscordWebhookArticleInput {
       };
       mentions?: DiscordWebhookConnection["mentions"];
       placeholderLimits?: DiscordWebhookConnection["details"]["placeholderLimits"];
+      enablePlaceholderFallback?: boolean;
     };
   };
 }

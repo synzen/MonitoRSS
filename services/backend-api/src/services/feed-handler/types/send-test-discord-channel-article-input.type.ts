@@ -35,6 +35,7 @@ export interface SendTestDiscordChannelArticleInput {
       forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
       mentions?: DiscordChannelConnection["mentions"];
       placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
+      enablePlaceholderFallback?: DiscordChannelConnection["details"]["enablePlaceholderFallback"];
     };
   };
 }

@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -73,4 +74,9 @@ export class CreateDiscordWebhookConnectionPreviewInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   userFeedFormatOptions?: UserFeedFormatOptions | null;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  enablePlaceholderFallback?: boolean;
 }

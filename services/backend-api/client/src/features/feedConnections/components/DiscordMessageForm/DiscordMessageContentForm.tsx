@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionPanel,
   Box,
+  Button,
   Code,
   FormControl,
   FormErrorMessage,
@@ -23,6 +24,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { useCallback, useEffect, useState } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
+import { HelpDialog } from "../../../../components";
 
 export const DiscordMessageContentForm = () => {
   const {
@@ -255,6 +257,71 @@ export const DiscordMessageContentForm = () => {
           <Stack spacing={8} flexGrow="1" width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
             <Controller
               name="formatter.stripImages"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Switch
+                    {...field}
+                    isChecked={!!field.value}
+                    value=""
+                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  />
+                );
+              }}
+            />
+          </Stack>
+        </Stack>
+      </FormControl>
+      <FormControl>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: "1.5", md: "8" }}
+          justify="space-between"
+        >
+          <Box>
+            <FormLabel>{t("components.discordMessageForm.placeholderFallbackTitle")}</FormLabel>
+            <FormHelperText>
+              <Stack>
+                <Text>
+                  {t("components.discordMessageForm.placeholderFallbackCheckboxDescription")}
+                </Text>
+                <HelpDialog
+                  trigger={
+                    <Button
+                      display="inline"
+                      fontSize="sm"
+                      mt={4}
+                      colorScheme="blue"
+                      variant="link"
+                      width="min-content"
+                    >
+                      Click here to see how to use placeholder fallbacks.
+                    </Button>
+                  }
+                  title="Using Placeholder Fallbacks"
+                  body={
+                    <Stack spacing={6}>
+                      <Text>
+                        To use placeholder fallbacks, separate each placeholder with <Code>||</Code>{" "}
+                        within the curly braces. For example, if you use{" "}
+                        <Code>{"{{title||description}}"}</Code>, then the description will be used
+                        if the title is not available.{" "}
+                      </Text>
+                      <Text>
+                        If the description is not available, then you may add text like so:{" "}
+                        <Code>{"{{title||description||text::my final text}}"}</Code>.{" "}
+                        <Code>my final text</Code> will appear in the final output if both title and
+                        description do not exist.
+                      </Text>
+                    </Stack>
+                  }
+                />
+              </Stack>
+            </FormHelperText>
+          </Box>
+          <Stack spacing={8} flexGrow="1" width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Controller
+              name="enablePlaceholderFallback"
               control={control}
               render={({ field }) => {
                 return (

@@ -129,6 +129,7 @@ export class FeedConnectionsDiscordWebhooksController {
       splitOptions,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: CreateDiscordWebhookConnectionPreviewInputDto
   ): Promise<CreateDiscordWebhookConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -142,6 +143,7 @@ export class FeedConnectionsDiscordWebhooksController {
       splitOptions,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     });
 
     return {
@@ -166,6 +168,7 @@ export class FeedConnectionsDiscordWebhooksController {
       formatter,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -227,6 +230,7 @@ export class FeedConnectionsDiscordWebhooksController {
                   name: useWebhook.name,
                 }
               : undefined,
+            enablePlaceholderFallback,
           },
         },
       }

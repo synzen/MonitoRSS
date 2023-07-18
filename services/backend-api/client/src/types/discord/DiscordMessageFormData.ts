@@ -123,6 +123,7 @@ export const discordMessageFormSchema = object({
   })
     .optional()
     .nullable(),
+  enablePlaceholderFallback: boolean().optional(),
 });
 
 export type DiscordMessageFormData = InferType<typeof discordMessageFormSchema>;

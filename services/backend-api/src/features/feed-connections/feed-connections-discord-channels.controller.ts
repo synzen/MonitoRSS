@@ -127,6 +127,7 @@ export class FeedConnectionsDiscordChannelsController {
       splitOptions,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -140,6 +141,7 @@ export class FeedConnectionsDiscordChannelsController {
       splitOptions,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     });
 
     return {
@@ -169,6 +171,7 @@ export class FeedConnectionsDiscordChannelsController {
       forumThreadTags,
       mentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -230,6 +233,7 @@ export class FeedConnectionsDiscordChannelsController {
             formatter,
             forumThreadTitle,
             forumThreadTags,
+            enablePlaceholderFallback,
           },
         },
       }

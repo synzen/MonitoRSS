@@ -54,6 +54,7 @@ export interface UpdateDiscordChannelConnectionInput {
           expression: Record<string, unknown>;
         };
       }[];
+      enablePlaceholderFallback?: boolean;
     };
   };
 }
@@ -75,6 +76,7 @@ interface CreatePreviewInput {
     | null;
   forumThreadTitle?: DiscordChannelConnection["details"]["forumThreadTitle"];
   forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
+  enablePlaceholderFallback?: boolean;
 }
 
 @Injectable()
@@ -324,6 +326,9 @@ export class FeedConnectionsDiscordChannelsService {
         placeholderLimits:
           previewInput?.placeholderLimits ||
           connection.details.placeholderLimits,
+        enablePlaceholderFallback:
+          previewInput?.enablePlaceholderFallback ??
+          connection.details.enablePlaceholderFallback,
       },
     } as const;
 
@@ -343,6 +348,7 @@ export class FeedConnectionsDiscordChannelsService {
     articleId,
     mentions,
     placeholderLimits,
+    enablePlaceholderFallback,
   }: CreatePreviewInput) {
     const payload = {
       type: "discord",
@@ -384,6 +390,7 @@ export class FeedConnectionsDiscordChannelsService {
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
         mentions: mentions,
         placeholderLimits,
+        enablePlaceholderFallback: enablePlaceholderFallback,
       },
     } as const;
 

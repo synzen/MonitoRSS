@@ -222,6 +222,12 @@ class Details {
     default: {},
   })
   formatter: DiscordFormatter;
+
+  @Prop({
+    required: false,
+    type: Boolean,
+  })
+  enablePlaceholderFallback?: boolean;
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);

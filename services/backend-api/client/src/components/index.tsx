@@ -10,3 +10,4 @@ export * from "./DashboardContentV2";
 export * from "./ConfirmModal";
 export * from "./BoxConstrainedWidth";
 export * from "./InlineErrorAlert";
+export * from "./HelpDialog";

@@ -28,10 +28,9 @@ import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
 
 interface Props {
   feedId: string;
-  guildId: string | undefined;
 }
 
-export const DiscordMessagePlaceholderLimitsForm = ({ feedId, guildId }: Props) => {
+export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
   const { fields, append, update, remove } = useFieldArray({

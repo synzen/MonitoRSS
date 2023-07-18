@@ -86,11 +86,26 @@ export const DiscordMessageForm = ({
     control,
     name: "embeds",
   });
-  const [splitOptions, content, formatOptions, watchedEmbeds, watchedMentions, placeholderLimits] =
-    useWatch({
-      control,
-      name: ["splitOptions", "content", "formatter", "embeds", "mentions", "placeholderLimits"],
-    });
+  const [
+    splitOptions,
+    content,
+    formatOptions,
+    watchedEmbeds,
+    watchedMentions,
+    placeholderLimits,
+    enablePlaceholderFallback,
+  ] = useWatch({
+    control,
+    name: [
+      "splitOptions",
+      "content",
+      "formatter",
+      "embeds",
+      "mentions",
+      "placeholderLimits",
+      "enablePlaceholderFallback",
+    ],
+  });
 
   const previewInput: CreateDiscordChannelConnectionPreviewInput = {
     connectionId: connection.id,
@@ -107,6 +122,7 @@ export const DiscordMessageForm = ({
       connectionFormatOptions: formatOptions,
       mentions: watchedMentions,
       placeholderLimits,
+      enablePlaceholderFallback,
     },
   };
 
@@ -135,14 +151,11 @@ export const DiscordMessageForm = ({
       });
 
       const toSubmit: DiscordMessageFormData = {
+        ...formData,
         content: formData.content?.trim(),
         embeds: embedsWithoutEmptyObjects,
         splitOptions: formData.splitOptions || null,
-        formatter: formData.formatter,
-        forumThreadTitle: formData.forumThreadTitle,
         forumThreadTags: formData.forumThreadTags || [],
-        mentions: formData.mentions,
-        placeholderLimits: formData.placeholderLimits,
       };
 
       await onClickSave(toSubmit);
@@ -292,7 +305,7 @@ export const DiscordMessageForm = ({
           </Stack>
           <Stack spacing={4}>
             <Heading size="md">Placeholder Limits</Heading>
-            <DiscordMessagePlaceholderLimitsForm guildId={guildId} feedId={feedId} />
+            <DiscordMessagePlaceholderLimitsForm feedId={feedId} />
           </Stack>
           <Flex direction="row-reverse">
             <HStack>
