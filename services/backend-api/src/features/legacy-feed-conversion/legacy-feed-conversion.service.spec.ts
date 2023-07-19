@@ -122,6 +122,26 @@ describe("LegacyFeedConversionService", () => {
       });
     });
 
+    describe("check dates", () => {
+      it("sets date check options when defined", async () => {
+        await expect(
+          service.getUserFeedEquivalent(
+            {
+              ...baseFeed,
+              checkDates: true,
+            },
+            {
+              ...data,
+            } as never
+          )
+        ).resolves.toMatchObject({
+          dateCheckOptions: {
+            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24,
+          },
+        });
+      });
+    });
+
     describe("date format", () => {
       it("sets date format when defined", async () => {
         await expect(
@@ -950,6 +970,19 @@ describe("LegacyFeedConversionService", () => {
           isYoutube: true,
         })
       ).toEqual("test {{media:group__media:description__#}}");
+    });
+
+    it("converts fallback placeholders with image URLs", () => {
+      expect(
+        service.convertPlaceholders(
+          "test {item1||item2||https://image.com||http://image.com}",
+          {
+            isYoutube: true,
+          }
+        )
+      ).toEqual(
+        "test {{item1||item2||text::https://image.com||text::http://image.com}}"
+      );
     });
   });
 

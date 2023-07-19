@@ -209,7 +209,7 @@ export class LegacyFeedConversionService {
     return results;
   }
 
-  // TODO: Fallback images
+  // TODO: disabled feeds, check titles, img previews
   async getUserFeedEquivalent(
     feed: Feed,
     {
@@ -257,6 +257,12 @@ export class LegacyFeedConversionService {
         dateTimezone: (profile ? profile.timezone : undefined) || undefined,
       },
     };
+
+    if (feed.checkDates) {
+      converted.dateCheckOptions = {
+        oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24,
+      };
+    }
 
     if (!feed.webhook) {
       converted.connections.discordChannels.push({
@@ -404,7 +410,7 @@ export class LegacyFeedConversionService {
       return undefined as T;
     }
 
-    const regex = /\{([^\{\}]*)\}/g;
+    const placeholderRegex = /{([^{}]+(?:||)+[^{}]+)}/g;
 
     let replacedWithKnownPlaceholders = text
       .replace(/\{subscriptions\}/g, "{discord::mentions}")
@@ -415,6 +421,28 @@ export class LegacyFeedConversionService {
         "{extracted::$1::$2$3}"
       );
 
+    let placeholderRegexResults = placeholderRegex.exec(
+      replacedWithKnownPlaceholders
+    );
+
+    while (placeholderRegexResults) {
+      const placeholder = placeholderRegexResults[0];
+
+      const convertedFallbackImages = placeholder
+        .split("||")
+        .map((s) => (s.startsWith("http") ? `text::${s}` : s))
+        .join("||");
+
+      replacedWithKnownPlaceholders = replacedWithKnownPlaceholders.replace(
+        placeholder,
+        convertedFallbackImages
+      );
+
+      placeholderRegexResults = placeholderRegex.exec(
+        replacedWithKnownPlaceholders
+      );
+    }
+
     if (meta?.isYoutube) {
       replacedWithKnownPlaceholders = replacedWithKnownPlaceholders.replace(
         /\{description\}/g,
@@ -424,10 +452,12 @@ export class LegacyFeedConversionService {
 
     const rawPlaceholderRegex = /{raw:([^{]+)}/g;
 
-    let results = rawPlaceholderRegex.exec(replacedWithKnownPlaceholders);
+    let rawPlaceholderRegexResults = rawPlaceholderRegex.exec(
+      replacedWithKnownPlaceholders
+    );
 
-    while (results) {
-      const rawPlaceholder = results[0];
+    while (rawPlaceholderRegexResults) {
+      const rawPlaceholder = rawPlaceholderRegexResults[0];
 
       const replaceWith = this.convertRawPlaceholderField(rawPlaceholder);
 
@@ -436,10 +466,15 @@ export class LegacyFeedConversionService {
         replaceWith
       );
 
-      results = rawPlaceholderRegex.exec(replacedWithKnownPlaceholders);
+      rawPlaceholderRegexResults = rawPlaceholderRegex.exec(
+        replacedWithKnownPlaceholders
+      );
     }
 
-    return replacedWithKnownPlaceholders.replace(regex, "{{$1}}") as T;
+    return replacedWithKnownPlaceholders.replace(
+      placeholderRegex,
+      "{{$1}}"
+    ) as T;
   }
 
   convertRawPlaceholderField(rawPlaceholder: string): string {
