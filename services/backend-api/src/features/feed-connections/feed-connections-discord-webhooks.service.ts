@@ -359,6 +359,7 @@ export class FeedConnectionsDiscordWebhooksService {
     splitOptions,
     mentions,
     placeholderLimits,
+    enablePlaceholderFallback,
   }: CreatePreviewInput): Promise<SendTestArticleResult> {
     const payload = {
       type: "discord",
@@ -408,6 +409,7 @@ export class FeedConnectionsDiscordWebhooksService {
         splitOptions: splitOptions || undefined,
         mentions: mentions || undefined,
         placeholderLimits,
+        enablePlaceholderFallback,
       },
     } as const;
 
