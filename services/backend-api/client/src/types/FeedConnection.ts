@@ -48,6 +48,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     .optional()
     .nullable()
     .default(undefined),
+  enablePlaceholderFallback: boolean().optional().default(false),
 });
 
 const DiscordWebhookConnectionDetailsSchema = object({
@@ -73,6 +74,7 @@ const DiscordWebhookConnectionDetailsSchema = object({
     .optional()
     .nullable()
     .default(undefined),
+  enablePlaceholderFallback: boolean().optional().default(false),
 });
 
 export const FeedConnectionSchema = object({

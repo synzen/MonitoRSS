@@ -290,15 +290,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                 <MessageTabSection
                   feedId={feedId as string}
                   guildId={connection?.details.webhook.guildId}
-                  onMessageUpdated={({ content, embeds, splitOptions, formatter, mentions }) =>
-                    onUpdate({
-                      content,
-                      embeds,
-                      splitOptions,
-                      formatter,
-                      mentions,
-                    })
-                  }
+                  onMessageUpdated={(data) => onUpdate(data)}
                   defaultMessageValues={{
                     content: connection?.details.content,
                     embeds: connection?.details.embeds,
