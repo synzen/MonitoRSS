@@ -464,9 +464,7 @@ export const UserFeed: React.FC = () => {
                           _hover={{
                             textDecoration: "none",
                             color: "blue.300",
-                            border: `solid 2px ${
-                              isError ? getChakraColor("red.500") : getChakraColor("blue.300")
-                            }`,
+                            border: `solid 2px ${getChakraColor("blue.300")}`,
                             borderRadius: "md",
                           }}
                           boxShadow="lg"
