@@ -14,7 +14,7 @@ import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
 
-const { DD_CLIENT_KEY } = process.env;
+const DD_CLIENT_KEY = process.env.REACT_APP_DD_CLIENT_KEY;
 
 if (DD_CLIENT_KEY) {
   datadogLogs.init({
