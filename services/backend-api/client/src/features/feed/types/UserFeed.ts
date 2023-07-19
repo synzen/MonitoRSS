@@ -22,6 +22,9 @@ export const UserFeedSchema = object({
     .optional()
     .notRequired()
     .default(null),
+  dateCheckOptions: object({
+    oldArticleDateDiffMsThreshold: number().optional().default(undefined),
+  }).optional(),
 });
 
 export type UserFeed = InferType<typeof UserFeedSchema>;

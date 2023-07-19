@@ -215,6 +215,7 @@ export class UserFeedsController {
       passingComparisons,
       blockingComparisons,
       formatOptions,
+      dateCheckOptions,
     }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
     if (disabledCode && feed.disabledCode) {
@@ -230,6 +231,7 @@ export class UserFeedsController {
         passingComparisons,
         blockingComparisons,
         formatOptions,
+        dateCheckOptions,
       }
     )) as UserFeed;
 
@@ -335,6 +337,7 @@ export class UserFeedsController {
         createdAt: feed.createdAt.toISOString(),
         updatedAt: feed.updatedAt.toISOString(),
         formatOptions: feed.formatOptions,
+        dateCheckOptions: feed.dateCheckOptions,
         refreshRateSeconds,
       },
     };

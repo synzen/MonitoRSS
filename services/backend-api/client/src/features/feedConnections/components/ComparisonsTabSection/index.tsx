@@ -71,13 +71,9 @@ export const ComparisonsTabSection = ({
   };
 
   return (
-    <Stack spacing={12} marginBottom={8}>
-      <Stack spacing={4}>
-        <Heading size="md" as="h3">
-          {t("features.feedConnections.components.comparisonsTabSection.title")}
-        </Heading>
-        <Text>{t("features.feedConnections.components.comparisonsTabSection.description")}</Text>
-        {error && (
+    <Stack spacing={16} marginBottom={8}>
+      {error && (
+        <Stack spacing={4}>
           <Alert status="error">
             <AlertIcon />
             <AlertTitle>
@@ -87,17 +83,19 @@ export const ComparisonsTabSection = ({
             </AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
-        )}
-      </Stack>
+        </Stack>
+      )}
       <Stack spacing={4}>
-        <Heading size="sm" as="h3">
-          {t("features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle")}
-        </Heading>
-        <Text>
-          {t(
-            "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription"
-          )}
-        </Text>
+        <Stack>
+          <Heading size="md" as="h3">
+            {t("features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle")}
+          </Heading>
+          <Text>
+            {t(
+              "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription"
+            )}
+          </Text>
+        </Stack>
         <HStack flexWrap="wrap">
           {passingComparisons?.map((comparison) => (
             <ComparisonTab
@@ -115,14 +113,18 @@ export const ComparisonsTabSection = ({
         </HStack>
       </Stack>
       <Stack spacing={4}>
-        <Heading size="sm" as="h3">
-          {t("features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle")}
-        </Heading>
-        <Text>
-          {t(
-            "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription"
-          )}
-        </Text>
+        <Stack>
+          <Heading size="md" as="h3">
+            {t(
+              "features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle"
+            )}
+          </Heading>
+          <Text>
+            {t(
+              "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription"
+            )}
+          </Text>
+        </Stack>
         <HStack flexWrap="wrap">
           {blockingComparisons?.map((comparison) => (
             <ComparisonTab

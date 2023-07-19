@@ -25,6 +25,8 @@ import {
   Article,
   discordMediumPayloadDetailsSchema,
   discordMediumTestPayloadDetailsSchema,
+  feedV2EventSchemaDateChecks,
+  feedV2EventSchemaFormatOptions,
   GetFeedArticlesRequestStatus,
   TransformValidationPipe,
   UserFeedFormatOptions,
@@ -224,11 +226,10 @@ export class FeedsController {
           feed: object()
             .shape({
               url: string().required(),
-              formatOptions: object()
-                .shape({
-                  dateFormat: string().optional().default(undefined),
-                  dateTimezone: string().optional().default(undefined),
-                })
+              formatOptions: feedV2EventSchemaFormatOptions
+                .optional()
+                .default(undefined),
+              dateChecks: feedV2EventSchemaDateChecks
                 .optional()
                 .default(undefined),
             })

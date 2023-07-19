@@ -1,6 +1,7 @@
 import {
   Button,
   Center,
+  Code,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -9,6 +10,11 @@ import {
   HStack,
   Input,
   Link,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -16,7 +22,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
-import { InferType, object, string } from "yup";
+import { InferType, number, object, string } from "yup";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { InlineErrorAlert, Loading } from "../../../../components";
@@ -50,6 +56,7 @@ const FormSchema = object({
       throw err;
     }
   }),
+  oldArticleDateDiffMsThreshold: number().optional(),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -75,6 +82,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     defaultValues: {
       dateFormat: feed?.formatOptions?.dateFormat || "",
       dateTimezone: feed?.formatOptions?.dateTimezone || "",
+      oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
     },
   });
 
@@ -91,12 +99,20 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             dateFormat: values.dateFormat?.trim() || undefined,
             dateTimezone: values.dateTimezone?.trim() || undefined,
           },
+          dateCheckOptions:
+            values.oldArticleDateDiffMsThreshold !== undefined
+              ? {
+                  oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
+                }
+              : undefined,
         },
       });
 
       reset({
         dateFormat: updatedFeed.result.formatOptions?.dateFormat || "",
         dateTimezone: updatedFeed.result.formatOptions?.dateTimezone || "",
+        oldArticleDateDiffMsThreshold:
+          updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
       });
       notifySuccess(t("common.success.savedChanges"));
     } catch (error) {
@@ -141,22 +157,51 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
 
   return (
     <form onSubmit={handleSubmit(onUpdatedFeed)}>
-      <Stack spacing={12} marginBottom={8}>
+      <Stack spacing={16} marginBottom={8}>
         <Stack spacing={4}>
-          <Heading size="md" as="h3">
-            {t("features.feedConnections.components.userFeedSettingsTabSection.title")}
-          </Heading>
-          <Text>
-            {t("features.feedConnections.components.userFeedSettingsTabSection.description")}
-          </Text>
+          <Stack>
+            <Heading size="md" as="h3">
+              Article Date Checks
+            </Heading>
+          </Stack>
+          <Controller
+            name="oldArticleDateDiffMsThreshold"
+            control={control}
+            render={({ field }) => {
+              return (
+                <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
+                  <FormLabel>Never deliver articles older than</FormLabel>
+                  <HStack alignItems="center" spacing={4}>
+                    <NumberInput min={0} allowMouseWheel {...field}>
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                    <FormLabel>days</FormLabel>
+                  </HStack>
+                  <FormHelperText>
+                    Set to <Code>0</Code> to disable. Articles that have no published date will also
+                    be ignored if this is enabled.
+                  </FormHelperText>
+                  {formErrors.oldArticleDateDiffMsThreshold && (
+                    <FormErrorMessage>
+                      {formErrors.oldArticleDateDiffMsThreshold.message}
+                    </FormErrorMessage>
+                  )}
+                </FormControl>
+              );
+            }}
+          />
         </Stack>
         <Stack spacing={4}>
-          <Heading size="sm" as="h3">
+          <Heading size="md" as="h3">
             {t("features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle")}
           </Heading>
           <Stack spacing={4}>
             <FormControl>
-              <FormLabel>
+              <FormLabel marginBottom={0}>
                 {t(
                   "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
                 )}
@@ -173,7 +218,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
                     )}
                   </FormLabel>
-                  <Input size="sm" spellCheck={false} autoComplete="" {...field} />
+                  <Input spellCheck={false} autoComplete="" {...field} />
                   {!formErrors.dateFormat && (
                     <FormHelperText>
                       {t(
@@ -197,7 +242,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
                     )}
                   </FormLabel>
-                  <Input size="sm" spellCheck={false} {...field} />
+                  <Input spellCheck={false} {...field} />
                   {!formErrors.dateTimezone && (
                     <FormHelperText>
                       <Trans

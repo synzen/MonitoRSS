@@ -42,6 +42,7 @@ interface UpdateFeedInput {
   passingComparisons?: string[];
   blockingComparisons?: string[];
   formatOptions?: Partial<UserFeed["formatOptions"]>;
+  dateCheckOptions?: Partial<UserFeed["dateCheckOptions"]>;
 }
 
 @Injectable()
@@ -218,6 +219,10 @@ export class UserFeedsService {
 
     if (updates.formatOptions) {
       query.set("formatOptions", updates.formatOptions);
+    }
+
+    if (updates.dateCheckOptions) {
+      query.set("dateCheckOptions", updates.dateCheckOptions);
     }
 
     return query.lean();

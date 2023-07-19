@@ -49,6 +49,8 @@ class GetUserFeedOutputResultDto {
 
   formatOptions?: UserFeed["formatOptions"];
 
+  dateCheckOptions?: UserFeed["dateCheckOptions"];
+
   @IsObject()
   @ValidateNested()
   @Type(() => ConnectionBaseDto, {

@@ -282,6 +282,7 @@ export class FeedEventHandlerService {
             dateFormat: event.data.feed.formatOptions?.dateFormat,
             dateTimezone: event.data.feed.formatOptions?.dateTimezone,
           },
+          dateChecks: event.data.feed.dateChecks,
         }
       );
 

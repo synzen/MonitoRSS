@@ -192,10 +192,7 @@ export class FeedFetcherService {
     { formatOptions }: FetchFeedArticleOptions
   ) {
     const result = await this.fetchFeedArticles(url, {
-      formatOptions: {
-        dateFormat: formatOptions.dateFormat,
-        dateTimezone: formatOptions.dateTimezone,
-      },
+      formatOptions,
     });
 
     if (!result) {

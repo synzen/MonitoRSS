@@ -2,7 +2,7 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
-import FeedParser from "feedparser";
+import FeedParser, { Item } from "feedparser";
 import { ArticleIDResolver } from "./utils";
 import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
 import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
@@ -13,6 +13,8 @@ import {
 } from "@mikro-orm/core";
 import { Article, UserFeedFormatOptions } from "../shared/types";
 import { ArticleParserService } from "../article-parser/article-parser.service";
+import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-options.type";
+import dayjs from "dayjs";
 
 @Injectable()
 export class ArticlesService {
@@ -35,19 +37,25 @@ export class ArticlesService {
       blockingComparisons,
       passingComparisons,
       formatOptions,
+      dateChecks,
     }: {
       id: string;
       blockingComparisons: string[];
       passingComparisons: string[];
       formatOptions: UserFeedFormatOptions;
+      dateChecks?: UserFeedDateCheckOptions;
     }
   ) {
-    const { articles } = await this.getArticlesFromXml(feedXml, {
+    let articles: Article[];
+
+    ({ articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions: {
         dateFormat: formatOptions.dateFormat,
         dateTimezone: formatOptions.dateTimezone,
       },
-    });
+    }));
+
+    articles = this.filterArticlesBasedOnDateChecks(articles, dateChecks);
 
     if (!articles.length) {
       return [];
@@ -123,6 +131,43 @@ export class ArticlesService {
      * the oldest articles first (hence putting them in the lowest indices)
      */
     return [...articlesPastBlocks, ...articlesPassedComparisons].reverse();
+  }
+
+  filterArticlesBasedOnDateChecks(
+    articles: Article[],
+    dateChecks?: UserFeedDateCheckOptions
+  ) {
+    if (!dateChecks) {
+      return articles;
+    }
+
+    const { datePlaceholderReferences, oldArticleDateDiffMsThreshold } =
+      dateChecks;
+
+    if (!oldArticleDateDiffMsThreshold) {
+      return articles;
+    }
+
+    return articles.filter((a) => {
+      const defaultPlaceholders: Array<keyof Item> = ["date", "pubdate"];
+      const placeholdersToUse =
+        datePlaceholderReferences || defaultPlaceholders;
+
+      const dateValue = placeholdersToUse
+        .map((placeholder) =>
+          dayjs(a.raw[placeholder as never] || "invalid date")
+        )
+        .filter((d) => d.isValid())
+        .find((v) => !!v);
+
+      if (!dateValue) {
+        return false;
+      }
+
+      const diffMs = dayjs().diff(dateValue, "millisecond");
+
+      return diffMs <= oldArticleDateDiffMsThreshold;
+    });
   }
 
   async hasPriorArticlesStored(feedId: string) {

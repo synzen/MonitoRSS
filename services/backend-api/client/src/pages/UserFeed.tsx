@@ -400,12 +400,12 @@ export const UserFeed: React.FC = () => {
           </Stack>
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
-          <TabPanel width="100%" tabIndex={-1}>
+          <TabPanel width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <Stack spacing={6}>
                   <Stack spacing={3}>
-                    <Flex justifyContent="space-between" alignItems="center">
+                    <Flex justifyContent="space-between" alignItems="flex-start">
                       <Heading size="md" as="h3">
                         {t("pages.userFeeds.tabConnections")}
                       </Heading>

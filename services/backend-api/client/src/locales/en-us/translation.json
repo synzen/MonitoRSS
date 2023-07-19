@@ -560,8 +560,6 @@
           "nextPage": "Next"
         },
         "comparisonsTabSection": {
-          "title": "Comparisons",
-          "description": "Comparisons are additional checks to determine whether an article is new and should be delivered, or if it's old and should be ignored.",
           "passingComparisonsTitle": "Passing Comparisons",
           "passingComparisonsDescription": "Article properties that will be checked to attempt to pass an article for it to send after an article has already been determine to be old.",
           "blockingComparisonsTitle": "Blocking Comparison",
@@ -569,9 +567,7 @@
           "errorFailedToGetPropertiesTitle": "Failed to get article properties to add"
         },
         "userFeedSettingsTabSection": {
-          "title": "Misc Settings",
-          "description": "Adjust miscellaneous settings for this feed.",
-          "dateSettingsTitle": "Date Settings",
+          "dateSettingsTitle": "Date Placeholder Settings",
           "placeholdersDescription": "Change how some placeholders are displayed.",
           "dateFormatInputLabel": "Format",
           "dateFormatInputDescription": "This will dictate how date placeholders will be formatted.",

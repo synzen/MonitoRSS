@@ -14,6 +14,9 @@ export interface UpdateUserFeedInput {
       dateFormat?: string;
       dateTimezone?: string;
     };
+    dateCheckOptions?: {
+      oldArticleDateDiffMsThreshold?: number;
+    };
   };
 }
 

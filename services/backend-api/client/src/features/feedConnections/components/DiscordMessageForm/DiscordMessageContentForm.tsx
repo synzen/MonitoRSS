@@ -335,8 +335,9 @@ export const DiscordMessageContentForm = () => {
                         if the title is not available.{" "}
                       </Text>
                       <Text>
-                        If the description is not available, then you may add text like so:{" "}
-                        <Code>{"{{title||description||text::my final text}}"}</Code>.{" "}
+                        If all placeholders have no content, then you may add text as the final
+                        fallback like so:{" "}
+                        <Code>{"{{title||description||text::my final text}}"}</Code>. In this case,{" "}
                         <Code>my final text</Code> will appear in the final output if both title and
                         description do not exist.
                       </Text>

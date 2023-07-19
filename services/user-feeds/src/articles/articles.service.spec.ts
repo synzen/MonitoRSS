@@ -12,6 +12,7 @@ import { join } from "path";
 import { InvalidFeedException } from "./exceptions";
 import { Article } from "../shared/types";
 import { ArticleParserService } from "../article-parser/article-parser.service";
+import dayjs from "dayjs";
 
 const feedId = "feed-id";
 
@@ -90,6 +91,7 @@ describe("ArticlesService", () => {
         dateFormat: undefined,
         dateTimezone: undefined,
       },
+      dateChecks: {},
     };
 
     it("returns empty array if there are no articles in xml", async () => {
@@ -235,6 +237,82 @@ describe("ArticlesService", () => {
       expect(articlesToDeliver[1].flattened.id).toEqual(
         articlesFromXml[0].flattened.id
       );
+    });
+  });
+
+  describe("filterArticlesBasedOnDateChecks", () => {
+    const articles = [
+      {
+        flattened: {
+          id: 1,
+        },
+        raw: { date: new Date() },
+      },
+      {
+        flattened: {
+          id: 2,
+        },
+        raw: { date: dayjs().subtract(1, "day").toDate() },
+      },
+      {
+        flattened: {
+          id: 3,
+        },
+        raw: { date: dayjs().subtract(1, "month").toDate() },
+      },
+      {
+        flattened: {
+          id: 4,
+        },
+        raw: {},
+      },
+      {
+        flattened: {
+          id: 5,
+        },
+        raw: { customdate: dayjs().subtract(1, "day").toDate() },
+      },
+    ] as never;
+
+    it("returns the original articles if no date checks are passed", () => {
+      const result = service.filterArticlesBasedOnDateChecks(articles);
+      expect(result).toEqual(articles);
+    });
+
+    it("returns the original articles if no threshold is specified", () => {
+      const result = service.filterArticlesBasedOnDateChecks(articles, {});
+      expect(result).toEqual(articles);
+    });
+
+    it("respects the threshold based on default date placeholders", () => {
+      const result = service.filterArticlesBasedOnDateChecks(articles, {
+        // 7 days
+        oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 * 7,
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].flattened.id).toEqual(1);
+      expect(result[1].flattened.id).toEqual(2);
+    });
+
+    it("respects the threshold based on custom date placeholders", () => {
+      const result = service.filterArticlesBasedOnDateChecks(articles, {
+        // 7 days
+        oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 * 7,
+        datePlaceholderReferences: ["customdate"],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].flattened.id).toEqual(5);
+    });
+
+    it("does not return articles with no date available", () => {
+      const result = service.filterArticlesBasedOnDateChecks(articles, {
+        oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 * 7,
+      });
+
+      const resultingIds = result.map((a) => a.flattened.id);
+      expect(resultingIds).not.toContain(4);
     });
   });
 

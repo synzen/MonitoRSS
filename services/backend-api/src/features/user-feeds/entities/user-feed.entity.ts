@@ -6,6 +6,10 @@ import {
 } from "../../feeds/entities/feed-connections.entity";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 import {
+  UserFeedDateCheckOptions,
+  UserFeedDateCheckOptionsSchema,
+} from "./user-feed-date-check-options.entity";
+import {
   UserFeedFormatOptions,
   UserFeedFormatOptionsSchema,
 } from "./user-feed-format-options.entity";
@@ -70,6 +74,12 @@ export class UserFeed {
     schema: UserFeedFormatOptionsSchema,
   })
   formatOptions?: UserFeedFormatOptions;
+
+  @Prop({
+    required: false,
+    schema: UserFeedDateCheckOptionsSchema,
+  })
+  dateCheckOptions?: UserFeedDateCheckOptions;
 
   @Prop({
     required: false,

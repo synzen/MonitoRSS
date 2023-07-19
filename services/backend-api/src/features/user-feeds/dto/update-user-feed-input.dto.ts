@@ -8,7 +8,10 @@ import {
   IsUrl,
   ValidateNested,
 } from "class-validator";
-import { UserFeedFormatOptions } from "../../../common";
+import {
+  UserFeedDateCheckOptions,
+  UserFeedFormatOptions,
+} from "../../../common";
 import { UserFeedDisabledCode } from "../types";
 
 export class UpdateUserFeedInputDto {
@@ -42,4 +45,10 @@ export class UpdateUserFeedInputDto {
   @ValidateNested()
   @IsObject()
   formatOptions?: UserFeedFormatOptions;
+
+  @IsOptional()
+  @Type(() => UserFeedDateCheckOptions)
+  @ValidateNested()
+  @IsObject()
+  dateCheckOptions?: UserFeedDateCheckOptions;
 }
