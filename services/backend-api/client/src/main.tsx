@@ -14,20 +14,20 @@ import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
 
-const DD_CLIENT_KEY = process.env.REACT_APP_DD_CLIENT_KEY;
-
-if (DD_CLIENT_KEY) {
-  datadogLogs.init({
-    clientToken: DD_CLIENT_KEY,
-    forwardErrorsToLogs: true,
-    sessionSampleRate: 100,
-    forwardConsoleLogs: ["error"],
-  });
-}
-
 async function prepare() {
-  if (import.meta.env.MODE === "development-mockapi") {
-    return setupMockBrowserWorker().then((worker) => worker.start());
+  if (["development-mockapi", "development"].includes(import.meta.env.MODE)) {
+    await setupMockBrowserWorker().then((worker) => worker.start());
+  } else {
+    const DD_CLIENT_KEY = process.env.REACT_APP_DD_CLIENT_KEY;
+
+    if (DD_CLIENT_KEY) {
+      datadogLogs.init({
+        clientToken: DD_CLIENT_KEY,
+        forwardErrorsToLogs: true,
+        sessionSampleRate: 100,
+        forwardConsoleLogs: ["error"],
+      });
+    }
   }
 
   return Promise.resolve();

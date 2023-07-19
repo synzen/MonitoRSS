@@ -27,10 +27,11 @@ import {
   Tabs,
   Text,
   useDisclosure,
+  Badge,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -100,6 +101,12 @@ function getPrettyConnectionName(
 
   return "Unknown";
 }
+
+const DISABLED_CODES_FOR_ERROR = [
+  FeedConnectionDisabledCode.MissingMedium,
+  FeedConnectionDisabledCode.MissingPermissions,
+  FeedConnectionDisabledCode.BadFormat,
+];
 
 export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
@@ -435,59 +442,77 @@ export const UserFeed: React.FC = () => {
                     <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                   </Stack>
                   <Stack spacing={2} mb={4}>
-                    {feed?.connections?.map((connection) => (
-                      <Link
-                        key={connection.id}
-                        as={RouterLink}
-                        to={pages.userFeedConnection({
-                          feedId: feedId as string,
-                          connectionType: connection.key,
-                          connectionId: connection.id,
-                        })}
-                        border="solid 2px transparent"
-                        borderRadius="md"
-                        textDecoration="none"
-                        _hover={{
-                          textDecoration: "none",
-                          color: "blue.300",
-                          border: `solid 2px ${getChakraColor("blue.300")}`,
-                          borderRadius: "md",
-                        }}
-                        boxShadow="lg"
-                      >
-                        <Flex
-                          background="gray.700"
-                          paddingX={8}
-                          paddingY={4}
+                    {feed?.connections?.map((connection) => {
+                      const isError = DISABLED_CODES_FOR_ERROR.includes(
+                        connection.disabledCode as FeedConnectionDisabledCode
+                      );
+
+                      return (
+                        <Link
+                          key={connection.id}
+                          as={RouterLink}
+                          to={pages.userFeedConnection({
+                            feedId: feedId as string,
+                            connectionType: connection.key,
+                            connectionId: connection.id,
+                          })}
+                          border={`solid 2px ${
+                            isError ? getChakraColor("red.300") : "transparent"
+                          }`}
                           borderRadius="md"
-                          alignItems="center"
-                          justifyContent="space-between"
+                          textDecoration="none"
+                          _hover={{
+                            textDecoration: "none",
+                            color: "blue.300",
+                            border: `solid 2px ${
+                              isError ? getChakraColor("red.500") : getChakraColor("blue.300")
+                            }`,
+                            borderRadius: "md",
+                          }}
+                          boxShadow="lg"
                         >
-                          <Stack spacing="1">
-                            <Text color="gray.500" fontSize="sm">
-                              {getPrettyConnectionName(connection as never)}
-                            </Text>
-                            <Stack spacing="0">
-                              <HStack alignItems="flex-end">
-                                {connection.disabledCode &&
-                                  connection.disabledCode !== FeedConnectionDisabledCode.Manual && (
-                                    <WarningIcon color={`${getChakraColor("red.500")}`} />
-                                  )}
-                                <Text fontWeight={600}>{connection.name}</Text>
+                          <Flex
+                            background="gray.700"
+                            paddingX={8}
+                            paddingY={4}
+                            borderRadius="md"
+                            alignItems="center"
+                            justifyContent="space-between"
+                          >
+                            <Stack spacing="1">
+                              <HStack>
+                                <Text color="gray.500" fontSize="sm">
+                                  {getPrettyConnectionName(connection as never)}
+                                </Text>
+                                {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
+                                  <Badge fontSize="x-small" colorScheme="blue">
+                                    Disabled
+                                  </Badge>
+                                )}
+                                {isError && (
+                                  <Badge fontSize="x-small" colorScheme="red">
+                                    Error
+                                  </Badge>
+                                )}
                               </HStack>
+                              <Stack spacing="0">
+                                <HStack alignItems="flex-end">
+                                  <Text fontWeight={600}>{connection.name}</Text>
+                                </HStack>
+                              </Stack>
                             </Stack>
-                          </Stack>
-                          <Icon
-                            as={ChevronRightIcon}
-                            alignSelf="flex-end"
-                            fontSize="xx-large"
-                            style={{
-                              alignSelf: "center",
-                            }}
-                          />
-                        </Flex>
-                      </Link>
-                    ))}
+                            <Icon
+                              as={ChevronRightIcon}
+                              alignSelf="flex-end"
+                              fontSize="xx-large"
+                              style={{
+                                alignSelf: "center",
+                              }}
+                            />
+                          </Flex>
+                        </Link>
+                      );
+                    })}
                   </Stack>
                 </Stack>
               </BoxConstrained.Container>

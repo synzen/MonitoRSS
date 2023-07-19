@@ -97,6 +97,7 @@ const mockUserFeeds: UserFeed[] = [
         splitOptions: null,
         filters: null,
         id: "2",
+        disabledCode: FeedConnectionDisabledCode.Manual,
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Forum 1",
       },
