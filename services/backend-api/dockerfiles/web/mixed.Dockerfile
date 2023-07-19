@@ -11,11 +11,14 @@ COPY . ./
 
 FROM node:18 AS build-prod
 
+ARG DD_CLIENT_KEY
+
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app ./
 
 # Build production files
 ENV SKIP_PREFLIGHT_CHECK=true
+ENV DD_CLIENT_KEY=$DD_CLIENT_KEY
 RUN npm run build && cd client && npm run build
 
 RUN apt install curl

@@ -7,11 +7,23 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { createRoot } from "react-dom/client";
+import { datadogLogs } from "@datadog/browser-logs";
 import App from "./App";
 import theme from "./utils/theme";
 import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
+
+const { DD_CLIENT_KEY } = process.env;
+
+if (DD_CLIENT_KEY) {
+  datadogLogs.init({
+    clientToken: DD_CLIENT_KEY,
+    forwardErrorsToLogs: true,
+    sessionSampleRate: 100,
+    forwardConsoleLogs: ["error"],
+  });
+}
 
 async function prepare() {
   if (import.meta.env.MODE === "development-mockapi") {
