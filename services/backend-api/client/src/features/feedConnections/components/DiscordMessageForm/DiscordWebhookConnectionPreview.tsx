@@ -21,7 +21,7 @@ export const DiscordWebhookConnectionPreview = ({ connectionId, data, feedId }: 
   const { data: connectionPreview, fetchStatus } = useCreateConnectionPreview(
     FeedConnectionType.DiscordWebhook,
     {
-      enabled: !!(feed && connection),
+      enabled: !!(feed && connection && debouncedData.article?.id),
       data: {
         connectionId: connection?.id as string,
         feedId,

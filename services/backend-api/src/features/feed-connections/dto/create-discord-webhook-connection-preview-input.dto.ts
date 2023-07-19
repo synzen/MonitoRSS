@@ -27,9 +27,8 @@ class Article {
 export class CreateDiscordWebhookConnectionPreviewInputDto {
   @IsObject()
   @Type(() => Article)
-  @IsOptional()
   @ValidateNested()
-  article?: Article;
+  article: Article;
 
   @IsString()
   @IsOptional()
