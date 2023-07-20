@@ -15,9 +15,9 @@ import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
 
 async function prepare() {
-  if (["development-mockapi", "development"].includes(import.meta.env.MODE)) {
+  if (["development-mockapi"].includes(import.meta.env.MODE)) {
     await setupMockBrowserWorker().then((worker) => worker.start());
-  } else {
+  } else if (import.meta.env.MODE !== "development") {
     const DD_CLIENT_KEY = process.env.REACT_APP_DD_CLIENT_KEY;
 
     if (DD_CLIENT_KEY) {
