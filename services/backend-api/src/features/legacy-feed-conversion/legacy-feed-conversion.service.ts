@@ -209,7 +209,7 @@ export class LegacyFeedConversionService {
     return results;
   }
 
-  // TODO: disabled feeds, check titles, img previews
+  // TODO: disabled feeds, img previews
   async getUserFeedEquivalent(
     feed: Feed,
     {
@@ -250,13 +250,17 @@ export class LegacyFeedConversionService {
       user: {
         discordUserId,
       },
-      blockingComparisons: feed.ncomparisons,
-      passingComparisons: feed.pcomparisons,
+      blockingComparisons: feed.ncomparisons || [],
+      passingComparisons: feed.pcomparisons || [],
       formatOptions: {
         dateFormat: (profile ? profile.dateFormat : undefined) || undefined,
         dateTimezone: (profile ? profile.timezone : undefined) || undefined,
       },
     };
+
+    if (feed.checkTitles && !converted.blockingComparisons?.includes("title")) {
+      converted.blockingComparisons?.push("title");
+    }
 
     if (feed.checkDates) {
       converted.dateCheckOptions = {
