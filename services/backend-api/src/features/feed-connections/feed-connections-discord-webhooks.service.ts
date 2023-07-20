@@ -340,6 +340,9 @@ export class FeedConnectionsDiscordWebhooksService {
         placeholderLimits:
           previewInput?.placeholderLimits ||
           connection.details.placeholderLimits,
+        enablePlaceholderFallback:
+          previewInput?.enablePlaceholderFallback ??
+          connection.details.enablePlaceholderFallback,
       },
     } as const;
 
