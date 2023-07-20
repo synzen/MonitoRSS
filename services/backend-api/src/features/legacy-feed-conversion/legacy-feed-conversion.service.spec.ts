@@ -402,7 +402,7 @@ describe("LegacyFeedConversionService", () => {
       });
 
       describe("strip images", () => {
-        it("sets correctly when tru", async () => {
+        it("sets correctly when true", async () => {
           const feed: Feed = {
             ...baseFeed,
             imgLinksExistence: true,
@@ -416,7 +416,7 @@ describe("LegacyFeedConversionService", () => {
                 {
                   details: {
                     formatter: {
-                      stripImages: true,
+                      stripImages: false,
                     },
                   },
                 },
@@ -439,7 +439,55 @@ describe("LegacyFeedConversionService", () => {
                 {
                   details: {
                     formatter: {
-                      stripImages: false,
+                      stripImages: true,
+                    },
+                  },
+                },
+              ],
+            },
+          });
+        });
+      });
+
+      describe("image links preview", () => {
+        it("sets correctly when true", async () => {
+          const feed: Feed = {
+            ...baseFeed,
+            imgPreviews: true,
+          };
+
+          const result = await service.getUserFeedEquivalent(feed, data);
+
+          expect(result).toMatchObject({
+            connections: {
+              discordChannels: [
+                {
+                  details: {
+                    formatter: {
+                      disableImageLinkPreviews: false,
+                    },
+                  },
+                },
+              ],
+            },
+          });
+        });
+
+        it("sets correctly when false", async () => {
+          const feed: Feed = {
+            ...baseFeed,
+            imgPreviews: false,
+          };
+
+          const result = await service.getUserFeedEquivalent(feed, data);
+
+          expect(result).toMatchObject({
+            connections: {
+              discordChannels: [
+                {
+                  details: {
+                    formatter: {
+                      disableImageLinkPreviews: true,
                     },
                   },
                 },
@@ -721,6 +769,54 @@ describe("LegacyFeedConversionService", () => {
                   details: {
                     formatter: {
                       stripImages: false,
+                    },
+                  },
+                },
+              ],
+            },
+          });
+        });
+      });
+
+      describe("image links preview", () => {
+        it("sets correctly when true", async () => {
+          const feed: Feed = {
+            ...baseWebhookFeed,
+            imgPreviews: true,
+          };
+
+          const result = await service.getUserFeedEquivalent(feed, data);
+
+          expect(result).toMatchObject({
+            connections: {
+              discordWebhooks: [
+                {
+                  details: {
+                    formatter: {
+                      disableImageLinkPreviews: false,
+                    },
+                  },
+                },
+              ],
+            },
+          });
+        });
+
+        it("sets correctly when false", async () => {
+          const feed: Feed = {
+            ...baseWebhookFeed,
+            imgPreviews: false,
+          };
+
+          const result = await service.getUserFeedEquivalent(feed, data);
+
+          expect(result).toMatchObject({
+            connections: {
+              discordWebhooks: [
+                {
+                  details: {
+                    formatter: {
+                      disableImageLinkPreviews: true,
                     },
                   },
                 },

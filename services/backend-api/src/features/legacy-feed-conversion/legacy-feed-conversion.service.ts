@@ -297,7 +297,8 @@ export class LegacyFeedConversionService {
           embeds: convertedEmbeds,
           formatter: {
             formatTables: feed.formatTables,
-            stripImages: feed.imgLinksExistence,
+            stripImages: !feed.imgLinksExistence,
+            disableImageLinkPreviews: !feed.imgPreviews,
           },
           placeholderLimits: [
             {
@@ -357,7 +358,8 @@ export class LegacyFeedConversionService {
           embeds: convertedEmbeds,
           formatter: {
             formatTables: feed.formatTables,
-            stripImages: feed.imgLinksExistence,
+            stripImages: !feed.imgLinksExistence,
+            disableImageLinkPreviews: !feed.imgPreviews,
           },
           placeholderLimits: [
             {
