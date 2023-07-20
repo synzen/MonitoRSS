@@ -35,8 +35,9 @@ const DiscordChannelConnectionDetailsSchema = object({
     .optional()
     .nullable(),
   formatter: object({
-    formatTables: boolean().required(),
-    stripImages: boolean().required(),
+    formatTables: boolean().default(false),
+    stripImages: boolean().default(false),
+    disableImageLinkPreviews: boolean().default(false),
   }).required(),
   placeholderLimits: array(
     object({
@@ -61,8 +62,9 @@ const DiscordWebhookConnectionDetailsSchema = object({
   }).required(),
   content: string().optional(),
   formatter: object({
-    formatTables: boolean().required(),
-    stripImages: boolean().required(),
+    formatTables: boolean().default(false),
+    stripImages: boolean().default(false),
+    disableImageLinkPreviews: boolean().default(false),
   }).required(),
   placeholderLimits: array(
     object({

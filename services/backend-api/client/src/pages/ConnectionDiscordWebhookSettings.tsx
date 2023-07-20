@@ -292,10 +292,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                   guildId={connection?.details.webhook.guildId}
                   onMessageUpdated={(data) => onUpdate(data)}
                   defaultMessageValues={{
-                    content: connection?.details.content,
-                    embeds: connection?.details.embeds,
                     splitOptions: connection?.splitOptions || null,
-                    formatter: connection?.details.formatter,
                     forumThreadTags: null,
                     mentions: connection?.mentions || null,
                     ...connection?.details,
@@ -306,6 +303,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                       stripImages: connection?.details?.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ...feed?.formatOptions,
                     },
                   }}
                   connection={{

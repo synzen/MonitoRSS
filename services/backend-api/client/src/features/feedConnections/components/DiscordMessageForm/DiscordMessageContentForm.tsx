@@ -306,6 +306,47 @@ export const DiscordMessageContentForm = () => {
           justify="space-between"
         >
           <Box>
+            <FormLabel>
+              {t("components.discordMessageForm.disableImageLinkPreviewsTitle")}
+            </FormLabel>
+            <FormHelperText>
+              <Trans
+                t={t}
+                i18nKey="components.discordMessageForm.disableImageLinkPreviewsCheckboxDescription"
+                components={[<Code />]}
+              />
+            </FormHelperText>
+          </Box>
+          <Stack
+            spacing={8}
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
+            <Controller
+              name="formatter.disableImageLinkPreviews"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Switch
+                    {...field}
+                    isChecked={!!field.value}
+                    value=""
+                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  />
+                );
+              }}
+            />
+          </Stack>
+        </Stack>
+      </FormControl>
+      <FormControl>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: "1.5", md: "8" }}
+          justify="space-between"
+        >
+          <Box>
             <FormLabel>{t("components.discordMessageForm.placeholderFallbackTitle")}</FormLabel>
             <FormHelperText>
               <Stack>

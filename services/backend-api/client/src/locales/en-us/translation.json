@@ -280,6 +280,8 @@
       "formatTablesCheckboxDescription": "If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping the table with triple backticks (<0>```table here```</0> for example).",
       "stripImagesSectionTitle": "Strip Images",
       "stripImagesCheckboxDescription": "If enabled, all images with \"src\" attributes found in the message content will be removed.",
+      "disableImageLinkPreviewsTitle": "Disable Image Link Previews",
+      "disableImageLinkPreviewsCheckboxDescription": "If enabled, image links will be wrapped with arrow brackets to prevent Discord from creating previews for them.",
       "placeholderFallbackTitle": "Placeholder Fallback",
       "placeholderFallbackCheckboxDescription": "Support falling back on alternate values within a placeholder if there is no placeholder value for a given article.",
       "previewSectionTitle": "Preview",

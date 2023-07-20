@@ -288,10 +288,6 @@ export class UserFeedsController {
         details: {
           ...con.details,
           embeds: convertToNestedDiscordEmbed(con.details.embeds),
-          formatter: {
-            formatTables: con.details.formatter?.formatTables || false,
-            stripImages: con.details.formatter?.stripImages || false,
-          },
         },
         filters: con.filters,
         disabledCode: con.disabledCode,
@@ -307,10 +303,6 @@ export class UserFeedsController {
         details: {
           ...con.details,
           embeds: convertToNestedDiscordEmbed(con.details.embeds),
-          formatter: {
-            formatTables: con.details.formatter?.formatTables || false,
-            stripImages: con.details.formatter?.stripImages || false,
-          },
         },
         filters: con.filters,
         disabledCode: con.disabledCode,

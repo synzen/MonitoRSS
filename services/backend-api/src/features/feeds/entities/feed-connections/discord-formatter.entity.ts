@@ -17,6 +17,12 @@ export class DiscordFormatter {
     default: false,
   })
   stripImages?: boolean;
+
+  @Prop({
+    required: false,
+    default: false,
+  })
+  disableImageLinkPreviews?: boolean;
 }
 
 export const DiscordFormatterSchema =

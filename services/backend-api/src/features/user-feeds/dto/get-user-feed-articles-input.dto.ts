@@ -36,6 +36,10 @@ class FormatterOptionsDto {
   @Type(() => Boolean)
   stripImages: boolean;
 
+  @IsBoolean()
+  @Type(() => Boolean)
+  disableImageLinkPreviews = false;
+
   @IsString()
   @ValidateIf((o) => !o.dateFormat)
   dateFormat?: string;

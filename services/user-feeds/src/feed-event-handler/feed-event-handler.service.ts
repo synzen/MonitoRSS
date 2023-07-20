@@ -281,6 +281,8 @@ export class FeedEventHandlerService {
           formatOptions: {
             dateFormat: event.data.feed.formatOptions?.dateFormat,
             dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+            disableImageLinkPreviews:
+              event.data.feed.formatOptions?.disableImageLinkPreviews,
           },
           dateChecks: event.data.feed.dateChecks,
         }

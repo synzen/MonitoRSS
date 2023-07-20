@@ -118,8 +118,9 @@ export const discordMessageFormSchema = object({
     .nullable()
     .default(null),
   formatter: object({
-    stripImages: boolean().optional().nullable(),
-    formatTables: boolean().optional().nullable(),
+    stripImages: boolean().default(false),
+    formatTables: boolean().default(false),
+    disableImageLinkPreviews: boolean().default(false),
   })
     .optional()
     .nullable(),

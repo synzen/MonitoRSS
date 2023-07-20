@@ -46,14 +46,9 @@ export class ArticlesService {
       dateChecks?: UserFeedDateCheckOptions;
     }
   ) {
-    let articles: Article[];
-
-    ({ articles } = await this.getArticlesFromXml(feedXml, {
-      formatOptions: {
-        dateFormat: formatOptions.dateFormat,
-        dateTimezone: formatOptions.dateTimezone,
-      },
-    }));
+    const { articles } = await this.getArticlesFromXml(feedXml, {
+      formatOptions,
+    });
 
     if (!articles.length) {
       return [];
@@ -124,9 +119,15 @@ export class ArticlesService {
       });
     }
 
-    const articlesPreCheck = [...articlesPastBlocks, ...articlesPassedComparisons].reverse()
+    const articlesPreCheck = [
+      ...articlesPastBlocks,
+      ...articlesPassedComparisons,
+    ].reverse();
 
-    const articlesPostDateCheck = this.filterArticlesBasedOnDateChecks(articlesPreCheck, dateChecks);
+    const articlesPostDateCheck = this.filterArticlesBasedOnDateChecks(
+      articlesPreCheck,
+      dateChecks
+    );
 
     /**
      * Reverse since feed XMLs typically store newest articles at the top, so we want to deliver

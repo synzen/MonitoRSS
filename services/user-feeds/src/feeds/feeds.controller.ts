@@ -109,8 +109,9 @@ export class FeedsController {
     try {
       const fetchResult = await this.feedFetcherService.fetchFeedArticles(url, {
         formatOptions: {
-          dateFormat: formatter?.options.dateFormat,
-          dateTimezone: formatter?.options.dateTimezone,
+          dateFormat: formatter.options.dateFormat,
+          dateTimezone: formatter.options.dateTimezone,
+          disableImageLinkPreviews: formatter.options.disableImageLinkPreviews,
         },
       });
 
@@ -155,10 +156,7 @@ export class FeedsController {
           matchedArticles.map(async (article) => {
             return this.articleFormatterService.formatArticleForDiscord(
               article,
-              {
-                formatTables: formatter?.options.formatTables,
-                stripImages: formatter?.options.stripImages,
-              }
+              formatter.options
             );
           })
         )
@@ -244,36 +242,6 @@ export class FeedsController {
         .required()
         .validate(payload);
 
-      let article: Article | null = null;
-
-      const formatOptions: UserFeedFormatOptions = {
-        dateFormat: withType.feed.formatOptions?.dateFormat,
-        dateTimezone: withType.feed.formatOptions?.dateTimezone,
-      };
-
-      if (!withType.article) {
-        article = await this.feedFetcherService.fetchRandomFeedArticle(
-          withType.feed.url,
-          {
-            formatOptions,
-          }
-        );
-      } else {
-        article = await this.feedFetcherService.fetchFeedArticle(
-          withType.feed.url,
-          withType.article.id,
-          {
-            formatOptions,
-          }
-        );
-      }
-
-      if (!article) {
-        return {
-          status: TestDeliveryStatus.NoArticles,
-        };
-      }
-
       const type = withType.type;
 
       if (type === TestDeliveryMedium.Discord) {
@@ -284,11 +252,43 @@ export class FeedsController {
           .required()
           .validate(payload);
 
+        let article: Article | null = null;
+
+        const formatOptions: UserFeedFormatOptions = {
+          dateFormat: withType.feed.formatOptions?.dateFormat,
+          dateTimezone: withType.feed.formatOptions?.dateTimezone,
+          disableImageLinkPreviews:
+            mediumDetails.formatter.disableImageLinkPreviews,
+        };
+
+        if (!withType.article) {
+          article = await this.feedFetcherService.fetchRandomFeedArticle(
+            withType.feed.url,
+            {
+              formatOptions,
+            }
+          );
+        } else {
+          article = await this.feedFetcherService.fetchFeedArticle(
+            withType.feed.url,
+            withType.article.id,
+            {
+              formatOptions,
+            }
+          );
+        }
+
+        if (!article) {
+          return {
+            status: TestDeliveryStatus.NoArticles,
+          };
+        }
+
         const formattedArticle =
-          await this.articleFormatterService.formatArticleForDiscord(article, {
-            formatTables: mediumDetails.formatter.formatTables,
-            stripImages: mediumDetails.formatter.stripImages,
-          });
+          await this.articleFormatterService.formatArticleForDiscord(
+            article,
+            mediumDetails.formatter
+          );
 
         const filterReferences =
           await this.articleFiltersService.buildReferences({
@@ -391,25 +391,6 @@ export class FeedsController {
         .required()
         .validate(payload);
 
-      const formatOptions: UserFeedFormatOptions = {
-        dateFormat: withType.feed.formatOptions?.dateFormat,
-        dateTimezone: withType.feed.formatOptions?.dateTimezone,
-      };
-
-      const article = await this.feedFetcherService.fetchFeedArticle(
-        withType.feed.url,
-        withType.article.id,
-        {
-          formatOptions,
-        }
-      );
-
-      if (!article) {
-        return {
-          status: TestDeliveryStatus.NoArticles,
-        };
-      }
-
       const type = withType.type;
 
       if (type === TestDeliveryMedium.Discord) {
@@ -419,11 +400,32 @@ export class FeedsController {
           .required()
           .validate(payload);
 
+        const formatOptions: UserFeedFormatOptions = {
+          dateFormat: withType.feed.formatOptions?.dateFormat,
+          dateTimezone: withType.feed.formatOptions?.dateTimezone,
+          disableImageLinkPreviews:
+            mediumDetails.formatter.disableImageLinkPreviews,
+        };
+
+        const article = await this.feedFetcherService.fetchFeedArticle(
+          withType.feed.url,
+          withType.article.id,
+          {
+            formatOptions,
+          }
+        );
+
+        if (!article) {
+          return {
+            status: TestDeliveryStatus.NoArticles,
+          };
+        }
+
         const formattedArticle =
-          await this.articleFormatterService.formatArticleForDiscord(article, {
-            formatTables: mediumDetails.formatter.formatTables,
-            stripImages: mediumDetails.formatter.stripImages,
-          });
+          await this.articleFormatterService.formatArticleForDiscord(
+            article,
+            mediumDetails.formatter
+          );
 
         const filterReferences =
           await this.articleFiltersService.buildReferences({

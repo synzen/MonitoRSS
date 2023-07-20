@@ -16,6 +16,7 @@ export interface GetFeedArticlesInput {
       formatTables: boolean;
       dateFormat: string | undefined;
       dateTimezone: string | undefined;
+      disableImageLinkPreviews: boolean;
     };
   };
 }

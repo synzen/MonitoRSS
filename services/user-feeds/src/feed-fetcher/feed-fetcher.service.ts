@@ -147,10 +147,7 @@ export class FeedFetcherService {
     }
 
     return this.articlesService.getArticlesFromXml(feedXml, {
-      formatOptions: {
-        dateFormat: formatOptions.dateFormat,
-        dateTimezone: formatOptions.dateTimezone,
-      },
+      formatOptions,
     });
   }
 
@@ -160,10 +157,7 @@ export class FeedFetcherService {
     { formatOptions }: FetchFeedArticleOptions
   ) {
     const result = await this.fetchFeedArticles(url, {
-      formatOptions: {
-        dateFormat: formatOptions.dateFormat,
-        dateTimezone: formatOptions.dateTimezone,
-      },
+      formatOptions,
     });
 
     if (!result) {

@@ -45,6 +45,10 @@ export class FormatOptions {
 
   @IsBoolean()
   @Type(() => Boolean)
+  disableImageLinkPreviews: boolean;
+
+  @IsBoolean()
+  @Type(() => Boolean)
   formatTables: boolean;
 
   @IsObject()

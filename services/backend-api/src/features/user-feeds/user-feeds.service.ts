@@ -22,6 +22,7 @@ import { FeedHandlerService } from "../../services/feed-handler/feed-handler.ser
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
+import { GetArticlesInput } from "../../services/feed-handler/types";
 
 interface GetFeedsInput {
   userId: string;
@@ -309,22 +310,25 @@ export class UserFeedsService {
   async getFeedArticleProperties({
     url,
   }: GetFeedArticlePropertiesInput): Promise<GetFeedArticlePropertiesOutput> {
-    const { articles, requestStatus } =
-      await this.feedHandlerService.getArticles({
-        url,
-        limit: 10,
-        random: false,
-        skip: 0,
-        selectProperties: ["*"],
-        formatter: {
-          options: {
-            formatTables: false,
-            stripImages: false,
-            dateFormat: undefined,
-            dateTimezone: undefined,
-          },
+    const input: GetArticlesInput = {
+      url,
+      limit: 10,
+      random: false,
+      skip: 0,
+      selectProperties: ["*"],
+      formatter: {
+        options: {
+          formatTables: false,
+          stripImages: false,
+          dateFormat: undefined,
+          dateTimezone: undefined,
+          disableImageLinkPreviews: false,
         },
-      });
+      },
+    };
+
+    const { articles, requestStatus } =
+      await this.feedHandlerService.getArticles(input);
 
     const properties = Array.from(
       new Set(articles.map((article) => Object.keys(article)).flat())

@@ -112,6 +112,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     formatter: object({
       stripImages: boolean().optional().default(false),
       formatTables: boolean().optional().default(false),
+      disableImageLinkPreviews: boolean().optional().default(false),
     }).required(),
     splitOptions: object({
       splitChar: string().optional().nullable(),

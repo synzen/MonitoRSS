@@ -90,6 +90,7 @@ describe("ArticlesService", () => {
       formatOptions: {
         dateFormat: undefined,
         dateTimezone: undefined,
+        disableImageLinkPreviews: undefined,
       },
       dateChecks: {},
     };
@@ -343,6 +344,7 @@ describe("ArticlesService", () => {
       formatOptions: {
         dateFormat: undefined,
         dateTimezone: undefined,
+        disableImageLinkPreviews: undefined,
       },
     };
 
@@ -368,12 +370,7 @@ describe("ArticlesService", () => {
 
     it("rejects if it is an invalid feed", async () => {
       await expect(
-        service.getArticlesFromXml(invalidFeed, {
-          formatOptions: {
-            dateFormat: undefined,
-            dateTimezone: undefined,
-          },
-        })
+        service.getArticlesFromXml(invalidFeed, options)
       ).rejects.toThrow(InvalidFeedException);
     });
   });

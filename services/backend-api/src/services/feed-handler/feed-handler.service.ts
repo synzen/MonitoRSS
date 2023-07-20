@@ -156,9 +156,13 @@ export class FeedHandlerService {
       throw new FeedArticleNotFoundException("Feed article not found");
     }
 
-    await this.validateResponseStatus(res, {
-      requestBody: details,
-    });
+    await this.validateResponseStatus(
+      res,
+      "Failed to send test article request",
+      {
+        requestBody: details,
+      }
+    );
 
     const json = await res.json();
 
@@ -195,7 +199,7 @@ export class FeedHandlerService {
       throw new FeedArticleNotFoundException("Feed article not found");
     }
 
-    await this.validateResponseStatus(res, {
+    await this.validateResponseStatus(res, "Failed to create preview", {
       requestBody: details,
     });
 
@@ -234,7 +238,7 @@ export class FeedHandlerService {
       },
     });
 
-    await this.validateResponseStatus(res, {
+    await this.validateResponseStatus(res, "Failed to get articles", {
       requestBody: body,
     });
 
@@ -259,7 +263,7 @@ export class FeedHandlerService {
       }),
     });
 
-    await this.validateResponseStatus(res, {
+    await this.validateResponseStatus(res, "Failed to validate filters", {
       requestBody: {
         expression,
       },
@@ -279,13 +283,14 @@ export class FeedHandlerService {
 
   private async validateResponseStatus(
     res: Response,
+    contextMessage: string,
     meta: {
       requestBody: Record<string, unknown>;
     }
   ) {
     if (res.status >= 500) {
       throw new FeedFetcherStatusException(
-        `Failed to get articles: >= 500 status code (${
+        `${contextMessage}: >= 500 status code (${
           res.status
         }) from User feeds api. Meta: ${JSON.stringify(meta)}`
       );
@@ -299,7 +304,7 @@ export class FeedHandlerService {
       } catch (err) {}
 
       throw new FeedFetcherStatusException(
-        `Failed to get articles: non-ok status code (${
+        `${contextMessage}: non-ok status code (${
           res.status
         }) from User feeds api, response: ${JSON.stringify(body)}`
       );

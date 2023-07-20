@@ -10,8 +10,17 @@ describe("ArticleFormatterService", () => {
 
   describe("formatValueForDiscord", () => {
     describe("img", () => {
-      it("returns the image link", async () => {
+      it("returns the image link with no alt", async () => {
         const value = '<img src="https://example.com/image.png" />';
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("https://example.com/image.png");
+      });
+
+      it("returns the image link with an alt", async () => {
+        const value =
+          '<img src="https://example.com/image.png" alt="this should not show" />';
 
         const result = service.formatValueForDiscord(value);
 
@@ -24,9 +33,25 @@ describe("ArticleFormatterService", () => {
         const result = service.formatValueForDiscord(value, {
           stripImages: true,
           formatTables: false,
+          disableImageLinkPreviews: false,
         });
 
         expect(result.value).toEqual("Hello World");
+      });
+
+      it("wraps links with < and > when disable image link previews is true", async () => {
+        const value =
+          'Hello <img src="https://example.com/image.png" /> World <img src="https://example.com/image2.png" />';
+
+        const result = service.formatValueForDiscord(value, {
+          stripImages: false,
+          formatTables: false,
+          disableImageLinkPreviews: true,
+        });
+
+        expect(result.value).toEqual(
+          "Hello <https://example.com/image.png> World <https://example.com/image2.png>"
+        );
       });
     });
 
@@ -97,6 +122,7 @@ describe("ArticleFormatterService", () => {
         const result = service.formatValueForDiscord(value, {
           formatTables: true,
           stripImages: false,
+          disableImageLinkPreviews: false,
         });
 
         expect(result.value).toEqual(

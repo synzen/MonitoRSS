@@ -116,6 +116,7 @@ describe("FeedController", () => {
         options: {
           formatTables: false,
           stripImages: true,
+          disableImageLinkPreviews: false,
         },
       },
     };

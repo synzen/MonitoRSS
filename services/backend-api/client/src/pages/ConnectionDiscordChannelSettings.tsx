@@ -308,6 +308,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       stripImages: connection?.details.formatter.stripImages,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ...feed?.formatOptions,
                     },
                   }}
                   connection={{

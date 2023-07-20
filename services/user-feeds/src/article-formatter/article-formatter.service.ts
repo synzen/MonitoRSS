@@ -116,22 +116,30 @@ export class ArticleFormatterService {
             builder.closeBlock(options);
           }
         },
-        images: (elem, walk, builder, options) => {
-          const imagesFormatter = builder.options.formatters.image;
+        images: (elem, walk, builder) => {
+          const attribs = elem.attribs || {};
 
-          if (imagesFormatter) {
-            imagesFormatter(elem, walk, builder, options);
+          const src = (attribs.src || "").trim();
 
-            if (elem.attribs.src) {
-              images.push(elem.attribs.src);
-            }
+          if (options?.disableImageLinkPreviews) {
+            builder.addInline("<");
+          }
+
+          builder.addInline(src);
+
+          if (options?.disableImageLinkPreviews) {
+            builder.addInline(">");
+          }
+
+          if (src) {
+            images.push(elem.attribs.src);
           }
         },
-        anchors: (elem, walk, builder, options) => {
+        anchors: (elem, walk, builder, htmlToTextOptions) => {
           const anchorsFormatter = builder.options.formatters.anchor;
 
           if (anchorsFormatter) {
-            anchorsFormatter(elem, walk, builder, options);
+            anchorsFormatter(elem, walk, builder, htmlToTextOptions);
 
             if (elem.attribs.href) {
               anchors.push(elem.attribs.href);

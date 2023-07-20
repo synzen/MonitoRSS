@@ -10,5 +10,10 @@ export class DiscordConnectionFormatterOptions {
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
-  stripImages: boolean;
+  stripImages?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  disableImageLinkPreviews?: boolean;
 }
