@@ -55,8 +55,6 @@ export class ArticlesService {
       },
     }));
 
-    articles = this.filterArticlesBasedOnDateChecks(articles, dateChecks);
-
     if (!articles.length) {
       return [];
     }
@@ -126,11 +124,15 @@ export class ArticlesService {
       });
     }
 
+    const articlesPreCheck = [...articlesPastBlocks, ...articlesPassedComparisons].reverse()
+
+    const articlesPostDateCheck = this.filterArticlesBasedOnDateChecks(articlesPreCheck, dateChecks);
+
     /**
      * Reverse since feed XMLs typically store newest articles at the top, so we want to deliver
      * the oldest articles first (hence putting them in the lowest indices)
      */
-    return [...articlesPastBlocks, ...articlesPassedComparisons].reverse();
+    return articlesPostDateCheck;
   }
 
   filterArticlesBasedOnDateChecks(
