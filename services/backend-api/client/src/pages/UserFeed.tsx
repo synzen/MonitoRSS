@@ -1,7 +1,4 @@
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Breadcrumb,
   BreadcrumbItem,
@@ -37,10 +34,10 @@ import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
   EditUserFeedDialog,
-  RefreshUserFeedButton,
   UpdateUserFeedInput,
   useArticleDailyLimit,
   useDeleteUserFeed,
+  UserFeedDisabledAlert,
   UserFeedDisabledCode,
   useUpdateUserFeed,
   useUserFeed,
@@ -282,60 +279,7 @@ export const UserFeed: React.FC = () => {
                     </MenuList>
                   </Menu>
                 </HStack>
-                <Alert
-                  status="info"
-                  hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.Manual}
-                  borderRadius="md"
-                >
-                  <Box>
-                    <AlertTitle>{t("pages.userFeed.manuallyDisabledTitle")}</AlertTitle>
-                    <AlertDescription display="block">
-                      {t("pages.userFeed.manuallyDisabledDescription")}
-                      <Box marginTop="1rem">
-                        <Button
-                          isLoading={updatingStatus === "loading"}
-                          onClick={() =>
-                            onUpdateFeed({
-                              disabledCode: null,
-                            })
-                          }
-                        >
-                          {t("pages.userFeed.manuallyDisabledEnableButtonText")}
-                        </Button>
-                      </Box>
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-                <Alert
-                  status="error"
-                  hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.InvalidFeed}
-                  borderRadius="md"
-                >
-                  <Box>
-                    <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
-                    <AlertDescription display="block">
-                      {t("pages.userFeed.invalidFeedFailureText")}
-                      <Box marginTop="1rem">
-                        {feedId && <RefreshUserFeedButton feedId={feedId} />}
-                      </Box>
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-                <Alert
-                  status="error"
-                  hidden={!feed || feed.disabledCode !== UserFeedDisabledCode.FailedRequests}
-                  borderRadius="md"
-                >
-                  <Box>
-                    <AlertTitle>{t("pages.userFeed.connectionFailureTitle")}</AlertTitle>
-                    <AlertDescription display="block">
-                      {t("pages.userFeed.connectionFailureText")}
-                      <Box marginTop="1rem">
-                        {feedId && <RefreshUserFeedButton feedId={feedId} />}
-                      </Box>
-                    </AlertDescription>
-                  </Box>
-                </Alert>
+                <UserFeedDisabledAlert feedId={feedId} />
               </Stack>
               <Grid
                 templateColumns={{

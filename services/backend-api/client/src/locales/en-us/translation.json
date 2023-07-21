@@ -143,7 +143,13 @@
       "connectionFailureTitle": "Disabled due to too many connection failures",
       "connectionFailureText": "There has been too many connection failures within a short period of time. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
       "invalidFeedFailureTitle": "Disabled due to invalid feed",
-      "invalidFeedFailureText": "The feed contents could not be read. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled."
+      "invalidFeedFailureText": "The feed contents could not be read. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
+      "exceededFeedLimitTitle": "Disabled due to exceeded feed limit",
+      "exceededFeedLimitText": "You currently have exceeded your feed limit. You may either become a supporter, or delete some of your other feeds to re-enable this feed automatically after some time.",
+      "adminDisabledTitle": "Disabled by an administrator",
+      "adminDisabledText": "This feed has been disabled by an administrator. Please contact support for more details.",
+      "unknownTitle": "Disabled",
+      "unknownText": "This feed has been disabled. Please contact support for more details."
     },
     "message": {
       "title": "Message",

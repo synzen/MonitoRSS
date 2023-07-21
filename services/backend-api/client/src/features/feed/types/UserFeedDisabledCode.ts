@@ -3,4 +3,6 @@ export enum UserFeedDisabledCode {
   FailedRequests = "FAILED_REQUESTS",
   Manual = "MANUAL",
   InvalidFeed = "INVALID_FEED",
+  ExceededFeedLimit = "EXCEEDED_FEED_LIMIT",
+  ExcessivelyActive = "EXCESSIVELY_ACTIVE",
 }

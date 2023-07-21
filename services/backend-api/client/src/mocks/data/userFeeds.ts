@@ -143,8 +143,8 @@ const mockUserFeeds: UserFeed[] = [
         name: "Discord Thread 1",
       },
     ],
-    healthStatus: UserFeedHealthStatus.Failed,
-    disabledCode: UserFeedDisabledCode.FailedRequests,
+    healthStatus: UserFeedHealthStatus.Ok,
+    disabledCode: UserFeedDisabledCode.BadFormat,
     refreshRateSeconds: 60,
   },
   {
