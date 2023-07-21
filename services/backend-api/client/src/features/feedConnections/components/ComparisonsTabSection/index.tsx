@@ -11,7 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
 import { AddComparisonSelect } from "./AddComparisonSelect";
-import { ComparisonTab } from "./ComparisonTab";
+import { ComparisonTag } from "./ComparisonTag";
 
 interface Props {
   feedId: string;
@@ -96,9 +96,9 @@ export const ComparisonsTabSection = ({
             )}
           </Text>
         </Stack>
-        <HStack flexWrap="wrap">
+        <HStack flexWrap="wrap" alignItems="center">
           {passingComparisons?.map((comparison) => (
-            <ComparisonTab
+            <ComparisonTag
               title={comparison}
               colorScheme="cyan"
               onDelete={() => onRemovePassingComparison(comparison)}
@@ -125,9 +125,9 @@ export const ComparisonsTabSection = ({
             )}
           </Text>
         </Stack>
-        <HStack flexWrap="wrap">
+        <HStack flexWrap="wrap" alignItems="center">
           {blockingComparisons?.map((comparison) => (
-            <ComparisonTab
+            <ComparisonTag
               title={comparison}
               colorScheme="red"
               onDelete={() => onRemoveBlockingComparison(comparison)}

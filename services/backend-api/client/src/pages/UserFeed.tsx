@@ -28,10 +28,11 @@ import {
   Text,
   useDisclosure,
   Badge,
+  IconButton,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { ArrowLeftIcon, ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -359,9 +360,22 @@ export const UserFeed: React.FC = () => {
                     description: t("pages.feed.articleDailyLimitHint"),
                   }}
                 >
-                  <Text color={isAtLimit ? "red.300" : ""} display="block">
-                    {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
-                  </Text>
+                  <HStack>
+                    <Text color={isAtLimit ? "red.300" : ""} display="block">
+                      {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                    </Text>
+                    <IconButton
+                      as="a"
+                      href="https://www.patreon.com/monitorss"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label="Increase article daily limit"
+                      variant="ghost"
+                      icon={<ArrowLeftIcon />}
+                      size="xs"
+                      transform="rotate(90deg)"
+                    />
+                  </HStack>
                   {!dailyLimit && <Spinner display="block" size="sm" />}
                 </CategoryText>
               </Grid>

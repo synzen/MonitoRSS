@@ -563,9 +563,9 @@
         },
         "comparisonsTabSection": {
           "passingComparisonsTitle": "Passing Comparisons",
-          "passingComparisonsDescription": "Article properties that will be checked to attempt to pass an article for it to send after an article has already been determine to be old.",
+          "passingComparisonsDescription": "Properties that will be checked against stored prior articles to attempt to deliver articles that were normally going to be blocked from delivery.",
           "blockingComparisonsTitle": "Blocking Comparison",
-          "blockingComparisonsDescription": "Article properties that will be checked to attempt to block an article from sending after default algorithms mark an article as new.",
+          "blockingComparisonsDescription": "Properties that will be checked against stored prior articles to attempt to block articles if they are about to be delivered.",
           "errorFailedToGetPropertiesTitle": "Failed to get article properties to add"
         },
         "userFeedSettingsTabSection": {

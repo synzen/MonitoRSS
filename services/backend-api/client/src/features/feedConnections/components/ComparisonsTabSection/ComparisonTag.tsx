@@ -7,7 +7,7 @@ interface Props {
   onDelete: () => Promise<void>;
 }
 
-export const ComparisonTab = ({ colorScheme, title, onDelete }: Props) => {
+export const ComparisonTag = ({ colorScheme, title, onDelete }: Props) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const onClickDelete = async () => {
@@ -17,8 +17,8 @@ export const ComparisonTab = ({ colorScheme, title, onDelete }: Props) => {
   };
 
   return (
-    <Box paddingBottom={2}>
-      <Tag size="lg" colorScheme={colorScheme}>
+    <Box>
+      <Tag size="lg" colorScheme={colorScheme} margin={0}>
         <TagLabel>{title}</TagLabel>
         {isDeleting && <TagRightIcon as={Spinner} />}
         {!isDeleting && <TagCloseButton aria-label="Delete" onClick={() => onClickDelete()} />}
