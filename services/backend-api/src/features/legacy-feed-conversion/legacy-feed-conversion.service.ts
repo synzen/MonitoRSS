@@ -8,7 +8,10 @@ import {
   DiscordServerProfile,
   DiscordServerProfileModel,
 } from "../discord-servers/entities";
-import { FeedConnectionMentionType } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionMentionType,
+} from "../feeds/constants";
 import {
   FailRecord,
   FailRecordModel,
@@ -25,7 +28,10 @@ import {
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
-import { UserFeedHealthStatus } from "../user-feeds/types";
+import {
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../user-feeds/types";
 
 enum ExpressionType {
   Relational = "RELATIONAL",
@@ -54,6 +60,67 @@ enum RelationalExpressionRight {
   String = "STRING",
   RegExp = "REGEXP",
 }
+
+enum LegacyFeedDisabledCode {
+  ExceededFeedLimit = "Exceeded feed limit",
+  ExcessivelyActiveFeed = "Excessively active feed",
+  MissingChannel = "Missing channel",
+  MissingPermissionsEmbedLinks = "Missing permissions EMBED_LINKS",
+  MissingPermissionsEmbedLinksViewChannel = "Missing permissions EMBED_LINKS, VIEW_CHANNEL",
+  MissingPermissionsSendMessages = "Missing permissions SEND_MESSAGES",
+  MissingPermissionsSendMessagesEmbedLinks = "Missing permissions SEND_MESSAGES, EMBED_LINKS",
+  MissingPermissionsSendMessageEmbedLinksViewChannel = "Missing permissions SEND_MESSAGES," +
+    " EMBED_LINKS, VIEW_CHANNEL",
+  MissingPermissionsSendMessagesViewChannel = "Missing permissions SEND_MESSAGES, VIEW_CHANNEL",
+  MissingPermissionsViewChannel = "Missing permissions VIEW_CHANNEL",
+  IncorrectFormat = "There was an issue sending an article due to an incorrectly-formatted" +
+    " text or embed. Update the feed and ensure it works to re-enable",
+}
+
+const getConnectionDisabledCode = (legacyFeedDisabledCode?: string) => {
+  if (!legacyFeedDisabledCode) {
+    return undefined;
+  }
+
+  if (legacyFeedDisabledCode === LegacyFeedDisabledCode.MissingChannel) {
+    return FeedConnectionDisabledCode.MissingMedium;
+  }
+
+  const setOfMissingPermissions = [
+    LegacyFeedDisabledCode.MissingPermissionsEmbedLinks,
+    LegacyFeedDisabledCode.MissingPermissionsEmbedLinksViewChannel,
+    LegacyFeedDisabledCode.MissingPermissionsSendMessages,
+    LegacyFeedDisabledCode.MissingPermissionsSendMessagesEmbedLinks,
+    LegacyFeedDisabledCode.MissingPermissionsSendMessageEmbedLinksViewChannel,
+    LegacyFeedDisabledCode.MissingPermissionsSendMessagesViewChannel,
+    LegacyFeedDisabledCode.MissingPermissionsViewChannel,
+  ];
+
+  if (
+    setOfMissingPermissions.includes(
+      legacyFeedDisabledCode as LegacyFeedDisabledCode
+    )
+  ) {
+    return FeedConnectionDisabledCode.MissingPermissions;
+  }
+
+  if (legacyFeedDisabledCode === LegacyFeedDisabledCode.IncorrectFormat) {
+    return FeedConnectionDisabledCode.BadFormat;
+  }
+
+  const ignore = [
+    LegacyFeedDisabledCode.ExceededFeedLimit,
+    LegacyFeedDisabledCode.ExcessivelyActiveFeed,
+  ];
+
+  if (ignore.includes(legacyFeedDisabledCode as LegacyFeedDisabledCode)) {
+    return undefined;
+  }
+
+  throw new Error(
+    `Unknown legacy disabled code while convertng legacy feed: ${legacyFeedDisabledCode}`
+  );
+};
 
 @Injectable()
 export class LegacyFeedConversionService {
@@ -209,7 +276,7 @@ export class LegacyFeedConversionService {
     return results;
   }
 
-  // TODO: disabled feeds, img previews
+  // TODO: disabled feeds
   async getUserFeedEquivalent(
     feed: Feed,
     {
@@ -235,6 +302,18 @@ export class LegacyFeedConversionService {
       isYoutube,
     });
 
+    const healthStatus = this.getHealthStatus(failRecord);
+
+    let disabledCode: UserFeedDisabledCode | undefined;
+
+    if (feed.disabled === LegacyFeedDisabledCode.ExceededFeedLimit) {
+      disabledCode = UserFeedDisabledCode.ExceededFeedLimit;
+    } else if (feed.disabled === LegacyFeedDisabledCode.ExcessivelyActiveFeed) {
+      disabledCode = UserFeedDisabledCode.ExcessivelyActive;
+    } else if (healthStatus === UserFeedHealthStatus.Failed) {
+      disabledCode = UserFeedDisabledCode.FailedRequests;
+    }
+
     const converted: UserFeed = {
       _id: new Types.ObjectId(),
       legacyFeedId: feed._id,
@@ -244,7 +323,8 @@ export class LegacyFeedConversionService {
       },
       createdAt: feed.createdAt || new Date(),
       updatedAt: feed.updatedAt || new Date(),
-      healthStatus: this.getHealthStatus(failRecord),
+      healthStatus,
+      disabledCode,
       title: feed.title,
       url: feed.url,
       user: {
@@ -270,6 +350,7 @@ export class LegacyFeedConversionService {
 
     if (!feed.webhook) {
       converted.connections.discordChannels.push({
+        disabledCode: getConnectionDisabledCode(feed.disabled),
         createdAt: feed.createdAt || new Date(),
         updatedAt: feed.updatedAt || new Date(),
         id: new Types.ObjectId(),
@@ -324,6 +405,7 @@ export class LegacyFeedConversionService {
       const webhook = await this.discordApiService.getWebhook(feed.webhook.id);
 
       converted.connections.discordWebhooks.push({
+        disabledCode: getConnectionDisabledCode(feed.disabled),
         createdAt: feed.createdAt || new Date(),
         updatedAt: feed.updatedAt || new Date(),
         id: new Types.ObjectId(),
