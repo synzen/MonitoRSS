@@ -331,8 +331,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                   filters={connection?.filters?.expression as LogicalFilterExpression}
                   articleFormatter={{
                     options: {
-                      formatTables: connection?.details.formatter.formatTables || false,
-                      stripImages: connection?.details.formatter.stripImages || false,
+                      formatTables: connection?.details.formatter?.formatTables || false,
+                      stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                     },

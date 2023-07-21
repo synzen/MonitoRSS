@@ -304,8 +304,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   }}
                   articleFormatter={{
                     options: {
-                      formatTables: connection?.details.formatter.formatTables,
-                      stripImages: connection?.details.formatter.stripImages,
+                      formatTables: connection?.details.formatter?.formatTables,
+                      stripImages: connection?.details.formatter?.stripImages,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                       ...feed?.formatOptions,
@@ -339,8 +339,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   filters={connection?.filters?.expression as LogicalFilterExpression}
                   articleFormatter={{
                     options: {
-                      formatTables: connection?.details.formatter.formatTables,
-                      stripImages: connection?.details.formatter.stripImages,
+                      formatTables: connection?.details.formatter?.formatTables,
+                      stripImages: connection?.details.formatter?.stripImages,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                     },

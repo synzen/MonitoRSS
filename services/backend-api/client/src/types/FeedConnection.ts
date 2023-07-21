@@ -38,7 +38,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     formatTables: boolean().default(false),
     stripImages: boolean().default(false),
     disableImageLinkPreviews: boolean().default(false),
-  }).required(),
+  }),
   placeholderLimits: array(
     object({
       characterCount: number().min(1).positive().integer().required(),
@@ -65,7 +65,7 @@ const DiscordWebhookConnectionDetailsSchema = object({
     formatTables: boolean().default(false),
     stripImages: boolean().default(false),
     disableImageLinkPreviews: boolean().default(false),
-  }).required(),
+  }),
   placeholderLimits: array(
     object({
       characterCount: number().min(1).positive().integer().required(),
