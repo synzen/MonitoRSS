@@ -7,6 +7,7 @@ import {
 } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
+import { DiscordWebhookForumChannelUnsupportedException } from "../exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   {
@@ -21,6 +22,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [DiscordWebhookMissingUserPermException.name]: {
       status: HttpStatus.FORBIDDEN,
       code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+    },
+    [DiscordWebhookForumChannelUnsupportedException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.WEBHOOK_FORUM_UNSUPPORTED,
     },
   };
 

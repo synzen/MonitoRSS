@@ -58,7 +58,8 @@
       "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically",
       "feedArticleNotFound": "Article does not exist. Try selecting another article or refreshing the page.",
       "discordServerNotFound": "The bot does not access to this server. Make sure the bot is in the server.",
-      "discordChannelInvalid": "That is an unacceptable channel. Try another one."
+      "discordChannelInvalid": "That is an unacceptable channel. Try another one.",
+      "webhookForumUnsupported": "Webhooks attached to forum channels are currently unsupported. Consider using a Discord channel connection instead."
     }
   },
   "pages": {

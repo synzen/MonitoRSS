@@ -27,6 +27,7 @@ export enum ApiErrorCode {
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = "FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED",
   FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
+  WEBHOOK_FORUM_UNSUPPORTED = "WEBHOOK_FORUM_UNSUPPORTED",
 }
 
 // Create a package for the frontend?
@@ -67,4 +68,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_ARTICLE_NOT_FOUND: "Article does not exist",
   DISCORD_SERVER_NOT_FOUND:
     "Server does not exist or bot does not have access to server",
+  WEBHOOK_FORUM_UNSUPPORTED: "Forum webhooks are currently unsupported",
 };

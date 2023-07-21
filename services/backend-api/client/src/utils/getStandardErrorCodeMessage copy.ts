@@ -27,6 +27,7 @@ enum ApiErrorCode {
   FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
   DISCORD_CAHNNEL_INVALID = "DISCORD_CAHNNEL_INVALID",
+  WEBHOOK_FORUM_UNSUPPORTED = "WEBHOOK_FORUM_UNSUPPORTED",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -56,6 +57,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_ARTICLE_NOT_FOUND: t("common.apiErrors.feedArticleNotFound"),
   DISCORD_SERVER_NOT_FOUND: t("common.apiErrors.discordServerNotFound"),
   DISCORD_CAHNNEL_INVALID: t("common.apiErrors.discordChannelInvalid"),
+  WEBHOOK_FORUM_UNSUPPORTED: t("common.apiErrors.webhookForumUnsupported"),
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

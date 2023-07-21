@@ -24,6 +24,9 @@ import {
   castDiscordEmbedsForMedium,
 } from "../../common/utils";
 import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { DiscordChannelType } from "../../common";
+import { DiscordWebhookForumChannelUnsupportedException } from "./exceptions";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -76,7 +79,8 @@ export class FeedConnectionsDiscordWebhooksService {
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly discordWebhooksService: DiscordWebhooksService,
     private readonly discordAuthService: DiscordAuthService,
-    private readonly feedHandlerService: FeedHandlerService
+    private readonly feedHandlerService: FeedHandlerService,
+    private readonly discordApiService: DiscordAPIService
   ) {}
 
   async createDiscordWebhookConnection({
@@ -448,6 +452,16 @@ export class FeedConnectionsDiscordWebhooksService {
     ) {
       throw new DiscordWebhookMissingUserPermException(
         `User does not manage guild of webhook webhook ${id}`
+      );
+    }
+
+    const { type } = await this.discordApiService.getChannel(
+      webhook.channel_id
+    );
+
+    if (type === DiscordChannelType.GUILD_FORUM) {
+      throw new DiscordWebhookForumChannelUnsupportedException(
+        `Webhook attached to a forum channel is currently unsupported`
       );
     }
 
