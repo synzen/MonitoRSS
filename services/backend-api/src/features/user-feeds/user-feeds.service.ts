@@ -609,10 +609,6 @@ export class UserFeedsService {
 
         const enableCount = maxUserFeeds - undisabledFeedCount;
 
-        logger.info(
-          `Enabling ${enableCount} feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
-        );
-
         // Some feeds should be enabled
         const disabledFeedCount = await this.userFeedModel.countDocuments({
           "user.discordUserId": discordUserId,
@@ -620,6 +616,10 @@ export class UserFeedsService {
         });
 
         if (disabledFeedCount > 0) {
+          logger.info(
+            `Enabling ${enableCount} feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
+          );
+
           const docs = await this.userFeedModel
             .find({
               "user.discordUserId": discordUserId,
