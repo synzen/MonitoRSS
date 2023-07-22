@@ -23,6 +23,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { GetArticlesInput } from "../../services/feed-handler/types";
+import logger from "../../utils/logger";
 
 interface GetFeedsInput {
   userId: string;
@@ -338,6 +339,301 @@ export class UserFeedsService {
       requestStatus,
       properties,
     };
+  }
+
+  async enforceUserFeedLimits(
+    supporterLimits: Array<{ discordUserId: string; maxUserFeeds: number }>
+  ) {
+    const supporterDiscordUserIds = supporterLimits.map(
+      ({ discordUserId }) => discordUserId
+    );
+    const defaultMaxUserFeeds = this.supportersService.defaultMaxUserFeeds;
+
+    // Handle non-supporter feed disabling first
+    const usersToDisable: Array<{
+      _id: string;
+      disabledCount: number;
+      enabledCount: number;
+    }> = await this.userFeedModel.aggregate([
+      {
+        $match: {
+          "user.discordUserId": {
+            $nin: supporterDiscordUserIds,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$user.discordUserId",
+          disabledCount: {
+            $sum: {
+              $cond: [
+                {
+                  $eq: [
+                    "$disabledCode",
+                    UserFeedDisabledCode.ExceededFeedLimit,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          enabledCount: {
+            $sum: {
+              $cond: [
+                {
+                  $ne: [
+                    "$disabledCode",
+                    UserFeedDisabledCode.ExceededFeedLimit,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          enabledCount: {
+            $gt: defaultMaxUserFeeds,
+          },
+        },
+      },
+    ]);
+    logger.info(
+      `Found ${usersToDisable.length} non-supporter users to` +
+        ` disable feeds for (limit: ${defaultMaxUserFeeds})`
+    );
+
+    await Promise.all(
+      usersToDisable.map(async ({ _id: discordUserId, enabledCount }) => {
+        const docs = await this.userFeedModel
+          .find({
+            "user.discordUserId": discordUserId,
+            disabledCode: {
+              $ne: UserFeedDisabledCode.ExceededFeedLimit,
+            },
+          })
+          .sort({
+            // Disable the oldest feeds first
+            createdAt: 1,
+          })
+          .limit(enabledCount - defaultMaxUserFeeds)
+          .select("_id")
+          .lean();
+
+        await this.userFeedModel.updateMany(
+          {
+            _id: {
+              $in: docs.map((doc) => doc._id),
+            },
+          },
+          {
+            $set: {
+              disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            },
+          }
+        );
+      })
+    );
+
+    // Handle feed enabling now
+    const usersToEnable: Array<{
+      _id: string;
+      disabledCount: number;
+      enabledCount: number;
+    }> = await this.userFeedModel.aggregate([
+      {
+        $match: {
+          "user.discordUserId": {
+            $nin: supporterDiscordUserIds,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$user.discordUserId",
+          disabledCount: {
+            $sum: {
+              $cond: [
+                {
+                  $eq: [
+                    "$disabledCode",
+                    UserFeedDisabledCode.ExceededFeedLimit,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          enabledCount: {
+            $sum: {
+              $cond: [
+                {
+                  $ne: [
+                    "$disabledCode",
+                    UserFeedDisabledCode.ExceededFeedLimit,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          enabledCount: {
+            $lt: defaultMaxUserFeeds,
+          },
+          // We should only be enabling feeds if some of them are disabled because of the feed limit
+          disabledCount: {
+            $gt: 0,
+          },
+        },
+      },
+    ]);
+
+    logger.info(
+      `Found ${usersToEnable.length} non-supporter users to enable feeds for`
+    );
+
+    await Promise.all(
+      usersToEnable.map(async ({ _id: discordUserId, enabledCount }) => {
+        const countToEnable = defaultMaxUserFeeds - enabledCount;
+
+        if (countToEnable === 0) {
+          return;
+        }
+
+        const docs = await this.userFeedModel
+          .find({
+            "user.discordUserId": discordUserId,
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          })
+          .sort({
+            // Re-enable the newest feeds first
+            createdAt: -1,
+          })
+          .limit(countToEnable)
+          .select("_id")
+          .lean();
+
+        await this.userFeedModel.updateMany(
+          {
+            _id: {
+              $in: docs.map((doc) => doc._id),
+            },
+          },
+          {
+            $unset: {
+              disabledCode: "",
+            },
+          }
+        );
+      })
+    );
+
+    await this.enforceSupporterLimits(supporterLimits);
+  }
+
+  private async enforceSupporterLimits(
+    supporterLimits: Array<{ discordUserId: string; maxUserFeeds: number }>
+  ) {
+    await Promise.all(
+      supporterLimits.map(async ({ discordUserId, maxUserFeeds }) => {
+        const undisabledFeedCount = await this.userFeedModel.countDocuments({
+          "user.discordUserId": discordUserId,
+          disabledCode: {
+            $ne: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+        });
+
+        if (undisabledFeedCount === maxUserFeeds) {
+          return;
+        }
+
+        if (undisabledFeedCount > maxUserFeeds) {
+          logger.info(
+            `Will disable ${
+              undisabledFeedCount - maxUserFeeds
+            } feeds for user ${discordUserId} (actual limit: ${maxUserFeeds})`
+          );
+          const docs = await this.userFeedModel
+            .find({
+              "user.discordUserId": discordUserId,
+              disabledCode: {
+                $ne: UserFeedDisabledCode.ExceededFeedLimit,
+              },
+            })
+            .sort({
+              // Disable the oldest feeds first
+              createdAt: 1,
+            })
+            .limit(undisabledFeedCount - maxUserFeeds)
+            .select("_id")
+            .lean();
+
+          await this.userFeedModel.updateMany(
+            {
+              _id: {
+                $in: docs.map((doc) => doc._id),
+              },
+            },
+            {
+              $set: {
+                disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+              },
+            }
+          );
+
+          return;
+        }
+
+        const enableCount = maxUserFeeds - undisabledFeedCount;
+
+        // Some feeds should be enabled
+        const disabledFeedCount = await this.userFeedModel.countDocuments({
+          "user.discordUserId": discordUserId,
+          disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+        });
+
+        if (disabledFeedCount > 0) {
+          const docs = await this.userFeedModel
+            .find({
+              "user.discordUserId": discordUserId,
+              disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            })
+            .sort({
+              // Re-enable the newest feeds first
+              createdAt: -1,
+            })
+            .limit(enableCount)
+            .select("_id")
+            .lean();
+
+          await this.userFeedModel.updateMany(
+            {
+              _id: {
+                $in: docs.map((doc) => doc._id),
+              },
+            },
+            {
+              $unset: {
+                disabledCode: "",
+              },
+            }
+          );
+
+          return;
+        }
+      })
+    );
   }
 
   private async checkUrlIsValid(url: string) {

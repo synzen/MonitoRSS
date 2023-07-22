@@ -1,5 +1,7 @@
+/* eslint-disable max-len */
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
+import dayjs from "dayjs";
 import { Types } from "mongoose";
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { FeedFetcherService } from "../../services/feed-fetcher/feed-fetcher.service";
@@ -30,9 +32,12 @@ describe("UserFeedsService", () => {
   let userFeedModel: UserFeedModel;
   let feedFetcherService: FeedFetcherService;
   let feedsService: FeedsService;
-  let supportersService: SupportersService;
   let feedHandlerService: FeedHandlerService;
   const discordUserId = "discordUserId";
+  const supportersService = {
+    getBenefitsOfDiscordUser: jest.fn(),
+    defaultMaxUserFeeds: 2,
+  };
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -72,9 +77,7 @@ describe("UserFeedsService", () => {
         getBannedFeedDetails: jest.fn(),
       })
       .overrideProvider(SupportersService)
-      .useValue({
-        getBenefitsOfDiscordUser: jest.fn(),
-      })
+      .useValue(supportersService)
       .overrideProvider(FeedHandlerService)
       .useValue({
         getRateLimits: jest.fn(),
@@ -88,7 +91,6 @@ describe("UserFeedsService", () => {
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     feedsService = module.get<FeedsService>(FeedsService);
-    supportersService = module.get<SupportersService>(SupportersService);
     feedHandlerService = module.get<FeedHandlerService>(FeedHandlerService);
   });
 
@@ -822,6 +824,7 @@ describe("UserFeedsService", () => {
           stripImages: false,
           dateFormat: "foo",
           dateTimezone: "bar",
+          disableImageLinkPreviews: false,
         },
       },
     };
@@ -894,6 +897,339 @@ describe("UserFeedsService", () => {
       expect(result).toEqual({
         requestStatus: "foo",
         properties: ["a", "b", "c", "z"],
+      });
+    });
+  });
+
+  describe("enforceUserFeedLimits", () => {
+    describe("supporter limits", () => {
+      it("enforces feed limits correctly", async () => {
+        const feed = await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+        ]);
+
+        await userFeedModel.collection.updateOne(
+          {
+            _id: feed[1]._id,
+          },
+          {
+            $set: {
+              createdAt: dayjs().subtract(5, "days"),
+            },
+          }
+        );
+
+        await userFeedModel.collection.updateOne(
+          {
+            _id: feed[2]._id,
+          },
+          {
+            $set: {
+              createdAt: dayjs().subtract(10, "days"),
+            },
+          }
+        );
+
+        await service.enforceUserFeedLimits([
+          {
+            discordUserId,
+            maxUserFeeds: 2,
+          },
+        ]);
+
+        const result = await userFeedModel
+          .find({
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            "user.discordUserId": discordUserId,
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(1);
+
+        expect(result).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              title: feed[2].title,
+            }),
+          ])
+        );
+      });
+
+      it("does not disable any feeds if not over limit", async () => {
+        const feed = await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([
+          {
+            discordUserId: discordUserId,
+            maxUserFeeds: 3,
+          },
+        ]);
+
+        const result = await userFeedModel
+          .find({
+            "user.discordUserId": discordUserId,
+            disabledCode: { $exists: false },
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(2);
+        const titles = result.map((r) => r.title);
+
+        expect(titles).toEqual(
+          expect.arrayContaining([feed[0].title, feed[1].title])
+        );
+      });
+
+      it("does not enable feeds disabled for other reasons if user is under limit with disabled feeds", async () => {
+        const feeds = await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.BadFormat,
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.BadFormat,
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([
+          {
+            discordUserId: discordUserId,
+            maxUserFeeds: 1,
+          },
+        ]);
+
+        const result = await userFeedModel
+          .find({
+            "user.discordUserId": discordUserId,
+          })
+          .select(["title", "disabledCode"])
+          .lean();
+
+        expect(result).toHaveLength(3);
+        const disabledCodes = result.map((r) => r.disabledCode);
+
+        expect(disabledCodes).toEqual(
+          expect.arrayContaining([
+            feeds[0].disabledCode,
+
+            feeds[1].disabledCode,
+            feeds[2].disabledCode,
+          ])
+        );
+      });
+    });
+
+    describe("default limits", () => {
+      it("disables over-limit feeds for non-supporters", async () => {
+        await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([]);
+
+        const result = await userFeedModel
+          .find({
+            disabledCode: {
+              $exists: false,
+            },
+            "user.discordUserId": discordUserId,
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(supportersService.defaultMaxUserFeeds);
+      });
+
+      it("enables feeds if user is under limit with disabled feeds", async () => {
+        const feeds = await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+        ]);
+
+        await userFeedModel.collection.updateOne(
+          {
+            _id: feeds[0]._id,
+          },
+          {
+            $set: {
+              createdAt: dayjs().subtract(10, "days").toDate(),
+            },
+          }
+        );
+
+        await userFeedModel.collection.updateOne(
+          {
+            _id: feeds[1]._id,
+          },
+          {
+            $set: {
+              createdAt: dayjs().subtract(5, "days").toDate(),
+            },
+          }
+        );
+
+        await service.enforceUserFeedLimits([]);
+
+        const result = await userFeedModel
+          .find({
+            "user.discordUserId": discordUserId,
+            disabledCode: { $exists: false },
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(2);
+        const titles = result.map((r) => r.title);
+
+        expect(titles).toEqual(
+          expect.arrayContaining([feeds[1].title, feeds[2].title])
+        );
+      });
+
+      it("does not enable feeds disabled for other reasons if user is under limit with disabled feeds", async () => {
+        const feeds = await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.BadFormat,
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.ExcessivelyActive,
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([]);
+
+        const result = await userFeedModel
+          .find({
+            "user.discordUserId": discordUserId,
+          })
+          .select(["disabledCode"])
+          .lean();
+
+        expect(result).toHaveLength(3);
+
+        const disabledCodes = result.map((r) => r.disabledCode);
+
+        expect(disabledCodes).toEqual(
+          expect.arrayContaining([
+            feeds[0].disabledCode,
+            feeds[1].disabledCode,
+            feeds[2].disabledCode,
+          ])
+        );
       });
     });
   });

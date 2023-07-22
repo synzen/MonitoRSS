@@ -26,6 +26,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { SupportersService } from "../supporters/supporters.service";
 import { ArticleRejectCode } from "./constants";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
+import { UserFeedsService } from "../user-feeds/user-feeds.service";
 
 jest.mock("../../utils/logger");
 
@@ -66,6 +67,9 @@ describe("handle-schedule", () => {
   const amqpConnection = {
     publish: jest.fn(),
   };
+  const userFeedsService = {
+    enforceUserFeedLimits: jest.fn(),
+  };
 
   beforeAll(async () => {
     const { init, uncompiledModule } = await setupIntegrationTests({
@@ -77,7 +81,11 @@ describe("handle-schedule", () => {
       ],
     });
 
-    uncompiledModule.overrideProvider(AmqpConnection).useValue(amqpConnection);
+    uncompiledModule
+      .overrideProvider(AmqpConnection)
+      .useValue(amqpConnection)
+      .overrideProvider(UserFeedsService)
+      .useValue(userFeedsService);
 
     ({ module } = await init());
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
@@ -1113,6 +1121,31 @@ describe("handle-schedule", () => {
       );
       expect(updatedFeed?.healthStatus).toEqual(UserFeedHealthStatus.Failed);
     });
+
+    it("does not override an existing disabled code", async () => {
+      const feed = await userFeedModel.create({
+        title: "feed-title",
+        url: "new-york-times.com",
+        user: {
+          discordUserId: "user-id-1",
+        },
+        connections: sampleConnections,
+        disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+      });
+
+      await service.handleUrlRequestFailureEvent({
+        data: {
+          url: feed.url,
+        },
+      });
+
+      const updatedFeed = await userFeedModel.findById(feed._id).lean();
+
+      expect(updatedFeed?.disabledCode).toEqual(
+        UserFeedDisabledCode.ExceededFeedLimit
+      );
+      expect(updatedFeed?.healthStatus).toEqual(UserFeedHealthStatus.Ok);
+    });
   });
 
   describe("handleRejectedArticleDisableConnection", () => {
@@ -1181,6 +1214,57 @@ describe("handle-schedule", () => {
         ).toEqual(connectionDisableCode);
       }
     );
+
+    it("does not override an existing disabled code", async () => {
+      const connectionId = new Types.ObjectId();
+      const feed = await userFeedModel.create({
+        title: "feed-title",
+        url: "new-york-times.com",
+        user: {
+          discordUserId: "user-id-1",
+        },
+        connections: {
+          discordChannels: [
+            {
+              disabledCode: FeedConnectionDisabledCode.Manual,
+              id: connectionId,
+              name: "connection-name",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              details: {
+                channel: {
+                  id: "channel-id",
+                  guildId: "guild-id",
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      const payload = {
+        data: {
+          rejectedCode: ArticleRejectCode.MediumNotFound,
+          medium: {
+            id: connectionId.toHexString(),
+          },
+          feed: {
+            id: feed._id.toHexString(),
+          },
+        },
+      };
+
+      await service.handleRejectedArticleDisableConnection(payload);
+
+      const foundUserFeed = await userFeedModel.findById(feed._id).lean();
+
+      expect(
+        foundUserFeed?.connections.discordChannels[0].disabledCode
+      ).toEqual(FeedConnectionDisabledCode.Manual);
+    });
   });
 
   describe("emitDeliverFeedArticlesEvent", () => {

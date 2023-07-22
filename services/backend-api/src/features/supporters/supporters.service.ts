@@ -149,6 +149,7 @@ export class SupportersService {
       refreshRateSeconds: number;
       isSupporter: boolean;
       maxDailyArticles: number;
+      maxUserFeeds: number;
     }>
   > {
     // TODO: Must implement user-level subscriptions on the payments api and include them here
@@ -169,6 +170,7 @@ export class SupportersService {
       maxDailyArticles: b.isSupporter
         ? this.maxDailyArticlesSupporter
         : this.maxDailyArticlesDefault,
+      maxUserFeeds: b.maxUserFeeds,
     }));
   }
 

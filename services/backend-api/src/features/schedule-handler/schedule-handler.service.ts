@@ -27,6 +27,7 @@ import {
   getConnectionDisableCodeByArticleRejectCode,
   getUserFeedDisableCodeByFeedRejectCode,
 } from "./utils";
+import { UserFeedsService } from "../user-feeds/user-feeds.service";
 
 interface PublishFeedDeliveryArticlesData {
   data: {
@@ -54,7 +55,8 @@ export class ScheduleHandlerService {
     private readonly supportersService: SupportersService,
     private readonly feedSchedulingService: FeedSchedulingService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    private readonly amqpConnection: AmqpConnection
+    private readonly amqpConnection: AmqpConnection,
+    private readonly userFeedsService: UserFeedsService
   ) {
     this.defaultRefreshRateSeconds =
       (this.configService.get<number>(
@@ -73,17 +75,22 @@ export class ScheduleHandlerService {
   }) {
     logger.debug(`handling url request failure event for url ${url}`);
 
-    await this.userFeedModel.updateMany(
-      {
-        url,
-      },
-      {
-        $set: {
-          disabledCode: UserFeedDisabledCode.FailedRequests,
-          healthStatus: UserFeedHealthStatus.Failed,
+    await this.userFeedModel
+      .updateMany(
+        {
+          url,
+          disabledCode: {
+            $exists: false,
+          },
         },
-      }
-    );
+        {
+          $set: {
+            disabledCode: UserFeedDisabledCode.FailedRequests,
+            healthStatus: UserFeedHealthStatus.Failed,
+          },
+        }
+      )
+      .lean();
   }
 
   @RabbitSubscribe({
@@ -119,6 +126,9 @@ export class ScheduleHandlerService {
     await this.userFeedModel.updateOne(
       {
         _id: feedId,
+        disabledCode: {
+          $exists: false,
+        },
       },
       {
         $set: {
@@ -181,6 +191,9 @@ export class ScheduleHandlerService {
         await this.userFeedModel.updateOne(
           {
             _id: feedId,
+            [`connections.${connectionKey}.${conIdx}.disabledCode`]: {
+              $exists: false,
+            },
           },
           {
             $set: {
@@ -567,5 +580,17 @@ export class ScheduleHandlerService {
     };
 
     return this.userFeedModel.find(query);
+  }
+
+  async enforceUserFeedLimits() {
+    const benefits =
+      await this.supportersService.getBenefitsOfAllDiscordUsers();
+
+    await this.userFeedsService.enforceUserFeedLimits(
+      benefits.map(({ discordUserId, maxUserFeeds }) => ({
+        discordUserId,
+        maxUserFeeds,
+      }))
+    );
   }
 }
