@@ -403,10 +403,16 @@ export class UserFeedsService {
         },
       },
     ]);
-    logger.info(
-      `Found ${usersToDisable.length} non-supporter users to` +
-        ` disable feeds for (limit: ${defaultMaxUserFeeds})`
-    );
+
+    if (usersToDisable.length > 0) {
+      logger.info(
+        `Disabling feeds of ${usersToDisable.length} users` +
+          ` (using default limit: ${defaultMaxUserFeeds})`,
+        {
+          usersToDisable,
+        }
+      );
+    }
 
     await Promise.all(
       usersToDisable.map(async ({ _id: discordUserId, enabledCount }) => {
@@ -499,9 +505,15 @@ export class UserFeedsService {
       },
     ]);
 
-    logger.info(
-      `Found ${usersToEnable.length} non-supporter users to enable feeds for`
-    );
+    if (usersToEnable.length > 0) {
+      logger.info(
+        `Enabling feeds of ${usersToEnable.length} users` +
+          ` (using default limit: ${defaultMaxUserFeeds})`,
+        {
+          usersToEnable,
+        }
+      );
+    }
 
     await Promise.all(
       usersToEnable.map(async ({ _id: discordUserId, enabledCount }) => {
@@ -560,9 +572,9 @@ export class UserFeedsService {
 
         if (undisabledFeedCount > maxUserFeeds) {
           logger.info(
-            `Will disable ${
+            `Disabling ${
               undisabledFeedCount - maxUserFeeds
-            } feeds for user ${discordUserId} (actual limit: ${maxUserFeeds})`
+            } feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
           );
           const docs = await this.userFeedModel
             .find({
@@ -596,6 +608,10 @@ export class UserFeedsService {
         }
 
         const enableCount = maxUserFeeds - undisabledFeedCount;
+
+        logger.info(
+          `Enabling ${enableCount} feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
+        );
 
         // Some feeds should be enabled
         const disabledFeedCount = await this.userFeedModel.countDocuments({
