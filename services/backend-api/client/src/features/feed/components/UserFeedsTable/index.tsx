@@ -386,7 +386,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                     </MenuItem>
                   }
                   title={`Are you sure you want to disable ${selectedRows.length} feed(s)?`}
-                  description="Only feeds that are not disabled for other reasons will be manually disabled."
+                  description="Only feeds that are not currently disabled will be affected."
                   onConfirm={disableUserFeedsHandler}
                   colorScheme="blue"
                 />
