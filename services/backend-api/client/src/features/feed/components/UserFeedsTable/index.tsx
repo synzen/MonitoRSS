@@ -94,21 +94,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   });
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
-  const totalFetched = flatData.length;
-  const totalCount = data?.pages?.[0].total || 0;
-  // const tableData = useMemo<RowData[]>(
-  //   () =>
-  //     (data?.results || []).map((feed) => ({
-  //       id: feed.id,
-  //       disabledCode: feed.disabledCode,
-  //       title: feed.title,
-  //       url: feed.url,
-  //       createdAt: feed.createdAt,
-  //     })),
-  //   [data]
-  // );
-
-  // const total = data?.total || 0;
 
   // called on scroll and possibly on mount to fetch more data as the user scrolls and reaches bottom of table
   const fetchMoreOnBottomReached = React.useCallback(() => {
@@ -162,7 +147,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               width="min-content"
               isChecked={row.getIsSelected()}
               isDisabled={!row.getCanSelect()}
-              zIndex={100}
               // onChange will not work for some reason with chakra checkboxes
               onChangeCapture={(e) => {
                 e.stopPropagation();
@@ -240,18 +224,12 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const tableInstance = useReactTable({
     columns,
     data: flatData,
-    // manualPagination: true,
     manualSorting: true,
-    // pageCount: Math.ceil(total / maxPerPage),
     getCoreRowModel: getCoreRowModel(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
       rowSelection,
-      // pagination: {
-      //   pageIndex,
-      //   pageSize,
-      // },
       sorting,
     },
     onSortingChange: setSorting,
@@ -337,7 +315,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               >
                 Bulk Actions
               </MenuButton>
-              <MenuList>
+              <MenuList zIndex={2}>
                 <ConfirmModal
                   trigger={<MenuItem icon={<DeleteIcon />}>Delete</MenuItem>}
                   title={`Are you sure you want to delete ${selectedRows.length} feed(s)?`}
@@ -348,19 +326,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 />
               </MenuList>
             </Menu>
-            {/* <InputGroup width="min-content">
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.400" />
-              </InputLeftElement>
-              <Input
-                onChange={({ target: { value } }) => {
-                  onSearchChange(value);
-                }}
-                minWidth="325px"
-                placeholder={t("pages.feeds.tableSearch")}
-              />
-              <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
-            </InputGroup> */}
           </Wrap>
           {/** TODO: Pass correct total feeds to prevent API call? */}
           <AddUserFeedDialog />
@@ -425,7 +390,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                   key={headerGroup.id}
                   position="sticky"
                   top={0}
-                  zIndex={10}
+                  zIndex={1}
                   background="gray.800"
                   // borderColor="gray.700"
                 >
@@ -535,38 +500,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           )}
           <div ref={scrollRef} />
         </Box>
-        {/* <Flex justifyContent="space-between" flexWrap="wrap">
-            <Text marginBottom="4">
-              {!isFetching ? (
-                t("pages.feeds.tableResults", {
-                  start: pageIndex * maxPerPage + 1,
-                  end: Math.min((pageIndex + 1) * maxPerPage, total),
-                  total,
-                })
-              ) : (
-                <Spinner size="sm" />
-              )}
-            </Text>
-            <ButtonGroup>
-              <Button
-                leftIcon={<ChevronLeftIcon />}
-                aria-label="Previous page"
-                onClick={previousPage}
-                isDisabled={isFetchingNewPage || !getCanPreviousPage()}
-              >
-                Previous
-              </Button>
-              <Button
-                aria-label="Next page"
-                onClick={nextPage}
-                isDisabled={isFetchingNewPage || !getCanNextPage()}
-                isLoading={isFetchingNewPage}
-                rightIcon={<ChevronRightIcon />}
-              >
-                Next
-              </Button>
-            </ButtonGroup>
-          </Flex> */}
       </Stack>
     </Stack>
   );
