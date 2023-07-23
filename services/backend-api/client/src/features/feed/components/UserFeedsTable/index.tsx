@@ -3,13 +3,11 @@
 import {
   Alert,
   AlertIcon,
-  ButtonGroup,
   Center,
   Flex,
   Stack,
   Table,
   Td,
-  Text,
   Th,
   Thead,
   Tr,
@@ -31,7 +29,6 @@ import {
 } from "@chakra-ui/react";
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import {
-  PaginationState,
   RowSelectionState,
   SortingState,
   createColumnHelper,
@@ -40,17 +37,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
-import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronUpIcon,
-  DeleteIcon,
-  SearchIcon,
-} from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, SearchIcon } from "@chakra-ui/icons";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
-import { useDeleteUserFeeds, useUserFeeds } from "../../hooks";
+import { useInView } from "react-intersection-observer";
+import { useDeleteUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
 import { AddUserFeedDialog } from "../AddUserFeedDialog";
 import { UserFeed } from "../../types";
@@ -58,12 +49,13 @@ import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { DATE_FORMAT } from "../../../../constants";
+import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 
 interface Props {
   onSelectedFeedId?: (feedId: string) => void;
 }
 
-const DEFAULT_MAX_PER_PAGE = 10;
+const DEFAULT_MAX_PER_PAGE = 20;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
@@ -81,32 +73,58 @@ const convertSortStateToSortKey = (state: SortingState) => {
 
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
+  // const [isVisible, scrollRef, calculateIsVisible] = useVisibility();
+  const { ref: scrollRef, inView } = useInView();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: maxPerPage,
-  });
-  const { data, status, error, isFetchingNewPage, search, setSearch, isFetching } = useUserFeeds({
+  const {
+    data,
+    status,
+    error,
+    isFetching,
+    search,
+    setSearch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useUserFeedsInfinite({
     limit: maxPerPage,
-    offset: maxPerPage * pageIndex,
     sort: convertSortStateToSortKey(sorting),
   });
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
+  const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
+  const totalFetched = flatData.length;
+  const totalCount = data?.pages?.[0].total || 0;
+  // const tableData = useMemo<RowData[]>(
+  //   () =>
+  //     (data?.results || []).map((feed) => ({
+  //       id: feed.id,
+  //       disabledCode: feed.disabledCode,
+  //       title: feed.title,
+  //       url: feed.url,
+  //       createdAt: feed.createdAt,
+  //     })),
+  //   [data]
+  // );
 
-  const tableData = useMemo<RowData[]>(
-    () =>
-      (data?.results || []).map((feed) => ({
-        id: feed.id,
-        disabledCode: feed.disabledCode,
-        title: feed.title,
-        url: feed.url,
-        createdAt: feed.createdAt,
-      })),
-    [data]
-  );
+  // const total = data?.total || 0;
 
-  const total = data?.total || 0;
+  // called on scroll and possibly on mount to fetch more data as the user scrolls and reaches bottom of table
+  const fetchMoreOnBottomReached = React.useCallback(() => {
+    // if (containerRefElement) {
+    if (inView && !isFetchingNextPage && hasNextPage) {
+      fetchNextPage();
+    }
+    // }
+  }, [fetchNextPage, inView, isFetchingNextPage, hasNextPage]);
+
+  // const refExists = !!scrollRef?.current;
+
+  // // a check on mount and after a fetch to see if the table is already scrolled to the bottom and immediately needs to fetch more data
+  React.useEffect(() => {
+    fetchMoreOnBottomReached();
+  }, [fetchMoreOnBottomReached]);
 
   const columns = useMemo(
     () => [
@@ -221,34 +239,26 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   const tableInstance = useReactTable({
     columns,
-    data: tableData,
-    manualPagination: true,
+    data: flatData,
+    // manualPagination: true,
     manualSorting: true,
-    pageCount: Math.ceil(total / maxPerPage),
+    // pageCount: Math.ceil(total / maxPerPage),
     getCoreRowModel: getCoreRowModel(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
       rowSelection,
-      pagination: {
-        pageIndex,
-        pageSize,
-      },
+      // pagination: {
+      //   pageIndex,
+      //   pageSize,
+      // },
       sorting,
     },
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
   });
 
-  const {
-    getHeaderGroups,
-    getRowModel,
-    nextPage,
-    previousPage,
-    getCanNextPage,
-    getCanPreviousPage,
-    getSelectedRowModel,
-  } = tableInstance;
+  const { getHeaderGroups, getRowModel, getSelectedRowModel } = tableInstance;
+
   const selectedRows = getSelectedRowModel().flatRows;
 
   const onClickFeedRow = (feedId: string) => {
@@ -278,10 +288,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   useEffect(() => {
     if (search) {
-      setPagination({
-        pageIndex: 0,
-        pageSize: maxPerPage,
-      });
       setRowSelection({});
     }
   }, [search, maxPerPage, sorting]);
@@ -304,7 +310,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   }
 
   return (
-    <Stack spacing={4}>
+    <Stack spacing={4} overflow="auto" height="100%">
       <InputGroup>
         <InputLeftElement pointerEvents="none">
           <SearchIcon color="gray.400" />
@@ -318,7 +324,47 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         />
         <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
       </InputGroup>
-      <HStack alignItems="flex-start" width="100%" spacing={8}>
+      <Stack overflow="auto">
+        <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
+          <Wrap>
+            <Menu>
+              <MenuButton
+                as={Button}
+                aria-label="Options"
+                rightIcon={<ChevronDownIcon />}
+                variant="outline"
+                isDisabled={selectedRows.length === 0}
+              >
+                Bulk Actions
+              </MenuButton>
+              <MenuList>
+                <ConfirmModal
+                  trigger={<MenuItem icon={<DeleteIcon />}>Delete</MenuItem>}
+                  title={`Are you sure you want to delete ${selectedRows.length} feed(s)?`}
+                  description="This action cannot be undone."
+                  onConfirm={deleteUserFeedsHandler}
+                  colorScheme="red"
+                  okText={t("common.buttons.delete")}
+                />
+              </MenuList>
+            </Menu>
+            {/* <InputGroup width="min-content">
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.400" />
+              </InputLeftElement>
+              <Input
+                onChange={({ target: { value } }) => {
+                  onSearchChange(value);
+                }}
+                minWidth="325px"
+                placeholder={t("pages.feeds.tableSearch")}
+              />
+              <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
+            </InputGroup> */}
+          </Wrap>
+          {/** TODO: Pass correct total feeds to prevent API call? */}
+          <AddUserFeedDialog />
+        </Flex>
         {/* <Stack maxWidth="200px" width="100%">
           <Heading size="sm">Filters</Heading>
           <Accordion
@@ -361,145 +407,135 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             </AccordionItem>
           </Accordion>
         </Stack> */}
-        <Stack mb={6} flex={1}>
-          <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
-            <Wrap>
-              <Menu>
-                <MenuButton
-                  as={Button}
-                  aria-label="Options"
-                  rightIcon={<ChevronDownIcon />}
-                  variant="outline"
-                  isDisabled={selectedRows.length === 0}
+        <Box
+          ref={tableContainerRef}
+          boxShadow="lg"
+          background="gray.850"
+          borderColor="whiteAlpha.300"
+          borderWidth="1px"
+          overflow="auto"
+          borderStyle="solid"
+          borderRadius="md"
+        >
+          <Table whiteSpace="nowrap" position="relative" variant="unstyled">
+            <Thead>
+              {/** z-index is required because some icons have a higher priority */}
+              {getHeaderGroups().map((headerGroup) => (
+                <Tr
+                  key={headerGroup.id}
+                  position="sticky"
+                  top={0}
+                  zIndex={10}
+                  background="gray.800"
+                  // borderColor="gray.700"
                 >
-                  Bulk Actions
-                </MenuButton>
-                <MenuList>
-                  <ConfirmModal
-                    trigger={<MenuItem icon={<DeleteIcon />}>Delete</MenuItem>}
-                    title={`Are you sure you want to delete ${selectedRows.length} feed(s)?`}
-                    description="This action cannot be undone."
-                    onConfirm={deleteUserFeedsHandler}
-                    colorScheme="red"
-                    okText={t("common.buttons.delete")}
-                  />
-                </MenuList>
-              </Menu>
-              {/* <InputGroup width="min-content">
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.400" />
-              </InputLeftElement>
-              <Input
-                onChange={({ target: { value } }) => {
-                  onSearchChange(value);
-                }}
-                minWidth="325px"
-                placeholder={t("pages.feeds.tableSearch")}
-              />
-              <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
-            </InputGroup> */}
-            </Wrap>
-            <AddUserFeedDialog totalFeeds={data?.total} />
-          </Flex>
-          <Box>
-            <Table
-              whiteSpace="nowrap"
-              background="gray.850"
-              borderColor="gray.700"
-              borderWidth="2px"
-              boxShadow="lg"
-            >
-              <Thead>
-                {getHeaderGroups().map((headerGroup) => (
-                  <Tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      const isSorted = header.column.getIsSorted();
-                      const canSort = header.column.getCanSort();
+                  {headerGroup.headers.map((header) => {
+                    const isSorted = header.column.getIsSorted();
+                    const canSort = header.column.getCanSort();
 
-                      let cursor: CSSProperties["cursor"] = "initial";
+                    let cursor: CSSProperties["cursor"] = "initial";
 
-                      if (isFetching) {
-                        cursor = "not-allowed";
-                      } else if (canSort) {
-                        cursor = "pointer";
+                    if (isFetching) {
+                      cursor = "not-allowed";
+                    } else if (canSort) {
+                      cursor = "pointer";
+                    }
+
+                    return (
+                      <Th
+                        _after={{
+                          borderStyle: "solid",
+                          borderWidth: "1px",
+                          borderColor: "gray.700",
+                          bottom: 0,
+                          content: '""',
+                          position: "absolute",
+                          width: "99.5%", // 100% will cause a horizontal scroll
+                          left: 0,
+                        }}
+                        _before={{
+                          border: "solid 10px red",
+                        }}
+                        key={header.id}
+                        cursor={cursor}
+                        onClick={header.column.getToggleSortingHandler()}
+                        userSelect="none"
+                        aria-label={canSort ? "sort" : undefined}
+                      >
+                        <HStack alignItems="center">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                          {isSorted === "desc" && (
+                            <ChevronDownIcon
+                              aria-label={isSorted ? "sorted descending" : undefined}
+                              aria-hidden={!isSorted}
+                              fontSize={16}
+                            />
+                          )}
+                          {isSorted === "asc" && (
+                            <ChevronUpIcon
+                              aria-label={isSorted ? "sorted ascending" : undefined}
+                              aria-hidden={!isSorted}
+                              fontSize={16}
+                            />
+                          )}
+                        </HStack>
+                      </Th>
+                    );
+                  })}
+                </Tr>
+              ))}
+            </Thead>
+            <tbody>
+              {getRowModel().rows.map((row) => {
+                const feed = row.original as RowData;
+
+                return (
+                  <Tr
+                    key={row.id}
+                    tabIndex={0}
+                    _hover={{
+                      bg: "gray.700",
+                      cursor: "pointer",
+                      // boxShadow: "outline",
+                    }}
+                    _focus={{
+                      // boxShadow: "outline",
+                      outline: "none",
+                    }}
+                    onClick={() => onClickFeedRow(feed.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        onClickFeedRow(feed.id);
                       }
-
-                      return (
-                        <Th
-                          key={header.id}
-                          cursor={cursor}
-                          onClick={header.column.getToggleSortingHandler()}
-                          userSelect="none"
-                          aria-label={canSort ? "sort" : undefined}
-                        >
-                          <HStack alignItems="center">
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                            {isSorted === "desc" && (
-                              <ChevronDownIcon
-                                aria-label={isSorted ? "sorted descending" : undefined}
-                                aria-hidden={!isSorted}
-                                fontSize={16}
-                              />
-                            )}
-                            {isSorted === "asc" && (
-                              <ChevronUpIcon
-                                aria-label={isSorted ? "sorted ascending" : undefined}
-                                aria-hidden={!isSorted}
-                                fontSize={16}
-                              />
-                            )}
-                          </HStack>
-                        </Th>
-                      );
-                    })}
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <Td
+                        paddingY={2}
+                        paddingX="24px"
+                        key={cell.id}
+                        maxWidth="250px"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </Td>
+                    ))}
                   </Tr>
-                ))}
-              </Thead>
-              <tbody>
-                {getRowModel().rows.map((row) => {
-                  const feed = row.original as RowData;
-
-                  return (
-                    <Tr
-                      key={row.id}
-                      tabIndex={0}
-                      _hover={{
-                        bg: "gray.700",
-                        cursor: "pointer",
-                        // boxShadow: "outline",
-                      }}
-                      _focus={{
-                        // boxShadow: "outline",
-                        outline: "none",
-                      }}
-                      onClick={() => onClickFeedRow(feed.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          onClickFeedRow(feed.id);
-                        }
-                      }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <Td
-                          paddingY={2}
-                          paddingX="24px"
-                          key={cell.id}
-                          maxWidth="250px"
-                          overflow="hidden"
-                          textOverflow="ellipsis"
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </Td>
-                      ))}
-                    </Tr>
-                  );
-                })}
-              </tbody>
-            </Table>
-          </Box>
-          <Flex justifyContent="space-between" flexWrap="wrap">
+                );
+              })}
+            </tbody>
+          </Table>
+          {isFetchingNextPage && (
+            <Center>
+              <Spinner margin={4} />
+            </Center>
+          )}
+          <div ref={scrollRef} />
+        </Box>
+        {/* <Flex justifyContent="space-between" flexWrap="wrap">
             <Text marginBottom="4">
               {!isFetching ? (
                 t("pages.feeds.tableResults", {
@@ -530,9 +566,8 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 Next
               </Button>
             </ButtonGroup>
-          </Flex>
-        </Stack>
-      </HStack>
+          </Flex> */}
+      </Stack>
     </Stack>
   );
 };

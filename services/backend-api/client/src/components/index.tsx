@@ -13,3 +13,4 @@ export * from "./InlineErrorAlert";
 export * from "./HelpDialog";
 export * from "./AnimatedComponent";
 export * from "./UserFeedStatusSelectDropdown";
+export * from "./NewHeader";

@@ -34,7 +34,7 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
   const { pathname } = useLocation();
 
   return (
-    <Flex flexGrow={1} height="100%" alignItems="center" flexDir="column" overflowX="auto">
+    <Flex flexGrow={1} alignItems="center" flexDir="column" overflow="auto">
       <Box
         width="100%"
         background={invertBackground ? "gray.700" : "none"}
@@ -116,7 +116,7 @@ export const PageContentV2 = ({ children, invertBackground }: Props) => {
           </Flex>
         </Flex>
       </Box>
-      <Flex width="100%" justifyContent="center">
+      <Flex width="100%" justifyContent="center" alignItems="flex-start" flex={1}>
         {children}
       </Flex>
     </Flex>

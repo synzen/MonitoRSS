@@ -17,6 +17,7 @@ const GetUserFeedsOutputSchema = object({
       url: string().required(),
       healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
       disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
+      createdAt: string().required(),
     })
   ).required(),
   total: number().required(),
