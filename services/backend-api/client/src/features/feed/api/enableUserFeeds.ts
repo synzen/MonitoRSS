@@ -1,35 +1,35 @@
 import { InferType, array, bool, object, string } from "yup";
 import fetchRest from "@/utils/fetchRest";
 
-export interface DisableUserFeedsInput {
+export interface EnableUserFeedsInput {
   data: {
     feeds: Array<{ id: string }>;
   };
 }
 
-const DisableUserFeedsOutputSchema = object({
+const EnableUserFeedsOutputSchema = object({
   results: array(
     object({
       id: string().required(),
-      disabled: bool().required(),
+      enabled: bool().required(),
     })
   ).required(),
 }).required();
 
-export type DisableUserFeedsOutput = InferType<typeof DisableUserFeedsOutputSchema>;
+export type EnableUserFeedsOutput = InferType<typeof EnableUserFeedsOutputSchema>;
 
-export const DisableUserFeeds = async (
-  input: DisableUserFeedsInput
-): Promise<DisableUserFeedsOutput> => {
+export const EnableUserFeeds = async (
+  input: EnableUserFeedsInput
+): Promise<EnableUserFeedsOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds`, {
     requestOptions: {
       method: "PATCH",
       body: JSON.stringify({
-        op: "bulk-disable",
+        op: "bulk-enable",
         data: input.data,
       }),
     },
   });
 
-  return res as DisableUserFeedsOutput;
+  return res as EnableUserFeedsOutput;
 };

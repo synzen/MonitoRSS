@@ -43,8 +43,8 @@ import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, SearchIcon } from "@chakra-
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import { useInView } from "react-intersection-observer";
-import { FaPause } from "react-icons/fa6";
-import { useDeleteUserFeeds, useDisableUserFeeds } from "../../hooks";
+import { FaPause, FaPlay } from "react-icons/fa6";
+import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
 import { AddUserFeedDialog } from "../AddUserFeedDialog";
 import { UserFeed, UserFeedDisabledCode } from "../../types";
@@ -97,6 +97,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   });
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
+  const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
 
   // called on scroll and possibly on mount to fetch more data as the user scrolls and reaches bottom of table
@@ -290,6 +291,23 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     resetUserAdjustments();
   };
 
+  const enableUserFeedsHandler = async () => {
+    const feedIds = selectedRows.map((row) => row.original.id);
+
+    try {
+      await enableUserFeeds({
+        data: {
+          feeds: feedIds.map((id) => ({ id })),
+        },
+      });
+      notifySuccess(t("common.success.savedChanges"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+
+    resetUserAdjustments();
+  };
+
   useEffect(() => {
     if (search) {
       resetUserAdjustments();
@@ -347,9 +365,23 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                     <MenuItem
                       isDisabled={
                         !selectedRows.some(
-                          (r) => r.original.disabledCode !== UserFeedDisabledCode.Manual
+                          (r) => r.original.disabledCode === UserFeedDisabledCode.Manual
                         )
                       }
+                      icon={<FaPlay />}
+                    >
+                      Enable
+                    </MenuItem>
+                  }
+                  title={`Are you sure you want to enable ${selectedRows.length} feed(s)?`}
+                  description="Only feeds that were manually disabled will be enabled."
+                  onConfirm={enableUserFeedsHandler}
+                  colorScheme="blue"
+                />
+                <ConfirmModal
+                  trigger={
+                    <MenuItem
+                      isDisabled={!selectedRows.some((r) => !r.original.disabledCode)}
                       icon={<FaPause />}
                     >
                       Disable

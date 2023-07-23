@@ -111,6 +111,17 @@ export class UserFeedsController {
       };
     }
 
+    if (input.op === UpdateUserFeedsOp.BulkEnable) {
+      const results = await this.userFeedsService.bulkEnable(
+        input.data.feeds.map((f) => f.id),
+        discordUserId
+      );
+
+      return {
+        results,
+      };
+    }
+
     throw new UnsupportedBulkOpException(
       `Unsupported bulk operation: ${input.op}`
     );

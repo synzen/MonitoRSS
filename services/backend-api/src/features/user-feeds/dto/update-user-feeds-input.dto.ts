@@ -11,6 +11,7 @@ import {
 export enum UpdateUserFeedsOp {
   BulkDelete = "bulk-delete",
   BulkDisable = "bulk-disable",
+  BulkEnable = "bulk-enable",
 }
 
 class DeleteUserFeedInputDataFeed {
@@ -48,7 +49,10 @@ export class UpdateUserFeedsInput {
       return DeleteUserFeedsInputData;
     }
 
-    if (data?.object.op === UpdateUserFeedsOp.BulkDisable) {
+    if (
+      data?.object.op === UpdateUserFeedsOp.BulkDisable ||
+      data?.object.op === UpdateUserFeedsOp.BulkEnable
+    ) {
       return DisableUserFeedsInputData;
     }
 

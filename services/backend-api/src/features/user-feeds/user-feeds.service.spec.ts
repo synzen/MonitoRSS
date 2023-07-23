@@ -362,10 +362,90 @@ describe("UserFeedsService", () => {
         ])
       );
     });
+  });
+
+  describe("bulkEnable", () => {
+    let created: UserFeed[];
+
+    beforeEach(async () => {
+      created = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.Manual,
+        },
+        {
+          title: "title2",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.Manual,
+        },
+        {
+          title: "title3",
+          url: "url",
+          user: {
+            discordUserId: discordUserId + "-other",
+          },
+          disabledCode: UserFeedDisabledCode.Manual,
+        },
+        {
+          title: "title4",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+        },
+      ]);
+    });
+
+    it("bulk enables feeds of the discord user id", async () => {
+      await service.bulkEnable(
+        created.map((c) => c._id.toHexString()),
+        discordUserId
+      );
+
+      const result = await userFeedModel
+        .find({})
+        .select(["title", "disabledCode"])
+        .lean();
+
+      expect(result).toHaveLength(4);
+      const mapped = result.map((r) => ({
+        title: r.title,
+        disabledCode: r.disabledCode || null,
+      }));
+
+      expect(mapped).toEqual(
+        expect.arrayContaining([
+          {
+            title: "title1",
+            disabledCode: null,
+          },
+          {
+            title: "title2",
+            disabledCode: null,
+          },
+          {
+            title: "title3",
+            disabledCode: UserFeedDisabledCode.Manual,
+          },
+          {
+            title: "title4",
+            disabledCode: UserFeedDisabledCode.FailedRequests,
+          },
+        ])
+      );
+    });
 
     it("returns the results", async () => {
       const inputIds = created.map((c) => c._id.toHexString());
-      const results = await service.bulkDisable(inputIds, discordUserId);
+      const results = await service.bulkEnable(inputIds, discordUserId);
 
       expect(results).toHaveLength(4);
       expect(results).toEqual([

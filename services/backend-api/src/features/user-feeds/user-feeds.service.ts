@@ -171,6 +171,42 @@ export class UserFeedsService {
     }));
   }
 
+  async bulkEnable(feedIds: string[], discordUserId: string) {
+    const found = await this.userFeedModel
+
+      .find({
+        _id: {
+          $in: feedIds.map((id) => new Types.ObjectId(id)),
+        },
+        "user.discordUserId": discordUserId,
+        disabledCode: UserFeedDisabledCode.Manual,
+      })
+      .select("_id")
+      .lean();
+
+    const foundIds = new Set(found.map((doc) => doc._id.toHexString()));
+
+    if (found.length > 0) {
+      await this.userFeedModel.updateMany(
+        {
+          _id: {
+            $in: found.map((doc) => doc._id),
+          },
+        },
+        {
+          $unset: {
+            disabledCode: "",
+          },
+        }
+      );
+    }
+
+    return feedIds.map((id) => ({
+      id,
+      enabled: foundIds.has(id),
+    }));
+  }
+
   async getFeedById(id: string) {
     return this.userFeedModel.findById(id).lean();
   }
