@@ -465,21 +465,14 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           <Table
             whiteSpace="nowrap"
             position="relative"
-            variant="unstyled"
+            variant="simple"
             overflow="auto"
             width="100%"
           >
             <Thead>
               {/** z-index is required because some icons have a higher priority */}
               {getHeaderGroups().map((headerGroup) => (
-                <Tr
-                  key={headerGroup.id}
-                  position="sticky"
-                  top={0}
-                  zIndex={1}
-                  background="gray.800"
-                  // borderColor="gray.700"
-                >
+                <Tr key={headerGroup.id} zIndex={1}>
                   {headerGroup.headers.map((header) => {
                     const isSorted = header.column.getIsSorted();
                     const canSort = header.column.getCanSort();
@@ -494,19 +487,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
                     return (
                       <Th
-                        _after={{
-                          borderStyle: "solid",
-                          borderWidth: "1px",
-                          borderColor: "gray.700",
-                          bottom: 0,
-                          content: '""',
-                          position: "absolute",
-                          width: "99.5%", // 100% will cause a horizontal scroll
-                          left: 0,
-                        }}
-                        _before={{
-                          border: "solid 10px red",
-                        }}
                         key={header.id}
                         cursor={cursor}
                         onClick={header.column.getToggleSortingHandler()}

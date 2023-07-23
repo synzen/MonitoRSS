@@ -9,7 +9,9 @@ export const UserFeedSchema = object({
   url: string().required(),
   passingComparisons: array(string().required()).optional().default(undefined),
   blockingComparisons: array(string().required()).optional().default(undefined),
-  createdAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
+  createdAt: string()
+    .transform((value) => (value ? new Date(value).toISOString() : value))
+    .required(),
   updatedAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
   disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
