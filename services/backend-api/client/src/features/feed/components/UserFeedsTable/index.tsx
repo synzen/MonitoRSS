@@ -49,6 +49,7 @@ import {
   SearchIcon,
 } from "@chakra-ui/icons";
 import { debounce } from "lodash";
+import dayjs from "dayjs";
 import { useDeleteUserFeeds, useUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
 import { AddUserFeedDialog } from "../AddUserFeedDialog";
@@ -56,6 +57,7 @@ import { UserFeed } from "../../types";
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { DATE_FORMAT } from "../../../../constants";
 
 interface Props {
   onSelectedFeedId?: (feedId: string) => void;
@@ -65,7 +67,7 @@ const DEFAULT_MAX_PER_PAGE = 10;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
-type RowData = Pick<UserFeed, "title" | "url" | "id" | "disabledCode">;
+type RowData = Pick<UserFeed, "title" | "url" | "id" | "disabledCode" | "createdAt">;
 
 const columnHelper = createColumnHelper<RowData>();
 
@@ -99,6 +101,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         disabledCode: feed.disabledCode,
         title: feed.title,
         url: feed.url,
+        createdAt: feed.createdAt,
       })),
     [data]
   );
@@ -166,6 +169,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         enableSorting: false,
       }),
       columnHelper.accessor("title", {
+        id: "title",
         header: () => t("pages.feeds.tableTitle") as string,
         cell: (info) => {
           const value = info.getValue();
@@ -182,6 +186,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         },
       }),
       columnHelper.accessor("url", {
+        id: "url",
         header: () => t("pages.feeds.tableUrl") as string,
         cell: (info) => {
           const value = info.getValue();
@@ -195,6 +200,19 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               {value}
             </Highlight>
           );
+        },
+      }),
+      columnHelper.accessor("createdAt", {
+        id: "createdAt",
+        header: () => "Added on",
+        cell: (info) => {
+          const value = info.getValue();
+
+          if (!value) {
+            return null;
+          }
+
+          return dayjs(value).format(DATE_FORMAT);
         },
       }),
     ],

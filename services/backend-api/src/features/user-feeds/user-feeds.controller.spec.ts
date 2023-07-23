@@ -162,6 +162,7 @@ describe("UserFeedsController", () => {
           options: {
             formatTables: false,
             stripImages: false,
+            disableImageLinkPreviews: false,
           },
         },
       };
