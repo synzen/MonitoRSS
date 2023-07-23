@@ -26,8 +26,10 @@ import {
   InputLeftElement,
   Input,
   InputRightElement,
+  MenuDivider,
+  Text,
 } from "@chakra-ui/react";
-import React, { CSSProperties, useEffect, useMemo, useState } from "react";
+import React, { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import {
   RowSelectionState,
   SortingState,
@@ -41,10 +43,11 @@ import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, SearchIcon } from "@chakra-
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import { useInView } from "react-intersection-observer";
-import { useDeleteUserFeeds } from "../../hooks";
+import { FaPause } from "react-icons/fa6";
+import { useDeleteUserFeeds, useDisableUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
 import { AddUserFeedDialog } from "../AddUserFeedDialog";
-import { UserFeed } from "../../types";
+import { UserFeed, UserFeedDisabledCode } from "../../types";
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -93,6 +96,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     sort: convertSortStateToSortKey(sorting),
   });
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
+  const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
 
   // called on scroll and possibly on mount to fetch more data as the user scrolls and reaches bottom of table
@@ -247,6 +251,11 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     setSearch(value);
   }, 500);
 
+  const resetUserAdjustments = useCallback(() => {
+    setRowSelection({});
+    setSorting([]);
+  }, [setRowSelection, setSorting]);
+
   const deleteUserFeedsHandler = async () => {
     const feedIds = selectedRows.map((row) => row.original.id);
 
@@ -261,14 +270,31 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
 
-    setRowSelection({});
+    resetUserAdjustments();
+  };
+
+  const disableUserFeedsHandler = async () => {
+    const feedIds = selectedRows.map((row) => row.original.id);
+
+    try {
+      await disableUserFeeds({
+        data: {
+          feeds: feedIds.map((id) => ({ id })),
+        },
+      });
+      notifySuccess(t("common.success.savedChanges"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+
+    resetUserAdjustments();
   };
 
   useEffect(() => {
     if (search) {
-      setRowSelection({});
+      resetUserAdjustments();
     }
-  }, [search, maxPerPage, sorting]);
+  }, [search, resetUserAdjustments]);
 
   if (status === "loading") {
     return (
@@ -317,7 +343,30 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               </MenuButton>
               <MenuList zIndex={2}>
                 <ConfirmModal
-                  trigger={<MenuItem icon={<DeleteIcon />}>Delete</MenuItem>}
+                  trigger={
+                    <MenuItem
+                      isDisabled={
+                        !selectedRows.some(
+                          (r) => r.original.disabledCode !== UserFeedDisabledCode.Manual
+                        )
+                      }
+                      icon={<FaPause />}
+                    >
+                      Disable
+                    </MenuItem>
+                  }
+                  title={`Are you sure you want to disable ${selectedRows.length} feed(s)?`}
+                  description="Only feeds that are not disabled for other reasons will be manually disabled."
+                  onConfirm={disableUserFeedsHandler}
+                  colorScheme="blue"
+                />
+                <MenuDivider />
+                <ConfirmModal
+                  trigger={
+                    <MenuItem icon={<DeleteIcon color="red.200" />}>
+                      <Text color="red.200">Delete</Text>
+                    </MenuItem>
+                  }
                   title={`Are you sure you want to delete ${selectedRows.length} feed(s)?`}
                   description="This action cannot be undone."
                   onConfirm={deleteUserFeedsHandler}

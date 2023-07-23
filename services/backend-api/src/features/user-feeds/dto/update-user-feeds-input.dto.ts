@@ -10,6 +10,7 @@ import {
 
 export enum UpdateUserFeedsOp {
   BulkDelete = "bulk-delete",
+  BulkDisable = "bulk-disable",
 }
 
 class DeleteUserFeedInputDataFeed {
@@ -26,6 +27,14 @@ class DeleteUserFeedsInputData {
   feeds: DeleteUserFeedInputDataFeed[];
 }
 
+class DisableUserFeedsInputData {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DeleteUserFeedInputDataFeed)
+  @IsObject({ each: true })
+  feeds: DeleteUserFeedInputDataFeed[];
+}
+
 export class UpdateUserFeedsInput {
   @IsNotEmpty()
   @IsString()
@@ -34,6 +43,16 @@ export class UpdateUserFeedsInput {
 
   @ValidateNested()
   @IsObject()
-  @Type(() => DeleteUserFeedsInputData)
-  data: DeleteUserFeedsInputData;
+  @Type((data) => {
+    if (data?.object.op === UpdateUserFeedsOp.BulkDelete) {
+      return DeleteUserFeedsInputData;
+    }
+
+    if (data?.object.op === UpdateUserFeedsOp.BulkDisable) {
+      return DisableUserFeedsInputData;
+    }
+
+    throw new Error("Invalid type");
+  })
+  data: DeleteUserFeedsInputData | DisableUserFeedsInputData;
 }

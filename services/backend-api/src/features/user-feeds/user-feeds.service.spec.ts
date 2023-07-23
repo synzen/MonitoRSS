@@ -300,6 +300,95 @@ describe("UserFeedsService", () => {
     });
   });
 
+  describe("bulkDisable", () => {
+    let created: UserFeed[];
+
+    beforeEach(async () => {
+      created = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+        },
+        {
+          title: "title2",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+        },
+        {
+          title: "title3",
+          url: "url",
+          user: {
+            discordUserId: discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+        },
+      ]);
+    });
+
+    it("bulk disables feeds of the discord user id", async () => {
+      await service.bulkDisable(
+        created.map((c) => c._id.toHexString()),
+        discordUserId
+      );
+
+      const result = await userFeedModel
+        .find({
+          disabledCode: UserFeedDisabledCode.Manual,
+        })
+        .select("title")
+        .lean();
+
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: "title1",
+          }),
+          expect.objectContaining({
+            title: "title2",
+          }),
+        ])
+      );
+    });
+
+    it("returns the results", async () => {
+      const inputIds = created.map((c) => c._id.toHexString());
+      const results = await service.bulkDisable(inputIds, discordUserId);
+
+      expect(results).toHaveLength(4);
+      expect(results).toEqual([
+        {
+          id: inputIds[0],
+          disabled: true,
+        },
+        {
+          id: inputIds[1],
+          disabled: true,
+        },
+        {
+          id: inputIds[2],
+          disabled: false,
+        },
+        {
+          id: inputIds[3],
+          disabled: false,
+        },
+      ]);
+    });
+  });
+
   describe("getFeedById", () => {
     it("returns the feed", async () => {
       const feed = await userFeedModel.create({

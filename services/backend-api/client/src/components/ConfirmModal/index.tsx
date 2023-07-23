@@ -54,7 +54,7 @@ export const ConfirmModal = ({
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          {title && <ModalHeader>{title}</ModalHeader>}
+          {title && <ModalHeader marginRight={4}>{title}</ModalHeader>}
           <ModalCloseButton />
           {description && (
             <ModalBody>
