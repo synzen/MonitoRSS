@@ -12,6 +12,7 @@
   "dependencies": {
     "@chakra-ui/icons": "^2.0.10",
     "@chakra-ui/react": "^2.7.0",
+    "@datadog/browser-logs": "^4.45.0",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@hookform/resolvers": "^3.0.0",
@@ -19,6 +20,7 @@
     "@sentry/tracing": "^6.18.2",
     "@tanstack/react-query": "^4.16.1",
     "@tanstack/react-query-devtools": "^4.16.1",
+    "@tanstack/react-table": "^8.9.3",
     "cross-env": "^7.0.3",
     "dayjs": "^1.11.7",
     "eslint-config-airbnb-typescript": "^16.1.0",

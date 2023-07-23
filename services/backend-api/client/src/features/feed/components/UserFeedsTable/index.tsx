@@ -6,7 +6,6 @@ import {
   ButtonGroup,
   Center,
   Flex,
-  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
@@ -21,10 +20,17 @@ import {
   InputRightElement,
   Spinner,
   HStack,
+  Button,
 } from "@chakra-ui/react";
-import { useEffect, useMemo } from "react";
-import { useTable, usePagination, Column, useGlobalFilter } from "react-table";
-import { useTranslation } from "react-i18next";
+import { useEffect, useMemo, useState } from "react";
+import {
+  PaginationState,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { TFunction, useTranslation } from "react-i18next";
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
 import { debounce } from "lodash";
 import { useUserFeeds } from "../../hooks";
@@ -37,18 +43,43 @@ interface Props {
   onSelectedFeedId?: (feedId: string) => void;
 }
 
-const DEFAULT_MAX_PER_PAGE = 10;
+const DEFAULT_MAX_PER_PAGE = 1;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
+type RowData = Pick<UserFeed, "title" | "url" | "id" | "disabledCode">;
+
+const columnHelper = createColumnHelper<RowData>();
+
+const columns = (t: TFunction) => [
+  columnHelper.accessor("disabledCode", {
+    cell: (info) => <UserFeedStatusTag disabledCode={info.getValue()} />,
+    header: () => t("pages.feeds.tableStatus") as string,
+    // footer: info => info.column.id
+  }),
+  columnHelper.accessor("title", {
+    header: () => t("pages.feeds.tableTitle") as string,
+  }),
+  columnHelper.accessor("url", {
+    header: () => t("pages.feeds.tableUrl") as string,
+    meta: {
+      data: 1,
+    },
+  }),
+];
+
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
-  const { data, status, error, setOffset, isFetchingNewPage, search, setSearch, isFetching } =
-    useUserFeeds({
-      initialLimit: maxPerPage,
-    });
+  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: maxPerPage,
+  });
+  const { data, status, error, isFetchingNewPage, search, setSearch, isFetching } = useUserFeeds({
+    limit: maxPerPage,
+    offset: maxPerPage * pageIndex,
+  });
 
-  const tableData = useMemo(
+  const tableData = useMemo<RowData[]>(
     () =>
       (data?.results || []).map((feed) => ({
         id: feed.id,
@@ -61,57 +92,34 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   const total = data?.total || 0;
 
-  const columns = useMemo<Column<Pick<UserFeed, "title" | "url" | "id" | "disabledCode">>[]>(
-    () => [
-      {
-        Header: t("pages.feeds.tableStatus") as string,
-        accessor: "disabledCode", // accessor is the "key" in the data
-        Cell: ({ cell: { value } }) => <UserFeedStatusTag disabledCode={value} />,
-      },
-      {
-        Header: t("pages.feeds.tableTitle") as string,
-        accessor: "title",
-      },
-      {
-        Header: t("pages.feeds.tableUrl") as string,
-        accessor: "url",
-      },
-    ],
-    []
-  );
-
-  const tableInstance = useTable(
-    {
-      columns,
-      data: tableData,
-      manualPagination: true,
-      manualGlobalFilter: true,
-      pageCount: Math.ceil(total / maxPerPage),
-      initialState: {
-        pageSize: maxPerPage,
+  const tableInstance = useReactTable({
+    columns: columns(t),
+    data: tableData,
+    manualPagination: true,
+    pageCount: Math.ceil(total / maxPerPage),
+    getCoreRowModel: getCoreRowModel(),
+    state: {
+      pagination: {
+        pageIndex,
+        pageSize,
       },
     },
-    useGlobalFilter,
-    usePagination
-  );
+    onPaginationChange: setPagination,
+    debugTable: true,
+  });
+
+  // console.log("pagecount", total, maxPerPage, Math.ceil(total / maxPerPage));
 
   const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    prepareRow,
+    getHeaderGroups,
+    getRowModel,
     nextPage,
-    canNextPage,
     previousPage,
-    canPreviousPage,
-    page,
+    getPageCount,
     setGlobalFilter,
-    state: { pageIndex },
+    getCanNextPage,
+    getCanPreviousPage,
   } = tableInstance;
-
-  useEffect(() => {
-    setOffset(pageIndex * maxPerPage);
-  }, [pageIndex]);
 
   const onClickFeedRow = (feedId: string) => {
     onSelectedFeedId?.(feedId);
@@ -121,6 +129,15 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     setGlobalFilter(value);
     setSearch(value);
   }, 500);
+
+  useEffect(() => {
+    if (search) {
+      setPagination({
+        pageIndex: 0,
+        pageSize: maxPerPage,
+      });
+    }
+  }, [search, maxPerPage]);
 
   if (status === "loading") {
     return (
@@ -155,35 +172,36 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           />
           <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
         </InputGroup>
-        <AddUserFeedDialog />
+        <AddUserFeedDialog totalFeeds={data?.total} />
       </HStack>
       <Box overflow="auto">
         <Table
-          {...getTableProps()}
           whiteSpace="nowrap"
-          marginBottom="5"
           background="gray.850"
           borderColor="gray.700"
           borderWidth="2px"
           boxShadow="lg"
         >
           <Thead>
-            {headerGroups.map((headerGroup) => (
-              <Tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column) => (
-                  <Th {...column.getHeaderProps()}>{column.render("Header")}</Th>
+            {getHeaderGroups().map((headerGroup) => (
+              <Tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <Th key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </Th>
                 ))}
               </Tr>
             ))}
           </Thead>
-          <tbody {...getTableBodyProps()}>
-            {page.map((row) => {
-              prepareRow(row);
-              const feed = row.original;
+          <tbody>
+            {getRowModel().rows.map((row) => {
+              const feed = row.original as RowData;
 
               return (
                 <Tr
-                  {...row.getRowProps()}
+                  key={row.id}
                   tabIndex={0}
                   zIndex={100}
                   position="relative"
@@ -203,14 +221,9 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                     }
                   }}
                 >
-                  {row.cells.map((cell) => (
-                    <Td
-                      {...cell.getCellProps()}
-                      maxWidth="250px"
-                      overflow="hidden"
-                      textOverflow="ellipsis"
-                    >
-                      {cell.render("Cell")}
+                  {row.getVisibleCells().map((cell) => (
+                    <Td key={cell.id} maxWidth="250px" overflow="hidden" textOverflow="ellipsis">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </Td>
                   ))}
                 </Tr>
@@ -221,29 +234,34 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       </Box>
       <Flex justifyContent="space-between" flexWrap="wrap">
         <Text marginBottom="4">
-          {t("pages.feeds.tableResults", {
-            start: pageIndex * maxPerPage + 1,
-            end: Math.min((pageIndex + 1) * maxPerPage, total),
-            total,
-          })}
+          {!isFetching &&
+            t("pages.feeds.tableResults", {
+              start: pageIndex * maxPerPage + 1,
+              end: Math.min((pageIndex + 1) * maxPerPage, total),
+              total,
+            })}
         </Text>
         <ButtonGroup>
-          <IconButton
-            icon={<ChevronLeftIcon />}
+          <Button
+            leftIcon={<ChevronLeftIcon />}
             aria-label="Previous page"
             onClick={previousPage}
-            isDisabled={isFetchingNewPage || !canPreviousPage}
-          />
-          <Flex alignItems="center">
-            <Text>{pageIndex + 1}</Text>/<Text>{Math.ceil(total / maxPerPage)}</Text>
-          </Flex>
-          <IconButton
-            icon={<ChevronRightIcon />}
+            isDisabled={isFetchingNewPage || !getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          {/* <Flex alignItems="center">
+            <Text>{pageIndex + 1}</Text>/<Text>{getPageCount()}</Text>
+          </Flex> */}
+          <Button
             aria-label="Next page"
             onClick={nextPage}
-            isDisabled={isFetchingNewPage || !canNextPage}
+            isDisabled={isFetchingNewPage || !getCanNextPage()}
             isLoading={isFetchingNewPage}
-          />
+            rightIcon={<ChevronRightIcon />}
+          >
+            Next
+          </Button>
         </ButtonGroup>
       </Flex>
     </Stack>

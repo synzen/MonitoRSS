@@ -6,16 +6,11 @@ import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { UserFeed } from "../types";
 
 interface Props {
-  initialLimit?: number;
+  limit: number;
+  offset: number;
 }
 
-export const useUserFeeds = (
-  { initialLimit }: Props = {
-    initialLimit: 10,
-  }
-) => {
-  const [limit, setLimit] = useState(initialLimit);
-  const [offset, setOffset] = useState(0);
+export const useUserFeeds = ({ limit, offset }: Props) => {
   const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
   const queryClient = useQueryClient();
@@ -84,8 +79,6 @@ export const useUserFeeds = (
     data,
     status,
     error,
-    setLimit,
-    setOffset,
     setSearch,
     isFetchingNewPage,
     isFetching,

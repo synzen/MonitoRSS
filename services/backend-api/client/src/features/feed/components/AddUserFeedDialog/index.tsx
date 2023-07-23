@@ -21,7 +21,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import { useEffect } from "react";
-import { useCreateUserFeed, useUserFeeds } from "../../hooks";
+import { useCreateUserFeed } from "../../hooks";
 import { notifyError } from "@/utils/notifyError";
 import { useDiscordUserMe } from "../../../discordUser";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -33,7 +33,11 @@ const formSchema = object({
 
 type FormData = InferType<typeof formSchema>;
 
-export const AddUserFeedDialog: React.FC = () => {
+interface Props {
+  totalFeeds?: number;
+}
+
+export const AddUserFeedDialog = ({ totalFeeds }: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
   const {
@@ -44,7 +48,6 @@ export const AddUserFeedDialog: React.FC = () => {
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
-  const { refetch: refetchFeeds, data } = useUserFeeds();
   const { mutateAsync } = useCreateUserFeed();
   const { data: discordUserMe } = useDiscordUserMe();
 
@@ -57,7 +60,6 @@ export const AddUserFeedDialog: React.FC = () => {
         },
       });
 
-      await refetchFeeds();
       reset();
       onClose();
       notifySuccess(t("features.userFeeds.components.addUserFeedDialog.successAdd"));
@@ -71,9 +73,9 @@ export const AddUserFeedDialog: React.FC = () => {
   }, [isOpen]);
 
   const isUnderLimit =
-    data?.total !== undefined &&
+    totalFeeds !== undefined &&
     discordUserMe?.maxUserFeeds !== undefined &&
-    data.total < discordUserMe.maxUserFeeds;
+    totalFeeds < discordUserMe.maxUserFeeds;
 
   return (
     <>

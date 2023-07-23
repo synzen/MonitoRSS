@@ -239,15 +239,25 @@ const handlers = [
     )
   ),
 
-  rest.get("/api/v1/user-feeds", (req, res, ctx) =>
-    res(
+  rest.get("/api/v1/user-feeds", (req, res, ctx) => {
+    const limit = Number(req.url.searchParams.get("limit") || "10");
+    const offset = Number(req.url.searchParams.get("offset") || "0");
+    const search = req.url.searchParams.get("search");
+
+    const filtered = mockUserFeeds.filter((feed) =>
+      search ? feed.title.toLowerCase().includes(search) : true
+    );
+
+    const limitedResults = filtered.slice(offset, offset + limit);
+
+    return res(
       ctx.delay(500),
       ctx.json<GetUserFeedsOutput>({
-        results: mockUserFeeds,
-        total: mockUserFeeds.length,
+        results: limitedResults,
+        total: filtered.length,
       })
-    )
-  ),
+    );
+  }),
 
   rest.post("/api/v1/user-feeds", (req, res, ctx) =>
     res(

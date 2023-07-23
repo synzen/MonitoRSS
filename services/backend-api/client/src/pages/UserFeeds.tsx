@@ -24,7 +24,8 @@ export const UserFeeds: React.FC = () => {
   const navigate = useNavigate();
   const { data: discordUserMe } = useDiscordUserMe();
   const { data: userFeeds } = useUserFeeds({
-    initialLimit: 10,
+    limit: 1,
+    offset: 0,
   });
 
   const onSelectedFeed = (feedId: string) => {
