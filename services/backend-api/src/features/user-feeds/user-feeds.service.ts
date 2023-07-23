@@ -24,6 +24,7 @@ import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { GetArticlesInput } from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
+import { Types } from "mongoose";
 
 interface GetFeedsInput {
   userId: string;
@@ -102,6 +103,33 @@ export class UserFeedsService {
     });
 
     return created;
+  }
+
+  async bulkDelete(feedIds: string[], discordUserId: string) {
+    const found = await this.userFeedModel
+      .find({
+        _id: {
+          $in: feedIds.map((id) => new Types.ObjectId(id)),
+        },
+        "user.discordUserId": discordUserId,
+      })
+      .select("_id")
+      .lean();
+
+    const foundIds = new Set(found.map((doc) => doc._id.toHexString()));
+
+    if (found.length > 0) {
+      await this.userFeedModel.deleteMany({
+        _id: {
+          $in: found.map((doc) => doc._id),
+        },
+      });
+    }
+
+    return feedIds.map((id) => ({
+      id,
+      deleted: foundIds.has(id),
+    }));
   }
 
   async getFeedById(id: string) {

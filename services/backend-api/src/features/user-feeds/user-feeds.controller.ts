@@ -26,7 +26,10 @@ import {
   CreateDiscordWebhookConnectionOutputDto,
 } from "../feed-connections/dto";
 import { FeedConnectionType } from "../feeds/constants";
-import { FeedExceptionFilter } from "../feeds/filters";
+import {
+  FeedExceptionFilter,
+  UpdateUserFeedsExceptionFilter,
+} from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   CreateUserFeedInputDto,
@@ -40,9 +43,12 @@ import {
   GetUserFeedsOutputDto,
   UpdateUserFeedInputDto,
   UpdateUserFeedOutputDto,
+  UpdateUserFeedsInput,
+  UpdateUserFeedsOp,
 } from "./dto";
 import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-output.dto";
 import { UserFeed } from "./entities";
+import { UnsupportedBulkOpException } from "./exceptions";
 import { RetryUserFeedFilter } from "./filters";
 import { GetUserFeedPipe } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
@@ -74,6 +80,28 @@ export class UserFeedsController {
     );
 
     return this.formatFeedForResponse(result, discordUserId);
+  }
+
+  @Patch()
+  @UseFilters(UpdateUserFeedsExceptionFilter)
+  async updateFeeds(
+    @Body(ValidationPipe) input: UpdateUserFeedsInput,
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    if (input.op === UpdateUserFeedsOp.BulkDelete) {
+      const results = await this.userFeedsService.bulkDelete(
+        input.data.feeds.map((f) => f.id),
+        discordUserId
+      );
+
+      return {
+        results,
+      };
+    }
+
+    throw new UnsupportedBulkOpException(
+      `Unsupported bulk operation: ${input.op}`
+    );
   }
 
   @Get("/:feedId")

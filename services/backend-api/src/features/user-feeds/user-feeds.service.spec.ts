@@ -231,6 +231,75 @@ describe("UserFeedsService", () => {
     });
   });
 
+  describe("bulkDelete", () => {
+    let created: UserFeed[];
+
+    beforeEach(async () => {
+      created = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+        },
+        {
+          title: "title2",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+        },
+        {
+          title: "title3",
+          url: "url",
+          user: {
+            discordUserId: discordUserId + "-other",
+          },
+        },
+      ]);
+    });
+
+    it("bulk deletes feeds of the discord user id", async () => {
+      await service.bulkDelete(
+        created.map((c) => c._id.toHexString()),
+        discordUserId
+      );
+
+      const result = await userFeedModel.find({}).select("title").lean();
+
+      expect(result).toHaveLength(1);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: "title3",
+          }),
+        ])
+      );
+    });
+
+    it("returns the results", async () => {
+      const inputIds = created.map((c) => c._id.toHexString());
+      const results = await service.bulkDelete(inputIds, discordUserId);
+
+      expect(results).toHaveLength(3);
+      expect(results).toEqual([
+        {
+          id: inputIds[0],
+          deleted: true,
+        },
+        {
+          id: inputIds[1],
+          deleted: true,
+        },
+        {
+          id: inputIds[2],
+          deleted: false,
+        },
+      ]);
+    });
+  });
+
   describe("getFeedById", () => {
     it("returns the feed", async () => {
       const feed = await userFeedModel.create({
