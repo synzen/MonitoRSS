@@ -8,9 +8,10 @@ import { UserFeed } from "../types";
 interface Props {
   limit: number;
   offset: number;
+  sort?: string;
 }
 
-export const useUserFeeds = ({ limit, offset }: Props) => {
+export const useUserFeeds = ({ limit, offset, sort }: Props) => {
   const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export const useUserFeeds = ({ limit, offset }: Props) => {
       limit,
       offset,
       search: search || "",
+      sort,
     },
   ];
 
@@ -34,6 +36,7 @@ export const useUserFeeds = ({ limit, offset }: Props) => {
         limit,
         offset,
         search,
+        sort,
       });
 
       return result;

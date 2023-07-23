@@ -1,5 +1,21 @@
 import { Transform } from "class-transformer";
-import { IsInt, IsOptional, IsString, Min } from "class-validator";
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateIf,
+} from "class-validator";
+
+export enum GetUserFeedsInputSortKey {
+  CreatedAtAscending = "createdAt",
+  CreatedAtDescending = "-createdAt",
+  TitleAscending = "title",
+  TitleDescending = "-title",
+  UrlAscending = "url",
+  UrlDescending = "-url",
+}
 
 export class GetUserFeedsInputDto {
   @IsInt()
@@ -15,4 +31,12 @@ export class GetUserFeedsInputDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsEnum(GetUserFeedsInputSortKey)
+  @ValidateIf((v) => {
+    return !!v.sort;
+  })
+  sort = GetUserFeedsInputSortKey.CreatedAtDescending;
 }

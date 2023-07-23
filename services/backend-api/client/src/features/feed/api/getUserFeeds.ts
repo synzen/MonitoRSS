@@ -6,6 +6,7 @@ export interface GetUserFeedsInput {
   limit?: number;
   offset?: number;
   search?: string;
+  sort?: string;
 }
 
 const GetUserFeedsOutputSchema = object({
@@ -28,6 +29,7 @@ export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserF
     limit: options.limit?.toString() || "10",
     offset: options.offset?.toString() || "0",
     search: options.search || "",
+    sort: options.sort || "",
   });
 
   const res = await fetchRest(`/api/v1/user-feeds?${searchParams}`, {

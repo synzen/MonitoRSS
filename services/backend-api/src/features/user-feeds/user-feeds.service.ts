@@ -31,6 +31,7 @@ interface GetFeedsInput {
   search?: string;
   limit?: number;
   offset?: number;
+  sort?: string;
 }
 
 interface GetFeedsCountInput {
@@ -141,6 +142,7 @@ export class UserFeedsService {
     limit = 10,
     offset = 0,
     search,
+    sort,
   }: GetFeedsInput) {
     const query = this.userFeedModel.find({
       "user.discordUserId": userId,
@@ -167,11 +169,11 @@ export class UserFeedsService {
       query.skip(offset);
     }
 
-    return query
-      .sort({
-        createdAt: -1,
-      })
-      .lean();
+    if (sort) {
+      query.sort(sort);
+    }
+
+    return query.lean();
   }
 
   async getFeedCountByUser({ userId, search }: GetFeedsCountInput) {
