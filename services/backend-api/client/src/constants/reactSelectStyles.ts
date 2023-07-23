@@ -1,5 +1,6 @@
 /* eslint-disable no-nested-ternary */
 import { GroupBase, StylesConfig } from "react-select";
+import { theme } from "@chakra-ui/react";
 import getChakraColor from "@/utils/getChakraColor";
 
 interface SelectOption {
@@ -16,25 +17,35 @@ export const REACT_SELECT_STYLES: SelectStyles = {
     backgroundColor: getChakraColor("gray.700"),
     height: "40px",
   }),
-  indicatorSeparator: (provided) => ({
-    ...provided,
-    color: "green",
-    background: getChakraColor("gray.600"),
-  }),
+  indicatorSeparator: (provided) => {
+    return {
+      ...provided,
+      // color: "green",
+      background: getChakraColor("gray.600"),
+    };
+  },
+  dropdownIndicator: (provided, state) => {
+    return {
+      ...provided,
+      color: state.isFocused ? "gray.500" : "gray.400",
+      "&:hover": {
+        color: "gray.400",
+      },
+    };
+  },
   control: (provided, state) => ({
     ...provided,
     background: getChakraColor("gray.800"),
-    // backgrounf: 'green',
     color: "white",
     height: "40px",
     paddingLeft: "8px",
     borderWidth: "1px",
-    borderColor: state.isFocused ? getChakraColor("gray.600") : getChakraColor("gray.700"),
+    borderColor: state.isFocused ? theme.colors.blue[300] : "none",
+    borderRadius: theme.radii.md,
     "&:hover": {
-      borderColor: getChakraColor("gray.600"),
+      borderColor: "whiteAlpha.400",
     },
-    borderRadius: "4px",
-    // background: 'green',
+    boxShadow: state.isFocused ? `0 0 0 1px ${theme.colors.blue[300]}` : "none",
   }),
   input: (provided) => ({
     ...provided,
@@ -53,13 +64,10 @@ export const REACT_SELECT_STYLES: SelectStyles = {
         : state.isSelected
         ? getChakraColor("blue.500")
         : getChakraColor("gray.800"),
-    // background: 'green',
   }),
   container: (provided) => ({
     ...provided,
-    borderWidth: "1px",
-    // background: 'green',
-    borderRadius: "4px",
+    borderStyle: "none",
   }),
   menuList: (provided) => ({
     ...provided,

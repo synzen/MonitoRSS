@@ -172,12 +172,14 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
                         icon: option.icon,
                       })
                     }
-                    filterFunction={selectedType === "user" ? () => true : undefined}
                     placeholder={
                       selectedType === "role"
                         ? t("components.discordMessageMentionForm.searchRolePlaceholder")
                         : t("components.discordMessageMentionForm.searchUserPlaceholder")
                     }
+                    selectProps={{
+                      filterOption: selectedType === "user" ? () => true : undefined,
+                    }}
                   />
                 </FormControl>
                 {selectedMention && (

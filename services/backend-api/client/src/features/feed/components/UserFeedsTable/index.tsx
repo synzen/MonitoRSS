@@ -6,9 +6,6 @@ import {
   ButtonGroup,
   Center,
   Flex,
-  Input,
-  InputGroup,
-  InputLeftElement,
   Stack,
   Table,
   Td,
@@ -17,7 +14,6 @@ import {
   Thead,
   Tr,
   Box,
-  InputRightElement,
   Spinner,
   Button,
   Checkbox,
@@ -28,6 +24,10 @@ import {
   Wrap,
   HStack,
   Highlight,
+  InputGroup,
+  InputLeftElement,
+  Input,
+  InputRightElement,
 } from "@chakra-ui/react";
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import {
@@ -284,7 +284,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       });
       setRowSelection({});
     }
-  }, [search, maxPerPage]);
+  }, [search, maxPerPage, sorting]);
 
   if (status === "loading") {
     return (
@@ -304,176 +304,235 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   }
 
   return (
-    <Stack mb={6}>
-      <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
-        <Wrap>
-          <Menu>
-            <MenuButton
-              as={Button}
-              aria-label="Options"
-              rightIcon={<ChevronDownIcon />}
-              variant="outline"
-              isDisabled={selectedRows.length === 0}
-            >
-              Bulk Actions
-            </MenuButton>
-            <MenuList>
-              <ConfirmModal
-                trigger={<MenuItem icon={<DeleteIcon />}>Delete</MenuItem>}
-                title={`Are you sure you want to delete ${selectedRows.length} feed(s)?`}
-                description="This action cannot be undone."
-                onConfirm={deleteUserFeedsHandler}
-                colorScheme="red"
-                okText={t("common.buttons.delete")}
+    <Stack spacing={4}>
+      <InputGroup>
+        <InputLeftElement pointerEvents="none">
+          <SearchIcon color="gray.400" />
+        </InputLeftElement>
+        <Input
+          onChange={({ target: { value } }) => {
+            onSearchChange(value);
+          }}
+          minWidth="325px"
+          placeholder={t("pages.feeds.tableSearch")}
+        />
+        <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
+      </InputGroup>
+      <HStack alignItems="flex-start" width="100%" spacing={8}>
+        {/* <Stack maxWidth="200px" width="100%">
+          <Heading size="sm">Filters</Heading>
+          <Accordion
+            defaultIndex={[0]}
+            allowMultiple
+            borderStyle="none"
+            gap={4}
+            display="flex"
+            flexDirection="column"
+          >
+            <AccordionItem background="whiteAlpha.50" borderRadius="md" border="none">
+              <h2>
+                <AccordionButton>
+                  <Box as="span" flex="1" textAlign="left">
+                    Status
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel pb={4}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              </AccordionPanel>
+            </AccordionItem>
+            <AccordionItem background="whiteAlpha.50" borderRadius="md" border="none">
+              <h2>
+                <AccordionButton>
+                  <Box as="span" flex="1" textAlign="left">
+                    Section 2 title
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel pb={4}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+        </Stack> */}
+        <Stack mb={6} flex={1}>
+          <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
+            <Wrap>
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  aria-label="Options"
+                  rightIcon={<ChevronDownIcon />}
+                  variant="outline"
+                  isDisabled={selectedRows.length === 0}
+                >
+                  Bulk Actions
+                </MenuButton>
+                <MenuList>
+                  <ConfirmModal
+                    trigger={<MenuItem icon={<DeleteIcon />}>Delete</MenuItem>}
+                    title={`Are you sure you want to delete ${selectedRows.length} feed(s)?`}
+                    description="This action cannot be undone."
+                    onConfirm={deleteUserFeedsHandler}
+                    colorScheme="red"
+                    okText={t("common.buttons.delete")}
+                  />
+                </MenuList>
+              </Menu>
+              {/* <InputGroup width="min-content">
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.400" />
+              </InputLeftElement>
+              <Input
+                onChange={({ target: { value } }) => {
+                  onSearchChange(value);
+                }}
+                minWidth="325px"
+                placeholder={t("pages.feeds.tableSearch")}
               />
-            </MenuList>
-          </Menu>
-          <InputGroup width="min-content">
-            <InputLeftElement pointerEvents="none">
-              <SearchIcon color="gray.400" />
-            </InputLeftElement>
-            <Input
-              onChange={({ target: { value } }) => {
-                onSearchChange(value);
-              }}
-              minWidth="325px"
-              placeholder={t("pages.feeds.tableSearch")}
-            />
-            <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
-          </InputGroup>
-        </Wrap>
-        <AddUserFeedDialog totalFeeds={data?.total} />
-      </Flex>
-      <Box>
-        <Table
-          whiteSpace="nowrap"
-          background="gray.850"
-          borderColor="gray.700"
-          borderWidth="2px"
-          boxShadow="lg"
-        >
-          <Thead>
-            {getHeaderGroups().map((headerGroup) => (
-              <Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const isSorted = header.column.getIsSorted();
-                  const canSort = header.column.getCanSort();
+              <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
+            </InputGroup> */}
+            </Wrap>
+            <AddUserFeedDialog totalFeeds={data?.total} />
+          </Flex>
+          <Box>
+            <Table
+              whiteSpace="nowrap"
+              background="gray.850"
+              borderColor="gray.700"
+              borderWidth="2px"
+              boxShadow="lg"
+            >
+              <Thead>
+                {getHeaderGroups().map((headerGroup) => (
+                  <Tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      const isSorted = header.column.getIsSorted();
+                      const canSort = header.column.getCanSort();
 
-                  let cursor: CSSProperties["cursor"] = "initial";
+                      let cursor: CSSProperties["cursor"] = "initial";
 
-                  if (isFetching) {
-                    cursor = "not-allowed";
-                  } else if (canSort) {
-                    cursor = "pointer";
-                  }
+                      if (isFetching) {
+                        cursor = "not-allowed";
+                      } else if (canSort) {
+                        cursor = "pointer";
+                      }
+
+                      return (
+                        <Th
+                          key={header.id}
+                          cursor={cursor}
+                          onClick={header.column.getToggleSortingHandler()}
+                          userSelect="none"
+                          aria-label={canSort ? "sort" : undefined}
+                        >
+                          <HStack alignItems="center">
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                            {isSorted === "desc" && (
+                              <ChevronDownIcon
+                                aria-label={isSorted ? "sorted descending" : undefined}
+                                aria-hidden={!isSorted}
+                                fontSize={16}
+                              />
+                            )}
+                            {isSorted === "asc" && (
+                              <ChevronUpIcon
+                                aria-label={isSorted ? "sorted ascending" : undefined}
+                                aria-hidden={!isSorted}
+                                fontSize={16}
+                              />
+                            )}
+                          </HStack>
+                        </Th>
+                      );
+                    })}
+                  </Tr>
+                ))}
+              </Thead>
+              <tbody>
+                {getRowModel().rows.map((row) => {
+                  const feed = row.original as RowData;
 
                   return (
-                    <Th
-                      key={header.id}
-                      cursor={cursor}
-                      onClick={header.column.getToggleSortingHandler()}
-                      userSelect="none"
-                      aria-label={canSort ? "sort" : undefined}
+                    <Tr
+                      key={row.id}
+                      tabIndex={0}
+                      _hover={{
+                        bg: "gray.700",
+                        cursor: "pointer",
+                        // boxShadow: "outline",
+                      }}
+                      _focus={{
+                        // boxShadow: "outline",
+                        outline: "none",
+                      }}
+                      onClick={() => onClickFeedRow(feed.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          onClickFeedRow(feed.id);
+                        }
+                      }}
                     >
-                      <HStack alignItems="center">
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                        {isSorted === "desc" && (
-                          <ChevronDownIcon
-                            aria-label={isSorted ? "sorted descending" : undefined}
-                            aria-hidden={!isSorted}
-                            fontSize={16}
-                          />
-                        )}
-                        {isSorted === "asc" && (
-                          <ChevronUpIcon
-                            aria-label={isSorted ? "sorted ascending" : undefined}
-                            aria-hidden={!isSorted}
-                            fontSize={16}
-                          />
-                        )}
-                      </HStack>
-                    </Th>
+                      {row.getVisibleCells().map((cell) => (
+                        <Td
+                          paddingY={2}
+                          paddingX="24px"
+                          key={cell.id}
+                          maxWidth="250px"
+                          overflow="hidden"
+                          textOverflow="ellipsis"
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </Td>
+                      ))}
+                    </Tr>
                   );
                 })}
-              </Tr>
-            ))}
-          </Thead>
-          <tbody>
-            {getRowModel().rows.map((row) => {
-              const feed = row.original as RowData;
-
-              return (
-                <Tr
-                  key={row.id}
-                  tabIndex={0}
-                  _hover={{
-                    bg: "gray.700",
-                    cursor: "pointer",
-                    // boxShadow: "outline",
-                  }}
-                  _focus={{
-                    // boxShadow: "outline",
-                    outline: "none",
-                  }}
-                  onClick={() => onClickFeedRow(feed.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      onClickFeedRow(feed.id);
-                    }
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <Td
-                      paddingY={2}
-                      paddingX="24px"
-                      key={cell.id}
-                      maxWidth="250px"
-                      overflow="hidden"
-                      textOverflow="ellipsis"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </Td>
-                  ))}
-                </Tr>
-              );
-            })}
-          </tbody>
-        </Table>
-      </Box>
-      <Flex justifyContent="space-between" flexWrap="wrap">
-        <Text marginBottom="4">
-          {!isFetching ? (
-            t("pages.feeds.tableResults", {
-              start: pageIndex * maxPerPage + 1,
-              end: Math.min((pageIndex + 1) * maxPerPage, total),
-              total,
-            })
-          ) : (
-            <Spinner size="sm" />
-          )}
-        </Text>
-        <ButtonGroup>
-          <Button
-            leftIcon={<ChevronLeftIcon />}
-            aria-label="Previous page"
-            onClick={previousPage}
-            isDisabled={isFetchingNewPage || !getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            aria-label="Next page"
-            onClick={nextPage}
-            isDisabled={isFetchingNewPage || !getCanNextPage()}
-            isLoading={isFetchingNewPage}
-            rightIcon={<ChevronRightIcon />}
-          >
-            Next
-          </Button>
-        </ButtonGroup>
-      </Flex>
+              </tbody>
+            </Table>
+          </Box>
+          <Flex justifyContent="space-between" flexWrap="wrap">
+            <Text marginBottom="4">
+              {!isFetching ? (
+                t("pages.feeds.tableResults", {
+                  start: pageIndex * maxPerPage + 1,
+                  end: Math.min((pageIndex + 1) * maxPerPage, total),
+                  total,
+                })
+              ) : (
+                <Spinner size="sm" />
+              )}
+            </Text>
+            <ButtonGroup>
+              <Button
+                leftIcon={<ChevronLeftIcon />}
+                aria-label="Previous page"
+                onClick={previousPage}
+                isDisabled={isFetchingNewPage || !getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+              <Button
+                aria-label="Next page"
+                onClick={nextPage}
+                isDisabled={isFetchingNewPage || !getCanNextPage()}
+                isLoading={isFetchingNewPage}
+                rightIcon={<ChevronRightIcon />}
+              >
+                Next
+              </Button>
+            </ButtonGroup>
+          </Flex>
+        </Stack>
+      </HStack>
     </Stack>
   );
 };
