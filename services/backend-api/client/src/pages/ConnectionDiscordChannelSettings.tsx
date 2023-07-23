@@ -210,9 +210,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                                   </MenuItem>
                                 }
                                 okText={t("common.buttons.yes")}
-                                okLoading={updateStatus === "loading"}
                                 colorScheme="blue"
-                                onConfirm={() =>
+                                onConfirm={async () =>
                                   onUpdate({
                                     disabledCode: FeedConnectionDisabledCode.Manual,
                                   })

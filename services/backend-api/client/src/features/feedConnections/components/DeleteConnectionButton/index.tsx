@@ -51,7 +51,6 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
         )
       }
       okText={t("pages.userFeed.deleteConfirmOk")}
-      okLoading={status === "loading"}
       colorScheme="red"
       onConfirm={onDelete}
     />

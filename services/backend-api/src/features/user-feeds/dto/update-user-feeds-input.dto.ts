@@ -3,6 +3,7 @@ import {
   IsArray,
   IsIn,
   IsNotEmpty,
+  IsObject,
   IsString,
   ValidateNested,
 } from "class-validator";
@@ -18,9 +19,10 @@ class DeleteUserFeedInputDataFeed {
 }
 
 class DeleteUserFeedsInputData {
-  @IsArray({ each: true })
-  @ValidateNested()
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => DeleteUserFeedInputDataFeed)
+  @IsObject({ each: true })
   feeds: DeleteUserFeedInputDataFeed[];
 }
 
@@ -31,6 +33,7 @@ export class UpdateUserFeedsInput {
   op: UpdateUserFeedsOp;
 
   @ValidateNested()
+  @IsObject()
   @Type(() => DeleteUserFeedsInputData)
   data: DeleteUserFeedsInputData;
 }

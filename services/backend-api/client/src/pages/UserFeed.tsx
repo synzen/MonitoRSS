@@ -251,9 +251,8 @@ export const UserFeed: React.FC = () => {
                             </MenuItem>
                           }
                           okText={t("common.buttons.yes")}
-                          okLoading={updatingStatus === "loading"}
                           colorScheme="blue"
-                          onConfirm={() =>
+                          onConfirm={async () =>
                             onUpdateFeed({
                               disabledCode: UserFeedDisabledCode.Manual,
                             })
@@ -271,7 +270,6 @@ export const UserFeed: React.FC = () => {
                             </MenuItem>
                           }
                           okText={t("pages.userFeed.deleteConfirmOk")}
-                          okLoading={deleteingStatus === "loading"}
                           colorScheme="red"
                           onConfirm={onDeleteFeed}
                         />

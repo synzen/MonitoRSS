@@ -21,3 +21,4 @@ export * from "./useUserFeedArticleProperties";
 export * from "./useUserFeedArticlesWithPagination";
 export * from "./useUserFeedRequests";
 export * from "./useUserFeedRequestsWithPagination";
+export * from "./useDeleteUserFeeds";

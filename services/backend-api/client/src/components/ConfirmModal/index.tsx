@@ -11,7 +11,7 @@ import {
   ThemingProps,
   useDisclosure,
 } from "@chakra-ui/react";
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -22,7 +22,6 @@ interface Props {
   cancelText?: string;
   okText?: string;
   colorScheme?: ThemingProps["colorScheme"];
-  okLoading?: boolean;
 }
 
 export const ConfirmModal = ({
@@ -33,14 +32,20 @@ export const ConfirmModal = ({
   cancelText,
   okText,
   colorScheme,
-  okLoading,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
 
   const onClickConfirm = async () => {
-    await onConfirm();
-    onClose();
+    setLoading(true);
+
+    try {
+      await onConfirm();
+      onClose();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,7 +66,7 @@ export const ConfirmModal = ({
               {cancelText || t("common.buttons.cancel")}
             </Button>
             <Button
-              isLoading={okLoading}
+              isLoading={loading}
               colorScheme={colorScheme}
               variant="solid"
               onClick={onClickConfirm}

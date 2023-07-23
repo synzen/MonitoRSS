@@ -11,6 +11,8 @@ import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
   CreateUserFeedOutput,
+  DeleteUserFeedsInput,
+  DeleteUserFeedsOutput,
   FeedSummary,
   GetFeedArticlesOutput,
   GetFeedOutput,
@@ -257,6 +259,33 @@ const handlers = [
         total: filtered.length,
       })
     );
+  }),
+
+  rest.patch("/api/v1/user-feeds", async (req, res, ctx) => {
+    const body = await req.json();
+
+    if (body.op === "bulk-delete") {
+      const castedBody = body.data as DeleteUserFeedsInput["data"];
+      const feedIdsToDelete = castedBody.feeds.map((f) => f.id);
+
+      for (let i = mockUserFeeds.length - 1; i >= 0; i -= 1) {
+        if (feedIdsToDelete.includes(mockUserFeeds[i].id)) {
+          mockUserFeeds.splice(i, 1);
+        }
+      }
+
+      return res(
+        ctx.delay(500),
+        ctx.json<DeleteUserFeedsOutput>({
+          results: feedIdsToDelete.map((id) => ({
+            id,
+            deleted: true,
+          })),
+        })
+      );
+    }
+
+    return res(ctx.delay(500), ctx.status(500), ctx.json({}));
   }),
 
   rest.post("/api/v1/user-feeds", (req, res, ctx) =>

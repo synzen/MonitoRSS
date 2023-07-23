@@ -13,6 +13,7 @@ export const useCreateUserFeed = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["user-feeds"],
+        exact: false,
       });
     },
   });

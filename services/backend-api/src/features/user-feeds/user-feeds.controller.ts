@@ -86,6 +86,7 @@ export class UserFeedsController {
   @UseFilters(UpdateUserFeedsExceptionFilter)
   async updateFeeds(
     @Body(ValidationPipe) input: UpdateUserFeedsInput,
+    @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ) {
     if (input.op === UpdateUserFeedsOp.BulkDelete) {
