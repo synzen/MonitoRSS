@@ -33,8 +33,8 @@ export const UserFeeds: React.FC = () => {
   };
 
   return (
-    <BoxConstrained.Wrapper justifyContent="flex-start" height="100%">
-      <BoxConstrained.Container paddingTop={10} spacing={6} overflow="auto" height="100%">
+    <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
+      <BoxConstrained.Container paddingTop={6} spacing={6} height="100%">
         <Stack spacing={4}>
           <Box>
             <Button marginTop={2} variant="outline" onClick={() => navigate("/")} size="sm">

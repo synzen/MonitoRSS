@@ -76,8 +76,6 @@ const convertSortStateToSortKey = (state: SortingState) => {
 
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
-  const tableContainerRef = React.useRef<HTMLDivElement>(null);
-  // const [isVisible, scrollRef, calculateIsVisible] = useVisibility();
   const { ref: scrollRef, inView } = useInView();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -332,7 +330,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   }
 
   return (
-    <Stack spacing={4} overflow="auto" height="100%">
+    <Stack spacing={4} height="100%">
       <InputGroup>
         <InputLeftElement pointerEvents="none">
           <SearchIcon color="gray.400" />
@@ -346,7 +344,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         />
         <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
       </InputGroup>
-      <Stack overflow="auto">
+      <Stack>
         <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
           <Wrap>
             <Menu>
@@ -454,16 +452,23 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           </Accordion>
         </Stack> */}
         <Box
-          ref={tableContainerRef}
           boxShadow="lg"
           background="gray.850"
           borderColor="whiteAlpha.300"
           borderWidth="1px"
-          overflow="auto"
           borderStyle="solid"
           borderRadius="md"
+          width="100%"
+          mb={20}
+          overflowX="auto"
         >
-          <Table whiteSpace="nowrap" position="relative" variant="unstyled">
+          <Table
+            whiteSpace="nowrap"
+            position="relative"
+            variant="unstyled"
+            overflow="auto"
+            width="100%"
+          >
             <Thead>
               {/** z-index is required because some icons have a higher priority */}
               {getHeaderGroups().map((headerGroup) => (
