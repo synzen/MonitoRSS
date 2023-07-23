@@ -41,7 +41,7 @@ async function runTimerSync(app: INestApplicationContext) {
       try {
         logger.debug(`Handling refresh rate ${refreshRateSeconds}s`);
 
-        await scheduleHandlerService.enforceUserFeedLimits();
+        // await scheduleHandlerService.enforceUserFeedLimits();
         await scheduleHandlerService.handleRefreshRate(refreshRateSeconds, {
           urlHandler: async (url) =>
             urlEventHandler(app, {
