@@ -28,8 +28,10 @@ import {
   InputRightElement,
   MenuDivider,
   Text,
+  MenuOptionGroup,
+  MenuItemOption,
 } from "@chakra-ui/react";
-import React, { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import React, { CSSProperties, useMemo, useState } from "react";
 import {
   RowSelectionState,
   SortingState,
@@ -46,7 +48,6 @@ import { useInView } from "react-intersection-observer";
 import { FaPause, FaPlay } from "react-icons/fa6";
 import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
-import { AddUserFeedDialog } from "../AddUserFeedDialog";
 import { UserFeed, UserFeedDisabledCode } from "../../types";
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { notifyError } from "../../../../utils/notifyError";
@@ -74,11 +75,33 @@ const convertSortStateToSortKey = (state: SortingState) => {
   return `${state[0].desc ? "-" : ""}${state[0].id}`;
 };
 
+enum StatusFilter {
+  Ok = "Ok",
+  Disabled = "Manually Disabled",
+  NeedsAttention = "Needs Attention",
+}
+
+const DISABLED_CODES_BY_STATUS_FILTER: Record<StatusFilter, (UserFeedDisabledCode | "")[]> = {
+  [StatusFilter.Ok]: [""],
+  [StatusFilter.NeedsAttention]: [
+    UserFeedDisabledCode.BadFormat,
+    UserFeedDisabledCode.ExceededFeedLimit,
+    UserFeedDisabledCode.ExcessivelyActive,
+    UserFeedDisabledCode.FailedRequests,
+    UserFeedDisabledCode.InvalidFeed,
+  ],
+  [StatusFilter.Disabled]: [UserFeedDisabledCode.Manual],
+};
+
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
   const { ref: scrollRef, inView } = useInView();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [statusFiltersSelected, setStatusFiltersSelected] = useState<StatusFilter[]>([]);
+  const [filterDisabledStatuses, setFilterDisabledStatuses] = useState<
+    (UserFeedDisabledCode | "")[] | undefined
+  >([]);
   const {
     data,
     status,
@@ -92,6 +115,9 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   } = useUserFeedsInfinite({
     limit: maxPerPage,
     sort: convertSortStateToSortKey(sorting),
+    filters: {
+      disabledCodes: filterDisabledStatuses,
+    },
   });
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
@@ -245,11 +271,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     setSearch(value);
   }, 500);
 
-  const resetUserAdjustments = useCallback(() => {
-    setRowSelection({});
-    setSorting([]);
-  }, [setRowSelection, setSorting]);
-
   const deleteUserFeedsHandler = async () => {
     const feedIds = selectedRows.map((row) => row.original.id);
 
@@ -263,8 +284,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
-
-    resetUserAdjustments();
   };
 
   const disableUserFeedsHandler = async () => {
@@ -280,8 +299,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
-
-    resetUserAdjustments();
   };
 
   const enableUserFeedsHandler = async () => {
@@ -297,15 +314,23 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
-
-    resetUserAdjustments();
   };
 
-  useEffect(() => {
-    if (search) {
-      resetUserAdjustments();
+  const onStatusSelect = (statuses: StatusFilter[]) => {
+    setStatusFiltersSelected(statuses);
+
+    if (statuses.length === 0) {
+      setFilterDisabledStatuses(undefined);
+
+      return;
     }
-  }, [search, resetUserAdjustments]);
+
+    const disableCodes: (UserFeedDisabledCode | "")[] = statuses.flatMap((current) => {
+      return DISABLED_CODES_BY_STATUS_FILTER[current];
+    });
+
+    setFilterDisabledStatuses(disableCodes);
+  };
 
   if (status === "loading") {
     return (
@@ -326,19 +351,39 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   return (
     <Stack spacing={4} height="100%">
-      <InputGroup>
-        <InputLeftElement pointerEvents="none">
-          <SearchIcon color="gray.400" />
-        </InputLeftElement>
-        <Input
-          onChange={({ target: { value } }) => {
-            onSearchChange(value);
-          }}
-          minWidth="325px"
-          placeholder={t("pages.feeds.tableSearch")}
-        />
-        <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
-      </InputGroup>
+      <HStack>
+        <InputGroup>
+          <InputLeftElement pointerEvents="none">
+            <SearchIcon color="gray.400" />
+          </InputLeftElement>
+          <Input
+            onChange={({ target: { value } }) => {
+              onSearchChange(value);
+            }}
+            minWidth="325px"
+            placeholder={t("pages.feeds.tableSearch")}
+          />
+          <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
+        </InputGroup>
+        <Menu closeOnSelect={false}>
+          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
+            <Text overflow="hidden" textAlign="left" textOverflow="ellipsis" whiteSpace="nowrap">
+              {statusFiltersSelected?.length
+                ? `Status: ${statusFiltersSelected.length} selected`
+                : "Filter by Status"}
+            </Text>
+          </MenuButton>
+          <MenuList minWidth="240px">
+            <MenuOptionGroup type="checkbox" onChange={(s) => onStatusSelect(s as StatusFilter[])}>
+              {Object.values(StatusFilter).map((val) => (
+                <MenuItemOption key={val} value={val}>
+                  {val}
+                </MenuItemOption>
+              ))}
+            </MenuOptionGroup>
+          </MenuList>
+        </Menu>
+      </HStack>
       <Stack>
         <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
           <Wrap>
@@ -401,8 +446,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               </MenuList>
             </Menu>
           </Wrap>
-          {/** TODO: Pass correct total feeds to prevent API call? */}
-          <AddUserFeedDialog />
         </Flex>
         {/* <Stack maxWidth="200px" width="100%">
           <Heading size="sm">Filters</Heading>

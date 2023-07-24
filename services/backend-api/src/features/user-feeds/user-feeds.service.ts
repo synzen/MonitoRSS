@@ -25,19 +25,7 @@ import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-
 import { GetArticlesInput } from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
 import { Types } from "mongoose";
-
-interface GetFeedsInput {
-  userId: string;
-  search?: string;
-  limit?: number;
-  offset?: number;
-  sort?: string;
-}
-
-interface GetFeedsCountInput {
-  userId: string;
-  search?: string;
-}
+import { GetUserFeedsInputDto } from "./dto";
 
 interface UpdateFeedInput {
   title?: string;
@@ -211,13 +199,10 @@ export class UserFeedsService {
     return this.userFeedModel.findById(id).lean();
   }
 
-  async getFeedsByUser({
-    userId,
-    limit = 10,
-    offset = 0,
-    search,
-    sort,
-  }: GetFeedsInput) {
+  async getFeedsByUser(
+    userId: string,
+    { limit = 10, offset = 0, search, sort, filters }: GetUserFeedsInputDto
+  ) {
     const query = this.userFeedModel.find({
       "user.discordUserId": userId,
     });
@@ -235,6 +220,13 @@ export class UserFeedsService {
       });
     }
 
+    if (filters?.disabledCodes) {
+      const useFilters = filters.disabledCodes.map((c) =>
+        c === "" ? null : c
+      );
+      query.where("disabledCode").in(useFilters);
+    }
+
     if (limit) {
       query.limit(limit);
     }
@@ -250,7 +242,10 @@ export class UserFeedsService {
     return query.lean();
   }
 
-  async getFeedCountByUser({ userId, search }: GetFeedsCountInput) {
+  async getFeedCountByUser(
+    userId: string,
+    { search, filters }: Omit<GetUserFeedsInputDto, "offset" | "limit" | "sort">
+  ) {
     const query = this.userFeedModel.where({
       "user.discordUserId": userId,
     });
@@ -266,6 +261,13 @@ export class UserFeedsService {
           },
         ],
       });
+    }
+
+    if (filters?.disabledCodes) {
+      const useFilters = filters.disabledCodes.map((c) =>
+        c === "" ? null : c
+      );
+      query.where("disabledCode").in(useFilters);
     }
 
     return query.countDocuments();

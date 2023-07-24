@@ -1,23 +1,21 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getUserFeeds, GetUserFeedsOutput } from "../api";
+import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 
-interface Props {
-  sort?: string;
-  limit: number;
-}
-
-export const useUserFeedsInfinite = ({ sort, limit }: Props) => {
+export const useUserFeedsInfinite = (input: Omit<GetUserFeedsInput, "search">) => {
   const [search, setSearch] = useState("");
+  const useLimit = input.limit || 10;
 
   const queryKey = [
     "user-feeds",
     {
-      infinite: true,
-      search: search || "",
-      sort,
-      limit,
+      input: {
+        ...input,
+        infinite: true,
+        limit: useLimit,
+        search,
+      },
     },
   ];
 
@@ -26,10 +24,9 @@ export const useUserFeedsInfinite = ({ sort, limit }: Props) => {
       queryKey,
       async ({ pageParam: newOffset }) => {
         const result = await getUserFeeds({
-          search,
-          sort,
-          limit,
+          ...input,
           offset: newOffset,
+          search,
         });
 
         return result;
@@ -39,11 +36,11 @@ export const useUserFeedsInfinite = ({ sort, limit }: Props) => {
         refetchOnWindowFocus: false,
         // Returns the next offset
         getNextPageParam: (lastPage, allPages) => {
-          if (lastPage.results.length < limit) {
+          if (lastPage.results.length < useLimit) {
             return undefined;
           }
 
-          return allPages.length * limit;
+          return allPages.length * useLimit;
         },
       }
     );

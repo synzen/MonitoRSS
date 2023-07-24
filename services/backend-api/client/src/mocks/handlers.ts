@@ -245,10 +245,25 @@ const handlers = [
     const limit = Number(req.url.searchParams.get("limit") || "10");
     const offset = Number(req.url.searchParams.get("offset") || "0");
     const search = req.url.searchParams.get("search");
+    const disabledCodes = req.url.searchParams.get("filters[disabledCodes]")?.split(",");
 
-    const filtered = mockUserFeeds.filter((feed) =>
-      search ? feed.title.toLowerCase().includes(search) : true
-    );
+    const filtered = mockUserFeeds
+      .filter((feed) => (search ? feed.title.toLowerCase().includes(search) : true))
+      .filter((feed) => {
+        if (!disabledCodes) {
+          return true;
+        }
+
+        if (disabledCodes.includes("") && !feed.disabledCode) {
+          return true;
+        }
+
+        if (feed.disabledCode && disabledCodes.includes(feed.disabledCode)) {
+          return true;
+        }
+
+        return false;
+      });
 
     const limitedResults = filtered.slice(offset, offset + limit);
 

@@ -294,20 +294,11 @@ export class UserFeedsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @NestedQuery(TransformValidationPipe)
-    { limit, offset, search, sort }: GetUserFeedsInputDto
+    dto: GetUserFeedsInputDto
   ): Promise<GetUserFeedsOutputDto> {
     const [feeds, count] = await Promise.all([
-      this.userFeedsService.getFeedsByUser({
-        userId: discordUserId,
-        limit,
-        offset,
-        search,
-        sort,
-      }),
-      this.userFeedsService.getFeedCountByUser({
-        userId: discordUserId,
-        search,
-      }),
+      this.userFeedsService.getFeedsByUser(discordUserId, dto),
+      this.userFeedsService.getFeedCountByUser(discordUserId, dto),
     ]);
 
     return {

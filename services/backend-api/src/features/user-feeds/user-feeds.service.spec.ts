@@ -18,6 +18,7 @@ import {
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
+import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 import {
@@ -451,19 +452,19 @@ describe("UserFeedsService", () => {
       expect(results).toEqual([
         {
           id: inputIds[0],
-          disabled: true,
+          enabled: true,
         },
         {
           id: inputIds[1],
-          disabled: true,
+          enabled: true,
         },
         {
           id: inputIds[2],
-          disabled: false,
+          enabled: false,
         },
         {
           id: inputIds[3],
-          disabled: false,
+          enabled: false,
         },
       ]);
     });
@@ -602,6 +603,12 @@ describe("UserFeedsService", () => {
   });
 
   describe("getFeedsByUser", () => {
+    const dto: GetUserFeedsInputDto = {
+      limit: 1000,
+      offset: 0,
+      sort: GetUserFeedsInputSortKey.CreatedAtDescending,
+    };
+
     it("returns the feeds", async () => {
       const user = {
         discordUserId: "123",
@@ -621,9 +628,7 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser({
-        userId: user.discordUserId,
-      });
+      const result = await service.getFeedsByUser(user.discordUserId, dto);
 
       expect(result).toMatchObject([
         {
@@ -659,8 +664,8 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser({
-        userId: user.discordUserId,
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
         search: "2 here",
       });
 
@@ -699,8 +704,8 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser({
-        userId: user.discordUserId,
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
         search: "here",
       });
 
@@ -714,130 +719,173 @@ describe("UserFeedsService", () => {
         },
       ]);
     });
-  });
 
-  it("works with offset and limit", async () => {
-    const user = {
-      discordUserId: "123",
-    };
-    const [feed1Id, feed2Id, feed3Id, feed4Id] = [
-      new Types.ObjectId(),
-      new Types.ObjectId(),
-      new Types.ObjectId(),
-      new Types.ObjectId(),
-    ];
+    it("works with disabled code filter", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      const [, , feed2] = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+          disabledCode: UserFeedDisabledCode.Manual,
+        },
+      ]);
 
-    await userFeedModel.collection.insertMany([
-      {
-        _id: feed1Id,
-        title: "title1",
-        url: "url1",
-        user,
-        createdAt: new Date(2020),
-      },
-      {
-        _id: feed2Id,
-        title: "title2",
-        url: "url2",
-        user,
-        createdAt: new Date(2021),
-      },
-      {
-        _id: feed3Id,
-        title: "title3",
-        url: "url3",
-        user,
-        createdAt: new Date(2022),
-      },
-      {
-        _id: feed4Id,
-        title: "title4",
-        url: "url4",
-        user,
-        createdAt: new Date(2023),
-      },
-    ]);
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
+        filters: {
+          disabledCodes: [UserFeedDisabledCode.Manual],
+        },
+      });
 
-    const result = await service.getFeedsByUser({
-      userId: user.discordUserId,
-      offset: 1,
-      limit: 1,
+      expect(result).toHaveLength(1);
+      expect(result).toMatchObject([
+        {
+          _id: feed2._id,
+          title: feed2.title,
+          url: feed2.url,
+          user,
+        },
+      ]);
     });
 
-    expect(result).toHaveLength(1);
-    expect(result).toMatchObject([
-      {
-        _id: feed3Id,
-        title: "title3",
-        url: "url3",
-        user,
-      },
-    ]);
-  });
+    it("works with offset and limit", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      const [feed1Id, feed2Id, feed3Id, feed4Id] = [
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+      ];
 
-  it('returns feeds in descending order by "createdAt"', async () => {
-    const user = {
-      discordUserId: "123",
-    };
-    const [feed1Id, feed2Id, feed3Id] = [
-      new Types.ObjectId(),
-      new Types.ObjectId(),
-      new Types.ObjectId(),
-      new Types.ObjectId(),
-    ];
+      await userFeedModel.collection.insertMany([
+        {
+          _id: feed1Id,
+          title: "title1",
+          url: "url1",
+          user,
+          createdAt: new Date(2020),
+        },
+        {
+          _id: feed2Id,
+          title: "title2",
+          url: "url2",
+          user,
+          createdAt: new Date(2021),
+        },
+        {
+          _id: feed3Id,
+          title: "title3",
+          url: "url3",
+          user,
+          createdAt: new Date(2022),
+        },
+        {
+          _id: feed4Id,
+          title: "title4",
+          url: "url4",
+          user,
+          createdAt: new Date(2023),
+        },
+      ]);
 
-    await userFeedModel.collection.insertMany([
-      {
-        _id: feed1Id,
-        title: "title1",
-        url: "url1",
-        user,
-        createdAt: new Date(2020),
-      },
-      {
-        _id: feed2Id,
-        title: "title2",
-        url: "url2",
-        user,
-        createdAt: new Date(2021),
-      },
-      {
-        _id: feed3Id,
-        title: "title3",
-        url: "url3",
-        user,
-        createdAt: new Date(2022),
-      },
-    ]);
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
+        limit: 1,
+        offset: 1,
+      });
 
-    const result = await service.getFeedsByUser({
-      userId: user.discordUserId,
+      expect(result).toHaveLength(1);
+      expect(result).toMatchObject([
+        {
+          _id: feed3Id,
+          title: "title3",
+          url: "url3",
+          user,
+        },
+      ]);
     });
 
-    expect(result).toHaveLength(3);
-    expect(result).toMatchObject([
-      {
-        _id: feed3Id,
-        title: "title3",
-        url: "url3",
-        user,
-      },
-      {
-        _id: feed2Id,
-        title: "title2",
-        url: "url2",
-        user,
-      },
-      {
-        _id: feed1Id,
-        title: "title1",
-        url: "url1",
-        user,
-      },
-    ]);
+    it('returns feeds in descending order by "createdAt"', async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      const [feed1Id, feed2Id, feed3Id] = [
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+      ];
+
+      await userFeedModel.collection.insertMany([
+        {
+          _id: feed1Id,
+          title: "title1",
+          url: "url1",
+          user,
+          createdAt: new Date(2020),
+        },
+        {
+          _id: feed2Id,
+          title: "title2",
+          url: "url2",
+          user,
+          createdAt: new Date(2021),
+        },
+        {
+          _id: feed3Id,
+          title: "title3",
+          url: "url3",
+          user,
+          createdAt: new Date(2022),
+        },
+      ]);
+
+      const result = await service.getFeedsByUser(user.discordUserId, dto);
+
+      expect(result).toHaveLength(3);
+      expect(result).toMatchObject([
+        {
+          _id: feed3Id,
+          title: "title3",
+          url: "url3",
+          user,
+        },
+        {
+          _id: feed2Id,
+          title: "title2",
+          url: "url2",
+          user,
+        },
+        {
+          _id: feed1Id,
+          title: "title1",
+          url: "url1",
+          user,
+        },
+      ]);
+    });
   });
 
   describe("getFeedCountByUser", () => {
+    const dto = {};
+
     it("returns the count of feeds owned by a user", async () => {
       const user = {
         discordUserId: "123",
@@ -857,9 +905,7 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser({
-        userId: user.discordUserId,
-      });
+      const result = await service.getFeedCountByUser(user.discordUserId, dto);
 
       expect(result).toEqual(1);
     });
@@ -888,10 +934,7 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser({
-        userId: user.discordUserId,
-        search: "2 here",
-      });
+      const result = await service.getFeedCountByUser(user.discordUserId, dto);
 
       expect(result).toEqual(1);
     });
@@ -920,9 +963,44 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser({
-        userId: user.discordUserId,
+      const result = await service.getFeedCountByUser(user.discordUserId, {
+        ...dto,
         search: "here",
+      });
+
+      expect(result).toEqual(1);
+    });
+
+    it("works with search on disabledCode", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+          disabledCode: UserFeedDisabledCode.Manual,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+        },
+      ]);
+
+      const result = await service.getFeedCountByUser(user.discordUserId, {
+        ...dto,
+        filters: {
+          disabledCodes: [UserFeedDisabledCode.Manual],
+        },
       });
 
       expect(result).toEqual(1);
@@ -947,8 +1025,8 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser({
-        userId: user.discordUserId,
+      const result = await service.getFeedCountByUser(user.discordUserId, {
+        ...dto,
         search: "no matches",
       });
 

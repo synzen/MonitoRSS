@@ -1,17 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { pick } from "lodash";
-import { getUserFeeds, GetUserFeedsOutput } from "../api";
+import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { UserFeed } from "../types";
 
-interface Props {
-  limit: number;
-  offset: number;
-  sort?: string;
-}
-
-export const useUserFeeds = ({ limit, offset, sort }: Props) => {
+export const useUserFeeds = (input: GetUserFeedsInput) => {
   const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
   const queryClient = useQueryClient();
@@ -19,10 +13,7 @@ export const useUserFeeds = ({ limit, offset, sort }: Props) => {
   const queryKey = [
     "user-feeds",
     {
-      limit,
-      offset,
-      search: search || "",
-      sort,
+      input,
     },
   ];
 
@@ -32,12 +23,7 @@ export const useUserFeeds = ({ limit, offset, sort }: Props) => {
   >(
     queryKey,
     async () => {
-      const result = await getUserFeeds({
-        limit,
-        offset,
-        search,
-        sort,
-      });
+      const result = await getUserFeeds(input);
 
       return result;
     },

@@ -92,6 +92,7 @@ export const AddUserFeedDialog = () => {
           onClick={onOpen}
           isDisabled={!isUnderLimit}
           isLoading={isLoading}
+          variant="solid"
         >
           {t("features.userFeeds.components.addUserFeedDialog.addButton")}
         </Button>

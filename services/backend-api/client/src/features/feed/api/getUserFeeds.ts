@@ -1,4 +1,5 @@
 import { array, InferType, number, object, string } from "yup";
+import qs from "qs";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 
@@ -7,6 +8,9 @@ export interface GetUserFeedsInput {
   offset?: number;
   search?: string;
   sort?: string;
+  filters?: {
+    disabledCodes?: (UserFeedDisabledCode | "")[];
+  };
 }
 
 const GetUserFeedsOutputSchema = object({
@@ -26,12 +30,18 @@ const GetUserFeedsOutputSchema = object({
 export type GetUserFeedsOutput = InferType<typeof GetUserFeedsOutputSchema>;
 
 export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserFeedsOutput> => {
-  const searchParams = new URLSearchParams({
-    limit: options.limit?.toString() || "10",
-    offset: options.offset?.toString() || "0",
-    search: options.search || "",
-    sort: options.sort || "",
-  });
+  const searchParams = qs.stringify(
+    {
+      limit: options.limit?.toString() || "10",
+      offset: options.offset?.toString() || "0",
+      search: options.search || "",
+      sort: options.sort || "",
+      filters: options.filters,
+    },
+    {
+      arrayFormat: "comma",
+    }
+  );
 
   const res = await fetchRest(`/api/v1/user-feeds?${searchParams}`, {
     validateSchema: GetUserFeedsOutputSchema,
