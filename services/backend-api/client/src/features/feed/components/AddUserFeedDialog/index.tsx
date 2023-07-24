@@ -21,7 +21,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import { useEffect } from "react";
-import { useCreateUserFeed } from "../../hooks";
+import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { notifyError } from "@/utils/notifyError";
 import { useDiscordUserMe } from "../../../discordUser";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -33,11 +33,7 @@ const formSchema = object({
 
 type FormData = InferType<typeof formSchema>;
 
-interface Props {
-  totalFeeds?: number;
-}
-
-export const AddUserFeedDialog = ({ totalFeeds }: Props) => {
+export const AddUserFeedDialog = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
   const {
@@ -49,7 +45,11 @@ export const AddUserFeedDialog = ({ totalFeeds }: Props) => {
     resolver: yupResolver(formSchema),
   });
   const { mutateAsync } = useCreateUserFeed();
-  const { data: discordUserMe } = useDiscordUserMe();
+  const { data: discordUserMe, status: discordUserStatus } = useDiscordUserMe();
+  const { data: userFeeds, status: userFeedsStatus } = useUserFeeds({
+    limit: 1,
+    offset: 0,
+  });
 
   const onSubmit = async ({ title, url }: FormData) => {
     try {
@@ -72,10 +72,14 @@ export const AddUserFeedDialog = ({ totalFeeds }: Props) => {
     reset();
   }, [isOpen]);
 
+  const totalFeeds = userFeeds?.total;
+
   const isUnderLimit =
     totalFeeds !== undefined &&
     discordUserMe?.maxUserFeeds !== undefined &&
     totalFeeds < discordUserMe.maxUserFeeds;
+
+  const isLoading = discordUserStatus === "loading" || userFeedsStatus === "loading";
 
   return (
     <>
@@ -83,7 +87,12 @@ export const AddUserFeedDialog = ({ totalFeeds }: Props) => {
         label={t("features.userFeeds.components.addUserFeedDialog.overLimitHint")}
         hidden={isUnderLimit === true}
       >
-        <Button colorScheme="blue" onClick={onOpen} isDisabled={!isUnderLimit}>
+        <Button
+          colorScheme="blue"
+          onClick={onOpen}
+          isDisabled={!isUnderLimit}
+          isLoading={isLoading}
+        >
           {t("features.userFeeds.components.addUserFeedDialog.addButton")}
         </Button>
       </Tooltip>
@@ -123,7 +132,8 @@ export const AddUserFeedDialog = ({ totalFeeds }: Props) => {
                     )}
                   />
                   <FormHelperText>
-                    {t("features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel")}
+                    Must be a valid RSS feed. To check if a link is a valid feed, you may search for
+                    online feed validators.
                   </FormHelperText>
                   <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
                 </FormControl>

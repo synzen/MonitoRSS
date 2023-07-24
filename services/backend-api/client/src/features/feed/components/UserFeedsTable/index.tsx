@@ -98,16 +98,11 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
 
-  // called on scroll and possibly on mount to fetch more data as the user scrolls and reaches bottom of table
   const fetchMoreOnBottomReached = React.useCallback(() => {
-    // if (containerRefElement) {
     if (inView && !isFetchingNextPage && hasNextPage) {
       fetchNextPage();
     }
-    // }
   }, [fetchNextPage, inView, isFetchingNextPage, hasNextPage]);
-
-  // const refExists = !!scrollRef?.current;
 
   // // a check on mount and after a fetch to see if the table is already scrolled to the bottom and immediately needs to fetch more data
   React.useEffect(() => {
