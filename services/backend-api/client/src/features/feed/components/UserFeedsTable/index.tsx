@@ -351,8 +351,8 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   return (
     <Stack spacing={4} height="100%">
-      <HStack>
-        <InputGroup>
+      <Wrap>
+        <InputGroup width="min-content" flex={1}>
           <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.400" />
           </InputLeftElement>
@@ -383,7 +383,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             </MenuOptionGroup>
           </MenuList>
         </Menu>
-      </HStack>
+      </Wrap>
       <Stack>
         <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
           <Wrap>
