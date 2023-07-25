@@ -21,10 +21,12 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { notifyError } from "@/utils/notifyError";
 import { useDiscordUserMe } from "../../../discordUser";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { pages } from "../../../../constants";
 
 const formSchema = object({
   title: string().required(),
@@ -50,10 +52,11 @@ export const AddUserFeedDialog = () => {
     limit: 1,
     offset: 0,
   });
+  const navigate = useNavigate();
 
   const onSubmit = async ({ title, url }: FormData) => {
     try {
-      await mutateAsync({
+      const result = await mutateAsync({
         details: {
           title,
           url,
@@ -63,6 +66,7 @@ export const AddUserFeedDialog = () => {
       reset();
       onClose();
       notifySuccess(t("features.userFeeds.components.addUserFeedDialog.successAdd"));
+      navigate(pages.userFeed(result.result.id));
     } catch (err) {
       notifyError(t("features.feed.components.addFeedDialog.failedToAdd"), err as Error);
     }
