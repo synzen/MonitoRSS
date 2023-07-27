@@ -363,7 +363,11 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             </Text>
           </MenuButton>
           <MenuList minWidth="240px">
-            <MenuOptionGroup type="checkbox" onChange={(s) => onStatusSelect(s)}>
+            <MenuOptionGroup
+              type="checkbox"
+              onChange={(s) => onStatusSelect(s)}
+              value={statusFilters}
+            >
               {STATUS_FILTERS.map((val) => (
                 <MenuItemOption key={val.value} value={val.value}>
                   {val.label}
