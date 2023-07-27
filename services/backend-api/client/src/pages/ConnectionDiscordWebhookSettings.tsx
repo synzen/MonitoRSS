@@ -1,8 +1,4 @@
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -222,22 +218,6 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     })
                   }
                 />
-                <Alert
-                  status="error"
-                  hidden={
-                    !connection || connection.disabledCode !== FeedConnectionDisabledCode.BadFormat
-                  }
-                  borderRadius="md"
-                >
-                  <Box>
-                    <AlertTitle>
-                      {t("pages.discordWebhookConnection.disabledAlertBadFormatTitle")}
-                    </AlertTitle>
-                    <AlertDescription display="block">
-                      {t("pages.discordWebhookConnection.disabledAlertBadFormatDescription")}
-                    </AlertDescription>
-                  </Box>
-                </Alert>
               </Stack>
               <Grid
                 templateColumns={{
