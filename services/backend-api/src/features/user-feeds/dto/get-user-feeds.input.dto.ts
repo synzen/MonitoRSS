@@ -22,6 +22,8 @@ export enum GetUserFeedsInputSortKey {
   TitleDescending = "-title",
   UrlAscending = "url",
   UrlDescending = "-url",
+  ComputedStatusAcending = "computedStatus",
+  ComputedStatusDescending = "-computedStatus",
 }
 
 export class GetUserFeedsInputFiltersDto {

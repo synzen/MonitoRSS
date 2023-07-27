@@ -184,10 +184,9 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           </Box>
         ),
       }),
-      columnHelper.accessor("disabledCode", {
-        cell: (info) => <UserFeedStatusTag status={info.row.original.computedStatus} />,
+      columnHelper.accessor("computedStatus", {
+        cell: (info) => <UserFeedStatusTag status={info.getValue()} />,
         header: () => t("pages.feeds.tableStatus") as string,
-        enableSorting: false,
       }),
       columnHelper.accessor("title", {
         id: "title",
