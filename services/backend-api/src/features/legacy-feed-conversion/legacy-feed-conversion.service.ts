@@ -16,7 +16,10 @@ import {
   FailRecord,
   FailRecordModel,
 } from "../feeds/entities/fail-record.entity";
-import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
+import {
+  DiscordChannelConnection,
+  DiscordWebhookConnection,
+} from "../feeds/entities/feed-connections";
 import {
   FeedFilteredFormat,
   FeedFilteredFormatModel,
@@ -295,8 +298,12 @@ export class LegacyFeedConversionService {
   ): Promise<UserFeed> {
     const guildId = feed.guild;
     const convertedFilters = feed.rfilters
-      ? this.convertRegexFilters(feed.rfilters)
-      : this.convertRegularFilters(feed.filters);
+      ? this.convertRegexFilters(feed.rfilters, {
+          invert: !!filteredFormats?.length,
+        })
+      : this.convertRegularFilters(feed.filters, {
+          invert: !!filteredFormats?.length,
+        });
     const isYoutube = feed.url.toLowerCase().includes("www.youtube.com/feeds");
     const convertedEmbeds = this.convertEmbeds(feed.embeds, {
       isYoutube,
@@ -349,7 +356,7 @@ export class LegacyFeedConversionService {
     }
 
     if (!feed.webhook) {
-      converted.connections.discordChannels.push({
+      const baseConnection: DiscordChannelConnection = {
         disabledCode: getConnectionDisabledCode(feed.disabled),
         createdAt: feed.createdAt || new Date(),
         updatedAt: feed.updatedAt || new Date(),
@@ -400,11 +407,35 @@ export class LegacyFeedConversionService {
           ],
         },
         filters: convertedFilters,
-      });
+      };
+
+      converted.connections.discordChannels.push(baseConnection);
+
+      if (!!filteredFormats?.length) {
+        for (const format of filteredFormats) {
+          const connectionCopy: DiscordChannelConnection = {
+            ...baseConnection,
+            details: {
+              ...baseConnection.details,
+              content: format.text || baseConnection.details.content,
+              embeds: format.embeds
+                ? this.convertEmbeds(format.embeds, {
+                    isYoutube,
+                  })
+                : baseConnection.details.embeds,
+            },
+            filters: format.filters
+              ? this.convertRegularFilters(format.filters)
+              : baseConnection.filters,
+          };
+
+          converted.connections.discordChannels.push(connectionCopy);
+        }
+      }
     } else {
       const webhook = await this.discordApiService.getWebhook(feed.webhook.id);
 
-      converted.connections.discordWebhooks.push({
+      const baseConnection: DiscordWebhookConnection = {
         disabledCode: getConnectionDisabledCode(feed.disabled),
         createdAt: feed.createdAt || new Date(),
         updatedAt: feed.updatedAt || new Date(),
@@ -462,7 +493,31 @@ export class LegacyFeedConversionService {
           ],
         },
         filters: convertedFilters,
-      });
+      };
+
+      converted.connections.discordWebhooks.push(baseConnection);
+
+      if (!!filteredFormats?.length) {
+        for (const format of filteredFormats) {
+          const connectionCopy: DiscordWebhookConnection = {
+            ...baseConnection,
+            details: {
+              ...baseConnection.details,
+              content: format.text || baseConnection.details.content,
+              embeds: format.embeds
+                ? this.convertEmbeds(format.embeds, {
+                    isYoutube,
+                  })
+                : baseConnection.details.embeds,
+            },
+            filters: format.filters
+              ? this.convertRegularFilters(format.filters)
+              : baseConnection.filters,
+          };
+
+          converted.connections.discordWebhooks.push(connectionCopy);
+        }
+      }
     }
 
     return converted;
@@ -608,16 +663,25 @@ export class LegacyFeedConversionService {
     });
   }
 
-  convertRegexFilters(filters: Feed["rfilters"]) {
+  convertRegexFilters(
+    filters: Feed["rfilters"],
+    options?: {
+      invert?: boolean;
+    }
+  ) {
     if (!filters || Object.keys(filters).length === 0) {
       return;
     }
 
     const orExpression: Record<string, any> = {
       type: ExpressionType.Logical,
-      op: LogicalExpressionOperator.Or,
+      op: options?.invert
+        ? LogicalExpressionOperator.And
+        : LogicalExpressionOperator.Or,
       children: [],
     };
+
+    // !(a | b) = !a & !b
 
     Object.entries(filters).forEach(([category, filterVal]) => {
       const cleanedCategory = category.replace("raw:", "");
@@ -636,12 +700,26 @@ export class LegacyFeedConversionService {
       });
     });
 
+    if (options?.invert) {
+      orExpression.children = orExpression.children.map(
+        (child: Record<string, any>) => ({
+          ...child,
+          not: true,
+        })
+      );
+    }
+
     return {
       expression: orExpression,
     };
   }
 
-  convertRegularFilters(filters: Feed["filters"]) {
+  convertRegularFilters(
+    filters: Feed["filters"],
+    options?: {
+      invert?: boolean;
+    }
+  ) {
     if (!filters || Object.keys(filters).length === 0) {
       return;
     }
@@ -654,9 +732,14 @@ export class LegacyFeedConversionService {
 
     const expression: Record<string, any> = {
       type: ExpressionType.Logical,
-      op: LogicalExpressionOperator.And,
+      op: options?.invert
+        ? LogicalExpressionOperator.Or
+        : LogicalExpressionOperator.And,
       children: [orExpression],
     };
+
+    // !(a & b & c) = !a | !b | !c
+    // !(a & b & (c | d)) = !a | !b | !(c & d) = !a | !b | (!c | !d)
 
     Object.entries(filters).forEach(([category, filterVals]) => {
       for (let i = 0; i < filterVals.length; ++i) {
@@ -724,6 +807,30 @@ export class LegacyFeedConversionService {
         }
       }
     });
+
+    if (options?.invert) {
+      expression.children = expression.children.map(
+        (child: Record<string, any>) => {
+          if (child.type !== ExpressionType.Relational) {
+            return child;
+          }
+
+          return {
+            ...child,
+            not: true,
+          };
+        }
+      );
+
+      orExpression.children = orExpression.children.map(
+        (child: Record<string, any>) => {
+          return {
+            ...child,
+            not: true,
+          };
+        }
+      );
+    }
 
     return { expression };
   }

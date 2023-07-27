@@ -745,7 +745,7 @@ describe("LegacyFeedConversionService", () => {
                 {
                   details: {
                     formatter: {
-                      stripImages: true,
+                      stripImages: false,
                     },
                   },
                 },
@@ -768,7 +768,7 @@ describe("LegacyFeedConversionService", () => {
                 {
                   details: {
                     formatter: {
-                      stripImages: false,
+                      stripImages: true,
                     },
                   },
                 },
@@ -1177,6 +1177,50 @@ describe("LegacyFeedConversionService", () => {
       });
     });
 
+    it("converts inverted correctly", () => {
+      const filters: Feed["rfilters"] = {
+        title: "myregex",
+        description: "myregex2",
+      };
+
+      expect(
+        service.convertRegexFilters(filters, {
+          invert: true,
+        })
+      ).toMatchObject({
+        expression: {
+          type: "LOGICAL",
+          op: "AND",
+          children: [
+            {
+              left: {
+                type: "ARTICLE",
+                value: "title",
+              },
+              op: "MATCHES",
+              not: true,
+              right: {
+                type: "STRING",
+                value: "myregex",
+              },
+            },
+            {
+              left: {
+                type: "ARTICLE",
+                value: "description",
+              },
+              op: "MATCHES",
+              not: true,
+              right: {
+                type: "STRING",
+                value: "myregex2",
+              },
+            },
+          ],
+        },
+      });
+    });
+
     it("handles raw categories by removing raw: prefix", () => {
       const filters: Feed["rfilters"] = {
         "raw:category": "myregex",
@@ -1450,6 +1494,82 @@ describe("LegacyFeedConversionService", () => {
                 type: "ARTICLE",
                 value: "description",
               },
+              right: {
+                type: "STRING",
+                value: "filter3",
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it("converts inverted combination of negated and non-negated filters correctly", () => {
+      const filters: Feed["filters"] = {
+        title: ["!~filter1", "~filter4"],
+        description: ["filter2", "!filter3"],
+      };
+
+      expect(
+        service.convertRegularFilters(filters, {
+          invert: true,
+        })
+      ).toMatchObject({
+        expression: {
+          type: "LOGICAL",
+          op: "OR",
+          children: [
+            {
+              type: "LOGICAL",
+              op: "OR",
+              children: [
+                {
+                  left: {
+                    type: "ARTICLE",
+                    value: "title",
+                  },
+                  op: "CONTAINS",
+                  not: true,
+                  right: {
+                    type: "STRING",
+                    value: "filter4",
+                  },
+                },
+                {
+                  left: {
+                    type: "ARTICLE",
+                    value: "description",
+                  },
+                  op: "EQ",
+                  not: true,
+                  right: {
+                    type: "STRING",
+                    value: "filter2",
+                  },
+                },
+              ],
+            },
+            {
+              type: "RELATIONAL",
+              op: "NOT_CONTAIN",
+              left: {
+                type: "ARTICLE",
+                value: "title",
+              },
+              not: true,
+              right: {
+                type: "STRING",
+                value: "filter1",
+              },
+            },
+            {
+              type: "RELATIONAL",
+              op: "NOT_EQ",
+              left: {
+                type: "ARTICLE",
+                value: "description",
+              },
+              not: true,
               right: {
                 type: "STRING",
                 value: "filter3",

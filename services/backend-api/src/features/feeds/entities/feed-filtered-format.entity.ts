@@ -29,6 +29,12 @@ export class FeedFilteredFormat {
     required: true,
   })
   priority: number;
+
+  @Prop({
+    type: Map,
+    of: [String],
+  })
+  filters?: Record<string, string[]>;
 }
 
 export type FeedFilteredFormatDocument = FeedFilteredFormat & Document;
