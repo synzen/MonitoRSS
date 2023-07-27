@@ -1,4 +1,5 @@
 import {
+  UserFeedComputedStatus,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedSummary,
@@ -11,7 +12,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     title: "New York Times",
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
-    requiresAttention: true,
+    computedStatus: UserFeedComputedStatus.RequiresAttention,
     healthStatus: UserFeedHealthStatus.Ok,
   },
   {
@@ -21,7 +22,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     createdAt: new Date().toISOString(),
     healthStatus: UserFeedHealthStatus.Failed,
     disabledCode: UserFeedDisabledCode.Manual,
-    requiresAttention: false,
+    computedStatus: UserFeedComputedStatus.Ok,
   },
   {
     id: mockUserFeeds[2].id,
@@ -30,7 +31,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     createdAt: new Date().toISOString(),
     healthStatus: UserFeedHealthStatus.Failing,
     disabledCode: undefined,
-    requiresAttention: true,
+    computedStatus: UserFeedComputedStatus.ManuallyDisabled,
   },
 ];
 

@@ -45,8 +45,6 @@ export const UserFeeds: React.FC = () => {
   };
 
   const onApplyRequiresAttentionFilters = useCallback(() => {
-    setStatusFilters([UserFeedComputedStatus.RequiresAttention]);
-
     if (
       statusFilters.length === 1 &&
       statusFilters.includes(UserFeedComputedStatus.RequiresAttention)
@@ -54,8 +52,9 @@ export const UserFeeds: React.FC = () => {
       notifyInfo("You are already viewing feeds that require your attention.");
     } else {
       notifySuccess("Filters applied!");
+      setStatusFilters([UserFeedComputedStatus.RequiresAttention]);
     }
-  }, [setStatusFilters]);
+  }, [statusFilters, setStatusFilters]);
 
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
