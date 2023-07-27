@@ -12,12 +12,18 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
+import { FeedConnectionDisabledCode } from "../feeds/constants";
+import {
+  DiscordChannelConnection,
+  DiscordWebhookConnection,
+} from "../feeds/entities/feed-connections";
 import {
   BannedFeedException,
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
+import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
@@ -27,6 +33,37 @@ import {
   UserFeedHealthStatus,
 } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
+
+const mockDiscordChannelConnection: DiscordChannelConnection = {
+  id: new Types.ObjectId(),
+  name: "name",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  details: {
+    channel: {
+      id: "1",
+      guildId: "guild",
+    },
+    embeds: [],
+    formatter: {},
+  },
+};
+
+const mockDiscordWebhookConnection: DiscordWebhookConnection = {
+  id: new Types.ObjectId(),
+  name: "name",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  details: {
+    webhook: {
+      id: "1",
+      guildId: "guild",
+      token: "1",
+    },
+    embeds: [],
+    formatter: {},
+  },
+};
 
 describe("UserFeedsService", () => {
   let service: UserFeedsService;
@@ -609,35 +646,90 @@ describe("UserFeedsService", () => {
       sort: GetUserFeedsInputSortKey.CreatedAtDescending,
     };
 
-    it("returns the feeds", async () => {
+    it("returns the feeds with extra fields", async () => {
       const user = {
         discordUserId: "123",
       };
-      const [feed] = await userFeedModel.create([
+      await userFeedModel.create([
         {
-          title: "title",
+          title: "title0",
           url: "url",
           user,
         },
         {
-          title: "title",
+          title: "title1",
+          url: "url",
+          user,
+          disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+        },
+        {
+          title: "title2",
+          url: "url",
+          user,
+          disabledCode: UserFeedDisabledCode.Manual,
+        },
+        {
+          title: "title3",
           url: "url",
           user: {
             discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title4",
+          url: "url",
+          user,
+          connections: {
+            discordChannels: [
+              {
+                ...mockDiscordChannelConnection,
+                disabledCode: FeedConnectionDisabledCode.MissingMedium,
+              },
+            ],
+          },
+        },
+        {
+          title: "title5",
+          url: "url",
+          user,
+          connections: {
+            discordWebhooks: [
+              {
+                ...mockDiscordWebhookConnection,
+                disabledCode: FeedConnectionDisabledCode.MissingPermissions,
+              },
+            ],
           },
         },
       ]);
 
       const result = await service.getFeedsByUser(user.discordUserId, dto);
 
-      expect(result).toMatchObject([
-        {
-          _id: feed._id,
-          title: feed.title,
-          url: feed.url,
-          user,
-        },
-      ]);
+      expect(result).toHaveLength(5);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: "title0",
+            computedStatus: UserFeedComputedStatus.Ok,
+          }),
+          expect.objectContaining({
+            title: "title1",
+            computedStatus: UserFeedComputedStatus.RequiresAttention,
+          }),
+          expect.objectContaining({
+            title: "title2",
+            computedStatus: UserFeedComputedStatus.ManuallyDisabled,
+          }),
+          expect.objectContaining({
+            title: "title4",
+            computedStatus: UserFeedComputedStatus.RequiresAttention,
+          }),
+          expect.objectContaining({
+            title: "title5",
+            computedStatus: UserFeedComputedStatus.RequiresAttention,
+          }),
+        ])
+      );
     });
 
     it("works with search on title", async () => {
@@ -881,6 +973,233 @@ describe("UserFeedsService", () => {
         },
       ]);
     });
+
+    it("works with computed status filters", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+          connections: {
+            discordChannels: [
+              {
+                ...mockDiscordChannelConnection,
+                disabledCode: FeedConnectionDisabledCode.MissingMedium,
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
+        filters: {
+          computedStatuses: [UserFeedComputedStatus.RequiresAttention],
+        },
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result).toMatchObject([
+        {
+          title: "title3",
+        },
+      ]);
+    });
+
+    it("works with connection disabled code filters", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      const [, , feed3, feed4] = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+          connections: {
+            discordChannels: [
+              {
+                id: new Types.ObjectId(),
+                name: "name",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                disabledCode: FeedConnectionDisabledCode.Manual,
+                details: {
+                  channel: {
+                    id: "1",
+                    guildId: "guild",
+                  },
+                  embeds: [],
+                  formatter: {},
+                },
+              },
+            ],
+          },
+        },
+        {
+          title: "title4",
+          url: "url HERE",
+          user,
+          connections: {
+            discordChannels: [
+              {
+                id: new Types.ObjectId(),
+                name: "name",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                details: {
+                  channel: {
+                    id: "1",
+                    guildId: "guild",
+                  },
+                  embeds: [],
+                  formatter: {},
+                },
+              },
+            ],
+            discordWebhooks: [
+              {
+                id: new Types.ObjectId(),
+                name: "name",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                disabledCode: FeedConnectionDisabledCode.Manual,
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "guild",
+                    token: "token",
+                  },
+                  embeds: [],
+                  formatter: {},
+                },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
+        filters: {
+          connectionDisabledCodes: [FeedConnectionDisabledCode.Manual],
+        },
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result).toMatchObject([
+        {
+          _id: feed3._id,
+          title: feed3.title,
+        },
+        {
+          _id: feed4._id,
+          title: feed4.title,
+        },
+      ]);
+    });
+
+    it("works with connection disabled code filters being an empty string", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      const [, , feed2] = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+          connections: {
+            discordChannels: [
+              {
+                id: new Types.ObjectId(),
+                name: "name",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                details: {
+                  channel: {
+                    id: "1",
+                    guildId: "guild",
+                  },
+                  embeds: [],
+                  formatter: {},
+                },
+              },
+              {
+                id: new Types.ObjectId(),
+                name: "name2",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                details: {
+                  channel: {
+                    id: "1",
+                    guildId: "guild",
+                  },
+                  embeds: [],
+                  formatter: {},
+                },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
+        filters: {
+          connectionDisabledCodes: [""],
+        },
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result).toMatchObject(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: feed2.title,
+          }),
+          expect.objectContaining({
+            title: "title1",
+          }),
+        ])
+      );
+    });
   });
 
   describe("getFeedCountByUser", () => {
@@ -934,7 +1253,10 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser(user.discordUserId, dto);
+      const result = await service.getFeedCountByUser(user.discordUserId, {
+        ...dto,
+        search: "3",
+      });
 
       expect(result).toEqual(1);
     });

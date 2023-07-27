@@ -14,14 +14,12 @@ import {
 import { PropsWithChildren, createContext, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeedConnectionType, SendTestArticleDeliveryStatus } from "../types";
-import {
-  CreateDiscordChannelConnectionPreviewInput,
-  useCreateConnectionTestArticle,
-} from "../features/feedConnections";
+import { CreateDiscordChannelConnectionPreviewInput } from "../features/feedConnections/api";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import getChakraColor from "../utils/getChakraColor";
 import { notifyInfo } from "../utils/notifyInfo";
+import { useCreateConnectionTestArticle } from "../features/feedConnections/hooks";
 
 interface ContextProps {
   sendTestArticle: (data: {

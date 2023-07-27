@@ -24,6 +24,7 @@ import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
 import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
+import { UserFeedStatusFilterProvider } from "../contexts";
 
 const Pages: React.FC = () => (
   <Routes>
@@ -80,7 +81,9 @@ const Pages: React.FC = () => (
         <RequireAuth>
           {/* <PageContentV2 invertBackground> */}
           <NewHeader invertBackground />
-          <UserFeeds />
+          <UserFeedStatusFilterProvider>
+            <UserFeeds />
+          </UserFeedStatusFilterProvider>
           {/* </PageContentV2> */}
         </RequireAuth>
       }

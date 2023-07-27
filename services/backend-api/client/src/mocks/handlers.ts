@@ -265,7 +265,10 @@ const handlers = [
         return false;
       });
 
-    const limitedResults = filtered.slice(offset, offset + limit);
+    const limitedResults = filtered.slice(offset, offset + limit).map((feed) => ({
+      ...feed,
+      requiresAttention: Math.random() > 0.5,
+    }));
 
     return res(
       ctx.delay(500),

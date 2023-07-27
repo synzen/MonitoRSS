@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { FeedConnectionTypeEntityKey } from "../constants";
 import {
   DiscordChannelConnection,
   DiscordChannelConnectionSchema,
@@ -16,13 +17,13 @@ export class FeedConnections {
     type: [DiscordChannelConnectionSchema],
     default: [],
   })
-  discordChannels: DiscordChannelConnection[];
+  [FeedConnectionTypeEntityKey.DiscordChannels]: DiscordChannelConnection[];
 
   @Prop({
     type: [DiscordWebhookConnectionSchema],
     default: [],
   })
-  discordWebhooks: DiscordWebhookConnection[];
+  [FeedConnectionTypeEntityKey.DiscordWebhooks]: DiscordWebhookConnection[];
 }
 
 export const FeedConnectionSchema =

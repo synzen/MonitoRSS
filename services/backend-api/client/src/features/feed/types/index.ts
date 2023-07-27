@@ -6,3 +6,5 @@ export * from "./UserFeedDisabledCode";
 export * from "./UserFeedHealthStatus";
 export * from "./UserFeedRequest";
 export * from "./UserFeedArticleRequestStatus";
+export * from "./UserFeedSummary";
+export * from "./UserFeedComputedStatus";

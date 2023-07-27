@@ -31,7 +31,7 @@ import {
   MenuOptionGroup,
   MenuItemOption,
 } from "@chakra-ui/react";
-import React, { CSSProperties, useMemo, useState } from "react";
+import React, { CSSProperties, useContext, useMemo, useState } from "react";
 import {
   RowSelectionState,
   SortingState,
@@ -48,12 +48,13 @@ import { useInView } from "react-intersection-observer";
 import { FaPause, FaPlay } from "react-icons/fa6";
 import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
-import { UserFeed, UserFeedDisabledCode } from "../../types";
+import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedSummary } from "../../types";
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { DATE_FORMAT } from "../../../../constants";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
+import { UserFeedStatusFilterContext } from "../../../../contexts";
 
 interface Props {
   onSelectedFeedId?: (feedId: string) => void;
@@ -63,7 +64,7 @@ const DEFAULT_MAX_PER_PAGE = 20;
 
 const maxPerPage = DEFAULT_MAX_PER_PAGE;
 
-type RowData = Pick<UserFeed, "title" | "url" | "id" | "disabledCode" | "createdAt">;
+type RowData = UserFeedSummary;
 
 const columnHelper = createColumnHelper<RowData>();
 
@@ -75,33 +76,27 @@ const convertSortStateToSortKey = (state: SortingState) => {
   return `${state[0].desc ? "-" : ""}${state[0].id}`;
 };
 
-enum StatusFilter {
-  Ok = "Ok",
-  Disabled = "Manually Disabled",
-  NeedsAttention = "Needs Attention",
-}
-
-const DISABLED_CODES_BY_STATUS_FILTER: Record<StatusFilter, (UserFeedDisabledCode | "")[]> = {
-  [StatusFilter.Ok]: [""],
-  [StatusFilter.NeedsAttention]: [
-    UserFeedDisabledCode.BadFormat,
-    UserFeedDisabledCode.ExceededFeedLimit,
-    UserFeedDisabledCode.ExcessivelyActive,
-    UserFeedDisabledCode.FailedRequests,
-    UserFeedDisabledCode.InvalidFeed,
-  ],
-  [StatusFilter.Disabled]: [UserFeedDisabledCode.Manual],
-};
+const STATUS_FILTERS = [
+  {
+    label: "Ok",
+    value: UserFeedComputedStatus.Ok,
+  },
+  {
+    label: "Disabled",
+    value: UserFeedComputedStatus.ManuallyDisabled,
+  },
+  {
+    label: "Requires Attention",
+    value: UserFeedComputedStatus.RequiresAttention,
+  },
+];
 
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
   const { ref: scrollRef, inView } = useInView();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [statusFiltersSelected, setStatusFiltersSelected] = useState<StatusFilter[]>([]);
-  const [filterDisabledStatuses, setFilterDisabledStatuses] = useState<
-    (UserFeedDisabledCode | "")[] | undefined
-  >([]);
+  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const {
     data,
     status,
@@ -116,7 +111,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     limit: maxPerPage,
     sort: convertSortStateToSortKey(sorting),
     filters: {
-      disabledCodes: filterDisabledStatuses,
+      computedStatuses: statusFilters,
     },
   });
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
@@ -190,7 +185,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         ),
       }),
       columnHelper.accessor("disabledCode", {
-        cell: (info) => <UserFeedStatusTag disabledCode={info.getValue()} />,
+        cell: (info) => <UserFeedStatusTag status={info.row.original.computedStatus} />,
         header: () => t("pages.feeds.tableStatus") as string,
         enableSorting: false,
       }),
@@ -316,20 +311,14 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     }
   };
 
-  const onStatusSelect = (statuses: StatusFilter[]) => {
-    setStatusFiltersSelected(statuses);
-
-    if (statuses.length === 0) {
-      setFilterDisabledStatuses(undefined);
+  const onStatusSelect = (statuses: string[] | string) => {
+    if (typeof statuses === "string") {
+      setStatusFilters([statuses as UserFeedComputedStatus]);
 
       return;
     }
 
-    const disableCodes: (UserFeedDisabledCode | "")[] = statuses.flatMap((current) => {
-      return DISABLED_CODES_BY_STATUS_FILTER[current];
-    });
-
-    setFilterDisabledStatuses(disableCodes);
+    setStatusFilters(statuses as UserFeedComputedStatus[]);
   };
 
   if (status === "loading") {
@@ -368,16 +357,16 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         <Menu closeOnSelect={false}>
           <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
             <Text overflow="hidden" textAlign="left" textOverflow="ellipsis" whiteSpace="nowrap">
-              {statusFiltersSelected?.length
-                ? `Status: ${statusFiltersSelected.length} selected`
+              {statusFilters?.length
+                ? `Status: ${statusFilters.length} selected`
                 : "Filter by Status"}
             </Text>
           </MenuButton>
           <MenuList minWidth="240px">
-            <MenuOptionGroup type="checkbox" onChange={(s) => onStatusSelect(s as StatusFilter[])}>
-              {Object.values(StatusFilter).map((val) => (
-                <MenuItemOption key={val} value={val}>
-                  {val}
+            <MenuOptionGroup type="checkbox" onChange={(s) => onStatusSelect(s)}>
+              {STATUS_FILTERS.map((val) => (
+                <MenuItemOption key={val.value} value={val.value}>
+                  {val.label}
                 </MenuItemOption>
               ))}
             </MenuOptionGroup>

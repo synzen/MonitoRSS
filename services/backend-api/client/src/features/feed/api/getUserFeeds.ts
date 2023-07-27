@@ -1,7 +1,7 @@
 import { array, InferType, number, object, string } from "yup";
 import qs from "qs";
 import fetchRest from "../../../utils/fetchRest";
-import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
+import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 
 export interface GetUserFeedsInput {
   limit?: number;
@@ -9,7 +9,7 @@ export interface GetUserFeedsInput {
   search?: string;
   sort?: string;
   filters?: {
-    disabledCodes?: (UserFeedDisabledCode | "")[];
+    computedStatuses?: UserFeedComputedStatus[];
   };
 }
 
@@ -22,6 +22,7 @@ const GetUserFeedsOutputSchema = object({
       healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
       disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
       createdAt: string().required(),
+      computedStatus: string().oneOf(Object.values(UserFeedComputedStatus)).required(),
     })
   ).required(),
   total: number().required(),

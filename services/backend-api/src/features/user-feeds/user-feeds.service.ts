@@ -24,8 +24,21 @@ import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { GetArticlesInput } from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
-import { Types } from "mongoose";
-import { GetUserFeedsInputDto } from "./dto";
+import { PipelineStage, Types } from "mongoose";
+import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionTypeEntityKey,
+} from "../feeds/constants";
+import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
+
+const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
+  (c) => c !== FeedConnectionDisabledCode.Manual
+);
+const badUserFeedCodes = Object.values(UserFeedDisabledCode).filter(
+  (c) => c !== UserFeedDisabledCode.Manual
+);
+const feedConnectionTypeKeys = Object.values(FeedConnectionTypeEntityKey);
 
 interface UpdateFeedInput {
   title?: string;
@@ -202,75 +215,70 @@ export class UserFeedsService {
   async getFeedsByUser(
     userId: string,
     { limit = 10, offset = 0, search, sort, filters }: GetUserFeedsInputDto
-  ) {
-    const query = this.userFeedModel.find({
-      "user.discordUserId": userId,
-    });
+  ): Promise<
+    Array<{
+      _id: Types.ObjectId;
+      title: string;
+      url: string;
+      healthStatus: UserFeedHealthStatus;
+      disabledCode?: UserFeedDisabledCode;
+      createdAt: Date;
+      computedStatus: boolean;
+    }>
+  > {
+    const useSort = sort || GetUserFeedsInputSortKey.CreatedAtDescending;
 
-    if (search) {
-      query.where("title").find({
-        $or: [
-          {
-            title: new RegExp(_.escapeRegExp(search), "i"),
-          },
-          {
-            url: new RegExp(_.escapeRegExp(search), "i"),
-          },
-        ],
-      });
-    }
+    const sortSplit = useSort.split("-");
+    const sortDirection = useSort.startsWith("-") ? -1 : 1;
+    const sortKey: string = sortSplit[sortSplit.length - 1];
 
-    if (filters?.disabledCodes) {
-      const useFilters = filters.disabledCodes.map((c) =>
-        c === "" ? null : c
-      );
-      query.where("disabledCode").in(useFilters);
-    }
+    const aggregateResults = await this.userFeedModel.aggregate([
+      ...this.generateGetFeedsAggregatePipeline(userId, {
+        search,
+        filters,
+      }),
+      {
+        $sort: {
+          [sortKey]: sortDirection,
+        },
+      },
+      {
+        $skip: offset,
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          url: 1,
+          healthStatus: 1,
+          disabledCode: 1,
+          createdAt: 1,
+          computedStatus: 1,
+        },
+      },
+    ]);
 
-    if (limit) {
-      query.limit(limit);
-    }
-
-    if (offset) {
-      query.skip(offset);
-    }
-
-    if (sort) {
-      query.sort(sort);
-    }
-
-    return query.lean();
+    return aggregateResults;
   }
 
   async getFeedCountByUser(
     userId: string,
     { search, filters }: Omit<GetUserFeedsInputDto, "offset" | "limit" | "sort">
   ) {
-    const query = this.userFeedModel.where({
-      "user.discordUserId": userId,
-    });
+    const aggregateResults = await this.userFeedModel.aggregate([
+      ...this.generateGetFeedsAggregatePipeline(userId, {
+        search,
+        filters,
+      }),
+      {
+        $count: "count",
+      },
+    ]);
 
-    if (search) {
-      query.where("title").find({
-        $or: [
-          {
-            title: new RegExp(_.escapeRegExp(search), "i"),
-          },
-          {
-            url: new RegExp(_.escapeRegExp(search), "i"),
-          },
-        ],
-      });
-    }
-
-    if (filters?.disabledCodes) {
-      const useFilters = filters.disabledCodes.map((c) =>
-        c === "" ? null : c
-      );
-      query.where("disabledCode").in(useFilters);
-    }
-
-    return query.countDocuments();
+    return aggregateResults[0]?.count || 0;
   }
 
   async getFeedRequests({
@@ -445,6 +453,127 @@ export class UserFeedsService {
       requestStatus,
       properties,
     };
+  }
+
+  private generateGetFeedsAggregatePipeline(
+    userId: string,
+    {
+      search,
+      filters,
+    }: {
+      search?: string;
+      filters?: GetUserFeedsInputDto["filters"];
+    }
+  ) {
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          "user.discordUserId": userId,
+        },
+      },
+      {
+        $addFields: {
+          computedStatus: {
+            $cond: {
+              if: {
+                $or: [
+                  ...feedConnectionTypeKeys.map((key) => {
+                    return {
+                      $anyElementTrue: {
+                        $map: {
+                          input: `$connections.${key}`,
+                          as: "c",
+                          in: {
+                            $in: [`$$c.disabledCode`, badConnectionCodes],
+                          },
+                        },
+                      },
+                    };
+                  }),
+                  {
+                    $in: ["$disabledCode", badUserFeedCodes],
+                  },
+                ],
+              },
+              then: UserFeedComputedStatus.RequiresAttention,
+              else: {
+                $cond: {
+                  if: {
+                    $eq: ["$disabledCode", UserFeedDisabledCode.Manual],
+                  },
+                  then: UserFeedComputedStatus.ManuallyDisabled,
+                  else: UserFeedComputedStatus.Ok,
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    if (filters?.computedStatuses?.length) {
+      pipeline.push({
+        $match: {
+          computedStatus: {
+            $in: filters.computedStatuses,
+          },
+        },
+      });
+    }
+
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            {
+              title: new RegExp(_.escapeRegExp(search), "i"),
+            },
+            {
+              url: new RegExp(_.escapeRegExp(search), "i"),
+            },
+          ],
+        },
+      });
+    }
+
+    if (filters?.disabledCodes) {
+      pipeline.push({
+        $match: {
+          disabledCode: {
+            $in: filters.disabledCodes.map((c) => (c === "" ? null : c)),
+          },
+        },
+      });
+    }
+
+    if (filters?.connectionDisabledCodes) {
+      const codesToSearchFor = filters.connectionDisabledCodes.map((c) =>
+        c === "" ? null : c
+      );
+
+      const toPush: PipelineStage = {
+        $match: {
+          $or: feedConnectionTypeKeys.map((key) => ({
+            [`connections.${key}.disabledCode`]: {
+              $in: codesToSearchFor,
+            },
+          })),
+        },
+      };
+
+      if (codesToSearchFor.includes(null)) {
+        // @ts-ignore
+        toPush.$match.$or.push({
+          [`connections.0`]: {
+            $exists: false,
+          },
+        });
+      }
+
+      pipeline.push(toPush);
+    }
+
+    return pipeline;
   }
 
   async enforceUserFeedLimits(

@@ -309,6 +309,7 @@ export class UserFeedsController {
         healthStatus: feed.healthStatus,
         disabledCode: feed.disabledCode,
         createdAt: feed.createdAt.toISOString(),
+        computedStatus: feed.computedStatus,
       })),
       total: count,
     };

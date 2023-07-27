@@ -1,21 +1,18 @@
 import { FaCircleExclamation, FaPause } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
-import { UserFeed, UserFeedDisabledCode } from "../../types";
+import { UserFeedComputedStatus } from "../../types";
 import getChakraColor from "../../../../utils/getChakraColor";
 
 interface Props {
-  disabledCode?: UserFeed["disabledCode"];
+  status: UserFeedComputedStatus;
 }
 
-export const UserFeedStatusTag: React.FC<Props> = ({ disabledCode }) => {
-  if (
-    disabledCode === UserFeedDisabledCode.FailedRequests ||
-    disabledCode === UserFeedDisabledCode.BadFormat
-  ) {
+export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
+  if (status === UserFeedComputedStatus.RequiresAttention) {
     return <FaCircleExclamation fontSize={18} color={getChakraColor("red.300")} />;
   }
 
-  if (disabledCode === UserFeedDisabledCode.Manual) {
+  if (status === UserFeedComputedStatus.ManuallyDisabled) {
     return <FaPause opacity="0.5" fontSize={18} />;
   }
 

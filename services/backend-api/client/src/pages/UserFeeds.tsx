@@ -9,28 +9,53 @@ import {
   Button,
   Link as ChakraLink,
   IconButton,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeftIcon } from "@chakra-ui/icons";
+import { useCallback, useContext } from "react";
 import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
 import { useDiscordUserMe } from "../features/discordUser";
-import { useUserFeeds } from "../features/feed";
+import { UserFeedComputedStatus, useUserFeeds } from "../features/feed";
 import { pages } from "../constants";
 import { BoxConstrained } from "../components";
+import { UserFeedStatusFilterContext } from "../contexts";
+import { notifySuccess } from "../utils/notifySuccess";
+import { notifyInfo } from "../utils/notifyInfo";
 
 export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: discordUserMe } = useDiscordUserMe();
-  const { data: userFeeds } = useUserFeeds({
+  const { data: userFeedsResults } = useUserFeeds({
     limit: 1,
     offset: 0,
+    filters: {
+      computedStatuses: [UserFeedComputedStatus.RequiresAttention],
+    },
   });
+  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
 
   const onSelectedFeed = (feedId: string) => {
     navigate(pages.userFeed(feedId));
   };
+
+  const onApplyRequiresAttentionFilters = useCallback(() => {
+    setStatusFilters([UserFeedComputedStatus.RequiresAttention]);
+
+    if (
+      statusFilters.length === 1 &&
+      statusFilters.includes(UserFeedComputedStatus.RequiresAttention)
+    ) {
+      notifyInfo("You are already viewing feeds that require your attention.");
+    } else {
+      notifySuccess("Filters applied!");
+    }
+  }, [setStatusFilters]);
 
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
@@ -41,6 +66,21 @@ export const UserFeeds: React.FC = () => {
               Back to legacy feeds
             </Button>
           </Box>
+          {userFeedsResults?.total !== undefined && userFeedsResults.total > 0 && (
+            <Alert status="warning">
+              <AlertIcon />
+              <AlertTitle>
+                {userFeedsResults.total} feed{userFeedsResults.total > 1 ? "s" : ""} require your
+                attention!
+              </AlertTitle>
+              <AlertDescription>
+                Article delivery may be fully or partially paused.{" "}
+                <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
+                  Apply filters to see which ones they are.
+                </ChakraLink>
+              </AlertDescription>
+            </Alert>
+          )}
           <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
               <Heading size="lg">{t("pages.userFeeds.title")}</Heading>
@@ -52,10 +92,10 @@ export const UserFeeds: React.FC = () => {
               </Badge>
             </Flex>
             <Flex alignItems="center">
-              {discordUserMe?.maxUserFeeds !== undefined && userFeeds?.total !== undefined && (
+              {discordUserMe?.maxUserFeeds !== undefined && userFeedsResults?.total !== undefined && (
                 <HStack>
                   <Text fontSize="xl" fontWeight={600}>
-                    {userFeeds.total}
+                    {userFeedsResults.total}
                   </Text>
                   <Text fontSize="xl" fontWeight={600}>
                     /

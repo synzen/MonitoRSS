@@ -11,6 +11,8 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
+import { FeedConnectionDisabledCode } from "../../feeds/constants";
+import { UserFeedComputedStatus } from "../constants/user-feed-computed-status.type";
 import { UserFeedDisabledCode } from "../types";
 
 export enum GetUserFeedsInputSortKey {
@@ -28,6 +30,18 @@ export class GetUserFeedsInputFiltersDto {
   @IsIn([...Object.values(UserFeedDisabledCode), ""], { each: true })
   @Transform(({ value }) => (value ? value.split(",") : undefined))
   disabledCodes?: (UserFeedDisabledCode | "")[];
+
+  @IsArray()
+  @IsOptional()
+  @IsIn([...Object.values(FeedConnectionDisabledCode), ""], { each: true })
+  @Transform(({ value }) => (value ? value.split(",") : undefined))
+  connectionDisabledCodes?: (FeedConnectionDisabledCode | "")[];
+
+  @IsArray()
+  @IsOptional()
+  @IsIn([...Object.values(UserFeedComputedStatus), ""], { each: true })
+  @Transform(({ value }) => (value ? value.split(",") : undefined))
+  computedStatuses?: UserFeedComputedStatus[];
 }
 
 export class GetUserFeedsInputDto {
