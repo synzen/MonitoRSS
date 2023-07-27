@@ -68,6 +68,7 @@ import { mockCreatePreviewResult } from "./data/createPreview";
 import mockDiscordThreads from "./data/discordThreads";
 import mockDiscordServerMembers from "./data/discordServerMembers";
 import mockDiscordUser from "./data/discordUser";
+import mockUserFeedSummary from "./data/userFeedSummary";
 
 const handlers = [
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
@@ -247,7 +248,7 @@ const handlers = [
     const search = req.url.searchParams.get("search");
     const disabledCodes = req.url.searchParams.get("filters[disabledCodes]")?.split(",");
 
-    const filtered = mockUserFeeds
+    const filtered = mockUserFeedSummary
       .filter((feed) => (search ? feed.title.toLowerCase().includes(search) : true))
       .filter((feed) => {
         if (!disabledCodes) {
@@ -267,7 +268,6 @@ const handlers = [
 
     const limitedResults = filtered.slice(offset, offset + limit).map((feed) => ({
       ...feed,
-      requiresAttention: Math.random() > 0.5,
     }));
 
     return res(
