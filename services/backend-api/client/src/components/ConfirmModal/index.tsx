@@ -19,6 +19,7 @@ interface Props {
   trigger: React.ReactElement;
   title?: string;
   description?: string;
+  descriptionNode?: React.ReactNode;
   cancelText?: string;
   okText?: string;
   colorScheme?: ThemingProps["colorScheme"];
@@ -32,6 +33,7 @@ export const ConfirmModal = ({
   cancelText,
   okText,
   colorScheme,
+  descriptionNode,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
@@ -56,11 +58,12 @@ export const ConfirmModal = ({
         <ModalContent>
           {title && <ModalHeader marginRight={4}>{title}</ModalHeader>}
           <ModalCloseButton />
-          {description && (
+          {description && !descriptionNode && (
             <ModalBody>
               <Text>{description}</Text>
             </ModalBody>
           )}
+          {descriptionNode && !description && <ModalBody>{descriptionNode}</ModalBody>}
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>
               {cancelText || t("common.buttons.cancel")}

@@ -8,3 +8,5 @@ export * from "./webhooks-disabled.exception";
 export * from "./webhook-missing.exception";
 export * from "./webhook-invalid.exception";
 export * from "./no-discord-channel-permission-overwrites.exception";
+export * from "./cannot-convert-over-user-feed-limit.exception";
+export * from "./already-converted-to-user-feed.exception";

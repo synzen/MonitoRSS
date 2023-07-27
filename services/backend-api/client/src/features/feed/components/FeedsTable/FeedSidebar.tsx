@@ -1,6 +1,7 @@
 import {
   Alert,
   AlertDescription,
+  AlertIcon,
   AlertTitle,
   Box,
   Button,
@@ -16,8 +17,8 @@ import { Link, useParams } from "react-router-dom";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { FiTrash } from "react-icons/fi";
 import { useState } from "react";
-import { CategoryText, Loading } from "@/components";
-import { useDeleteFeed, useFeed, useFeeds } from "../../hooks";
+import { CategoryText, ConfirmModal, Loading } from "@/components";
+import { useConvertLegacyFeedToUserFeed, useDeleteFeed, useFeed, useFeeds } from "../../hooks";
 import { RefreshButton } from "../RefreshButton";
 import RouteParams from "@/types/RouteParams";
 import { SettingsForm } from "./SettingsForm";
@@ -27,6 +28,7 @@ import { notifyError } from "@/utils/notifyError";
 import { Feed } from "@/types";
 import { FeedStatusTag } from "./FeedStatusTag";
 import { WebhookForm } from "./WebhookForm";
+import { notifySuccess } from "../../../../utils/notifySuccess";
 
 interface Props {
   feedId?: string;
@@ -40,6 +42,8 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
   const { feed, status, error, updateCache } = useFeed({
     feedId,
   });
+  const { mutateAsync: convertToUserFeed, status: convertingStatus } =
+    useConvertLegacyFeedToUserFeed();
   const { mutateAsync } = useDeleteFeed();
   const [deleting, setDeleting] = useState(false);
 
@@ -86,6 +90,23 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
     updateCachedFeed(updatedFeed.id, updatedFeed);
     updateCache(updatedFeed);
   };
+
+  const onConvertToUserFeed = async () => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      await convertToUserFeed({
+        feedId,
+      });
+      notifySuccess("Successfully converted to personal feed!");
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+  };
+
+  const isConvertedToPersonal = feed && feed?.status === "converted-to-user";
 
   return (
     <Stack
@@ -169,6 +190,41 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
             {feed?.createdAt}
           </CategoryText>
         </Flex>
+        {!isConvertedToPersonal && (
+          <ConfirmModal
+            trigger={
+              <Button
+                colorScheme="purple"
+                boxShadow="lg"
+                size="lg"
+                isLoading={convertingStatus === "loading"}
+              >
+                Convert to Personal Feed
+              </Button>
+            }
+            onConfirm={onConvertToUserFeed}
+            okText="Convert"
+            colorScheme="purple"
+            descriptionNode={
+              <Stack>
+                <Alert status="error">
+                  <AlertIcon />
+                  <AlertTitle>This is not a perfect conversion!</AlertTitle>
+                </Alert>
+                <br />
+                <Text fontWeight={700}>
+                  Double check that everything is as exepcted afterwards, or the personal feed may
+                  get disabled due to errors during delivery attempts.
+                </Text>
+                <Text>
+                  This legacy feed will be permanently disabled after the conversion, and subject to
+                  deletion in the future.
+                </Text>
+              </Stack>
+            }
+            title="Convert to Personal Feed"
+          />
+        )}
         <Button as={Link} to={`${feedId}/message`} leftIcon={<ExternalLinkIcon />}>
           {t("features.feed.components.sidebar.customizeButton")}
         </Button>

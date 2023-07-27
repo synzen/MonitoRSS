@@ -29,6 +29,7 @@ import {
   FeedSubscriberModel,
 } from "../feeds/entities/feed-subscriber.entity";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { CannotConvertOverUserFeedLimitException } from "../feeds/exceptions";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {
@@ -144,66 +145,10 @@ export class LegacyFeedConversionService {
     private readonly supportersService: SupportersService
   ) {}
 
-  async convertToUserFeeds(
-    feeds: Feed[],
+  async convertToUserFeed(
+    feed: Feed,
     { discordUserId }: { discordUserId: string }
   ) {
-    const [profiles, subscribers, filteredFormats, failRecords] =
-      await Promise.all([
-        this.profileModel.find({
-          _id: {
-            $in: feeds.map((feed) => feed.guild),
-          },
-        }),
-        this.feedSubscriberModel.find({
-          feed: {
-            $in: feeds.map((feed) => feed._id),
-          },
-        }),
-        this.feedFilteredFormatModel.find({
-          feed: {
-            $in: feeds.map((feed) => feed._id),
-          },
-        }),
-        this.failRecordModel.find({
-          _id: {
-            $in: Array.from(new Set(feeds.map((feed) => feed.url))),
-          },
-        }),
-      ]);
-
-    const profilesByGuild = new Map<string, DiscordServerProfile>();
-    profiles.forEach((profile) => {
-      profilesByGuild.set(profile._id.toHexString(), profile);
-    });
-
-    const subscribersByFeed = new Map<string, FeedSubscriber[]>();
-    subscribers.forEach((subscriber) => {
-      const feedId = subscriber.feed.toHexString();
-
-      if (!subscribersByFeed.has(feedId)) {
-        subscribersByFeed.set(feedId, []);
-      }
-
-      subscribersByFeed.get(feedId)?.push(subscriber);
-    });
-
-    const filteredFormatsByFeed = new Map<string, FeedFilteredFormat[]>();
-    filteredFormats.forEach((filteredFormat) => {
-      const feedId = filteredFormat.feed.toHexString();
-
-      if (!filteredFormatsByFeed.has(feedId)) {
-        filteredFormatsByFeed.set(feedId, []);
-      }
-
-      filteredFormatsByFeed.get(feedId)?.push(filteredFormat);
-    });
-
-    const failRecordsByUrl = new Map<string, FailRecord>();
-    failRecords.forEach((failRecord) => {
-      failRecordsByUrl.set(failRecord._id, failRecord);
-    });
-
     const [{ maxUserFeeds }, currentUserFeedCount] = await Promise.all([
       this.supportersService.getBenefitsOfDiscordUser(discordUserId),
       this.userFeedModel.countDocuments({
@@ -211,72 +156,47 @@ export class LegacyFeedConversionService {
       }),
     ]);
 
-    const results = await Promise.all(
-      feeds.map(async (f, index) => {
-        if (currentUserFeedCount + index + 1 > maxUserFeeds) {
-          return {
-            state: "error",
-            error: new Error(
-              `Reached the maximum number of user feeds (${maxUserFeeds})`
-            ),
-          };
-        }
-
-        try {
-          const converted: UserFeed = await this.getUserFeedEquivalent(f, {
-            discordUserId,
-            failRecord: failRecordsByUrl.get(f.url),
-            profile: profilesByGuild.get(f.guild),
-            subscribers: subscribersByFeed.get(f._id.toHexString()),
-            filteredFormats: filteredFormatsByFeed.get(f._id.toHexString()),
-          });
-
-          return {
-            state: "success",
-            result: converted,
-            feedId: f._id,
-          };
-        } catch (err) {
-          return {
-            state: "error",
-            error: err as Error,
-            feedId: f._id,
-          };
-        }
-      })
-    );
-
-    const session = await this.feedModel.startSession();
-
-    await session.withTransaction(async () => {
-      const userFeedsToCreate = results
-        .filter((r) => r.state === "success")
-        .map(({ result }) => result);
-
-      await this.userFeedModel.create(userFeedsToCreate, { session });
-
-      const feedIdsToUpdate = results
-        .filter((r) => r.state === "success")
-        .map(({ feedId }) => feedId);
-
-      await this.feedModel.updateMany(
-        {
-          _id: {
-            $in: feedIdsToUpdate,
-          },
-        },
-        {
-          $set: {
-            disabled: "CONVERTED_USER_FEED",
-          },
-        },
-        { session }
+    if (currentUserFeedCount + 1 > maxUserFeeds) {
+      throw new CannotConvertOverUserFeedLimitException(
+        `Converting feed limit would exceed limit: ${maxUserFeeds}`
       );
+    }
+
+    const [profile, subscribers, filteredFormats, failRecord] =
+      await Promise.all([
+        this.profileModel.findById(feed.guild),
+        this.feedSubscriberModel.find({
+          feed: feed._id,
+        }),
+        this.feedFilteredFormatModel.find({
+          feed: feed._id,
+        }),
+        this.failRecordModel.findById(feed.url),
+      ]);
+
+    const converted: UserFeed = await this.getUserFeedEquivalent(feed, {
+      discordUserId,
+      failRecord,
+      profile,
+      subscribers: subscribers,
+      filteredFormats,
     });
 
-    await session.endSession();
+    await this.userFeedModel.create([converted]);
 
-    return results;
+    await this.feedModel.updateOne(
+      {
+        _id: feed._id,
+      },
+      {
+        $set: {
+          disabled: "CONVERTED_USER_FEED",
+          disabledReason: "Converted to personal feed",
+        },
+      }
+    );
+
+    return converted;
   }
 
   // TODO: disabled feeds
@@ -356,12 +276,21 @@ export class LegacyFeedConversionService {
     }
 
     if (!feed.webhook) {
+      let name: string;
+
+      try {
+        const fetched = await this.discordApiService.getChannel(feed.channel);
+        name = `Channel: #${fetched.name}`;
+      } catch (err) {
+        name = `Channel: ${feed.channel}`;
+      }
+
       const baseConnection: DiscordChannelConnection = {
         disabledCode: getConnectionDisabledCode(feed.disabled),
         createdAt: feed.createdAt || new Date(),
         updatedAt: feed.updatedAt || new Date(),
         id: new Types.ObjectId(),
-        name: feed.title,
+        name: name,
         splitOptions: {
           isEnabled: feed.split?.enabled || false,
         },
@@ -384,9 +313,9 @@ export class LegacyFeedConversionService {
           }),
           embeds: convertedEmbeds,
           formatter: {
-            formatTables: feed.formatTables,
-            stripImages: !feed.imgLinksExistence,
-            disableImageLinkPreviews: !feed.imgPreviews,
+            formatTables: feed.formatTables ?? false,
+            stripImages: feed.imgLinksExistence ?? false,
+            disableImageLinkPreviews: feed.imgPreviews ?? false,
           },
           placeholderLimits: [
             {
@@ -415,6 +344,7 @@ export class LegacyFeedConversionService {
         for (const format of filteredFormats) {
           const connectionCopy: DiscordChannelConnection = {
             ...baseConnection,
+            name: `${name} | Filtered format priority ${format.priority || 0}`,
             details: {
               ...baseConnection.details,
               content: format.text || baseConnection.details.content,
@@ -435,12 +365,14 @@ export class LegacyFeedConversionService {
     } else {
       const webhook = await this.discordApiService.getWebhook(feed.webhook.id);
 
+      const name = `Webhook: ${webhook.name || feed.webhook.id}`;
+
       const baseConnection: DiscordWebhookConnection = {
         disabledCode: getConnectionDisabledCode(feed.disabled),
         createdAt: feed.createdAt || new Date(),
         updatedAt: feed.updatedAt || new Date(),
         id: new Types.ObjectId(),
-        name: feed.title,
+        name,
         splitOptions: {
           isEnabled: feed.split?.enabled || false,
         },
@@ -501,6 +433,7 @@ export class LegacyFeedConversionService {
         for (const format of filteredFormats) {
           const connectionCopy: DiscordWebhookConnection = {
             ...baseConnection,
+            name: `${name} | Filtered format priority ${format.priority || 0}`,
             details: {
               ...baseConnection.details,
               content: format.text || baseConnection.details.content,

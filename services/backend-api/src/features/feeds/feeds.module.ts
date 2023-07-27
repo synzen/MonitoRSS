@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { CacheModule, Module } from "@nestjs/common";
 import { FeedsService } from "./feeds.service";
 import { FeedsController } from "./feeds.controller";
@@ -17,6 +18,7 @@ import { DiscordApiModule } from "../../services/apis/discord/discord-api.module
 import { BannedFeedFeature } from "./entities/banned-feed.entity";
 import { FeedFilteredFormatFeature } from "./entities/feed-filtered-format.entity";
 import { UserFeedFeature } from "../user-feeds/entities";
+import { LegacyFeedConversionModule } from "../legacy-feed-conversion/legacy-feed-conversion.module";
 
 @Module({
   controllers: [FeedsController, FeedSubscribersController],
@@ -37,6 +39,7 @@ import { UserFeedFeature } from "../user-feeds/entities";
     SupportersModule,
     DiscordWebhooksModule,
     DiscordApiModule,
+    LegacyFeedConversionModule,
   ],
   exports: [
     FeedsService,

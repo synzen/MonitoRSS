@@ -1,7 +1,9 @@
+import { FeedStatus } from "../../feeds/types/FeedStatus.type";
+
 interface FeedSummary {
   id: string;
   title: string;
-  status: "ok" | "failed" | "disabled" | "failing";
+  status: FeedStatus;
   url: string;
   channel: string;
   createdAt?: string;

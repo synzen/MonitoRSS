@@ -25,3 +25,4 @@ export * from "./getUserFeedRequests";
 export * from "./deleteUserFeeds";
 export * from "./disableUserFeeds";
 export * from "./enableUserFeeds";
+export * from "./getConvertFeedToUserFeed";

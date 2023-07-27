@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {
   BadRequestException,
   Body,
@@ -34,6 +35,7 @@ import { CloneFeedInputDto } from "./dto/CloneFeedInput.dto";
 import { CloneFeedOutputDto } from "./dto/CloneFeedOutput.dto";
 import {
   AddFeedExceptionFilter,
+  ConverToUserFeedExceptionFilter,
   FeedExceptionFilter,
   UpdateFeedExceptionFilter,
 } from "./filters";
@@ -50,6 +52,7 @@ import {
 import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
 import { FEED_DISABLED_LEGACY_CODES } from "./constants";
+import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -58,7 +61,8 @@ export class FeedsController {
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
-    private readonly webhooksService: DiscordWebhooksService
+    private readonly webhooksService: DiscordWebhooksService,
+    private readonly legacyFeedConversionService: LegacyFeedConversionService
   ) {}
 
   @Post()
@@ -87,6 +91,28 @@ export class FeedsController {
     @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<GetFeedOutputDto> {
     return GetFeedOutputDto.fromEntity(feed);
+  }
+
+  @Get(":feedId/user-feed")
+  @UseGuards(UserManagesFeedServerGuard)
+  @UseFilters(ConverToUserFeedExceptionFilter)
+  async convert(
+    @Param("feedId", GetFeedPipe) feed: DetailedFeed,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    const result = await this.legacyFeedConversionService.convertToUserFeed(
+      feed,
+      {
+        discordUserId,
+      }
+    );
+
+    return {
+      result: {
+        id: result._id.toHexString(),
+      },
+    };
   }
 
   @Delete(":feedId")

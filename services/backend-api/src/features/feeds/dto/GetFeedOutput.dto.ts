@@ -1,4 +1,5 @@
 import { DetailedFeed } from "../types/detailed-feed.type";
+import { FeedStatus } from "../types/FeedStatus.type";
 
 export enum FeedEmbedTimestamp {
   ARTICLE = "article",
@@ -36,7 +37,7 @@ export interface FeedEmbedOutputDto {
 interface FeedOutputDto {
   id: string;
   title: string;
-  status: "ok" | "failed" | "disabled" | "failing";
+  status: FeedStatus;
   failReason?: string;
   disabledReason?: string;
   filters: Array<{ category: string; value: string }>;

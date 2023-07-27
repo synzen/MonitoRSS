@@ -238,6 +238,7 @@ describe("FeedsModule", () => {
           createTestDiscordGuildMember({
             user: {
               id: botClientId,
+              username: "username",
             },
           })
         )

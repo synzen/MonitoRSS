@@ -28,6 +28,8 @@ enum ApiErrorCode {
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
   DISCORD_CAHNNEL_INVALID = "DISCORD_CAHNNEL_INVALID",
   WEBHOOK_FORUM_UNSUPPORTED = "WEBHOOK_FORUM_UNSUPPORTED",
+  USER_FEED_LIMIT_REACHED = "USER_FEED_LIMIT_REACHED",
+  ALREADY_CONVERTED_TO_USER_FEED = "ALREADY_CONVERTED_TO_USER_FEED",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -58,6 +60,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   DISCORD_SERVER_NOT_FOUND: t("common.apiErrors.discordServerNotFound"),
   DISCORD_CAHNNEL_INVALID: t("common.apiErrors.discordChannelInvalid"),
   WEBHOOK_FORUM_UNSUPPORTED: t("common.apiErrors.webhookForumUnsupported"),
+  USER_FEED_LIMIT_REACHED: "You have reached the maximum number of user feeds you can create",
+  ALREADY_CONVERTED_TO_USER_FEED: "This feed has already been converted to a user feed",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

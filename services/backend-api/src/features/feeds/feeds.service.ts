@@ -506,6 +506,8 @@ export class FeedsService {
         feedStatus = FeedStatus.FAILED;
       } else if (feed.failRecord) {
         feedStatus = FeedStatus.FAILING;
+      } else if (feed.disabled === "CONVERTED_USER_FEED") {
+        feedStatus = FeedStatus.CONVERTED_TO_USER;
       } else if (feed.disabled) {
         feedStatus = FeedStatus.DISABLED;
       } else {
