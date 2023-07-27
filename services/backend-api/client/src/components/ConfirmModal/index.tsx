@@ -23,6 +23,7 @@ interface Props {
   cancelText?: string;
   okText?: string;
   colorScheme?: ThemingProps["colorScheme"];
+  size?: ThemingProps["size"];
 }
 
 export const ConfirmModal = ({
@@ -34,6 +35,7 @@ export const ConfirmModal = ({
   okText,
   colorScheme,
   descriptionNode,
+  size,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
@@ -53,7 +55,7 @@ export const ConfirmModal = ({
   return (
     <>
       {React.cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size={size}>
         <ModalOverlay />
         <ModalContent>
           {title && <ModalHeader marginRight={4}>{title}</ModalHeader>}

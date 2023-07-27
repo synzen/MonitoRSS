@@ -29,6 +29,7 @@ import { Feed } from "@/types";
 import { FeedStatusTag } from "./FeedStatusTag";
 import { WebhookForm } from "./WebhookForm";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { pages } from "../../../../constants";
 
 interface Props {
   feedId?: string;
@@ -192,6 +193,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
         </Flex>
         {!isConvertedToPersonal && (
           <ConfirmModal
+            size="xl"
             trigger={
               <Button
                 colorScheme="purple"
@@ -207,18 +209,25 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
             colorScheme="purple"
             descriptionNode={
               <Stack>
-                <Alert status="error">
-                  <AlertIcon />
-                  <AlertTitle>This is not a perfect conversion!</AlertTitle>
+                <Alert status="warning">
+                  <AlertIcon fontSize={24} />
+                  <Stack>
+                    <AlertTitle>This is not a perfect conversion!</AlertTitle>
+                    <AlertDescription>
+                      Double check that everything is as exepcted afterwards, or the personal feed
+                      may get disabled due to errors during delivery attempts.
+                    </AlertDescription>
+                  </Stack>
                 </Alert>
                 <br />
-                <Text fontWeight={700}>
-                  Double check that everything is as exepcted afterwards, or the personal feed may
-                  get disabled due to errors during delivery attempts.
-                </Text>
                 <Text>
                   This legacy feed will be permanently disabled after the conversion, and subject to
-                  deletion in the future.
+                  deletion once all legacy feeds have been converted to personal feeds.
+                </Text>
+                <Text>
+                  <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
+                    Click here to see more information on legacy feeds.
+                  </Button>
                 </Text>
               </Stack>
             }
