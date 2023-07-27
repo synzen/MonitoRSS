@@ -69,8 +69,8 @@ export const UserFeeds: React.FC = () => {
             <Alert status="warning">
               <AlertIcon />
               <AlertTitle>
-                {userFeedsResults.total} feed{userFeedsResults.total > 1 ? "s" : ""} require your
-                attention!
+                {userFeedsResults.total} feed{userFeedsResults.total > 1 ? "s" : ""} require
+                {userFeedsResults.total > 1 ? "" : "s"} your attention!
               </AlertTitle>
               <AlertDescription>
                 Article delivery may be fully or partially paused.{" "}
