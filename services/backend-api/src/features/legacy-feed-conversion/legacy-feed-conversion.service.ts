@@ -220,7 +220,7 @@ export class LegacyFeedConversionService {
         }
 
         try {
-          const converted = await this.getUserFeedEquivalent(f, {
+          const converted: UserFeed = await this.getUserFeedEquivalent(f, {
             discordUserId,
             failRecord: failRecordsByUrl.get(f.url),
             profile: profilesByGuild.get(f.guild),
@@ -292,7 +292,7 @@ export class LegacyFeedConversionService {
       filteredFormats?: FeedFilteredFormat[] | null;
       failRecord?: FailRecord | null;
     }
-  ) {
+  ): Promise<UserFeed> {
     const guildId = feed.guild;
     const convertedFilters = feed.rfilters
       ? this.convertRegexFilters(feed.rfilters)
