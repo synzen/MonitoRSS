@@ -31,12 +31,16 @@ export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: discordUserMe } = useDiscordUserMe();
-  const { data: userFeedsResults } = useUserFeeds({
+  const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
     offset: 0,
     filters: {
       computedStatuses: [UserFeedComputedStatus.RequiresAttention],
     },
+  });
+  const { data: userFeedsResults } = useUserFeeds({
+    limit: 1,
+    offset: 0,
   });
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
 
@@ -65,21 +69,23 @@ export const UserFeeds: React.FC = () => {
               Back to legacy feeds
             </Button>
           </Box>
-          {userFeedsResults?.total !== undefined && userFeedsResults.total > 0 && (
-            <Alert status="warning">
-              <AlertIcon />
-              <AlertTitle>
-                {userFeedsResults.total} feed{userFeedsResults.total > 1 ? "s" : ""} require
-                {userFeedsResults.total > 1 ? "" : "s"} your attention!
-              </AlertTitle>
-              <AlertDescription>
-                Article delivery may be fully or partially paused.{" "}
-                <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
-                  Apply filters to see which ones they are.
-                </ChakraLink>
-              </AlertDescription>
-            </Alert>
-          )}
+          {userFeedsRequireAttentionResults?.total !== undefined &&
+            userFeedsRequireAttentionResults.total > 0 && (
+              <Alert status="warning">
+                <AlertIcon />
+                <AlertTitle>
+                  {userFeedsRequireAttentionResults.total} feed
+                  {userFeedsRequireAttentionResults.total > 1 ? "s" : ""} require
+                  {userFeedsRequireAttentionResults.total > 1 ? "" : "s"} your attention!
+                </AlertTitle>
+                <AlertDescription>
+                  Article delivery may be fully or partially paused.{" "}
+                  <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
+                    Apply filters to see which ones they are.
+                  </ChakraLink>
+                </AlertDescription>
+              </Alert>
+            )}
           <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
               <Heading size="lg">{t("pages.userFeeds.title")}</Heading>
