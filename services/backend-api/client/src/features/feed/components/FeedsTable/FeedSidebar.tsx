@@ -175,6 +175,16 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
             </AlertDescription>
           </Box>
         </Alert>
+        {isConvertedToPersonal && (
+          <Alert status="info">
+            <Box>
+              <AlertTitle>Disabled for Personal Feed</AlertTitle>
+              <AlertDescription>
+                This feed has been converted to a personal feed and is no longer active.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
       </Stack>
       <Stack>
         <Flex wrap="wrap">
