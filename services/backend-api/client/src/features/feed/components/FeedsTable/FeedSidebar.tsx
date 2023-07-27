@@ -214,8 +214,8 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                   <Stack>
                     <AlertTitle>This is not a perfect conversion!</AlertTitle>
                     <AlertDescription>
-                      Double check that everything is as exepcted afterwards, or the personal feed
-                      may get disabled due to errors during delivery attempts.
+                      Double check that everything is as expected afterwards, or the feed may get
+                      disabled due to errors during delivery attempts.
                     </AlertDescription>
                   </Stack>
                 </Alert>
@@ -226,7 +226,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                 </Text>
                 <Text>
                   <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
-                    Click here to see more information on legacy feeds.
+                    Click here to see more information on what personal feeds are.
                   </Button>
                 </Text>
               </Stack>
