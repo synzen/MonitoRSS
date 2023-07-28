@@ -33,6 +33,7 @@ interface SupportPatronAggregateResult {
   maxUserFeeds?: number;
   maxGuilds?: number;
   slowRate?: boolean;
+  maxUserFeedsLegacyAddition?: number;
   patrons: Array<{
     status: Patron["status"];
     pledge: number;
@@ -405,10 +406,11 @@ export class SupportersService {
         supporter.maxFeeds ?? this.defaultMaxFeeds,
         patronMaxFeeds
       ),
-      maxUserFeeds: Math.max(
-        supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
-        patronMaxUserFeeds
-      ),
+      maxUserFeeds:
+        Math.max(
+          supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
+          patronMaxUserFeeds
+        ) + (supporter.maxUserFeedsLegacyAddition || 0),
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
       webhooks: true,
