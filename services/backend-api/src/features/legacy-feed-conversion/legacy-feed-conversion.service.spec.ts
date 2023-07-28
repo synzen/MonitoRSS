@@ -1136,6 +1136,59 @@ describe("LegacyFeedConversionService", () => {
         },
       ]);
     });
+
+    it("converts embeds with no color", () => {
+      const input: Feed["embeds"] = [
+        {
+          title: "title {placeholder}",
+          description: "description {placeholder}",
+          url: "url {placeholder}",
+          footerIconURL: "footer icon url {placeholder}",
+          footerText: "footer text {placeholder}",
+          imageURL: "image url {placeholder}",
+          authorIconURL: "author icon url",
+          authorName: "author name {placeholder}",
+          authorURL: "author url {placeholder}",
+          thumbnailURL: "thumbnail url {placeholder}",
+          timestamp: "now",
+          fields: [
+            {
+              name: "field name {placeholder}",
+              value: "field value {placeholder}",
+              inline: true,
+            },
+          ],
+        },
+      ];
+
+      expect(
+        service.convertEmbeds(input, {
+          isYoutube: false,
+        })
+      ).toEqual([
+        {
+          title: "title {{placeholder}}",
+          description: "description {{placeholder}}",
+          url: "url {{placeholder}}",
+          color: undefined,
+          footerIconURL: "footer icon url {{placeholder}}",
+          footerText: "footer text {{placeholder}}",
+          imageURL: "image url {{placeholder}}",
+          authorIconURL: "author icon url",
+          authorName: "author name {{placeholder}}",
+          authorURL: "author url {{placeholder}}",
+          thumbnailURL: "thumbnail url {{placeholder}}",
+          timestamp: "now",
+          fields: [
+            {
+              name: "field name {{placeholder}}",
+              value: "field value {{placeholder}}",
+              inline: true,
+            },
+          ],
+        },
+      ]);
+    });
   });
 
   describe("convertRegexFilters", () => {

@@ -577,13 +577,13 @@ export class LegacyFeedConversionService {
         authorIconURL: this.convertPlaceholders(embed.authorIconURL, meta),
         authorName: this.convertPlaceholders(embed.authorName, meta),
         authorURL: this.convertPlaceholders(embed.authorURL, meta),
-        color: this.convertPlaceholders(embed.color, meta),
+        color: embed.color ? String(embed.color) : undefined,
         description: this.convertPlaceholders(embed.description, meta),
         footerIconURL: this.convertPlaceholders(embed.footerIconURL, meta),
         footerText: this.convertPlaceholders(embed.footerText, meta),
         imageURL: this.convertPlaceholders(embed.imageURL, meta),
         thumbnailURL: this.convertPlaceholders(embed.thumbnailURL, meta),
-        timestamp: this.convertPlaceholders(embed.timestamp, meta),
+        timestamp: embed.timestamp,
         url: this.convertPlaceholders(embed.url, meta),
         fields: embed.fields?.map((field) => {
           return {
