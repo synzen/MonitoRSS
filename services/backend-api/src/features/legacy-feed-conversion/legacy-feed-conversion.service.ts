@@ -4,6 +4,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import dayjs from "dayjs";
 import { Types } from "mongoose";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import logger from "../../utils/logger";
 import {
   DiscordServerProfile,
   DiscordServerProfileModel,
@@ -149,54 +150,63 @@ export class LegacyFeedConversionService {
     feed: Feed,
     { discordUserId }: { discordUserId: string }
   ) {
-    const [{ maxUserFeeds }, currentUserFeedCount] = await Promise.all([
-      this.supportersService.getBenefitsOfDiscordUser(discordUserId),
-      this.userFeedModel.countDocuments({
-        "user.discordUserId": discordUserId,
-      }),
-    ]);
-
-    if (currentUserFeedCount + 1 > maxUserFeeds) {
-      throw new CannotConvertOverUserFeedLimitException(
-        `Converting feed limit would exceed limit: ${maxUserFeeds}`
-      );
-    }
-
-    const [profile, subscribers, filteredFormats, failRecord] =
-      await Promise.all([
-        this.profileModel.findById(feed.guild),
-        this.feedSubscriberModel.find({
-          feed: feed._id,
+    try {
+      const [{ maxUserFeeds }, currentUserFeedCount] = await Promise.all([
+        this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+        this.userFeedModel.countDocuments({
+          "user.discordUserId": discordUserId,
         }),
-        this.feedFilteredFormatModel.find({
-          feed: feed._id,
-        }),
-        this.failRecordModel.findById(feed.url),
       ]);
 
-    const converted: UserFeed = await this.getUserFeedEquivalent(feed, {
-      discordUserId,
-      failRecord,
-      profile,
-      subscribers: subscribers,
-      filteredFormats,
-    });
-
-    await this.userFeedModel.create([converted]);
-
-    await this.feedModel.updateOne(
-      {
-        _id: feed._id,
-      },
-      {
-        $set: {
-          disabled: "CONVERTED_USER_FEED",
-          disabledReason: "Converted to personal feed",
-        },
+      if (currentUserFeedCount + 1 > maxUserFeeds) {
+        throw new CannotConvertOverUserFeedLimitException(
+          `Converting feed limit would exceed limit: ${maxUserFeeds}`
+        );
       }
-    );
 
-    return converted;
+      const [profile, subscribers, filteredFormats, failRecord] =
+        await Promise.all([
+          this.profileModel.findById(feed.guild),
+          this.feedSubscriberModel.find({
+            feed: feed._id,
+          }),
+          this.feedFilteredFormatModel.find({
+            feed: feed._id,
+          }),
+          this.failRecordModel.findById(feed.url),
+        ]);
+
+      const converted: UserFeed = await this.getUserFeedEquivalent(feed, {
+        discordUserId,
+        failRecord,
+        profile,
+        subscribers: subscribers,
+        filteredFormats,
+      });
+
+      await this.userFeedModel.create([converted]);
+
+      await this.feedModel.updateOne(
+        {
+          _id: feed._id,
+        },
+        {
+          $set: {
+            disabled: "CONVERTED_USER_FEED",
+            disabledReason: "Converted to personal feed",
+          },
+        }
+      );
+
+      return converted;
+    } catch (err) {
+      logger.error(
+        `Failed to convert feed ${feed._id} to user feed: ${err}`,
+        err
+      );
+
+      throw err;
+    }
   }
 
   // TODO: disabled feeds
