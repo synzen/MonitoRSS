@@ -10,7 +10,6 @@ export * from "./deleteFeedSubscriber";
 export * from "./cloneFeed";
 export * from "./getFeedArticlesDump";
 export * from "./getFeedArticlesRawDump";
-export * from "./createFeed";
 export * from "./deleteFeed";
 export * from "./getArticleDailyLimit";
 export * from "./getUserFeeds";

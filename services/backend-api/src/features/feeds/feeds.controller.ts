@@ -34,15 +34,12 @@ import _ from "lodash";
 import { CloneFeedInputDto } from "./dto/CloneFeedInput.dto";
 import { CloneFeedOutputDto } from "./dto/CloneFeedOutput.dto";
 import {
-  AddFeedExceptionFilter,
   ConverToUserFeedExceptionFilter,
   FeedExceptionFilter,
   UpdateFeedExceptionFilter,
 } from "./filters";
 import FlattenedJSON from "../../services/feed-fetcher/utils/FlattenedJSON";
-import { CreateFeedInputDto } from "./dto/create-feed-input.dto";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
-import { CreateFeedOutputDto } from "./dto/create-feed-output.dto";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import {
   WebhookInvalidException,
@@ -64,26 +61,6 @@ export class FeedsController {
     private readonly webhooksService: DiscordWebhooksService,
     private readonly legacyFeedConversionService: LegacyFeedConversionService
   ) {}
-
-  @Post()
-  @UseFilters(FeedExceptionFilter, AddFeedExceptionFilter)
-  async createFeed(
-    @Body(TransformValidationPipe) createFeedInputDto: CreateFeedInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken
-  ): Promise<CreateFeedOutputDto> {
-    const { channelId, feeds } = createFeedInputDto;
-    const feedToAdd = feeds[0];
-
-    const addedFeed = await this.feedsService.addFeed(access_token, {
-      title: feedToAdd.title,
-      url: feedToAdd.url,
-      channelId: channelId,
-      // Hardcoded false for now until feed v2 is fully implemented
-      isFeedV2: false,
-    });
-
-    return CreateFeedOutputDto.fromEntity([addedFeed]);
-  }
 
   @Get(":feedId")
   @UseGuards(UserManagesFeedServerGuard)

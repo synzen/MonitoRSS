@@ -21,18 +21,24 @@ import {
   InputRightElement,
   Spinner,
   HStack,
+  AlertTitle,
+  AlertDescription,
+  Tooltip,
+  Button,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { useEffect, useMemo } from "react";
 import { useTable, usePagination, Column, useGlobalFilter } from "react-table";
 import { useTranslation } from "react-i18next";
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
 import { debounce } from "lodash";
+import { Link } from "react-router-dom";
 import { useFeeds } from "../../hooks";
 import { Feed } from "@/types";
 import { Loading } from "@/components";
 import { DiscordChannelName } from "@/features/discordServers/components/DiscordChannelName";
-import { AddFeedDialog } from "../AddFeedDialog";
 import { FeedStatusTag } from "./FeedStatusTag";
+import { pages } from "../../../../constants";
 
 interface Props {
   serverId?: string;
@@ -151,6 +157,15 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
 
   return (
     <Stack>
+      <Alert status="warning">
+        <AlertIcon />
+        <AlertTitle>Legacy feeds can no longer be added.</AlertTitle>
+        <AlertDescription>
+          <ChakraLink as={Link} to={pages.userFeeds()} color="blue.300">
+            Please transition to personal feeds instead.
+          </ChakraLink>
+        </AlertDescription>
+      </Alert>
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">
           <InputLeftElement pointerEvents="none">
@@ -165,7 +180,11 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
           />
           <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
         </InputGroup>
-        <AddFeedDialog />
+        <Tooltip label="Legacy feeds can no longer be added. Please transition to personal feeds instead.">
+          <Button colorScheme="blue" isDisabled>
+            {t("features.feed.components.addFeedDialog.addButton")}
+          </Button>
+        </Tooltip>
       </HStack>
       {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
       <Box overflow="auto">
