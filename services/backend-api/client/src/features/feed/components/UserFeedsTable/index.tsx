@@ -41,13 +41,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  DeleteIcon,
-  SearchIcon,
-} from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, SearchIcon } from "@chakra-ui/icons";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import { useInView } from "react-intersection-observer";
@@ -124,7 +118,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
-  const someAreLegacyFeeds = flatData.some((f) => f.isLegacyFeed);
 
   const fetchMoreOnBottomReached = React.useCallback(() => {
     if (inView && !isFetchingNextPage && hasNextPage) {
@@ -242,25 +235,8 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           return dayjs(value).format(DATE_FORMAT);
         },
       }),
-      ...(someAreLegacyFeeds
-        ? [
-            columnHelper.accessor("isLegacyFeed", {
-              id: "isLegacyFeed",
-              header: () => "Legacy feed",
-              cell: (info) => {
-                const value = info.getValue();
-
-                if (!value) {
-                  return null;
-                }
-
-                return <CheckIcon color="green.300" />;
-              },
-            }),
-          ]
-        : []),
     ],
-    [search, someAreLegacyFeeds]
+    [search]
   );
 
   const tableInstance = useReactTable({

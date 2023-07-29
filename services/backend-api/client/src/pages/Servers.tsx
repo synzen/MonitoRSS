@@ -47,7 +47,10 @@ const Servers: React.FC = () => {
           >
             <Stack>
               <Heading> Manage personal feeds</Heading>
-              <Text>A new type of feed that&apos;s more reliable, flexible, and customizable.</Text>
+              <Text>
+                A new type of feed that&apos;s more reliable, flexible, and customizable. If it is
+                your first time using MonitoRSS, click through here!
+              </Text>
             </Stack>
             <Button
               colorScheme="purple"
