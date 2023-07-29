@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { DiscordApiModule } from "../../services/apis/discord/discord-api.module";
@@ -6,6 +7,7 @@ import { FailRecordFeature } from "../feeds/entities/fail-record.entity";
 import { FeedFilteredFormatFeature } from "../feeds/entities/feed-filtered-format.entity";
 import { FeedSubscriberFeature } from "../feeds/entities/feed-subscriber.entity";
 import { FeedFeature } from "../feeds/entities/feed.entity";
+import { UserFeedLimitOverrideFeature } from "../supporters/entities/user-feed-limit-overrides.entity";
 import { SupportersModule } from "../supporters/supporters.module";
 import { UserFeedFeature } from "../user-feeds/entities";
 import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
@@ -20,6 +22,7 @@ import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
       FeedFilteredFormatFeature,
       FailRecordFeature,
       UserFeedFeature,
+      UserFeedLimitOverrideFeature,
     ]),
     DiscordApiModule,
     SupportersModule,

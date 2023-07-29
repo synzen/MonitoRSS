@@ -222,7 +222,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                 <Alert status="warning">
                   <AlertIcon fontSize={24} />
                   <Stack>
-                    <AlertTitle>This is not a perfect conversion!</AlertTitle>
+                    <AlertTitle>This may not be a perfect conversion!</AlertTitle>
                     <AlertDescription>
                       Double check that everything is as expected afterwards, or the feed may get
                       disabled due to errors during delivery attempts.

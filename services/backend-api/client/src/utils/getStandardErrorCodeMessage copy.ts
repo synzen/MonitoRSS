@@ -60,7 +60,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   DISCORD_SERVER_NOT_FOUND: t("common.apiErrors.discordServerNotFound"),
   DISCORD_CAHNNEL_INVALID: t("common.apiErrors.discordChannelInvalid"),
   WEBHOOK_FORUM_UNSUPPORTED: t("common.apiErrors.webhookForumUnsupported"),
-  USER_FEED_LIMIT_REACHED: "You have reached the maximum number of user feeds you can create",
+  USER_FEED_LIMIT_REACHED: "You have reached the maximum number of personal feeds you can create",
   ALREADY_CONVERTED_TO_USER_FEED: "This feed has already been converted to a user feed",
 };
 

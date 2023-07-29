@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import dayjs from "dayjs";
 import { Types } from "mongoose";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
@@ -9,6 +10,7 @@ import {
   FeedSubscriberModel,
 } from "../feeds/entities/feed-subscriber.entity";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { UserFeedLimitOverrideModel } from "../supporters/entities/user-feed-limit-overrides.entity";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeedModel } from "../user-feeds/entities";
 import { UserFeedHealthStatus } from "../user-feeds/types";
@@ -39,6 +41,10 @@ describe("LegacyFeedConversionService", () => {
   const supportersService: SupportersService = {
     getBenefitsOfDiscordUser: jest.fn(),
   } as never;
+  const userFeedLimitOverrideModel: UserFeedLimitOverrideModel = {
+    findById: jest.fn(),
+    create: jest.fn(),
+  } as never;
 
   beforeEach(async () => {
     service = new LegacyFeedConversionService(
@@ -48,6 +54,7 @@ describe("LegacyFeedConversionService", () => {
       feedFilteredFormatModel,
       failRecordModel,
       userFeedModel,
+      userFeedLimitOverrideModel,
       discordApiService,
       supportersService
     );

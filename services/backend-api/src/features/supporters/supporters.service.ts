@@ -8,6 +8,7 @@ import { PipelineStage } from "mongoose";
 import { PatronsService } from "./patrons.service";
 import { GuildSubscriptionsService } from "./guild-subscriptions.service";
 import { GuildSubscriptionFormatted } from "./types";
+import { UserFeedLimitOverride } from "./entities/user-feed-limit-overrides.entity";
 
 interface SupporterBenefits {
   isSupporter: boolean;
@@ -34,6 +35,7 @@ interface SupportPatronAggregateResult {
   maxGuilds?: number;
   slowRate?: boolean;
   maxUserFeedsLegacyAddition?: number;
+  userFeedLimitOverrides?: Array<UserFeedLimitOverride>;
   patrons: Array<{
     status: Patron["status"];
     pledge: number;
@@ -98,6 +100,14 @@ export class SupportersService {
         as: "patrons",
       },
     },
+    {
+      $lookup: {
+        from: "userfeedlimitoverride",
+        localField: "_id",
+        foreignField: "_id",
+        as: "userFeedLimitOverrides",
+      },
+    },
   ];
 
   async getBenefitsOfDiscordUser(
@@ -106,6 +116,7 @@ export class SupportersService {
     const aggregate: Array<
       Supporter & {
         patrons: Patron[];
+        userFeedLimitOverrides?: UserFeedLimitOverride[];
       }
     > = await this.supporterModel.aggregate([
       {
@@ -400,6 +411,9 @@ export class SupportersService {
       refreshRateSeconds = 120;
     }
 
+    const legacyFeedAdditions =
+      supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0;
+
     return {
       isSupporter: true,
       maxFeeds: Math.max(
@@ -410,7 +424,9 @@ export class SupportersService {
         Math.max(
           supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
           patronMaxUserFeeds
-        ) + (supporter.maxUserFeedsLegacyAddition || 0),
+        ) +
+        (supporter.maxUserFeedsLegacyAddition || 0) +
+        legacyFeedAdditions,
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
       webhooks: true,

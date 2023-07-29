@@ -30,7 +30,10 @@ import {
   FeedSubscriberModel,
 } from "../feeds/entities/feed-subscriber.entity";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
-import { CannotConvertOverUserFeedLimitException } from "../feeds/exceptions";
+import {
+  UserFeedLimitOverride,
+  UserFeedLimitOverrideModel,
+} from "../supporters/entities/user-feed-limit-overrides.entity";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {
@@ -142,6 +145,8 @@ export class LegacyFeedConversionService {
     private readonly failRecordModel: FailRecordModel,
     @InjectModel(UserFeed.name)
     private readonly userFeedModel: UserFeedModel,
+    @InjectModel(UserFeedLimitOverride.name)
+    private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
     private readonly discordApiService: DiscordAPIService,
     private readonly supportersService: SupportersService
   ) {}
@@ -158,11 +163,13 @@ export class LegacyFeedConversionService {
         }),
       ]);
 
-      if (currentUserFeedCount + 1 > maxUserFeeds) {
-        throw new CannotConvertOverUserFeedLimitException(
-          `Converting feed limit would exceed limit: ${maxUserFeeds}`
-        );
-      }
+      const isOverLimit = currentUserFeedCount + 1 > maxUserFeeds;
+
+      // if (currentUserFeedCount + 1 > maxUserFeeds) {
+      //   throw new CannotConvertOverUserFeedLimitException(
+      //     `Converting feed limit would exceed limit: ${maxUserFeeds}`
+      //   );
+      // }
 
       const [profile, subscribers, filteredFormats, failRecord] =
         await Promise.all([
@@ -197,6 +204,25 @@ export class LegacyFeedConversionService {
           },
         }
       );
+
+      if (isOverLimit) {
+        const found = await this.userFeedLimitOverrideModel.findById(
+          discordUserId
+        );
+
+        if (found) {
+          found.additionalUserFeeds = (found.additionalUserFeeds || 0) + 1;
+
+          await found.save();
+        } else {
+          await this.userFeedLimitOverrideModel.create([
+            {
+              _id: discordUserId,
+              additionalUserFeeds: 1,
+            },
+          ]);
+        }
+      }
 
       return converted;
     } catch (err) {
