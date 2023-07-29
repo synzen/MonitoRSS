@@ -361,7 +361,9 @@ export const DiscordMessageContentForm = () => {
                       mt={4}
                       colorScheme="blue"
                       variant="link"
-                      width="min-content"
+                      whiteSpace="initial"
+                      textAlign="left"
+                      mb={2}
                     >
                       Click here to see how to use placeholder fallbacks.
                     </Button>

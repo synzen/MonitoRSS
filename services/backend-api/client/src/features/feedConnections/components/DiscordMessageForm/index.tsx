@@ -202,7 +202,7 @@ export const DiscordMessageForm = ({
           <Stack spacing={4}>
             <Stack spacing={4}>
               <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
-                <HStack spacing={4} alignItems="center">
+                <HStack spacing={4} alignItems="center" flexWrap="wrap">
                   <Heading as="h2" size="md">
                     {t("components.discordMessageForm.previewSectionTitle")}
                   </Heading>
