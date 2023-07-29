@@ -1,7 +1,6 @@
 /* eslint-disable react/state-in-constructor */
 import { Box } from "@chakra-ui/react";
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import * as Sentry from "@sentry/react";
 import { ErrorAlert } from "../ErrorAlert";
 
 interface Props {
@@ -25,7 +24,6 @@ export class GenericErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // eslint-disable-next-line no-console
     console.error("Uncaught error:", error, errorInfo);
-    Sentry.captureException(error);
   }
 
   public render() {

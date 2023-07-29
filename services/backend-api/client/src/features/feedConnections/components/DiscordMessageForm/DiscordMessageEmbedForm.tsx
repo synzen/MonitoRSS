@@ -4,7 +4,6 @@ import {
   FormErrorMessage,
   FormHelperText,
   FormLabel,
-  HStack,
   IconButton,
   Input,
   Radio,
@@ -13,18 +12,40 @@ import {
   StackDivider,
   Textarea,
   Text,
+  HStack,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Button,
 } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { Controller, FieldError, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { CloseIcon } from "@chakra-ui/icons";
+import { SketchPicker } from "react-color";
+import styled from "@emotion/styled";
 import { DiscordMessageFormData } from "@/types/discord";
 import { getNestedField } from "@/utils/getNestedField";
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from "./constants";
+import getChakraColor from "../../../../utils/getChakraColor";
 
 interface Props {
   index: number;
 }
+
+const StyledSketchPicker = styled(SketchPicker)`
+  background: ${getChakraColor("black.100")} !important;
+  .sketch-picker > div:last-child {
+    background: red;
+  }
+  .flexbox-fix {
+    display: none;
+  }
+  border: solid 1px ${getChakraColor("whiteAlpha.400")};
+  label {
+    color: ${getChakraColor("whiteAlpha.800")} !important;
+  }
+`;
 
 export const DiscordMessageEmbedForm = ({ index }: Props) => {
   const {
@@ -109,30 +130,48 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
 
                   return (
                     <HStack>
-                      <input
-                        type="color"
-                        {...field}
-                        value={hexValue}
-                        onChange={(e) => {
-                          const hexColorAsNumberString = parseInt(
-                            e.target.value.replace("#", ""),
-                            16
-                          ).toString();
+                      <HStack width="100%">
+                        <Popover>
+                          <PopoverTrigger>
+                            <Button
+                              // height="40px"
+                              backgroundColor={!hexValue ? "black" : `${hexValue}`}
+                              flex={1}
+                              borderStyle="solid"
+                              borderWidth="1px"
+                              borderColor="whiteAlpha.400"
+                            />
+                            {/* <IconButton
+                              icon={<FaEyeDropper />}
+                              aria-label="pick color"
+                              variant="solid"
+                              size="sm"
+                            /> */}
+                          </PopoverTrigger>
+                          <PopoverContent backgroundColor="black.100" width="min-content">
+                            <StyledSketchPicker
+                              presetColors={[]}
+                              disableAlpha
+                              color={hexValue}
+                              onChange={(c) => {
+                                const hexColorAsNumberString = parseInt(
+                                  c.hex.replace("#", ""),
+                                  16
+                                ).toString();
 
-                          field.onChange(hexColorAsNumberString);
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          width: "100%",
-                        }}
-                      />
-                      <IconButton
-                        size="xs"
-                        aria-label="Clear color"
-                        icon={<CloseIcon />}
-                        isDisabled={!field.value}
-                        onClick={() => field.onChange("")}
-                      />
+                                field.onChange(hexColorAsNumberString);
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <IconButton
+                          // size="sm"
+                          aria-label="Clear color"
+                          icon={<CloseIcon />}
+                          isDisabled={!field.value}
+                          onClick={() => field.onChange("")}
+                        />
+                      </HStack>
                     </HStack>
                   );
                 }}

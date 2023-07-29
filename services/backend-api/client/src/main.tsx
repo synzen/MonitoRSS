@@ -1,4 +1,3 @@
-import "./utils/setupSentry";
 import "./utils/i18n";
 import React from "react";
 import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
