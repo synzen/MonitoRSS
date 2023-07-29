@@ -135,7 +135,7 @@ export const ArticleSelectPrompt = ({
                 {articles && (
                   <Stack>
                     <Flex>
-                      <HStack alignItems="center" flexGrow={1}>
+                      <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
                         <Text whiteSpace="nowrap">
                           {t(
                             "features.feedConnections.components" +
