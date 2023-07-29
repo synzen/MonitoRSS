@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {
   Body,
   CacheTTL,
@@ -5,6 +6,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   StreamableFile,
   UseFilters,
@@ -32,13 +34,18 @@ import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInpu
 import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
 import { GetServerMembersOutputDto } from "./dto/GetServerMembersOutput.dto";
 import { FeedsService } from "../feeds/feeds.service";
+import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
+import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
+import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import { ConvertServerLegacyFeedsFilter } from "./filters/convert-server-legacy-feeds.filter";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordServersController {
   constructor(
     private readonly discordServersService: DiscordServersService,
-    private readonly feedsService: FeedsService
+    private readonly feedsService: FeedsService,
+    private readonly legacyFeedConversionService: LegacyFeedConversionService
   ) {}
 
   @Get(":serverId")
@@ -54,6 +61,36 @@ export class DiscordServersController {
         profile,
       },
     };
+  }
+
+  @Post(":serverId/legacy-conversion")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  @UseFilters(ConvertServerLegacyFeedsFilter)
+  async createLegacyConversion(
+    @Param("serverId") serverId: string,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    return this.legacyFeedConversionService.createBulkConversionJob(
+      discordUserId,
+      serverId
+    );
+  }
+
+  @Get(":serverId/legacy-conversion")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  @UseFilters(ConvertServerLegacyFeedsFilter)
+  async getLegacyConversionStatus(
+    @Param("serverId") serverId: string,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    return this.legacyFeedConversionService.createBulkConversionJob(
+      discordUserId,
+      serverId
+    );
   }
 
   @Get(":serverId/backup")

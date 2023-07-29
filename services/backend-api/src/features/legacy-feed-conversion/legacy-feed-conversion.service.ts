@@ -40,6 +40,13 @@ import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../user-feeds/types";
+import { LegacyFeedConversionStatus } from "./constants/legacy-feed-conversion-status.constants";
+import {
+  LegacyFeedConversionJob,
+  LegacyFeedConversionJobModel,
+} from "./entities/legacy-feed-conversion-job.entity";
+import { ConversionJobExistsException } from "./exceptions/conversion-job-exists.exception";
+import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
 
 enum ExpressionType {
   Relational = "RELATIONAL",
@@ -147,9 +154,106 @@ export class LegacyFeedConversionService {
     private readonly userFeedModel: UserFeedModel,
     @InjectModel(UserFeedLimitOverride.name)
     private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
+    @InjectModel(LegacyFeedConversionJob.name)
+    private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
     private readonly discordApiService: DiscordAPIService,
     private readonly supportersService: SupportersService
   ) {}
+
+  async createBulkConversionJob(discordUserId: string, guildId: string) {
+    const existingJob = await this.legacyFeedConversionJobModel.countDocuments({
+      discordUserId,
+      guildId,
+    });
+
+    if (existingJob > 0) {
+      throw new ConversionJobExistsException(
+        `Cannot create a new conversion job for server ${guildId}, user ${discordUserId}` +
+          ` while one is already in progress`
+      );
+    }
+
+    const unconvertedFeeds = await this.feedModel
+      .find({
+        guild: guildId,
+        disabled: {
+          $ne: "CONVERTED_USER_FEED",
+        },
+      })
+      .select("_id")
+      .lean();
+
+    if (unconvertedFeeds.length === 0) {
+      throw new NoLegacyFeedsToConvertException(
+        `Cannot create a new conversion job for server ${guildId}, user ${discordUserId}` +
+          ` because there are no unconverted feeds`
+      );
+    }
+
+    const jobsToCreate: LegacyFeedConversionJob[] = unconvertedFeeds.map(
+      (f) => ({
+        _id: new Types.ObjectId(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        guildId,
+        discordUserId,
+        legacyFeedId: f._id,
+        status: LegacyFeedConversionStatus.NotStarted,
+      })
+    );
+
+    await this.legacyFeedConversionJobModel.insertMany(jobsToCreate);
+
+    return {
+      total: unconvertedFeeds.length,
+    };
+  }
+
+  async getBulkConversionJobStatus(discordUserId: string, guildId: string) {
+    const [notStartedCount, inProgressCount, completedCount, failedCount] =
+      await Promise.all([
+        this.legacyFeedConversionJobModel.countDocuments({
+          discordUserId,
+          guildId,
+          status: LegacyFeedConversionStatus.NotStarted,
+        }),
+
+        this.legacyFeedConversionJobModel.countDocuments({
+          discordUserId,
+          guildId,
+          status: LegacyFeedConversionStatus.InProgress,
+        }),
+
+        this.legacyFeedConversionJobModel.countDocuments({
+          discordUserId,
+          guildId,
+          status: LegacyFeedConversionStatus.Completed,
+        }),
+
+        this.legacyFeedConversionJobModel.countDocuments({
+          discordUserId,
+          guildId,
+          status: LegacyFeedConversionStatus.Failed,
+        }),
+      ]);
+
+    const failed = await this.legacyFeedConversionJobModel
+      .find({
+        discordUserId,
+        guildId,
+        status: LegacyFeedConversionStatus.Failed,
+      })
+      .select("_id title url")
+      .lean();
+
+    return {
+      notStartedCount,
+      inProgressCount,
+      completedCount,
+      failedCount,
+      failed,
+    };
+  }
 
   async convertToUserFeed(
     feed: Feed,

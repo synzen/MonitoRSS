@@ -30,6 +30,8 @@ export enum ApiErrorCode {
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
   WEBHOOK_FORUM_UNSUPPORTED = "WEBHOOK_FORUM_UNSUPPORTED",
   ALREADY_CONVERTED_TO_USER_FEED = "ALREADY_CONVERTED_TO_USER_FEED",
+  LEGACY_CONVERSION_JOB_EXISTS = "LEGACY_CONVERSION_JOB_EXISTS",
+  NO_LEGACY_FEEDS_TO_CONVERT = "NO_LEGACY_FEEDS_TO_CONVERT",
 }
 
 // Create a package for the frontend?
@@ -74,4 +76,7 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   USER_FEED_LIMIT_REACHED: "User feed limit has been reached",
   ALREADY_CONVERTED_TO_USER_FEED:
     "Feed has already been converted to a user feed",
+  LEGACY_CONVERSION_JOB_EXISTS:
+    "A legacy conversion job already exists for this feed",
+  NO_LEGACY_FEEDS_TO_CONVERT: "No legacy feeds to convert",
 };
