@@ -31,11 +31,15 @@ import { GetDiscordServerChannelsFilter } from "./filters";
 import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInput.dto";
 import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
 import { GetServerMembersOutputDto } from "./dto/GetServerMembersOutput.dto";
+import { FeedsService } from "../feeds/feeds.service";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordServersController {
-  constructor(private readonly discordServersService: DiscordServersService) {}
+  constructor(
+    private readonly discordServersService: DiscordServersService,
+    private readonly feedsService: FeedsService
+  ) {}
 
   @Get(":serverId")
   @UseGuards(BotHasServerGuard)
@@ -112,6 +116,19 @@ export class DiscordServersController {
     return {
       result: {
         authorized: !!result,
+      },
+    };
+  }
+
+  @Get(":serverId/legacy-feed-count")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getServerLegacyFeedCount(@Param("serverId") serverId: string) {
+    const total = await this.feedsService.countLegacyServerFeeds(serverId);
+
+    return {
+      result: {
+        total,
       },
     };
   }

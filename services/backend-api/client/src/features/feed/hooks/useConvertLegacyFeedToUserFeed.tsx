@@ -23,7 +23,8 @@ export const useConvertLegacyFeedToUserFeed = () => {
                 query.queryKey[1]?.feedId === inputData.feedId) ||
               query.queryKey[0] === "feeds" ||
               query.queryKey[0] === "user-feeds" ||
-              query.queryKey[0] === "discord-user-me"
+              query.queryKey[0] === "discord-user-me" ||
+              query.queryKey[0] === "legacy-feed-count"
             );
           },
           refetchType: "all",

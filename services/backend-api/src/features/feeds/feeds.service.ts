@@ -293,6 +293,17 @@ export class FeedsService {
     return this.feedModel.countDocuments(query);
   }
 
+  async countLegacyServerFeeds(serverId: string): Promise<number> {
+    const query: FilterQuery<Feed> = {
+      guild: serverId,
+      disabled: {
+        $ne: "CONVERTED_USER_FEED",
+      },
+    };
+
+    return this.feedModel.countDocuments(query);
+  }
+
   async updateOne(
     feedId: string | Types.ObjectId,
     input: UpdateFeedInput

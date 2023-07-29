@@ -6,7 +6,12 @@ import { DiscordUsersController } from "./discord-users.controller";
 import { DiscordUsersService } from "./discord-users.service";
 
 @Module({
-  imports: [DiscordApiModule, DiscordAuthModule, SupportersModule],
+  imports: [
+    DiscordApiModule,
+    DiscordAuthModule,
+    SupportersModule,
+    DiscordUserModule,
+  ],
   controllers: [DiscordUsersController],
   providers: [DiscordUsersService],
   exports: [DiscordUsersService],

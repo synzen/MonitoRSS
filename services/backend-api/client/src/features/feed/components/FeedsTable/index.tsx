@@ -21,8 +21,6 @@ import {
   InputRightElement,
   Spinner,
   HStack,
-  AlertTitle,
-  AlertDescription,
   Tooltip,
   Button,
   Link as ChakraLink,
@@ -157,15 +155,18 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
 
   return (
     <Stack>
-      <Alert status="warning">
-        <AlertIcon />
-        <AlertTitle>Legacy feeds can no longer be added.</AlertTitle>
-        <AlertDescription>
+      {/* <Alert status="info"> */}
+      <Box mb={4}>
+        <Text>
+          Legacy feeds can no longer be added.{" "}
           <ChakraLink as={Link} to={pages.userFeeds()} color="blue.300">
             Please transition to personal feeds instead.
           </ChakraLink>
-        </AlertDescription>
-      </Alert>
+        </Text>
+        {/* <AlertDescription> */}
+      </Box>
+      {/* </AlertDescription> */}
+      {/* </Alert> */}
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">
           <InputLeftElement pointerEvents="none">

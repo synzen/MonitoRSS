@@ -16,6 +16,7 @@ import {
   AlertTitle,
   AlertDescription,
   Button,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -25,7 +26,7 @@ import RouteParams from "../types/RouteParams";
 import { RequireServerBotAccess, useDiscordServer } from "@/features/discordServers";
 import { FeedSidebar } from "@/features/feed/components/FeedsTable/FeedSidebar";
 import { FeedsTable } from "@/features/feed/components/FeedsTable";
-import { useFeeds } from "@/features/feed";
+import { useFeeds, useLegacyFeedCount } from "@/features/feed";
 import { pages } from "../constants";
 import { useDiscordUserMe } from "../features/discordUser";
 
@@ -37,6 +38,7 @@ const Feeds: React.FC = () => {
   const { data: serverData } = useDiscordServer({ serverId });
   const { data: feedsData } = useFeeds({ serverId });
   const { data } = useDiscordUserMe();
+  const { data: legacyFeedCountData } = useLegacyFeedCount({ serverId });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -91,33 +93,50 @@ const Feeds: React.FC = () => {
               </Stack>
             </Alert>
           )}
-          <Flex justifyContent="space-between" alignItems="center">
-            <Heading size="lg">{t("pages.feeds.title")}</Heading>
-            {feedCountIsAccessible && (
-              <Flex alignItems="center">
-                <Text fontSize="xl" fontWeight={600}>
-                  {currentFeedCount} / {maxFeedsCount}
-                </Text>
-                <IconButton
-                  as="a"
-                  href="https://www.patreon.com/monitorss"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  marginLeft="4"
-                  aria-label="Increase feed limit"
-                  variant="outline"
-                  icon={<ArrowLeftIcon />}
-                  size="sm"
-                  transform="rotate(90deg)"
-                />
-              </Flex>
-            )}
-          </Flex>
-          <FeedsTable
-            onSelectedFeedId={setFocusedFeedId}
-            selectedFeedId={focusedFeedId}
-            serverId={serverId}
-          />
+          {legacyFeedCountData?.result?.total && (
+            <Alert status="error" borderRadius="md" overflow="visible">
+              <AlertIcon />
+              <Box>
+                <AlertTitle>You have unconverted legacy feeds!</AlertTitle>
+                <AlertDescription>
+                  On October 1 2023, legacy feeds will start getting disabled to complete the
+                  transition to personal feeds. By December 1 2023, all legacy feeds will be
+                  disabled. To prevent disruption to article delivery, please convert all legacy
+                  feeds to personal feeds as soon as possible. To convert a feed, click on one in
+                  the table below to see the option to do so.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          )}
+          <Stack>
+            <Flex justifyContent="space-between" alignItems="center">
+              <Heading size="lg">{t("pages.feeds.title")}</Heading>
+              {feedCountIsAccessible && (
+                <Flex alignItems="center">
+                  <Text fontSize="xl" fontWeight={600}>
+                    {currentFeedCount} / {maxFeedsCount}
+                  </Text>
+                  <IconButton
+                    as="a"
+                    href="https://www.patreon.com/monitorss"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    marginLeft="4"
+                    aria-label="Increase feed limit"
+                    variant="outline"
+                    icon={<ArrowLeftIcon />}
+                    size="sm"
+                    transform="rotate(90deg)"
+                  />
+                </Flex>
+              )}
+            </Flex>
+            <FeedsTable
+              onSelectedFeedId={setFocusedFeedId}
+              selectedFeedId={focusedFeedId}
+              serverId={serverId}
+            />
+          </Stack>
         </Stack>
         {focusedFeedId && (
           <Box

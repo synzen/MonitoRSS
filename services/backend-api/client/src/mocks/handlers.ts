@@ -18,6 +18,7 @@ import {
   GetFeedOutput,
   GetFeedsOutput,
   GetFeedSubscribersOutput,
+  GetLegacyFeedCountOutput,
   GetUserFeedArticlePropertiesOutput,
   GetUserFeedArticlesOutput,
   GetUserFeedOutput,
@@ -148,6 +149,17 @@ const handlers = [
       })
     )
   ),
+
+  rest.get("/api/v1/discord-servers/:serverId/legacy-feed-count", (req, res, ctx) => {
+    return res(
+      ctx.delay(700),
+      ctx.json<GetLegacyFeedCountOutput>({
+        result: {
+          total: 5,
+        },
+      })
+    );
+  }),
 
   rest.get("/api/v1/discord-servers/:serverId/feeds", (req, res, ctx) => {
     const limit = Number(req.url.searchParams.get("limit") || "10");
