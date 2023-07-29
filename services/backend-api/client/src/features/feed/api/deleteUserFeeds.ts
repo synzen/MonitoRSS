@@ -12,6 +12,7 @@ const GetUserFeedsOutputSchema = object({
     object({
       id: string().required(),
       deleted: bool().required(),
+      isLegacy: bool().required(),
     })
   ).required(),
 }).required();

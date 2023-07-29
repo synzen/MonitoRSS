@@ -159,19 +159,12 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
     <Stack>
       <Alert status="warning">
         <AlertIcon />
-        <Box width="100%">
-          <AlertTitle>Legacy feeds can no longer be added.</AlertTitle>
-          <AlertDescription width="100%">
-            <Stack>
-              <ChakraLink as={Link} to={pages.userFeeds()} color="blue.300">
-                Please transition to personal feeds instead.
-              </ChakraLink>
-              <Button width="min-content" variant="outline">
-                Convert to Personal Feeds
-              </Button>
-            </Stack>
-          </AlertDescription>
-        </Box>
+        <AlertTitle>Legacy feeds can no longer be added.</AlertTitle>
+        <AlertDescription>
+          <ChakraLink as={Link} to={pages.userFeeds()} color="blue.300">
+            Please transition to personal feeds instead.
+          </ChakraLink>
+        </AlertDescription>
       </Alert>
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">

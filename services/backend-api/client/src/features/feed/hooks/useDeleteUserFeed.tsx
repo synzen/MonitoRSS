@@ -8,17 +8,20 @@ export const useDeleteUserFeed = () => {
   const { mutateAsync, status, error } = useMutation<void, ApiAdapterError, DeleteUserFeedInput>(
     (details) => deleteUserFeed(details),
     {
-      onSuccess: () =>
-        queryClient.invalidateQueries(
+      onSuccess: () => {
+        return queryClient.invalidateQueries(
           {
-            queryKey: ["user-feeds"],
+            predicate: (query) => {
+              return query.queryKey[0] === "user-feeds" || query.queryKey[0] === "discord-user-me";
+            },
             refetchType: "all",
             exact: false,
           },
           {
             throwOnError: true,
           }
-        ),
+        );
+      },
     }
   );
 

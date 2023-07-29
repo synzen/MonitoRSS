@@ -298,6 +298,7 @@ const handlers = [
           results: feedIdsToDelete.map((id) => ({
             id,
             deleted: true,
+            isLegacy: false,
           })),
         })
       );

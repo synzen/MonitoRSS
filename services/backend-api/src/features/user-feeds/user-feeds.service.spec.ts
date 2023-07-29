@@ -22,6 +22,11 @@ import {
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
+import {
+  UserFeedLimitOverride,
+  UserFeedLimitOverrideFeature,
+  UserFeedLimitOverrideModel,
+} from "../supporters/entities/user-feed-limit-overrides.entity";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
@@ -68,6 +73,7 @@ const mockDiscordWebhookConnection: DiscordWebhookConnection = {
 describe("UserFeedsService", () => {
   let service: UserFeedsService;
   let userFeedModel: UserFeedModel;
+  let userFeedLimitOverrideModel: UserFeedLimitOverrideModel;
   let feedFetcherService: FeedFetcherService;
   let feedsService: FeedsService;
   let feedHandlerService: FeedHandlerService;
@@ -100,7 +106,10 @@ describe("UserFeedsService", () => {
       ],
       imports: [
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([UserFeedFeature]),
+        MongooseModule.forFeature([
+          UserFeedFeature,
+          UserFeedLimitOverrideFeature,
+        ]),
       ],
     });
 
@@ -127,6 +136,9 @@ describe("UserFeedsService", () => {
 
     service = module.get<UserFeedsService>(UserFeedsService);
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
+    userFeedLimitOverrideModel = module.get<UserFeedLimitOverrideModel>(
+      getModelToken(UserFeedLimitOverride.name)
+    );
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     feedsService = module.get<FeedsService>(FeedsService);
     feedHandlerService = module.get<FeedHandlerService>(FeedHandlerService);
@@ -287,6 +299,7 @@ describe("UserFeedsService", () => {
           user: {
             discordUserId,
           },
+          legacyFeedId: new Types.ObjectId(),
         },
         {
           title: "title3",
@@ -335,6 +348,30 @@ describe("UserFeedsService", () => {
           deleted: false,
         },
       ]);
+    });
+
+    it("adjusts limit overrides if legacy feeds were deleted", async () => {
+      await userFeedLimitOverrideModel.create([
+        {
+          _id: discordUserId,
+          additionalUserFeeds: 2,
+        },
+      ]);
+      const inputIds = created.map((c) => c._id.toHexString());
+      const results = await service.bulkDelete(inputIds, discordUserId);
+
+      expect(results).toHaveLength(3);
+      expect(results.filter((r) => r.isLegacy)).toHaveLength(1);
+
+      const limitOverride = await userFeedLimitOverrideModel
+        .findOne({
+          _id: discordUserId,
+        })
+        .lean();
+
+      expect(limitOverride).toMatchObject({
+        additionalUserFeeds: 1,
+      });
     });
   });
 

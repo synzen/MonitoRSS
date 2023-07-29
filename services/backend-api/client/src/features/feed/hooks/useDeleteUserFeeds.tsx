@@ -10,16 +10,26 @@ export const useDeleteUserFeeds = () => {
     ApiAdapterError,
     DeleteUserFeedsInput
   >((details) => deleteUserFeeds(details), {
-    onSuccess: () =>
-      queryClient.invalidateQueries(
+    onSuccess: (res) => {
+      return queryClient.invalidateQueries(
         {
-          queryKey: ["user-feeds"],
+          predicate: (query) => {
+            const someLegacyDeleted = res.results.some((r) => r.isLegacy);
+
+            return (
+              query.queryKey[0] === "user-feeds" ||
+              // if legacy feeds were deleted, feed limit will be adjusted
+              (someLegacyDeleted && query.queryKey[0] === "discord-user-me")
+            );
+          },
+          refetchType: "all",
           exact: false,
         },
         {
           throwOnError: true,
         }
-      ),
+      );
+    },
   });
 
   return {

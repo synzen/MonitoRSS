@@ -32,6 +32,10 @@ import {
   FeedConnectionTypeEntityKey,
 } from "../feeds/constants";
 import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
+import {
+  UserFeedLimitOverride,
+  UserFeedLimitOverrideModel,
+} from "../supporters/entities/user-feed-limit-overrides.entity";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -55,6 +59,9 @@ interface UpdateFeedInput {
 export class UserFeedsService {
   constructor(
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    @InjectModel(UserFeedLimitOverride.name)
+    private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
+
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
@@ -116,10 +123,13 @@ export class UserFeedsService {
         },
         "user.discordUserId": discordUserId,
       })
-      .select("_id")
+      .select("_id legacyFeedId")
       .lean();
 
     const foundIds = new Set(found.map((doc) => doc._id.toHexString()));
+    const legacyFeedIds = new Set(
+      found.filter((d) => d.legacyFeedId).map((d) => d._id.toHexString())
+    );
 
     if (found.length > 0) {
       await this.userFeedModel.deleteMany({
@@ -127,11 +137,21 @@ export class UserFeedsService {
           $in: found.map((doc) => doc._id),
         },
       });
+
+      if (legacyFeedIds.size > 0) {
+        await this.userFeedLimitOverrideModel.updateOne({
+          _id: discordUserId,
+          $inc: {
+            additionalUserFeeds: -legacyFeedIds.size,
+          },
+        });
+      }
     }
 
     return feedIds.map((id) => ({
       id,
       deleted: foundIds.has(id),
+      isLegacy: legacyFeedIds.has(id),
     }));
   }
 
@@ -346,12 +366,29 @@ export class UserFeedsService {
   }
 
   async deleteFeedById(id: string) {
-    await this.userFeedModel.findByIdAndDelete(id);
+    const found = await this.userFeedModel.findByIdAndDelete(id);
+
+    if (found?.legacyFeedId) {
+      const discordUserId = found.user.discordUserId;
+      await this.userFeedLimitOverrideModel.updateOne(
+        {
+          _id: discordUserId,
+        },
+        {
+          $inc: {
+            additionalUserFeeds: -1,
+          },
+        }
+      );
+    }
+
     this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
       "",
       MessageBrokerQueue.FeedDeleted,
       { data: { feed: { id } } }
     );
+
+    return found;
   }
 
   async retryFailedFeed(feedId: string) {
