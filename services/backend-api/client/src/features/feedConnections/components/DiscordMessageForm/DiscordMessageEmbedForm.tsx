@@ -140,13 +140,8 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                               borderStyle="solid"
                               borderWidth="1px"
                               borderColor="whiteAlpha.400"
+                              aria-label="Pick color"
                             />
-                            {/* <IconButton
-                              icon={<FaEyeDropper />}
-                              aria-label="pick color"
-                              variant="solid"
-                              size="sm"
-                            /> */}
                           </PopoverTrigger>
                           <PopoverContent backgroundColor="black.100" width="min-content">
                             <StyledSketchPicker
