@@ -106,15 +106,25 @@ export const UserFeeds: React.FC = () => {
                   <Text fontSize="xl" fontWeight={600}>
                     /
                   </Text>
-                  <Text fontSize="xl" fontWeight={600}>
-                    {discordUserMe.maxUserFeedsComposition.base}
-                  </Text>
-                  {discordUserMe.maxUserFeedsComposition.legacy && (
-                    <Tooltip label="From legacy feed conversions">
-                      <Text fontSize="md" fontWeight={400}>
-                        (+{discordUserMe.maxUserFeedsComposition.legacy})
+                  {discordUserMe.maxUserFeedsComposition.legacy ? (
+                    <Tooltip
+                      label={
+                        <Box>
+                          <Text>+{discordUserMe.maxUserFeedsComposition.base}: Base Amount</Text>
+                          <Text>
+                            +{discordUserMe.maxUserFeedsComposition.legacy}: Legacy feed conversions
+                          </Text>
+                        </Box>
+                      }
+                    >
+                      <Text fontSize="xl" fontWeight={600}>
+                        {discordUserMe.maxUserFeeds}
                       </Text>
                     </Tooltip>
+                  ) : (
+                    <Text fontSize="xl" fontWeight={600}>
+                      {discordUserMe.maxUserFeeds}
+                    </Text>
                   )}
                 </HStack>
               )}

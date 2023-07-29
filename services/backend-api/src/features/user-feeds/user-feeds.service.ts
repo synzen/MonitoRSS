@@ -32,10 +32,6 @@ import {
   FeedConnectionTypeEntityKey,
 } from "../feeds/constants";
 import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
-import {
-  UserFeedLimitOverride,
-  UserFeedLimitOverrideModel,
-} from "../supporters/entities/user-feed-limit-overrides.entity";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -59,8 +55,6 @@ interface UpdateFeedInput {
 export class UserFeedsService {
   constructor(
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    @InjectModel(UserFeedLimitOverride.name)
-    private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
 
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
@@ -137,38 +131,6 @@ export class UserFeedsService {
           $in: found.map((doc) => doc._id),
         },
       });
-
-      if (legacyFeedIds.size > 0) {
-        const currentLimit = await this.userFeedLimitOverrideModel
-          .findOne({
-            _id: discordUserId,
-          })
-          .lean();
-
-        if (currentLimit) {
-          const newOverrideLimit =
-            currentLimit.additionalUserFeeds - legacyFeedIds.size;
-
-          let incValue: number;
-
-          if (newOverrideLimit < 0) {
-            incValue = -currentLimit.additionalUserFeeds;
-          } else {
-            incValue = -legacyFeedIds.size;
-          }
-
-          await this.userFeedLimitOverrideModel.updateOne(
-            {
-              _id: discordUserId,
-            },
-            {
-              $inc: {
-                additionalUserFeeds: incValue,
-              },
-            }
-          );
-        }
-      }
     }
 
     return feedIds.map((id) => ({
@@ -392,23 +354,6 @@ export class UserFeedsService {
 
   async deleteFeedById(id: string) {
     const found = await this.userFeedModel.findByIdAndDelete(id);
-
-    if (found?.legacyFeedId) {
-      const discordUserId = found.user.discordUserId;
-      await this.userFeedLimitOverrideModel.updateOne(
-        {
-          _id: discordUserId,
-          additionalUserFeeds: {
-            $gt: 0,
-          },
-        },
-        {
-          $inc: {
-            additionalUserFeeds: -1,
-          },
-        }
-      );
-    }
 
     this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
       "",
