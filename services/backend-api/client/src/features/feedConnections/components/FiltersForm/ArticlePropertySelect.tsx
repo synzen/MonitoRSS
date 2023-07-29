@@ -33,7 +33,12 @@ export const ArticlePropertySelect = ({ controllerName, placeholder, data }: Pro
         rules={{ required: true }}
         render={({ field }) => (
           <>
-            <Select placeholder={placeholder} isDisabled={status === "loading"} {...field}>
+            <Select
+              placeholder={placeholder}
+              isDisabled={status === "loading"}
+              minWidth={200}
+              {...field}
+            >
               {propertiesData?.result.properties.map((property) => (
                 <option value={property} key={property}>
                   {property}

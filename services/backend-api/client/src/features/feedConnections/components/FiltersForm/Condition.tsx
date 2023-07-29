@@ -83,7 +83,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, data }: Props) => 
             control={control}
             render={({ field }) => {
               return (
-                <Select flexShrink={1} {...field}>
+                <Select flexShrink={1} minWidth={150} {...field}>
                   <option value={Equals}>
                     {t("features.feedConnections.components.filtersForm.relationalOpEquals")}
                   </option>

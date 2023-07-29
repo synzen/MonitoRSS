@@ -25,7 +25,7 @@ export const ConditionInput = ({ controllerName, placeholder }: Props) => {
         rules={{ required: true }}
         render={({ field }) => (
           <>
-            <Input flexGrow={1} placeholder={placeholder} {...field} />
+            <Input flexGrow={1} placeholder={placeholder} minWidth={150} {...field} />
             {error?.type === "required" && (
               <FormErrorMessage>
                 {t("features.feedConnections.components.filtersForm.valueIsRequired")}

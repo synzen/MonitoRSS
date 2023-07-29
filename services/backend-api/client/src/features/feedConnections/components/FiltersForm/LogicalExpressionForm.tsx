@@ -130,6 +130,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", data }: Props) =
         padding="4"
         borderRadius="md"
         width="100%"
+        overflow="auto"
       >
         <Flex justifyContent="space-between">
           <Box width="100%">
