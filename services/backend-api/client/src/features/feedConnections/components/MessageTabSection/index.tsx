@@ -124,7 +124,7 @@ export const MessageTabSection = ({
   return (
     <Stack spacing={12}>
       <Stack spacing={4}>
-        <HStack alignItems="center" spacing={4}>
+        <HStack alignItems="center" spacing={4} flexWrap="wrap">
           <Heading as="h2" size="md">
             {t(
               "features.feedConnections.components." +
@@ -132,7 +132,7 @@ export const MessageTabSection = ({
             )}
           </Heading>
           {!hasAlert && (
-            <HStack alignItems="center">
+            <HStack alignItems="center" flexWrap="wrap">
               <ArticleSelectPrompt
                 trigger={
                   <Button

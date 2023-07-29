@@ -119,7 +119,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             justify="space-between"
           >
             <FormLabel>Color</FormLabel>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <Controller
                 name={`embeds.${index}.color`}
                 control={control}
@@ -141,6 +146,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                               borderWidth="1px"
                               borderColor="whiteAlpha.400"
                               aria-label="Pick color"
+                              size={["sm", "sm", "md"]}
                             />
                           </PopoverTrigger>
                           <PopoverContent backgroundColor="black.100" width="min-content">
@@ -160,7 +166,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                           </PopoverContent>
                         </Popover>
                         <IconButton
-                          // size="sm"
+                          size={["sm", "sm", "md"]}
                           aria-label="Clear color"
                           icon={<CloseIcon />}
                           isDisabled={!field.value}
@@ -184,7 +190,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Author
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <FormControl isInvalid={!!authorNameError}>
                 <FormLabel variant="inline">Name</FormLabel>
                 <Controller
@@ -227,7 +238,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Title
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <FormControl isInvalid={!!titleError}>
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
@@ -260,7 +276,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Description
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <FormControl isInvalid={!!descriptionError}>
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
@@ -285,7 +306,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Image
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <FormControl isInvalid={!!imageUrlError}>
                 <FormLabel variant="inline">Image URL</FormLabel>
                 <Controller
@@ -308,7 +334,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Thumbnail
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <FormControl isInvalid={!!thumbnailUrlError}>
                 <FormLabel variant="inline">Image URL</FormLabel>
                 <Controller
@@ -331,7 +362,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Footer
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <FormControl isInvalid={!!footerTextError}>
                 <FormLabel variant="inline">Text</FormLabel>
                 <Controller
@@ -364,7 +400,12 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
             <Text size="sm" fontWeight={400}>
               Timestamp
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
               <Controller
                 name={`embeds.${index}.timestamp`}
                 control={control}
