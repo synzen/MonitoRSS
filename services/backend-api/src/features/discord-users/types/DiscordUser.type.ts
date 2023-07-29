@@ -17,4 +17,8 @@ export type DiscordUserFormatted = DiscordUser & {
     maxGuilds: number;
     expireAt?: Date;
   };
+  maxUserFeedsComposition: {
+    base: number;
+    legacy: number;
+  };
 };

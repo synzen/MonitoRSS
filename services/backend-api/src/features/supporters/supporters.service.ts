@@ -19,6 +19,10 @@ interface SupporterBenefits {
   refreshRateSeconds: number;
   maxDailyArticles: number;
   maxUserFeeds: number;
+  maxUserFeedsComposition: {
+    base: number;
+    legacy: number;
+  };
 }
 
 interface ServerBenefits {
@@ -136,6 +140,10 @@ export class SupportersService {
         refreshRateSeconds: this.defaultRefreshRateSeconds,
         maxDailyArticles: this.maxDailyArticlesDefault, // hardcode for now
         maxUserFeeds: this.defaultMaxUserFeeds,
+        maxUserFeedsComposition: {
+          base: this.defaultMaxUserFeeds,
+          legacy: 0,
+        },
       };
     }
 
@@ -152,6 +160,7 @@ export class SupportersService {
         ? this.maxDailyArticlesSupporter
         : this.maxDailyArticlesDefault,
       maxUserFeeds: benefits.maxUserFeeds,
+      maxUserFeedsComposition: benefits.maxUserFeedsComposition,
     };
   }
 
@@ -388,6 +397,10 @@ export class SupportersService {
         webhooks: false,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
         maxUserFeeds: this.defaultMaxUserFeeds,
+        maxUserFeedsComposition: {
+          base: this.defaultMaxUserFeeds,
+          legacy: 0,
+        },
       };
     }
 
@@ -411,8 +424,14 @@ export class SupportersService {
       refreshRateSeconds = 120;
     }
 
-    const legacyFeedAdditions =
-      supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0;
+    const baseMaxUserFeeds = Math.max(
+      supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
+      patronMaxUserFeeds
+    );
+
+    const legacyFeedLimitAddon =
+      (supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0) +
+      (supporter.maxUserFeedsLegacyAddition || 0);
 
     return {
       isSupporter: true,
@@ -420,13 +439,11 @@ export class SupportersService {
         supporter.maxFeeds ?? this.defaultMaxFeeds,
         patronMaxFeeds
       ),
-      maxUserFeeds:
-        Math.max(
-          supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
-          patronMaxUserFeeds
-        ) +
-        (supporter.maxUserFeedsLegacyAddition || 0) +
-        legacyFeedAdditions,
+      maxUserFeeds: baseMaxUserFeeds + legacyFeedLimitAddon,
+      maxUserFeedsComposition: {
+        base: baseMaxUserFeeds,
+        legacy: legacyFeedLimitAddon,
+      },
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
       webhooks: true,

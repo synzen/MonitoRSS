@@ -10,4 +10,8 @@ export interface GetMeOutputDto {
     maxGuilds: number;
     expireAt?: Date;
   };
+  maxUserFeedsComposition: {
+    base: number;
+    legacy: number;
+  };
 }

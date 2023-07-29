@@ -139,6 +139,7 @@ export class DiscordUsersService {
       avatar: user.avatar,
       maxFeeds: benefits.maxFeeds,
       maxUserFeeds: benefits.maxUserFeeds,
+      maxUserFeedsComposition: benefits.maxUserFeedsComposition,
     };
 
     if (benefits.isSupporter) {

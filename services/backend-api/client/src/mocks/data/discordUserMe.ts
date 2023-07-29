@@ -12,6 +12,10 @@ const mockDiscordUserMe: DiscordMeUser = {
     maxFeeds: 10,
     maxGuilds: 10,
   },
+  maxUserFeedsComposition: {
+    base: 10,
+    legacy: 2,
+  },
 };
 
 export default mockDiscordUserMe;

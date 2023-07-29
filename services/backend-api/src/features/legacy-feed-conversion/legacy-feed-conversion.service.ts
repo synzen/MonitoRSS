@@ -165,12 +165,6 @@ export class LegacyFeedConversionService {
 
       const isOverLimit = currentUserFeedCount + 1 > maxUserFeeds;
 
-      // if (currentUserFeedCount + 1 > maxUserFeeds) {
-      //   throw new CannotConvertOverUserFeedLimitException(
-      //     `Converting feed limit would exceed limit: ${maxUserFeeds}`
-      //   );
-      // }
-
       const [profile, subscribers, filteredFormats, failRecord] =
         await Promise.all([
           this.profileModel.findById(feed.guild),

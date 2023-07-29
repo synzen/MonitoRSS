@@ -69,6 +69,7 @@ export class DiscordUsersController {
       supporter: user.supporter,
       maxFeeds: user.maxFeeds,
       maxUserFeeds: user.maxUserFeeds,
+      maxUserFeedsComposition: user.maxUserFeedsComposition,
     };
   }
 

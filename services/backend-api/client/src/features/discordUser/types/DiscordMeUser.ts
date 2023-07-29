@@ -12,6 +12,10 @@ export const DiscordMeUserSchema = object({
   }).optional(),
   maxFeeds: number().required(),
   maxUserFeeds: number().required(),
+  maxUserFeedsComposition: object({
+    base: number().required(),
+    legacy: number().required(),
+  }),
 });
 
 export type DiscordMeUser = InferType<typeof DiscordMeUserSchema>;

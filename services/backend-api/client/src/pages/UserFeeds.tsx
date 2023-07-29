@@ -13,6 +13,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Tooltip,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -106,8 +107,15 @@ export const UserFeeds: React.FC = () => {
                     /
                   </Text>
                   <Text fontSize="xl" fontWeight={600}>
-                    {discordUserMe.maxUserFeeds}
+                    {discordUserMe.maxUserFeedsComposition.base}
                   </Text>
+                  {discordUserMe.maxUserFeedsComposition.legacy && (
+                    <Tooltip label="From legacy feed conversions">
+                      <Text fontSize="md" fontWeight={400}>
+                        (+{discordUserMe.maxUserFeedsComposition.legacy})
+                      </Text>
+                    </Tooltip>
+                  )}
                 </HStack>
               )}
               <IconButton
