@@ -14,6 +14,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     createdAt: new Date().toISOString(),
     computedStatus: UserFeedComputedStatus.RequiresAttention,
     healthStatus: UserFeedHealthStatus.Ok,
+    isLegacyFeed: false,
   },
   {
     id: mockUserFeeds[1].id,
@@ -23,6 +24,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     healthStatus: UserFeedHealthStatus.Failed,
     disabledCode: UserFeedDisabledCode.Manual,
     computedStatus: UserFeedComputedStatus.Ok,
+    isLegacyFeed: true,
   },
   {
     id: mockUserFeeds[2].id,
@@ -32,6 +34,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     healthStatus: UserFeedHealthStatus.Failing,
     disabledCode: undefined,
     computedStatus: UserFeedComputedStatus.ManuallyDisabled,
+    isLegacyFeed: false,
   },
 ];
 

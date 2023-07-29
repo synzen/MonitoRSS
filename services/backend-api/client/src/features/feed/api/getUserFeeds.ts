@@ -1,4 +1,4 @@
-import { array, InferType, number, object, string } from "yup";
+import { array, bool, InferType, number, object, string } from "yup";
 import qs from "qs";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
@@ -23,6 +23,7 @@ const GetUserFeedsOutputSchema = object({
       disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
       createdAt: string().required(),
       computedStatus: string().oneOf(Object.values(UserFeedComputedStatus)).required(),
+      isLegacyFeed: bool().required(),
     })
   ).required(),
   total: number().required(),

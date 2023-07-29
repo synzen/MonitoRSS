@@ -310,6 +310,7 @@ export class UserFeedsController {
         disabledCode: feed.disabledCode,
         createdAt: feed.createdAt.toISOString(),
         computedStatus: feed.computedStatus,
+        isLegacyFeed: !!feed.legacyFeedId,
       })),
       total: count,
     };

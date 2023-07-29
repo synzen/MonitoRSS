@@ -139,12 +139,35 @@ export class UserFeedsService {
       });
 
       if (legacyFeedIds.size > 0) {
-        await this.userFeedLimitOverrideModel.updateOne({
-          _id: discordUserId,
-          $inc: {
-            additionalUserFeeds: -legacyFeedIds.size,
-          },
-        });
+        const currentLimit = await this.userFeedLimitOverrideModel
+          .findOne({
+            _id: discordUserId,
+          })
+          .lean();
+
+        if (currentLimit) {
+          const newOverrideLimit =
+            currentLimit.additionalUserFeeds - legacyFeedIds.size;
+
+          let incValue: number;
+
+          if (newOverrideLimit < 0) {
+            incValue = -currentLimit.additionalUserFeeds;
+          } else {
+            incValue = -legacyFeedIds.size;
+          }
+
+          await this.userFeedLimitOverrideModel.updateOne(
+            {
+              _id: discordUserId,
+            },
+            {
+              $inc: {
+                additionalUserFeeds: incValue,
+              },
+            }
+          );
+        }
       }
     }
 
@@ -245,6 +268,7 @@ export class UserFeedsService {
       disabledCode?: UserFeedDisabledCode;
       createdAt: Date;
       computedStatus: boolean;
+      legacyFeedId?: Types.ObjectId;
     }>
   > {
     const useSort = sort || GetUserFeedsInputSortKey.CreatedAtDescending;
@@ -278,6 +302,7 @@ export class UserFeedsService {
           disabledCode: 1,
           createdAt: 1,
           computedStatus: 1,
+          legacyFeedId: 1,
         },
       },
     ]);
@@ -373,6 +398,9 @@ export class UserFeedsService {
       await this.userFeedLimitOverrideModel.updateOne(
         {
           _id: discordUserId,
+          additionalUserFeeds: {
+            $gt: 0,
+          },
         },
         {
           $inc: {

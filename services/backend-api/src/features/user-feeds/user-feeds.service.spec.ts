@@ -373,6 +373,30 @@ describe("UserFeedsService", () => {
         additionalUserFeeds: 1,
       });
     });
+
+    it("does not set override limit to negatives", async () => {
+      await userFeedLimitOverrideModel.create([
+        {
+          _id: discordUserId,
+          additionalUserFeeds: 0,
+        },
+      ]);
+      const inputIds = created.map((c) => c._id.toHexString());
+      const results = await service.bulkDelete(inputIds, discordUserId);
+
+      expect(results).toHaveLength(3);
+      expect(results.filter((r) => r.isLegacy)).toHaveLength(1);
+
+      const limitOverride = await userFeedLimitOverrideModel
+        .findOne({
+          _id: discordUserId,
+        })
+        .lean();
+
+      expect(limitOverride).toMatchObject({
+        additionalUserFeeds: 0,
+      });
+    });
   });
 
   describe("bulkDisable", () => {
