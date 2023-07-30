@@ -8,7 +8,10 @@ import { PipelineStage } from "mongoose";
 import { PatronsService } from "./patrons.service";
 import { GuildSubscriptionsService } from "./guild-subscriptions.service";
 import { GuildSubscriptionFormatted } from "./types";
-import { UserFeedLimitOverride } from "./entities/user-feed-limit-overrides.entity";
+import {
+  UserFeedLimitOverride,
+  UserFeedLimitOverrideModel,
+} from "./entities/user-feed-limit-overrides.entity";
 import { Customer } from "./entities/customer.entity";
 
 interface SupporterBenefits {
@@ -62,6 +65,8 @@ export class SupportersService {
   constructor(
     @InjectModel(Supporter.name)
     private readonly supporterModel: SupporterModel,
+    @InjectModel(UserFeedLimitOverride.name)
+    private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
     private readonly configService: ConfigService,
     private readonly patronsService: PatronsService,
     private readonly guildSubscriptionsService: GuildSubscriptionsService
@@ -142,6 +147,13 @@ export class SupportersService {
       ...SupportersService.SUPPORTER_PATRON_PIPELINE,
     ]);
 
+    const found = await this.userFeedLimitOverrideModel
+      .findById(discordId)
+      .lean();
+
+    const base = this.defaultMaxUserFeeds;
+    const legacyAdd = found?.additionalUserFeeds || 0;
+
     if (!aggregate.length) {
       return {
         isSupporter: false,
@@ -150,10 +162,10 @@ export class SupportersService {
         maxGuilds: 0,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
         maxDailyArticles: this.maxDailyArticlesDefault, // hardcode for now
-        maxUserFeeds: this.defaultMaxUserFeeds,
+        maxUserFeeds: base + legacyAdd,
         maxUserFeedsComposition: {
-          base: this.defaultMaxUserFeeds,
-          legacy: 0,
+          base: base,
+          legacy: legacyAdd,
         },
       };
     }
@@ -195,16 +207,35 @@ export class SupportersService {
     ]);
 
     const benefits = aggregate.map((agg) => this.getBenefitsFromSupporter(agg));
+    const supporterIds = aggregate.map((agg) => agg._id);
+    const nonSupporterOverrides = await this.userFeedLimitOverrideModel
+      .find({
+        _id: {
+          $nin: supporterIds,
+        },
+      })
+      .lean();
 
-    return benefits.map((b, i) => ({
-      discordUserId: aggregate[i]._id,
-      refreshRateSeconds: b.refreshRateSeconds,
-      isSupporter: b.isSupporter,
-      maxDailyArticles: b.isSupporter
-        ? this.maxDailyArticlesSupporter
-        : this.maxDailyArticlesDefault,
-      maxUserFeeds: b.maxUserFeeds,
+    const nonSupporterBenefits = nonSupporterOverrides.map((override) => ({
+      discordUserId: override._id,
+      refreshRateSeconds: this.defaultRefreshRateSeconds,
+      isSupporter: false,
+      maxDailyArticles: this.maxDailyArticlesDefault,
+      maxUserFeeds:
+        this.defaultMaxUserFeeds + (override.additionalUserFeeds || 0),
     }));
+
+    return benefits
+      .map((b, i) => ({
+        discordUserId: aggregate[i]._id,
+        refreshRateSeconds: b.refreshRateSeconds,
+        isSupporter: b.isSupporter,
+        maxDailyArticles: b.isSupporter
+          ? this.maxDailyArticlesSupporter
+          : this.maxDailyArticlesDefault,
+        maxUserFeeds: b.maxUserFeeds,
+      }))
+      .concat(nonSupporterBenefits);
   }
 
   async getBenefitsOfAllServers() {
