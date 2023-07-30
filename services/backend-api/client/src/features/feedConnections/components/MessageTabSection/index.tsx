@@ -1,9 +1,18 @@
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Alert,
   AlertIcon,
   Box,
   Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Center,
   Checkbox,
   HStack,
   Heading,
@@ -27,6 +36,7 @@ import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { FeedConnectionType } from "../../../../types";
 import { DiscordMessageForm } from "../DiscordMessageForm";
 import { ArticleSelectPrompt } from "../../../feed/components";
+import getChakraColor from "../../../../utils/getChakraColor";
 
 interface Props {
   feedId: string;
@@ -121,101 +131,163 @@ export const MessageTabSection = ({
 
   const hasAlert = !!(fetchErrorAlert || parseErrorAlert || noArticlesAlert);
 
+  const firstArticleTitle = (firstArticle as Record<string, string>)?.title;
+  const firstArticleDate = (firstArticle as Record<string, string>)?.date;
+
   return (
-    <Stack spacing={12}>
+    <Stack spacing={24}>
       <Stack spacing={4}>
-        <HStack alignItems="center" spacing={4} flexWrap="wrap">
+        <Stack>
           <Heading as="h2" size="md">
             {t(
               "features.feedConnections.components." +
                 "articlePlaceholderTable.headingSamplePlaceholders"
             )}
           </Heading>
-          {!hasAlert && (
-            <HStack alignItems="center" flexWrap="wrap">
-              <ArticleSelectPrompt
-                trigger={
-                  <Button
-                    size="sm"
-                    leftIcon={<FiMousePointer />}
-                    isLoading={!!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
-                    isDisabled={userFeedArticlesFetchStatus === "fetching"}
-                  >
-                    {t("features.feedConnections.components.articlePlaceholderTable.selectArticle")}
-                  </Button>
-                }
-                feedId={feedId}
-                articleFormatter={articleFormatter}
-                onArticleSelected={onSelectedArticle}
-                onClickRandomArticle={onClickRandomFeedArticle}
-              />
-              <Button
-                size="sm"
-                leftIcon={<RepeatIcon />}
-                isLoading={!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
-                isDisabled={userFeedArticlesFetchStatus === "fetching"}
-                onClick={onClickRandomFeedArticle}
-              >
-                {t("features.feedConnections.components.articlePlaceholderTable.randomButton")}
-              </Button>
-            </HStack>
-          )}
-        </HStack>
-        <Stack>
-          <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-            <InputGroup maxWidth={["100%", "100%", "400px"]}>
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.300" />
-              </InputLeftElement>
-              <Input
-                isDisabled={userFeedArticlesFetchStatus === "fetching"}
-                placeholder={t(
-                  "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder"
-                )}
-                onChange={(e) => setPlaceholderTableSearch(e.target.value.toLowerCase())}
-              />
-            </InputGroup>
-            <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
-              <Text whiteSpace="nowrap">
-                {t(
-                  "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
-                )}
-              </Text>
-            </Checkbox>
-          </HStack>
-          <Box marginBottom="8">
-            {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
-            {userFeedArticlesStatus === "loading" && (
-              <Stack alignItems="center">
-                <Spinner size="xl" />
-                <Text>
-                  {t("features.feedConnections.components.articlePlaceholderTable.loadingArticle")}
-                </Text>
-              </Stack>
-            )}
-            {!hasAlert && firstArticle && (
-              <ArticlePlaceholderTable
-                asPlaceholders
-                article={userFeedArticles.result.articles[0]}
-                searchText={placeholderTableSearch}
-                hideEmptyPlaceholders={hideEmptyPlaceholders}
-                isFetching={userFeedArticlesFetchStatus === "fetching"}
-              />
-            )}
-          </Box>
+          <Text>
+            Placeholders can be used to inject article content into your messages. View any
+            article&apos;s placeholders below.
+          </Text>
         </Stack>
+        {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
+        {userFeedArticlesStatus === "loading" && (
+          <Center mt={6}>
+            <Spinner />
+          </Center>
+        )}
+        {!hasAlert && firstArticle && (
+          <Card size="md">
+            <CardHeader padding={0} margin={5}>
+              <Heading size="xs" textTransform="uppercase">
+                Selected Article
+              </Heading>
+            </CardHeader>
+            <CardBody padding={0} margin={5} mt={0}>
+              <Stack spacing={4}>
+                <HStack justifyContent="space-between" flexWrap="wrap">
+                  <Box>
+                    {firstArticleDate && <Text color="gray.400">{firstArticleDate}</Text>}
+                    <Heading size="md">
+                      {firstArticleTitle || (
+                        <span
+                          style={{
+                            color: `${getChakraColor("gray.400")}`,
+                          }}
+                        >
+                          (no title available)
+                        </span>
+                      )}
+                    </Heading>
+                  </Box>
+                  <HStack alignItems="center" flexWrap="wrap">
+                    <ArticleSelectPrompt
+                      trigger={
+                        <Button
+                          leftIcon={<FiMousePointer />}
+                          isLoading={
+                            !!selectedArticleId && userFeedArticlesFetchStatus === "fetching"
+                          }
+                          isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                        >
+                          {t(
+                            "features.feedConnections.components.articlePlaceholderTable.selectArticle"
+                          )}
+                        </Button>
+                      }
+                      feedId={feedId}
+                      articleFormatter={articleFormatter}
+                      onArticleSelected={onSelectedArticle}
+                      onClickRandomArticle={onClickRandomFeedArticle}
+                    />
+                    <Button
+                      leftIcon={<RepeatIcon />}
+                      isLoading={!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
+                      isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                      onClick={onClickRandomFeedArticle}
+                    >
+                      {t(
+                        "features.feedConnections.components.articlePlaceholderTable.randomButton"
+                      )}
+                    </Button>
+                  </HStack>
+                </HStack>
+                <Accordion allowToggle borderRadius="md">
+                  <AccordionItem bg="gray.800" borderRadius="md" alignItems="center">
+                    <AccordionButton
+                      fontSize="sm"
+                      fontWeight={600}
+                      minHeight="50px"
+                      color="blue.300"
+                    >
+                      <HStack spacing={2}>
+                        <Text>View Placeholders</Text>
+                        <AccordionIcon />
+                      </HStack>
+                    </AccordionButton>
+                    <AccordionPanel bg="gray.800" borderRadius="md">
+                      <Stack>
+                        <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
+                          <InputGroup maxWidth={["100%", "100%", "400px"]}>
+                            <InputLeftElement pointerEvents="none">
+                              <SearchIcon color="gray.300" />
+                            </InputLeftElement>
+                            <Input
+                              isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                              placeholder={t(
+                                "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder"
+                              )}
+                              onChange={(e) =>
+                                setPlaceholderTableSearch(e.target.value.toLowerCase())
+                              }
+                            />
+                          </InputGroup>
+                          <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
+                            <Text whiteSpace="nowrap">
+                              {t(
+                                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
+                              )}
+                            </Text>
+                          </Checkbox>
+                        </HStack>
+                        <Box>
+                          {userFeedArticlesStatus === "loading" && (
+                            <Stack alignItems="center">
+                              <Spinner size="xl" />
+                              <Text>
+                                {t(
+                                  "features.feedConnections.components.articlePlaceholderTable.loadingArticle"
+                                )}
+                              </Text>
+                            </Stack>
+                          )}
+                          {!hasAlert && firstArticle && (
+                            <ArticlePlaceholderTable
+                              asPlaceholders
+                              article={userFeedArticles.result.articles[0]}
+                              searchText={placeholderTableSearch}
+                              hideEmptyPlaceholders={hideEmptyPlaceholders}
+                              isFetching={userFeedArticlesFetchStatus === "fetching"}
+                            />
+                          )}
+                        </Box>
+                      </Stack>
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              </Stack>
+            </CardBody>
+          </Card>
+        )}
       </Stack>
-      <Stack spacing={4}>
-        <DiscordMessageForm
-          onClickSave={onMessageUpdated}
-          defaultValues={defaultMessageValues}
-          connection={connection}
-          feedId={feedId}
-          articleIdToPreview={firstArticle?.id}
-          include={include}
-          guildId={guildId}
-        />
-      </Stack>
+      <DiscordMessageForm
+        onClickSave={onMessageUpdated}
+        defaultValues={defaultMessageValues}
+        connection={connection}
+        feedId={feedId}
+        articleIdToPreview={firstArticle?.id}
+        include={include}
+        guildId={guildId}
+      />
     </Stack>
   );
 };

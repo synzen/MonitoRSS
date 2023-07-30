@@ -199,8 +199,8 @@ export const DiscordMessageForm = ({
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={24} mb={24}>
-          <Stack spacing={4}>
-            <Stack spacing={4}>
+          <Stack>
+            <Stack>
               <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
                 <HStack spacing={4} alignItems="center" flexWrap="wrap">
                   <Heading as="h2" size="md">
@@ -250,16 +250,16 @@ export const DiscordMessageForm = ({
             )}
           </Stack>
           {include?.forumThreadTitle && (
-            <Stack spacing={4}>
+            <Stack>
               <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
               <DiscordMessageForumThreadForm connectionId={connection.id} feedId={feedId} />
             </Stack>
           )}
-          <Stack spacing={4}>
+          <Stack>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
             <DiscordMessageContentForm />
           </Stack>
-          <Stack spacing={4}>
+          <Stack>
             <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
             <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
             <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
@@ -301,11 +301,11 @@ export const DiscordMessageForm = ({
               </TabPanels>
             </Tabs>
           </Stack>
-          <Stack spacing={4}>
+          <Stack>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
             <DiscordMessageMentionForm guildId={guildId} feedId={feedId} />
           </Stack>
-          <Stack spacing={4}>
+          <Stack>
             <Heading size="md">Placeholder Limits</Heading>
             <DiscordMessagePlaceholderLimitsForm feedId={feedId} />
           </Stack>

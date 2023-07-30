@@ -86,7 +86,13 @@ export const DiscordMessageContentForm = () => {
               name="content"
               control={control}
               render={({ field }) => (
-                <Textarea size="sm" aria-label="Text content" spellCheck={false} {...field} />
+                <Textarea
+                  placeholder=":newspaper: | {{title}}&#10;&#10;{{link}}"
+                  size="sm"
+                  aria-label="Text content"
+                  spellCheck={false}
+                  {...field}
+                />
               )}
             />
             {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
