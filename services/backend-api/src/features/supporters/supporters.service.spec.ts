@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { PatronsService } from "./patrons.service";
 import { ConfigService } from "@nestjs/config";
 import { GuildSubscriptionsService } from "./guild-subscriptions.service";
+import { UserFeedLimitOverrideModel } from "./entities/user-feed-limit-overrides.entity";
 
 describe("SupportersService", () => {
   let supportersService: SupportersService;
@@ -15,6 +16,10 @@ describe("SupportersService", () => {
   } as never;
   const supporterModel: SupporterModel = {
     aggregate: jest.fn(),
+  } as never;
+  const userFeedLimitOverrideModel: UserFeedLimitOverrideModel = {
+    findOne: jest.fn(),
+    find: jest.fn(),
   } as never;
   const configService: ConfigService = {
     getOrThrow: jest.fn(),
@@ -29,6 +34,7 @@ describe("SupportersService", () => {
   beforeAll(async () => {
     supportersService = new SupportersService(
       supporterModel,
+      userFeedLimitOverrideModel,
       configService,
       patronsService,
       guildSubscriptionsService
@@ -118,6 +124,10 @@ describe("SupportersService", () => {
       expect(result).toEqual({
         maxFeeds: defaultMaxFeeds,
         maxUserFeeds: defaultMaxUserFeeds,
+        maxUserFeedsComposition: {
+          base: defaultMaxUserFeeds,
+          legacy: 0,
+        },
         maxGuilds: 0,
         isSupporter: false,
         webhooks: false,

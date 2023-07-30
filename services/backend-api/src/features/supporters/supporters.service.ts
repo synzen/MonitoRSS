@@ -42,7 +42,6 @@ interface SupportPatronAggregateResult {
   maxUserFeeds?: number;
   maxGuilds?: number;
   slowRate?: boolean;
-  maxUserFeedsLegacyAddition?: number;
   userFeedLimitOverrides?: Array<UserFeedLimitOverride>;
   patrons: Array<{
     status: Patron["status"];
@@ -485,8 +484,7 @@ export class SupportersService {
     baseMaxUserFeeds = Math.max(baseMaxUserFeeds, patronMaxUserFeeds);
 
     const legacyFeedLimitAddon =
-      (supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0) +
-      (supporter.maxUserFeedsLegacyAddition || 0);
+      supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0;
 
     return {
       isSupporter: true,

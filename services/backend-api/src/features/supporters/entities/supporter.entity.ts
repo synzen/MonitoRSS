@@ -35,12 +35,6 @@ export class Supporter {
   })
   guilds: string[];
 
-  @Prop({
-    type: Number,
-    required: false,
-  })
-  maxUserFeedsLegacyAddition?: number;
-
   @Prop()
   expireAt?: Date;
 }
