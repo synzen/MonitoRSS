@@ -271,14 +271,18 @@ export class LegacyFeedConversionService {
 
       const [profile, subscribers, filteredFormats, failRecord] =
         await Promise.all([
-          this.profileModel.findById(feed.guild),
-          this.feedSubscriberModel.find({
-            feed: feed._id,
-          }),
-          this.feedFilteredFormatModel.find({
-            feed: feed._id,
-          }),
-          this.failRecordModel.findById(feed.url),
+          this.profileModel.findById(feed.guild).lean(),
+          this.feedSubscriberModel
+            .find({
+              feed: feed._id,
+            })
+            .lean(),
+          this.feedFilteredFormatModel
+            .find({
+              feed: feed._id,
+            })
+            .lean(),
+          this.failRecordModel.findById(feed.url).lean(),
         ]);
 
       const converted: UserFeed = await this.getUserFeedEquivalent(feed, {
