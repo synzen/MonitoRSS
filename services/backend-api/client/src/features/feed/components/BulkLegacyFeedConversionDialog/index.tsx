@@ -7,6 +7,7 @@ import {
   Center,
   Flex,
   HStack,
+  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -167,7 +168,21 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
                                 <WarningIcon color="red.300" />
                               </Td>
                               <Td>{feed.title}</Td>
-                              <Td>{feed.url}</Td>
+                              <Td
+                                maxWidth="300px"
+                                overflow="hidden"
+                                textOverflow="ellipsis"
+                                whiteSpace="nowrap"
+                              >
+                                <Link
+                                  color="blue.300"
+                                  href={feed.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {feed.url}
+                                </Link>
+                              </Td>
                               <Td>{feed.failReasonPublic || ""}</Td>
                             </Tr>
                           ))}
