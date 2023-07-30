@@ -9,6 +9,7 @@ import { PatronsService } from "./patrons.service";
 import { GuildSubscriptionsService } from "./guild-subscriptions.service";
 import { GuildSubscriptionFormatted } from "./types";
 import { UserFeedLimitOverride } from "./entities/user-feed-limit-overrides.entity";
+import { Customer } from "./entities/customer.entity";
 
 interface SupporterBenefits {
   isSupporter: boolean;
@@ -46,6 +47,7 @@ interface SupportPatronAggregateResult {
     pledgeLifetime: number;
     pledgeOverride?: number;
   }>;
+  customers: Array<Customer>;
 }
 
 @Injectable()
@@ -112,6 +114,14 @@ export class SupportersService {
         as: "userFeedLimitOverrides",
       },
     },
+    {
+      $lookup: {
+        from: "customers",
+        localField: "_id",
+        foreignField: "connections.discord.id",
+        as: "customers",
+      },
+    },
   ];
 
   async getBenefitsOfDiscordUser(
@@ -121,6 +131,7 @@ export class SupportersService {
       Supporter & {
         patrons: Patron[];
         userFeedLimitOverrides?: UserFeedLimitOverride[];
+        customers: Customer[];
       }
     > = await this.supporterModel.aggregate([
       {
@@ -177,6 +188,7 @@ export class SupportersService {
     const aggregate: Array<
       Supporter & {
         patrons: Patron[];
+        customers: Customer[];
       }
     > = await this.supporterModel.aggregate([
       ...SupportersService.SUPPORTER_PATRON_PIPELINE,
@@ -206,6 +218,7 @@ export class SupportersService {
     const allSupportersWithGuild: Array<
       Omit<Supporter, "guilds"> & {
         patrons: Patron[];
+        customers: Customer[];
         guilds: string; // Unwinded to actually be guild IDs
         guildId: string; // An alias to unwinded "guilds" for readability
       }
@@ -256,6 +269,7 @@ export class SupportersService {
     const allSupportersWithGuild: Array<
       Omit<Supporter, "guilds"> & {
         patrons: Patron[];
+        customers: Customer[];
         guilds: string; // Unwinded to actually be guild IDs
         guildId: string; // An alias to unwinded "guilds" for readability
       }
@@ -424,10 +438,20 @@ export class SupportersService {
       refreshRateSeconds = 120;
     }
 
-    const baseMaxUserFeeds = Math.max(
-      supporter.maxUserFeeds ?? this.defaultMaxUserFeeds,
-      patronMaxUserFeeds
-    );
+    let baseMaxUserFeeds: number;
+
+    const customerMaxUserFeeds =
+      supporter.customers[0]?.connections?.discord?.benefits?.maxUserFeeds;
+
+    if (customerMaxUserFeeds) {
+      baseMaxUserFeeds = customerMaxUserFeeds;
+    } else if (supporter.maxUserFeeds) {
+      baseMaxUserFeeds = supporter.maxUserFeeds;
+    } else {
+      baseMaxUserFeeds = this.defaultMaxUserFeeds;
+    }
+
+    baseMaxUserFeeds = Math.max(baseMaxUserFeeds, patronMaxUserFeeds);
 
     const legacyFeedLimitAddon =
       (supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0) +

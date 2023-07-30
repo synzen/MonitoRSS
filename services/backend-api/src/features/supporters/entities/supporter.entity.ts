@@ -15,6 +15,9 @@ export class Supporter {
   patron?: boolean;
 
   @Prop()
+  stripe?: boolean;
+
+  @Prop()
   webhook?: boolean;
 
   @Prop()

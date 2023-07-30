@@ -22,12 +22,18 @@ import { createTestPatron } from "../../test/data/patron.test-data";
 import dayjs from "dayjs";
 import { PatronsService } from "./patrons.service";
 import { GuildSubscriptionsService } from "./guild-subscriptions.service";
+import {
+  Customer,
+  CustomerFeature,
+  CustomerModel,
+} from "./entities/customer.entity";
 
 describe("SupportersService Integration", () => {
   let supportersService: SupportersService;
   let guildSubscriptionsService: GuildSubscriptionsService;
   let supporterModel: SupporterModel;
   let patronModel: PatronModel;
+  let customerModel: CustomerModel;
   const userDiscordId = "user-discord-id";
 
   beforeAll(async () => {
@@ -35,7 +41,11 @@ describe("SupportersService Integration", () => {
       providers: [SupportersService, PatronsService, GuildSubscriptionsService],
       imports: [
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([SupporterFeature, PatronFeature]),
+        MongooseModule.forFeature([
+          SupporterFeature,
+          PatronFeature,
+          CustomerFeature,
+        ]),
       ],
     });
 
@@ -54,6 +64,7 @@ describe("SupportersService Integration", () => {
       .mockResolvedValue([]);
     supporterModel = module.get<SupporterModel>(getModelToken(Supporter.name));
     patronModel = module.get<PatronModel>(getModelToken(Patron.name));
+    customerModel = module.get<CustomerModel>(getModelToken(Customer.name));
   });
 
   afterEach(async () => {
@@ -76,7 +87,10 @@ describe("SupportersService Integration", () => {
         maxFeeds: supportersService.defaultMaxFeeds,
         guilds: [],
         maxGuilds: 0,
-        expireAt: undefined,
+        maxUserFeedsComposition: {
+          base: 1000,
+          legacy: 0,
+        },
         refreshRateSeconds: supportersService.defaultRefreshRateSeconds,
         maxDailyArticles: supportersService.maxDailyArticlesDefault,
         maxUserFeeds: supportersService.defaultMaxUserFeeds,
@@ -103,9 +117,58 @@ describe("SupportersService Integration", () => {
         guilds: supporter.guilds,
         maxGuilds: supporter.maxGuilds,
         expireAt: supporter.expireAt,
+        maxUserFeedsComposition: {
+          base: 1000,
+          legacy: 0,
+        },
         refreshRateSeconds: 120,
         maxDailyArticles: supportersService.maxDailyArticlesSupporter,
         maxUserFeeds: supportersService.defaultMaxUserFeeds,
+      });
+    });
+
+    it("returns the correct benefits when they have a customer", async () => {
+      await customerModel.create({
+        connections: {
+          discord: {
+            id: userDiscordId,
+            benefits: {
+              maxUserFeeds: 1337,
+            },
+          },
+          stripe: {
+            id: "stripe-id",
+          },
+        },
+      });
+
+      const supporter = createTestSupporter({
+        _id: userDiscordId,
+        expireAt: dayjs().add(1, "day").toDate(),
+        maxGuilds: 10,
+        maxFeeds: 11,
+        guilds: ["1", "2"],
+      });
+
+      await supporterModel.create(supporter);
+
+      const benefits = await supportersService.getBenefitsOfDiscordUser(
+        userDiscordId
+      );
+
+      expect(benefits).toEqual({
+        isSupporter: true,
+        maxFeeds: supporter.maxFeeds,
+        guilds: supporter.guilds,
+        maxGuilds: supporter.maxGuilds,
+        expireAt: supporter.expireAt,
+        maxUserFeedsComposition: {
+          base: 1337,
+          legacy: 0,
+        },
+        refreshRateSeconds: 120,
+        maxDailyArticles: supportersService.maxDailyArticlesSupporter,
+        maxUserFeeds: 1337,
       });
     });
   });

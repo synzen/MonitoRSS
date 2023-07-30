@@ -94,6 +94,7 @@ describe("SupportersService", () => {
       maxGuilds: 5,
       lastCharge: new Date(),
       patrons: [],
+      customers: [],
     };
     const patronBenefits = {
       maxFeeds: 10,

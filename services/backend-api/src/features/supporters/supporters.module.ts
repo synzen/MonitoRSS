@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { CustomerFeature } from "./entities/customer.entity";
 import { PatronFeature } from "./entities/patron.entity";
 import { SupporterFeature } from "./entities/supporter.entity";
 import { UserFeedLimitOverrideFeature } from "./entities/user-feed-limit-overrides.entity";
@@ -14,6 +15,7 @@ import { SupportersService } from "./supporters.service";
       SupporterFeature,
       PatronFeature,
       UserFeedLimitOverrideFeature,
+      CustomerFeature,
     ]),
   ],
   exports: [SupportersService],
