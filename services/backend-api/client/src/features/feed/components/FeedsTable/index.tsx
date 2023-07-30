@@ -40,7 +40,7 @@ import {
   useSeverLegacyFeedBulkConversion,
 } from "../../hooks";
 import { Feed } from "@/types";
-import { Loading } from "@/components";
+import { ConfirmModal, Loading } from "@/components";
 import { DiscordChannelName } from "@/features/discordServers/components/DiscordChannelName";
 import { FeedStatusTag } from "./FeedStatusTag";
 import { pages } from "../../../../constants";
@@ -219,14 +219,47 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
               </AlertDescription>
             </Box>
             {legacyConversionData && legacyConversionData.status === "NOT_STARTED" && (
-              <Button
-                width="min-content"
-                variant="outline"
-                onClick={onStartBulkConversion}
-                isLoading={createConvertStatus === "loading"}
-              >
-                Convert Server Feeds
-              </Button>
+              <ConfirmModal
+                trigger={
+                  <Button
+                    width="min-content"
+                    variant="outline"
+                    // onClick={onStartBulkConversion}
+                    isLoading={createConvertStatus === "loading"}
+                  >
+                    Convert Server Feeds
+                  </Button>
+                }
+                title="Heads up!"
+                size="lg"
+                onConfirm={onStartBulkConversion}
+                okText="Convert Server Feeds"
+                colorScheme="purple"
+                descriptionNode={
+                  <Stack>
+                    <Alert status="warning">
+                      <AlertIcon fontSize={24} />
+                      <Stack>
+                        <AlertTitle>This may not be a perfect conversion!</AlertTitle>
+                        <AlertDescription>
+                          Double check that everything is as expected afterwards, or feeds may get
+                          disabled due to errors during delivery attempts.
+                        </AlertDescription>
+                      </Stack>
+                    </Alert>
+                    <br />
+                    <Text>
+                      Legacy feed will be permanently disabled after the conversion, and subject to
+                      deletion once all legacy feeds have been converted to personal feeds.
+                    </Text>
+                    <Text>
+                      <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
+                        Click here to see more information on what personal feeds are.
+                      </Button>
+                    </Text>
+                  </Stack>
+                }
+              />
             )}
             {legacyConversionData &&
               (legacyConversionData.status === "IN_PROGRESS" ||
