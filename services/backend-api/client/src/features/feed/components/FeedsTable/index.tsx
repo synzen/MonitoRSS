@@ -24,6 +24,8 @@ import {
   Tooltip,
   Button,
   Link as ChakraLink,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
 import { useEffect, useMemo } from "react";
 import { useTable, usePagination, Column, useGlobalFilter } from "react-table";
@@ -31,12 +33,20 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
 import { debounce } from "lodash";
 import { Link } from "react-router-dom";
-import { useFeeds } from "../../hooks";
+import {
+  useCreateServerLegacyFeedBulkConversion,
+  useFeeds,
+  useLegacyFeedCount,
+  useSeverLegacyFeedBulkConversion,
+} from "../../hooks";
 import { Feed } from "@/types";
 import { Loading } from "@/components";
 import { DiscordChannelName } from "@/features/discordServers/components/DiscordChannelName";
 import { FeedStatusTag } from "./FeedStatusTag";
 import { pages } from "../../../../constants";
+import { BulkLegacyFeedConversionDialog } from "../BulkLegacyFeedConversionDialog";
+import { notifySuccess } from "../../../../utils/notifySuccess";
+import { notifyError } from "../../../../utils/notifyError";
 
 interface Props {
   serverId?: string;
@@ -55,6 +65,33 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
       serverId,
       initialLimit: maxPerPage,
     });
+  const { data: legacyFeedCountData, status: legacyFeedCountStatus } = useLegacyFeedCount({
+    serverId,
+  });
+  const { data: legacyConversionData, status: legacyConversionStatus } =
+    useSeverLegacyFeedBulkConversion(
+      {
+        serverId,
+      },
+      {
+        disablePolling: true,
+      }
+    );
+  const { mutateAsync: createConvert, status: createConvertStatus } =
+    useCreateServerLegacyFeedBulkConversion();
+
+  const onStartBulkConversion = async () => {
+    try {
+      if (!serverId) {
+        return;
+      }
+
+      await createConvert({ serverId });
+      notifySuccess("Conversion has started for this server. This may take a while.");
+    } catch (err) {
+      notifyError("Failed to start conversion", (err as Error).message);
+    }
+  };
 
   const tableData = useMemo(
     () =>
@@ -136,7 +173,11 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
     setSearch(value);
   }, 500);
 
-  if (status === "loading") {
+  if (
+    status === "loading" ||
+    legacyFeedCountStatus === "loading" ||
+    legacyConversionStatus === "loading"
+  ) {
     return (
       <Center width="100%" height="100%">
         <Loading size="lg" />
@@ -155,7 +196,7 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
 
   return (
     <Stack>
-      <Box mb={4}>
+      <Box mb={2}>
         <Text>
           Legacy feeds can no longer be added.{" "}
           <ChakraLink as={Link} to={pages.userFeeds()} color="blue.300">
@@ -163,6 +204,46 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
           </ChakraLink>
         </Text>
       </Box>
+      {legacyFeedCountData?.result?.total && (
+        <Alert status="error" borderRadius="md" overflow="visible" mb={4}>
+          <AlertIcon />
+          <Stack>
+            <Box>
+              <AlertTitle>You have unconverted legacy feeds in this server!</AlertTitle>
+              <AlertDescription>
+                On October 1 2023, legacy feeds will start getting disabled to complete the
+                transition to personal feeds. By December 1 2023, all legacy feeds will be disabled.
+                To prevent disruption to article delivery, please convert all legacy feeds to
+                personal feeds as soon as possible. To convert an individual feed, you may click on
+                one in the table below to see the option to do so.
+              </AlertDescription>
+            </Box>
+            {legacyConversionData && legacyConversionData.status === "NOT_STARTED" && (
+              <Button
+                width="min-content"
+                variant="outline"
+                onClick={onStartBulkConversion}
+                isLoading={createConvertStatus === "loading"}
+              >
+                Convert Server Feeds
+              </Button>
+            )}
+            {legacyConversionData &&
+              (legacyConversionData.status === "IN_PROGRESS" ||
+                legacyConversionData.status === "COMPLETED") && (
+                <BulkLegacyFeedConversionDialog
+                  trigger={
+                    <Button display="block" width="min-content" variant="outline">
+                      View Conversion Progress
+                    </Button>
+                  }
+                  serverId={serverId}
+                />
+              )}
+            {/* <BulkLegacyFeedConversionDialog />} */}
+          </Stack>
+        </Alert>
+      )}
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">
           <InputLeftElement pointerEvents="none">

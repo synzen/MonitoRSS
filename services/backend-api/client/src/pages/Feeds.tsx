@@ -16,7 +16,6 @@ import {
   AlertTitle,
   AlertDescription,
   Button,
-  AlertIcon,
 } from "@chakra-ui/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -26,17 +25,9 @@ import RouteParams from "../types/RouteParams";
 import { RequireServerBotAccess, useDiscordServer } from "@/features/discordServers";
 import { FeedSidebar } from "@/features/feed/components/FeedsTable/FeedSidebar";
 import { FeedsTable } from "@/features/feed/components/FeedsTable";
-import {
-  useCreateServerLegacyFeedBulkConversion,
-  useFeeds,
-  useLegacyFeedCount,
-  useSeverLegacyFeedBulkConversion,
-} from "@/features/feed";
+import { useFeeds } from "@/features/feed";
 import { pages } from "../constants";
 import { useDiscordUserMe } from "../features/discordUser";
-import { BulkLegacyFeedConversionDialog } from "../features/feed/components/BulkLegacyFeedConversionDialog";
-import { notifySuccess } from "../utils/notifySuccess";
-import { notifyError } from "../utils/notifyError";
 
 const Feeds: React.FC = () => {
   const { serverId } = useParams<RouteParams>();
@@ -46,17 +37,7 @@ const Feeds: React.FC = () => {
   const { data: serverData } = useDiscordServer({ serverId });
   const { data: feedsData } = useFeeds({ serverId });
   const { data } = useDiscordUserMe();
-  const { data: legacyFeedCountData } = useLegacyFeedCount({ serverId });
   const navigate = useNavigate();
-  const { data: legacyConversionData } = useSeverLegacyFeedBulkConversion(
-    {
-      serverId,
-    },
-    {
-      disablePolling: true,
-    }
-  );
-  const { mutateAsync, status: createConvertStatus } = useCreateServerLegacyFeedBulkConversion();
 
   useEffect(() => {
     setFocusedFeedId("");
@@ -64,19 +45,6 @@ const Feeds: React.FC = () => {
 
   const onFeedDeleted = () => {
     setFocusedFeedId("");
-  };
-
-  const onStartBulkConversion = async () => {
-    try {
-      if (!serverId) {
-        return;
-      }
-
-      await mutateAsync({ serverId });
-      notifySuccess("Conversion has started for this server. This may take a while.");
-    } catch (err) {
-      notifyError("Failed to start conversion", (err as Error).message);
-    }
   };
 
   const currentFeedCount = feedsData?.total || 0;
@@ -120,46 +88,6 @@ const Feeds: React.FC = () => {
                     Check it out
                   </Button>
                 </Box>
-              </Stack>
-            </Alert>
-          )}
-          {legacyFeedCountData?.result?.total && (
-            <Alert status="error" borderRadius="md" overflow="visible">
-              <AlertIcon />
-              <Stack>
-                <Box>
-                  <AlertTitle>You have unconverted legacy feeds in this server!</AlertTitle>
-                  <AlertDescription>
-                    On October 1 2023, legacy feeds will start getting disabled to complete the
-                    transition to personal feeds. By December 1 2023, all legacy feeds will be
-                    disabled. To prevent disruption to article delivery, please convert all legacy
-                    feeds to personal feeds as soon as possible. To convert an individual feed, you
-                    may click on one in the table below to see the option to do so.
-                  </AlertDescription>
-                </Box>
-                {legacyConversionData && legacyConversionData.status === "NOT_STARTED" && (
-                  <Button
-                    width="min-content"
-                    variant="outline"
-                    onClick={onStartBulkConversion}
-                    isLoading={createConvertStatus === "loading"}
-                  >
-                    Convert Server Feeds
-                  </Button>
-                )}
-                {legacyConversionData &&
-                  (legacyConversionData.status === "IN_PROGRESS" ||
-                    legacyConversionData.status === "COMPLETED") && (
-                    <BulkLegacyFeedConversionDialog
-                      trigger={
-                        <Button display="block" width="min-content" variant="outline">
-                          View Conversion Progress
-                        </Button>
-                      }
-                      serverId={serverId}
-                    />
-                  )}
-                {/* <BulkLegacyFeedConversionDialog />} */}
               </Stack>
             </Alert>
           )}
