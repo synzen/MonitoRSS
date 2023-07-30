@@ -121,6 +121,7 @@ export async function processLegacyFeedBulkConversionJobs(
   try {
     await convertService.convertToUserFeed(legacyFeed, {
       discordUserId,
+      isBulkConversion: true,
     });
 
     await legacyFeedConversionJobModel.updateOne(

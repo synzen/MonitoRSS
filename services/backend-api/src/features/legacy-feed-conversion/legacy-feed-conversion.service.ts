@@ -349,8 +349,8 @@ export class LegacyFeedConversionService {
     feed: Feed,
     {
       discordUserId,
-      ignorePending,
-    }: { discordUserId: string; ignorePending?: boolean }
+      isBulkConversion,
+    }: { discordUserId: string; isBulkConversion?: boolean }
   ) {
     try {
       if (feed.disabled === ConversionDisabledCode.ConvertSuccess) {
@@ -360,10 +360,14 @@ export class LegacyFeedConversionService {
         );
       }
 
-      if (
-        !ignorePending &&
-        feed.disabled === ConversionDisabledCode.ConvertPending
-      ) {
+      const conversionJob =
+        await this.legacyFeedConversionJobModel.countDocuments({
+          discordUserId,
+          guildId: feed.guild,
+          legacyFeedId: feed._id,
+        });
+
+      if (!isBulkConversion && conversionJob) {
         throw new HandledByBulkConversionException(
           `Cannot convert feed ${feed._id} to user feed for user` +
             ` ${discordUserId} because it is pending a bulk conversion`
