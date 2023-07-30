@@ -155,7 +155,6 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
 
   return (
     <Stack>
-      {/* <Alert status="info"> */}
       <Box mb={4}>
         <Text>
           Legacy feeds can no longer be added.{" "}
@@ -163,10 +162,7 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
             Please transition to personal feeds instead.
           </ChakraLink>
         </Text>
-        {/* <AlertDescription> */}
       </Box>
-      {/* </AlertDescription> */}
-      {/* </Alert> */}
       <HStack justifyContent="space-between" flexWrap="wrap">
         <InputGroup width="min-content">
           <InputLeftElement pointerEvents="none">
@@ -187,7 +183,6 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
           </Button>
         </Tooltip>
       </HStack>
-      {/* <Button colorScheme="blue">{t('pages.feeds.add')}</Button> */}
       <Box overflow="auto">
         <Table
           {...getTableProps()}

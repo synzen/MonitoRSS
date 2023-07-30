@@ -87,7 +87,7 @@ export class DiscordServersController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ) {
-    return this.legacyFeedConversionService.createBulkConversionJob(
+    return this.legacyFeedConversionService.getBulkConversionJobStatus(
       discordUserId,
       serverId
     );

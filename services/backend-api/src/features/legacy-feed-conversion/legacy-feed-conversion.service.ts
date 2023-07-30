@@ -168,16 +168,41 @@ export class LegacyFeedConversionService {
   ) {}
 
   async createBulkConversionJob(discordUserId: string, guildId: string) {
-    const existingJob = await this.legacyFeedConversionJobModel.countDocuments({
-      discordUserId,
-      guildId,
-    });
+    const existingJobCount =
+      await this.legacyFeedConversionJobModel.countDocuments({
+        discordUserId,
+        guildId,
+      });
 
-    if (existingJob > 0) {
-      throw new ConversionJobExistsException(
-        `Cannot create a new conversion job for server ${guildId}, user ${discordUserId}` +
-          ` while one is already in progress`
-      );
+    if (existingJobCount > 0) {
+      const failedCount =
+        await this.legacyFeedConversionJobModel.countDocuments({
+          discordUserId,
+          guildId,
+          status: LegacyFeedConversionStatus.Failed,
+        });
+
+      if (failedCount > 0) {
+        await this.legacyFeedConversionJobModel.updateMany(
+          {
+            discordUserId,
+            guildId,
+            status: LegacyFeedConversionStatus.Failed,
+          },
+          {
+            status: LegacyFeedConversionStatus.NotStarted,
+          }
+        );
+
+        return {
+          total: existingJobCount,
+        };
+      } else {
+        throw new ConversionJobExistsException(
+          `Cannot create a new conversion job for server ${guildId}, user ${discordUserId}` +
+            ` while one is already in progress`
+        );
+      }
     }
 
     const unconvertedFeeds = await this.feedModel
@@ -233,34 +258,33 @@ export class LegacyFeedConversionService {
   }
 
   async getBulkConversionJobStatus(discordUserId: string, guildId: string) {
-    const [notStartedCount, inProgressCount, completedCount, failedCount] =
-      await Promise.all([
-        this.legacyFeedConversionJobModel.countDocuments({
-          discordUserId,
-          guildId,
-          status: LegacyFeedConversionStatus.NotStarted,
-        }),
+    const [notStarted, inProgress, completed, failed] = await Promise.all([
+      this.legacyFeedConversionJobModel.countDocuments({
+        discordUserId,
+        guildId,
+        status: LegacyFeedConversionStatus.NotStarted,
+      }),
 
-        this.legacyFeedConversionJobModel.countDocuments({
-          discordUserId,
-          guildId,
-          status: LegacyFeedConversionStatus.InProgress,
-        }),
+      this.legacyFeedConversionJobModel.countDocuments({
+        discordUserId,
+        guildId,
+        status: LegacyFeedConversionStatus.InProgress,
+      }),
 
-        this.legacyFeedConversionJobModel.countDocuments({
-          discordUserId,
-          guildId,
-          status: LegacyFeedConversionStatus.Completed,
-        }),
+      this.legacyFeedConversionJobModel.countDocuments({
+        discordUserId,
+        guildId,
+        status: LegacyFeedConversionStatus.Completed,
+      }),
 
-        this.legacyFeedConversionJobModel.countDocuments({
-          discordUserId,
-          guildId,
-          status: LegacyFeedConversionStatus.Failed,
-        }),
-      ]);
+      this.legacyFeedConversionJobModel.countDocuments({
+        discordUserId,
+        guildId,
+        status: LegacyFeedConversionStatus.Failed,
+      }),
+    ]);
 
-    const failed = await this.legacyFeedConversionJobModel
+    const failedFeeds = await this.legacyFeedConversionJobModel
       .find({
         discordUserId,
         guildId,
@@ -269,12 +293,26 @@ export class LegacyFeedConversionService {
       .select("_id title url")
       .lean();
 
+    const hasStarted = notStarted + inProgress + completed + failed > 0;
+    const hasCompleted = notStarted === 0 && inProgress === 0;
+
+    let status = "NOT_STARTED";
+
+    if (hasCompleted) {
+      status = "COMPLETED";
+    } else if (hasStarted) {
+      status = "IN_PROGRESS";
+    }
+
     return {
-      notStartedCount,
-      inProgressCount,
-      completedCount,
-      failedCount,
-      failed,
+      status,
+      failedFeeds,
+      counts: {
+        notStarted,
+        inProgress,
+        completed,
+        failed,
+      },
     };
   }
 

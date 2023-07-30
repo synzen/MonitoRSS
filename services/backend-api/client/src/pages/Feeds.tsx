@@ -96,16 +96,22 @@ const Feeds: React.FC = () => {
           {legacyFeedCountData?.result?.total && (
             <Alert status="error" borderRadius="md" overflow="visible">
               <AlertIcon />
-              <Box>
-                <AlertTitle>You have unconverted legacy feeds!</AlertTitle>
-                <AlertDescription>
-                  On October 1 2023, legacy feeds will start getting disabled to complete the
-                  transition to personal feeds. By December 1 2023, all legacy feeds will be
-                  disabled. To prevent disruption to article delivery, please convert all legacy
-                  feeds to personal feeds as soon as possible. To convert a feed, click on one in
-                  the table below to see the option to do so.
-                </AlertDescription>
-              </Box>
+              <Stack>
+                <Box>
+                  <AlertTitle>You have unconverted legacy feeds!</AlertTitle>
+                  <AlertDescription>
+                    On October 1 2023, legacy feeds will start getting disabled to complete the
+                    transition to personal feeds. By December 1 2023, all legacy feeds will be
+                    disabled. To prevent disruption to article delivery, please convert all legacy
+                    feeds to personal feeds as soon as possible. To convert a feed, click on one in
+                    the table below to see the option to do so.
+                  </AlertDescription>
+                </Box>
+                {/* <Button display="block" width="min-content" variant="outline">
+                  Convert
+                </Button>
+                <BulkLegacyFeedConversionDialog /> */}
+              </Stack>
             </Alert>
           )}
           <Stack>

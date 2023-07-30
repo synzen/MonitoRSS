@@ -25,3 +25,5 @@ export * from "./useDisableUserFeeds";
 export * from "./useEnableUserFeeds";
 export * from "./useConvertLegacyFeedToUserFeed";
 export * from "./useLegacyFeedCount";
+export * from "./useServerLegacyFeedBulkConversion";
+export * from "./useCreateServerLegacyFeedBulkConversion";

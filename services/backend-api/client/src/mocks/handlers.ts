@@ -19,6 +19,7 @@ import {
   GetFeedsOutput,
   GetFeedSubscribersOutput,
   GetLegacyFeedCountOutput,
+  GetServerLegacyFeedBulkConversionOutput,
   GetUserFeedArticlePropertiesOutput,
   GetUserFeedArticlesOutput,
   GetUserFeedOutput,
@@ -117,6 +118,33 @@ const handlers = [
         result: {
           authorized: true,
         },
+      })
+    )
+  ),
+
+  rest.get("/api/v1/discord-servers/:serverId/legacy-conversion", (req, res, ctx) =>
+    res(
+      ctx.delay(500),
+      ctx.json<GetServerLegacyFeedBulkConversionOutput>({
+        status: "IN_PROGRESS",
+        counts: {
+          completed: Math.round(Math.random() * 10),
+          failed: Math.round(Math.random() * 10),
+          inProgress: Math.round(Math.random() * 10),
+          notStarted: Math.round(Math.random() * 10),
+        },
+        failedFeeds: [
+          {
+            _id: "1",
+            title: "title1",
+            url: "url1",
+          },
+          {
+            _id: "2",
+            title: "title2",
+            url: "url2",
+          },
+        ],
       })
     )
   ),
