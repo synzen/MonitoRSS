@@ -147,6 +147,11 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                               borderColor="whiteAlpha.400"
                               aria-label="Pick color"
                               size={["sm", "sm", "md"]}
+                              _hover={{
+                                background: !hexValue ? "black" : hexValue,
+                                outline: `solid 2px ${getChakraColor("blue.300")}`,
+                                transition: "outline 0.2s",
+                              }}
                             />
                           </PopoverTrigger>
                           <PopoverContent backgroundColor="black.100" width="min-content">
