@@ -17,6 +17,7 @@ const GetServerLegacyFeedBulkConversionOutputSchema = object({
       _id: string().required(),
       title: string().required(),
       url: string().required(),
+      failReasonPublic: string().optional(),
     }).required()
   ).required(),
   status: string().oneOf(["NOT_STARTED", "COMPLETED", "IN_PROGRESS"]).required(),

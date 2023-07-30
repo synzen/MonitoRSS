@@ -1,5 +1,5 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types, Model } from "mongoose";
+import { Document, Types, Model, Schema as MongooseSchema } from "mongoose";
 import { LegacyFeedConversionStatus } from "../constants/legacy-feed-conversion-status.constants";
 
 @Schema({
@@ -11,8 +11,9 @@ export class LegacyFeedConversionJob {
 
   @Prop({
     required: true,
+    type: MongooseSchema.Types.ObjectId,
   })
-  legacyFeedId: string;
+  legacyFeedId: Types.ObjectId;
 
   @Prop({
     required: true,
@@ -31,6 +32,18 @@ export class LegacyFeedConversionJob {
     type: String,
   })
   status: LegacyFeedConversionStatus;
+
+  @Prop({
+    required: false,
+    type: String,
+  })
+  failReasonPublic?: string;
+
+  @Prop({
+    required: false,
+    type: String,
+  })
+  failReasonInternal?: string;
 
   createdAt: Date;
 

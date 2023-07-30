@@ -171,6 +171,36 @@ services:
       - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
     command: npm run start:schedule-emitter:local
 
+  # Schedule emitter
+  mrss-legacy-feed-bulk-converter-service:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
+      target: build
+    restart: on-failure:3
+    volumes:
+      - ./services/backend-api:/usr/src/app
+      - /usr/src/app/node_modules/
+    depends_on:
+      - mrss-mongo
+    env_file:
+      - ./.env.local
+    environment:
+      - NODE_ENV=local
+      - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
+      - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
+      - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
+      - BACKEND_API_FEED_REQUESTS_API_KEY=----IRRELEVANT----
+      - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=0.1
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
+      - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
+    command: npm run start:legacy-feed-converter:local
+
   # Web - Backend api
   mrss-web-api:
     build:

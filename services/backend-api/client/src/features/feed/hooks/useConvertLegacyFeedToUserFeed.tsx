@@ -27,7 +27,6 @@ export const useConvertLegacyFeedToUserFeed = () => {
               query.queryKey[0] === "legacy-feed-count"
             );
           },
-          refetchType: "all",
         }),
       ]);
     },

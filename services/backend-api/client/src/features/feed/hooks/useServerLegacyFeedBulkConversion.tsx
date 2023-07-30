@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   GetServerLegacyFeedBulkConversionInput,
   GetServerLegacyFeedBulkConversionOutput,
@@ -7,7 +7,14 @@ import {
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { useDiscordServerAccessStatus } from "@/features/discordServers";
 
-export const useSeverLegacyFeedBulkConversion = (input: GetServerLegacyFeedBulkConversionInput) => {
+export const useSeverLegacyFeedBulkConversion = (
+  input: Partial<GetServerLegacyFeedBulkConversionInput>,
+  options?: {
+    disablePolling?: boolean;
+  }
+) => {
+  const queryClient = useQueryClient();
+
   const { data: accessData } = useDiscordServerAccessStatus({ serverId: input.serverId });
 
   const queryKey = ["server-legacy-feed-bulk-conversion", input];
@@ -22,16 +29,39 @@ export const useSeverLegacyFeedBulkConversion = (input: GetServerLegacyFeedBulkC
         throw new Error("Missing server ID when getting legacy feed count");
       }
 
-      return getServerLegacyFeedBulkConversion(input);
+      return getServerLegacyFeedBulkConversion({
+        serverId: input.serverId,
+      });
     },
     {
       enabled: !!accessData?.result.authorized,
-      refetchInterval(result) {
-        if (result?.status === "COMPLETED") {
+      refetchInterval: (result) => {
+        if (options?.disablePolling) {
           return false;
         }
 
-        return 5000;
+        if (result?.status === "IN_PROGRESS") {
+          return 5000;
+        }
+
+        return false;
+      },
+      onSuccess: async (result) => {
+        if (result.status === "COMPLETED") {
+          await queryClient.invalidateQueries({
+            predicate: (query) => {
+              return (
+                (query.queryKey[0] === "feed" &&
+                  // @ts-ignore
+                  query.queryKey[1]?.feedId === inputData.feedId) ||
+                query.queryKey[0] === "feeds" ||
+                query.queryKey[0] === "user-feeds" ||
+                query.queryKey[0] === "discord-user-me" ||
+                query.queryKey[0] === "legacy-feed-count"
+              );
+            },
+          });
+        }
       },
     }
   );

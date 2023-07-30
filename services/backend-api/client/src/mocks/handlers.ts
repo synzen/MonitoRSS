@@ -10,6 +10,7 @@ import { GetServersOutput } from "../features/discordServers/api/getServer";
 import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
+  CreateServerLegacyFeedBulkConversionOutput,
   CreateUserFeedOutput,
   DeleteUserFeedsInput,
   DeleteUserFeedsOutput,
@@ -71,6 +72,7 @@ import mockDiscordThreads from "./data/discordThreads";
 import mockDiscordServerMembers from "./data/discordServerMembers";
 import mockDiscordUser from "./data/discordUser";
 import mockUserFeedSummary from "./data/userFeedSummary";
+import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 
 const handlers = [
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
@@ -123,32 +125,24 @@ const handlers = [
   ),
 
   rest.get("/api/v1/discord-servers/:serverId/legacy-conversion", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<GetServerLegacyFeedBulkConversionOutput>({
-        status: "IN_PROGRESS",
-        counts: {
-          completed: Math.round(Math.random() * 10),
-          failed: Math.round(Math.random() * 10),
-          inProgress: Math.round(Math.random() * 10),
-          notStarted: Math.round(Math.random() * 10),
-        },
-        failedFeeds: [
-          {
-            _id: "1",
-            title: "title1",
-            url: "url1",
-          },
-          {
-            _id: "2",
-            title: "title2",
-            url: "url2",
-          },
-        ],
-      })
-    )
+    res(ctx.delay(500), ctx.json<GetServerLegacyFeedBulkConversionOutput>(legacyFeedBulkConversion))
   ),
 
+  rest.post("/api/v1/discord-servers/:serverId/legacy-conversion", (req, res, ctx) => {
+    if (legacyFeedBulkConversion.status !== "IN_PROGRESS") {
+      legacyFeedBulkConversion.status = "IN_PROGRESS";
+    } else {
+      legacyFeedBulkConversion.status = "COMPLETED";
+      legacyFeedBulkConversion.failedFeeds = [];
+    }
+
+    return res(
+      ctx.delay(1000),
+      ctx.json<CreateServerLegacyFeedBulkConversionOutput>({
+        total: 5,
+      })
+    );
+  }),
   rest.get("/api/v1/discord-servers/:serverId", (req, res, ctx) =>
     res(
       ctx.json<GetServerSettingsOutput>({

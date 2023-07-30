@@ -190,7 +190,13 @@ export class LegacyFeedConversionService {
             status: LegacyFeedConversionStatus.Failed,
           },
           {
-            status: LegacyFeedConversionStatus.NotStarted,
+            $set: {
+              status: LegacyFeedConversionStatus.NotStarted,
+            },
+            $unset: {
+              failReasonPublic: "",
+              failReasonInternal: "",
+            },
           }
         );
 
@@ -276,7 +282,6 @@ export class LegacyFeedConversionService {
         guildId,
         status: LegacyFeedConversionStatus.Completed,
       }),
-
       this.legacyFeedConversionJobModel.countDocuments({
         discordUserId,
         guildId,
@@ -284,21 +289,38 @@ export class LegacyFeedConversionService {
       }),
     ]);
 
-    const failedFeeds = await this.legacyFeedConversionJobModel
-      .find({
-        discordUserId,
-        guildId,
-        status: LegacyFeedConversionStatus.Failed,
-      })
-      .select("_id title url")
-      .lean();
+    let failedJobs: LegacyFeedConversionJob[] = [];
+    let failedFeeds: Feed[] = [];
+
+    if (failed > 0) {
+      failedJobs = await this.legacyFeedConversionJobModel
+        .find({
+          discordUserId,
+          guildId,
+          status: LegacyFeedConversionStatus.Failed,
+        })
+        .select("_id failReasonPublic legacyFeedId")
+        .lean();
+
+      failedFeeds = await this.feedModel
+        .find({
+          _id: {
+            $in: failedJobs.map((j) => j.legacyFeedId),
+          },
+        })
+        .select("_id title url")
+        .lean();
+    }
 
     const hasStarted = notStarted + inProgress + completed + failed > 0;
+    const hasNotStarted = notStarted + inProgress + completed + failed === 0;
     const hasCompleted = notStarted === 0 && inProgress === 0;
 
     let status = "NOT_STARTED";
 
-    if (hasCompleted) {
+    if (hasNotStarted) {
+      status = "NOT_STARTED";
+    } else if (hasCompleted) {
       status = "COMPLETED";
     } else if (hasStarted) {
       status = "IN_PROGRESS";
@@ -306,7 +328,14 @@ export class LegacyFeedConversionService {
 
     return {
       status,
-      failedFeeds,
+      failedFeeds: failedFeeds.map((feed) => ({
+        _id: feed._id,
+        title: feed.title,
+        url: feed.url,
+        failReasonPublic: failedJobs.find((j) =>
+          j.legacyFeedId.equals(feed._id)
+        )?.failReasonPublic,
+      })),
       counts: {
         notStarted,
         inProgress,
@@ -318,17 +347,23 @@ export class LegacyFeedConversionService {
 
   async convertToUserFeed(
     feed: Feed,
-    { discordUserId }: { discordUserId: string }
+    {
+      discordUserId,
+      ignorePending,
+    }: { discordUserId: string; ignorePending?: boolean }
   ) {
-    if (feed.disabled === ConversionDisabledCode.ConvertSuccess) {
-      throw new AlreadyConvertedToUserFeedException(
-        `Cannot convert feed ${feed._id} to user feed for user` +
-          ` ${discordUserId} because it is has already been converted`
-      );
-    }
-
     try {
-      if (feed.disabled === ConversionDisabledCode.ConvertPending) {
+      if (feed.disabled === ConversionDisabledCode.ConvertSuccess) {
+        throw new AlreadyConvertedToUserFeedException(
+          `Cannot convert feed ${feed._id} to user feed for user` +
+            ` ${discordUserId} because it is has already been converted`
+        );
+      }
+
+      if (
+        !ignorePending &&
+        feed.disabled === ConversionDisabledCode.ConvertPending
+      ) {
         throw new HandledByBulkConversionException(
           `Cannot convert feed ${feed._id} to user feed for user` +
             ` ${discordUserId} because it is pending a bulk conversion`

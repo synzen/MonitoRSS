@@ -29,18 +29,49 @@ import {
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { WarningIcon } from "@chakra-ui/icons";
-import { useSeverLegacyFeedBulkConversion } from "../../hooks";
+import { cloneElement } from "react";
+import {
+  useCreateServerLegacyFeedBulkConversion,
+  useSeverLegacyFeedBulkConversion,
+} from "../../hooks";
 import { InlineErrorAlert } from "../../../../components";
+import { notifyError } from "../../../../utils/notifyError";
+import { useDiscordServer } from "../../../discordServers";
 
-export const BulkLegacyFeedConversionDialog = () => {
+interface Props {
+  serverId?: string;
+  trigger: React.ReactElement;
+}
+
+export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     data: conversionData,
     error: conversionError,
     status: conversionStatus,
-  } = useSeverLegacyFeedBulkConversion({
-    serverId: "1",
-  });
+  } = useSeverLegacyFeedBulkConversion(
+    {
+      serverId,
+    },
+    {
+      disablePolling: !isOpen,
+    }
+  );
+  const { mutateAsync: retryFailed, status: retryStatus } =
+    useCreateServerLegacyFeedBulkConversion();
+  const { data: serverData } = useDiscordServer({ serverId });
+
+  const onClickRetryFailed = async () => {
+    try {
+      if (!serverId) {
+        return;
+      }
+
+      await retryFailed({ serverId });
+    } catch (err) {
+      notifyError(`Failed to retry conversion`, (err as Error).message);
+    }
+  };
 
   const doneSoFarCount =
     (conversionData?.counts.completed || 0) + (conversionData?.counts.failed || 0);
@@ -54,19 +85,13 @@ export const BulkLegacyFeedConversionDialog = () => {
 
   return (
     <>
-      <Button onClick={onOpen}>Open Modal</Button>
+      {cloneElement(trigger, { onClick: onOpen })}
       <Modal size="2xl" isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Bulk conversion for private serverse</ModalHeader>
+          <ModalHeader>Bulk conversion status for {serverData?.name}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {conversionError && (
-              <InlineErrorAlert
-                title="Failed to get conversion status"
-                description={conversionError.message}
-              />
-            )}
             {conversionStatus === "loading" && (
               <Center>
                 <Spinner size="xl" />
@@ -74,6 +99,12 @@ export const BulkLegacyFeedConversionDialog = () => {
             )}
             {conversionStatus !== "loading" && conversionData && (
               <Stack spacing={8}>
+                {conversionError && (
+                  <InlineErrorAlert
+                    title="Failed to get conversion status"
+                    description={conversionError.message}
+                  />
+                )}
                 <Stack>
                   <HStack alignItems="center">
                     {percent < 100 && <Spinner size="xs" />}
@@ -91,6 +122,9 @@ export const BulkLegacyFeedConversionDialog = () => {
                     colorScheme="blue"
                     transition="all 2s"
                   />
+                  {percent < 100 && (
+                    <Text fontSize="xs">You may close this dialog while it is processing.</Text>
+                  )}
                 </Stack>
                 {conversionData.failedFeeds.length && (
                   <Stack>
@@ -101,21 +135,29 @@ export const BulkLegacyFeedConversionDialog = () => {
                         alignItems="center"
                         width="100%"
                       >
-                        <AlertTitle>5 feeds had internal errors while converting</AlertTitle>
+                        <AlertTitle>
+                          {conversionData.failedFeeds.length} feed(s) failed to be converted
+                        </AlertTitle>
                         <AlertDescription>
-                          <Button colorScheme="blue" size="sm">
+                          <Button
+                            colorScheme="blue"
+                            size="sm"
+                            onClick={onClickRetryFailed}
+                            isLoading={retryStatus === "loading"}
+                          >
                             Retry all
                           </Button>
                         </AlertDescription>
                       </Flex>
                     </Alert>
                     <TableContainer>
-                      <Table variant="striped" size="sm">
+                      <Table size="sm">
                         <Thead>
                           <Tr>
                             <Th>Status</Th>
                             <Th>Title</Th>
                             <Th>Url</Th>
+                            <Th>Reason</Th>
                           </Tr>
                         </Thead>
                         <Tbody>
@@ -126,6 +168,7 @@ export const BulkLegacyFeedConversionDialog = () => {
                               </Td>
                               <Td>{feed.title}</Td>
                               <Td>{feed.url}</Td>
+                              <Td>{feed.failReasonPublic || ""}</Td>
                             </Tr>
                           ))}
                         </Tbody>

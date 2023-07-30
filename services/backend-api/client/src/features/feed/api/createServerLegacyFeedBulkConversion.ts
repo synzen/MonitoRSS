@@ -20,6 +20,7 @@ export const createServerLegacyFeedBulkConversion = async (
     validateSchema: CreateServerLegacyFeedBulkConversionOutputSchema,
     requestOptions: {
       method: "POST",
+      body: JSON.stringify({}),
     },
   });
 
