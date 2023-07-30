@@ -18,7 +18,6 @@ export enum ApiErrorCode {
   FEED_MISSING_CHANNEL = "FEED_MISSING_CHANNEL",
   FEED_USER_MISSING_MANAGE_GUILD = "FEED_USER_MISSING_MANAGE_GUILD",
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
-  USER_FEED_LIMIT_REACHED = "USER_FEED_LIMIT_REACHED",
   FEED_NOT_FAILED = "FEED_NOT_FAILED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
@@ -32,6 +31,7 @@ export enum ApiErrorCode {
   ALREADY_CONVERTED_TO_USER_FEED = "ALREADY_CONVERTED_TO_USER_FEED",
   LEGACY_CONVERSION_JOB_EXISTS = "LEGACY_CONVERSION_JOB_EXISTS",
   NO_LEGACY_FEEDS_TO_CONVERT = "NO_LEGACY_FEEDS_TO_CONVERT",
+  HANDLED_BY_BULK_CONVERSION = "HANDLED_BY_BULK_CONVERSION",
 }
 
 // Create a package for the frontend?
@@ -73,10 +73,10 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   DISCORD_SERVER_NOT_FOUND:
     "Server does not exist or bot does not have access to server",
   WEBHOOK_FORUM_UNSUPPORTED: "Forum webhooks are currently unsupported",
-  USER_FEED_LIMIT_REACHED: "User feed limit has been reached",
   ALREADY_CONVERTED_TO_USER_FEED:
     "Feed has already been converted to a user feed",
   LEGACY_CONVERSION_JOB_EXISTS:
     "A legacy conversion job already exists for this feed",
   NO_LEGACY_FEEDS_TO_CONVERT: "No legacy feeds to convert",
+  HANDLED_BY_BULK_CONVERSION: "Handled by bulk conversion",
 };

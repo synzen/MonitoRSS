@@ -2,21 +2,19 @@ import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
 import { StandardException } from "../../../common/exceptions";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
+import { HandledByBulkConversionException } from "../../legacy-feed-conversion/exceptions/handled-by-bulk-conversion.exception";
 
-import {
-  AlreadyConvertedToUserFeedException,
-  CannotConvertOverUserFeedLimitException,
-} from "../exceptions";
+import { AlreadyConvertedToUserFeedException } from "../exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   {
-    [CannotConvertOverUserFeedLimitException.name]: {
-      status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.USER_FEED_LIMIT_REACHED,
-    },
     [AlreadyConvertedToUserFeedException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.ALREADY_CONVERTED_TO_USER_FEED,
+    },
+    [HandledByBulkConversionException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.HANDLED_BY_BULK_CONVERSION,
     },
   };
 

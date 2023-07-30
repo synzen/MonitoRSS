@@ -29,7 +29,6 @@ module.exports = {
     "newline-before-return": "error",
     'curly': 'error',
     "eol-last": ["error"],
-    "max-len": ["error", { "code": 100 }],
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "padding-line-between-statements": [
       "error",

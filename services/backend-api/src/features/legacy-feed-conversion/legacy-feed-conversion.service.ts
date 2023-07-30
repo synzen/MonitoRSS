@@ -47,6 +47,13 @@ import {
 } from "./entities/legacy-feed-conversion-job.entity";
 import { ConversionJobExistsException } from "./exceptions/conversion-job-exists.exception";
 import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
+import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
+import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
+
+enum ConversionDisabledCode {
+  ConvertSuccess = "CONVERTED_USER_FEED",
+  ConvertPending = "CONVERT_PENDING",
+}
 
 enum ExpressionType {
   Relational = "RELATIONAL",
@@ -177,7 +184,10 @@ export class LegacyFeedConversionService {
       .find({
         guild: guildId,
         disabled: {
-          $ne: "CONVERTED_USER_FEED",
+          $nin: [
+            ConversionDisabledCode.ConvertSuccess,
+            ConversionDisabledCode.ConvertPending,
+          ],
         },
       })
       .select("_id")
@@ -202,6 +212,19 @@ export class LegacyFeedConversionService {
       })
     );
 
+    await this.userFeedModel.updateMany(
+      {
+        _id: {
+          $in: unconvertedFeeds.map((f) => f._id),
+        },
+      },
+      {
+        $set: {
+          disabled: ConversionDisabledCode.ConvertPending,
+          disabledReason: "Pending conversion to user feed",
+        },
+      }
+    );
     await this.legacyFeedConversionJobModel.insertMany(jobsToCreate);
 
     return {
@@ -259,7 +282,21 @@ export class LegacyFeedConversionService {
     feed: Feed,
     { discordUserId }: { discordUserId: string }
   ) {
+    if (feed.disabled === ConversionDisabledCode.ConvertSuccess) {
+      throw new AlreadyConvertedToUserFeedException(
+        `Cannot convert feed ${feed._id} to user feed for user` +
+          ` ${discordUserId} because it is has already been converted`
+      );
+    }
+
     try {
+      if (feed.disabled === ConversionDisabledCode.ConvertPending) {
+        throw new HandledByBulkConversionException(
+          `Cannot convert feed ${feed._id} to user feed for user` +
+            ` ${discordUserId} because it is pending a bulk conversion`
+        );
+      }
+
       const [{ maxUserFeeds }, currentUserFeedCount] = await Promise.all([
         this.supportersService.getBenefitsOfDiscordUser(discordUserId),
         this.userFeedModel.countDocuments({
@@ -301,7 +338,7 @@ export class LegacyFeedConversionService {
         },
         {
           $set: {
-            disabled: "CONVERTED_USER_FEED",
+            disabled: ConversionDisabledCode.ConvertSuccess,
             disabledReason: "Converted to personal feed",
           },
         }
