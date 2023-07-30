@@ -11,7 +11,6 @@ import { LegacyFeedConversionStatus } from "../features/legacy-feed-conversion/c
 import dayjs from "dayjs";
 import { LegacyFeedConversionService } from "../features/legacy-feed-conversion/legacy-feed-conversion.service";
 import { Feed, FeedModel } from "../features/feeds/entities/feed.entity";
-import { INestApplicationContext } from "@nestjs/common";
 
 bootstrap();
 
@@ -22,16 +21,25 @@ async function bootstrap() {
     await app.init();
     logger.info("Initiailized legacy feed bulk converter service");
 
+    const legacyFeedConversionJobModel = app.get<LegacyFeedConversionJobModel>(
+      getModelToken(LegacyFeedConversionJob.name)
+    );
+    const feedModel = app.get<FeedModel>(getModelToken(Feed.name));
+    const conversionService = app.get(LegacyFeedConversionService);
+
     setInterval(async () => {
       try {
-        await processLegacyFeedBulkConversionJobs(app);
+        await processLegacyFeedBulkConversionJobs({
+          legacyFeedConversionJobModel,
+          conversionService,
+          feedModel,
+        });
       } catch (err) {
         logger.error(`Failed to process jobs`, {
           stack: err.stack,
         });
       }
     }, 1000 * 5);
-    await processLegacyFeedBulkConversionJobs(app);
   } catch (err) {
     logger.error(`Failed to initialize schedule emitter`, {
       stack: err.stack,
@@ -39,14 +47,15 @@ async function bootstrap() {
   }
 }
 
-export async function processLegacyFeedBulkConversionJobs(
-  app: INestApplicationContext
-) {
-  const legacyFeedConversionJobModel = app.get<LegacyFeedConversionJobModel>(
-    getModelToken(LegacyFeedConversionJob.name)
-  );
-  const feedModel = app.get<FeedModel>(getModelToken(Feed.name));
-
+export async function processLegacyFeedBulkConversionJobs({
+  conversionService,
+  feedModel,
+  legacyFeedConversionJobModel,
+}: {
+  legacyFeedConversionJobModel: LegacyFeedConversionJobModel;
+  feedModel: FeedModel;
+  conversionService: LegacyFeedConversionService;
+}) {
   const oldestInProgress = await legacyFeedConversionJobModel
     .findOne({
       status: LegacyFeedConversionStatus.InProgress,
@@ -116,10 +125,8 @@ export async function processLegacyFeedBulkConversionJobs(
     return;
   }
 
-  const convertService = app.get(LegacyFeedConversionService);
-
   try {
-    await convertService.convertToUserFeed(legacyFeed, {
+    await conversionService.convertToUserFeed(legacyFeed, {
       discordUserId,
       isBulkConversion: true,
     });
