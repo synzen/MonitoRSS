@@ -93,7 +93,7 @@ const Feeds: React.FC = () => {
           )}
           <Stack>
             <Flex justifyContent="space-between" alignItems="center">
-              <Heading size="lg">{t("pages.feeds.title")}</Heading>
+              <Heading size="lg">Legacy Feeds</Heading>
               {feedCountIsAccessible && (
                 <Flex alignItems="center">
                   <Text fontSize="xl" fontWeight={600}>

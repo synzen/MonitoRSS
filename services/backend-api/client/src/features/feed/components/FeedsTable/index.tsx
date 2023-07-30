@@ -249,7 +249,7 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
                     </Alert>
                     <br />
                     <Text>
-                      Legacy feed will be permanently disabled after the conversion, and subject to
+                      Legacy feeds will be permanently disabled after the conversion, and subject to
                       deletion once all legacy feeds have been converted to personal feeds.
                     </Text>
                     <Text>
