@@ -39,8 +39,6 @@ export class PatronsService {
       .filter((patron) => this.isValidPatron(patron))
       .map((patron) => this.getBenefitsFromPatron(patron));
 
-    console.log(allBenefits);
-
     if (allBenefits.length === 0) {
       return {
         maxFeeds: this.defaultMaxFeeds,

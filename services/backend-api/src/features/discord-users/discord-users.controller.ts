@@ -92,8 +92,6 @@ export class DiscordUsersController {
         authenticated: true,
       };
     } catch (err) {
-      console.log(err);
-
       if (
         err instanceof DiscordAPIError &&
         err.statusCode === HttpStatus.FORBIDDEN

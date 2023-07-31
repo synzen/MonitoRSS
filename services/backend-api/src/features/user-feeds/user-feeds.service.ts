@@ -109,6 +109,17 @@ export class UserFeedsService {
     return created;
   }
 
+  async initializeFeed(feed: UserFeed, discordUserId: string) {
+    const { maxDailyArticles } =
+      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+
+    await this.feedHandlerService.initializeFeed(feed._id.toHexString(), {
+      maxDailyArticles,
+    });
+
+    return this.getFeedDailyLimit(feed._id.toHexString());
+  }
+
   async bulkDelete(feedIds: string[], discordUserId: string) {
     const found = await this.userFeedModel
       .find({

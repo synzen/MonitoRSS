@@ -54,7 +54,7 @@ export class DiscordAPIService {
       },
     });
 
-    await this.handleJSONResponseError(res);
+    await this.handleJSONResponseError({ res, url });
 
     return res.json();
   }
@@ -81,7 +81,7 @@ export class DiscordAPIService {
       },
     });
 
-    await this.handleJSONResponseError(res);
+    await this.handleJSONResponseError({ res, url });
 
     return res.json();
   }
@@ -113,17 +113,25 @@ export class DiscordAPIService {
     return this.executeBotRequest(`/guilds/${guildId}/members/${userId}`);
   }
 
-  private async handleJSONResponseError(res: FetchResponse): Promise<void> {
+  private async handleJSONResponseError({
+    res,
+    url,
+  }: {
+    res: FetchResponse;
+    url: string;
+  }): Promise<void> {
     if (res.status >= 400 && res.status < 500) {
       throw new DiscordAPIError(
-        `Discord API request failed (${JSON.stringify(await res.json())})`,
+        `Discord API request to ${url} failed (${JSON.stringify(
+          await res.json()
+        )})`,
         res.status
       );
     }
 
     if (res.status >= 500) {
       throw new DiscordAPIError(
-        `Discord API request failed (${res.status} - Discord internal error)`,
+        `Discord API request to ${url} failed (${res.status} - Discord internal error)`,
         res.status
       );
     }
