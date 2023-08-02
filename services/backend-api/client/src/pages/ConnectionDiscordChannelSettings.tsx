@@ -39,7 +39,7 @@ import {
   ConnectionDisabledAlert,
   EditConnectionChannelDialog,
   UpdateDiscordChannelConnectionInput,
-  CloneDiscordChannelConnectionDialog,
+  CloneDiscordConnectionCloneDialog,
 } from "../features/feedConnections";
 import {
   FeedConnectionDisabledCode,
@@ -197,7 +197,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                               {t("common.buttons.configure")}
                             </MenuItem>
                             {connection && (
-                              <CloneDiscordChannelConnectionDialog
+                              <CloneDiscordConnectionCloneDialog
                                 trigger={<MenuItem>Clone</MenuItem>}
                                 defaultValues={{
                                   name: `${connection.name} (Clone)`,

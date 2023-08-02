@@ -20,7 +20,10 @@ import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useCreateDiscordChannelConnectionClone } from "../../hooks";
+import {
+  useCreateDiscordChannelConnectionClone,
+  useCreateDiscordWebhookConnectionClone,
+} from "../../hooks";
 import { pages } from "../../../../constants";
 import { FeedConnectionType } from "../../../../types";
 import { notifyError } from "../../../../utils/notifyError";
@@ -42,7 +45,7 @@ interface Props {
   trigger: React.ReactElement;
 }
 
-export const CloneDiscordChannelConnectionDialog = ({
+export const CloneDiscordConnectionCloneDialog = ({
   feedId,
   connectionId,
   type,
@@ -60,7 +63,8 @@ export const CloneDiscordChannelConnectionDialog = ({
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
-  const { mutateAsync } = useCreateDiscordChannelConnectionClone();
+  const { mutateAsync: createChannelClone } = useCreateDiscordChannelConnectionClone();
+  const { mutateAsync: createWebhookClone } = useCreateDiscordWebhookConnectionClone();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -70,10 +74,19 @@ export const CloneDiscordChannelConnectionDialog = ({
 
   const onSubmit = async ({ name }: FormData) => {
     try {
-      const res = await mutateAsync({ feedId, connectionId, details: { name } });
+      let newConnectionId: string;
+
+      if (type === FeedConnectionType.DiscordChannel) {
+        const res = await createChannelClone({ feedId, connectionId, details: { name } });
+        newConnectionId = res.result.id;
+      } else {
+        const res = await createWebhookClone({ feedId, connectionId, details: { name } });
+        newConnectionId = res.result.id;
+      }
+
       navigate(
         pages.userFeedConnection({
-          connectionId: res.result.id,
+          connectionId: newConnectionId,
           feedId,
           connectionType: type,
         })

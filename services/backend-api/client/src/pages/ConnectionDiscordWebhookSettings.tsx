@@ -36,6 +36,7 @@ import {
   MessageTabSection,
   ConnectionDisabledAlert,
   UpdateDiscordWebhookConnectionInput,
+  CloneDiscordConnectionCloneDialog,
 } from "../features/feedConnections";
 import { useUserFeed } from "../features/feed";
 import { DashboardContentV2 } from "../components/DashboardContentV2";
@@ -174,6 +175,17 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                             <MenuItem aria-label="Edit" onClick={editOnOpen}>
                               {t("common.buttons.configure")}
                             </MenuItem>
+                            {connection && (
+                              <CloneDiscordConnectionCloneDialog
+                                trigger={<MenuItem aria-label="Clone connection">Clone</MenuItem>}
+                                connectionId={connection.id}
+                                feedId={feedId as string}
+                                defaultValues={{
+                                  name: `${connection.name} (Clone)`,
+                                }}
+                                type={FeedConnectionType.DiscordWebhook}
+                              />
+                            )}
                             {connection && !connection.disabledCode && (
                               <ConfirmModal
                                 title={t(

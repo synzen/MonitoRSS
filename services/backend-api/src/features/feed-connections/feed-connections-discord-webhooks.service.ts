@@ -27,6 +27,7 @@ import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.ty
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
 import { DiscordChannelType } from "../../common";
 import { DiscordWebhookForumChannelUnsupportedException } from "./exceptions";
+import { CreateDiscordWebhookConnectionCloneInputDto } from "./dto";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -140,6 +141,33 @@ export class FeedConnectionsDiscordWebhooksService {
     }
 
     return createdConnection;
+  }
+
+  async cloneConnection(
+    userFeed: UserFeed,
+    connection: DiscordWebhookConnection,
+    { name }: CreateDiscordWebhookConnectionCloneInputDto
+  ) {
+    const newId = new Types.ObjectId();
+
+    await this.userFeedModel.findOneAndUpdate(
+      {
+        _id: userFeed._id,
+      },
+      {
+        $push: {
+          "connections.discordWebhooks": {
+            ...connection,
+            id: newId,
+            name,
+          },
+        },
+      }
+    );
+
+    return {
+      id: newId,
+    };
   }
 
   async updateDiscordWebhookConnection({

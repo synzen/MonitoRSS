@@ -23,6 +23,7 @@ import {
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
+  CreateDiscordWebhookConnectionCloneInputDto,
   CreateDiscordWebhookConnectionInputDto,
   CreateDiscordWebhookConnectionOutputDto,
   CreateDiscordWebhookConnectionPreviewInputDto,
@@ -114,6 +115,19 @@ export class FeedConnectionsDiscordWebhooksController {
     };
   }
 
+  @Post("/discord-webhooks/:connectionId/clone")
+  async clone(
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
+    @Body(ValidationPipe)
+    data: CreateDiscordWebhookConnectionCloneInputDto
+  ) {
+    const result = await this.service.cloneConnection(feed, connection, data);
+
+    return {
+      result,
+    };
+  }
   @Post("/discord-webhooks/:connectionId/preview")
   @UseFilters(CreateDiscordWebhookTestArticleFilter)
   async createPreview(

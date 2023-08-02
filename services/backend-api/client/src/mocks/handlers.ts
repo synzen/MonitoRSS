@@ -598,6 +598,15 @@ const handlers = [
     )
   ),
 
+  rest.post("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id/clone", (req, res, ctx) =>
+    res(
+      ctx.delay(500),
+      ctx.json<CreateDiscordWebhookConnectionTestArticleOutput>({
+        result: mockSendTestArticleResult,
+      })
+    )
+  ),
+
   rest.post("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id/test", (req, res, ctx) =>
     res(
       ctx.delay(500),
