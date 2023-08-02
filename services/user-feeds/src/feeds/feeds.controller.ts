@@ -12,6 +12,7 @@ import {
 import { object, string, ValidationError } from "yup";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
+import { InvalidFeedException } from "../articles/exceptions";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { DiscordEmbed } from "../delivery/types";
 import {
@@ -172,7 +173,10 @@ export class FeedsController {
         },
       };
     } catch (err) {
-      if (err instanceof FeedRequestParseException) {
+      if (
+        err instanceof FeedRequestParseException ||
+        err instanceof InvalidFeedException
+      ) {
         return {
           result: {
             requestStatus: GetFeedArticlesRequestStatus.ParseError,
