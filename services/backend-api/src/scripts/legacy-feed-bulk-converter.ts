@@ -11,6 +11,7 @@ import { LegacyFeedConversionStatus } from "../features/legacy-feed-conversion/c
 import dayjs from "dayjs";
 import { LegacyFeedConversionService } from "../features/legacy-feed-conversion/legacy-feed-conversion.service";
 import { Feed, FeedModel } from "../features/feeds/entities/feed.entity";
+import { DiscordAPIError } from "../common/errors/DiscordAPIError";
 
 bootstrap();
 
@@ -142,6 +143,15 @@ export async function processLegacyFeedBulkConversionJobs({
       }
     );
   } catch (err) {
+    let publicReason = `Internal error`;
+
+    if (
+      err instanceof DiscordAPIError &&
+      (err.statusCode === 403 || err.statusCode === 401)
+    ) {
+      publicReason = `Bot is missing permissions. If this feed uses a webhook, ensure the bot has Manage Webhooks permission. If this feed uses a text channel, ensure the bot has permissions to view the channel.`;
+    }
+
     await legacyFeedConversionJobModel.updateOne(
       {
         _id: jobToHandle._id,
@@ -149,7 +159,7 @@ export async function processLegacyFeedBulkConversionJobs({
       {
         $set: {
           status: LegacyFeedConversionStatus.Failed,
-          failReasonPublic: `Internal error`,
+          failReasonPublic: publicReason,
           failReasonInternal: err.message,
         },
       }
