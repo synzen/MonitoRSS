@@ -119,6 +119,76 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     });
   });
 
+  describe("cloneConnection", () => {
+    it("clones the connection and returns the new id", async () => {
+      const guildId = "guild-id";
+      const connectionIdToUse = new Types.ObjectId();
+      const connection: DiscordChannelConnection = {
+        id: connectionIdToUse,
+        name: "name",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        disabledCode: FeedConnectionDisabledCode.BadFormat,
+        filters: {
+          expression: {
+            foo: "bar",
+          },
+        },
+        splitOptions: {
+          splitChar: "1",
+          appendChar: "2",
+          prependChar: "3",
+        },
+        details: {
+          channel: {
+            id: "channel-id",
+            guildId,
+          },
+          embeds: [],
+          content: "content",
+          formatter: {
+            formatTables: true,
+            stripImages: true,
+          },
+        },
+      };
+
+      const createdFeed = await userFeedsModel.create({
+        title: "my feed",
+        url: "url",
+        user: {
+          discordUserId: "user-id",
+        },
+        connections: {
+          discordChannels: [connection],
+        },
+      });
+
+      const { id: clonedConnectionId } = await service.cloneConnection(
+        createdFeed,
+        connection,
+        {
+          name: connection.name + "new-name",
+        }
+      );
+
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordChannels).toHaveLength(2);
+
+      const clonedConnection = updatedFeed?.connections.discordChannels.find(
+        (c) => c.id.toHexString() === clonedConnectionId.toHexString()
+      );
+
+      expect(clonedConnection).toMatchObject({
+        ...connection,
+        name: connection.name + "new-name",
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
+    });
+  });
+
   describe("updateDiscordChannelConnection", () => {
     const guildId = "guild-id";
     const connectionIdToUse = new Types.ObjectId();

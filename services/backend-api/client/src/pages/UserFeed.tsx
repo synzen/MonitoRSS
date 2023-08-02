@@ -306,19 +306,21 @@ export const UserFeed: React.FC = () => {
                     <Text color={isAtLimit ? "red.300" : ""} display="block">
                       {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
                     </Text>
-                    <IconButton
-                      as="a"
-                      href="https://www.patreon.com/monitorss"
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      aria-label="Increase article daily limit"
-                      variant="ghost"
-                      icon={<ArrowLeftIcon />}
-                      size="xs"
-                      transform="rotate(90deg)"
-                    />
+                    {dailyLimit && (
+                      <IconButton
+                        as="a"
+                        href="https://www.patreon.com/monitorss"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        aria-label="Increase article daily limit"
+                        variant="ghost"
+                        icon={<ArrowLeftIcon />}
+                        size="xs"
+                        transform="rotate(90deg)"
+                      />
+                    )}
+                    {!dailyLimit && <Spinner display="block" size="sm" />}
                   </HStack>
-                  {!dailyLimit && <Spinner display="block" size="sm" />}
                 </CategoryText>
               </Grid>
             </Stack>

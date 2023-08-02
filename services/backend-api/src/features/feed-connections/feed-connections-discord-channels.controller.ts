@@ -23,6 +23,7 @@ import {
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
+  CreateDiscordChannelConnectionCloneInputDto,
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordChannelConnectionPreviewInputDto,
   CreateDiscordChannelConnectionPreviewOutputDto,
@@ -109,6 +110,20 @@ export class FeedConnectionsDiscordChannelsController {
         apiPayload: result.apiPayload,
         apiResponse: result.apiResponse,
       },
+    };
+  }
+
+  @Post("/discord-channels/:connectionId/clone")
+  async clone(
+    @Param("feedId", GetUserFeedPipe, GetFeedDiscordChannelConnectionPipe)
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Body(ValidationPipe)
+    data: CreateDiscordChannelConnectionCloneInputDto
+  ) {
+    const result = await this.service.cloneConnection(feed, connection, data);
+
+    return {
+      result,
     };
   }
 

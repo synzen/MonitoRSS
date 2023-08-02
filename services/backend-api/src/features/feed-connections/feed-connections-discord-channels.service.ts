@@ -23,6 +23,7 @@ import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { NoDiscordChannelPermissionOverwritesException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
+import { CreateDiscordChannelConnectionCloneInputDto } from "./dto";
 import {
   DiscordChannelPermissionsException,
   InvalidDiscordChannelException,
@@ -142,6 +143,33 @@ export class FeedConnectionsDiscordChannelsService {
     }
 
     return createdConnection;
+  }
+
+  async cloneConnection(
+    userFeed: UserFeed,
+    connection: DiscordChannelConnection,
+    { name }: CreateDiscordChannelConnectionCloneInputDto
+  ) {
+    const newId = new Types.ObjectId();
+
+    await this.userFeedModel.findOneAndUpdate(
+      {
+        _id: userFeed._id,
+      },
+      {
+        $push: {
+          "connections.discordChannels": {
+            ...connection,
+            id: newId,
+            name,
+          },
+        },
+      }
+    );
+
+    return {
+      id: newId,
+    };
   }
 
   async updateDiscordChannelConnection(

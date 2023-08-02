@@ -8,3 +8,4 @@ export * from "./useDeleteConnection";
 export * from "./useCreateConnectionTestArticle";
 export * from "./useCreateConnectionPreview";
 export * from "./useDiscordChannelForumTags";
+export * from "./useCreateDiscordChannelConnectionClone";

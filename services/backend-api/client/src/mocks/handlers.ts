@@ -51,6 +51,7 @@ import mockDiscordWebhooks from "./data/discordWebhooks";
 import { generateMockApiErrorResponse } from "./generateMockApiErrorResponse";
 import mockDiscordBot from "./data/discordBot";
 import {
+  CreateDiscordChannelConnectionCloneOutput,
   CreateDiscordChannelConnectionOutput,
   CreateDiscordChannelConnectionPreviewOutput,
   CreateDiscordChannelConnectionTestArticleOutput,
@@ -539,6 +540,17 @@ const handlers = [
       ctx.delay(500),
       ctx.json<CreateDiscordChannelConnectionOutput>({
         result: mockFeedChannelConnections[0],
+      })
+    )
+  ),
+
+  rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/clone", (req, res, ctx) =>
+    res(
+      ctx.delay(500),
+      ctx.json<CreateDiscordChannelConnectionCloneOutput>({
+        result: {
+          id: mockUserFeeds[0].connections[1].id,
+        },
       })
     )
   ),

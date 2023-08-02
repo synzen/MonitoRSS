@@ -10,3 +10,4 @@ export * from "./createDiscordChannelConnectionTestArticle";
 export * from "./createDiscordWebhookConnectionTestArticle";
 export * from "./createDiscordChannelConnectionPreview";
 export * from "./createDiscordWebhookConnectionPreview";
+export * from "./createDiscordChannelConnectionClone";
