@@ -253,6 +253,11 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
                       deletion once all legacy feeds have been converted to personal feeds.
                     </Text>
                     <Text>
+                      If multiple people manage this server&apos;s feeds, you converting them will
+                      make them only visible to you. Make sure the right person is converting the
+                      feeds!
+                    </Text>
+                    <Text>
                       <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
                         Click here to see more information on what personal feeds are.
                       </Button>
