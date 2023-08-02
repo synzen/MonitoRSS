@@ -33,9 +33,14 @@ import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPrevi
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
-import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
+import {
+  CreateDiscordChannelConnectionPreviewInput,
+  CreateDiscordWebhookConnectionPreviewInput,
+} from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
+
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 interface Props {
   defaultValues?: DiscordMessageFormData;
@@ -109,7 +114,11 @@ export const DiscordMessageForm = ({
     ],
   });
 
-  const previewInput: CreateDiscordChannelConnectionPreviewInput = {
+  const previewInput: Omit<CreateDiscordChannelConnectionPreviewInput, "data"> & {
+    data: Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> & {
+      article?: CreateDiscordChannelConnectionPreviewInput["data"]["article"] | undefined;
+    };
+  } = {
     connectionId: connection.id,
     feedId,
     data: {
@@ -183,10 +192,14 @@ export const DiscordMessageForm = ({
   };
 
   const onClickSendPreviewToDiscord = async () => {
+    if (!previewInput.data.article) {
+      return;
+    }
+
     try {
       await sendTestArticle({
         connectionType: connection.type,
-        previewInput,
+        previewInput: previewInput as CreateDiscordChannelConnectionPreviewInput,
       });
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
@@ -228,6 +241,7 @@ export const DiscordMessageForm = ({
                   size="sm"
                   colorScheme="blue"
                   isLoading={isSendingTestArticle}
+                  isDisabled={isSendingTestArticle || !articleIdToPreview}
                 >
                   {t("components.discordMessageForm.sendPreviewToDiscordButtonText")}
                 </Button>
@@ -237,14 +251,14 @@ export const DiscordMessageForm = ({
             {connection.type === FeedConnectionType.DiscordChannel && (
               <DiscordChannelConnectionPreview
                 connectionId={connection.id}
-                data={previewInput.data}
+                data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
                 feedId={feedId}
               />
             )}
             {connection.type === FeedConnectionType.DiscordWebhook && (
               <DiscordWebhookConnectionPreview
                 connectionId={connection.id}
-                data={previewInput.data}
+                data={previewInput.data as CreateDiscordWebhookConnectionPreviewInput["data"]}
                 feedId={feedId}
               />
             )}

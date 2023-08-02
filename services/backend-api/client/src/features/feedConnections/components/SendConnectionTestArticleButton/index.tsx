@@ -28,6 +28,10 @@ export const SendConnectionTestArticleButton = ({
   const { sendTestArticle, isFetching } = useContext(SendTestArticleContext);
 
   const onClick = async (articleId?: string) => {
+    if (!articleId) {
+      return;
+    }
+
     try {
       await sendTestArticle({
         connectionType: type,

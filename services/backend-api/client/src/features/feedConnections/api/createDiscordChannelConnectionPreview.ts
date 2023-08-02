@@ -6,8 +6,8 @@ export interface CreateDiscordChannelConnectionPreviewInput {
   feedId: string;
   connectionId: string;
   data: {
-    article?: {
-      id?: string;
+    article: {
+      id: string;
     };
     content?: string | null;
     embeds?: PreviewEmbedInput[];
