@@ -243,7 +243,17 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
                         <AlertTitle>This may not be a perfect conversion!</AlertTitle>
                         <AlertDescription>
                           Double check that everything is as expected afterwards, or feeds may get
-                          disabled due to errors during delivery attempts.
+                          disabled due to errors during delivery attempts. If you enounter any major
+                          issues, you create a thread in the{" "}
+                          <ChakraLink
+                            href="https://discord.com/invite/pudv7Rx"
+                            target="_blank"
+                            rel="noreferrer"
+                            color="blue.300"
+                          >
+                            support server
+                          </ChakraLink>{" "}
+                          for help.
                         </AlertDescription>
                       </Stack>
                     </Alert>
