@@ -216,7 +216,7 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
       expect(result).toEqual(["hello world"]);
     });
 
-    it("applies split with a high limit and append char", () => {
+    it("does not add append char if there was nothing to split on", () => {
       const result = service.applySplit("hello world", {
         limit: 100,
         isEnabled: true,
@@ -224,10 +224,10 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
         prependChar: "",
       });
 
-      expect(result).toEqual(["hello world!"]);
+      expect(result).toEqual(["hello world"]);
     });
 
-    it("applies split with a high limit and prepend char", () => {
+    it("does not add prepend char if there was nothing to split on", () => {
       const result = service.applySplit("hello world", {
         limit: 100,
         isEnabled: true,
@@ -235,10 +235,10 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
         prependChar: "!",
       });
 
-      expect(result).toEqual(["!hello world"]);
+      expect(result).toEqual(["hello world"]);
     });
 
-    it("applies split with a high limit and append and prepend char", () => {
+    it("does not add append and prepend char if there was nothing to split on", () => {
       const result = service.applySplit("hello world", {
         limit: 100,
         isEnabled: true,
@@ -246,7 +246,7 @@ Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/Fortnit
         prependChar: "!",
       });
 
-      expect(result).toEqual(["!hello world!"]);
+      expect(result).toEqual(["hello world"]);
     });
 
     it("applies split with a high limit and append and prepend char and multiple lines", () => {

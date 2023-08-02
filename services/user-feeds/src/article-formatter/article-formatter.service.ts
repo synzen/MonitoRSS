@@ -194,7 +194,7 @@ export class ArticleFormatterService {
 
     if (splitOptions?.isEnabled) {
       if (split.length === 1) {
-        return [prependChar + split[0].trim() + appendChar];
+        return [split[0].trim()];
       } else if (split.length === 2) {
         const firstPart = split[0].trimStart();
         const lastPart = split[1].trimEnd();
