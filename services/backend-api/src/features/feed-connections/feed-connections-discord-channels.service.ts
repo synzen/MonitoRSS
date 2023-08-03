@@ -148,9 +148,27 @@ export class FeedConnectionsDiscordChannelsService {
   async cloneConnection(
     userFeed: UserFeed,
     connection: DiscordChannelConnection,
-    { name }: CreateDiscordChannelConnectionCloneInputDto
+    {
+      name,
+      channelId: newChannelId,
+    }: CreateDiscordChannelConnectionCloneInputDto,
+    userAccessToken: string
   ) {
     const newId = new Types.ObjectId();
+    let channelId = connection.details.channel.id;
+    let type: FeedConnectionDiscordChannelType | undefined;
+    let guildId = connection.details.channel.guildId;
+
+    if (newChannelId) {
+      const channel = await this.assertDiscordChannelCanBeUsed(
+        userAccessToken,
+        newChannelId
+      );
+
+      channelId = newChannelId;
+      type = channel.type;
+      guildId = channel.channel.guild_id;
+    }
 
     await this.userFeedModel.findOneAndUpdate(
       {
@@ -162,6 +180,14 @@ export class FeedConnectionsDiscordChannelsService {
             ...connection,
             id: newId,
             name,
+            details: {
+              ...connection.details,
+              channel: {
+                id: channelId,
+                type,
+                guildId,
+              },
+            },
           },
         },
       }
