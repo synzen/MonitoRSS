@@ -51,7 +51,7 @@ export const ArticleSelectDialog = ({
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
-    undefined
+    "title"
   );
   const [search, setSearch] = useState("");
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
