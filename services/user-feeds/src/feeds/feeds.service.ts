@@ -81,18 +81,20 @@ export class FeedsService {
         });
       }
 
-      const max = !random
-        ? Math.min(matchedArticles.length - 1, skip + limit - 1)
-        : matchedArticles.length - 1;
+      if (matchedArticles.length > 0) {
+        const max = !random
+          ? Math.min(matchedArticles.length - 1, skip + limit - 1)
+          : matchedArticles.length - 1;
 
-      matchedArticles = getNumbersInRange({
-        min: skip,
-        max,
-        countToGet: limit,
-        random,
-      }).map((index) => {
-        return matchedArticles[index];
-      });
+        matchedArticles = getNumbersInRange({
+          min: skip,
+          max,
+          countToGet: limit,
+          random,
+        }).map((index) => {
+          return matchedArticles[index];
+        });
+      }
     }
 
     const matchedArticlesWithProperties = matchedArticles.map((article) => {
@@ -134,7 +136,7 @@ export class FeedsService {
 
     return {
       articles: matchedArticlesWithProperties,
-      totalArticles: articles.length,
+      totalArticles: matchedArticles.length,
       properties,
       filterEvalResults: filterEvalResults,
     };
