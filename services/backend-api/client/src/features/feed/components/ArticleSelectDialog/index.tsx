@@ -8,7 +8,9 @@ import {
   Divider,
   Flex,
   HStack,
-  IconButton,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -16,18 +18,20 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Spinner,
   Stack,
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { RepeatIcon } from "@chakra-ui/icons";
+import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { Loading, Menu, ThemedSelect } from "@/components";
 import { GetArticlesFilterReturnType } from "../../constants";
 import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from "../../hooks";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { GetUserFeedArticlesInput } from "../../api";
+import { useDebounce } from "../../../../hooks";
 
 interface Props {
   feedId: string;
@@ -37,7 +41,7 @@ interface Props {
   articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const ArticleSelectPrompt = ({
+export const ArticleSelectDialog = ({
   feedId,
   trigger,
   onArticleSelected,
@@ -49,8 +53,10 @@ export const ArticleSelectPrompt = ({
   const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
     undefined
   );
+  const [search, setSearch] = useState("");
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
     useUserFeedArticleProperties({ feedId });
+  const debouncedSearch = useDebounce(search, 500);
   const {
     data: userFeedArticlesResults,
     status: userFeedArticlesStatus,
@@ -74,6 +80,7 @@ export const ArticleSelectPrompt = ({
             .filter((i) => i) as string[]),
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
+        search: debouncedSearch,
       },
       formatter: articleFormatter,
     },
@@ -136,12 +143,7 @@ export const ArticleSelectPrompt = ({
                   <Stack>
                     <Flex>
                       <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
-                        <Text whiteSpace="nowrap">
-                          {t(
-                            "features.feedConnections.components" +
-                              ".filtersTabSection.displayPropertyDropdownLabel"
-                          )}
-                        </Text>
+                        <Text whiteSpace="nowrap">Property:</Text>
                         <Box flexGrow={1}>
                           <ThemedSelect
                             options={
@@ -157,15 +159,46 @@ export const ArticleSelectPrompt = ({
                             onChange={onChangeFeedArticleProperty}
                           />
                         </Box>
-                        <IconButton
+                        {/* <IconButton
                           aria-label="Reload"
                           icon={<RepeatIcon />}
                           isLoading={fetchStatus === "fetching"}
                           onClick={() => refetch()}
-                        />
+                        /> */}
+                        <Button
+                          leftIcon={<RepeatIcon />}
+                          isLoading={fetchStatus === "fetching"}
+                          onClick={() => refetch()}
+                        >
+                          Reload
+                        </Button>
                       </HStack>
                     </Flex>
-                    <Stack spacing={8}>
+                    <Stack>
+                      <InputGroup>
+                        <InputLeftElement pointerEvents="none">
+                          <SearchIcon color="gray.300" />
+                        </InputLeftElement>
+                        <Input
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search..."
+                        />
+                      </InputGroup>
+                    </Stack>
+                    <Stack spacing={8} position="relative" rounded="lg">
+                      {fetchStatus === "fetching" && (
+                        <Flex
+                          bg="blackAlpha.700"
+                          position="absolute"
+                          height="100%"
+                          width="100%"
+                          rounded="lg"
+                          justifyContent="center"
+                          alignItems="center"
+                        >
+                          <Spinner />
+                        </Flex>
+                      )}
                       <Stack spacing={4} bg="gray.700" rounded="lg">
                         <Box
                           overflow="auto"

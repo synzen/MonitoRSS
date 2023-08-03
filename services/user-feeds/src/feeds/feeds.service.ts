@@ -62,24 +62,36 @@ export class FeedsService {
       };
     }
 
-    const max = !random
-      ? Math.min(articles.length - 1, skip + limit - 1)
-      : articles.length - 1;
-
-    let matchedArticles: Article[];
+    let matchedArticles: Article[] = articles;
 
     if (filters?.articleId) {
       matchedArticles = articles.filter(
         (article) => article.flattened.id === filters.articleId
       );
     } else {
+      const filtersSearch = filters?.search;
+
+      if (filtersSearch && typeof filtersSearch === "string") {
+        matchedArticles = articles.filter((article) => {
+          return properties.some((property) =>
+            article.flattened[property]
+              .toLowerCase()
+              .includes(filtersSearch.toLowerCase())
+          );
+        });
+      }
+
+      const max = !random
+        ? Math.min(matchedArticles.length - 1, skip + limit - 1)
+        : matchedArticles.length - 1;
+
       matchedArticles = getNumbersInRange({
         min: skip,
         max,
         countToGet: limit,
         random,
       }).map((index) => {
-        return articles[index];
+        return matchedArticles[index];
       });
     }
 

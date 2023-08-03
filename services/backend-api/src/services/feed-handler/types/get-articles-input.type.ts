@@ -9,6 +9,7 @@ export interface GetArticlesInput {
   filters?: {
     expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;
+    search?: string;
   };
   formatter: {
     options: {

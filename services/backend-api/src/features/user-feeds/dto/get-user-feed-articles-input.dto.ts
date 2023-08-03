@@ -25,6 +25,10 @@ class FiltersDto {
   @IsString()
   @IsOptional()
   articleId?: string;
+
+  @IsString()
+  @IsOptional()
+  search?: string;
 }
 
 class FormatterOptionsDto {

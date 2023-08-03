@@ -33,6 +33,10 @@ class FiltersDto {
   @IsString()
   @IsOptional()
   articleId?: string;
+
+  @IsString()
+  @IsOptional()
+  search?: string;
 }
 
 export class GetUserFeedArticlesInputDto {

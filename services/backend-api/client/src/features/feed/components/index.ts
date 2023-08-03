@@ -8,5 +8,5 @@ export * from "./RefreshUserFeedButton";
 export * from "./EditUserFeedDialog";
 export * from "./AddUserFeedDialog";
 export * from "./UserFeedsTable";
-export * from "./ArticleSelectPrompt";
+export * from "./ArticleSelectDialog";
 export * from "./UserFeedDisabledAlert";

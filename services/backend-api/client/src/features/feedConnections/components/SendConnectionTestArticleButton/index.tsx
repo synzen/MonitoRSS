@@ -5,7 +5,7 @@ import { FiPlay } from "react-icons/fi";
 import { FeedConnectionType } from "../../../../types";
 import { notifyError } from "../../../../utils/notifyError";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
-import { ArticleSelectPrompt } from "../../../feed/components";
+import { ArticleSelectDialog } from "../../../feed/components";
 import { CreateDiscordChannelConnectionTestArticleInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 
@@ -52,7 +52,7 @@ export const SendConnectionTestArticleButton = ({
   };
 
   return (
-    <ArticleSelectPrompt
+    <ArticleSelectDialog
       feedId={feedId}
       trigger={
         <Button variant="solid" colorScheme="blue" isLoading={isFetching} leftIcon={<FiPlay />}>

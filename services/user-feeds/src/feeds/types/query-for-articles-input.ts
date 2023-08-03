@@ -11,5 +11,6 @@ export interface QueryForArticlesInput {
     expression?: Record<string, unknown>;
     returnType: GetUserFeedArticlesFilterReturnType;
     articleId?: string;
+    search?: string;
   };
 }

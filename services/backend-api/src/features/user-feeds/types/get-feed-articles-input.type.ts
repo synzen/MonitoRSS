@@ -9,6 +9,7 @@ export interface GetFeedArticlesInput {
   filters?: {
     returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
     expression?: Record<string, unknown>;
+    search?: string;
   };
   formatter: {
     options: {

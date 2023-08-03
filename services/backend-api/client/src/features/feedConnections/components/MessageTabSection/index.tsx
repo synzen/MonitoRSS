@@ -35,7 +35,7 @@ import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { FeedConnectionType } from "../../../../types";
 import { DiscordMessageForm } from "../DiscordMessageForm";
-import { ArticleSelectPrompt } from "../../../feed/components";
+import { ArticleSelectDialog } from "../../../feed/components";
 import getChakraColor from "../../../../utils/getChakraColor";
 
 interface Props {
@@ -180,7 +180,7 @@ export const MessageTabSection = ({
                     </Heading>
                   </Box>
                   <HStack alignItems="center" flexWrap="wrap">
-                    <ArticleSelectPrompt
+                    <ArticleSelectDialog
                       trigger={
                         <Button
                           leftIcon={<FiMousePointer />}

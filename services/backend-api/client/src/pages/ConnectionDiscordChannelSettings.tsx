@@ -117,6 +117,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      throw err;
     }
   };
 
