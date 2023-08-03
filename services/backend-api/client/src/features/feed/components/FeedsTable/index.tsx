@@ -212,7 +212,7 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
               <AlertTitle>You have unconverted legacy feeds in this server!</AlertTitle>
               <AlertDescription>
                 On October 1 2023, legacy feeds will start getting disabled to complete the
-                transition to personal feeds. By December 1 2023, all legacy feeds will be disabled.
+                transition to personal feeds. By November 1 2023, all legacy feeds will be disabled.
                 To prevent disruption to article delivery, please convert all legacy feeds to
                 personal feeds as soon as possible. To convert an individual feed, you may click on
                 one in the table below to see the option to do so.
