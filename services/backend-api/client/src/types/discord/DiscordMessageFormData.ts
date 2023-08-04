@@ -1,6 +1,13 @@
 import { array, boolean, InferType, number, object, string } from "yup";
 
-export const discordMessageEmbedFormSchema = object().shape({
+export const discordMessageEmbedFieldFormSchema = object({
+  name: string().max(256).required(),
+  value: string().max(1024).required(),
+  inline: boolean().default(false).required(),
+  id: string().required(),
+});
+
+export const discordMessageEmbedFormSchema = object({
   color: string()
     .nullable()
     .test(
@@ -69,6 +76,7 @@ export const discordMessageEmbedFormSchema = object().shape({
     .optional()
     .nullable(),
   timestamp: string().oneOf(["article", "now", "", undefined]).optional().nullable(),
+  fields: array(discordMessageEmbedFieldFormSchema.required()).nullable(),
 });
 
 export const discordMessageFormSchema = object({
@@ -95,7 +103,9 @@ export const discordMessageFormSchema = object({
         id: string().required(),
         filters: object({
           expression: object().required(),
-        }).nullable(),
+        })
+          .nullable()
+          .default(null),
       }).required()
     ).nullable(),
   }).nullable(),
@@ -129,3 +139,4 @@ export const discordMessageFormSchema = object({
 
 export type DiscordMessageFormData = InferType<typeof discordMessageFormSchema>;
 export type DiscordMessageEmbedFormData = InferType<typeof discordMessageEmbedFormSchema>;
+export type DiscordMessageEmbedFieldFormData = InferType<typeof discordMessageEmbedFieldFormSchema>;

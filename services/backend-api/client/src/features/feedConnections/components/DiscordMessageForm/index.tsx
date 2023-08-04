@@ -85,6 +85,7 @@ export const DiscordMessageForm = ({
     reset,
     formState: { isDirty, isSubmitting, errors },
   } = formMethods;
+
   const {
     fields: embeds,
     append,

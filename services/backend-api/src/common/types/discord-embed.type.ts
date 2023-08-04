@@ -1,11 +1,13 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsIn,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 
@@ -54,8 +56,9 @@ class DiscordEmbedField {
   @IsNotEmpty()
   value: string;
 
-  @IsString()
+  @IsBoolean()
   @IsOptional()
+  @ValidateIf((v) => v.inline !== null)
   inline?: boolean;
 }
 

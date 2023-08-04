@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsObject,
   IsOptional,
   IsString,
@@ -54,17 +55,17 @@ class DiscordEmbedImage {
 class DiscordEmbedField {
   @IsString()
   @IsOptional()
-  @ValidateIf((v) => v !== null)
+  @ValidateIf((v) => v.name !== null)
   name?: string | null;
 
   @IsString()
   @IsOptional()
-  @ValidateIf((v) => v !== null)
+  @ValidateIf((v) => v.value !== null)
   value?: string | null;
 
-  @IsString()
+  @IsBoolean()
   @IsOptional()
-  @ValidateIf((v) => v !== null)
+  @ValidateIf((v) => v.value !== null)
   inline?: boolean | null;
 }
 

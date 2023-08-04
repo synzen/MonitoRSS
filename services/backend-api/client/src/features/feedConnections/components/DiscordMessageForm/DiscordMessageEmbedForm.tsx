@@ -17,17 +17,31 @@ import {
   PopoverTrigger,
   PopoverContent,
   Button,
+  TableContainer,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Switch,
+  Editable,
+  EditablePreview,
+  EditableInput,
 } from "@chakra-ui/react";
 import { useEffect } from "react";
-import { Controller, FieldError, useFormContext, useWatch } from "react-hook-form";
+import { Controller, FieldError, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { CloseIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
 import styled from "@emotion/styled";
+import { motion } from "framer-motion";
+import { uniqueId } from "lodash";
 import { DiscordMessageFormData } from "@/types/discord";
 import { getNestedField } from "@/utils/getNestedField";
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from "./constants";
 import getChakraColor from "../../../../utils/getChakraColor";
+import { AnimatedComponent } from "../../../../components";
 
 interface Props {
   index: number;
@@ -53,7 +67,20 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
     formState: { errors },
     setError,
     clearErrors,
+    setValue,
   } = useFormContext<DiscordMessageFormData>();
+  const {
+    append: addField,
+    swap: swapField,
+    remove: removeField,
+    update: updateField,
+    fields: embedFields,
+    move: moveField,
+  } = useFieldArray({
+    control,
+    name: `embeds.${index}.fields`,
+  });
+
   const embed = useWatch({
     control,
     name: `embeds.${index}`,
@@ -393,6 +420,165 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 />
                 {footerIconUrlError && <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>}
               </FormControl>
+            </Stack>
+          </Stack>
+        </Box>
+        <Box>
+          <Stack
+            direction={{ base: "column", md: "row" }}
+            spacing={{ base: "1.5", md: "8" }}
+            justify="space-between"
+          >
+            <Text size="sm" fontWeight={400}>
+              Fields
+            </Text>
+            <Stack
+              spacing={8}
+              width="100%"
+              maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
+              minW={{ md: "md", lg: "2xl", xl: "3xl" }}
+            >
+              <Stack>
+                <TableContainer>
+                  <Table size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Name</Th>
+                        <Th>Value</Th>
+                        <Th>Inline?</Th>
+                        <Th isNumeric />
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      <AnimatedComponent>
+                        {embed.fields?.map((f, fieldIndex) => {
+                          return (
+                            <Tr
+                              as={motion.tr}
+                              key={f.id}
+                              exit={{
+                                opacity: 0,
+                              }}
+                              initial={{
+                                opacity: 0,
+                              }}
+                              animate={{
+                                opacity: 1,
+                              }}
+                            >
+                              <Td
+                                border={
+                                  errors.embeds?.[index]?.fields?.[fieldIndex]?.name
+                                    ? `solid 2px ${getChakraColor("red.300")}`
+                                    : ""
+                                }
+                                borderRadius="md"
+                              >
+                                <Editable
+                                  value={f.name}
+                                  onChange={(newVal) =>
+                                    setValue(
+                                      `embeds.${index}.fields.${fieldIndex}.name`,
+                                      newVal.trim(),
+                                      {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                      }
+                                    )
+                                  }
+                                >
+                                  <EditablePreview width="100%" padding={2} cursor="pointer" />
+                                  <EditableInput />
+                                </Editable>
+                              </Td>
+                              <Td
+                                border={
+                                  errors.embeds?.[index]?.fields?.[fieldIndex]?.value
+                                    ? `solid 2px ${getChakraColor("red.300")}`
+                                    : ""
+                                }
+                                borderRadius="md"
+                              >
+                                <Editable
+                                  value={f.value}
+                                  onChange={(newVal) => {
+                                    setValue(
+                                      `embeds.${index}.fields.${fieldIndex}.value`,
+                                      newVal.trim(),
+                                      {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                      }
+                                    );
+                                  }}
+                                >
+                                  <EditablePreview width="100%" padding={2} cursor="pointer" />
+                                  <EditableInput />
+                                </Editable>
+                              </Td>
+                              <Td>
+                                <Switch
+                                  isChecked={!!f.inline}
+                                  onChange={(e) =>
+                                    setValue(
+                                      `embeds.${index}.fields.${fieldIndex}.inline`,
+                                      e.target.checked,
+                                      {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                      }
+                                    )
+                                  }
+                                />
+                              </Td>
+                              <Td isNumeric>
+                                <HStack justifyContent="flex-end">
+                                  <IconButton
+                                    aria-label="Move up"
+                                    icon={<ChevronUpIcon />}
+                                    variant="ghost"
+                                    size="sm"
+                                    isDisabled={fieldIndex === 0}
+                                    onClick={() => moveField(fieldIndex, fieldIndex - 1)}
+                                  />
+                                  <IconButton
+                                    aria-label="Move down"
+                                    icon={<ChevronDownIcon />}
+                                    variant="ghost"
+                                    size="sm"
+                                    isDisabled={fieldIndex === embedFields.length - 1}
+                                    onClick={() => moveField(fieldIndex, fieldIndex + 1)}
+                                  />
+                                  <IconButton
+                                    aria-label="Remove"
+                                    icon={<DeleteIcon />}
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeField(fieldIndex)}
+                                  />
+                                </HStack>
+                              </Td>
+                            </Tr>
+                          );
+                        })}
+                      </AnimatedComponent>
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    addField({
+                      id: uniqueId("newfield-"),
+                      name: "name",
+                      value: "value",
+                      inline: false,
+                    })
+                  }
+                >
+                  Add field
+                </Button>
+              </Stack>
             </Stack>
           </Stack>
         </Box>

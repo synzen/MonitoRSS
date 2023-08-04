@@ -183,7 +183,7 @@ export const UserFeed: React.FC = () => {
         feedId,
       });
       navigate("/servers");
-      notifySuccess('Successfully restored');
+      notifySuccess("Successfully restored");
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }

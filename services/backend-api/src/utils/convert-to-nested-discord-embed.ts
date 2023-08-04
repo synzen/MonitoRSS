@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { DiscordEmbed } from "../common";
 import { FeedEmbed } from "../features/feeds/entities/feed-embed.entity";
 
@@ -34,6 +35,11 @@ export const convertToNestedDiscordEmbed = (
             url: embed.imageURL,
           }
         : undefined,
+      fields: embed.fields?.map((field) => ({
+        ...field,
+        id: randomUUID(),
+        inline: !!field.inline,
+      })),
     };
   });
 };

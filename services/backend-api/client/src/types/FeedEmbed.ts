@@ -23,9 +23,10 @@ export const FeedEmbedSchema = object({
   color: string().optional(),
   fields: array(
     object({
-      name: string(),
-      value: string(),
-      inline: boolean().optional(),
+      id: string().required(),
+      name: string().required(),
+      value: string().required(),
+      inline: boolean().default(false).required(),
     })
   ).optional(),
 }).required();
