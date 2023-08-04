@@ -11,6 +11,7 @@ import {
   SlideFade,
   Stack,
   Text,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
@@ -225,7 +226,17 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                     <AlertTitle>This may not be a perfect conversion!</AlertTitle>
                     <AlertDescription>
                       Double check that everything is as expected afterwards, or the feed may get
-                      disabled due to errors during delivery attempts.
+                      disabled due to errors during delivery attempts. If you enounter any major
+                      issues, you create a thread in the{" "}
+                      <ChakraLink
+                        href="https://discord.com/invite/pudv7Rx"
+                        target="_blank"
+                        rel="noreferrer"
+                        color="blue.300"
+                      >
+                        support server
+                      </ChakraLink>{" "}
+                      for help.
                     </AlertDescription>
                   </Stack>
                 </Alert>
@@ -233,6 +244,10 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                 <Text>
                   This legacy feed will be permanently disabled after the conversion, and subject to
                   deletion once all legacy feeds have been converted to personal feeds.
+                </Text>
+                <Text>
+                  If multiple people manage this server&apos;s feeds, you converting them will make
+                  them only visible to you. Make sure the right person is converting the feeds!
                 </Text>
                 <Text>
                   <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
