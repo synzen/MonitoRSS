@@ -40,6 +40,9 @@ interface PublishFeedDeliveryArticlesData {
         dateFormat: string | undefined;
         dateTimezone: string | undefined;
       };
+      dateChecks?: {
+        oldArticleDateDiffMsThreshold?: number;
+      };
     };
     articleDayLimit: number;
     mediums: Array<DiscordMediumEvent>;
@@ -304,6 +307,7 @@ export class ScheduleHandlerService {
               dateFormat: userFeed.formatOptions?.dateFormat,
               dateTimezone: userFeed.formatOptions?.dateTimezone,
             },
+            dateChecks: userFeed.dateCheckOptions,
           },
           mediums: allMediums,
         },
