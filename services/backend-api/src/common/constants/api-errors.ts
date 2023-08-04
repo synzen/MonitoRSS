@@ -32,6 +32,7 @@ export enum ApiErrorCode {
   LEGACY_CONVERSION_JOB_EXISTS = "LEGACY_CONVERSION_JOB_EXISTS",
   NO_LEGACY_FEEDS_TO_CONVERT = "NO_LEGACY_FEEDS_TO_CONVERT",
   HANDLED_BY_BULK_CONVERSION = "HANDLED_BY_BULK_CONVERSION",
+  CANNOT_RESTORE_LEGACY_FEED = "CANNOT_RESTORE_LEGACY_FEED",
 }
 
 // Create a package for the frontend?
@@ -79,4 +80,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "A legacy conversion job already exists for this feed",
   NO_LEGACY_FEEDS_TO_CONVERT: "No legacy feeds to convert",
   HANDLED_BY_BULK_CONVERSION: "Handled by bulk conversion",
+  CANNOT_RESTORE_LEGACY_FEED: "Feed is ineligible for legacy restoration",
 };

@@ -35,6 +35,7 @@ const mockUserFeeds: UserFeed[] = [
     updatedAt: new Date().toISOString(),
     blockingComparisons: ["title", "description"],
     passingComparisons: ["author"],
+    isLegacyFeed: true,
     formatOptions: {
       dateFormat: undefined,
       dateTimezone: "UTC",

@@ -1,4 +1,4 @@
-import { array, InferType, number, object, string } from "yup";
+import { array, bool, InferType, number, object, string } from "yup";
 import { FeedConnectionSchema } from "../../../types";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
@@ -27,6 +27,7 @@ export const UserFeedSchema = object({
   dateCheckOptions: object({
     oldArticleDateDiffMsThreshold: number().optional().default(undefined),
   }).optional(),
+  isLegacyFeed: bool(),
 });
 
 export type UserFeed = InferType<typeof UserFeedSchema>;

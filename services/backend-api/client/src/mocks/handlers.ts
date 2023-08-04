@@ -11,6 +11,7 @@ import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
   CreateServerLegacyFeedBulkConversionOutput,
+  CreateUserFeedLegacyRestoreOutput,
   CreateUserFeedOutput,
   DeleteUserFeedsInput,
   DeleteUserFeedsOutput,
@@ -310,6 +311,17 @@ const handlers = [
       ctx.json<GetUserFeedsOutput>({
         results: limitedResults,
         total: filtered.length,
+      })
+    );
+  }),
+
+  rest.post("/api/v1/user-feeds/:id/restore-to-legacy", async (req, res, ctx) => {
+    return res(
+      ctx.delay(500),
+      ctx.json<CreateUserFeedLegacyRestoreOutput>({
+        result: {
+          status: "success",
+        },
       })
     );
   }),

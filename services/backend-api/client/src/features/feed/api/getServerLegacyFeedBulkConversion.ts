@@ -20,7 +20,9 @@ const GetServerLegacyFeedBulkConversionOutputSchema = object({
       failReasonPublic: string().optional(),
     }).required()
   ).required(),
-  status: string().oneOf(["NOT_STARTED", "COMPLETED", "IN_PROGRESS"]).required(),
+  status: string()
+    .oneOf(["NOT_STARTED", "COMPLETED", "IN_PROGRESS", "PARTIALLY_COMPLETED"])
+    .required(),
 }).required();
 
 export type GetServerLegacyFeedBulkConversionOutput = InferType<

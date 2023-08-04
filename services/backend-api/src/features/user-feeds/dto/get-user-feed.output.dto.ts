@@ -90,6 +90,8 @@ class GetUserFeedOutputResultDto {
 
   @IsDateString()
   updatedAt: string;
+
+  isLegacyFeed?: boolean;
 }
 
 export class GetUserFeedOutputDto {

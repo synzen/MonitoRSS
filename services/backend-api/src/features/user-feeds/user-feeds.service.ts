@@ -32,6 +32,16 @@ import {
   FeedConnectionTypeEntityKey,
 } from "../feeds/constants";
 import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
+import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import {
+  UserFeedLimitOverride,
+  UserFeedLimitOverrideModel,
+} from "../supporters/entities/user-feed-limit-overrides.entity";
+import { IneligibleForRestorationException } from "./exceptions";
+import {
+  LegacyFeedConversionJob,
+  LegacyFeedConversionJobModel,
+} from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -55,7 +65,11 @@ interface UpdateFeedInput {
 export class UserFeedsService {
   constructor(
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-
+    @InjectModel(Feed.name) private readonly feedModel: FeedModel,
+    @InjectModel(UserFeedLimitOverride.name)
+    private readonly limitOverrideModel: UserFeedLimitOverrideModel,
+    @InjectModel(LegacyFeedConversionJob.name)
+    private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
@@ -63,6 +77,50 @@ export class UserFeedsService {
     private readonly feedFetcherApiService: FeedFetcherApiService,
     private readonly amqpConnection: AmqpConnection
   ) {}
+
+  async restoreToLegacyFeed(userFeed: UserFeed) {
+    if (!userFeed.legacyFeedId) {
+      throw new IneligibleForRestorationException(
+        `User feed ${userFeed._id} is not related to a legacy feed for restoration`
+      );
+    }
+
+    if (userFeed.disabledCode === UserFeedDisabledCode.ExcessivelyActive) {
+      throw new IneligibleForRestorationException(
+        `User feed ${userFeed._id} is excessively active and cannot be restored`
+      );
+    }
+
+    await this.feedModel.updateOne(
+      {
+        _id: userFeed.legacyFeedId,
+      },
+      {
+        $unset: {
+          disabled: "",
+        },
+      }
+    );
+
+    await this.userFeedModel.deleteOne({
+      _id: userFeed._id,
+    });
+
+    await this.limitOverrideModel.updateOne(
+      {
+        _id: userFeed.user.discordUserId,
+      },
+      {
+        $inc: {
+          additionalUserFeeds: -1,
+        },
+      }
+    );
+
+    await this.legacyFeedConversionJobModel.deleteOne({
+      legacyFeedId: userFeed.legacyFeedId,
+    });
+  }
 
   async addFeed(
     {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -50,6 +51,7 @@ import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-outpu
 import { UserFeed } from "./entities";
 import { UnsupportedBulkOpException } from "./exceptions";
 import { RetryUserFeedFilter } from "./filters";
+import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedPipe } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
@@ -295,6 +297,22 @@ export class UserFeedsController {
     return this.formatFeedForResponse(updated, feed.user.discordUserId);
   }
 
+  @Post("/:feedId/restore-to-legacy")
+  @UseFilters(RestoreLegacyUserFeedExceptionFilter)
+  async restoreToLegacy(@Param("feedId", GetUserFeedPipe) feed: UserFeed) {
+    if (!feed.legacyFeedId) {
+      throw new BadRequestException("Feed is not related to a legacy feed");
+    }
+
+    await this.userFeedsService.restoreToLegacyFeed(feed);
+
+    return {
+      result: {
+        status: "success",
+      },
+    };
+  }
+
   @Get()
   async getFeeds(
     @DiscordAccessToken()
@@ -370,6 +388,7 @@ export class UserFeedsController {
         id: feed._id.toHexString(),
         title: feed.title,
         url: feed.url,
+        isLegacyFeed: !!feed.legacyFeedId,
         connections: [
           ...discordChannelConnections,
           ...discordWebhookConnections,

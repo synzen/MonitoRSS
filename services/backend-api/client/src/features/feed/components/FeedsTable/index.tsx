@@ -218,64 +218,65 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
                 one in the table below to see the option to do so.
               </AlertDescription>
             </Box>
-            {legacyConversionData && legacyConversionData.status === "NOT_STARTED" && (
-              <ConfirmModal
-                trigger={
-                  <Button
-                    width="min-content"
-                    variant="outline"
-                    // onClick={onStartBulkConversion}
-                    isLoading={createConvertStatus === "loading"}
-                  >
-                    Convert Server Feeds
-                  </Button>
-                }
-                title="Heads up!"
-                size="lg"
-                onConfirm={onStartBulkConversion}
-                okText="Convert Server Feeds"
-                colorScheme="purple"
-                descriptionNode={
-                  <Stack>
-                    <Alert status="warning">
-                      <AlertIcon fontSize={24} />
-                      <Stack>
-                        <AlertTitle>This may not be a perfect conversion!</AlertTitle>
-                        <AlertDescription>
-                          Double check that everything is as expected afterwards, or feeds may get
-                          disabled due to errors during delivery attempts. If you enounter any major
-                          issues, you create a thread in the{" "}
-                          <ChakraLink
-                            href="https://discord.com/invite/pudv7Rx"
-                            target="_blank"
-                            rel="noreferrer"
-                            color="blue.300"
-                          >
-                            support server
-                          </ChakraLink>{" "}
-                          for help.
-                        </AlertDescription>
-                      </Stack>
-                    </Alert>
-                    <br />
-                    <Text>
-                      Legacy feeds will be permanently disabled after the conversion, and subject to
-                      deletion once all legacy feeds have been converted to personal feeds.
-                    </Text>
-                    <Text>
-                      If multiple people manage this server&apos;s feeds, you converting them will
-                      make them only visible to you. Make sure the right person is converting the
-                      feeds!
-                    </Text>
-                    <Text>
-                      <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
-                        Click here to see more information on what personal feeds are.
-                      </Button>
-                    </Text>
-                  </Stack>
-                }
-              />
-            )}
+            {legacyConversionData &&
+              (legacyConversionData.status === "NOT_STARTED" ||
+                legacyConversionData.status === "PARTIALLY_COMPLETED") && (
+                <ConfirmModal
+                  trigger={
+                    <Button
+                      width="min-content"
+                      variant="outline"
+                      isLoading={createConvertStatus === "loading"}
+                    >
+                      Convert Server Feeds
+                    </Button>
+                  }
+                  title="Heads up!"
+                  size="lg"
+                  onConfirm={onStartBulkConversion}
+                  okText="Convert Server Feeds"
+                  colorScheme="purple"
+                  descriptionNode={
+                    <Stack>
+                      <Alert status="warning">
+                        <AlertIcon fontSize={24} />
+                        <Stack>
+                          <AlertTitle>This may not be a perfect conversion!</AlertTitle>
+                          <AlertDescription>
+                            Double check that everything is as expected afterwards, or feeds may get
+                            disabled due to errors during delivery attempts. If you enounter any
+                            major issues, you create a thread in the{" "}
+                            <ChakraLink
+                              href="https://discord.com/invite/pudv7Rx"
+                              target="_blank"
+                              rel="noreferrer"
+                              color="blue.300"
+                            >
+                              support server
+                            </ChakraLink>{" "}
+                            for help.
+                          </AlertDescription>
+                        </Stack>
+                      </Alert>
+                      <br />
+                      <Text>
+                        Legacy feeds will be permanently disabled after the conversion, and subject
+                        to deletion once all legacy feeds have been converted to personal feeds.
+                      </Text>
+                      <Text>
+                        If multiple people manage this server&apos;s feeds, you converting them will
+                        make them only visible to you. Make sure the right person is converting the
+                        feeds!
+                      </Text>
+                      <Text>
+                        <Button variant="link" as={Link} to={pages.userFeedsFaq()} color="blue.300">
+                          Click here to see more information on what personal feeds are.
+                        </Button>
+                      </Text>
+                    </Stack>
+                  }
+                />
+              )}
             {legacyConversionData &&
               (legacyConversionData.status === "IN_PROGRESS" ||
                 legacyConversionData.status === "COMPLETED") && (

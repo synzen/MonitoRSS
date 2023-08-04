@@ -26,6 +26,7 @@ import {
   useDisclosure,
   Badge,
   IconButton,
+  Wrap,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,7 @@ import {
   EditUserFeedDialog,
   UpdateUserFeedInput,
   useArticleDailyLimit,
+  useCreateUserFeedLegacyRestore,
   useDeleteUserFeed,
   UserFeedDisabledAlert,
   UserFeedDisabledCode,
@@ -126,6 +128,7 @@ export const UserFeed: React.FC = () => {
   const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
+  const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
 
   const onAddConnection = (type: FeedConnectionType, isChannelThread?: boolean) => {
     setAddConnectionType({ type, isChannelThread });
@@ -167,6 +170,22 @@ export const UserFeed: React.FC = () => {
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
       throw err;
+    }
+  };
+
+  const onRestoreLegacyFeed = async () => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      await restoreLegacyFeed({
+        feedId,
+      });
+      navigate("/servers");
+      notifySuccess('Successfully restored');
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
 
@@ -260,6 +279,58 @@ export const UserFeed: React.FC = () => {
                         />
                       )}
                       <MenuDivider />
+                      {feed?.isLegacyFeed && (
+                        <ConfirmModal
+                          title="Restore legacy feed"
+                          size="xl"
+                          descriptionNode={
+                            <Stack>
+                              <Text fontWeight={800} color="red.300">
+                                Only proceed if absolutely required!
+                              </Text>
+                              <Stack>
+                                <Text>
+                                  If you are currently facing issues with personal feeds, you may
+                                  convert this feed back to a legacy feed.
+                                </Text>
+                                <Text>
+                                  Legacy feeds are still scheduled to be permanently disabled. If
+                                  you are facing issues, please reach out to Support for remediation
+                                  so that you can convert this back to a personal feed as soon as
+                                  possible.
+                                </Text>
+                                <Text>
+                                  After this feed has been restored, this personal feed will be
+                                  deleted.
+                                </Text>
+                                <Wrap mt={4}>
+                                  <Button
+                                    as={Link}
+                                    href="https://discord.gg/pudv7Rx"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    variant="ghost"
+                                  >
+                                    Discord Support Server
+                                  </Button>
+                                  <Button
+                                    as={Link}
+                                    href="https://support.monitorss.xyz"
+                                    target="_blank"
+                                    variant="ghost"
+                                  >
+                                    File a Support ticket
+                                  </Button>
+                                </Wrap>
+                              </Stack>
+                            </Stack>
+                          }
+                          onConfirm={onRestoreLegacyFeed}
+                          colorScheme="red"
+                          okText="Restore legacy feed"
+                          trigger={<MenuItem>Restore legacy feed</MenuItem>}
+                        />
+                      )}
                       {feedId && (
                         <ConfirmModal
                           title={t("pages.userFeed.deleteConfirmTitle")}

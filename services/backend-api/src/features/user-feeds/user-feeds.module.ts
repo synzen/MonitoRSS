@@ -13,13 +13,21 @@ import { UserFeedsController } from "./user-feeds.controller";
 import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
 import { MessageBrokerModule } from "../message-broker/message-broker.module";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
+import { FeedFeature } from "../feeds/entities/feed.entity";
+import { UserFeedLimitOverrideFeature } from "../supporters/entities/user-feed-limit-overrides.entity";
+import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 
 @Module({
   controllers: [UserFeedsController],
   providers: [UserFeedsService],
   imports: [
     DiscordAuthModule,
-    MongooseModule.forFeature([UserFeedFeature]),
+    MongooseModule.forFeature([
+      UserFeedFeature,
+      FeedFeature,
+      UserFeedLimitOverrideFeature,
+      LegacyFeedConversionJobFeature,
+    ]),
     FeedFetcherModule,
     SupportersModule,
     DiscordWebhooksModule,

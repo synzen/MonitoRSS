@@ -45,7 +45,6 @@ import {
   LegacyFeedConversionJob,
   LegacyFeedConversionJobModel,
 } from "./entities/legacy-feed-conversion-job.entity";
-import { ConversionJobExistsException } from "./exceptions/conversion-job-exists.exception";
 import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
 import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
 import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
@@ -170,9 +169,21 @@ export class LegacyFeedConversionService {
   async createBulkConversionJob(discordUserId: string, guildId: string) {
     const existingJobCount =
       await this.legacyFeedConversionJobModel.countDocuments({
-        discordUserId,
         guildId,
       });
+
+    const unconvertedFeeds = await this.feedModel
+      .find({
+        guild: guildId,
+        disabled: {
+          $nin: [
+            ConversionDisabledCode.ConvertSuccess,
+            ConversionDisabledCode.ConvertPending,
+          ],
+        },
+      })
+      .select("_id")
+      .lean();
 
     if (existingJobCount > 0) {
       const failedCount =
@@ -203,26 +214,8 @@ export class LegacyFeedConversionService {
         return {
           total: existingJobCount,
         };
-      } else {
-        throw new ConversionJobExistsException(
-          `Cannot create a new conversion job for server ${guildId}, user ${discordUserId}` +
-            ` while one is already in progress`
-        );
       }
     }
-
-    const unconvertedFeeds = await this.feedModel
-      .find({
-        guild: guildId,
-        disabled: {
-          $nin: [
-            ConversionDisabledCode.ConvertSuccess,
-            ConversionDisabledCode.ConvertPending,
-          ],
-        },
-      })
-      .select("_id")
-      .lean();
 
     if (unconvertedFeeds.length === 0) {
       throw new NoLegacyFeedsToConvertException(
@@ -264,6 +257,15 @@ export class LegacyFeedConversionService {
   }
 
   async getBulkConversionJobStatus(discordUserId: string, guildId: string) {
+    const totalUnconverted = await this.feedModel.countDocuments({
+      guild: guildId,
+      disabled: {
+        $nin: [
+          ConversionDisabledCode.ConvertSuccess,
+          ConversionDisabledCode.ConvertPending,
+        ],
+      },
+    });
     const [notStarted, inProgress, completed, failed] = await Promise.all([
       this.legacyFeedConversionJobModel.countDocuments({
         discordUserId,
@@ -312,16 +314,23 @@ export class LegacyFeedConversionService {
         .lean();
     }
 
-    const hasStarted = notStarted + inProgress + completed + failed > 0;
-    const hasNotStarted = notStarted + inProgress + completed + failed === 0;
+    const allJobCounts = notStarted + inProgress + completed + failed;
+
+    const hasStarted = allJobCounts > 0;
+    const hasNotStarted = allJobCounts === 0;
     const hasCompleted = notStarted === 0 && inProgress === 0;
+    const someUnconverted = totalUnconverted > 0;
 
     let status = "NOT_STARTED";
 
     if (hasNotStarted) {
       status = "NOT_STARTED";
     } else if (hasCompleted) {
-      status = "COMPLETED";
+      if (someUnconverted) {
+        status = "PARTIALLY_COMPLETED"; // some user feeds were restored to legacy feeds
+      } else {
+        status = "COMPLETED";
+      }
     } else if (hasStarted) {
       status = "IN_PROGRESS";
     }
