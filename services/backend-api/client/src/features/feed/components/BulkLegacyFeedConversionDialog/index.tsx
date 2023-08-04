@@ -31,6 +31,7 @@ import {
 import { motion } from "framer-motion";
 import { WarningIcon } from "@chakra-ui/icons";
 import { cloneElement } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useCreateServerLegacyFeedBulkConversion,
   useSeverLegacyFeedBulkConversion,
@@ -38,6 +39,7 @@ import {
 import { InlineErrorAlert } from "../../../../components";
 import { notifyError } from "../../../../utils/notifyError";
 import { useDiscordServer } from "../../../discordServers";
+import { pages } from "../../../../constants";
 
 interface Props {
   serverId?: string;
@@ -61,6 +63,7 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
   const { mutateAsync: retryFailed, status: retryStatus } =
     useCreateServerLegacyFeedBulkConversion();
   const { data: serverData } = useDiscordServer({ serverId });
+  const navigate = useNavigate();
 
   const onClickRetryFailed = async () => {
     try {
@@ -195,7 +198,17 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
             )}
           </ModalBody>
           <ModalFooter>
-            <Button onClick={onClose}>Close</Button>
+            <HStack>
+              <Button onClick={onClose}>Close</Button>
+              <Button
+                colorScheme="blue"
+                onClick={() => {
+                  navigate(pages.userFeeds());
+                }}
+              >
+                View Personal Feeds
+              </Button>
+            </HStack>
           </ModalFooter>
         </ModalContent>
       </Modal>
