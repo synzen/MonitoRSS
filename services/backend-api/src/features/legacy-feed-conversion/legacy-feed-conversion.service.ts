@@ -381,7 +381,11 @@ export class LegacyFeedConversionService {
         }),
       ]);
 
-      const isOverLimit = currentUserFeedCount + 1 > maxUserFeeds;
+      const addOverrideCount =
+        feed.disabled === LegacyFeedDisabledCode.ExceededFeedLimit ? 0 : 1;
+
+      const isOverLimit =
+        currentUserFeedCount + addOverrideCount > maxUserFeeds;
 
       const [profile, subscribers, filteredFormats, failRecord] =
         await Promise.all([
