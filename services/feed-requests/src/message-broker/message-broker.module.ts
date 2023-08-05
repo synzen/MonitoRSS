@@ -24,7 +24,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
           channels: {
             default: {
-              prefetchCount: 100,
+              prefetchCount: 10,
               default: true,
             },
           },
