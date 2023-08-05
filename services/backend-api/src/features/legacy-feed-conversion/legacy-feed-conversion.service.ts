@@ -480,13 +480,15 @@ export class LegacyFeedConversionService {
     }
   ): Promise<UserFeed> {
     const guildId = feed.guild;
-    const convertedFilters = feed.rfilters
-      ? this.convertRegexFilters(feed.rfilters, {
-          invert: !!filteredFormats?.length,
-        })
-      : this.convertRegularFilters(feed.filters, {
-          invert: !!filteredFormats?.length,
-        });
+    const convertedFilters =
+      feed.rfilters && Object.keys(feed.rfilters).length > 0
+        ? this.convertRegexFilters(feed.rfilters, {
+            invert: !!filteredFormats?.length,
+          })
+        : this.convertRegularFilters(feed.filters, {
+            invert: !!filteredFormats?.length,
+          });
+
     const isYoutube = feed.url.toLowerCase().includes("www.youtube.com/feeds");
     const convertedEmbeds = this.convertEmbeds(feed.embeds, {
       isYoutube,
