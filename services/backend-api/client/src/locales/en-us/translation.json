@@ -42,6 +42,7 @@
       "feedRequestTimeout": "Requesting the feed took too long. The feed may be too slow to respond, or may be facing issues. Try again later.",
       "feedRequestFailed": "Request to the feed failed. Please try again later.",
       "feedRequestForbidden": "The feed host has explicitly blocked the request for the feed.",
+      "feedRequestPendingArticles": "Articles will be available after feed has been fetched on schedule (depending on your feed's refresh rate). Please check again later.",
       "feedRequestInternalError": "Feed host is currently experiencing issues",
       "feedRequestTooManyRequests": "Requests to the feed has been rate limited. Please try again later.",
       "feedRequestUnauthorized": "Feed hosts requesting authorization that does not exist",

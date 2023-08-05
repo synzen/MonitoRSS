@@ -5,28 +5,49 @@ export const getErrorMessageForArticleRequestStatus = (
   statusCode?: number
 ) => {
   if (status === UserFeedArticleRequestStatus.ParseError) {
-    return "common.apiErrors.feedParseFailed";
+    return {
+      ref: "common.apiErrors.feedParseFailed",
+    };
+  }
+
+  if (status === UserFeedArticleRequestStatus.Pending) {
+    return {
+      ref: "common.apiErrors.feedRequestPendingArticles",
+      status: "info" as const,
+    };
   }
 
   if (status === UserFeedArticleRequestStatus.BadStatusCode) {
     if (statusCode === 403) {
-      return "common.apiErrors.feedRequestForbidden";
+      return {
+        ref: "common.apiErrors.feedRequestForbidden",
+      };
     }
 
     if (statusCode === 401) {
-      return "common.apiErrors.feedRequestUnauthorized";
+      return {
+        ref: "common.apiErrors.feedRequestUnauthorized",
+      };
     }
 
     if (statusCode === 429) {
-      return "common.apiErrors.feedRequestTooManyRequests";
+      return {
+        ref: "common.apiErrors.feedRequestTooManyRequests",
+      };
     }
 
     if (statusCode?.toString().startsWith("5")) {
-      return "common.apiErrors.feedRequestInternalError";
+      return {
+        ref: "common.apiErrors.feedRequestInternalError",
+      };
     }
 
-    return "common.apiErrors.feedRequestFailed";
+    return {
+      ref: "common.apiErrors.feedRequestFailed",
+    };
   }
 
-  return "common.apiErrors.feedRequestFailed";
+  return {
+    ref: "common.apiErrors.feedRequestFailed",
+  };
 };

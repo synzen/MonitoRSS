@@ -1,4 +1,4 @@
-import { Box, Spinner } from "@chakra-ui/react";
+import { Box, Spinner, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import DiscordView from "../../../../components/DiscordView";
 import { FeedConnectionType } from "../../../../types";
@@ -15,7 +15,6 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
   const {
     feed,
     fetchStatus: feedFetchStatus,
-    status: feedStatus,
     error: feedError,
   } = useUserFeed({
     feedId,
@@ -23,7 +22,6 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
   const {
     connection,
     fetchStatus: connectionFetchStatus,
-    status: connectionStatus,
     error: connectionError,
   } = useDiscordChannelConnection({
     connectionId,
@@ -34,7 +32,6 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
   const {
     data: connectionPreview,
     fetchStatus,
-    status,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
     enabled: !!(feed && connection && debouncedData.article?.id),
@@ -54,14 +51,12 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
   const { data: bot } = useDiscordBot();
   const { t } = useTranslation();
 
-  const isLoading =
-    feedStatus === "loading" || connectionStatus === "loading" || status === "loading";
-
   const isFetching =
-    isLoading ||
     feedFetchStatus === "fetching" ||
     connectionFetchStatus === "fetching" ||
     fetchStatus === "fetching";
+
+  const waitingForArticle = feed && connection && !debouncedData.article?.id && !isFetching;
 
   const useError = feedError || connectionError || error;
 
@@ -76,7 +71,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
 
   return (
     <Box position="relative" borderRadius="md" overflow="hidden" zIndex={10}>
-      {isFetching && (
+      {(isFetching || waitingForArticle) && (
         <Box
           borderRadius="md"
           position="absolute"
@@ -88,7 +83,8 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
           alignItems="center"
           justifyContent="center"
         >
-          <Spinner />
+          {isFetching && <Spinner />}
+          {waitingForArticle && <Text>Waiting for article...</Text>}
         </Box>
       )}
       <DiscordView

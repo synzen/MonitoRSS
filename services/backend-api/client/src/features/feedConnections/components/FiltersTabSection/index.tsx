@@ -86,18 +86,20 @@ export const FiltersTabSection = ({
     </Alert>
   );
 
-  const parseErrorAlert = requestStatus &&
-    requestStatus !== UserFeedArticleRequestStatus.Success && (
-      <Alert status="error">
-        <AlertIcon />
-        {t(
-          getErrorMessageForArticleRequestStatus(
-            requestStatus,
-            userFeedArticlesResults?.result?.response?.statusCode
-          )
-        )}
-      </Alert>
-    );
+  const alertStatus =
+    requestStatus && requestStatus !== UserFeedArticleRequestStatus.Success
+      ? getErrorMessageForArticleRequestStatus(
+          requestStatus,
+          userFeedArticlesResults?.result?.response?.statusCode
+        )
+      : null;
+
+  const parseErrorAlert = alertStatus && (
+    <Alert status={alertStatus.status || "error"}>
+      <AlertIcon />
+      {t(alertStatus.ref)}
+    </Alert>
+  );
 
   const noArticlesAlert = userFeedArticlesResults?.result.totalArticles === 0 && (
     <Alert status="info">

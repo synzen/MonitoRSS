@@ -109,18 +109,20 @@ export const MessageTabSection = ({
     </Alert>
   );
 
-  const parseErrorAlert = requestStatus &&
-    requestStatus !== UserFeedArticleRequestStatus.Success && (
-      <Alert status="error">
-        <AlertIcon />
-        {t(
-          getErrorMessageForArticleRequestStatus(
-            requestStatus,
-            userFeedArticles?.result?.response?.statusCode
-          )
-        )}
-      </Alert>
-    );
+  const alertStatus =
+    requestStatus && requestStatus !== UserFeedArticleRequestStatus.Success
+      ? getErrorMessageForArticleRequestStatus(
+          requestStatus,
+          userFeedArticles?.result?.response?.statusCode
+        )
+      : null;
+
+  const parseErrorAlert = alertStatus && (
+    <Alert status={alertStatus.status || "error"}>
+      <AlertIcon />
+      {t(alertStatus.ref)}
+    </Alert>
+  );
 
   const noArticlesAlert = userFeedArticles?.result.articles.length === 0 && (
     <Alert status="info">
