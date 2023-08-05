@@ -1429,7 +1429,8 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_EQ",
+              op: "EQ",
+              not: true,
               left: {
                 type: "ARTICLE",
                 value: "title",
@@ -1441,7 +1442,8 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_EQ",
+              op: "EQ",
+              not: true,
               left: {
                 type: "ARTICLE",
                 value: "description",
@@ -1474,7 +1476,8 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_CONTAIN",
+              op: "CONTAINS",
+              not: true,
               left: {
                 type: "ARTICLE",
                 value: "title",
@@ -1486,7 +1489,8 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_CONTAIN",
+              op: "CONTAINS",
+              not: true,
               left: {
                 type: "ARTICLE",
                 value: "description",
@@ -1542,7 +1546,8 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_CONTAIN",
+              op: "CONTAINS",
+              not: true,
               left: {
                 type: "ARTICLE",
                 value: "title",
@@ -1554,7 +1559,8 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_EQ",
+              op: "EQ",
+              not: true,
               left: {
                 type: "ARTICLE",
                 value: "description",
@@ -1616,12 +1622,12 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_CONTAIN",
+              op: "CONTAINS",
               left: {
                 type: "ARTICLE",
                 value: "title",
               },
-              not: true,
+              not: false,
               right: {
                 type: "STRING",
                 value: "filter1",
@@ -1629,12 +1635,12 @@ describe("LegacyFeedConversionService", () => {
             },
             {
               type: "RELATIONAL",
-              op: "NOT_EQ",
+              op: "EQ",
               left: {
                 type: "ARTICLE",
                 value: "description",
               },
-              not: true,
+              not: false,
               right: {
                 type: "STRING",
                 value: "filter3",

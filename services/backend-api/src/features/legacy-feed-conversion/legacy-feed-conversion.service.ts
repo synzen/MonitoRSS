@@ -69,8 +69,6 @@ enum RelationalExpressionOperator {
   Eq = "EQ",
   Contains = "CONTAINS",
   Matches = "MATCHES",
-  NotEq = "NOT_EQ",
-  NotContain = "NOT_CONTAIN",
 }
 
 enum RelationalExpressionLeft {
@@ -953,7 +951,8 @@ export class LegacyFeedConversionService {
         if (isBlockingBroad) {
           expression.children.push({
             type: ExpressionType.Relational,
-            op: RelationalExpressionOperator.NotContain,
+            op: RelationalExpressionOperator.Contains,
+            not: true,
             left: {
               type: RelationalExpressionLeft.Article,
               value: cleanedCategory,
@@ -966,7 +965,8 @@ export class LegacyFeedConversionService {
         } else if (isBlocking) {
           expression.children.push({
             type: ExpressionType.Relational,
-            op: RelationalExpressionOperator.NotEq,
+            op: RelationalExpressionOperator.Eq,
+            not: true,
             left: {
               type: RelationalExpressionLeft.Article,
               value: cleanedCategory,
@@ -1015,7 +1015,7 @@ export class LegacyFeedConversionService {
 
           return {
             ...child,
-            not: true,
+            not: !child.not,
           };
         }
       );
@@ -1024,7 +1024,7 @@ export class LegacyFeedConversionService {
         (child: Record<string, any>) => {
           return {
             ...child,
-            not: true,
+            not: !child.not,
           };
         }
       );
