@@ -226,8 +226,9 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                     <AlertTitle>This may not be a perfect conversion!</AlertTitle>
                     <AlertDescription>
                       Double check that everything is as expected afterwards, or the feed may get
-                      disabled due to errors during delivery attempts. If you enounter any major
-                      issues, you create a thread in the{" "}
+                      disabled due to errors during delivery attempts. There is a high likelyhood
+                      that some manual adjustments are needed. If you enounter any major issues, you
+                      create a thread in the{" "}
                       <ChakraLink
                         href="https://discord.com/invite/pudv7Rx"
                         target="_blank"
