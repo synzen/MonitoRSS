@@ -59,13 +59,18 @@ export class ArticleRateLimitService {
     feedId: string,
     { timeWindowSec, limit }: { timeWindowSec: number; limit: number }
   ) {
-    const existsAlready = await this.deliveryLimitRepo.count({
-      feed_id: feedId,
-      time_window_seconds: timeWindowSec,
-      limit,
-    });
+    const countCheck = await this.deliveryLimitRepo.findOne(
+      {
+        feed_id: feedId,
+        time_window_seconds: timeWindowSec,
+        limit,
+      },
+      {
+        fields: ["id"],
+      }
+    );
 
-    if (existsAlready > 0) {
+    if (countCheck) {
       return;
     }
 

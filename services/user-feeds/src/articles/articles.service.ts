@@ -174,11 +174,16 @@ export class ArticlesService {
   }
 
   async hasPriorArticlesStored(feedId: string) {
-    const result = await this.articleFieldRepo.count({
-      feed_id: feedId,
-    });
+    const result = await this.articleFieldRepo.findOne(
+      {
+        feed_id: feedId,
+      },
+      {
+        fields: ["id"],
+      }
+    );
 
-    return result > 0;
+    return !!result;
   }
 
   async storeArticles(
