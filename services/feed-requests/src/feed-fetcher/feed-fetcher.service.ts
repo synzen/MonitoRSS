@@ -145,14 +145,19 @@ export class FeedFetcherService {
     },
     time: Date,
   ) {
-    const count = await this.requestRepo.count({
-      url: requestQuery.url,
-      createdAt: {
-        $gt: time,
+    const found = await this.requestRepo.findOne(
+      {
+        url: requestQuery.url,
+        createdAt: {
+          $gt: time,
+        },
       },
-    });
+      {
+        fields: ['id'],
+      },
+    );
 
-    return count > 0;
+    return !!found;
   }
 
   async getLatestRequest(url: string): Promise<Request | null> {
