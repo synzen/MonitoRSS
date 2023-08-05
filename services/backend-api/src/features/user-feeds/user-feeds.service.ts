@@ -153,7 +153,7 @@ export class UserFeedsService {
 
     const created = await this.userFeedModel.create({
       title,
-      url: url.toLowerCase(),
+      url,
       user: {
         discordUserId,
       },
