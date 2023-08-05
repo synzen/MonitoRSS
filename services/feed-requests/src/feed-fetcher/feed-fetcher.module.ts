@@ -7,7 +7,7 @@ import { MessageBrokerModule } from '../message-broker/message-broker.module';
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
 
 @Module({
-  controllers: [FeedFetcherController],
+  controllers: [],
   providers: [FeedFetcherService],
   exports: [FeedFetcherService],
   imports: [MikroOrmModule.forFeature([Request, Response])],
@@ -24,6 +24,7 @@ export class FeedFetcherModule {
   static forApi(): DynamicModule {
     return {
       module: FeedFetcherModule,
+      providers: [FeedFetcherController],
       imports: [],
     };
   }
@@ -32,7 +33,7 @@ export class FeedFetcherModule {
     return {
       module: FeedFetcherModule,
       imports: [MessageBrokerModule.forRoot()],
-      providers: [FeedFetcherListenerService],
+      providers: [FeedFetcherController, FeedFetcherListenerService],
     };
   }
 }

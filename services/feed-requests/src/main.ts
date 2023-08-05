@@ -11,9 +11,9 @@ import logger from './utils/logger';
 import { MikroORM } from '@mikro-orm/core';
 import { RequestContext } from '@mikro-orm/core';
 
-async function bootstrap() {
+async function startApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forRoot(),
+    AppModule.forApi(),
     new FastifyAdapter(),
   );
   app.enableShutdownHooks();
@@ -40,7 +40,38 @@ async function bootstrap() {
     tryDbConnection(orm).catch(() => process.exit(1));
   }, 60000);
 
-  logger.info(`Application is running on port ${port}`);
+  logger.info(`API is running on port ${port}`);
+}
+
+async function startService() {
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule.forService(),
+    new FastifyAdapter(),
+  );
+  app.enableShutdownHooks();
+
+  const orm = app.get(MikroORM);
+
+  setInterval(() => {
+    tryDbConnection(orm).catch(() => process.exit(1));
+  }, 60000);
+
+  logger.info(`Service is running`);
+}
+
+async function bootstrap() {
+  if (process.env.FEED_REQUESTS_START_TARGET === 'api') {
+    await startApi();
+  } else if (process.env.FEED_REQUESTS_START_TARGET === 'service') {
+    await startService();
+  } else if (process.env.FEED_REQUESTS_START_TARGET) {
+    logger.error('Invalid FEED_REQUESTS_START_TARGET environment variable');
+
+    process.exit(1);
+  } else {
+    await startApi();
+    await startService();
+  }
 }
 
 async function tryDbConnection(orm: MikroORM, currentTries = 0) {

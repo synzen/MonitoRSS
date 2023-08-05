@@ -10,6 +10,8 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start:local": "cross-env NODE_ENV=local nest start --watch",
+    "start:local:api": "cross-env NODE_ENV=local FEED_REQUESTS_START_TARGET=api nest start --watch",
+    "start:local:service": "cross-env NODE_ENV=local FEED_REQUESTS_START_TARGET=service nest start --watch",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "start:prod": "cross-env NODE_ENV=production nest start --watch",
     "start:debug": "nest start --debug --watch",

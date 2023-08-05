@@ -14,7 +14,7 @@ import logger from './utils/logger';
   providers: [AppService],
 })
 export class AppModule implements OnApplicationShutdown {
-  static forRoot(): DynamicModule {
+  static _forCommon(): DynamicModule {
     const configVals = config();
 
     return {
@@ -25,7 +25,6 @@ export class AppModule implements OnApplicationShutdown {
           ignoreEnvFile: true,
           load: [config],
         }),
-        FeedFetcherModule.forApiAndService(),
         MikroOrmModule.forRoot({
           entities: ['dist/**/*.entity.js'],
           entitiesTs: ['src/**/*.entity.ts'],
@@ -38,6 +37,24 @@ export class AppModule implements OnApplicationShutdown {
           },
         }),
       ],
+    };
+  }
+
+  static forApi(): DynamicModule {
+    const common = this._forCommon();
+
+    return {
+      module: AppModule,
+      imports: [...(common.imports || []), FeedFetcherModule.forApi()],
+    };
+  }
+
+  static forService(): DynamicModule {
+    const common = this._forCommon();
+
+    return {
+      module: AppModule,
+      imports: [...(common.imports || []), FeedFetcherModule.forService()],
     };
   }
 
