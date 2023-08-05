@@ -18,4 +18,10 @@ export class Response {
 
   @Property()
   isCloudflare!: boolean;
+
+  @Property({
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
+  createdAt: Date = new Date();
 }
