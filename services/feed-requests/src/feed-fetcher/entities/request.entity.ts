@@ -55,6 +55,7 @@ export class Request {
   @OneToOne({
     nullable: true,
     entity: () => Response,
+    index: true,
   })
   response!: Response | null;
 }
