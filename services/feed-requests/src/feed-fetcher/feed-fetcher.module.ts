@@ -24,7 +24,7 @@ export class FeedFetcherModule {
   static forApi(): DynamicModule {
     return {
       module: FeedFetcherModule,
-      providers: [FeedFetcherController],
+      controllers: [FeedFetcherController],
       imports: [],
     };
   }
@@ -32,8 +32,9 @@ export class FeedFetcherModule {
   static forApiAndService(): DynamicModule {
     return {
       module: FeedFetcherModule,
+      controllers: [FeedFetcherController],
       imports: [MessageBrokerModule.forRoot()],
-      providers: [FeedFetcherController, FeedFetcherListenerService],
+      providers: [FeedFetcherListenerService],
     };
   }
 }
