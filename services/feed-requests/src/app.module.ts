@@ -25,7 +25,7 @@ export class AppModule implements OnApplicationShutdown {
           ignoreEnvFile: true,
           load: [config],
         }),
-        FeedFetcherModule.forRoot(),
+        FeedFetcherModule.forApiAndService(),
         MikroOrmModule.forRoot({
           entities: ['dist/**/*.entity.js'],
           entitiesTs: ['src/**/*.entity.ts'],

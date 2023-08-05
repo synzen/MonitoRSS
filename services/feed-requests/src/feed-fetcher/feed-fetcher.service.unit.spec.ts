@@ -6,9 +6,7 @@ import { URL } from 'url';
 import { readFileSync } from 'fs';
 import { Request, Response } from './entities';
 import { RequestStatus } from './constants';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { EntityRepository } from '@mikro-orm/postgresql';
-import { MikroORM } from '@mikro-orm/core';
 
 jest.mock('../utils/logger');
 
@@ -29,35 +27,13 @@ describe('FeedFetcherService', () => {
     persistAndFlush: jest.fn(),
     persist: jest.fn(),
   } as never;
-  const amqpConnection: AmqpConnection = {
-    publish: jest.fn(),
-  } as never;
 
   beforeEach(async () => {
     configService = {
       get: jest.fn(),
       getOrThrow: jest.fn(),
     } as never;
-    const mockMikroOrm = await MikroORM.init(
-      {
-        // Get past errors related to @UseRequestContext() decorator from MikroORM
-        type: 'postgresql',
-        dbName: 'test',
-        entities: [],
-        discovery: {
-          warnWhenNoEntities: false,
-        },
-      },
-      false,
-    );
-
-    service = new FeedFetcherService(
-      requestRepo,
-      responseRepo,
-      configService,
-      amqpConnection,
-      mockMikroOrm,
-    );
+    service = new FeedFetcherService(requestRepo, responseRepo, configService);
     service.defaultUserAgent = defaultUserAgent;
   });
 
@@ -147,6 +123,7 @@ describe('FeedFetcherService', () => {
               statusCode: 200,
               isCloudflare: false,
               text: feedXml,
+              createdAt: expect.any(Date),
             },
           }),
         );
@@ -191,6 +168,7 @@ describe('FeedFetcherService', () => {
               statusCode: 404,
               isCloudflare: false,
               text: JSON.stringify(feedResponseBody),
+              createdAt: expect.any(Date),
             },
           }),
         );
@@ -208,6 +186,7 @@ describe('FeedFetcherService', () => {
             isCloudflare: true,
             statusCode: 404,
             text: JSON.stringify(feedResponseBody),
+            createdAt: expect.any(Date),
           }),
         );
       });
@@ -226,17 +205,10 @@ describe('FeedFetcherService', () => {
               userAgent,
             },
             errorMessage: expect.any(String),
+            createdAt: expect.any(Date),
           }),
         );
       });
-    });
-  });
-
-  describe('emitFailedUrl', () => {
-    it('publishes the url event', () => {
-      service.emitFailedUrl({ url: feedUrl });
-
-      expect(amqpConnection.publish).toHaveBeenCalled();
     });
   });
 });
