@@ -58,7 +58,7 @@ export class FeedFetcherListenerService {
     data: Array<{ url: string }>;
     rateSeconds: number;
   }) {
-    logger.info(`Received fetch batch request message`, {
+    logger.datadog(`Received fetch batch request message`, {
       message,
     });
     await this.onBrokerFetchRequestBatchHandler(message);
