@@ -13,3 +13,4 @@ export * from "./filters.type";
 export * from "./discord-mention-options.type";
 export * from "./discord-placeholder-limit-options.type";
 export * from "./user-feed-date-check-options.type";
+export * from "./user-feed-share-manage-options.type";

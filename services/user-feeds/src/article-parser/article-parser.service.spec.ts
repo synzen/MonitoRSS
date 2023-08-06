@@ -317,6 +317,7 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article, {
         dateFormat,
         dateTimezone: undefined,
+        disableImageLinkPreviews: false,
       });
 
       expect(flattenedArticle).toEqual({
@@ -348,6 +349,7 @@ describe("ArticleParserService", () => {
       const flattenedArticle = service.flatten(article, {
         dateFormat: undefined,
         dateTimezone,
+        disableImageLinkPreviews: false,
       });
 
       expect(flattenedArticle).toEqual({

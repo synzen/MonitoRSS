@@ -1,9 +1,9 @@
-import { NotFoundException } from "@nestjs/common";
+import { NotFoundException, PipeTransform } from "@nestjs/common";
 import { Types } from "mongoose";
 import { GetUserFeedPipe } from "./get-user-feed.pipe";
 
 describe("GetUserFeedPioe", () => {
-  let pipe: GetUserFeedPipe;
+  let pipe: PipeTransform;
   const userFeedsService = {
     getFeedById: jest.fn(),
   };
@@ -22,7 +22,7 @@ describe("GetUserFeedPioe", () => {
         id: discordUserId,
       },
     });
-    pipe = new GetUserFeedPipe(userFeedsService as never, request as never);
+    pipe = new (GetUserFeedPipe())(userFeedsService as never, request as never);
   });
 
   it("returns the feed with the id", async () => {
@@ -35,13 +35,36 @@ describe("GetUserFeedPioe", () => {
 
     userFeedsService.getFeedById.mockResolvedValue(feed);
 
-    await expect(pipe.transform(feedId as never)).resolves.toEqual(feed);
+    await expect(pipe.transform(feedId as never, {} as never)).resolves.toEqual(
+      feed
+    );
   });
 
+  it("returns the feed with the id if user is a shared manager", async () => {
+    const feed = {
+      id: feedId,
+      user: {
+        discordUserId: discordUserId + "other",
+      },
+      shareManageOptions: {
+        users: [
+          {
+            discordUserId,
+          },
+        ],
+      },
+    };
+
+    userFeedsService.getFeedById.mockResolvedValue(feed);
+
+    await expect(pipe.transform(feedId as never, {} as never)).resolves.toEqual(
+      feed
+    );
+  });
   it("throws an error if the feed is not found", async () => {
     userFeedsService.getFeedById.mockResolvedValue(null);
 
-    await expect(pipe.transform(feedId as never)).rejects.toThrow(
+    await expect(pipe.transform(feedId as never, {} as never)).rejects.toThrow(
       NotFoundException
     );
   });
@@ -49,7 +72,7 @@ describe("GetUserFeedPioe", () => {
   it("throws an error if the feed id is not valid", async () => {
     userFeedsService.getFeedById.mockResolvedValue(null);
 
-    await expect(pipe.transform(feedId as never)).rejects.toThrow(
+    await expect(pipe.transform(feedId as never, {} as never)).rejects.toThrow(
       NotFoundException
     );
   });
@@ -64,7 +87,7 @@ describe("GetUserFeedPioe", () => {
 
     userFeedsService.getFeedById.mockResolvedValue(feed);
 
-    await expect(pipe.transform(feedId as never)).rejects.toThrow(
+    await expect(pipe.transform(feedId as never, {} as never)).rejects.toThrow(
       NotFoundException
     );
   });

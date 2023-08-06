@@ -13,6 +13,10 @@ import {
   UserFeedFormatOptions,
   UserFeedFormatOptionsSchema,
 } from "./user-feed-format-options.entity";
+import {
+  UserFeedShareManageOptions,
+  UserFeedShareManageOptionsSchema,
+} from "./user-feed-share-manage-options.entity";
 import { UserFeedUser, UserFeedUserSchema } from "./user-feed-user.entity";
 
 @Schema({
@@ -80,6 +84,12 @@ export class UserFeed {
     schema: UserFeedDateCheckOptionsSchema,
   })
   dateCheckOptions?: UserFeedDateCheckOptions;
+
+  @Prop({
+    schema: UserFeedShareManageOptionsSchema,
+    required: false,
+  })
+  shareManageOptions?: UserFeedShareManageOptions;
 
   @Prop({
     required: false,

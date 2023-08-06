@@ -11,6 +11,7 @@ import {
 import {
   UserFeedDateCheckOptions,
   UserFeedFormatOptions,
+  UserFeedShareManageOptions,
 } from "../../../common";
 import { UserFeedDisabledCode } from "../types";
 
@@ -51,4 +52,10 @@ export class UpdateUserFeedInputDto {
   @ValidateNested()
   @IsObject()
   dateCheckOptions?: UserFeedDateCheckOptions;
+
+  @IsOptional()
+  @IsObject()
+  @Type(() => UserFeedShareManageOptions)
+  @ValidateNested()
+  shareManageOptions?: UserFeedShareManageOptions;
 }

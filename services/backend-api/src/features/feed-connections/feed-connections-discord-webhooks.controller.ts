@@ -55,7 +55,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @Post("/discord-webhooks")
   @UseFilters(AddDiscordWebhookConnectionFilter)
   async createDiscordWebhookConnection(
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed,
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
     @Body(ValidationPipe)
     { name, webhook }: CreateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
@@ -95,7 +95,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @Post("/discord-webhooks/:connectionId/test")
   @UseFilters(CreateDiscordWebhookTestArticleFilter)
   async sendTestArticle(
-    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
     data: CreateDiscordWebhookConnectionTestArticleInputDto
@@ -117,7 +117,7 @@ export class FeedConnectionsDiscordWebhooksController {
 
   @Post("/discord-webhooks/:connectionId/clone")
   async clone(
-    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
     data: CreateDiscordWebhookConnectionCloneInputDto
@@ -131,7 +131,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @Post("/discord-webhooks/:connectionId/preview")
   @UseFilters(CreateDiscordWebhookTestArticleFilter)
   async createPreview(
-    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
     {
@@ -168,7 +168,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @Patch("/discord-webhooks/:connectionId")
   @UseFilters(UpdateDiscordWebhookConnectionFilter)
   async updateDiscordWebhookConnection(
-    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
     {
@@ -273,7 +273,7 @@ export class FeedConnectionsDiscordWebhooksController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseFilters(DeleteDiscordWebhookConnectionFilter)
   async deleteDiscordWebhookConnection(
-    @Param("feedId", GetUserFeedPipe, GetFeedDiscordWebhookConnectionPipe)
+    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput
   ): Promise<void> {
     await this.service.deleteDiscordWebhookConnection({

@@ -59,6 +59,7 @@ interface UpdateFeedInput {
   blockingComparisons?: string[];
   formatOptions?: Partial<UserFeed["formatOptions"]>;
   dateCheckOptions?: Partial<UserFeed["dateCheckOptions"]>;
+  shareManageOptions?: Partial<UserFeed["shareManageOptions"]>;
 }
 
 @Injectable()
@@ -418,6 +419,10 @@ export class UserFeedsService {
       query.set("dateCheckOptions", updates.dateCheckOptions);
     }
 
+    if (updates.shareManageOptions) {
+      query.set("shareManageOptions", updates.shareManageOptions);
+    }
+
     return query.lean();
   }
 
@@ -548,7 +553,12 @@ export class UserFeedsService {
     const pipeline: PipelineStage[] = [
       {
         $match: {
-          "user.discordUserId": userId,
+          $or: [
+            {
+              "user.discordUserId": userId,
+              "shareManageOptions.users.discordUserId": userId,
+            },
+          ],
         },
       },
       {

@@ -32,6 +32,7 @@ import {
   UpdateUserFeedsExceptionFilter,
 } from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
+import { UserFeedManagerType } from "./constants/user-feed-manager-type.types";
 import {
   CreateUserFeedInputDto,
   GetUserFeedArticlePropertiesOutputDto,
@@ -131,14 +132,14 @@ export class UserFeedsController {
 
   @Get("/:feedId")
   async getFeed(
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
     return await this.formatFeedForResponse(feed, feed.user.discordUserId);
   }
 
   @Get("/:feed/requests")
   async getFeedRequests(
-    @Param("feed", GetUserFeedPipe) feed: UserFeed,
+    @Param("feed", GetUserFeedPipe()) feed: UserFeed,
     @NestedQuery(TransformValidationPipe)
     { limit, skip }: GetUserFeedRequestsInputDto
   ): Promise<GetUserFeedRequestsOutputDto> {
@@ -153,7 +154,7 @@ export class UserFeedsController {
 
   @Get("/:feedId/article-properties")
   async getArticleProperties(
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
   ): Promise<GetUserFeedArticlePropertiesOutputDto> {
     const input: GetFeedArticlePropertiesInput = {
       url: feed.url,
@@ -182,7 +183,7 @@ export class UserFeedsController {
       skip,
       formatter,
     }: GetUserFeedArticlesInputDto,
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
   ): Promise<GetUserFeedArticlesOutputDto> {
     const input: GetFeedArticlesInput = {
       limit,
@@ -227,7 +228,7 @@ export class UserFeedsController {
   async retryFailedFeed(
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
   ): Promise<GetUserFeedOutputDto> {
     const updatedFeed = (await this.userFeedsService.retryFailedFeed(
       feed._id.toHexString()
@@ -238,7 +239,7 @@ export class UserFeedsController {
 
   @Get("/:feedId/daily-limit")
   async getDailyLimit(
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed,
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedDailyLimitOutputDto> {
@@ -265,7 +266,7 @@ export class UserFeedsController {
   @Patch("/:feedId")
   @UseFilters(FeedExceptionFilter)
   async updateFeed(
-    @Param("feedId", GetUserFeedPipe) feed: UserFeed,
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
     @Body(ValidationPipe)
     {
       title,
@@ -275,6 +276,7 @@ export class UserFeedsController {
       blockingComparisons,
       formatOptions,
       dateCheckOptions,
+      shareManageOptions,
     }: UpdateUserFeedInputDto
   ): Promise<UpdateUserFeedOutputDto> {
     if (disabledCode && feed.disabledCode) {
@@ -291,6 +293,7 @@ export class UserFeedsController {
         blockingComparisons,
         formatOptions,
         dateCheckOptions,
+        shareManageOptions,
       }
     )) as UserFeed;
 
@@ -299,7 +302,7 @@ export class UserFeedsController {
 
   @Post("/:feedId/restore-to-legacy")
   @UseFilters(RestoreLegacyUserFeedExceptionFilter)
-  async restoreToLegacy(@Param("feedId", GetUserFeedPipe) feed: UserFeed) {
+  async restoreToLegacy(@Param("feedId", GetUserFeedPipe()) feed: UserFeed) {
     if (!feed.legacyFeedId) {
       throw new BadRequestException("Feed is not related to a legacy feed");
     }
@@ -342,7 +345,15 @@ export class UserFeedsController {
 
   @Delete("/:feedId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteFeed(@Param("feedId", GetUserFeedPipe) feed: UserFeed) {
+  async deleteFeed(
+    @Param(
+      "feedId",
+      GetUserFeedPipe({
+        userTypes: [UserFeedManagerType.Creator],
+      })
+    )
+    feed: UserFeed
+  ) {
     await this.userFeedsService.deleteFeedById(feed._id.toHexString());
   }
 
@@ -402,6 +413,7 @@ export class UserFeedsController {
         formatOptions: feed.formatOptions,
         dateCheckOptions: feed.dateCheckOptions,
         refreshRateSeconds,
+        shareManageOptions: feed.shareManageOptions,
       },
     };
   }

@@ -11,6 +11,7 @@ import {
   IsString,
   ValidateNested,
 } from "class-validator";
+import { UserFeedShareManageOptions } from "../../../common";
 import { CreateDiscordChannelConnectionOutputDto } from "../../feed-connections/dto/create-discord-channel-connection-output.dto";
 import { CreateDiscordWebhookConnectionOutputDto } from "../../feed-connections/dto/create-discord-webhook-connection-output.dto";
 import { FeedConnectionType } from "../../feeds/constants";
@@ -92,6 +93,8 @@ class GetUserFeedOutputResultDto {
   updatedAt: string;
 
   isLegacyFeed?: boolean;
+
+  shareManageOptions?: UserFeedShareManageOptions;
 }
 
 export class GetUserFeedOutputDto {

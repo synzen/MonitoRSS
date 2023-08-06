@@ -374,7 +374,7 @@ export class ScheduleHandlerService {
     await Promise.all(
       chunk(
         urls.map((url) => ({ url })),
-        200
+        100
       ).map((urlsChunk) => urlsHandler(urlsChunk))
     );
 
