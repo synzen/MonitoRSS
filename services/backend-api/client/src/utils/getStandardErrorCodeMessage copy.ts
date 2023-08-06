@@ -31,6 +31,7 @@ enum ApiErrorCode {
   USER_FEED_LIMIT_REACHED = "USER_FEED_LIMIT_REACHED",
   ALREADY_CONVERTED_TO_USER_FEED = "ALREADY_CONVERTED_TO_USER_FEED",
   HANDLED_BY_BULK_CONVERSION = "HANDLED_BY_BULK_CONVERSION",
+  MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -64,6 +65,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   USER_FEED_LIMIT_REACHED: "You have reached the maximum number of personal feeds you can create",
   ALREADY_CONVERTED_TO_USER_FEED: "This feed has already been converted to a user feed",
   HANDLED_BY_BULK_CONVERSION: "This feed is being handled by the bulk conversion process",
+  MISSING_SHARED_MANAGER_PERMISSIONS: "You do not have permission to do this",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

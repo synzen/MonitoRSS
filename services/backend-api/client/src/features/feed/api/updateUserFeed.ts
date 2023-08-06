@@ -17,6 +17,11 @@ export interface UpdateUserFeedInput {
     dateCheckOptions?: {
       oldArticleDateDiffMsThreshold?: number;
     };
+    shareManageOptions?: {
+      users?: Array<{
+        discordUserId: string;
+      }>;
+    };
   };
 }
 

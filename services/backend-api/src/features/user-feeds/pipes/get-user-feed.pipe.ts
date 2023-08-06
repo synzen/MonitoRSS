@@ -14,6 +14,7 @@ import { FastifyRequest } from "fastify";
 import { getAccessTokenFromRequest } from "../../discord-auth/utils/get-access-token-from-session";
 import { UserFeedManagerType } from "../constants/user-feed-manager-type.types";
 import { memoize } from "lodash";
+import { NoPermissionException } from "../exceptions";
 
 interface PipeOptions {
   userTypes: UserFeedManagerType[];
@@ -48,11 +49,18 @@ const createGetUserFeedPipe = (
       const allowOwner =
         data.userTypes.includes(UserFeedManagerType.Creator) &&
         found?.user.discordUserId === accessToken.discord.id;
+
+      const isSharedManager = found?.shareManageOptions?.users?.some(
+        (u) => u.discordUserId === accessToken.discord.id
+      );
+
       const allowSharedManager =
         data.userTypes.includes(UserFeedManagerType.SharedManager) &&
-        found?.shareManageOptions?.users?.some(
-          (u) => u.discordUserId === accessToken.discord.id
-        );
+        isSharedManager;
+
+      if (isSharedManager && !allowSharedManager) {
+        throw new NoPermissionException();
+      }
 
       if (!found || (!allowOwner && !allowSharedManager)) {
         throw new NotFoundException(`Feed ${feedId} not found`);

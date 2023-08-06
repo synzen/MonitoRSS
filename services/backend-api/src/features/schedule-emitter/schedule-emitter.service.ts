@@ -107,7 +107,6 @@ export class ScheduleEmitterService {
       const timer = setInterval(async () => {
         await onTimerTrigger(refreshRate / 1000);
       }, refreshRate);
-      onTimerTrigger(refreshRate / 1000);
       inputTimers.set(refreshRate, timer);
     });
 

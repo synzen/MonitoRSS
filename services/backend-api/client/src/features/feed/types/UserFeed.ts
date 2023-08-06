@@ -2,6 +2,7 @@ import { array, bool, InferType, number, object, string } from "yup";
 import { FeedConnectionSchema } from "../../../types";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
+import { UserFeedManagerStatus } from "../../../constants";
 
 export const UserFeedSchema = object({
   id: string().required(),
@@ -28,6 +29,20 @@ export const UserFeedSchema = object({
     oldArticleDateDiffMsThreshold: number().optional().default(undefined),
   }).optional(),
   isLegacyFeed: bool(),
+  shareManageOptions: object({
+    users: array(
+      object({
+        discordUserId: string().required(),
+        status: string().oneOf(Object.values(UserFeedManagerStatus)).required(),
+        createdAt: string()
+          .transform((value) => (value ? new Date(value).toISOString() : value))
+          .required(),
+      }).required()
+    ).required(),
+  })
+    .optional()
+    .notRequired()
+    .default(null),
 });
 
 export type UserFeed = InferType<typeof UserFeedSchema>;

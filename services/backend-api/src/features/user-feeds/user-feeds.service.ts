@@ -25,7 +25,7 @@ import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { GetArticlesInput } from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
-import { PipelineStage, Types } from "mongoose";
+import { FilterQuery, PipelineStage, Types } from "mongoose";
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
 import {
   FeedConnectionDisabledCode,
@@ -42,6 +42,7 @@ import {
   LegacyFeedConversionJob,
   LegacyFeedConversionJobModel,
 } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
+import { UserFeedManagerStatus } from "./constants";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -59,7 +60,9 @@ interface UpdateFeedInput {
   blockingComparisons?: string[];
   formatOptions?: Partial<UserFeed["formatOptions"]>;
   dateCheckOptions?: Partial<UserFeed["dateCheckOptions"]>;
-  shareManageOptions?: Partial<UserFeed["shareManageOptions"]>;
+  shareManageOptions?: {
+    users: Array<{ discordUserId: string }>;
+  };
 }
 
 @Injectable()
@@ -140,11 +143,9 @@ export class UserFeedsService {
     const { maxUserFeeds, maxDailyArticles } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
-    const feedCount = await this.userFeedModel
-      .where({
-        "user.discordUserId": discordUserId,
-      })
-      .countDocuments();
+    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
+      discordUserId
+    );
 
     if (feedCount >= maxUserFeeds) {
       throw new FeedLimitReachedException("Max feeds reached");
@@ -284,6 +285,24 @@ export class UserFeedsService {
     }));
   }
 
+  async calculateCurrentFeedCountOfDiscordUser(discordUserId: string) {
+    return this.userFeedModel.countDocuments({
+      $or: [
+        {
+          "user.discordUserId": discordUserId,
+        },
+        {
+          "shareManageOptions.users": {
+            $elemMatch: {
+              discordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          },
+        },
+      ],
+    });
+  }
+
   async getFeedById(id: string) {
     return this.userFeedModel.findById(id).lean();
   }
@@ -301,6 +320,7 @@ export class UserFeedsService {
       createdAt: Date;
       computedStatus: boolean;
       legacyFeedId?: Types.ObjectId;
+      ownedByUser: boolean;
     }>
   > {
     const useSort = sort || GetUserFeedsInputSortKey.CreatedAtDescending;
@@ -335,6 +355,7 @@ export class UserFeedsService {
           createdAt: 1,
           computedStatus: 1,
           legacyFeedId: 1,
+          ownedByUser: 1,
         },
       },
     ]);
@@ -556,13 +577,23 @@ export class UserFeedsService {
           $or: [
             {
               "user.discordUserId": userId,
-              "shareManageOptions.users.discordUserId": userId,
+            },
+            {
+              "shareManageOptions.users": {
+                $elemMatch: {
+                  discordUserId: userId,
+                  status: UserFeedManagerStatus.Accepted,
+                },
+              },
             },
           ],
         },
       },
       {
         $addFields: {
+          ownedByUser: {
+            $eq: ["$user.discordUserId", userId],
+          },
           computedStatus: {
             $cond: {
               if: {
@@ -601,38 +632,38 @@ export class UserFeedsService {
       },
     ];
 
+    const $match: FilterQuery<any> = {};
+
+    if (filters?.ownedByUser) {
+      $match.ownedByUser = filters.ownedByUser;
+    }
+
     if (filters?.computedStatuses?.length) {
-      pipeline.push({
-        $match: {
-          computedStatus: {
-            $in: filters.computedStatuses,
-          },
-        },
-      });
+      $match.computedStatus = {
+        $in: filters.computedStatuses,
+      };
     }
 
     if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            {
-              title: new RegExp(_.escapeRegExp(search), "i"),
-            },
-            {
-              url: new RegExp(_.escapeRegExp(search), "i"),
-            },
-          ],
+      $match.$or = [
+        {
+          title: new RegExp(_.escapeRegExp(search), "i"),
         },
-      });
+        {
+          url: new RegExp(_.escapeRegExp(search), "i"),
+        },
+      ];
     }
 
     if (filters?.disabledCodes) {
+      $match.disabledCode = {
+        $in: filters.disabledCodes.map((c) => (c === "" ? null : c)),
+      };
+    }
+
+    if (Object.keys($match).length) {
       pipeline.push({
-        $match: {
-          disabledCode: {
-            $in: filters.disabledCodes.map((c) => (c === "" ? null : c)),
-          },
-        },
+        $match,
       });
     }
 

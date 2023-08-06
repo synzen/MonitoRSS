@@ -41,7 +41,13 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, SearchIcon } from "@chakra-ui/icons";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DeleteIcon,
+  SearchIcon,
+} from "@chakra-ui/icons";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import { useInView } from "react-intersection-observer";
@@ -233,6 +239,15 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           }
 
           return dayjs(value).format(DATE_FORMAT);
+        },
+      }),
+      columnHelper.accessor("ownedByUser", {
+        id: "ownedByUser",
+        header: () => "Shared with Me",
+        cell: (info) => {
+          const isOwnedByCurrentUser = info.getValue();
+
+          return isOwnedByCurrentUser ? null : <CheckIcon />;
         },
       }),
     ],

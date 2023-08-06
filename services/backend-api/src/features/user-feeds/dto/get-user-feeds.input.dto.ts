@@ -1,6 +1,7 @@
 import { Transform, Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsIn,
   IsInt,
@@ -24,6 +25,8 @@ export enum GetUserFeedsInputSortKey {
   UrlDescending = "-url",
   ComputedStatusAcending = "computedStatus",
   ComputedStatusDescending = "-computedStatus",
+  OwnedByUserAscending = "ownedByUser",
+  OwnedByUserDescending = "-ownedByUser",
 }
 
 export class GetUserFeedsInputFiltersDto {
@@ -44,6 +47,11 @@ export class GetUserFeedsInputFiltersDto {
   @IsIn([...Object.values(UserFeedComputedStatus), ""], { each: true })
   @Transform(({ value }) => (value ? value.split(",") : undefined))
   computedStatuses?: UserFeedComputedStatus[];
+
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => (value != null ? !!value : undefined))
+  ownedByUser?: boolean;
 }
 
 export class GetUserFeedsInputDto {

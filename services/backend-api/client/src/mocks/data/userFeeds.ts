@@ -40,6 +40,7 @@ const mockUserFeeds: UserFeed[] = [
       dateFormat: undefined,
       dateTimezone: "UTC",
     },
+    shareManageOptions: null,
     connections: [
       {
         details: {
@@ -179,6 +180,7 @@ const mockUserFeeds: UserFeed[] = [
   },
   {
     id: "2",
+    shareManageOptions: null,
     title: "Yahoo News",
     url: "https://www.feed2.com",
     createdAt: new Date().toISOString(),
@@ -194,6 +196,7 @@ const mockUserFeeds: UserFeed[] = [
   },
   {
     id: "3",
+    shareManageOptions: null,
     title: "CNN",
     url: "https://www.feed3.com",
     createdAt: new Date().toISOString(),

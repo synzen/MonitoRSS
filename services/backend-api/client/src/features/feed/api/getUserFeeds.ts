@@ -1,7 +1,7 @@
-import { array, bool, InferType, number, object, string } from "yup";
+import { array, InferType, number, object } from "yup";
 import qs from "qs";
 import fetchRest from "../../../utils/fetchRest";
-import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
+import { UserFeedComputedStatus, UserFeedSummarySchema } from "../types";
 
 export interface GetUserFeedsInput {
   limit?: number;
@@ -14,18 +14,7 @@ export interface GetUserFeedsInput {
 }
 
 const GetUserFeedsOutputSchema = object({
-  results: array(
-    object({
-      id: string().required(),
-      title: string().required(),
-      url: string().required(),
-      healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
-      disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
-      createdAt: string().required(),
-      computedStatus: string().oneOf(Object.values(UserFeedComputedStatus)).required(),
-      isLegacyFeed: bool().required(),
-    })
-  ).required(),
+  results: array(UserFeedSummarySchema.required()).required(),
   total: number().required(),
 }).required();
 

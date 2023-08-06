@@ -1,0 +1,178 @@
+import {
+  Avatar,
+  Button,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormHelperText,
+  FormLabel,
+  HStack,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Stack,
+  Tag,
+  TagLabel,
+  useDisclosure,
+} from "@chakra-ui/react";
+import React, { cloneElement, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  DiscordServerSearchSelectv2,
+  useDiscordServerAccessStatus,
+  useDiscordServerMembers,
+} from "../../../discordServers";
+import { InlineErrorAlert, ThemedSelect } from "../../../../components";
+import { useDebounce } from "../../../../hooks";
+
+interface OptionData {
+  id: string;
+  name: string;
+  icon?: React.ReactElement | null;
+}
+
+interface Props {
+  onAdded: (data: { id: string }) => void;
+  trigger: React.ReactElement;
+}
+
+export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
+  const { t } = useTranslation();
+  const [currentInput, setCurrentInput] = useState("");
+  const [guildId, setGuildId] = useState("");
+  const [selectedMention, setSelectedMention] = useState<OptionData>();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const debouncedSearch = useDebounce(currentInput, 500);
+  const { data: serverAccessData } = useDiscordServerAccessStatus({ serverId: guildId });
+  const {
+    data: users,
+    error: usersError,
+    isFetching: isFetchingUsers,
+  } = useDiscordServerMembers({
+    serverId: guildId,
+    disabled: !isOpen || !debouncedSearch,
+    data: {
+      limit: 25,
+      search: debouncedSearch,
+    },
+  });
+
+  const onSelected = (data: { label: string; value: string; icon?: React.ReactElement | null }) => {
+    setSelectedMention({
+      id: data.value,
+      name: data.label,
+      icon: data.icon,
+    });
+  };
+
+  const onClickSave = () => {
+    if (selectedMention) {
+      onAdded({ id: selectedMention.id });
+      onClose();
+    }
+  };
+
+  useEffect(() => {
+    setSelectedMention(undefined);
+    setGuildId("");
+  }, [isOpen]);
+
+  const options: Array<{
+    label: string;
+    value: string;
+    icon?: React.ReactElement | null;
+    data: OptionData;
+  }> =
+    users?.results.map((u) => {
+      const icon = u.avatarUrl ? <Avatar name={u.username} size="sm" src={u.avatarUrl} /> : null;
+
+      return {
+        data: {
+          id: u.id,
+          name: u.username,
+          icon,
+        },
+        label: u.username,
+        value: u.id,
+        icon,
+      };
+    }) || [];
+
+  const isInvalidServer = serverAccessData && !serverAccessData.result.authorized;
+
+  return (
+    <>
+      {cloneElement(trigger, { onClick: onOpen })}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Select a User</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={8}>
+              <Stack spacing={4}>
+                <FormControl isInvalid={isInvalidServer}>
+                  <FormLabel>Discord Server</FormLabel>
+                  <DiscordServerSearchSelectv2 onChange={(id) => setGuildId(id)} value={guildId} />
+                  {!isInvalidServer && (
+                    <FormHelperText>
+                      This is just to help pin down where the user is.
+                    </FormHelperText>
+                  )}
+                  {isInvalidServer && (
+                    <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>
+                  )}
+                </FormControl>
+                <FormControl>
+                  <FormLabel>User</FormLabel>
+                  <ThemedSelect
+                    loading={isFetchingUsers}
+                    onInputChange={(value) => setCurrentInput(value)}
+                    options={options}
+                    onChange={(id, option) =>
+                      onSelected({
+                        value: id,
+                        label: option.name,
+                        icon: option.icon,
+                      })
+                    }
+                    placeholder="Search for a user..."
+                    selectProps={{
+                      filterOption: () => true,
+                    }}
+                  />
+                </FormControl>
+                {selectedMention && (
+                  <Flex justifyContent="center">
+                    <Tag size="lg">
+                      {selectedMention.icon &&
+                        React.cloneElement(selectedMention.icon, { size: "xs" })}
+                      <TagLabel ml={2}>{selectedMention.name}</TagLabel>
+                    </Tag>
+                  </Flex>
+                )}
+                {usersError && (
+                  <InlineErrorAlert title="Failed to get users" description={usersError.message} />
+                )}
+              </Stack>
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <HStack>
+              <Button variant="ghost" onClick={onClose}>
+                {t("common.buttons.cancel")}
+              </Button>
+              <Button colorScheme="blue" mr={3} onClick={onClickSave} isDisabled={!selectedMention}>
+                {t("common.buttons.save")}
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+};

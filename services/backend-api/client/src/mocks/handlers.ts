@@ -304,6 +304,7 @@ const handlers = [
 
     const limitedResults = filtered.slice(offset, offset + limit).map((feed) => ({
       ...feed,
+      ownedByUser: Math.random() > 0.5,
     }));
 
     return res(

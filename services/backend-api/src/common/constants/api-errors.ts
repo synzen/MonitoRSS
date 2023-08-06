@@ -33,6 +33,7 @@ export enum ApiErrorCode {
   NO_LEGACY_FEEDS_TO_CONVERT = "NO_LEGACY_FEEDS_TO_CONVERT",
   HANDLED_BY_BULK_CONVERSION = "HANDLED_BY_BULK_CONVERSION",
   CANNOT_RESTORE_LEGACY_FEED = "CANNOT_RESTORE_LEGACY_FEED",
+  MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
 }
 
 // Create a package for the frontend?
@@ -81,4 +82,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   NO_LEGACY_FEEDS_TO_CONVERT: "No legacy feeds to convert",
   HANDLED_BY_BULK_CONVERSION: "Handled by bulk conversion",
   CANNOT_RESTORE_LEGACY_FEED: "Feed is ineligible for legacy restoration",
+  MISSING_SHARED_MANAGER_PERMISSIONS:
+    "You are missing the required permissions to do this action.",
 };

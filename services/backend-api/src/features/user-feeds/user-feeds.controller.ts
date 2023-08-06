@@ -338,6 +338,7 @@ export class UserFeedsController {
         createdAt: feed.createdAt.toISOString(),
         computedStatus: feed.computedStatus,
         isLegacyFeed: !!feed.legacyFeedId,
+        ownedByUser: feed.ownedByUser,
       })),
       total: count,
     };

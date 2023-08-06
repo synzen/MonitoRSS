@@ -73,7 +73,8 @@ enum TabSearchParam {
 const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Connections, 0],
   [TabSearchParam.Comparisons, 1],
-  [TabSearchParam.Logs, 2],
+  [TabSearchParam.Settings, 2],
+  [TabSearchParam.Logs, 3],
 ]);
 
 function getPrettyConnectionName(
@@ -417,7 +418,7 @@ export const UserFeed: React.FC = () => {
               <Tab
                 onClick={() =>
                   navigate({
-                    search: TabSearchParam.Logs,
+                    search: TabSearchParam.Settings,
                   })
                 }
               >
@@ -426,7 +427,7 @@ export const UserFeed: React.FC = () => {
               <Tab
                 onClick={() =>
                   navigate({
-                    search: TabSearchParam.Settings,
+                    search: TabSearchParam.Logs,
                   })
                 }
               >

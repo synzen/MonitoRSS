@@ -1,5 +1,7 @@
 import { NotFoundException, PipeTransform } from "@nestjs/common";
 import { Types } from "mongoose";
+import { UserFeedManagerType } from "../constants/user-feed-manager-type.types";
+import { NoPermissionException } from "../exceptions/no-permission.exception";
 import { GetUserFeedPipe } from "./get-user-feed.pipe";
 
 describe("GetUserFeedPioe", () => {
@@ -61,6 +63,33 @@ describe("GetUserFeedPioe", () => {
       feed
     );
   });
+
+  it("throws if user is a shared manager but access controls explicitly deny them", async () => {
+    const feed = {
+      id: feedId,
+      user: {
+        discordUserId: discordUserId + "other",
+      },
+      shareManageOptions: {
+        users: [
+          {
+            discordUserId,
+          },
+        ],
+      },
+    };
+
+    userFeedsService.getFeedById.mockResolvedValue(feed);
+
+    pipe = new (GetUserFeedPipe({
+      userTypes: [UserFeedManagerType.Creator],
+    }))(userFeedsService as never, request as never);
+
+    await expect(pipe.transform(feedId as never, {} as never)).rejects.toThrow(
+      NoPermissionException
+    );
+  });
+
   it("throws an error if the feed is not found", async () => {
     userFeedsService.getFeedById.mockResolvedValue(null);
 

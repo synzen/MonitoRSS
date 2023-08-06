@@ -14,6 +14,7 @@ export const UserFeedSummarySchema = object({
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
   computedStatus: string().oneOf(Object.values(UserFeedComputedStatus)).required(),
   isLegacyFeed: bool().required(),
+  ownedByUser: bool().required(),
 });
 
 export type UserFeedSummary = InferType<typeof UserFeedSummarySchema>;
