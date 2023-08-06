@@ -50,7 +50,7 @@
     "lodash": "4.17.21",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.37",
-    "mongoose": "^6.6.1",
+    "mongoose": "^6.11.3",
     "node-fetch": "2.6.7",
     "qs": "6.10.3",
     "reflect-metadata": "0.1.13",
