@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
-import { Request, Response } from './entities';
+import { Request } from './entities';
 import dayjs from 'dayjs';
 import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { MikroORM, UseRequestContext } from '@mikro-orm/core';
 import { FeedFetcherService } from './feed-fetcher.service';
@@ -18,12 +18,11 @@ export class FeedFetcherListenerService {
   constructor(
     @InjectRepository(Request)
     private readonly requestRepo: EntityRepository<Request>,
-    @InjectRepository(Response)
-    private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly amqpConnection: AmqpConnection,
     private readonly orm: MikroORM, // For @UseRequestContext decorator
+    private readonly em: EntityManager,
   ) {
     this.failedDurationThresholdHours = this.configService.get(
       'FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
@@ -88,8 +87,7 @@ export class FeedFetcherListenerService {
 
     await this.handleBrokerFetchRequest({ url, rateSeconds });
 
-    await this.requestRepo.flush();
-    await this.responseRepo.flush();
+    await this.em.flush();
 
     logger.debug(`Fetch request message processed for url ${url}`);
   }
@@ -121,8 +119,7 @@ export class FeedFetcherListenerService {
       urls.map((url) => this.handleBrokerFetchRequest({ url, rateSeconds })),
     );
 
-    await this.requestRepo.flush();
-    await this.responseRepo.flush();
+    await this.em.flush();
 
     logger.debug(`Fetch batch request message processed for urls`, {
       urls,
@@ -179,7 +176,6 @@ export class FeedFetcherListenerService {
         );
 
         latestRequest.nextRetryDate = nextRetryDate;
-        await this.requestRepo.persist(latestRequest);
       }
     }
 
