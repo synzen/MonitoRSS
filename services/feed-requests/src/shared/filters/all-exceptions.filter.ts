@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Catch, ArgumentsHost, HttpException } from '@nestjs/common';
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
-import { FastifyReply } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import * as util from 'util';
 import logger from '../../utils/logger';
 
@@ -26,8 +26,19 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
     const { httpAdapter } = this.httpAdapterHost;
 
     const res = exception.getResponse() as Record<string, any>;
+    const req = ctx.getRequest<FastifyRequest>();
 
     logger.error(exception.message, exception);
+    logger.error(`HTTP Exception - ${exception.message}`, {
+      exception: exception.stack || exception,
+      http: {
+        method: req.method,
+        url: req.url,
+        res,
+      },
+    });
+
+    logger.error(`HTTP Exception: ${exception.message}`, exception);
 
     httpAdapter.reply(response, res, statusCode);
   }
