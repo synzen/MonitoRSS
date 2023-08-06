@@ -28,6 +28,7 @@ import {
   getUserFeedDisableCodeByFeedRejectCode,
 } from "./utils";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
+import { chunk } from "lodash";
 
 interface PublishFeedDeliveryArticlesData {
   data: {
@@ -222,6 +223,20 @@ export class ScheduleHandlerService {
     logger.debug("successfully emitted url request event");
   }
 
+  async emitUrlRequestBatchEvent(data: {
+    rateSeconds: number;
+    data: Array<{ url: string }>;
+  }) {
+    this.amqpConnection.publish<{
+      rateSeconds: number;
+      data: Array<{ url: string }>;
+    }>("", MessageBrokerQueue.UrlFetchBatch, data, {
+      expiration: data.rateSeconds * 1000,
+    });
+
+    logger.debug("successfully emitted url request event");
+  }
+
   emitDeliverFeedArticlesEvent({
     userFeed,
     maxDailyArticles,
@@ -323,10 +338,10 @@ export class ScheduleHandlerService {
   async handleRefreshRate(
     refreshRateSeconds: number,
     {
-      urlHandler,
+      urlsHandler,
       feedHandler,
     }: {
-      urlHandler: (url: string) => Promise<void>;
+      urlsHandler: (data: Array<{ url: string }>) => Promise<void>;
       feedHandler: (
         feed: UserFeed,
         {
@@ -356,7 +371,12 @@ export class ScheduleHandlerService {
       }
     );
 
-    await Promise.all(urls.map((url) => urlHandler(url)));
+    await Promise.all(
+      chunk(
+        urls.map((url) => ({ url })),
+        100
+      ).map((urlsChunk) => urlsHandler(urlsChunk))
+    );
 
     const feedCursor = await this.getFeedCursorMatchingRefreshRate(
       refreshRateSeconds

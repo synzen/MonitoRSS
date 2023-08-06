@@ -12,7 +12,7 @@ const logger = setupLogger({
   datadog: datadogApiKey
     ? {
         apiKey: datadogApiKey,
-        service: 'monitorss-feed-requests-service',
+        service: process.env.SERVICE_NAME || 'monitorss-feed-requests-service',
       }
     : undefined,
   enableDebugLogs: process.env.LOG_LEVEL === 'debug',

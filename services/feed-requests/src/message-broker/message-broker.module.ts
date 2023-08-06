@@ -27,6 +27,10 @@ export class MessageBrokerModule implements OnApplicationShutdown {
               prefetchCount: 10,
               default: true,
             },
+            fetchBatch: {
+              prefetchCount: 1,
+              default: false,
+            },
           },
           connectionInitOptions: {
             wait: false,

@@ -1,5 +1,6 @@
 export enum MessageBrokerQueue {
   UrlFetch = "url.fetch",
+  UrlFetchBatch = "url.fetch-batch",
   UrlFailedDisableFeeds = "url.failed.disable-feeds",
   FeedRejectedArticleDisableConnection = "feed.rejected-article.disable-connection",
   FeedDeliverArticles = "feed.deliver-articles",

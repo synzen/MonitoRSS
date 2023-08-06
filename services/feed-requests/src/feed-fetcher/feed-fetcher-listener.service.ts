@@ -43,11 +43,26 @@ export class FeedFetcherListenerService {
   async onBrokerFetchRequest(message: {
     data: { url: string; rateSeconds: number };
   }) {
-    await this.handleBrokerFetchRequest(message);
+    await this.onBrokerFetchRequestHandler(message);
+  }
+
+  @RabbitSubscribe({
+    exchange: '',
+    queue: 'url.fetch-batch',
+    queueOptions: {
+      channel: 'fetchBatch',
+    },
+    createQueueIfNotExists: true,
+  })
+  async onBrokerFetchRequestBatch(message: {
+    data: Array<{ url: string }>;
+    rateSeconds: number;
+  }) {
+    await this.onBrokerFetchRequestBatchHandler(message);
   }
 
   @UseRequestContext()
-  private async handleBrokerFetchRequest(message: {
+  private async onBrokerFetchRequestHandler(message: {
     data: { url: string; rateSeconds: number };
   }): Promise<void> {
     const url = message?.data?.url;
@@ -67,6 +82,56 @@ export class FeedFetcherListenerService {
     logger.debug(`Fetch request message received for url ${url}`, {
       message,
     });
+
+    await this.handleBrokerFetchRequest({ url, rateSeconds });
+
+    await this.requestRepo.flush();
+    await this.responseRepo.flush();
+
+    logger.debug(`Fetch request message processed for url ${url}`);
+  }
+
+  @UseRequestContext()
+  private async onBrokerFetchRequestBatchHandler(message: {
+    data: Array<{ url: string }>;
+    rateSeconds: number;
+  }): Promise<void> {
+    const urls = message?.data?.map((u) => u.url);
+    const rateSeconds = message?.rateSeconds;
+
+    if (!urls || rateSeconds == null) {
+      logger.error(
+        `Received fetch batch request message has no urls and/or rateSeconds, skipping`,
+        {
+          message,
+        },
+      );
+
+      return;
+    }
+
+    logger.debug(`Fetch batch request message received for batch urls`, {
+      message,
+    });
+
+    await Promise.all(
+      urls.map((url) => this.handleBrokerFetchRequest({ url, rateSeconds })),
+    );
+
+    await this.requestRepo.flush();
+    await this.responseRepo.flush();
+
+    logger.debug(`Fetch batch request message processed for urls`, {
+      urls,
+    });
+  }
+
+  private async handleBrokerFetchRequest(data: {
+    url: string;
+    rateSeconds: number;
+  }): Promise<void> {
+    const url = data?.url;
+    const rateSeconds = data?.rateSeconds;
 
     const dateToCheck = dayjs()
       .subtract(Math.round(rateSeconds * 0.75), 'seconds')
@@ -116,11 +181,6 @@ export class FeedFetcherListenerService {
     }
 
     await this.deleteStaleRequests(url);
-
-    await this.requestRepo.flush();
-    await this.responseRepo.flush();
-
-    logger.debug(`Fetch request message processed for url ${url}`);
   }
 
   async shouldSkipAfterPreviousFailedAttempt({

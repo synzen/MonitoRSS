@@ -90,8 +90,6 @@ services:
       context: services/feed-requests
       dockerfile: Dockerfile
       target: build
-    ports:
-      - "5000:5000"
     volumes:
       - ./services/feed-requests:/usr/src/app
       - /usr/src/app/node_modules/
@@ -112,6 +110,35 @@ services:
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://mrss-rabbitmq-broker:5672
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 MonitoRSS/1.0"
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=0.02
+      - FEED_REQUESTS_START_TARGET=service
+
+  mrss-feed-requests-api:
+    restart: on-failure:3
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./services/feed-requests:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npm run start:local
+    depends_on:
+      mrss-postgres-feed-requests:
+        condition: service_started
+    env_file:
+      - ./.env.local
+    environment:
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-feed-requests:5432/feedrequests
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      # - FEED_REQUESTS_SYNC_DB=true
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://mrss-rabbitmq-broker:5672
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 MonitoRSS/1.0"
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=0.02
+      - FEED_REQUESTS_START_TARGET=api
 
   mrss-user-feeds-service:
     restart: on-failure:3

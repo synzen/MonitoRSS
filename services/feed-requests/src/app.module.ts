@@ -58,6 +58,18 @@ export class AppModule implements OnApplicationShutdown {
     };
   }
 
+  static forApiAndService(): DynamicModule {
+    const common = this._forCommon();
+
+    return {
+      module: AppModule,
+      imports: [
+        ...(common.imports || []),
+        FeedFetcherModule.forApiAndService(),
+      ],
+    };
+  }
+
   constructor(private readonly orm: MikroORM) {}
 
   async onApplicationShutdown(signal?: string | undefined) {

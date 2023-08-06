@@ -51,6 +51,7 @@ async function startService() {
   app.enableShutdownHooks();
 
   const orm = app.get(MikroORM);
+  await app.init();
 
   setInterval(() => {
     tryDbConnection(orm).catch(() => process.exit(1));

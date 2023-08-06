@@ -43,9 +43,9 @@ async function runTimerSync(app: INestApplicationContext) {
 
         // await scheduleHandlerService.enforceUserFeedLimits();
         await scheduleHandlerService.handleRefreshRate(refreshRateSeconds, {
-          urlHandler: async (url) =>
-            urlEventHandler(app, {
-              url,
+          urlsHandler: async (data) =>
+            urlsEventHandler(app, {
+              data,
               rateSeconds: refreshRateSeconds,
             }),
           feedHandler: async (feed, { maxDailyArticles }) =>
@@ -64,20 +64,20 @@ async function runTimerSync(app: INestApplicationContext) {
   }
 }
 
-async function urlEventHandler(
+async function urlsEventHandler(
   app: INestApplicationContext,
   data: {
-    url: string;
     rateSeconds: number;
+    data: Array<{ url: string }>;
   }
 ) {
   const scheduleHandlerService = app.get(ScheduleHandlerService);
 
   try {
-    logger.debug(`Handling url event`, {
+    logger.debug(`Handling urls event`, {
       data,
     });
-    await scheduleHandlerService.emitUrlRequestEvent(data);
+    await scheduleHandlerService.emitUrlRequestBatchEvent(data);
   } catch (err) {
     logger.error(`Failed to handle url event`, {
       stack: err.stack,
