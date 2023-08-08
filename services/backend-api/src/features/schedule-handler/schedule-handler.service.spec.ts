@@ -128,7 +128,7 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const urlHandler = jest.fn();
+      const urlsHandler = jest.fn();
       const feedHandler = jest.fn();
 
       jest
@@ -136,11 +136,11 @@ describe("handle-schedule", () => {
         .mockResolvedValue([]);
 
       await service.handleRefreshRate(service.defaultRefreshRateSeconds, {
-        urlHandler,
+        urlsHandler,
         feedHandler,
       });
 
-      expect(urlHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(urlsHandler).toHaveBeenCalledWith("new-york-times.com");
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
@@ -181,7 +181,7 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const urlHandler = jest.fn();
+      const urlsHandler = jest.fn();
       const feedHandler = jest.fn();
 
       jest
@@ -189,11 +189,11 @@ describe("handle-schedule", () => {
         .mockResolvedValue([]);
 
       await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
-        urlHandler,
+        urlsHandler,
         feedHandler,
       });
 
-      expect(urlHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(urlsHandler).toHaveBeenCalledWith("new-york-times.com");
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
@@ -241,7 +241,7 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const urlHandler = jest.fn();
+      const urlsHandler = jest.fn();
       const feedHandler = jest.fn();
 
       jest
@@ -258,11 +258,11 @@ describe("handle-schedule", () => {
         ] as never);
 
       await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
-        urlHandler,
+        urlsHandler,
         feedHandler,
       });
 
-      expect(urlHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(urlsHandler).toHaveBeenCalledWith("new-york-times.com");
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,

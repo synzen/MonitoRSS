@@ -46,6 +46,7 @@ export const UserFeedSchema = object({
     ).required(),
   })
     .optional()
+    .nullable()
     .default(undefined),
 });
 

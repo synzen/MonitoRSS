@@ -206,7 +206,7 @@ const mockUserFeeds: UserFeed[] = [
   {
     id: "2",
     sharedAccessDetails: undefined,
-    shareManageOptions: null,
+    shareManageOptions: undefined,
     title: "Yahoo News",
     url: "https://www.feed2.com",
     createdAt: new Date().toISOString(),
@@ -222,7 +222,7 @@ const mockUserFeeds: UserFeed[] = [
   },
   {
     id: "3",
-    shareManageOptions: null,
+    shareManageOptions: undefined,
     sharedAccessDetails: undefined,
     title: "CNN",
     url: "https://www.feed3.com",

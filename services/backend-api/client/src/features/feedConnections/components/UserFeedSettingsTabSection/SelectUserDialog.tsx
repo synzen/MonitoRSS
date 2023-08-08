@@ -40,9 +40,11 @@ interface Props {
   onAdded: (data: { id: string }) => Promise<void>;
   trigger: React.ReactElement;
   description?: React.ReactNode;
+  title?: React.ReactNode;
+  okButtonText?: string;
 }
 
-export const SelectUserDialog = ({ onAdded, trigger, description }: Props) => {
+export const SelectUserDialog = ({ onAdded, trigger, title, description, okButtonText }: Props) => {
   const { t } = useTranslation();
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
@@ -122,7 +124,7 @@ export const SelectUserDialog = ({ onAdded, trigger, description }: Props) => {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Select a User</ModalHeader>
+          <ModalHeader>{title || "Select a User"}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={8}>
@@ -186,7 +188,7 @@ export const SelectUserDialog = ({ onAdded, trigger, description }: Props) => {
                 isDisabled={!selectedMention || saving}
                 isLoading={saving}
               >
-                {t("common.buttons.save")}
+                {okButtonText || t("common.buttons.save")}
               </Button>
             </HStack>
           </ModalFooter>

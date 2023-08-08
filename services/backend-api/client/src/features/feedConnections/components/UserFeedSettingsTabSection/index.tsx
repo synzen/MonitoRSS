@@ -230,9 +230,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
               Feed Management Invites
             </Heading>
             <Text>
-              Share this feed with users who you would like to also manage this feed. After inviting
-              them, they must accept the invite by logging in. After they accept it, this shared
-              feed will count towards their feed limit. To revoke access, delete their invite.
+              Share this feed with users who you would like to also manage this feed. After they
+              accept it, this shared feed will count towards their feed limit. To revoke access,
+              delete their invite.
             </Text>
           </Stack>
           <Stack>
@@ -328,9 +328,12 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   description={
                     <Text>
                       This user will have access to manage all the settings of this feed, but you
-                      still retain ownership of this feed after they accept the invite.
+                      still retain ownership of this feed after they accept the invite. They must
+                      accept the invite by logging in.
                     </Text>
                   }
+                  title="Invite User to Co-manage Feed"
+                  okButtonText="Invite"
                   onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.CoManage })}
                 />
                 <SelectUserDialog
@@ -338,9 +341,11 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   description={
                     <Text>
                       This user will have full ownership of this feed, and you will lose access to
-                      it after they accept the invite.
+                      it after they accept the invite. They must accept the invite by logging in.
                     </Text>
                   }
+                  title="Invite User to Transfer Ownership"
+                  okButtonText="Invite"
                   onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.Transfer })}
                 />
               </MenuList>
