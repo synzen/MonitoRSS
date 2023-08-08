@@ -404,7 +404,7 @@ export class UserFeedsController {
 
     const isOwner = feed.user.discordUserId === discordUserId;
 
-    const userInviteId = feed.shareManageOptions?.invites.find(
+    const userInviteId = feed.shareManageOptions?.invites?.find(
       (u) =>
         u.discordUserId === discordUserId &&
         u.status === UserFeedManagerStatus.Accepted

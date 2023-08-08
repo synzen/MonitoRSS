@@ -35,6 +35,7 @@ export enum ApiErrorCode {
   CANNOT_RESTORE_LEGACY_FEED = "CANNOT_RESTORE_LEGACY_FEED",
   MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
   USER_MANAGER_ALREADY_INVITED = "USER_MANAGER_ALREADY_INVITED",
+  USER_FEED_TRANSFER_REQUEST_EXISTS = "USER_FEED_TRANSFER_REQUEST_EXISTS",
 }
 
 // Create a package for the frontend?
@@ -86,4 +87,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   MISSING_SHARED_MANAGER_PERMISSIONS:
     "You are missing the required permissions to do this action.",
   USER_MANAGER_ALREADY_INVITED: "Invitation exists for this user.",
+  USER_FEED_TRANSFER_REQUEST_EXISTS:
+    "Transfer request already exists for this feed.",
 };

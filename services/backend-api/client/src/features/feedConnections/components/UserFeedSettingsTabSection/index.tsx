@@ -13,6 +13,10 @@ import {
   IconButton,
   Input,
   Link,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   NumberDecrementStepper,
   NumberIncrementStepper,
   NumberInput,
@@ -36,7 +40,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -47,9 +51,9 @@ import {
   useUserFeed,
 } from "../../../feed/hooks";
 import { DiscordUsername } from "../../../discordUser";
-import { SelectUserDialog } from "./SelectUserDialog";
-import { UserFeedManagerStatus } from "../../../../constants";
+import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../../constants";
 import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
+import { SelectUserDialog } from "./SelectUserDialog";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -158,12 +162,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     }
   };
 
-  const onAddUser = async ({ id }: { id: string }) => {
+  const onAddUser = async ({ id, type }: { id: string; type: UserFeedManagerInviteType }) => {
     try {
       await createUserFeedManagementInvite({
         data: {
           feedId,
           discordUserId: id,
+          type,
         },
       });
       notifySuccess("Successfully sent invite");
@@ -244,6 +249,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   <Thead>
                     <Tr>
                       <Th>Name</Th>
+                      <Th>Type</Th>
                       <Th>Status</Th>
                       <Th>Added On</Th>
                       <Th />
@@ -254,6 +260,14 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       <Tr key={u.id}>
                         <Td>
                           <DiscordUsername userId={u.discordUserId} />
+                        </Td>
+                        <Td>
+                          {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
+                            <Text>Co-manage</Text>
+                          )}
+                          {u.type === UserFeedManagerInviteType.Transfer && (
+                            <Text>Ownership transfer</Text>
+                          )}
                         </Td>
                         <Td>
                           {u.status === UserFeedManagerStatus.Accepted && (
@@ -297,19 +311,40 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                 </Table>
               </TableContainer>
             )}
-            <SelectUserDialog
-              trigger={
-                <Button
-                  width="min-content"
-                  isDisabled={
-                    creatingInvitesStatus === "loading" || !!feed?.sharedAccessDetails?.inviteId
+            <Menu>
+              <MenuButton
+                isDisabled={
+                  creatingInvitesStatus === "loading" || !!feed?.sharedAccessDetails?.inviteId
+                }
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                width="min-content"
+              >
+                Invite user to...
+              </MenuButton>
+              <MenuList>
+                <SelectUserDialog
+                  trigger={<MenuItem>Co-manage feed</MenuItem>}
+                  description={
+                    <Text>
+                      This user will have access to manage all the settings of this feed, but you
+                      still retain ownership of this feed after they accept the invite.
+                    </Text>
                   }
-                >
-                  Add User
-                </Button>
-              }
-              onAdded={onAddUser}
-            />
+                  onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.CoManage })}
+                />
+                <SelectUserDialog
+                  trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
+                  description={
+                    <Text>
+                      This user will have full ownership of this feed, and you will lose access to
+                      it after they accept the invite.
+                    </Text>
+                  }
+                  onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.Transfer })}
+                />
+              </MenuList>
+            </Menu>
           </Stack>
         </Stack>
         <Stack spacing={4}>

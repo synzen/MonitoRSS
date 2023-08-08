@@ -39,9 +39,10 @@ interface OptionData {
 interface Props {
   onAdded: (data: { id: string }) => Promise<void>;
   trigger: React.ReactElement;
+  description?: React.ReactNode;
 }
 
-export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
+export const SelectUserDialog = ({ onAdded, trigger, description }: Props) => {
   const { t } = useTranslation();
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
@@ -125,6 +126,7 @@ export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={8}>
+              {description}
               <Stack spacing={4}>
                 <FormControl isInvalid={isInvalidServer}>
                   <FormLabel>Discord Server</FormLabel>

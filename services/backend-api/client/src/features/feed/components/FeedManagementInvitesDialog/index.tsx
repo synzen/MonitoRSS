@@ -31,7 +31,7 @@ import { useUpdateUserFeedManagementInvite, useUserFeedManagementInvites } from 
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { DiscordUsername } from "../../../discordUser";
 import { UserFeedManagementInvite } from "../../types";
-import { UserFeedManagerStatus } from "../../../../constants";
+import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../../constants";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
 
@@ -45,6 +45,7 @@ const FeedManagementInviteRow = ({
   invite: {
     id,
     feed: { ownerDiscordUserId, title, url },
+    type,
   },
 }: {
   currentNumberOfInvites: number;
@@ -103,6 +104,10 @@ const FeedManagementInviteRow = ({
   return (
     <Tr key={id}>
       <Td>
+        {(!type || type === UserFeedManagerInviteType.CoManage) && <Text>Co-manage</Text>}
+        {type === UserFeedManagerInviteType.Transfer && <Text>Ownership transfer</Text>}
+      </Td>
+      <Td>
         <DiscordUsername userId={ownerDiscordUserId} />
       </Td>
       <Td>{title}</Td>
@@ -153,8 +158,9 @@ export const FeedManagementInvitesDialog = ({ trigger }: Props) => {
           <ModalBody>
             <Stack spacing={4}>
               <Text>
-                You have been invited to co-manage one or more feeds owned by someone else. Once you
-                accept the invite, you&apos;ll be able to see those feeds in your feed list.
+                You have been invited to either co-manage or own one or more feeds owned by someone
+                else. Once you accept the invite, you&apos;ll be able to see those feeds in your
+                feed list.
               </Text>
               {!error && data && (
                 <Alert status="warning">
@@ -178,6 +184,7 @@ export const FeedManagementInvitesDialog = ({ trigger }: Props) => {
                   <Table variant="simple">
                     <Thead>
                       <Tr>
+                        <Th>Request Type</Th>
                         <Th>Owner</Th>
                         <Th>Feed Title</Th>
                         <Th>Feed URL</Th>

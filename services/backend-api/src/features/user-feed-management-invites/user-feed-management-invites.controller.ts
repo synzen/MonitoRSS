@@ -81,11 +81,13 @@ export class UserFeedManagementInvitesController {
     @Body(ValidationPipe)
     {
       discordUserId: targetDiscordUserId,
+      type,
     }: CreateUserFeedManagementInviteInputDto
   ) {
     await this.service.createInvite({
       feed,
       targetDiscordUserId,
+      type,
     });
 
     return {
@@ -100,11 +102,9 @@ export class UserFeedManagementInvitesController {
   async updateInvite(
     @Param("id") inviteId: string,
     @Param("id", GetUserFeedManagementInviteByInviteePipe()) userFeed: UserFeed,
-    @Body(ValidationPipe) { status }: UpdateUserFeedManagementInviteInputDto,
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
+    @Body(ValidationPipe) { status }: UpdateUserFeedManagementInviteInputDto
   ) {
-    await this.service.updateInvite(userFeed, inviteId, discordUserId, {
+    await this.service.updateInvite(userFeed, inviteId, {
       status,
     });
 

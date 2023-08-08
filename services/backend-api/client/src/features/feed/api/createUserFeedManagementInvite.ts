@@ -1,10 +1,12 @@
 import { InferType, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
+import { UserFeedManagerInviteType } from "../../../constants";
 
 export interface CreateUserFeedManagementInviteInput {
   data: {
     feedId: string;
     discordUserId: string;
+    type: UserFeedManagerInviteType;
   };
 }
 

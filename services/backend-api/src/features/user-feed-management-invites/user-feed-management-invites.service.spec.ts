@@ -14,7 +14,7 @@ import {
   UserFeedModel,
 } from "../user-feeds/entities";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
-import { UserFeedManagerStatus } from "./constants";
+import { UserFeedManagerInviteType, UserFeedManagerStatus } from "./constants";
 import { UserFeedManagementInvitesService } from "./user-feed-management-invites.service";
 
 const discordUserId = "discordUserId";
@@ -90,6 +90,7 @@ describe("UserFeedManagementInvitesService", () => {
       await service.createInvite({
         feed,
         targetDiscordUserId,
+        type: UserFeedManagerInviteType.CoManage,
       });
 
       const updatedFeed = await userFeedModel
@@ -265,14 +266,9 @@ describe("UserFeedManagementInvitesService", () => {
     });
 
     it("updates the invite status", async () => {
-      await service.updateInvite(
-        feed,
-        inviteId.toHexString(),
-        "discordUserId",
-        {
-          status: UserFeedManagerStatus.Declined,
-        }
-      );
+      await service.updateInvite(feed, inviteId.toHexString(), {
+        status: UserFeedManagerStatus.Declined,
+      });
 
       const updatedFeed = await userFeedModel
         .findById(feed._id)
@@ -285,12 +281,7 @@ describe("UserFeedManagementInvitesService", () => {
     });
 
     it("does not update the invite status if there is nothing to update", async () => {
-      await service.updateInvite(
-        feed,
-        inviteId.toHexString(),
-        "discordUserId",
-        {}
-      );
+      await service.updateInvite(feed, inviteId.toHexString(), {});
 
       const updatedFeed = await userFeedModel
         .findById(feed._id)
@@ -315,7 +306,7 @@ describe("UserFeedManagementInvitesService", () => {
       });
 
       await expect(
-        service.updateInvite(feed, inviteId.toHexString(), "discordUserId", {})
+        service.updateInvite(feed, inviteId.toHexString(), {})
       ).rejects.toThrow(FeedLimitReachedException);
     });
   });

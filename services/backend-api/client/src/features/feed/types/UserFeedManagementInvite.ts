@@ -1,4 +1,5 @@
 import { InferType, object, string } from "yup";
+import { UserFeedManagerInviteType } from "../../../constants";
 
 export const UserFeedManagementInviteSchema = object({
   id: string().required(),
@@ -8,6 +9,7 @@ export const UserFeedManagementInviteSchema = object({
     url: string().required(),
     ownerDiscordUserId: string().required(),
   }).required(),
+  type: string().oneOf(Object.values(UserFeedManagerInviteType)).optional().nullable(),
 });
 
 export type UserFeedManagementInvite = InferType<typeof UserFeedManagementInviteSchema>;

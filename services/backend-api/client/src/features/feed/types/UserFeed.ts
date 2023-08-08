@@ -2,7 +2,7 @@ import { array, bool, InferType, number, object, string } from "yup";
 import { FeedConnectionSchema } from "../../../types";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
-import { UserFeedManagerStatus } from "../../../constants";
+import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../constants";
 
 export const UserFeedSchema = object({
   id: string().required(),
@@ -37,7 +37,8 @@ export const UserFeedSchema = object({
       object({
         id: string().required(),
         discordUserId: string().required(),
-        status: string().oneOf(Object.values(UserFeedManagerStatus)).required(),
+        type: string().oneOf(Object.values(UserFeedManagerInviteType)).optional(),
+        status: string().oneOf(Object.values(UserFeedManagerStatus)).optional().nullable(),
         createdAt: string()
           .transform((value) => (value ? new Date(value).toISOString() : value))
           .required(),
@@ -45,8 +46,7 @@ export const UserFeedSchema = object({
     ).required(),
   })
     .optional()
-    .notRequired()
-    .default(null),
+    .default(undefined),
 });
 
 export type UserFeed = InferType<typeof UserFeedSchema>;

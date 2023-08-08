@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Schema as MongooseSchema, Types } from "mongoose";
-import { UserFeedManagerStatus } from "../../user-feed-management-invites/constants";
+import {
+  UserFeedManagerInviteType,
+  UserFeedManagerStatus,
+} from "../../user-feed-management-invites/constants";
 
 @Schema({
   _id: false,
@@ -12,6 +15,14 @@ export class UserFeedUserShareManageUser {
     auto: true,
   })
   id: Types.ObjectId;
+
+  @Prop({
+    required: false,
+    type: String,
+    enum: Object.values(UserFeedManagerInviteType),
+    default: UserFeedManagerInviteType.CoManage,
+  })
+  type: UserFeedManagerInviteType;
 
   @Prop({
     required: true,

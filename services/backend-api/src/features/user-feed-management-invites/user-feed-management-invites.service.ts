@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
@@ -5,8 +6,11 @@ import { FeedLimitReachedException } from "../feeds/exceptions";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
-import { UserFeedManagerStatus } from "./constants";
-import { UserManagerAlreadyInvitedException } from "./exceptions";
+import { UserFeedManagerInviteType, UserFeedManagerStatus } from "./constants";
+import {
+  UserFeedTransferRequestExiststException,
+  UserManagerAlreadyInvitedException,
+} from "./exceptions";
 
 @Injectable()
 export class UserFeedManagementInvitesService {
@@ -19,9 +23,11 @@ export class UserFeedManagementInvitesService {
   async createInvite({
     feed,
     targetDiscordUserId,
+    type,
   }: {
     feed: UserFeed;
     targetDiscordUserId: string;
+    type: UserFeedManagerInviteType;
   }) {
     if (!feed.shareManageOptions) {
       feed.shareManageOptions = {
@@ -45,12 +51,24 @@ export class UserFeedManagementInvitesService {
       throw new UserManagerAlreadyInvitedException("Cannot invite self");
     }
 
+    if (
+      type === UserFeedManagerInviteType.Transfer &&
+      feed.shareManageOptions.invites.find(
+        (i) => i.type === UserFeedManagerInviteType.Transfer
+      )
+    ) {
+      throw new UserFeedTransferRequestExiststException(
+        "Transfer request already exists"
+      );
+    }
+
     feed.shareManageOptions.invites.push({
       discordUserId: targetDiscordUserId,
       createdAt: new Date(),
       updatedAt: new Date(),
       status: UserFeedManagerStatus.Pending,
       id: new Types.ObjectId(),
+      type,
     });
 
     await this.userFeedModel.updateOne(
@@ -135,7 +153,6 @@ export class UserFeedManagementInvitesService {
   async updateInvite(
     userFeed: UserFeed,
     inviteId: string,
-    inviteeDiscordUserId: string,
     updates: {
       status?: UserFeedManagerStatus;
     }
@@ -144,20 +161,23 @@ export class UserFeedManagementInvitesService {
       (u) => u.id.toHexString() === inviteId
     );
 
-    if (inviteIndex === -1) {
+    if (inviteIndex == null || inviteIndex === -1) {
       throw new Error(
         `Failed to update invite ${inviteId} for user feed ${userFeed._id}: invite ID is not in user feed`
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const invite = userFeed.shareManageOptions!.invites[inviteIndex];
+
     const { maxUserFeeds } =
       await this.supportersService.getBenefitsOfDiscordUser(
-        inviteeDiscordUserId
+        invite.discordUserId
       );
 
     const currentCount =
       await this.userFeedsService.calculateCurrentFeedCountOfDiscordUser(
-        inviteeDiscordUserId
+        invite.discordUserId
       );
 
     if (
@@ -167,19 +187,33 @@ export class UserFeedManagementInvitesService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
-    await this.userFeedModel.updateOne(
-      {
-        _id: userFeed._id,
-      },
-      {
-        $set: {
-          ...(updates.status && {
-            [`shareManageOptions.invites.${inviteIndex}.status`]:
-              updates.status,
-          }),
+    if (!invite.type || invite.type === UserFeedManagerInviteType.CoManage) {
+      await this.userFeedModel.updateOne(
+        {
+          _id: userFeed._id,
         },
-      }
-    );
+        {
+          $set: {
+            ...(updates.status && {
+              [`shareManageOptions.invites.${inviteIndex}.status`]:
+                updates.status,
+            }),
+          },
+        }
+      );
+    } else if (invite.type === UserFeedManagerInviteType.Transfer) {
+      await this.userFeedModel.updateOne(
+        {
+          _id: userFeed._id,
+        },
+        {
+          $set: {
+            "user.discordUserId": invite.discordUserId,
+            "shareManageOptions.invites": [],
+          },
+        }
+      );
+    }
   }
 
   async getMyPendingInvites(discordUserId: string): Promise<
@@ -203,20 +237,22 @@ export class UserFeedManagementInvitesService {
       .select("_id title url user shareManageOptions")
       .lean();
 
-    return feeds.map((feed) => ({
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      id: feed
-        .shareManageOptions!.invites.find(
-          (u) => u.discordUserId === discordUserId
-        )!
-        .id.toHexString(),
-      feed: {
-        id: feed._id.toHexString(),
-        title: feed.title,
-        url: feed.url,
-        ownerDiscordUserId: feed.user.discordUserId,
-      },
-    }));
+    return feeds.map((feed) => {
+      const invite = feed.shareManageOptions!.invites.find(
+        (u) => u.discordUserId === discordUserId
+      );
+
+      return {
+        id: invite!.id.toHexString(),
+        type: invite!.type,
+        feed: {
+          id: feed._id.toHexString(),
+          title: feed.title,
+          url: feed.url,
+          ownerDiscordUserId: feed.user.discordUserId,
+        },
+      };
+    });
   }
 
   async getMyPendingInviteCount(discordUserId: string): Promise<number> {
