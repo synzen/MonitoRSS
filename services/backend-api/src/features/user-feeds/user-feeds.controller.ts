@@ -32,7 +32,10 @@ import {
   UpdateUserFeedsExceptionFilter,
 } from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
-import { UserFeedManagerType } from "./constants/user-feed-manager-type.types";
+import {
+  UserFeedManagerStatus,
+  UserFeedManagerType,
+} from "../user-feed-management-invites/constants";
 import {
   CreateUserFeedInputDto,
   GetUserFeedArticlePropertiesOutputDto,
@@ -132,9 +135,11 @@ export class UserFeedsController {
 
   @Get("/:feedId")
   async getFeed(
-    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
-    return await this.formatFeedForResponse(feed, feed.user.discordUserId);
+    return await this.formatFeedForResponse(feed, discordUserId);
   }
 
   @Get("/:feed/requests")
@@ -277,7 +282,9 @@ export class UserFeedsController {
       formatOptions,
       dateCheckOptions,
       shareManageOptions,
-    }: UpdateUserFeedInputDto
+    }: UpdateUserFeedInputDto,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<UpdateUserFeedOutputDto> {
     if (disabledCode && feed.disabledCode) {
       throw new ForbiddenException("Feed is already disabled");
@@ -297,7 +304,7 @@ export class UserFeedsController {
       }
     )) as UserFeed;
 
-    return this.formatFeedForResponse(updated, feed.user.discordUserId);
+    return this.formatFeedForResponse(updated, discordUserId);
   }
 
   @Post("/:feedId/restore-to-legacy")
@@ -395,9 +402,22 @@ export class UserFeedsController {
     const { refreshRateSeconds } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
+    const isOwner = feed.user.discordUserId === discordUserId;
+
+    const userInviteId = feed.shareManageOptions?.users.find(
+      (u) =>
+        u.discordUserId === discordUserId &&
+        u.status === UserFeedManagerStatus.Accepted
+    )?.id;
+
     return {
       result: {
         id: feed._id.toHexString(),
+        sharedAccessDetails: userInviteId
+          ? {
+              inviteId: userInviteId.toHexString(),
+            }
+          : undefined,
         title: feed.title,
         url: feed.url,
         isLegacyFeed: !!feed.legacyFeedId,
@@ -414,7 +434,7 @@ export class UserFeedsController {
         formatOptions: feed.formatOptions,
         dateCheckOptions: feed.dateCheckOptions,
         refreshRateSeconds,
-        shareManageOptions: feed.shareManageOptions,
+        shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
       },
     };
   }

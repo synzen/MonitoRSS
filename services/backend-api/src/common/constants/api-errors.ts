@@ -34,6 +34,7 @@ export enum ApiErrorCode {
   HANDLED_BY_BULK_CONVERSION = "HANDLED_BY_BULK_CONVERSION",
   CANNOT_RESTORE_LEGACY_FEED = "CANNOT_RESTORE_LEGACY_FEED",
   MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
+  USER_MANAGER_ALREADY_INVITED = "USER_MANAGER_ALREADY_INVITED",
 }
 
 // Create a package for the frontend?
@@ -84,4 +85,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   CANNOT_RESTORE_LEGACY_FEED: "Feed is ineligible for legacy restoration",
   MISSING_SHARED_MANAGER_PERMISSIONS:
     "You are missing the required permissions to do this action.",
+  USER_MANAGER_ALREADY_INVITED: "Invitation exists for this user.",
 };

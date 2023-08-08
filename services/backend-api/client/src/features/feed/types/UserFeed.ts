@@ -8,6 +8,9 @@ export const UserFeedSchema = object({
   id: string().required(),
   title: string().required(),
   url: string().required(),
+  sharedAccessDetails: object({
+    inviteId: string().required(),
+  }).optional(),
   passingComparisons: array(string().required()).optional().default(undefined),
   blockingComparisons: array(string().required()).optional().default(undefined),
   createdAt: string()
@@ -32,6 +35,7 @@ export const UserFeedSchema = object({
   shareManageOptions: object({
     users: array(
       object({
+        id: string().required(),
         discordUserId: string().required(),
         status: string().oneOf(Object.values(UserFeedManagerStatus)).required(),
         createdAt: string()

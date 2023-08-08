@@ -19,6 +19,7 @@ import { FeedConnectionsDiscordChannelsModule } from "./features/feed-connection
 import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connections/feed-connections-discord-webhooks.module";
 import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 import { LegacyFeedConversionModule } from "./features/legacy-feed-conversion/legacy-feed-conversion.module";
+import { UserFeedManagementInvitesModule } from "./features/user-feed-management-invites/user-feed-management-invites.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { LegacyFeedConversionModule } from "./features/legacy-feed-conversion/le
     SupportersModule,
     LegacyFeedConversionModule,
     ScheduleEmitterModule,
+    UserFeedManagementInvitesModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
     }),

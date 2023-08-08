@@ -42,7 +42,7 @@ import {
   LegacyFeedConversionJob,
   LegacyFeedConversionJobModel,
 } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
-import { UserFeedManagerStatus } from "./constants";
+import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual

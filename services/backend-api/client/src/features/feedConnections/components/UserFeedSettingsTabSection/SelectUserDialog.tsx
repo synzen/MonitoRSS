@@ -28,6 +28,7 @@ import {
 } from "../../../discordServers";
 import { InlineErrorAlert, ThemedSelect } from "../../../../components";
 import { useDebounce } from "../../../../hooks";
+import { useDiscordUserMe } from "../../../discordUser";
 
 interface OptionData {
   id: string;
@@ -36,7 +37,7 @@ interface OptionData {
 }
 
 interface Props {
-  onAdded: (data: { id: string }) => void;
+  onAdded: (data: { id: string }) => Promise<void>;
   trigger: React.ReactElement;
 }
 
@@ -46,6 +47,7 @@ export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
   const [guildId, setGuildId] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { data: discordUserMe } = useDiscordUserMe();
   const debouncedSearch = useDebounce(currentInput, 500);
   const { data: serverAccessData } = useDiscordServerAccessStatus({ serverId: guildId });
   const {
@@ -60,6 +62,7 @@ export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
       search: debouncedSearch,
     },
   });
+  const [saving, setSaving] = useState(false);
 
   const onSelected = (data: { label: string; value: string; icon?: React.ReactElement | null }) => {
     setSelectedMention({
@@ -69,9 +72,15 @@ export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
     });
   };
 
-  const onClickSave = () => {
+  const onClickSave = async () => {
     if (selectedMention) {
-      onAdded({ id: selectedMention.id });
+      try {
+        setSaving(true);
+        await onAdded({ id: selectedMention.id });
+      } finally {
+        setSaving(false);
+      }
+
       onClose();
     }
   };
@@ -87,20 +96,22 @@ export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
     icon?: React.ReactElement | null;
     data: OptionData;
   }> =
-    users?.results.map((u) => {
-      const icon = u.avatarUrl ? <Avatar name={u.username} size="sm" src={u.avatarUrl} /> : null;
+    users?.results
+      .filter((u) => (discordUserMe ? u.id !== discordUserMe.id : true))
+      .map((u) => {
+        const icon = u.avatarUrl ? <Avatar name={u.username} size="sm" src={u.avatarUrl} /> : null;
 
-      return {
-        data: {
-          id: u.id,
-          name: u.username,
+        return {
+          data: {
+            id: u.id,
+            name: u.username,
+            icon,
+          },
+          label: u.username,
+          value: u.id,
           icon,
-        },
-        label: u.username,
-        value: u.id,
-        icon,
-      };
-    }) || [];
+        };
+      }) || [];
 
   const isInvalidServer = serverAccessData && !serverAccessData.result.authorized;
 
@@ -166,7 +177,13 @@ export const SelectUserDialog = ({ onAdded, trigger }: Props) => {
               <Button variant="ghost" onClick={onClose}>
                 {t("common.buttons.cancel")}
               </Button>
-              <Button colorScheme="blue" mr={3} onClick={onClickSave} isDisabled={!selectedMention}>
+              <Button
+                colorScheme="blue"
+                mr={3}
+                onClick={onClickSave}
+                isDisabled={!selectedMention || saving}
+                isLoading={saving}
+              >
                 {t("common.buttons.save")}
               </Button>
             </HStack>

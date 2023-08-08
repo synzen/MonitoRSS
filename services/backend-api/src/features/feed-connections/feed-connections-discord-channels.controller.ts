@@ -20,7 +20,7 @@ import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
 } from "../feeds/constants";
-import { UserFeedManagerType } from "../user-feeds/constants/user-feed-manager-type.types";
+import { UserFeedManagerType } from "../user-feed-management-invites/constants";
 import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {

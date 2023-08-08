@@ -1,4 +1,6 @@
 import {
+  Alert,
+  AlertDescription,
   Button,
   Center,
   Code,
@@ -19,6 +21,7 @@ import {
   Stack,
   Table,
   TableContainer,
+  Tag,
   Tbody,
   Td,
   Text,
@@ -37,9 +40,16 @@ import { DeleteIcon } from "@chakra-ui/icons";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { useUpdateUserFeed, useUserFeed } from "../../../feed/hooks";
+import {
+  useCreateUserFeedManagementInvite,
+  useDeleteUserFeedManagementInvite,
+  useUpdateUserFeed,
+  useUserFeed,
+} from "../../../feed/hooks";
 import { DiscordUsername } from "../../../discordUser";
 import { SelectUserDialog } from "./SelectUserDialog";
+import { UserFeedManagerStatus } from "../../../../constants";
+import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -98,7 +108,6 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     reset,
     formState: { isDirty, isSubmitting, errors: formErrors },
     watch,
-    setValue,
   } = useForm<FormValues>({
     resolver: yupResolver(FormSchema),
     defaultValues: {
@@ -109,13 +118,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     },
   });
 
-  const [dateFormat, dateTimezone, shareManageOptions] = watch([
-    "dateFormat",
-    "dateTimezone",
-    "shareManageOptions",
-  ]);
+  const [dateFormat, dateTimezone] = watch(["dateFormat", "dateTimezone", "shareManageOptions"]);
 
-  const { mutateAsync, status } = useUpdateUserFeed();
+  const { mutateAsync } = useUpdateUserFeed();
+  const { mutateAsync: createUserFeedManagementInvite, status: creatingInvitesStatus } =
+    useCreateUserFeedManagementInvite();
+  const { mutateAsync: deleteUserFeedManagementInvite, status: deletingInviteStatus } =
+    useDeleteUserFeedManagementInvite({ feedId });
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
@@ -150,39 +159,26 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
   };
 
   const onAddUser = async ({ id }: { id: string }) => {
-    const clone = {
-      ...shareManageOptions,
-      users: [...(shareManageOptions?.users || [])],
-    };
-
-    if (clone.users.some((user) => user.discordUserId === id)) {
-      return;
+    try {
+      await createUserFeedManagementInvite({
+        data: {
+          feedId,
+          discordUserId: id,
+        },
+      });
+      notifySuccess("Successfully sent invite");
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
-
-    clone.users.push({
-      discordUserId: id,
-    });
-
-    setValue("shareManageOptions", clone);
-    handleSubmit(onUpdatedFeed)();
   };
 
-  const removeUser = (id: string) => {
-    const clone = {
-      ...shareManageOptions,
-      users: [...(shareManageOptions?.users || [])],
-    };
-
-    const index = clone.users.findIndex((user) => user.discordUserId === id);
-
-    if (index === -1) {
-      return;
+  const removeInvite = async (id: string) => {
+    try {
+      await deleteUserFeedManagementInvite({ id });
+      notifySuccess("Successfully removed invite");
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
-
-    clone.users.splice(index, 1);
-
-    setValue("shareManageOptions", clone);
-    handleSubmit(onUpdatedFeed)();
   };
 
   let datePreview: React.ReactNode;
@@ -226,21 +222,27 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
         <Stack spacing={4}>
           <Stack>
             <Heading size="md" as="h3">
-              Feed Management
+              Feed Management Invites
             </Heading>
             <Text>
-              Invite users who you would like to also manage this feed. After inviting them, they
-              will have to accept the invite. Once they accept it, the shared feed will count
-              towards their feed limit.
+              Share this feed with users who you would like to also manage this feed. After inviting
+              them, they must accept the invite by logging in. After they accept it, this shared
+              feed will count towards their feed limit. To revoke access, delete their invite.
             </Text>
           </Stack>
           <Stack>
-            {feed?.shareManageOptions?.users.length && (
+            {feed && feed.sharedAccessDetails && (
+              <Alert status="warning">
+                <AlertDescription>
+                  Only the feed owner can manage feed management invites.
+                </AlertDescription>
+              </Alert>
+            )}
+            {feed && !feed.sharedAccessDetails && feed?.shareManageOptions?.users.length && (
               <TableContainer>
                 <Table variant="simple">
                   <Thead>
                     <Tr>
-                      <Th>ID</Th>
                       <Th>Name</Th>
                       <Th>Status</Th>
                       <Th>Added On</Th>
@@ -249,12 +251,27 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   </Thead>
                   <Tbody>
                     {feed.shareManageOptions.users.map((u) => (
-                      <Tr>
-                        <Td>{u.discordUserId}</Td>
+                      <Tr key={u.id}>
                         <Td>
                           <DiscordUsername userId={u.discordUserId} />
                         </Td>
-                        <Td>{u.status}</Td>
+                        <Td>
+                          {u.status === UserFeedManagerStatus.Accepted && (
+                            <Tag colorScheme="green">Accepted</Tag>
+                          )}
+                          {u.status === UserFeedManagerStatus.Pending && (
+                            <Tag colorScheme="yellow">Pending</Tag>
+                          )}
+                          {u.status === UserFeedManagerStatus.Declined && (
+                            <HStack>
+                              <Tag colorScheme="red">Declined</Tag>
+                              <ResendUserFeedManagementInviteButton
+                                feedId={feedId}
+                                inviteId={u.id}
+                              />
+                            </HStack>
+                          )}
+                        </Td>
                         <Td>{u.createdAt}</Td>
                         <Td isNumeric>
                           <ConfirmModal
@@ -264,14 +281,14 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                                 aria-label="Delete user"
                                 icon={<DeleteIcon />}
                                 variant="ghost"
-                                isDisabled={status === "loading"}
+                                isDisabled={deletingInviteStatus === "loading"}
                               />
                             }
                             okText="Delete"
                             title="Delete User"
                             description="Are you sure you want to remove this user? They will lose access to this feed."
                             colorScheme="red"
-                            onConfirm={() => removeUser(u.discordUserId)}
+                            onConfirm={() => removeInvite(u.id)}
                           />
                         </Td>
                       </Tr>
@@ -282,7 +299,12 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             )}
             <SelectUserDialog
               trigger={
-                <Button width="min-content" isDisabled={status === "loading"}>
+                <Button
+                  width="min-content"
+                  isDisabled={
+                    creatingInvitesStatus === "loading" || !!feed?.sharedAccessDetails?.inviteId
+                  }
+                >
                   Add User
                 </Button>
               }

@@ -1,11 +1,18 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { UserFeedManagerStatus } from "../constants";
+import { Schema as MongooseSchema, Types } from "mongoose";
+import { UserFeedManagerStatus } from "../../user-feed-management-invites/constants";
 
 @Schema({
   _id: false,
   timestamps: true,
 })
 export class UserFeedUserShareManageUser {
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    auto: true,
+  })
+  id: Types.ObjectId;
+
   @Prop({
     required: true,
   })
@@ -20,6 +27,7 @@ export class UserFeedUserShareManageUser {
   status: UserFeedManagerStatus;
 
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserFeedShareUserSchema = SchemaFactory.createForClass(

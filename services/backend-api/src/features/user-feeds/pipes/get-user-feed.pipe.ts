@@ -12,9 +12,12 @@ import { Types } from "mongoose";
 import { UserFeedsService } from "../user-feeds.service";
 import { FastifyRequest } from "fastify";
 import { getAccessTokenFromRequest } from "../../discord-auth/utils/get-access-token-from-session";
-import { UserFeedManagerType } from "../constants/user-feed-manager-type.types";
 import { memoize } from "lodash";
 import { NoPermissionException } from "../exceptions";
+import {
+  UserFeedManagerStatus,
+  UserFeedManagerType,
+} from "../../user-feed-management-invites/constants";
 
 interface PipeOptions {
   userTypes: UserFeedManagerType[];
@@ -51,7 +54,9 @@ const createGetUserFeedPipe = (
         found?.user.discordUserId === accessToken.discord.id;
 
       const isSharedManager = found?.shareManageOptions?.users?.some(
-        (u) => u.discordUserId === accessToken.discord.id
+        (u) =>
+          u.discordUserId === accessToken.discord.id &&
+          u.status === UserFeedManagerStatus.Accepted
       );
 
       const allowSharedManager =

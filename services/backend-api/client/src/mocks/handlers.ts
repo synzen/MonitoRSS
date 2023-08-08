@@ -12,6 +12,7 @@ import {
   CreateFeedSubscriberOutput,
   CreateServerLegacyFeedBulkConversionOutput,
   CreateUserFeedLegacyRestoreOutput,
+  CreateUserFeedManagementInviteOutput,
   CreateUserFeedOutput,
   DeleteUserFeedsInput,
   DeleteUserFeedsOutput,
@@ -24,6 +25,8 @@ import {
   GetServerLegacyFeedBulkConversionOutput,
   GetUserFeedArticlePropertiesOutput,
   GetUserFeedArticlesOutput,
+  GetUserFeedManagementInvitesCountOutput,
+  GetUserFeedManagementInvitesOutput,
   GetUserFeedOutput,
   GetUserFeedsOutput,
   UpdateFeedSubscriberOutput,
@@ -75,6 +78,8 @@ import mockDiscordServerMembers from "./data/discordServerMembers";
 import mockDiscordUser from "./data/discordUser";
 import mockUserFeedSummary from "./data/userFeedSummary";
 import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
+import { UserFeedManagerStatus } from "../constants";
+import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 
 const handlers = [
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
@@ -277,6 +282,111 @@ const handlers = [
       )
     )
   ),
+
+  rest.get("/api/v1/user-feed-management-invites/pending", async (req, res, ctx) => {
+    return res(
+      ctx.delay(500),
+      ctx.json<GetUserFeedManagementInvitesCountOutput>({
+        total: mockUserFeedManagementInvites.length,
+      })
+    );
+  }),
+
+  rest.get("/api/v1/user-feed-management-invites", async (req, res, ctx) => {
+    return res(
+      ctx.delay(500),
+      ctx.json<GetUserFeedManagementInvitesOutput>({
+        results: mockUserFeedManagementInvites,
+      })
+    );
+  }),
+
+  rest.post("/api/v1/user-feed-management-invites", async (req, res, ctx) => {
+    const body = await req.json();
+    const { feedId, discordUserId } = body as { feedId: string; discordUserId: string };
+
+    const feed = mockUserFeeds.find((f) => f.id === feedId);
+
+    if (!feed) {
+      return res(
+        ctx.delay(500),
+        ctx.status(404),
+        ctx.json(
+          generateMockApiErrorResponse({
+            code: "FEED_NOT_FOUND",
+          })
+        )
+      );
+    }
+
+    if (!feed.shareManageOptions) {
+      feed.shareManageOptions = {
+        users: [],
+      };
+    }
+
+    feed.shareManageOptions?.users.push({
+      id: Math.random().toString(),
+      createdAt: new Date().toISOString(),
+      discordUserId,
+      status: UserFeedManagerStatus.Pending,
+    });
+
+    return res(
+      ctx.delay(500),
+      ctx.json<CreateUserFeedManagementInviteOutput>({
+        result: {
+          status: "success",
+        },
+      })
+    );
+  }),
+
+  rest.patch("/api/v1/user-feed-management-invites/:id", async (req, res, ctx) => {
+    const { id } = req.params;
+
+    mockUserFeedManagementInvites.splice(
+      mockUserFeedManagementInvites.findIndex((u) => u.id === id),
+      1
+    );
+
+    return res(ctx.delay(500), ctx.status(204));
+  }),
+
+  rest.post("/api/v1/user-feed-management-invites/:id/resend", async (req, res, ctx) => {
+    const { id } = req.params;
+
+    const matchedFeed = mockUserFeeds.find((f) =>
+      f.shareManageOptions?.users.find((u) => u.id === id)
+    );
+
+    if (!matchedFeed) {
+      return res(ctx.delay(500), ctx.status(404), ctx.json({}));
+    }
+
+    matchedFeed.shareManageOptions!.users.find((u) => u.id === id)!.status =
+      UserFeedManagerStatus.Pending;
+
+    return res(ctx.delay(500), ctx.status(204));
+  }),
+
+  rest.delete("/api/v1/user-feed-management-invites/:id", async (req, res, ctx) => {
+    const { id } = req.params;
+    const matchedFeed = mockUserFeeds.find((f) =>
+      f.shareManageOptions?.users.find((u) => u.id === id)
+    );
+
+    if (!matchedFeed) {
+      return res(ctx.delay(500), ctx.status(404), ctx.json({}));
+    }
+
+    matchedFeed.shareManageOptions?.users.splice(
+      matchedFeed.shareManageOptions?.users.findIndex((u) => u.id === id),
+      1
+    );
+
+    return res(ctx.delay(500), ctx.status(204));
+  }),
 
   rest.get("/api/v1/user-feeds", (req, res, ctx) => {
     const limit = Number(req.url.searchParams.get("limit") || "10");

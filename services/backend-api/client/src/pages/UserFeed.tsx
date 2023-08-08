@@ -1,5 +1,4 @@
 import {
-  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -12,7 +11,6 @@ import {
   Link,
   Menu,
   MenuButton,
-  MenuDivider,
   MenuItem,
   MenuList,
   Spinner,
@@ -26,6 +24,9 @@ import {
   useDisclosure,
   Badge,
   IconButton,
+  Alert,
+  AlertDescription,
+  MenuDivider,
   Wrap,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
@@ -42,6 +43,7 @@ import {
   UserFeedDisabledAlert,
   UserFeedDisabledCode,
   useUpdateUserFeed,
+  useUpdateUserFeedManagementInvite,
   useUserFeed,
 } from "../features/feed";
 import RouteParams from "../types/RouteParams";
@@ -59,7 +61,7 @@ import {
 } from "../types";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
-import { pages } from "../constants";
+import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
 import getChakraColor from "../utils/getChakraColor";
 
@@ -130,6 +132,7 @@ export const UserFeed: React.FC = () => {
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
+  const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInvite();
 
   const onAddConnection = (type: FeedConnectionType, isChannelThread?: boolean) => {
     setAddConnectionType({ type, isChannelThread });
@@ -190,6 +193,26 @@ export const UserFeed: React.FC = () => {
     }
   };
 
+  const onRemoveMyAccess = async () => {
+    if (!feed?.sharedAccessDetails?.inviteId) {
+      return;
+    }
+
+    try {
+      await updateInvite({
+        id: feed.sharedAccessDetails?.inviteId,
+        data: {
+          status: UserFeedManagerStatus.Declined,
+        },
+      });
+
+      notifySuccess(t("common.success.savedChanges"));
+      navigate(pages.userFeeds());
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+  };
+
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <AddConnectionDialog
@@ -219,136 +242,161 @@ export const UserFeed: React.FC = () => {
           <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, lg: 12 }} spacing={6}>
             <Stack spacing={6}>
               <Stack spacing={4}>
-                <HStack justifyContent="space-between">
-                  <Box>
-                    <Breadcrumb>
-                      <BreadcrumbItem>
-                        <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
-                          Feeds
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                      <BreadcrumbItem isCurrentPage>
-                        <BreadcrumbLink href="#">{feed?.title}</BreadcrumbLink>
-                      </BreadcrumbItem>
-                    </Breadcrumb>
-                    <HStack alignItems="center">
-                      <Heading size="lg" marginRight={4}>
-                        {feed?.title}
-                      </Heading>
+                {/* <HStack justifyContent="space-between"> */}
+                <Stack flex={1}>
+                  <Breadcrumb>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
+                        Feeds
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbItem isCurrentPage>
+                      <BreadcrumbLink href="#">{feed?.title}</BreadcrumbLink>
+                    </BreadcrumbItem>
+                  </Breadcrumb>
+                  <Stack flex={1}>
+                    <HStack alignItems="flex-start" justifyContent="space-between">
+                      <Stack>
+                        <Heading size="lg" marginRight={4}>
+                          {feed?.title}
+                        </Heading>
+                        <Link
+                          color="gray.400"
+                          _hover={{
+                            color: "gray.200",
+                          }}
+                          href={feed?.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {feed?.url}
+                        </Link>
+                      </Stack>
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          variant="outline"
+                          ref={menuButtonRef}
+                          rightIcon={<ChevronDownIcon />}
+                        >
+                          {t("pages.userFeed.actionsButtonText")}
+                        </MenuButton>
+                        <MenuList>
+                          <MenuItem aria-label="Edit" onClick={editOnOpen}>
+                            {t("common.buttons.configure")}
+                          </MenuItem>
+                          {feed?.sharedAccessDetails?.inviteId && (
+                            <ConfirmModal
+                              title="Remove my shared access"
+                              description="Are you sure you want to remove your access to this feed? You will no longer be able to view or manage this feed."
+                              trigger={
+                                <MenuItem isDisabled={updatingStatus === "loading"}>
+                                  Remove my shared access
+                                </MenuItem>
+                              }
+                              okText={t("common.buttons.yes")}
+                              colorScheme="red"
+                              onConfirm={onRemoveMyAccess}
+                            />
+                          )}
+                          {feed && !feed.disabledCode && (
+                            <ConfirmModal
+                              title={t("pages.userFeed.disableFeedConfirmTitle")}
+                              description={t("pages.userFeed.disableFeedConfirmDescription")}
+                              trigger={
+                                <MenuItem isDisabled={updatingStatus === "loading"}>
+                                  {t("pages.userFeed.disableFeedButtonText")}
+                                </MenuItem>
+                              }
+                              okText={t("common.buttons.yes")}
+                              colorScheme="blue"
+                              onConfirm={async () =>
+                                onUpdateFeed({
+                                  disabledCode: UserFeedDisabledCode.Manual,
+                                })
+                              }
+                            />
+                          )}
+                          <MenuDivider />
+                          {feed?.isLegacyFeed && (
+                            <ConfirmModal
+                              title="Restore legacy feed"
+                              size="xl"
+                              descriptionNode={
+                                <Stack>
+                                  <Text fontWeight={800} color="red.300">
+                                    Only proceed if absolutely required!
+                                  </Text>
+                                  <Stack>
+                                    <Text>
+                                      If you are currently facing issues with personal feeds, you
+                                      may convert this feed back to a legacy feed.
+                                    </Text>
+                                    <Text>
+                                      Legacy feeds are still scheduled to be permanently disabled.
+                                      If you are facing issues, please reach out to Support for
+                                      remediation so that you can convert this back to a personal
+                                      feed as soon as possible.
+                                    </Text>
+                                    <Text>
+                                      After this feed has been restored, this personal feed will be
+                                      deleted.
+                                    </Text>
+                                    <Wrap mt={4}>
+                                      <Button
+                                        as={Link}
+                                        href="https://discord.gg/pudv7Rx"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        variant="ghost"
+                                      >
+                                        Discord Support Server
+                                      </Button>
+                                      <Button
+                                        as={Link}
+                                        href="https://support.monitorss.xyz"
+                                        target="_blank"
+                                        variant="ghost"
+                                      >
+                                        File a Support ticket
+                                      </Button>
+                                    </Wrap>
+                                  </Stack>
+                                </Stack>
+                              }
+                              onConfirm={onRestoreLegacyFeed}
+                              colorScheme="red"
+                              okText="Restore legacy feed"
+                              trigger={<MenuItem>Restore legacy feed</MenuItem>}
+                            />
+                          )}
+                          {feedId && (
+                            <ConfirmModal
+                              title={t("pages.userFeed.deleteConfirmTitle")}
+                              description={t("pages.userFeed.deleteConfirmDescription")}
+                              trigger={
+                                <MenuItem isDisabled={deleteingStatus === "loading"}>
+                                  {t("common.buttons.delete")}
+                                </MenuItem>
+                              }
+                              okText={t("pages.userFeed.deleteConfirmOk")}
+                              colorScheme="red"
+                              onConfirm={onDeleteFeed}
+                            />
+                          )}
+                        </MenuList>
+                      </Menu>
                     </HStack>
-                    <Link
-                      color="gray.400"
-                      _hover={{
-                        color: "gray.200",
-                      }}
-                      href={feed?.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {feed?.url}
-                    </Link>
-                  </Box>
-                  <Menu>
-                    <MenuButton
-                      as={Button}
-                      variant="outline"
-                      ref={menuButtonRef}
-                      rightIcon={<ChevronDownIcon />}
-                    >
-                      {t("pages.userFeed.actionsButtonText")}
-                    </MenuButton>
-                    <MenuList>
-                      <MenuItem aria-label="Edit" onClick={editOnOpen}>
-                        {t("common.buttons.configure")}
-                      </MenuItem>
-                      {feed && !feed.disabledCode && (
-                        <ConfirmModal
-                          title={t("pages.userFeed.disableFeedConfirmTitle")}
-                          description={t("pages.userFeed.disableFeedConfirmDescription")}
-                          trigger={
-                            <MenuItem isDisabled={updatingStatus === "loading"}>
-                              {t("pages.userFeed.disableFeedButtonText")}
-                            </MenuItem>
-                          }
-                          okText={t("common.buttons.yes")}
-                          colorScheme="blue"
-                          onConfirm={async () =>
-                            onUpdateFeed({
-                              disabledCode: UserFeedDisabledCode.Manual,
-                            })
-                          }
-                        />
-                      )}
-                      <MenuDivider />
-                      {feed?.isLegacyFeed && (
-                        <ConfirmModal
-                          title="Restore legacy feed"
-                          size="xl"
-                          descriptionNode={
-                            <Stack>
-                              <Text fontWeight={800} color="red.300">
-                                Only proceed if absolutely required!
-                              </Text>
-                              <Stack>
-                                <Text>
-                                  If you are currently facing issues with personal feeds, you may
-                                  convert this feed back to a legacy feed.
-                                </Text>
-                                <Text>
-                                  Legacy feeds are still scheduled to be permanently disabled. If
-                                  you are facing issues, please reach out to Support for remediation
-                                  so that you can convert this back to a personal feed as soon as
-                                  possible.
-                                </Text>
-                                <Text>
-                                  After this feed has been restored, this personal feed will be
-                                  deleted.
-                                </Text>
-                                <Wrap mt={4}>
-                                  <Button
-                                    as={Link}
-                                    href="https://discord.gg/pudv7Rx"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    variant="ghost"
-                                  >
-                                    Discord Support Server
-                                  </Button>
-                                  <Button
-                                    as={Link}
-                                    href="https://support.monitorss.xyz"
-                                    target="_blank"
-                                    variant="ghost"
-                                  >
-                                    File a Support ticket
-                                  </Button>
-                                </Wrap>
-                              </Stack>
-                            </Stack>
-                          }
-                          onConfirm={onRestoreLegacyFeed}
-                          colorScheme="red"
-                          okText="Restore legacy feed"
-                          trigger={<MenuItem>Restore legacy feed</MenuItem>}
-                        />
-                      )}
-                      {feedId && (
-                        <ConfirmModal
-                          title={t("pages.userFeed.deleteConfirmTitle")}
-                          description={t("pages.userFeed.deleteConfirmDescription")}
-                          trigger={
-                            <MenuItem isDisabled={deleteingStatus === "loading"}>
-                              {t("common.buttons.delete")}
-                            </MenuItem>
-                          }
-                          okText={t("pages.userFeed.deleteConfirmOk")}
-                          colorScheme="red"
-                          onConfirm={onDeleteFeed}
-                        />
-                      )}
-                    </MenuList>
-                  </Menu>
-                </HStack>
+                  </Stack>
+                </Stack>
+                {feed?.sharedAccessDetails?.inviteId && (
+                  <Alert borderRadius="md">
+                    <AlertDescription>
+                      This feed is shared with by someone else currently counts towards your feed
+                      limit. You can remove your access through the Actions dropdown.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <UserFeedDisabledAlert feedId={feedId} />
               </Stack>
               <Grid

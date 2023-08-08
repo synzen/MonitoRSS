@@ -95,6 +95,10 @@ class GetUserFeedOutputResultDto {
   isLegacyFeed?: boolean;
 
   shareManageOptions?: UserFeedShareManageOptions;
+
+  sharedAccessDetails?: {
+    inviteId: string;
+  };
 }
 
 export class GetUserFeedOutputDto {

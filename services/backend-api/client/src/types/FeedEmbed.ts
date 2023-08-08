@@ -26,7 +26,7 @@ export const FeedEmbedSchema = object({
       id: string().required(),
       name: string().required(),
       value: string().required(),
-      inline: boolean().default(false).required(),
+      inline: boolean().default(false).required().optional(),
     })
   ).optional(),
 }).required();

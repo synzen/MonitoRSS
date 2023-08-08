@@ -32,6 +32,7 @@ enum ApiErrorCode {
   ALREADY_CONVERTED_TO_USER_FEED = "ALREADY_CONVERTED_TO_USER_FEED",
   HANDLED_BY_BULK_CONVERSION = "HANDLED_BY_BULK_CONVERSION",
   MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
+  USER_MANAGER_ALREADY_INVITED = "USER_MANAGER_ALREADY_INVITED",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -66,6 +67,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   ALREADY_CONVERTED_TO_USER_FEED: "This feed has already been converted to a user feed",
   HANDLED_BY_BULK_CONVERSION: "This feed is being handled by the bulk conversion process",
   MISSING_SHARED_MANAGER_PERMISSIONS: "You do not have permission to do this",
+  USER_MANAGER_ALREADY_INVITED: "You have already invited this user to manage this feed",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

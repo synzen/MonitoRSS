@@ -4,6 +4,7 @@ import { FeedConnectionDisabledCode, FeedConnectionType } from "../../types";
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
+import { UserFeedManagerStatus } from "../../constants";
 
 const sampleFilters = {
   expression: {
@@ -29,6 +30,9 @@ const sampleFilters = {
 const mockUserFeeds: UserFeed[] = [
   {
     id: "1",
+    sharedAccessDetails: {
+      inviteId: "1",
+    },
     title: "New York Times",
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
@@ -40,7 +44,28 @@ const mockUserFeeds: UserFeed[] = [
       dateFormat: undefined,
       dateTimezone: "UTC",
     },
-    shareManageOptions: null,
+    shareManageOptions: {
+      users: [
+        {
+          id: "99",
+          createdAt: new Date().toISOString(),
+          discordUserId: "1",
+          status: UserFeedManagerStatus.Pending,
+        },
+        {
+          id: "98",
+          createdAt: new Date().toISOString(),
+          discordUserId: "1",
+          status: UserFeedManagerStatus.Declined,
+        },
+        {
+          id: "97",
+          createdAt: new Date().toISOString(),
+          discordUserId: "1",
+          status: UserFeedManagerStatus.Accepted,
+        },
+      ],
+    },
     connections: [
       {
         details: {
@@ -180,6 +205,7 @@ const mockUserFeeds: UserFeed[] = [
   },
   {
     id: "2",
+    sharedAccessDetails: undefined,
     shareManageOptions: null,
     title: "Yahoo News",
     url: "https://www.feed2.com",
@@ -197,6 +223,7 @@ const mockUserFeeds: UserFeed[] = [
   {
     id: "3",
     shareManageOptions: null,
+    sharedAccessDetails: undefined,
     title: "CNN",
     url: "https://www.feed3.com",
     createdAt: new Date().toISOString(),

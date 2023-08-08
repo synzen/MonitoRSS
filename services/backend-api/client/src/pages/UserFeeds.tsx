@@ -4,7 +4,6 @@ import {
   Box,
   HStack,
   Text,
-  Badge,
   Stack,
   Button,
   Link as ChakraLink,
@@ -21,7 +20,12 @@ import { ArrowLeftIcon } from "@chakra-ui/icons";
 import { useCallback, useContext } from "react";
 import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
 import { useDiscordUserMe } from "../features/discordUser";
-import { UserFeedComputedStatus, useUserFeeds } from "../features/feed";
+import {
+  FeedManagementInvitesDialog,
+  UserFeedComputedStatus,
+  useUserFeedManagementInvitesCount,
+  useUserFeeds,
+} from "../features/feed";
 import { pages } from "../constants";
 import { BoxConstrained } from "../components";
 import { UserFeedStatusFilterContext } from "../contexts";
@@ -39,6 +43,7 @@ export const UserFeeds: React.FC = () => {
       computedStatuses: [UserFeedComputedStatus.RequiresAttention],
     },
   });
+  const { data: managementInvitesCount } = useUserFeedManagementInvitesCount();
   const { data: userFeedsResults } = useUserFeeds({
     limit: 1,
     offset: 0,
@@ -87,15 +92,22 @@ export const UserFeeds: React.FC = () => {
                 </AlertDescription>
               </Alert>
             )}
+          {managementInvitesCount?.total && (
+            <Alert>
+              <AlertIcon />
+              <AlertTitle flex={1}>
+                You have {managementInvitesCount.total} pending feed management invite(s)
+              </AlertTitle>
+              <AlertDescription>
+                <Flex justifyContent="flex-end" flex={1}>
+                  <FeedManagementInvitesDialog trigger={<Button variant="outline">View</Button>} />
+                </Flex>
+              </AlertDescription>
+            </Alert>
+          )}
           <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
               <Heading size="lg">{t("pages.userFeeds.title")}</Heading>
-              <Badge colorScheme="purple" fontSize="lg">
-                {t("pages.userFeeds.newBadge")}
-              </Badge>
-              <Badge colorScheme="orange" fontSize="lg">
-                BETA
-              </Badge>
             </Flex>
             <Flex alignItems="center">
               {discordUserMe?.maxUserFeeds !== undefined && userFeedsResults?.total !== undefined && (

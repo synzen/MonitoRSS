@@ -11,7 +11,7 @@ export const DiscordUsername = ({ userId }: Props) => {
   });
 
   if (isFetchingUser) {
-    return <Spinner />;
+    return <Spinner size="sm" />;
   }
 
   const username = userData?.result.username;
