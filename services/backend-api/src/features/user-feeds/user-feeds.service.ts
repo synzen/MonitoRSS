@@ -61,7 +61,7 @@ interface UpdateFeedInput {
   formatOptions?: Partial<UserFeed["formatOptions"]>;
   dateCheckOptions?: Partial<UserFeed["dateCheckOptions"]>;
   shareManageOptions?: {
-    users: Array<{ discordUserId: string }>;
+    invites: Array<{ discordUserId: string }>;
   };
 }
 
@@ -292,7 +292,7 @@ export class UserFeedsService {
           "user.discordUserId": discordUserId,
         },
         {
-          "shareManageOptions.users": {
+          "shareManageOptions.invites": {
             $elemMatch: {
               discordUserId,
               status: UserFeedManagerStatus.Accepted,
@@ -579,7 +579,7 @@ export class UserFeedsService {
               "user.discordUserId": userId,
             },
             {
-              "shareManageOptions.users": {
+              "shareManageOptions.invites": {
                 $elemMatch: {
                   discordUserId: userId,
                   status: UserFeedManagerStatus.Accepted,
@@ -847,7 +847,7 @@ export class UserFeedsService {
 
     // if (usersToEnable.length > 0) {
     //   logger.info(
-    //     `Enabling feeds of ${usersToEnable.length} users` +
+    //     `Enabling feeds of ${usersToEnable.length} invites` +
     //       ` (using default limit: ${defaultMaxUserFeeds})`,
     //     {
     //       usersToEnable,

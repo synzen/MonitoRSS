@@ -18,7 +18,7 @@ export interface UpdateUserFeedInput {
       oldArticleDateDiffMsThreshold?: number;
     };
     shareManageOptions?: {
-      users?: Array<{
+      invites?: Array<{
         discordUserId: string;
       }>;
     };

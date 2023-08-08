@@ -321,11 +321,11 @@ const handlers = [
 
     if (!feed.shareManageOptions) {
       feed.shareManageOptions = {
-        users: [],
+        invites: [],
       };
     }
 
-    feed.shareManageOptions?.users.push({
+    feed.shareManageOptions?.invites.push({
       id: Math.random().toString(),
       createdAt: new Date().toISOString(),
       discordUserId,
@@ -357,14 +357,14 @@ const handlers = [
     const { id } = req.params;
 
     const matchedFeed = mockUserFeeds.find((f) =>
-      f.shareManageOptions?.users.find((u) => u.id === id)
+      f.shareManageOptions?.invites.find((u) => u.id === id)
     );
 
     if (!matchedFeed) {
       return res(ctx.delay(500), ctx.status(404), ctx.json({}));
     }
 
-    matchedFeed.shareManageOptions!.users.find((u) => u.id === id)!.status =
+    matchedFeed.shareManageOptions!.invites.find((u) => u.id === id)!.status =
       UserFeedManagerStatus.Pending;
 
     return res(ctx.delay(500), ctx.status(204));
@@ -373,15 +373,15 @@ const handlers = [
   rest.delete("/api/v1/user-feed-management-invites/:id", async (req, res, ctx) => {
     const { id } = req.params;
     const matchedFeed = mockUserFeeds.find((f) =>
-      f.shareManageOptions?.users.find((u) => u.id === id)
+      f.shareManageOptions?.invites.find((u) => u.id === id)
     );
 
     if (!matchedFeed) {
       return res(ctx.delay(500), ctx.status(404), ctx.json({}));
     }
 
-    matchedFeed.shareManageOptions?.users.splice(
-      matchedFeed.shareManageOptions?.users.findIndex((u) => u.id === id),
+    matchedFeed.shareManageOptions?.invites.splice(
+      matchedFeed.shareManageOptions?.invites.findIndex((u) => u.id === id),
       1
     );
 

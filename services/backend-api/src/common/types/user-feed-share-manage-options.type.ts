@@ -11,5 +11,5 @@ export class UserFeedShareManageOptions {
   @IsArray()
   @Type(() => UserSchema)
   @ValidateNested({ each: true })
-  users: UserSchema[];
+  invites: UserSchema[];
 }

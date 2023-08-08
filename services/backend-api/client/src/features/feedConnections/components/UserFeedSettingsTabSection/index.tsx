@@ -79,7 +79,7 @@ const FormSchema = object({
   }),
   oldArticleDateDiffMsThreshold: number().optional(),
   shareManageOptions: object({
-    users: array(
+    invites: array(
       object({
         discordUserId: string().required(),
       }).required()
@@ -238,7 +238,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                 </AlertDescription>
               </Alert>
             )}
-            {feed && !feed.sharedAccessDetails && feed?.shareManageOptions?.users.length && (
+            {feed && !feed.sharedAccessDetails && feed?.shareManageOptions?.invites.length && (
               <TableContainer>
                 <Table variant="simple">
                   <Thead>
@@ -250,7 +250,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {feed.shareManageOptions.users.map((u) => (
+                    {feed.shareManageOptions.invites.map((u) => (
                       <Tr key={u.id}>
                         <Td>
                           <DiscordUsername userId={u.discordUserId} />

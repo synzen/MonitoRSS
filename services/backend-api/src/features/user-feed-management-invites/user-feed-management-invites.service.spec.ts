@@ -97,7 +97,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users).toMatchObject([
+      expect(updatedFeed?.shareManageOptions?.invites).toMatchObject([
         {
           id: expect.any(Types.ObjectId),
           discordUserId: targetDiscordUserId,
@@ -121,7 +121,7 @@ describe("UserFeedManagementInvitesService", () => {
           discordUserId,
         },
         shareManageOptions: {
-          users: [
+          invites: [
             {
               id: inviteId,
               discordUserId: "discordUserId",
@@ -148,7 +148,7 @@ describe("UserFeedManagementInvitesService", () => {
           discordUserId,
         },
         shareManageOptions: {
-          users: [
+          invites: [
             {
               id: inviteId,
               discordUserId: "discordUserId",
@@ -192,7 +192,7 @@ describe("UserFeedManagementInvitesService", () => {
           discordUserId,
         },
         shareManageOptions: {
-          users: [
+          invites: [
             {
               id: inviteId,
               discordUserId: "discordUserId",
@@ -213,7 +213,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users).toHaveLength(0);
+      expect(updatedFeed?.shareManageOptions?.invites).toHaveLength(0);
     });
 
     it("does not delete the invite if the invite id does not match", async () => {
@@ -224,7 +224,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users).toHaveLength(1);
+      expect(updatedFeed?.shareManageOptions?.invites).toHaveLength(1);
     });
 
     it("does not delete the invite if the feed id does not match", async () => {
@@ -235,7 +235,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users).toHaveLength(1);
+      expect(updatedFeed?.shareManageOptions?.invites).toHaveLength(1);
     });
   });
 
@@ -251,7 +251,7 @@ describe("UserFeedManagementInvitesService", () => {
           discordUserId,
         },
         shareManageOptions: {
-          users: [
+          invites: [
             {
               id: inviteId,
               discordUserId: "discordUserId",
@@ -279,7 +279,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users[0].status).toEqual(
+      expect(updatedFeed?.shareManageOptions?.invites[0].status).toEqual(
         UserFeedManagerStatus.Declined
       );
     });
@@ -297,7 +297,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users[0]).toMatchObject({
+      expect(updatedFeed?.shareManageOptions?.invites[0]).toMatchObject({
         id: inviteId,
         discordUserId: "discordUserId",
         createdAt: expect.any(Date),
@@ -332,7 +332,7 @@ describe("UserFeedManagementInvitesService", () => {
           discordUserId,
         },
         shareManageOptions: {
-          users: [
+          invites: [
             {
               id: inviteId,
               discordUserId: "discordUserId",
@@ -353,7 +353,7 @@ describe("UserFeedManagementInvitesService", () => {
         .select("shareManageOptions")
         .lean();
 
-      expect(updatedFeed?.shareManageOptions?.users[0].status).toEqual(
+      expect(updatedFeed?.shareManageOptions?.invites[0].status).toEqual(
         UserFeedManagerStatus.Pending
       );
     });

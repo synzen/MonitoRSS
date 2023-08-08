@@ -30,7 +30,7 @@ export class UserFeedUserShareManageUser {
   updatedAt: Date;
 }
 
-const UserFeedShareUserSchema = SchemaFactory.createForClass(
+const UserFeedShareInviteSchema = SchemaFactory.createForClass(
   UserFeedUserShareManageUser
 );
 
@@ -41,9 +41,9 @@ const UserFeedShareUserSchema = SchemaFactory.createForClass(
 export class UserFeedShareManageOptions {
   @Prop({
     required: true,
-    type: [UserFeedShareUserSchema],
+    type: [UserFeedShareInviteSchema],
   })
-  users: UserFeedUserShareManageUser[];
+  invites: UserFeedUserShareManageUser[];
 }
 
 export const UserFeedShareManageOptionsSchema = SchemaFactory.createForClass(

@@ -53,7 +53,7 @@ const createGetUserFeedPipe = (
         data.userTypes.includes(UserFeedManagerType.Creator) &&
         found?.user.discordUserId === accessToken.discord.id;
 
-      const isSharedManager = found?.shareManageOptions?.users?.some(
+      const isSharedManager = found?.shareManageOptions?.invites?.some(
         (u) =>
           u.discordUserId === accessToken.discord.id &&
           u.status === UserFeedManagerStatus.Accepted

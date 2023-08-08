@@ -45,7 +45,7 @@ const mockUserFeeds: UserFeed[] = [
       dateTimezone: "UTC",
     },
     shareManageOptions: {
-      users: [
+      invites: [
         {
           id: "99",
           createdAt: new Date().toISOString(),

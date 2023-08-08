@@ -33,7 +33,7 @@ export const UserFeedSchema = object({
   }).optional(),
   isLegacyFeed: bool(),
   shareManageOptions: object({
-    users: array(
+    invites: array(
       object({
         id: string().required(),
         discordUserId: string().required(),

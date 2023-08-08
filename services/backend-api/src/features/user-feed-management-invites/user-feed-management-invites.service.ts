@@ -25,16 +25,16 @@ export class UserFeedManagementInvitesService {
   }) {
     if (!feed.shareManageOptions) {
       feed.shareManageOptions = {
-        users: [],
+        invites: [],
       };
     }
 
-    if (!feed.shareManageOptions.users) {
-      feed.shareManageOptions.users = [];
+    if (!feed.shareManageOptions.invites) {
+      feed.shareManageOptions.invites = [];
     }
 
     if (
-      feed.shareManageOptions.users.find(
+      feed.shareManageOptions.invites.find(
         (u) => u.discordUserId === targetDiscordUserId
       )
     ) {
@@ -45,7 +45,7 @@ export class UserFeedManagementInvitesService {
       throw new UserManagerAlreadyInvitedException("Cannot invite self");
     }
 
-    feed.shareManageOptions.users.push({
+    feed.shareManageOptions.invites.push({
       discordUserId: targetDiscordUserId,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -72,7 +72,7 @@ export class UserFeedManagementInvitesService {
     return this.userFeedModel
       .findOne({
         "user.discordUserId": ownerDiscordUserId,
-        "shareManageOptions.users.id": new Types.ObjectId(inviteId),
+        "shareManageOptions.invites.id": new Types.ObjectId(inviteId),
       })
       .lean();
   }
@@ -83,7 +83,7 @@ export class UserFeedManagementInvitesService {
   ) {
     return this.userFeedModel
       .findOne({
-        "shareManageOptions.users": {
+        "shareManageOptions.invites": {
           $elemMatch: {
             id: new Types.ObjectId(inviteId),
             discordUserId: inviteeDiscordUserId,
@@ -100,7 +100,7 @@ export class UserFeedManagementInvitesService {
       },
       {
         $pull: {
-          "shareManageOptions.users": {
+          "shareManageOptions.invites": {
             id: new Types.ObjectId(id),
           },
         },
@@ -113,11 +113,12 @@ export class UserFeedManagementInvitesService {
       .findOneAndUpdate(
         {
           _id: userFeedId,
-          "shareManageOptions.users.id": new Types.ObjectId(id),
+          "shareManageOptions.invites.id": new Types.ObjectId(id),
         },
         {
           $set: {
-            "shareManageOptions.users.$.status": UserFeedManagerStatus.Pending,
+            "shareManageOptions.invites.$.status":
+              UserFeedManagerStatus.Pending,
           },
         }
       )
@@ -139,7 +140,7 @@ export class UserFeedManagementInvitesService {
       status?: UserFeedManagerStatus;
     }
   ) {
-    const inviteIndex = userFeed?.shareManageOptions?.users?.findIndex(
+    const inviteIndex = userFeed?.shareManageOptions?.invites?.findIndex(
       (u) => u.id.toHexString() === inviteId
     );
 
@@ -173,7 +174,8 @@ export class UserFeedManagementInvitesService {
       {
         $set: {
           ...(updates.status && {
-            [`shareManageOptions.users.${inviteIndex}.status`]: updates.status,
+            [`shareManageOptions.invites.${inviteIndex}.status`]:
+              updates.status,
           }),
         },
       }
@@ -191,7 +193,7 @@ export class UserFeedManagementInvitesService {
   > {
     const feeds = await this.userFeedModel
       .find({
-        "shareManageOptions.users": {
+        "shareManageOptions.invites": {
           $elemMatch: {
             discordUserId,
             status: UserFeedManagerStatus.Pending,
@@ -204,7 +206,7 @@ export class UserFeedManagementInvitesService {
     return feeds.map((feed) => ({
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       id: feed
-        .shareManageOptions!.users.find(
+        .shareManageOptions!.invites.find(
           (u) => u.discordUserId === discordUserId
         )!
         .id.toHexString(),
@@ -219,7 +221,7 @@ export class UserFeedManagementInvitesService {
 
   async getMyPendingInviteCount(discordUserId: string): Promise<number> {
     const count = await this.userFeedModel.countDocuments({
-      "shareManageOptions.users": {
+      "shareManageOptions.invites": {
         $elemMatch: {
           discordUserId,
           status: UserFeedManagerStatus.Pending,
