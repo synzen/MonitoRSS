@@ -16,6 +16,13 @@ export class Response {
   })
   text?: string | null;
 
+  @Property({
+    nullable: true,
+    type: 'bool',
+    default: false,
+  })
+  hasCompressedText?: boolean;
+
   @Property()
   isCloudflare!: boolean;
 

@@ -7,6 +7,11 @@ import { Request, Response } from './entities';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
+import { deflate, inflate } from 'zlib';
+import { promisify } from 'util';
+
+const deflatePromise = promisify(deflate);
+const inflatePromise = promisify(inflate);
 
 interface FetchOptions {
   userAgent?: string;
@@ -48,7 +53,7 @@ export class FeedFetcherService {
   }
 
   async getLatestRequest(url: string): Promise<Request | null> {
-    const response = await this.requestRepo.findOne(
+    const request = await this.requestRepo.findOne(
       {
         url,
       },
@@ -60,7 +65,16 @@ export class FeedFetcherService {
       },
     );
 
-    return response;
+    if (request?.response?.text && request?.response?.hasCompressedText) {
+      request.response = {
+        ...request.response,
+        text: (
+          await inflatePromise(Buffer.from(request.response.text, 'base64'))
+        ).toString(),
+      };
+    }
+
+    return request;
   }
 
   async fetchAndSaveResponse(url: string): Promise<Request> {
@@ -85,7 +99,19 @@ export class FeedFetcherService {
       response.statusCode = res.status;
 
       try {
-        response.text = await res.text();
+        const text = await res.text();
+
+        try {
+          const deflated = await deflatePromise(text);
+          response.text = deflated.toString('base64');
+          response.hasCompressedText = true;
+        } catch (err) {
+          logger.error(`Failed to deflate response text of url ${url}`, {
+            stack: (err as Error).stack,
+          });
+
+          response.text = text;
+        }
       } catch (err) {
         request.status = RequestStatus.PARSE_ERROR;
         logger.debug(`Failed to parse response text of url ${url}`, {
