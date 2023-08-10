@@ -18,6 +18,8 @@ export class FeedFetcherListenerService {
   constructor(
     @InjectRepository(Request)
     private readonly requestRepo: EntityRepository<Request>,
+    @InjectRepository(Response)
+    private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly amqpConnection: AmqpConnection,
@@ -347,28 +349,44 @@ export class FeedFetcherListenerService {
    * existing requests stored.
    */
   async deleteStaleRequests(url: string) {
-    // const cutoff = dayjs().subtract(7, 'days').toDate();
+    const cutoff = dayjs().subtract(1, 'days').toDate();
+
+    const staleRequestsExists = await this.requestRepo.findOne(
+      {
+        url,
+        createdAt: {
+          $lt: cutoff,
+        },
+      },
+      {
+        fields: ['id'],
+      },
+    );
+
+    if (!staleRequestsExists) {
+      return;
+    }
 
     try {
-      // const oldResponseIds = this.requestRepo
-      //   .createQueryBuilder('a')
-      //   .select('response')
-      //   .where({ url, createdAt: { $lt: cutoff } })
-      //   .getKnexQuery();
-      // await this.responseRepo
-      //   .createQueryBuilder()
-      //   .delete()
-      //   .where({
-      //     id: {
-      //       $in: oldResponseIds,
-      //     },
-      //   });
-      // await this.requestRepo.nativeDelete({
-      //   url,
-      //   createdAt: {
-      //     $lt: cutoff,
-      //   },
-      // });
+      const oldResponseIds = this.requestRepo
+        .createQueryBuilder('a')
+        .select('response')
+        .where({ url, createdAt: { $lt: cutoff } })
+        .getKnexQuery();
+      await this.responseRepo
+        .createQueryBuilder()
+        .delete()
+        .where({
+          id: {
+            $in: oldResponseIds,
+          },
+        });
+      await this.requestRepo.nativeDelete({
+        url,
+        createdAt: {
+          $lt: cutoff,
+        },
+      });
     } catch (err) {
       logger.error(`Failed to delete stale requests for url ${url}`, {
         stack: (err as Error).stack,
