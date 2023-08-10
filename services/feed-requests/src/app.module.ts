@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import config from './config';
 import { FeedFetcherModule } from './feed-fetcher/feed-fetcher.module';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { MikroORM } from '@mikro-orm/core';
+import { LoadStrategy, MikroORM } from '@mikro-orm/core';
 import logger from './utils/logger';
 
 @Module({
@@ -32,6 +32,7 @@ export class AppModule implements OnApplicationShutdown {
           type: 'postgresql',
           forceUtcTimezone: true,
           timezone: 'UTC',
+          loadStrategy: LoadStrategy.JOINED,
           pool: {
             min: 0,
           },
