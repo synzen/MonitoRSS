@@ -41,6 +41,8 @@ export default function config(): EnvironmentVariables {
       .FEED_REQUESTS_RABBITMQ_BROKER_URL as string,
     FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: process.env
       .FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT as string,
+    FEED_REQUESTS_S3_ENDPOINT: process.env.FEED_REQUESTS_S3_ENDPOINT,
+    FEED_REQUESTS_REDIS_URI: process.env.FEED_REQUESTS_REDIS_URI,
   };
 
   validateConfig(values);

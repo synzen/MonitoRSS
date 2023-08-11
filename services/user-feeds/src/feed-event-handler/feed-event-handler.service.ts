@@ -341,6 +341,15 @@ export class FeedEventHandlerService {
           }
         );
       }
+    } finally {
+      if (event.timestamp) {
+        const nowTs = Date.now();
+        const finishedTs = nowTs - event.timestamp;
+
+        logger.datadog(`Finished handling user feed event in ${finishedTs}ms`, {
+          duration: finishedTs,
+        });
+      }
     }
   }
 

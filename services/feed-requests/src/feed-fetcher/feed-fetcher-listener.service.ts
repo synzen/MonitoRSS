@@ -56,6 +56,7 @@ export class FeedFetcherListenerService {
     createQueueIfNotExists: true,
   })
   async onBrokerFetchRequestBatch(message: {
+    timestamp: number;
     data: Array<{ url: string }>;
     rateSeconds: number;
   }) {
@@ -71,6 +72,7 @@ export class FeedFetcherListenerService {
   }): Promise<void> {
     const url = message?.data?.url;
     const rateSeconds = message?.data?.rateSeconds;
+    console.log('brok');
 
     if (!url || rateSeconds == null) {
       logger.error(
@@ -96,6 +98,7 @@ export class FeedFetcherListenerService {
 
   @UseRequestContext()
   private async onBrokerFetchRequestBatchHandler(message: {
+    timestamp: number;
     data: Array<{ url: string }>;
     rateSeconds: number;
   }): Promise<void> {
@@ -117,15 +120,46 @@ export class FeedFetcherListenerService {
       message,
     });
 
-    await Promise.all(
-      urls.map((url) => this.handleBrokerFetchRequest({ url, rateSeconds })),
-    );
+    try {
+      const results = await Promise.allSettled(
+        urls.map((url) => this.handleBrokerFetchRequest({ url, rateSeconds })),
+      );
 
-    await this.em.flush();
+      for (let i = 0; i < results.length; ++i) {
+        const res = results[i];
 
-    logger.debug(`Fetch batch request message processed for urls`, {
-      urls,
-    });
+        if (res.status === 'fulfilled') {
+          continue;
+        }
+
+        logger.error(`Error processing a message within batch request`, {
+          reason: res.reason instanceof Error ? res.reason.stack : res.reason,
+        });
+      }
+
+      await this.em.flush();
+
+      logger.debug(`Fetch batch request message processed for urls`, {
+        urls,
+      });
+    } catch (err) {
+      logger.error(`Error processing fetch batch request message`, {
+        message,
+        err: (err as Error).stack,
+      });
+    } finally {
+      if (message.timestamp) {
+        const nowTs = Date.now();
+        const finishedTs = nowTs - message.timestamp;
+
+        logger.datadog(
+          `Finished handling feed requests batch event in ${finishedTs}s`,
+          {
+            duration: finishedTs,
+          },
+        );
+      }
+    }
   }
 
   private async handleBrokerFetchRequest(data: {
@@ -351,42 +385,42 @@ export class FeedFetcherListenerService {
   async deleteStaleRequests(url: string) {
     const cutoff = dayjs().subtract(1, 'days').toDate();
 
-    const staleRequestsExists = await this.requestRepo.findOne(
-      {
-        url,
-        createdAt: {
-          $lt: cutoff,
-        },
-      },
-      {
-        fields: ['id'],
-      },
-    );
+    // const staleRequestsExists = await this.requestRepo.findOne(
+    //   {
+    //     url,
+    //     createdAt: {
+    //       $lt: cutoff,
+    //     },
+    //   },
+    //   {
+    //     fields: ['id'],
+    //   },
+    // );
 
-    if (!staleRequestsExists) {
-      return;
-    }
+    // if (!staleRequestsExists) {
+    //   return;
+    // }
 
     try {
-      const oldResponseIds = this.requestRepo
-        .createQueryBuilder('a')
-        .select('response')
-        .where({ url, createdAt: { $lt: cutoff } })
-        .getKnexQuery();
-      await this.responseRepo
-        .createQueryBuilder()
-        .delete()
-        .where({
-          id: {
-            $in: oldResponseIds,
-          },
-        });
-      await this.requestRepo.nativeDelete({
-        url,
-        createdAt: {
-          $lt: cutoff,
-        },
-      });
+      // const oldResponseIds = this.requestRepo
+      //   .createQueryBuilder('a')
+      //   .select('response')
+      //   .where({ url, createdAt: { $lt: cutoff } })
+      //   .getKnexQuery();
+      // await this.responseRepo
+      //   .createQueryBuilder()
+      //   .delete()
+      //   .where({
+      //     id: {
+      //       $in: oldResponseIds,
+      //     },
+      //   });
+      // await this.requestRepo.nativeDelete({
+      //   url,
+      //   createdAt: {
+      //     $lt: cutoff,
+      //   },
+      // });
     } catch (err) {
       logger.error(`Failed to delete stale requests for url ${url}`, {
         stack: (err as Error).stack,

@@ -9,6 +9,8 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
+import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
+import { randomUUID } from 'crypto';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -27,6 +29,7 @@ export class FeedFetcherService {
     @InjectRepository(Response)
     private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
+    private readonly objectFileStorageService: ObjectFileStorageService,
   ) {
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
@@ -61,16 +64,50 @@ export class FeedFetcherService {
         orderBy: {
           createdAt: 'DESC',
         },
-        populate: ['response'],
+        populate: [],
       },
     );
 
-    if (request?.response?.text && request?.response?.hasCompressedText) {
-      request.response = {
-        ...request.response,
-        text: (
-          await inflatePromise(Buffer.from(request.response.text, 'base64'))
-        ).toString(),
+    if (!request) {
+      return null;
+    }
+
+    let response: Response | null = null;
+
+    if (request.response?.id) {
+      response = await this.responseRepo.findOne({
+        id: request.response.id,
+      });
+    }
+
+    const s3ObjectKey = response?.s3ObjectKey;
+
+    if (response && s3ObjectKey) {
+      const compressedText =
+        await this.objectFileStorageService.getFeedHtmlContent({
+          key: s3ObjectKey,
+        });
+
+      return {
+        ...request,
+        response: {
+          ...response,
+          text: compressedText
+            ? (
+                await inflatePromise(Buffer.from(compressedText, 'base64'))
+              ).toString()
+            : '',
+        },
+      };
+    } else if (response?.text && response?.hasCompressedText) {
+      return {
+        ...request,
+        response: {
+          ...response,
+          text: (
+            await inflatePromise(Buffer.from(response.text, 'base64'))
+          ).toString(),
+        },
       };
     }
 
@@ -97,14 +134,37 @@ export class FeedFetcherService {
       const response = new Response();
       response.createdAt = request.createdAt;
       response.statusCode = res.status;
+      response.text = null;
 
       try {
         const text = await res.text();
 
         try {
           const deflated = await deflatePromise(text);
-          response.text = deflated.toString('base64');
-          response.hasCompressedText = true;
+          const compressedText = deflated.toString('base64');
+          response.text = null;
+
+          logger.datadog('saving response', {
+            url,
+            byteSize: Buffer.byteLength(compressedText),
+          });
+
+          try {
+            const currentHour = new Date().getHours();
+
+            response.s3ObjectKey = `${currentHour}/${randomUUID()}`;
+            await this.objectFileStorageService.uploadFeedHtmlContent({
+              body: compressedText,
+              key: response.s3ObjectKey,
+            });
+          } catch (err) {
+            logger.error(
+              `Failed to upload feed html content for url ${url} to s3`,
+              {
+                stack: (err as Error).stack,
+              },
+            );
+          }
         } catch (err) {
           logger.error(`Failed to deflate response text of url ${url}`, {
             stack: (err as Error).stack,

@@ -27,6 +27,13 @@ export class Response {
   isCloudflare!: boolean;
 
   @Property({
+    nullable: true,
+    type: 'text',
+    default: null,
+  })
+  s3ObjectKey?: string | null;
+
+  @Property({
     type: 'timestamp with time zone',
     nullable: true,
   })

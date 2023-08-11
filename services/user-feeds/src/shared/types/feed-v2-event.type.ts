@@ -4,6 +4,7 @@ import { UserFeedDateCheckOptions } from "./user-feed-date-check-options.type";
 import { UserFeedFormatOptions } from "./user-feed-format-options.type";
 
 export interface FeedV2Event {
+  timestamp: number;
   data: {
     feed: {
       id: string;

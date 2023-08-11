@@ -1,5 +1,32 @@
 version: "3.8"
 services:
+  mrss-feed-requests-cache:
+    image: redis:7.0.7-alpine
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --save 60 1
+    volumes: 
+      - cache-feed-requests:/data
+    networks:
+      - monitorss-default
+
+  mrss-seaweed-fs:
+    image: chrislusf/seaweedfs
+    container_name: 'mrss-seaweed-fs'
+    ports:
+      - 8333:8333
+    command: server -s3
+    healthcheck:
+      test: curl --fail http://localhost:8333 || text 1
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    volumes:
+      - fs-s3-storage-data:/data/seaweed-s3
+    networks:
+      - monitorss-default
+  
   mrss-rabbitmq-broker:
     image: rabbitmq:3-management-alpine
     container_name: 'mrss-rabbitmq-broker'
@@ -11,6 +38,8 @@ services:
       interval: 5s
       timeout: 1s
       retries: 20
+    networks:
+      - monitorss-default
 
   mrss-mongo:
     restart: on-failure:5
@@ -22,6 +51,8 @@ services:
       - "27018:27017"
     volumes:
       - "db-mongodb-data:/data/db"
+    networks:
+      - monitorss-default
   
   mrss-postgres-feed-requests:
     restart: always
@@ -42,6 +73,8 @@ services:
     volumes:
       - db-feedrequests-postgres-data:/var/lib/postgresql/data
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    networks:
+      - monitorss-default
       
   mrss-postgres-user-feeds-service:
     restart: always
@@ -62,6 +95,8 @@ services:
     volumes:
       - db-user-feeds-postgres-data:/var/lib/postgresql/data
       - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    networks:
+      - monitorss-default
 
   mrss-discord-rest-listener:
     restart: on-failure:3
@@ -83,6 +118,8 @@ services:
     environment:
       - DISCORD_REST_LISTENER_RABBITMQ_URI=amqp://mrss-rabbitmq-broker:5672
       - DISCORD_REST_LISTENER_MONGO_URI=mongodb://mrss-mongo:27017/rss
+    networks:
+      - monitorss-default
 
   mrss-feed-requests-service:
     restart: on-failure:3
@@ -111,6 +148,10 @@ services:
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 MonitoRSS/1.0"
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=0.02
       - FEED_REQUESTS_START_TARGET=service
+      - FEED_REQUESTS_S3_ENDPOINT=http://mrss-seaweed-fs:8333
+      - FEED_REQUESTS_REDIS_URI=redis://mrss-feed-requests-cache:6379
+    networks:
+      - monitorss-default
 
   mrss-feed-requests-api:
     restart: on-failure:3
@@ -139,6 +180,10 @@ services:
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 MonitoRSS/1.0"
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=0.02
       - FEED_REQUESTS_START_TARGET=api
+      - FEED_REQUESTS_S3_ENDPOINT=http://mrss-seaweed-fs:8333
+      - FEED_REQUESTS_REDIS_URI=redis://mrss-feed-requests-cache:6379
+    networks:
+      - monitorss-default
 
   mrss-user-feeds-service:
     restart: on-failure:3
@@ -167,6 +212,8 @@ services:
       - USER_FEEDS_FEED_REQUESTS_API_URL=http://mrss-feed-requests-api:5000/v1/feed-requests
       - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - USER_FEEDS_API_KEY=user-feeds-api-key
+    networks:
+      - monitorss-default
 
   # Schedule emitter
   mrss-schedule-emitter-service:
@@ -197,6 +244,8 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
       - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
     command: npm run start:schedule-emitter:local
+    networks:
+      - monitorss-default
 
   # Schedule emitter
   mrss-legacy-feed-bulk-converter-service:
@@ -227,6 +276,8 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
       - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
     command: npm run start:legacy-feed-converter:local
+    networks:
+      - monitorss-default
 
   # Web - Backend api
   mrss-web-api:
@@ -263,6 +314,8 @@ services:
       - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
       - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
     command: npm run start:local
+    networks:
+      - monitorss-default
 
   mrss-web-client:
     build:
@@ -285,9 +338,17 @@ services:
       - ./services/backend-api/client:/usr/src/app
       - /usr/src/app/node_modules/
     command: npx vite --host
+    networks:
+      - monitorss-default
 
 volumes:
   db-mongodb-data:
   db-feedrequests-postgres-data:
   db-user-feeds-postgres-data:
+  cache-feed-requests:
+  fs-s3-storage-data:
     driver: local
+
+networks:
+  monitorss-default:
+    driver: bridge

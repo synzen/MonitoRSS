@@ -21,12 +21,14 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:create:local": "cross-env NODE_ENV=local mikro-orm migration:create",
-    "migration:up:local": "cross-env NODE_ENV=local mikro-orm migration:up",
-    "migration:create:prod": "cross-env NODE_ENV=production mikro-orm migration:create",
-    "migration:up:prod": "cross-env NODE_ENV=production mikro-orm migration:up"
+    "migration:local:create": "cross-env NODE_ENV=local mikro-orm migration:create",
+    "migration:local:up": "cross-env NODE_ENV=local mikro-orm migration:up",
+    "migration:local:down": "cross-env NODE_ENV=local mikro-orm migration:down",
+    "migration:prod:create": "cross-env NODE_ENV=production mikro-orm migration:create",
+    "migration:prod:up": "cross-env NODE_ENV=production mikro-orm migration:up"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.387.0",
     "@golevelup/nestjs-rabbitmq": "^4.0.0",
     "@mikro-orm/core": "^5.7.5",
     "@mikro-orm/nestjs": "^5.1.8",
@@ -46,6 +48,7 @@
     "node-fetch": "^2.6.7",
     "pg": "^8.7.3",
     "qs": "^6.11.2",
+    "redis": "^4.6.7",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0"

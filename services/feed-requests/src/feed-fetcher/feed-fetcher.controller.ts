@@ -5,7 +5,7 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { Get } from '@nestjs/common/decorators';
+import { Get, Inject } from '@nestjs/common/decorators';
 import dayjs from 'dayjs';
 import { NestedQuery } from '../shared/decorators';
 import { ApiGuard } from '../shared/guards';
@@ -18,12 +18,17 @@ import {
   GetFeedRequestsOutputDto,
 } from './dto';
 import { FeedFetcherService } from './feed-fetcher.service';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Controller({
   version: '1',
 })
 export class FeedFetcherController {
-  constructor(private readonly feedFetcherService: FeedFetcherService) {}
+  constructor(
+    private readonly feedFetcherService: FeedFetcherService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   @Get('feed-requests')
   @UseGuards(ApiGuard)

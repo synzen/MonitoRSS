@@ -50,6 +50,14 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT!: string;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_S3_ENDPOINT?: string;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_REDIS_URI?: string;
 }
 
 export function validateConfig(

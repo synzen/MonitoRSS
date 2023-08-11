@@ -32,7 +32,7 @@ export class AppModule implements OnApplicationShutdown {
           type: 'postgresql',
           forceUtcTimezone: true,
           timezone: 'UTC',
-          loadStrategy: LoadStrategy.JOINED,
+          // loadStrategy: LoadStrategy.JOINED,
           pool: {
             min: 0,
           },

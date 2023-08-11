@@ -31,6 +31,7 @@ import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { chunk } from "lodash";
 
 interface PublishFeedDeliveryArticlesData {
+  timestamp: number;
   data: {
     feed: {
       id: string;
@@ -229,10 +230,16 @@ export class ScheduleHandlerService {
   }) {
     this.amqpConnection.publish<{
       rateSeconds: number;
+      timestamp: number;
       data: Array<{ url: string }>;
-    }>("", MessageBrokerQueue.UrlFetchBatch, data, {
-      expiration: data.rateSeconds * 1000,
-    });
+    }>(
+      "",
+      MessageBrokerQueue.UrlFetchBatch,
+      { ...data, timestamp: Date.now() },
+      {
+        expiration: data.rateSeconds * 1000,
+      }
+    );
 
     logger.debug("successfully emitted url request event");
   }
@@ -311,6 +318,7 @@ export class ScheduleHandlerService {
       "",
       MessageBrokerQueue.FeedDeliverArticles,
       {
+        timestamp: Date.now(),
         data: {
           articleDayLimit: maxDailyArticles,
           feed: {
@@ -374,7 +382,7 @@ export class ScheduleHandlerService {
     await Promise.all(
       chunk(
         urls.map((url) => ({ url })),
-        100
+        25
       ).map((urlsChunk) => urlsHandler(urlsChunk))
     );
 
