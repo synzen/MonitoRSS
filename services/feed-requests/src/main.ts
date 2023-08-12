@@ -6,16 +6,35 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { AllExceptionsFilter } from './shared/filters';
+import {
+  AllExceptionsFilter,
+  AllMicroserviceExceptionsFilter,
+} from './shared/filters';
 import logger from './utils/logger';
 import { MikroORM } from '@mikro-orm/core';
 import { RequestContext } from '@mikro-orm/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { join } from 'path';
 
 async function startApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forApi(),
     new FastifyAdapter(),
   );
+  const microservice =
+    await NestFactory.createMicroservice<MicroserviceOptions>(
+      AppModule.forApi(),
+      {
+        transport: Transport.GRPC,
+        options: {
+          package: 'feedfetcher',
+          protoPath: join(__dirname, './feed-fetcher/feed-fetcher.proto'),
+          url: '0.0.0.0:4999',
+        },
+      },
+    );
+
+  microservice.enableShutdownHooks();
   app.enableShutdownHooks();
 
   const orm = app.get(MikroORM);
@@ -24,6 +43,7 @@ async function startApi() {
   app.use((req, res, next) => {
     RequestContext.create(orm.em, next);
   });
+  microservice.useGlobalFilters(new AllMicroserviceExceptionsFilter());
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
   app.enableVersioning({
     type: VersioningType.URI,
@@ -34,6 +54,7 @@ async function startApi() {
   const configService = app.get(ConfigService);
   const port = configService.getOrThrow<number>('FEED_REQUESTS_API_PORT');
 
+  await microservice.listen();
   await app.listen(port, '0.0.0.0');
 
   setInterval(() => {

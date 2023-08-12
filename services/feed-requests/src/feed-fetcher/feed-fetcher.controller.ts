@@ -4,6 +4,8 @@ import {
   Post,
   UseGuards,
   ValidationPipe,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Get } from '@nestjs/common/decorators';
 import dayjs from 'dayjs';
@@ -18,12 +20,27 @@ import {
   GetFeedRequestsOutputDto,
 } from './dto';
 import { FeedFetcherService } from './feed-fetcher.service';
+import { GrpcMethod } from '@nestjs/microservices';
+import { MikroORM, UseRequestContext } from '@mikro-orm/core';
+import { plainToClass } from 'class-transformer';
+import { validateSync } from 'class-validator';
+import { Metadata } from '@grpc/grpc-js';
+import { ConfigService } from '@nestjs/config';
 
 @Controller({
   version: '1',
 })
 export class FeedFetcherController {
-  constructor(private readonly feedFetcherService: FeedFetcherService) {}
+  API_KEY: string;
+  constructor(
+    private readonly feedFetcherService: FeedFetcherService,
+    private readonly orm: MikroORM,
+    private readonly configService: ConfigService,
+  ) {
+    this.API_KEY = this.configService.getOrThrow<string>(
+      'FEED_REQUESTS_API_KEY',
+    );
+  }
 
   @Get('feed-requests')
   @UseGuards(ApiGuard)
@@ -68,6 +85,30 @@ export class FeedFetcherController {
   async fetchFeed(
     @Body(ValidationPipe) data: FetchFeedDto,
   ): Promise<FetchFeedDetailsDto> {
+    return this.getLatestRequest(data);
+  }
+
+  @GrpcMethod('FeedFetcherGrpc', 'FetchFeed')
+  @UseRequestContext()
+  async fetchFeedGrpc(data: FetchFeedDto, metadata: Metadata) {
+    console.log(metadata);
+    const classData = plainToClass(FetchFeedDto, data);
+    const results = validateSync(classData);
+
+    if (results.length > 0) {
+      throw new BadRequestException(results.join(','));
+    }
+
+    const auth = metadata.get('api-key')[0];
+
+    if (auth !== this.API_KEY) {
+      throw new UnauthorizedException('Invalid authorization');
+    }
+
+    return this.getLatestRequest(data);
+  }
+
+  private async getLatestRequest(data: FetchFeedDto) {
     if (data.executeFetch) {
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url);
@@ -91,14 +132,14 @@ export class FeedFetcherController {
         );
       } else {
         return {
-          requestStatus: 'PENDING',
+          requestStatus: 'PENDING' as const,
         };
       }
     }
 
     if (latestRequest.status === RequestStatus.FETCH_TIMEOUT) {
       return {
-        requestStatus: 'FETCH_TIMEOUT',
+        requestStatus: 'FETCH_TIMEOUT' as const,
       };
     }
 
@@ -107,13 +148,13 @@ export class FeedFetcherController {
       !latestRequest.response
     ) {
       return {
-        requestStatus: 'FETCH_ERROR',
+        requestStatus: 'FETCH_ERROR' as const,
       };
     }
 
     if (latestRequest.status === RequestStatus.OK) {
       return {
-        requestStatus: 'SUCCESS',
+        requestStatus: 'SUCCESS' as const,
         response: {
           body: latestRequest.response.text as string,
           statusCode: latestRequest.response.statusCode,
@@ -123,7 +164,7 @@ export class FeedFetcherController {
 
     if (latestRequest.status === RequestStatus.PARSE_ERROR) {
       return {
-        requestStatus: 'PARSE_ERROR',
+        requestStatus: 'PARSE_ERROR' as const,
         response: {
           statusCode: latestRequest.response.statusCode,
         },
@@ -132,13 +173,13 @@ export class FeedFetcherController {
 
     if (latestRequest.status === RequestStatus.INTERNAL_ERROR) {
       return {
-        requestStatus: 'INTERNAL_ERROR',
+        requestStatus: 'INTERNAL_ERROR' as const,
       };
     }
 
     if (latestRequest.status === RequestStatus.BAD_STATUS_CODE) {
       return {
-        requestStatus: 'BAD_STATUS_CODE',
+        requestStatus: 'BAD_STATUS_CODE' as const,
         response: {
           statusCode: latestRequest.response.statusCode,
         },

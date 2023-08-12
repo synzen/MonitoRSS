@@ -34,6 +34,8 @@ export function config(options?: {
       .USER_FEEDS_DATADOG_API_KEY as string,
     USER_FEEDS_FEED_REQUESTS_API_URL: process.env
       .USER_FEEDS_FEED_REQUESTS_API_URL as string,
+    USER_FEEDS_FEED_REQUESTS_GRPC_URL: process.env
+      .USER_FEEDS_FEED_REQUESTS_GRPC_URL as string,
     USER_FEEDS_FEED_REQUESTS_API_KEY: process.env
       .USER_FEEDS_FEED_REQUESTS_API_KEY as string,
     USER_FEEDS_POSTGRES_URI: process.env.USER_FEEDS_POSTGRES_URI as string,

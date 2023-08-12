@@ -38,6 +38,7 @@
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.1.3",
     "@nestjs/mapped-types": "*",
+    "@nestjs/microservices": "^10.1.3",
     "@nestjs/platform-fastify": "^10.1.3",
     "@synzen/discord-rest": "^0.7.0-beta.7",
     "class-transformer": "^0.5.1",

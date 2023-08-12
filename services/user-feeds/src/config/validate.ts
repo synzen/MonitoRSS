@@ -27,6 +27,10 @@ export class EnvironmentVariables {
   USER_FEEDS_FEED_REQUESTS_API_URL: string;
 
   @IsString()
+  @IsNotEmpty()
+  USER_FEEDS_FEED_REQUESTS_GRPC_URL: string;
+
+  @IsString()
   USER_FEEDS_FEED_REQUESTS_API_KEY: string;
 
   @IsString()
