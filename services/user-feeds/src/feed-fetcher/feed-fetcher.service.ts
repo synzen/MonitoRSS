@@ -54,7 +54,8 @@ export class FeedFetcherService {
             method: "POST",
             body: JSON.stringify({
               url,
-              executeFetch: options?.executeFetchIfNotInCache ?? false,
+              executeFetchIfNotExists:
+                options?.executeFetchIfNotInCache ?? false,
             }),
             headers: {
               "content-type": "application/json",
