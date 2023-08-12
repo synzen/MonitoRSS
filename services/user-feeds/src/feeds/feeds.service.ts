@@ -63,11 +63,13 @@ export class FeedsService {
     }
 
     let matchedArticles: Article[] = articles;
+    let totalMatchedArticles = articles.length;
 
     if (filters?.articleId) {
       matchedArticles = articles.filter(
         (article) => article.flattened.id === filters.articleId
       );
+      totalMatchedArticles = 1;
     } else {
       const filtersSearch = filters?.search;
 
@@ -79,6 +81,8 @@ export class FeedsService {
               .includes(filtersSearch.toLowerCase())
           );
         });
+
+        totalMatchedArticles = matchedArticles.length;
       }
 
       if (matchedArticles.length > 0) {
@@ -136,7 +140,7 @@ export class FeedsService {
 
     return {
       articles: matchedArticlesWithProperties,
-      totalArticles: matchedArticles.length,
+      totalArticles: totalMatchedArticles,
       properties,
       filterEvalResults: filterEvalResults,
     };
