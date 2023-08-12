@@ -10,10 +10,13 @@ import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
-import { randomUUID } from 'crypto';
+import { createHash } from 'crypto';
+import { CacheStorageService } from '../cache-storage/cache-storage.service';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
+
+const sha1 = createHash('sha1');
 
 interface FetchOptions {
   userAgent?: string;
@@ -30,6 +33,7 @@ export class FeedFetcherService {
     private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly objectFileStorageService: ObjectFileStorageService,
+    private readonly cacheStorageService: CacheStorageService,
   ) {
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
@@ -81,8 +85,25 @@ export class FeedFetcherService {
     }
 
     const s3ObjectKey = response?.s3ObjectKey;
+    const cacheKey = response?.redisCacheKey;
 
-    if (response && s3ObjectKey) {
+    if (response && cacheKey) {
+      const compressedText = await this.cacheStorageService.getFeedHtmlContent({
+        key: cacheKey,
+      });
+
+      return {
+        ...request,
+        response: {
+          ...response,
+          text: compressedText
+            ? (
+                await inflatePromise(Buffer.from(compressedText, 'base64'))
+              ).toString()
+            : '',
+        },
+      };
+    } else if (response && s3ObjectKey) {
       const compressedText =
         await this.objectFileStorageService.getFeedHtmlContent({
           key: s3ObjectKey,
@@ -149,28 +170,18 @@ export class FeedFetcherService {
             byteSize: Buffer.byteLength(compressedText),
           });
 
-          try {
-            const currentHour = new Date().getHours();
-
-            response.s3ObjectKey = `${currentHour}/${randomUUID()}`;
-            await this.objectFileStorageService.uploadFeedHtmlContent({
-              body: compressedText,
-              key: response.s3ObjectKey,
-            });
-          } catch (err) {
-            logger.error(
-              `Failed to upload feed html content for url ${url} to s3`,
-              {
-                stack: (err as Error).stack,
-              },
-            );
-          }
-        } catch (err) {
-          logger.error(`Failed to deflate response text of url ${url}`, {
-            stack: (err as Error).stack,
+          response.redisCacheKey = sha1.copy().update(url).digest('hex');
+          await this.cacheStorageService.setFeedHtmlContent({
+            key: response.redisCacheKey,
+            body: compressedText,
           });
-
-          response.text = text;
+        } catch (err) {
+          logger.error(
+            `Failed to upload feed html content for url ${url} to cache`,
+            {
+              stack: (err as Error).stack,
+            },
+          );
         }
       } catch (err) {
         request.status = RequestStatus.PARSE_ERROR;

@@ -56,8 +56,12 @@ export class EnvironmentVariables {
   FEED_REQUESTS_S3_ENDPOINT?: string;
 
   @IsString()
+  @IsNotEmpty()
+  FEED_REQUESTS_REDIS_URI!: string;
+
+  @IsBoolean()
   @IsOptional()
-  FEED_REQUESTS_REDIS_URI?: string;
+  FEED_REQUESTS_REDIS_DISABLE_CLUSTER?: boolean;
 }
 
 export function validateConfig(

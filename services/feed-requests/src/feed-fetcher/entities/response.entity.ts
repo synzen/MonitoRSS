@@ -34,6 +34,13 @@ export class Response {
   s3ObjectKey?: string | null;
 
   @Property({
+    nullable: true,
+    type: 'text',
+    default: null,
+  })
+  redisCacheKey?: string | null;
+
+  @Property({
     type: 'timestamp with time zone',
     nullable: true,
   })

@@ -42,7 +42,9 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: process.env
       .FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT as string,
     FEED_REQUESTS_S3_ENDPOINT: process.env.FEED_REQUESTS_S3_ENDPOINT,
-    FEED_REQUESTS_REDIS_URI: process.env.FEED_REQUESTS_REDIS_URI,
+    FEED_REQUESTS_REDIS_URI: process.env.FEED_REQUESTS_REDIS_URI as string,
+    FEED_REQUESTS_REDIS_DISABLE_CLUSTER:
+      process.env.FEED_REQUESTS_REDIS_DISABLE_CLUSTER === 'true',
   };
 
   validateConfig(values);

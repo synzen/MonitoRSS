@@ -150,6 +150,7 @@ services:
       - FEED_REQUESTS_START_TARGET=service
       - FEED_REQUESTS_S3_ENDPOINT=http://mrss-seaweed-fs:8333
       - FEED_REQUESTS_REDIS_URI=redis://mrss-feed-requests-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
     networks:
       - monitorss-default
 
@@ -182,6 +183,7 @@ services:
       - FEED_REQUESTS_START_TARGET=api
       - FEED_REQUESTS_S3_ENDPOINT=http://mrss-seaweed-fs:8333
       - FEED_REQUESTS_REDIS_URI=redis://mrss-feed-requests-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
     networks:
       - monitorss-default
 

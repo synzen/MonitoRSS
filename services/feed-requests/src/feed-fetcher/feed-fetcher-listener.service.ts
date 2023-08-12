@@ -72,7 +72,6 @@ export class FeedFetcherListenerService {
   }): Promise<void> {
     const url = message?.data?.url;
     const rateSeconds = message?.data?.rateSeconds;
-    console.log('brok');
 
     if (!url || rateSeconds == null) {
       logger.error(
