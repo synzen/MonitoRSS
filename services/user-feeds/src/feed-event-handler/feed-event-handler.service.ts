@@ -233,7 +233,8 @@ export class FeedEventHandlerService {
           // hardcode seconds in a day for now
           timeWindowSec: 86400,
           limit: event.data.articleDayLimit,
-        }
+        },
+        false
       );
 
       const {
@@ -300,7 +301,8 @@ export class FeedEventHandlerService {
       try {
         await this.deliveryRecordService.store(
           event.data.feed.id,
-          deliveryStates
+          deliveryStates,
+          false
         );
       } catch (err) {
         logger.error(
@@ -311,6 +313,15 @@ export class FeedEventHandlerService {
             error: (err as Error).stack,
           }
         );
+      }
+
+      try {
+        await this.orm.em.flush();
+      } catch (err) {
+        logger.error(`Failed to flush ORM while handling feed event`, {
+          event,
+          error: (err as Error).stack,
+        });
       }
     } catch (err) {
       if (err instanceof InvalidFeedException) {

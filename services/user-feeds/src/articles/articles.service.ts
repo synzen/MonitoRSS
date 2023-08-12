@@ -367,11 +367,16 @@ export class ArticlesService {
       return false;
     }
 
-    const count = await this.articleFieldRepo.count({
-      $or: queries,
-    });
+    const foundOne = await this.articleFieldRepo.findOne(
+      {
+        $or: queries,
+      },
+      {
+        fields: ["id"],
+      }
+    );
 
-    return count > 0;
+    return !!foundOne;
   }
 
   async getArticlesFromXml(

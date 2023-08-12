@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { ArticleDeliveryState, ArticleDeliveryStatus } from "../shared";
 import { DeliveryRecord } from "./entities";
 import dayjs from "dayjs";
+import { MikroORM } from "@mikro-orm/core";
 
 const { Failed, Rejected, Sent, PendingDelivery } = ArticleDeliveryStatus;
 
@@ -11,10 +12,15 @@ const { Failed, Rejected, Sent, PendingDelivery } = ArticleDeliveryStatus;
 export class DeliveryRecordService {
   constructor(
     @InjectRepository(DeliveryRecord)
-    private readonly recordRepo: EntityRepository<DeliveryRecord>
+    private readonly recordRepo: EntityRepository<DeliveryRecord>,
+    private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
-  async store(feedId: string, articleStates: ArticleDeliveryState[]) {
+  async store(
+    feedId: string,
+    articleStates: ArticleDeliveryState[],
+    flush = true
+  ) {
     const records = articleStates.map((articleState) => {
       const { status: articleStatus } = articleState;
 
@@ -65,7 +71,11 @@ export class DeliveryRecordService {
       return record;
     });
 
-    await this.recordRepo.persistAndFlush(records);
+    if (flush) {
+      await this.orm.em.persistAndFlush(records);
+    } else {
+      this.orm.em.persist(records);
+    }
   }
 
   async updateDeliveryStatus(

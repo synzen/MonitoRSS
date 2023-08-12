@@ -1,3 +1,4 @@
+import { MikroORM } from "@mikro-orm/core";
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
@@ -9,7 +10,8 @@ export class ArticleRateLimitService {
   constructor(
     private readonly deliveryRecordService: DeliveryRecordService,
     @InjectRepository(FeedArticleDeliveryLimit)
-    private readonly deliveryLimitRepo: EntityRepository<FeedArticleDeliveryLimit>
+    private readonly deliveryLimitRepo: EntityRepository<FeedArticleDeliveryLimit>,
+    private readonly orm: MikroORM
   ) {}
 
   async getUnderLimitCheck(feedId: string) {
@@ -57,7 +59,8 @@ export class ArticleRateLimitService {
 
   async addOrUpdateFeedLimit(
     feedId: string,
-    { timeWindowSec, limit }: { timeWindowSec: number; limit: number }
+    { timeWindowSec, limit }: { timeWindowSec: number; limit: number },
+    flush = true
   ) {
     const countCheck = await this.deliveryLimitRepo.findOne(
       {
@@ -81,7 +84,12 @@ export class ArticleRateLimitService {
 
     if (found) {
       found.limit = limit;
-      await this.deliveryLimitRepo.flush();
+
+      if (flush) {
+        await this.orm.em.persistAndFlush(found);
+      } else {
+        this.orm.em.persist(found);
+      }
     } else {
       const newLimit = new FeedArticleDeliveryLimit({
         feed_id: feedId,
@@ -89,7 +97,11 @@ export class ArticleRateLimitService {
         limit,
       });
 
-      await this.deliveryLimitRepo.persistAndFlush(newLimit);
+      if (flush) {
+        await this.orm.em.persistAndFlush(newLimit);
+      } else {
+        await this.orm.em.persist(newLimit);
+      }
     }
   }
 }

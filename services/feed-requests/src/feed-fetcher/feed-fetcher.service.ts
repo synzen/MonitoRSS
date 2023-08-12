@@ -92,15 +92,17 @@ export class FeedFetcherService {
         key: cacheKey,
       });
 
+      const text = compressedText
+        ? (
+            await inflatePromise(Buffer.from(compressedText, 'base64'))
+          ).toString()
+        : '';
+
       return {
         ...request,
         response: {
           ...response,
-          text: compressedText
-            ? (
-                await inflatePromise(Buffer.from(compressedText, 'base64'))
-              ).toString()
-            : '',
+          text: text,
         },
       };
     } else if (response && s3ObjectKey) {
@@ -171,6 +173,7 @@ export class FeedFetcherService {
           });
 
           response.redisCacheKey = sha1.copy().update(url).digest('hex');
+
           await this.cacheStorageService.setFeedHtmlContent({
             key: response.redisCacheKey,
             body: compressedText,
