@@ -77,7 +77,7 @@ export class FeedFetcherService {
     }
 
     if (statusCode < 200 || statusCode >= 300) {
-      let bodyJson: Record<string, unknown> = {};
+      let bodyJson: unknown = {};
 
       try {
         bodyJson = await body.json();
@@ -90,7 +90,7 @@ export class FeedFetcherService {
       );
     }
 
-    const response: FeedResponse = await body.json();
+    const response = (await body.json()) as FeedResponse;
 
     const { requestStatus } = response;
 

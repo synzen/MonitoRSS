@@ -627,7 +627,7 @@ export class DiscordMediumService implements DeliveryMedium {
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
-      splitOptions: DeliveryDetails["deliverySettings"]["splitOptions"] & {
+      splitOptions?: DeliveryDetails["deliverySettings"]["splitOptions"] & {
         limit?: number;
       };
       mentions: DeliveryDetails["deliverySettings"]["mentions"];
