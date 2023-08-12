@@ -17,7 +17,6 @@ export class CacheStorageService {
     try {
       await this.redisClient.set(key, body, {
         EX: 60 * 15, // 15 minutes
-        NX: true,
       });
     } catch (err) {
       logger.error(`Failed to set html content in cache storage`, {
