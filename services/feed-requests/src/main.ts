@@ -36,6 +36,10 @@ async function startApi() {
           package: 'feedfetcher',
           protoPath: join(__dirname, './feed-fetcher/feed-fetcher.proto'),
           url: '0.0.0.0:4999',
+          channelOptions: {
+            'grpc.default_compression_algorithm': 2,
+            'grpc.default_compression_level': 2,
+          },
         },
       },
     );

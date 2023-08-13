@@ -19,6 +19,7 @@ import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
+  FeedFetchGrpcException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestInternalException,
@@ -246,14 +247,15 @@ export class FeedEventHandlerService {
       let feedXml: string | null;
 
       try {
-        feedXml = await this.feedFetcherService.fetch(url);
+        feedXml = await this.feedFetcherService.fetchWithGrpc(url);
       } catch (err) {
         if (
           err instanceof FeedRequestInternalException ||
           err instanceof FeedRequestParseException ||
           err instanceof FeedRequestBadStatusCodeException ||
           err instanceof FeedRequestFetchException ||
-          err instanceof FeedRequestTimedOutException
+          err instanceof FeedRequestTimedOutException ||
+          err instanceof FeedFetchGrpcException
         ) {
           logger.debug(`Ignoring feed event due to expected exception`, {
             exceptionName: (err as Error).name,

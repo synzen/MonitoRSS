@@ -9,12 +9,14 @@ import { ConfigService } from "@nestjs/config";
 import { VersioningType } from "@nestjs/common";
 import logger from "./shared/utils/logger";
 import { AllExceptionsFilter } from "./shared/filters";
+import compression from "@fastify/compress";
 
 export async function setupHttpApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forRoot(),
     new FastifyAdapter()
   );
+  await app.register(compression, { encodings: ["gzip", "deflate"] });
   app.enableShutdownHooks();
 
   const configService = app.get(ConfigService);

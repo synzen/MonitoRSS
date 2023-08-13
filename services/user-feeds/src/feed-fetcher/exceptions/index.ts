@@ -6,3 +6,4 @@ export * from "./feed-request-fetch.exception";
 export * from "./feed-request-bad-status-code.exception";
 export * from "./feed-article-not-found.exception";
 export * from "./feed-request-timed-out.exception";
+export * from "./feed-fetch-grpc.exception";

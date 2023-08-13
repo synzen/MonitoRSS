@@ -32,7 +32,11 @@ import { FeedFetcherService } from "./feed-fetcher.service";
                 url,
                 package: "feedfetcher",
                 protoPath: join(__dirname, "feed-fetcher.proto"),
+                // https://github.com/grpc/grpc-node/issues/2093#issuecomment-1117969843
                 credentials: useTls ? credentials.createSsl() : undefined,
+                channelOptions: {
+                  "grpc.max_receive_message_length": 1024 * 1024 * 100,
+                },
               },
             };
           },

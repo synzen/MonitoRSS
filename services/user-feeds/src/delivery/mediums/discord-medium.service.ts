@@ -29,6 +29,7 @@ import {
   FilterExpressionReference,
   LogicalExpression,
 } from "../../article-filters/types";
+import dayjs from "dayjs";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -669,8 +670,12 @@ export class DiscordMediumService implements DeliveryMedium {
 
         if (embed.timestamp === "now") {
           timestamp = new Date().toISOString();
-        } else if (embed.timestamp === "article") {
-          timestamp = article.raw.date?.toISOString();
+        } else if (embed.timestamp === "article" && article.raw.date) {
+          const dayjsDate = dayjs(article.raw.date);
+
+          if (dayjsDate.isValid()) {
+            timestamp = dayjsDate.toISOString();
+          }
         }
 
         const embedTitle = this.articleFormatterService.applySplit(

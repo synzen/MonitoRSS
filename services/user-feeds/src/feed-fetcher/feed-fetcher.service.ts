@@ -3,9 +3,14 @@ import { ConfigService } from "@nestjs/config";
 import { Dispatcher, request } from "undici";
 import BodyReadable from "undici/types/readable";
 import { ArticlesService } from "../articles/articles.service";
-import { FeedResponseRequestStatus, UserFeedFormatOptions } from "../shared";
+import {
+  FeedResponseRequestStatus,
+  GrpcError,
+  UserFeedFormatOptions,
+} from "../shared";
 import {
   FeedArticleNotFoundException,
+  FeedFetchGrpcException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestInternalException,
@@ -119,13 +124,14 @@ export class FeedFetcherService implements OnModuleInit {
         json: async () => lastVal,
       });
     } catch (err) {
+      const typedErr = err as GrpcError;
       logger.error(`Failed to execute GRPC request to feed requests API`, {
-        grpcErrorMessage: (err as any).message,
-        code: (err as any).code,
-        details: (err as any).details,
+        grpcErrorMessage: typedErr.message,
+        code: typedErr.code,
+        details: typedErr.details,
       });
 
-      throw err;
+      throw new FeedFetchGrpcException(typedErr.message);
     }
   }
 

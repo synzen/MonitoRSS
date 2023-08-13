@@ -214,6 +214,7 @@ services:
       - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672
       - USER_FEEDS_FEED_REQUESTS_API_URL=http://mrss-feed-requests-api:5000/v1/feed-requests
       - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///mrss-feed-requests-api:4999
+      - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
       - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - USER_FEEDS_API_KEY=user-feeds-api-key
     networks:
