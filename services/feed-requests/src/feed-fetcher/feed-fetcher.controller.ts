@@ -91,7 +91,6 @@ export class FeedFetcherController {
   @GrpcMethod('FeedFetcherGrpc', 'FetchFeed')
   @UseRequestContext()
   async fetchFeedGrpc(data: FetchFeedDto, metadata: Metadata) {
-    console.log(metadata);
     const classData = plainToClass(FetchFeedDto, data);
     const results = validateSync(classData);
 
