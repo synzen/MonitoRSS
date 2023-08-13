@@ -15,12 +15,18 @@ import { MikroORM } from '@mikro-orm/core';
 import { RequestContext } from '@mikro-orm/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
+import compression from '@fastify/compress';
 
 async function startApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forApi(),
     new FastifyAdapter(),
   );
+
+  app.register(compression, {
+    encodings: ['gzip', 'deflate'],
+  });
+
   const microservice =
     await NestFactory.createMicroservice<MicroserviceOptions>(
       AppModule.forApi(),
