@@ -102,6 +102,7 @@ export class FeedFetcherService implements OnModuleInit {
     try {
       const metadata = new Metadata();
       metadata.add("api-key", this.API_KEY);
+      metadata.add("grpc-target", "feed-requests");
       const observable: Observable<string> =
         await this.feedFetcherGrpcPackage.fetchFeed(
           {
