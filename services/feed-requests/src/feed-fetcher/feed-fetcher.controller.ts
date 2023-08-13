@@ -128,6 +128,9 @@ export class FeedFetcherController {
       if (data.executeFetchIfNotExists) {
         latestRequest = await this.feedFetcherService.fetchAndSaveResponse(
           data.url,
+          {
+            flushEntities: true,
+          },
         );
       } else {
         return {
