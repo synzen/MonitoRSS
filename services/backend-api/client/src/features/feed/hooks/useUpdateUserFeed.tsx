@@ -24,6 +24,12 @@ export const useUpdateUserFeed = () => {
         ],
         data
       );
+
+      return queryClient.invalidateQueries({
+        predicate: (query) => {
+          return query.queryKey[0] === "user-feeds";
+        },
+      });
     },
   });
 
