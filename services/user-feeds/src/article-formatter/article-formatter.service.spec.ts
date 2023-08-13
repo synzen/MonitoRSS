@@ -9,6 +9,16 @@ describe("ArticleFormatterService", () => {
   });
 
   describe("formatValueForDiscord", () => {
+    describe.skip("br", () => {
+      // https://github.com/html-to-text/node-html-to-text/issues/280
+      it("returns a new line", async () => {
+        const value = `Text <br/> <br/> <div class="center-wrap"></div>`;
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("Text\n\n ");
+      });
+    });
     describe("img", () => {
       it("returns the image link with no alt", async () => {
         const value = '<img src="https://example.com/image.png" />';

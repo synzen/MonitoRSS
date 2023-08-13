@@ -6,9 +6,11 @@ import { Article, UserFeedFormatOptions } from "../shared";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { parse, valid } from "node-html-parser";
+import advancedFormat from "dayjs/plugin/advancedFormat";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
+dayjs.extend(advancedFormat);
 
 type FlattenedArticleWithoutId = Omit<Article["flattened"], "id">;
 

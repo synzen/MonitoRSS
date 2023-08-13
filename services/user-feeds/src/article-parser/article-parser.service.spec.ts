@@ -331,6 +331,29 @@ describe("ArticleParserService", () => {
       });
     });
 
+    it("converts dates to ISO strings with a advanced custom date formats", () => {
+      const date = new Date(2020, 1, 1);
+      const article = {
+        id: "hello world",
+        a: date,
+      };
+
+      const dateFormat = "x";
+
+      const flattenedArticle = service.flatten(article, {
+        dateFormat,
+        dateTimezone: undefined,
+        disableImageLinkPreviews: false,
+      });
+
+      expect(flattenedArticle).toEqual({
+        flattened: {
+          id: article.id,
+          a: expect.stringMatching(/^\d+$/),
+        },
+      });
+    });
+
     it("works with custom timezones", async () => {
       const article = {
         id: "hello world",

@@ -41,6 +41,7 @@ import { array, InferType, number, object, string } from "yup";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
+import { advancedFormat } from "dayjs/plugin/advancedFormat";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -57,6 +58,7 @@ import { SelectUserDialog } from "./SelectUserDialog";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(advancedFormat);
 
 interface Props {
   feedId: string;
