@@ -144,10 +144,6 @@ export function validateLogicalExpression(
     ];
   }
 
-  if (children.length === 0) {
-    return [`Expected ${currentPath}children to have at least one item`];
-  }
-
   const errors = children.flatMap((child, index) => {
     const childPath = `${currentPath}children[${index}].`;
 

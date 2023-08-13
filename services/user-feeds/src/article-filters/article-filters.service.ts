@@ -66,6 +66,10 @@ export class ArticleFiltersService {
 
     switch (expression.op) {
       case LogicalExpressionOperator.And: {
+        if (!children.length) {
+          return true;
+        }
+
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
           const result = this.evaluateExpression(child, references);
@@ -79,6 +83,10 @@ export class ArticleFiltersService {
       }
 
       case LogicalExpressionOperator.Or: {
+        if (!children.length) {
+          return true;
+        }
+
         for (let i = 0; i < children.length; ++i) {
           const child = children[i];
           const result = this.evaluateExpression(child, references);
