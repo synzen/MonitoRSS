@@ -1,5 +1,6 @@
 import { plainToClass } from "class-transformer";
 import {
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsNumberString,
@@ -54,6 +55,9 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   USER_FEEDS_RABBITMQ_BROKER_URL: string;
+
+  @IsString()
+  USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS!: string;
 }
 
 export function validateConfig(

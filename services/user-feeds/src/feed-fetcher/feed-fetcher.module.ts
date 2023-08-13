@@ -1,3 +1,4 @@
+import { credentials } from "@grpc/grpc-js";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ClientsModule } from "@nestjs/microservices";
@@ -20,6 +21,10 @@ import { FeedFetcherService } from "./feed-fetcher.service";
             const url = configService.getOrThrow<string>(
               "USER_FEEDS_FEED_REQUESTS_GRPC_URL"
             );
+            const useTls =
+              configService.getOrThrow<string>(
+                "USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS"
+              ) === "true";
 
             return {
               transport: Transport.GRPC,
@@ -27,6 +32,7 @@ import { FeedFetcherService } from "./feed-fetcher.service";
                 url,
                 package: "feedfetcher",
                 protoPath: join(__dirname, "feed-fetcher.proto"),
+                credentials: useTls ? credentials.createSsl() : undefined,
               },
             };
           },
