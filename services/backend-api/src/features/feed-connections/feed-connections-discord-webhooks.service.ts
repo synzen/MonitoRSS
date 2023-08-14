@@ -28,6 +28,7 @@ import { DiscordAPIService } from "../../services/apis/discord/discord-api.servi
 import { DiscordChannelType } from "../../common";
 import { DiscordWebhookForumChannelUnsupportedException } from "./exceptions";
 import { CreateDiscordWebhookConnectionCloneInputDto } from "./dto";
+import { SupportersService } from "../supporters/supporters.service";
 
 export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
@@ -81,15 +82,18 @@ export class FeedConnectionsDiscordWebhooksService {
     private readonly discordWebhooksService: DiscordWebhooksService,
     private readonly discordAuthService: DiscordAuthService,
     private readonly feedHandlerService: FeedHandlerService,
-    private readonly discordApiService: DiscordAPIService
+    private readonly discordApiService: DiscordAPIService,
+    private readonly supportersService: SupportersService
   ) {}
 
   async createDiscordWebhookConnection({
+    discordUserId,
     accessToken,
     feedId,
     name,
     webhook: { id, name: webhookName, iconUrl },
   }: {
+    discordUserId: string;
     accessToken: string;
     feedId: string;
     name: string;
@@ -99,6 +103,14 @@ export class FeedConnectionsDiscordWebhooksService {
       iconUrl?: string;
     };
   }): Promise<DiscordWebhookConnection> {
+    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+      discordUserId
+    );
+
+    if (!benefits.isSupporter) {
+      throw new Error("User must be a supporter to add webhooks");
+    }
+
     const webhook = await this.assertDiscordWebhookCanBeUsed(id, accessToken);
 
     const connectionId = new Types.ObjectId();

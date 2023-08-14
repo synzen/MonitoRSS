@@ -8,6 +8,7 @@ import { FeedConnectionsDiscordWebhooksController } from "./feed-connections-dis
 import { UserFeedsModule } from "../user-feeds/user-feeds.module";
 import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
 import { DiscordApiModule } from "../../services/apis/discord/discord-api.module";
+import { SupportersModule } from "../supporters/supporters.module";
 
 @Module({
   controllers: [FeedConnectionsDiscordWebhooksController],
@@ -18,6 +19,7 @@ import { DiscordApiModule } from "../../services/apis/discord/discord-api.module
     DiscordAuthModule,
     FeedHandlerModule,
     DiscordApiModule,
+    SupportersModule,
   ],
 })
 export class FeedConnectionsDiscordWebhooksModule {

@@ -58,10 +58,12 @@ export class FeedConnectionsDiscordWebhooksController {
     @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
     @Body(ValidationPipe)
     { name, webhook }: CreateDiscordWebhookConnectionInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken
+    @DiscordAccessToken()
+    { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<CreateDiscordWebhookConnectionOutputDto> {
     const createdConnection = await this.service.createDiscordWebhookConnection(
       {
+        discordUserId,
         accessToken: access_token,
         feedId: feed._id.toHexString(),
         name,
