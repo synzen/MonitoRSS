@@ -124,7 +124,11 @@ export class FeedFetcherController {
       data.url,
     );
 
-    if (!latestRequest) {
+    // If there's no text, response must be fetched to be cached
+    if (
+      !latestRequest ||
+      (latestRequest.response?.redisCacheKey && !latestRequest?.response?.text)
+    ) {
       if (data.executeFetchIfNotExists) {
         latestRequest = await this.feedFetcherService.fetchAndSaveResponse(
           data.url,
