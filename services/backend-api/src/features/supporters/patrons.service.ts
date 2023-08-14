@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { ConfigService } from "@nestjs/config";
 
 interface PatronBenefits {
+  existsAndIsValid: boolean;
   maxFeeds: number;
   maxUserFeeds: number;
   maxGuilds: number;
@@ -41,6 +42,7 @@ export class PatronsService {
 
     if (allBenefits.length === 0) {
       return {
+        existsAndIsValid: false,
         maxFeeds: this.defaultMaxFeeds,
         maxGuilds: 0,
         allowWebhooks: false,
@@ -49,6 +51,7 @@ export class PatronsService {
     }
 
     return {
+      existsAndIsValid: true,
       maxFeeds: Math.max(...allBenefits.map((benefits) => benefits.maxFeeds)),
       maxGuilds: Math.max(...allBenefits.map((benefits) => benefits.maxGuilds)),
       allowWebhooks: allBenefits.some((benefits) => benefits.allowWebhooks),
@@ -102,6 +105,7 @@ export class PatronsService {
     const usePledge = pledgeOverride ?? pledge;
 
     return {
+      existsAndIsValid: true,
       maxFeeds: this.getMaxFeedsFromPledge(usePledge),
       maxUserFeeds: this.getMaxUserFeedsFromPledge(usePledge),
       maxGuilds: this.getMaxServersFromPledgeLifetime(pledgeLifetime),

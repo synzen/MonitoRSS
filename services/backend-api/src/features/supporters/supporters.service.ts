@@ -56,6 +56,7 @@ interface SupportPatronAggregateResult {
 export class SupportersService {
   defaultMaxFeeds: number;
   defaultRefreshRateSeconds: number;
+  defaultSupporterRefreshRateSeconds = 120;
   defaultMaxUserFeeds: number;
   defaultMaxSupporterUserFeeds: number;
   maxDailyArticlesSupporter: number;
@@ -127,6 +128,10 @@ export class SupportersService {
       },
     },
   ];
+
+  async areSupportersEnabled() {
+    return !!(await this.supporterModel.findOne({}).select("_id").lean());
+  }
 
   async getBenefitsOfDiscordUser(
     discordId: string
@@ -451,6 +456,7 @@ export class SupportersService {
     const isFromPatrons = supporter.patrons.length > 0;
 
     const {
+      existsAndIsValid: patronExistsAndIsValid,
       maxFeeds: patronMaxFeeds,
       maxUserFeeds: patronMaxUserFeeds,
       maxGuilds: patronMaxGuilds,
@@ -461,11 +467,11 @@ export class SupportersService {
 
     if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
-    } else if (isFromPatrons) {
+    } else if (patronExistsAndIsValid) {
       refreshRateSeconds =
         patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
     } else {
-      refreshRateSeconds = 120;
+      refreshRateSeconds = this.defaultSupporterRefreshRateSeconds;
     }
 
     let baseMaxUserFeeds: number;
@@ -487,7 +493,7 @@ export class SupportersService {
       supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0;
 
     return {
-      isSupporter: true,
+      isSupporter: isFromPatrons ? patronExistsAndIsValid : true,
       maxFeeds: Math.max(
         supporter.maxFeeds ?? this.defaultMaxFeeds,
         patronMaxFeeds
