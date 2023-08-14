@@ -463,13 +463,15 @@ export class SupportersService {
       refreshRateSeconds: patronRefreshRateSeconds,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
-    let refreshRateSeconds: number;
+    let refreshRateSeconds = this.defaultRefreshRateSeconds;
 
     if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
-    } else if (patronExistsAndIsValid) {
-      refreshRateSeconds =
-        patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
+    } else if (isFromPatrons) {
+      if (patronExistsAndIsValid) {
+        refreshRateSeconds =
+          patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
+      }
     } else {
       refreshRateSeconds = this.defaultSupporterRefreshRateSeconds;
     }
