@@ -1,3 +1,4 @@
+import "./tracer";
 import "source-map-support/register";
 import { setupFeedListener } from "./setup-feed-listener";
 import { setupHttpApi } from "./setup-http-api";
