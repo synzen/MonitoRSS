@@ -98,6 +98,10 @@ describe("handle-schedule", () => {
   });
 
   beforeEach(async () => {
+    jest.resetAllMocks();
+    jest
+      .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
+      .mockResolvedValue([]);
     await userFeedModel.deleteMany();
     await feedScheduleModel.deleteMany();
   });
@@ -131,16 +135,12 @@ describe("handle-schedule", () => {
       const urlsHandler = jest.fn();
       const feedHandler = jest.fn();
 
-      jest
-        .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
-        .mockResolvedValue([]);
-
       await service.handleRefreshRate(service.defaultRefreshRateSeconds, {
         urlsHandler,
         feedHandler,
       });
 
-      expect(urlsHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(urlsHandler).toHaveBeenCalledWith([{ url: "new-york-times.com" }]);
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
@@ -184,16 +184,12 @@ describe("handle-schedule", () => {
       const urlsHandler = jest.fn();
       const feedHandler = jest.fn();
 
-      jest
-        .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
-        .mockResolvedValue([]);
-
       await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
         urlsHandler,
         feedHandler,
       });
 
-      expect(urlsHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(urlsHandler).toHaveBeenCalledWith([{ url: "new-york-times.com" }]);
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
@@ -262,7 +258,7 @@ describe("handle-schedule", () => {
         feedHandler,
       });
 
-      expect(urlsHandler).toHaveBeenCalledWith("new-york-times.com");
+      expect(urlsHandler).toHaveBeenCalledWith([{ url: "new-york-times.com" }]);
       expect(feedHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           title: createdFeeds[0].title,
@@ -291,7 +287,7 @@ describe("handle-schedule", () => {
   });
 
   describe("getUrlsMatchingRefreshRate", () => {
-    it("does not return duplicate urls for default refresh rate for default rate", async () => {
+    it("does not return duplicate urls for default refresh rate", async () => {
       await userFeedModel.create([
         {
           title: "feed-title",
@@ -1278,11 +1274,6 @@ describe("handle-schedule", () => {
         formatOptions: {
           dateFormat: "MMMM Do YYYY, h:mm:ss a",
         },
-        splitOptions: {
-          splitChar: "a",
-          appendChar: "append",
-          prependChar: "prepend",
-        },
         connections: {
           discordChannels: [
             {
@@ -1291,6 +1282,12 @@ describe("handle-schedule", () => {
                 expression: {
                   foo: "bar",
                 },
+              },
+              splitOptions: {
+                splitChar: "a",
+                appendChar: "append",
+                prependChar: "prepend",
+                isEnabled: true,
               },
               details: {
                 formatter: {
@@ -1335,79 +1332,79 @@ describe("handle-schedule", () => {
         maxDailyArticles: 100,
       });
 
-      expect(amqpConnection.publish).toHaveBeenCalledWith(
-        "",
-        "feed.deliver-articles",
-        {
-          data: {
-            articleDayLimit: 100,
-            feed: {
-              id: feed._id.toHexString(),
-              url: feed.url,
-              passingComparisons: [],
-              blockingComparisons: [],
-              formatOptions: {
-                dateFormat: "MMMM Do YYYY, h:mm:ss a",
+      const args = amqpConnection.publish.mock.calls[0];
+
+      expect(args[0]).toEqual("");
+      expect(args[1]).toEqual("feed.deliver-articles");
+      expect(args[2]).toMatchObject({
+        data: {
+          articleDayLimit: 100,
+          feed: {
+            id: feed._id.toHexString(),
+            url: feed.url,
+            passingComparisons: [],
+            blockingComparisons: [],
+            formatOptions: {
+              dateFormat: "MMMM Do YYYY, h:mm:ss a",
+            },
+          },
+          mediums: [
+            {
+              id: feed.connections.discordChannels[0].id.toHexString(),
+              key: "discord",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              details: {
+                channel: {
+                  id: "channel-id",
+                },
+                content: "content",
+                guildId: "guild-id",
+                embeds: [
+                  {
+                    title: "embed-title",
+                    description: "embed-description",
+                    url: "embed-url",
+                    color: 123,
+                    fields: [
+                      {
+                        name: "field-name",
+                        value: "field-value",
+                        inline: true,
+                      },
+                    ],
+                    footer: {
+                      text: "footer-text",
+                      iconUrl: "footer-icon-url",
+                    },
+                    thumbnail: {
+                      url: "thumbnail-url",
+                    },
+                    image: {
+                      url: "image-url",
+                    },
+                  },
+                ],
+                formatter: {
+                  formatTables: true,
+                  stripImages: true,
+                },
+                splitOptions: {
+                  splitChar: "a",
+                  appendChar: "append",
+                  prependChar: "prepend",
+                },
               },
             },
-            mediums: [
-              {
-                id: feed.connections.discordChannels[0].id.toHexString(),
-                key: "discord",
-                filters: {
-                  expression: {
-                    foo: "bar",
-                  },
-                },
-                details: {
-                  channel: {
-                    id: "channel-id",
-                  },
-                  content: "content",
-                  guildId: "guild-id",
-                  embeds: [
-                    {
-                      title: "embed-title",
-                      description: "embed-description",
-                      url: "embed-url",
-                      color: 123,
-                      fields: [
-                        {
-                          name: "field-name",
-                          value: "field-value",
-                          inline: true,
-                        },
-                      ],
-                      footer: {
-                        text: "footer-text",
-                        iconUrl: "footer-icon-url",
-                      },
-                      thumbnail: {
-                        url: "thumbnail-url",
-                      },
-                      image: {
-                        url: "image-url",
-                      },
-                    },
-                  ],
-                  formatter: {
-                    formatTables: true,
-                    stripImages: true,
-                  },
-                  splitOptions: {
-                    splitChar: "a",
-                    appendChar: "append",
-                    prependChar: "prepend",
-                  },
-                },
-              },
-            ],
-          },
+          ],
         },
-        {
-          expiration: 3600000,
-        }
-      );
+      });
+      expect(args[3]).toMatchObject({
+        expiration: 3600000,
+      });
     });
 
     it("emits the correct event for discord webhook mediums", async () => {
@@ -1420,11 +1417,6 @@ describe("handle-schedule", () => {
         formatOptions: {
           dateFormat: "MMMM Do YYYY, h:mm:ss a",
         },
-        splitOptions: {
-          splitChar: "a",
-          appendChar: "append",
-          prependChar: "prepend",
-        },
         connections: {
           discordWebhooks: [
             {
@@ -1434,6 +1426,12 @@ describe("handle-schedule", () => {
                 expression: {
                   foo: "bar",
                 },
+              },
+              splitOptions: {
+                splitChar: "a",
+                appendChar: "append",
+                prependChar: "prepend",
+                isEnabled: true,
               },
               details: {
                 formatter: {
@@ -1480,82 +1478,82 @@ describe("handle-schedule", () => {
         maxDailyArticles: 102,
       });
 
-      expect(amqpConnection.publish).toHaveBeenCalledWith(
-        "",
-        "feed.deliver-articles",
-        {
-          data: {
-            articleDayLimit: 102,
-            feed: {
-              id: feed._id.toHexString(),
-              url: feed.url,
-              passingComparisons: [],
-              blockingComparisons: [],
-              formatOptions: {
-                dateFormat: "MMMM Do YYYY, h:mm:ss a",
+      const args = amqpConnection.publish.mock.calls[0];
+
+      expect(args[0]).toEqual("");
+      expect(args[1]).toEqual("feed.deliver-articles");
+      expect(args[2]).toMatchObject({
+        data: {
+          articleDayLimit: 102,
+          feed: {
+            id: feed._id.toHexString(),
+            url: feed.url,
+            passingComparisons: [],
+            blockingComparisons: [],
+            formatOptions: {
+              dateFormat: "MMMM Do YYYY, h:mm:ss a",
+            },
+          },
+          mediums: [
+            {
+              id: feed.connections.discordWebhooks[0].id.toHexString(),
+              key: "discord",
+              filters: {
+                expression: {
+                  foo: "bar",
+                },
+              },
+              details: {
+                webhook: {
+                  id: "webhook-id",
+                  token: "webhook token",
+                  name: "webhook-name",
+                  iconUrl: "icon-url",
+                },
+                content: "content",
+                guildId: "guild-id",
+                embeds: [
+                  {
+                    title: "embed-title",
+                    description: "embed-description",
+                    url: "embed-url",
+                    color: 123,
+                    fields: [
+                      {
+                        name: "field-name",
+                        value: "field-value",
+                        inline: true,
+                      },
+                    ],
+                    footer: {
+                      text: "footer-text",
+                      iconUrl: "footer-icon-url",
+                    },
+                    thumbnail: {
+                      url: "thumbnail-url",
+                    },
+                    image: {
+                      url: "image-url",
+                    },
+                  },
+                ],
+                formatter: {
+                  formatTables: true,
+                  stripImages: true,
+                },
+                splitOptions: {
+                  splitChar: "a",
+                  appendChar: "append",
+                  prependChar: "prepend",
+                },
               },
             },
-            mediums: [
-              {
-                id: feed.connections.discordWebhooks[0].id.toHexString(),
-                key: "discord",
-                filters: {
-                  expression: {
-                    foo: "bar",
-                  },
-                },
-                details: {
-                  webhook: {
-                    id: "webhook-id",
-                    token: "webhook token",
-                    name: "webhook-name",
-                    iconUrl: "icon-url",
-                  },
-                  content: "content",
-                  guildId: "guild-id",
-                  embeds: [
-                    {
-                      title: "embed-title",
-                      description: "embed-description",
-                      url: "embed-url",
-                      color: 123,
-                      fields: [
-                        {
-                          name: "field-name",
-                          value: "field-value",
-                          inline: true,
-                        },
-                      ],
-                      footer: {
-                        text: "footer-text",
-                        iconUrl: "footer-icon-url",
-                      },
-                      thumbnail: {
-                        url: "thumbnail-url",
-                      },
-                      image: {
-                        url: "image-url",
-                      },
-                    },
-                  ],
-                  formatter: {
-                    formatTables: true,
-                    stripImages: true,
-                  },
-                  splitOptions: {
-                    splitChar: "a",
-                    appendChar: "append",
-                    prependChar: "prepend",
-                  },
-                },
-              },
-            ],
-          },
+          ],
         },
-        {
-          expiration: 1000 * 60 * 60,
-        }
-      );
+      });
+      expect(args[3]).toMatchObject({
+        expiration: 3600000,
+      });
     });
   });
 });
