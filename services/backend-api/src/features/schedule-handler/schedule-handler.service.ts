@@ -497,10 +497,24 @@ export class ScheduleHandlerService {
           "connections.discordChannels.0": {
             $exists: true,
           },
+          "connections.discordChannels": {
+            $elemMatch: {
+              disabledCode: {
+                $exists: false,
+              },
+            },
+          },
         },
         {
           "connections.discordWebhooks.0": {
             $exists: true,
+          },
+          "connections.discordWebhooks": {
+            $elemMatch: {
+              disabledCode: {
+                $exists: false,
+              },
+            },
           },
         },
       ],
@@ -579,11 +593,9 @@ export class ScheduleHandlerService {
           disabledCode: {
             $exists: false,
           },
-          healthStatus: {
-            $ne: UserFeedHealthStatus.Failed,
+          refreshRateSeconds: {
+            $exists: false,
           },
-        },
-        {
           "user.discordUserId": {
             $nin: discordUserIdsToExclude,
           },
@@ -600,10 +612,24 @@ export class ScheduleHandlerService {
               "connections.discordChannels.0": {
                 $exists: true,
               },
+              "connections.discordChannels": {
+                $elemMatch: {
+                  disabledCode: {
+                    $exists: false,
+                  },
+                },
+              },
             },
             {
               "connections.discordWebhooks.0": {
                 $exists: true,
+              },
+              "connections.discordWebhooks": {
+                $elemMatch: {
+                  disabledCode: {
+                    $exists: false,
+                  },
+                },
               },
             },
           ],

@@ -756,6 +756,80 @@ describe("handle-schedule", () => {
       expect(resultUrls).toHaveLength(0);
     });
 
+    it("returns nothing if all connections are disabled", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-1",
+          },
+          connections: {
+            ...sampleConnections,
+            discordChannels: [
+              {
+                ...sampleConnections.discordChannels[0],
+                disabledCode: FeedConnectionDisabledCode.MissingMedium,
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await service.getScheduleFeedQueryExcluding(
+        [
+          {
+            name: "bloomberg news",
+            keywords: ["bloomberg"],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        ["irrelevant-user-id-to-exclude"]
+      );
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("returns correctly if some connections are enabled", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-1",
+          },
+          connections: {
+            ...sampleConnections,
+            discordChannels: [
+              {
+                ...sampleConnections.discordChannels[0],
+              },
+              {
+                ...sampleConnections.discordChannels[0],
+                id: new Types.ObjectId(),
+                disabledCode: FeedConnectionDisabledCode.MissingMedium,
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await service.getScheduleFeedQueryExcluding(
+        [
+          {
+            name: "bloomberg news",
+            keywords: ["bloomberg"],
+            feeds: [],
+            refreshRateMinutes: 10,
+          },
+        ],
+        ["irrelevant-user-id-to-exclude"]
+      );
+
+      expect(result).toHaveLength(1);
+    });
+
     describe("schedule keywords", () => {
       it("returns the correct matches", async () => {
         const created = await userFeedModel.create([
@@ -939,47 +1013,6 @@ describe("handle-schedule", () => {
 
         expect(result).toHaveLength(0);
       });
-
-      it("does not return if they are failed", async () => {
-        const created = await userFeedModel.insertMany(
-          [
-            {
-              title: "feed-title",
-              url: "new-york-times.com",
-              user: {
-                discordUserId: "user-id-1",
-              },
-              connections: sampleConnections,
-            },
-            {
-              title: "feed-title",
-              url: "yahoo-news.com",
-              user: {
-                discordUserId: "user-id-1",
-              },
-              healthStatus: UserFeedHealthStatus.Failed,
-              connections: sampleConnections,
-            },
-          ],
-          {
-            ordered: true,
-          }
-        );
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [created[0]._id],
-              refreshRateMinutes: 10,
-            },
-          ],
-          []
-        );
-
-        expect(result).toHaveLength(0);
-      });
     });
 
     describe("user ids", () => {
@@ -1028,42 +1061,6 @@ describe("handle-schedule", () => {
               discordUserId: "user-id-1",
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-2",
-            },
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [created[1].user.discordUserId]
-        );
-
-        expect(result).toHaveLength(0);
-      });
-
-      it("does not return if they are failed", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            healthStatus: UserFeedHealthStatus.Failed,
             connections: sampleConnections,
           },
           {
