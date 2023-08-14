@@ -97,6 +97,11 @@ export class UserFeed {
   })
   legacyFeedId?: Types.ObjectId;
 
+  @Prop({
+    required: false,
+  })
+  refreshRateSeconds?: number;
+
   createdAt: Date;
   updatedAt: Date;
 }

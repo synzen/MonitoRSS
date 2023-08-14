@@ -282,6 +282,7 @@ export class UserFeedsController {
       formatOptions,
       dateCheckOptions,
       shareManageOptions,
+      refreshRateSeconds,
     }: UpdateUserFeedInputDto,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
@@ -301,6 +302,7 @@ export class UserFeedsController {
         formatOptions,
         dateCheckOptions,
         shareManageOptions,
+        refreshRateSeconds,
       }
     )) as UserFeed;
 
@@ -399,8 +401,9 @@ export class UserFeedsController {
         mentions: con.mentions,
       }));
 
-    const { refreshRateSeconds } =
-      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+      discordUserId
+    );
 
     const isOwner = feed.user.discordUserId === discordUserId;
 
@@ -409,6 +412,8 @@ export class UserFeedsController {
         u.discordUserId === discordUserId &&
         u.status === UserFeedManagerStatus.Accepted
     )?.id;
+
+    console.log("benefit", benefits, "feed", feed.refreshRateSeconds);
 
     return {
       result: {
@@ -433,7 +438,8 @@ export class UserFeedsController {
         updatedAt: feed.updatedAt.toISOString(),
         formatOptions: feed.formatOptions,
         dateCheckOptions: feed.dateCheckOptions,
-        refreshRateSeconds,
+        refreshRateSeconds:
+          feed.refreshRateSeconds || benefits.refreshRateSeconds,
         shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
       },
     };

@@ -17,11 +17,13 @@ import {
   DiscordChannelConnection,
   DiscordWebhookConnection,
 } from "../feeds/entities/feed-connections";
+import { FeedFeature } from "../feeds/entities/feed.entity";
 import {
   BannedFeedException,
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
+import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import {
   UserFeedLimitOverride,
   UserFeedLimitOverrideFeature,
@@ -107,6 +109,8 @@ describe("UserFeedsService", () => {
       imports: [
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([
+          FeedFeature,
+          LegacyFeedConversionJobFeature,
           UserFeedFeature,
           UserFeedLimitOverrideFeature,
         ]),
@@ -605,14 +609,22 @@ describe("UserFeedsService", () => {
       title: "url",
       url: "url",
     };
+    const userRefreshRateSeconds = 600;
 
     beforeEach(async () => {
+      jest
+        .spyOn(supportersService, "getBenefitsOfDiscordUser")
+        .mockResolvedValue({
+          refreshRateSeconds: userRefreshRateSeconds,
+        });
+
       feed = await userFeedModel.create({
         title: "original title",
         url: "original url",
         user: {
           discordUserId,
         },
+        refreshRateSeconds: userRefreshRateSeconds,
       });
 
       jest.spyOn(feedsService, "getBannedFeedDetails").mockResolvedValue(null);
@@ -655,6 +667,34 @@ describe("UserFeedsService", () => {
           discordUserId,
         },
       });
+    });
+
+    it("unsets the refresh rate seconds if it is the original", async () => {
+      await service.updateFeedById(feed._id.toHexString(), {
+        refreshRateSeconds: userRefreshRateSeconds,
+      });
+
+      const found = await userFeedModel.findById(feed._id).lean();
+
+      expect(found).not.toHaveProperty("refreshRateSeconds");
+    });
+
+    it("sets the refresh rate seconds if it is slower than the original", async () => {
+      await service.updateFeedById(feed._id.toHexString(), {
+        refreshRateSeconds: userRefreshRateSeconds + 100,
+      });
+
+      const found = await userFeedModel.findById(feed._id).lean();
+
+      expect(found?.refreshRateSeconds).toBe(userRefreshRateSeconds + 100);
+    });
+
+    it("throws if the refresh rate seconds is faster than the original", async () => {
+      await expect(
+        service.updateFeedById(feed._id.toHexString(), {
+          refreshRateSeconds: userRefreshRateSeconds - 100,
+        })
+      ).rejects.toThrowError();
     });
 
     it("sets null disabled code correctly", async () => {

@@ -51,7 +51,7 @@ import {
   useUpdateUserFeed,
   useUserFeed,
 } from "../../../feed/hooks";
-import { DiscordUsername } from "../../../discordUser";
+import { DiscordUsername, useDiscordUserMe } from "../../../discordUser";
 import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../../constants";
 import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
 import { SelectUserDialog } from "./SelectUserDialog";
@@ -94,6 +94,7 @@ const FormSchema = object({
     .optional()
     .nullable()
     .default(null),
+  refreshRateSeconds: number().optional(),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -107,6 +108,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
   } = useUserFeed({
     feedId,
   });
+  const { data: user } = useDiscordUserMe();
 
   const {
     handleSubmit,
@@ -121,6 +123,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
       dateTimezone: feed?.formatOptions?.dateTimezone || "",
       oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
       shareManageOptions: feed?.shareManageOptions || null,
+      refreshRateSeconds: feed?.refreshRateSeconds,
     },
   });
 
@@ -148,6 +151,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
+          refreshRateSeconds: values.refreshRateSeconds || feed?.refreshRateSeconds,
         },
       });
 
@@ -157,6 +161,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
+        refreshRateSeconds: updatedFeed.result.refreshRateSeconds,
       });
       notifySuccess(t("common.success.savedChanges"));
     } catch (error) {
@@ -354,6 +359,56 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             </Menu>
           </Stack>
         </Stack>
+        {/* <Stack spacing={4}>
+          <Stack>
+            <Heading size="md" as="h3">
+              Refresh Rate
+            </Heading>
+            <Text>
+              Change the rate at which the bot sends requests for this feed. If you are facing rate
+              limits for this feed, this may be helpful, but is not guaranteed to resolve
+              rate-limit-related issues. If other users are using this feed at a faster refresh
+              rate, the bot will ignore this setting,
+            </Text>
+          </Stack>
+          <Controller
+            name="refreshRateSeconds"
+            control={control}
+            render={({ field }) => {
+              return (
+                <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
+                  <RadioGroup
+                    {...field}
+                    value={field.value?.toString()}
+                    onChange={(v) => field.onChange(Number(v))}
+                    isDisabled={!user}
+                  >
+                    <Stack>
+                      {user?.refreshRates.map((r) => {
+                        const { disabledCode } = r;
+
+                        let reason: string = "";
+
+                        if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
+                          reason = "(only available for higher supporter tiers)";
+                        }
+
+                        return (
+                          <Radio value={r.rateSeconds.toString()} isDisabled={!!r.disabledCode}>
+                            {r.rateSeconds} seconds{reason ? ` ${reason}` : ""}
+                          </Radio>
+                        );
+                      })}
+                    </Stack>
+                  </RadioGroup>
+                  {formErrors.refreshRateSeconds && (
+                    <FormErrorMessage>{formErrors.refreshRateSeconds.message}</FormErrorMessage>
+                  )}
+                </FormControl>
+              );
+            }}
+          />
+        </Stack> */}
         <Stack spacing={4}>
           <Stack>
             <Heading size="md" as="h3">

@@ -128,9 +128,10 @@ export class DiscordUsersService {
       endpoint
     );
 
-    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
-      user.id
-    );
+    const [benefits, supportersEnabled] = await Promise.all([
+      this.supportersService.getBenefitsOfDiscordUser(user.id),
+      this.supportersService.areSupportersEnabled(),
+    ]);
 
     const toReturn: DiscordUserFormatted = {
       id: user.id,
@@ -140,7 +141,23 @@ export class DiscordUsersService {
       maxFeeds: benefits.maxFeeds,
       maxUserFeeds: benefits.maxUserFeeds,
       maxUserFeedsComposition: benefits.maxUserFeedsComposition,
+      refreshRates: [
+        {
+          rateSeconds: this.supportersService.defaultRefreshRateSeconds,
+        },
+      ],
     };
+
+    if (supportersEnabled) {
+      toReturn.refreshRates.push({
+        rateSeconds: this.supportersService.defaultSupporterRefreshRateSeconds,
+        disabledCode:
+          benefits.refreshRateSeconds >=
+          this.supportersService.defaultRefreshRateSeconds
+            ? "INSUFFICIENT_SUPPORTER_TIER"
+            : undefined,
+      });
+    }
 
     if (benefits.isSupporter) {
       toReturn.supporter = {

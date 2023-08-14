@@ -251,8 +251,9 @@ export class ScheduleHandlerService {
     userFeed: UserFeed;
     maxDailyArticles: number;
   }) {
-    const discordChannelMediums =
-      userFeed.connections.discordChannels.map<DiscordMediumEvent>((con) => ({
+    const discordChannelMediums = userFeed.connections.discordChannels
+      .filter((c) => !c.disabledCode)
+      .map<DiscordMediumEvent>((con) => ({
         id: con.id.toHexString(),
         key: "discord",
         filters: con.filters?.expression
@@ -282,8 +283,9 @@ export class ScheduleHandlerService {
         },
       }));
 
-    const discordWebhookMediums =
-      userFeed.connections.discordWebhooks.map<DiscordMediumEvent>((con) => ({
+    const discordWebhookMediums = userFeed.connections.discordWebhooks
+      .filter((c) => !c.disabledCode)
+      .map<DiscordMediumEvent>((con) => ({
         id: con.id.toHexString(),
         key: "discord",
         filters: con.filters?.expression
@@ -424,7 +426,8 @@ export class ScheduleHandlerService {
 
       return this.getScheduleFeedQueryExcluding(
         excludeSchedules,
-        discordUserIdsToExclude
+        discordUserIdsToExclude,
+        refreshRateSeconds
       ).distinct("url");
     }
 
@@ -436,7 +439,8 @@ export class ScheduleHandlerService {
 
     return this.getFeedsQueryWithScheduleAndUsers(
       schedules,
-      discordUserIdsToInclude
+      discordUserIdsToInclude,
+      refreshRateSeconds
     ).distinct("url");
   }
 
@@ -458,7 +462,8 @@ export class ScheduleHandlerService {
 
       return this.getScheduleFeedQueryExcluding(
         excludeSchedules,
-        discordUserIdsToExclude
+        discordUserIdsToExclude,
+        refreshRateSeconds
       ).cursor();
     }
 
@@ -470,7 +475,8 @@ export class ScheduleHandlerService {
 
     return this.getFeedsQueryWithScheduleAndUsers(
       schedules,
-      discordUserIdsToInclude
+      discordUserIdsToInclude,
+      refreshRateSeconds
     ).cursor();
   }
 
@@ -489,36 +495,54 @@ export class ScheduleHandlerService {
 
   getFeedsQueryWithScheduleAndUsers(
     schedules: FeedSchedule[],
-    discordUserIdsToInclude: string[]
+    discordUserIdsToInclude: string[],
+    rate: number
   ) {
-    const withConnectionsQuery = {
-      $or: [
+    const commonQuery = {
+      $and: [
         {
-          "connections.discordChannels.0": {
-            $exists: true,
-          },
-          "connections.discordChannels": {
-            $elemMatch: {
-              disabledCode: {
-                $exists: false,
+          $or: [
+            {
+              "connections.discordChannels.0": {
+                $exists: true,
+              },
+              "connections.discordChannels": {
+                $elemMatch: {
+                  disabledCode: {
+                    $exists: false,
+                  },
+                },
               },
             },
-          },
+            {
+              "connections.discordWebhooks.0": {
+                $exists: true,
+              },
+              "connections.discordWebhooks": {
+                $elemMatch: {
+                  disabledCode: {
+                    $exists: false,
+                  },
+                },
+              },
+            },
+          ],
         },
         {
-          "connections.discordWebhooks.0": {
-            $exists: true,
-          },
-          "connections.discordWebhooks": {
-            $elemMatch: {
-              disabledCode: {
+          $or: [
+            {
+              refreshRateSeconds: rate,
+            },
+            {
+              refreshRateSeconds: {
                 $exists: false,
               },
             },
-          },
+          ],
         },
       ],
     };
+
     const keywordConditions = schedules
       .map((schedule) => schedule.keywords)
       .flat()
@@ -530,7 +554,7 @@ export class ScheduleHandlerService {
         healthStatus: {
           $ne: UserFeedHealthStatus.Failed,
         },
-        ...withConnectionsQuery,
+        ...commonQuery,
       }));
 
     const query: FilterQuery<UserFeedDocument> = {
@@ -546,7 +570,7 @@ export class ScheduleHandlerService {
           healthStatus: {
             $ne: UserFeedHealthStatus.Failed,
           },
-          ...withConnectionsQuery,
+          ...commonQuery,
         },
         {
           _id: {
@@ -562,7 +586,7 @@ export class ScheduleHandlerService {
           healthStatus: {
             $ne: UserFeedHealthStatus.Failed,
           },
-          ...withConnectionsQuery,
+          ...commonQuery,
         },
       ],
     };
@@ -572,7 +596,8 @@ export class ScheduleHandlerService {
 
   getScheduleFeedQueryExcluding(
     schedulesToExclude: FeedSchedule[],
-    discordUserIdsToExclude: string[]
+    discordUserIdsToExclude: string[],
+    rate: number
   ) {
     const keywordConditions = schedulesToExclude
       .map((schedule) => schedule.keywords)
@@ -591,9 +616,6 @@ export class ScheduleHandlerService {
       $and: [
         {
           disabledCode: {
-            $exists: false,
-          },
-          refreshRateSeconds: {
             $exists: false,
           },
           "user.discordUserId": {
@@ -631,6 +653,18 @@ export class ScheduleHandlerService {
                   },
                 },
               },
+            },
+          ],
+        },
+        {
+          $or: [
+            {
+              refreshRateSeconds: {
+                $exists: false,
+              },
+            },
+            {
+              refreshRateSeconds: rate,
             },
           ],
         },

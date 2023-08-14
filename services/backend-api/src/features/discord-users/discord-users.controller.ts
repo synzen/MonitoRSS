@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { FastifyRequest } from "fastify";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
@@ -19,7 +20,6 @@ import { getAccessTokenFromRequest } from "../discord-auth/utils/get-access-toke
 import { DiscordUsersService } from "./discord-users.service";
 import {
   GetMeAuthStatusOutputDto,
-  GetMeOutputDto,
   GetUserOutputDto,
   UpdateSupporterInputDto,
 } from "./dto";
@@ -29,7 +29,10 @@ import { DiscordUserIsSupporterGuard } from "./guards/DiscordUserIsSupporter";
 
 @Controller("discord-users")
 export class DiscordUsersController {
-  constructor(private readonly discordUsersService: DiscordUsersService) {}
+  constructor(
+    private readonly discordUsersService: DiscordUsersService,
+    private readonly configService: ConfigService
+  ) {}
 
   @Get("/:id")
   @UseGuards(DiscordOAuth2Guard)
@@ -55,9 +58,7 @@ export class DiscordUsersController {
 
   @Get("@me")
   @UseGuards(DiscordOAuth2Guard)
-  async getMe(
-    @DiscordAccessToken() accessToken: SessionAccessToken
-  ): Promise<GetMeOutputDto> {
+  async getMe(@DiscordAccessToken() accessToken: SessionAccessToken) {
     const user = await this.discordUsersService.getUser(
       accessToken.access_token
     );
@@ -70,6 +71,7 @@ export class DiscordUsersController {
       maxFeeds: user.maxFeeds,
       maxUserFeeds: user.maxUserFeeds,
       maxUserFeedsComposition: user.maxUserFeedsComposition,
+      refreshRates: user.refreshRates,
     };
   }
 

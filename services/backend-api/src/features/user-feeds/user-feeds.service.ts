@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable max-len */
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
@@ -7,7 +8,7 @@ import {
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
-import { UserFeed, UserFeedModel } from "./entities";
+import { UserFeed, UserFeedDocument, UserFeedModel } from "./entities";
 import _ from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
 import {
@@ -25,7 +26,7 @@ import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import { GetArticlesInput } from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
-import { FilterQuery, PipelineStage, Types } from "mongoose";
+import { FilterQuery, PipelineStage, Types, UpdateQuery } from "mongoose";
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
 import {
   FeedConnectionDisabledCode,
@@ -63,6 +64,7 @@ interface UpdateFeedInput {
   shareManageOptions?: {
     invites: Array<{ discordUserId: string }>;
   };
+  refreshRateSeconds?: number;
 }
 
 @Injectable()
@@ -397,54 +399,87 @@ export class UserFeedsService {
   }
 
   async updateFeedById(id: string, updates: UpdateFeedInput) {
-    const query = this.userFeedModel.findByIdAndUpdate(
-      id,
-      {
-        $unset: {
-          ...(updates.disabledCode === null && {
-            disabledCode: "",
-          }),
-        },
+    const useUpdateObject: UpdateQuery<UserFeedDocument> = {
+      $set: {},
+      $unset: {
+        ...(updates.disabledCode === null && {
+          disabledCode: "",
+        }),
       },
-      {
-        new: true,
-      }
-    );
+    };
 
     if (updates.title) {
-      query.set("title", updates.title);
+      useUpdateObject.$set!.title = updates.title;
     }
 
     if (updates.url) {
       await this.checkUrlIsValid(updates.url);
-      query.set("url", updates.url);
+      useUpdateObject.$set!.url = updates.url;
     }
 
     if (updates.disabledCode) {
-      query.set("disabledCode", updates.disabledCode);
+      useUpdateObject.$set!.disabledCode = updates.disabledCode;
     }
 
     if (updates.passingComparisons) {
-      query.set("passingComparisons", updates.passingComparisons);
+      useUpdateObject.$set!.passingComparisons = updates.passingComparisons;
     }
 
     if (updates.blockingComparisons) {
-      query.set("blockingComparisons", updates.blockingComparisons);
+      useUpdateObject.$set!.blockingComparisons = updates.blockingComparisons;
     }
 
     if (updates.formatOptions) {
-      query.set("formatOptions", updates.formatOptions);
+      useUpdateObject.$set!.formatOptions = updates.formatOptions;
     }
 
     if (updates.dateCheckOptions) {
-      query.set("dateCheckOptions", updates.dateCheckOptions);
+      useUpdateObject.$set!.dateCheckOptions = updates.dateCheckOptions;
     }
 
     if (updates.shareManageOptions) {
-      query.set("shareManageOptions", updates.shareManageOptions);
+      useUpdateObject.$set!.shareManageOptions = updates.shareManageOptions;
     }
 
-    return query.lean();
+    if (updates.refreshRateSeconds) {
+      const found = await this.userFeedModel
+        .findById(new Types.ObjectId(id))
+        .select("user")
+        .lean();
+
+      if (!found) {
+        throw new Error(`Feed ${id} not found while updating refresh rate`);
+      }
+
+      const { refreshRateSeconds: fastestPossibleRate } =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          found.user.discordUserId
+        );
+
+      if (
+        updates.refreshRateSeconds === null ||
+        updates.refreshRateSeconds === fastestPossibleRate
+      ) {
+        useUpdateObject.$unset!.refreshRateSeconds = "";
+      } else if (
+        updates.refreshRateSeconds !==
+          this.supportersService.defaultRefreshRateSeconds &&
+        updates.refreshRateSeconds !==
+          this.supportersService.defaultSupporterRefreshRateSeconds
+      ) {
+        throw new Error(
+          `Refresh rate ${updates.refreshRateSeconds} is not allowed for user ${found.user.discordUserId}`
+        );
+      } else {
+        useUpdateObject.$set!.refreshRateSeconds = updates.refreshRateSeconds;
+      }
+    }
+
+    return this.userFeedModel
+      .findByIdAndUpdate(id, useUpdateObject, {
+        new: true,
+      })
+      .lean();
   }
 
   async deleteFeedById(id: string) {

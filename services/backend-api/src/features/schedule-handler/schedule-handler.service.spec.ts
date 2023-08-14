@@ -377,7 +377,8 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-guild-id"]
+        ["irrelevant-guild-id"],
+        1
       );
 
       expect(result).toEqual([]);
@@ -403,7 +404,8 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-guild-id"]
+        ["irrelevant-guild-id"],
+        1
       );
 
       expect(result).toEqual([]);
@@ -440,7 +442,8 @@ describe("handle-schedule", () => {
                 refreshRateMinutes: 10,
               },
             ],
-            []
+            [],
+            1
           )
           .lean();
 
@@ -470,7 +473,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toEqual([]);
@@ -512,7 +516,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result[0].url).toEqual(created[1].url);
@@ -545,7 +550,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toEqual([]);
@@ -578,7 +584,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toEqual([]);
@@ -615,7 +622,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          [created[1].user.discordUserId]
+          [created[1].user.discordUserId],
+          1
         );
 
         expect(result[0].url).toEqual(created[1].url);
@@ -651,7 +659,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          [created[1].user.discordUserId]
+          [created[1].user.discordUserId],
+          1
         );
 
         expect(result).toEqual([]);
@@ -679,7 +688,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          [created[0].user.discordUserId]
+          [created[0].user.discordUserId],
+          1
         );
 
         expect(result).toEqual([]);
@@ -717,7 +727,8 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-user-id-to-exclude"]
+        ["irrelevant-user-id-to-exclude"],
+        1
       );
 
       const resultUrls = result.map((feed) => feed.url);
@@ -748,7 +759,8 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-user-id-to-exclude"]
+        ["irrelevant-user-id-to-exclude"],
+        1
       );
 
       const resultUrls = result.map((feed) => feed.url);
@@ -785,7 +797,8 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-user-id-to-exclude"]
+        ["irrelevant-user-id-to-exclude"],
+        1
       );
 
       expect(result).toHaveLength(0);
@@ -824,7 +837,8 @@ describe("handle-schedule", () => {
             refreshRateMinutes: 10,
           },
         ],
-        ["irrelevant-user-id-to-exclude"]
+        ["irrelevant-user-id-to-exclude"],
+        1
       );
 
       expect(result).toHaveLength(1);
@@ -860,7 +874,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toHaveLength(1);
@@ -889,7 +904,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toEqual([]);
@@ -925,7 +941,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toEqual([]);
@@ -967,7 +984,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result[0].url).toEqual(created[0].url);
@@ -1008,7 +1026,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          []
+          [],
+          1
         );
 
         expect(result).toHaveLength(0);
@@ -1045,7 +1064,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          [created[1].user.discordUserId]
+          [created[1].user.discordUserId],
+          1
         );
 
         expect(result).toHaveLength(1);
@@ -1082,7 +1102,8 @@ describe("handle-schedule", () => {
               refreshRateMinutes: 10,
             },
           ],
-          [created[1].user.discordUserId]
+          [created[1].user.discordUserId],
+          1
         );
 
         expect(result).toHaveLength(0);

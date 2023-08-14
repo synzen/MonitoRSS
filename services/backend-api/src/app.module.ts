@@ -51,6 +51,7 @@ export class AppModule {
         FeedConnectionsDiscordChannelsModule.forRoot(),
         ConfigModule.forRoot({
           isGlobal: true,
+          cache: true,
           ignoreEnvFile: true,
           load: [process.env.NODE_ENV === "test" ? testConfig : config],
         }),

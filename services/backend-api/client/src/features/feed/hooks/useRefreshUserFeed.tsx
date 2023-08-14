@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import {
   GetUserFeedOutput,
-  GetUserFeedsOutput,
   refreshUserFeed,
   RefreshUserFeedInput,
   RefreshUserFeedOutput,
@@ -26,25 +25,8 @@ export const useRefreshUserFeed = () => {
         data
       );
 
-      queryClient.setQueriesData<GetUserFeedsOutput>(["user-feeds"], (currentFeeds) => {
-        if (!currentFeeds) {
-          return currentFeeds;
-        }
-
-        return {
-          ...currentFeeds,
-          results: currentFeeds.results.map((feed) => {
-            if (feed.id === inputData.feedId) {
-              return {
-                ...feed,
-                healthStatus: data.result.healthStatus,
-                disabledCode: data.result.disabledCode,
-              };
-            }
-
-            return feed;
-          }),
-        };
+      return queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "user-feeds",
       });
     },
   });

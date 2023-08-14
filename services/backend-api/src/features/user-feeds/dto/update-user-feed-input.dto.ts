@@ -1,11 +1,15 @@
 import { Type } from "class-transformer";
 import {
   IsIn,
+  IsInt,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
+  IsPositive,
   IsString,
   IsUrl,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import {
@@ -58,4 +62,13 @@ export class UpdateUserFeedInputDto {
   @Type(() => UserFeedShareManageOptions)
   @ValidateNested()
   shareManageOptions?: UserFeedShareManageOptions;
+
+  @IsNumber()
+  @IsOptional()
+  @IsPositive()
+  @IsInt()
+  @ValidateIf(
+    (o) => o.refreshRateSeconds !== null && o.refreshRateSeconds !== undefined
+  )
+  refreshRateSeconds?: number;
 }

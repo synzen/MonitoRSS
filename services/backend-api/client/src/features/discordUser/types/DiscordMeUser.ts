@@ -16,6 +16,12 @@ export const DiscordMeUserSchema = object({
     base: number().required(),
     legacy: number().required(),
   }),
+  refreshRates: array(
+    object({
+      rateSeconds: number().required(),
+      disabledCode: string().default(undefined),
+    }).required()
+  ).required(),
 });
 
 export type DiscordMeUser = InferType<typeof DiscordMeUserSchema>;
