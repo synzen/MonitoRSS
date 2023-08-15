@@ -100,10 +100,10 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
       roles?.results.map((r) => ({
         data: {
           id: r.id,
-          name: r.name,
+          name: r.name || "",
           icon: <Avatar size="sm" name={r.name} backgroundColor={r.color} />,
         },
-        label: r.name,
+        label: r.name || "",
         value: r.id,
         icon: <Avatar size="sm" name={r.name} backgroundColor={r.color} />,
       })) || [];

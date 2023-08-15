@@ -12,7 +12,7 @@ interface Props {
 export const DiscordRoleName: React.FC<Props> = ({ serverId, roleId }) => {
   const { data, status, error } = useDiscordServerRoles({ serverId });
   const roleNamesById = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, string | undefined>();
 
     if (data?.results) {
       data.results.forEach((role) => {
