@@ -142,7 +142,7 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    const { maxUserFeeds, maxDailyArticles } =
+    const { maxUserFeeds, maxDailyArticles, refreshRateSeconds } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
     const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
@@ -161,6 +161,7 @@ export class UserFeedsService {
       user: {
         discordUserId,
       },
+      refreshRateSeconds,
     });
 
     // Primarily used to set up the daily article limit for it to be fetched

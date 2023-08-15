@@ -361,6 +361,7 @@ export class FeedEventHandlerService {
 
         logger.datadog(`Finished handling user feed event in ${finishedTs}ms`, {
           duration: finishedTs,
+          feedId: event.data.feed.id,
         });
       }
     }

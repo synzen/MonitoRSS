@@ -102,6 +102,12 @@ export class UserFeed {
   })
   refreshRateSeconds?: number;
 
+  @Prop({
+    required: false,
+    index: true,
+  })
+  userRefreshRateSeconds?: number;
+
   createdAt: Date;
   updatedAt: Date;
 }

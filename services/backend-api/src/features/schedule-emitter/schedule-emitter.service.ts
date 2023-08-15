@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import logger from "../../utils/logger";
-import { FeedSchedulingService } from "../feeds/feed-scheduling.service";
 import { SupportersService } from "../supporters/supporters.service";
 
 @Injectable()
@@ -10,8 +9,7 @@ export class ScheduleEmitterService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly supportersService: SupportersService,
-    private readonly feedSchedulingService: FeedSchedulingService
+    private readonly supportersService: SupportersService
   ) {}
 
   async syncTimerStates(
@@ -20,15 +18,11 @@ export class ScheduleEmitterService {
     const supporterRefreshRates = await this.getSupporterRefreshRates();
     logger.debug(`Supporter refresh rates: [${supporterRefreshRates}]`);
 
-    const scheduleRefreshRates = await this.getScheduleRefreshRates();
-    logger.debug(`Schedule refresh rates: [${scheduleRefreshRates}]`);
-
     const defaultRefreshRate = await this.getDefaultRefreshRate();
     logger.debug(`Default refresh rate: [${defaultRefreshRate}]`);
 
     const setOfRefreshRatesMs = new Set([
       ...supporterRefreshRates,
-      ...scheduleRefreshRates,
       defaultRefreshRate,
     ]);
 
@@ -43,16 +37,6 @@ export class ScheduleEmitterService {
     );
 
     return [...supporterRefreshRates];
-  }
-
-  async getScheduleRefreshRates() {
-    const allSchedules = await this.feedSchedulingService.getAllSchedules();
-
-    const scheduleRefreshRates = allSchedules.map((schedule) => {
-      return schedule.refreshRateMinutes * 60 * 1000;
-    });
-
-    return scheduleRefreshRates;
   }
 
   getDefaultRefreshRate() {

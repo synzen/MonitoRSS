@@ -283,6 +283,7 @@ describe("FeedHandlerService", () => {
           stripImages: false,
           dateFormat: "yyyy-MM-dd",
           dateTimezone: undefined,
+          disableImageLinkPreviews: false,
         },
       },
     };

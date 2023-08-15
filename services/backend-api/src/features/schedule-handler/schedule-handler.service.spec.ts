@@ -10,10 +10,6 @@ import { Types } from "mongoose";
 import { ScheduleHandlerModule } from "./schedule-handler.module";
 import { ScheduleHandlerService } from "./schedule-handler.service";
 import {
-  FeedSchedule,
-  FeedScheduleModel,
-} from "../feeds/entities/feed-schedule.entity";
-import {
   UserFeed,
   UserFeedFeature,
   UserFeedModel,
@@ -61,7 +57,6 @@ const sampleConnections: UserFeed["connections"] = {
 describe("handle-schedule", () => {
   let module: TestingModule;
   let userFeedModel: UserFeedModel;
-  let feedScheduleModel: FeedScheduleModel;
   let service: ScheduleHandlerService;
   let supportersService: SupportersService;
   const amqpConnection = {
@@ -89,9 +84,6 @@ describe("handle-schedule", () => {
 
     ({ module } = await init());
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
-    feedScheduleModel = module.get<FeedScheduleModel>(
-      getModelToken(FeedSchedule.name)
-    );
     service = module.get<ScheduleHandlerService>(ScheduleHandlerService);
     supportersService = module.get<SupportersService>(SupportersService);
     service.defaultRefreshRateSeconds = 600;
@@ -103,7 +95,6 @@ describe("handle-schedule", () => {
       .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
       .mockResolvedValue([]);
     await userFeedModel.deleteMany();
-    await feedScheduleModel.deleteMany();
   });
 
   afterAll(async () => {
@@ -121,6 +112,7 @@ describe("handle-schedule", () => {
             discordUserId: "user-id",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
         {
           title: "feed-title-2",
@@ -129,8 +121,11 @@ describe("handle-schedule", () => {
             discordUserId: "user-id",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
       ]);
+
+      // console.log(createdFeeds);
 
       const urlsHandler = jest.fn();
       const feedHandler = jest.fn();
@@ -145,7 +140,6 @@ describe("handle-schedule", () => {
         expect.objectContaining({
           title: createdFeeds[0].title,
         }),
-
         expect.anything()
       );
       expect(feedHandler).toHaveBeenCalledWith(
@@ -153,135 +147,6 @@ describe("handle-schedule", () => {
           title: createdFeeds[1].title,
         }),
         expect.anything()
-      );
-    });
-
-    it("calls the handlers for feeds with non-default refresh rates", async () => {
-      const createdSchedule = await feedScheduleModel.create({
-        name: "something",
-        keywords: ["york"],
-        refreshRateMinutes: 4,
-      });
-      const createdFeeds = await userFeedModel.create([
-        {
-          title: "feed-title",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id",
-          },
-          connections: sampleConnections,
-        },
-        {
-          title: "feed-title-2",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id",
-          },
-          connections: sampleConnections,
-        },
-      ]);
-
-      const urlsHandler = jest.fn();
-      const feedHandler = jest.fn();
-
-      await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
-        urlsHandler,
-        feedHandler,
-      });
-
-      expect(urlsHandler).toHaveBeenCalledWith([{ url: "new-york-times.com" }]);
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[0].title,
-        }),
-        expect.anything()
-      );
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[1].title,
-        }),
-        expect.anything()
-      );
-    });
-
-    it("calls the handlers for feeds with the correct max daily articles", async () => {
-      const createdSchedule = await feedScheduleModel.create({
-        name: "something",
-        keywords: ["york"],
-        refreshRateMinutes: 4,
-      });
-      const createdFeeds = await userFeedModel.create([
-        {
-          title: "feed-title",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id",
-          },
-          connections: sampleConnections,
-        },
-        {
-          title: "feed-title-2",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id-2",
-          },
-          connections: sampleConnections,
-        },
-        {
-          title: "feed-title-3",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id-3",
-          },
-          connections: sampleConnections,
-        },
-      ]);
-
-      const urlsHandler = jest.fn();
-      const feedHandler = jest.fn();
-
-      jest
-        .spyOn(supportersService, "getBenefitsOfAllDiscordUsers")
-        .mockResolvedValue([
-          {
-            discordUserId: "user-id",
-            maxDailyArticles: 101,
-          },
-          {
-            discordUserId: "user-id-2",
-            maxDailyArticles: 102,
-          },
-        ] as never);
-
-      await service.handleRefreshRate(createdSchedule.refreshRateMinutes * 60, {
-        urlsHandler,
-        feedHandler,
-      });
-
-      expect(urlsHandler).toHaveBeenCalledWith([{ url: "new-york-times.com" }]);
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[0].title,
-        }),
-        {
-          maxDailyArticles: 101,
-        }
-      );
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[1].title,
-        }),
-        {
-          maxDailyArticles: 102,
-        }
-      );
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[2].title,
-        }),
-        {
-          maxDailyArticles: supportersService.maxDailyArticlesDefault,
-        }
       );
     });
   });
@@ -296,6 +161,7 @@ describe("handle-schedule", () => {
             discordUserId: "user-id",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
         {
           title: "feed-title-2",
@@ -304,6 +170,7 @@ describe("handle-schedule", () => {
             discordUserId: "user-id",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
       ]);
 
@@ -314,12 +181,7 @@ describe("handle-schedule", () => {
       expect(urls).toEqual(["new-york-times.com"]);
     });
 
-    it("does not return duplicate urls for non-default rates", async () => {
-      const createdSchedule = await feedScheduleModel.create({
-        name: "something",
-        keywords: ["york"],
-        refreshRateMinutes: 4,
-      });
+    it("works with alternate refresh rate", async () => {
       await userFeedModel.create([
         {
           title: "feed-title",
@@ -328,377 +190,27 @@ describe("handle-schedule", () => {
             discordUserId: "user-id",
           },
           connections: sampleConnections,
+          refreshRateSeconds: 30,
         },
         {
           title: "feed-title-2",
-          url: "new-york-times.com",
+          url: "new-york-times-2.com",
           user: {
             discordUserId: "user-id",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
       ]);
 
-      const urls = await service.getUrlsMatchingRefreshRate(
-        createdSchedule.refreshRateMinutes * 60
-      );
+      const urls = await service.getUrlsMatchingRefreshRate(30);
 
       expect(urls).toEqual(["new-york-times.com"]);
     });
   });
 
-  describe("getFeedsQueryWithScheduleAndUsers", () => {
-    it("returns nothing if no results are found", async () => {
-      await userFeedModel.create([
-        {
-          title: "feed-title",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id",
-          },
-          connections: sampleConnections,
-        },
-        {
-          title: "feed-title",
-          url: "yahoo-news.com",
-          user: {
-            discordUserId: "user-id",
-          },
-          connections: sampleConnections,
-        },
-      ]);
-
-      const result = await service.getFeedsQueryWithScheduleAndUsers(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["bloomberg"],
-            feeds: [new Types.ObjectId().toString()],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-guild-id"],
-        1
-      );
-
-      expect(result).toEqual([]);
-    });
-
-    it("returns nothing if no connections are found", async () => {
-      await userFeedModel.create([
-        {
-          title: "feed-title",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id",
-          },
-        },
-      ]);
-
-      const result = await service.getFeedsQueryWithScheduleAndUsers(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["york"],
-            feeds: [],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-guild-id"],
-        1
-      );
-
-      expect(result).toEqual([]);
-    });
-
-    describe("schedule keywords", () => {
-      it("returns matches", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id",
-            },
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id",
-            },
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service
-          .getFeedsQueryWithScheduleAndUsers(
-            [
-              {
-                name: "new york times",
-                keywords: ["YORK"],
-                feeds: [],
-                refreshRateMinutes: 10,
-              },
-            ],
-            [],
-            1
-          )
-          .lean();
-
-        expect(result).toHaveLength(1);
-        expect(result[0].url).toEqual(created[0].url);
-      });
-
-      it("does not return if they are disabled", async () => {
-        await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id",
-            },
-            disabledCode: UserFeedDisabledCode.BadFormat,
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: ["YORK"],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-    });
-
-    describe("schedule feed ids", () => {
-      it("returns matches", async () => {
-        const created = await userFeedModel.insertMany(
-          [
-            {
-              title: "feed-title",
-              url: "new-york-times.com",
-              user: {
-                discordUserId: "user-id",
-              },
-              connections: sampleConnections,
-            },
-            {
-              title: "feed-title",
-              url: "yahoo-news.com",
-              user: {
-                discordUserId: "user-id",
-              },
-              connections: sampleConnections,
-            },
-          ],
-          {
-            ordered: true,
-          }
-        );
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [created[1]._id],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result[0].url).toEqual(created[1].url);
-      });
-
-      it("does not return if they are disabled", async () => {
-        const created = await userFeedModel.insertMany(
-          [
-            {
-              title: "feed-title",
-              url: "yahoo-news.com",
-              user: {
-                discordUserId: "user-id",
-              },
-              disabledCode: UserFeedDisabledCode.BadFormat,
-              connections: sampleConnections,
-            },
-          ],
-          {
-            ordered: true,
-          }
-        );
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [created[0]._id],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-
-      it("does not return if they are failed", async () => {
-        const created = await userFeedModel.insertMany(
-          [
-            {
-              title: "feed-title",
-              url: "yahoo-news.com",
-              user: {
-                discordUserId: "user-id",
-              },
-              healthStatus: UserFeedHealthStatus.Failed,
-              connections: sampleConnections,
-            },
-          ],
-          {
-            ordered: true,
-          }
-        );
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [created[0]._id],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-    });
-
-    describe("user ids", () => {
-      it("returns matches", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-2",
-            },
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [created[1].user.discordUserId],
-          1
-        );
-
-        expect(result[0].url).toEqual(created[1].url);
-      });
-
-      it("does not return if they are disabled", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-2",
-            },
-            disabledCode: UserFeedDisabledCode.BadFormat,
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [created[1].user.discordUserId],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-
-      it("does not return if they are failed", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            healthStatus: UserFeedHealthStatus.Failed,
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getFeedsQueryWithScheduleAndUsers(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [created[0].user.discordUserId],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-    });
-  });
-
-  describe("getScheduleFeedQueryExcluding", () => {
-    it("returns correctly if no results are found", async () => {
+  describe("getFeedsQuery", () => {
+    it("returns correctly", async () => {
       const created = await userFeedModel.create([
         {
           title: "feed-title",
@@ -707,6 +219,7 @@ describe("handle-schedule", () => {
             discordUserId: "user-id-1",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
         {
           title: "feed-title",
@@ -715,20 +228,12 @@ describe("handle-schedule", () => {
             discordUserId: "user-id-2",
           },
           connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
       ]);
 
-      const result = await service.getScheduleFeedQueryExcluding(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["bloomberg"],
-            feeds: [new Types.ObjectId().toString()],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-user-id-to-exclude"],
-        1
+      const result = await service.getFeedsQuery(
+        service.defaultRefreshRateSeconds
       );
 
       const resultUrls = result.map((feed) => feed.url);
@@ -738,6 +243,35 @@ describe("handle-schedule", () => {
         expect.arrayContaining([created[0].url, created[1].url])
       );
     });
+    it("returns correctly for alternate rates", async () => {
+      const created = await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-1",
+          },
+          connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
+        },
+        {
+          title: "feed-title",
+          url: "yahoo-news.com",
+          user: {
+            discordUserId: "user-id-2",
+          },
+          connections: sampleConnections,
+          refreshRateSeconds: 40,
+        },
+      ]);
+
+      const result = await service.getFeedsQuery(40);
+
+      const resultUrls = result.map((feed) => feed.url);
+
+      expect(resultUrls).toHaveLength(1);
+      expect(resultUrls).toEqual(expect.arrayContaining([created[1].url]));
+    });
 
     it("returns nothing if no connections are found", async () => {
       await userFeedModel.create([
@@ -747,20 +281,12 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id-1",
           },
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
         },
       ]);
 
-      const result = await service.getScheduleFeedQueryExcluding(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["bloomberg"],
-            feeds: [],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-user-id-to-exclude"],
-        1
+      const result = await service.getFeedsQuery(
+        service.defaultRefreshRateSeconds
       );
 
       const resultUrls = result.map((feed) => feed.url);
@@ -776,6 +302,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id-1",
           },
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
           connections: {
             ...sampleConnections,
             discordChannels: [
@@ -788,17 +315,8 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getScheduleFeedQueryExcluding(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["bloomberg"],
-            feeds: [],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-user-id-to-exclude"],
-        1
+      const result = await service.getFeedsQuery(
+        service.defaultRefreshRateSeconds
       );
 
       expect(result).toHaveLength(0);
@@ -812,6 +330,7 @@ describe("handle-schedule", () => {
           user: {
             discordUserId: "user-id-1",
           },
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
           connections: {
             ...sampleConnections,
             discordChannels: [
@@ -828,286 +347,32 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getScheduleFeedQueryExcluding(
-        [
-          {
-            name: "bloomberg news",
-            keywords: ["bloomberg"],
-            feeds: [],
-            refreshRateMinutes: 10,
-          },
-        ],
-        ["irrelevant-user-id-to-exclude"],
-        1
+      const result = await service.getFeedsQuery(
+        service.defaultRefreshRateSeconds
       );
 
       expect(result).toHaveLength(1);
     });
 
-    describe("schedule keywords", () => {
-      it("returns the correct matches", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            connections: sampleConnections,
+    it("does not return if they are disabled", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id-1",
           },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            connections: sampleConnections,
-          },
-        ]);
+          disabledCode: UserFeedDisabledCode.BadFormat,
+          connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
+        },
+      ]);
 
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: ["YORK"],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
+      const result = await service.getFeedsQuery(
+        service.defaultRefreshRateSeconds
+      );
 
-        expect(result).toHaveLength(1);
-        expect(result[0].url).toEqual(created[1].url);
-      });
-
-      it("does not return feeds that are not healthy", async () => {
-        await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            healthStatus: UserFeedHealthStatus.Failed,
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: ["yahoo"],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-
-      it("does not return if they are disabled", async () => {
-        await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "discord-user",
-            },
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "discord-user",
-            },
-            disabledCode: UserFeedDisabledCode.BadFormat,
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: ["YORK"],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result).toEqual([]);
-      });
-    });
-
-    describe("schedule feed ids", () => {
-      it("returns correctly based on feed id", async () => {
-        const created = await userFeedModel.insertMany(
-          [
-            {
-              title: "feed-title",
-              url: "new-york-times.com",
-              user: {
-                discordUserId: "user-id-1",
-              },
-              connections: sampleConnections,
-            },
-            {
-              title: "feed-title",
-              url: "yahoo-news.com",
-              user: {
-                discordUserId: "user-id-1",
-              },
-              connections: sampleConnections,
-            },
-          ],
-          {
-            ordered: true,
-          }
-        );
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [created[1]._id],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result[0].url).toEqual(created[0].url);
-      });
-
-      it("does not return if they are disabled", async () => {
-        const created = await userFeedModel.insertMany(
-          [
-            {
-              title: "feed-title",
-              url: "new-york-times.com",
-              user: {
-                discordUserId: "user-id-1",
-              },
-              connections: sampleConnections,
-            },
-            {
-              title: "feed-title",
-              url: "yahoo-news.com",
-              user: {
-                discordUserId: "user-id-1",
-              },
-              disabledCode: UserFeedDisabledCode.BadFormat,
-              connections: sampleConnections,
-            },
-          ],
-          {
-            ordered: true,
-          }
-        );
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [created[0]._id],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [],
-          1
-        );
-
-        expect(result).toHaveLength(0);
-      });
-    });
-
-    describe("user ids", () => {
-      it("returns correctly", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-2",
-            },
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [created[1].user.discordUserId],
-          1
-        );
-
-        expect(result).toHaveLength(1);
-        expect(result[0].url).toEqual(created[0].url);
-      });
-
-      it("does not return if they are disabled", async () => {
-        const created = await userFeedModel.create([
-          {
-            title: "feed-title",
-            url: "new-york-times.com",
-            user: {
-              discordUserId: "user-id-1",
-            },
-            disabledCode: UserFeedDisabledCode.BadFormat,
-            connections: sampleConnections,
-          },
-          {
-            title: "feed-title",
-            url: "yahoo-news.com",
-            user: {
-              discordUserId: "user-id-2",
-            },
-            connections: sampleConnections,
-          },
-        ]);
-
-        const result = await service.getScheduleFeedQueryExcluding(
-          [
-            {
-              name: "new york times",
-              keywords: [],
-              feeds: [],
-              refreshRateMinutes: 10,
-            },
-          ],
-          [created[1].user.discordUserId],
-          1
-        );
-
-        expect(result).toHaveLength(0);
-      });
+      expect(result).toHaveLength(0);
     });
   });
 
@@ -1120,6 +385,7 @@ describe("handle-schedule", () => {
           discordUserId: "user-id-1",
         },
         connections: sampleConnections,
+        refreshRateSeconds: service.defaultRefreshRateSeconds,
       });
 
       await service.handleUrlRequestFailureEvent({

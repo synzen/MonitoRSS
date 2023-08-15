@@ -1,10 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
-import { FeedSchedule } from "../feeds/entities/feed-schedule.entity";
-import { FeedSchedulingService } from "../feeds/feed-scheduling.service";
 import { SupportersService } from "../supporters/supporters.service";
-import { FilterQuery, Types } from "mongoose";
+import { FilterQuery } from "mongoose";
 import logger from "../../utils/logger";
 import {
   UserFeedDisabledCode,
@@ -58,7 +56,6 @@ export class ScheduleHandlerService {
   constructor(
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
-    private readonly feedSchedulingService: FeedSchedulingService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly amqpConnection: AmqpConnection,
     private readonly userFeedsService: UserFeedsService
@@ -362,6 +359,8 @@ export class ScheduleHandlerService {
       ) => Promise<void>;
     }
   ) {
+    await this.syncRefreshRates();
+
     const allBenefits =
       await this.supportersService.getBenefitsOfAllDiscordUsers();
 
@@ -407,77 +406,11 @@ export class ScheduleHandlerService {
   async getUrlsMatchingRefreshRate(
     refreshRateSeconds: number
   ): Promise<string[]> {
-    const isDefaultRefreshRate =
-      refreshRateSeconds === this.defaultRefreshRateSeconds;
-
-    const discordSupporters = await this.getValidDiscordUserSupporters();
-
-    if (isDefaultRefreshRate) {
-      logger.debug(`${refreshRateSeconds}s is default refresh rate`);
-
-      const discordUserIdsToExclude = discordSupporters
-        .filter(({ refreshRateSeconds: rate }) => rate !== refreshRateSeconds)
-        .map(({ discordUserId }) => discordUserId);
-
-      const excludeSchedules =
-        await this.feedSchedulingService.findSchedulesNotMatchingRefreshRate(
-          refreshRateSeconds
-        );
-
-      return this.getScheduleFeedQueryExcluding(
-        excludeSchedules,
-        discordUserIdsToExclude,
-        refreshRateSeconds
-      ).distinct("url");
-    }
-
-    const discordUserIdsToInclude = discordSupporters
-      .filter(({ refreshRateSeconds: rate }) => rate === refreshRateSeconds)
-      .map(({ discordUserId }) => discordUserId);
-
-    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
-
-    return this.getFeedsQueryWithScheduleAndUsers(
-      schedules,
-      discordUserIdsToInclude,
-      refreshRateSeconds
-    ).distinct("url");
+    return this.getFeedsQuery(refreshRateSeconds).distinct("url");
   }
 
   async getFeedCursorMatchingRefreshRate(refreshRateSeconds: number) {
-    const isDefaultRefreshRate =
-      refreshRateSeconds === this.defaultRefreshRateSeconds;
-
-    const discordSupporters = await this.getValidDiscordUserSupporters();
-
-    if (isDefaultRefreshRate) {
-      const discordUserIdsToExclude = discordSupporters
-        .filter(({ refreshRateSeconds: rate }) => rate !== refreshRateSeconds)
-        .map(({ discordUserId }) => discordUserId);
-
-      const excludeSchedules =
-        await this.feedSchedulingService.findSchedulesNotMatchingRefreshRate(
-          refreshRateSeconds
-        );
-
-      return this.getScheduleFeedQueryExcluding(
-        excludeSchedules,
-        discordUserIdsToExclude,
-        refreshRateSeconds
-      ).cursor();
-    }
-
-    const discordUserIdsToInclude = discordSupporters
-      .filter(({ refreshRateSeconds: rate }) => rate === refreshRateSeconds)
-      .map(({ discordUserId }) => discordUserId);
-
-    const schedules = await this.getSchedulesOfRefreshRate(refreshRateSeconds);
-
-    return this.getFeedsQueryWithScheduleAndUsers(
-      schedules,
-      discordUserIdsToInclude,
-      refreshRateSeconds
-    ).cursor();
+    return this.getFeedsQuery(refreshRateSeconds).cursor();
   }
 
   async getValidDiscordUserSupporters() {
@@ -487,145 +420,13 @@ export class ScheduleHandlerService {
     return allBenefits.filter(({ isSupporter }) => isSupporter);
   }
 
-  getSchedulesOfRefreshRate(refreshRateSeconds: number) {
-    return this.feedSchedulingService.findSchedulesOfRefreshRate(
-      refreshRateSeconds
-    );
-  }
-
-  getFeedsQueryWithScheduleAndUsers(
-    schedules: FeedSchedule[],
-    discordUserIdsToInclude: string[],
-    rate: number
-  ) {
-    const commonQuery = {
-      $and: [
-        {
-          $or: [
-            {
-              "connections.discordChannels.0": {
-                $exists: true,
-              },
-              "connections.discordChannels": {
-                $elemMatch: {
-                  disabledCode: {
-                    $exists: false,
-                  },
-                },
-              },
-            },
-            {
-              "connections.discordWebhooks.0": {
-                $exists: true,
-              },
-              "connections.discordWebhooks": {
-                $elemMatch: {
-                  disabledCode: {
-                    $exists: false,
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          $or: [
-            {
-              refreshRateSeconds: rate,
-            },
-            {
-              refreshRateSeconds: {
-                $exists: false,
-              },
-            },
-          ],
-        },
-      ],
-    };
-
-    const keywordConditions = schedules
-      .map((schedule) => schedule.keywords)
-      .flat()
-      .map((keyword) => ({
-        url: new RegExp(keyword, "i"),
-        disabledCode: {
-          $exists: false,
-        },
-        healthStatus: {
-          $ne: UserFeedHealthStatus.Failed,
-        },
-        ...commonQuery,
-      }));
-
-    const query: FilterQuery<UserFeedDocument> = {
-      $or: [
-        ...keywordConditions,
-        {
-          "user.discordUserId": {
-            $in: discordUserIdsToInclude,
-          },
-          disabledCode: {
-            $exists: false,
-          },
-          healthStatus: {
-            $ne: UserFeedHealthStatus.Failed,
-          },
-          ...commonQuery,
-        },
-        {
-          _id: {
-            $in: schedules
-              .map((schedule) =>
-                schedule.feeds.map((id) => new Types.ObjectId(id))
-              )
-              .flat(),
-          },
-          disabledCode: {
-            $exists: false,
-          },
-          healthStatus: {
-            $ne: UserFeedHealthStatus.Failed,
-          },
-          ...commonQuery,
-        },
-      ],
-    };
-
-    return this.userFeedModel.find(query);
-  }
-
-  getScheduleFeedQueryExcluding(
-    schedulesToExclude: FeedSchedule[],
-    discordUserIdsToExclude: string[],
-    rate: number
-  ) {
-    const keywordConditions = schedulesToExclude
-      .map((schedule) => schedule.keywords)
-      .flat()
-      .map((keyword) => ({
-        url: {
-          $not: new RegExp(keyword, "i"),
-        },
-      }));
-
-    const feedIdConditions = schedulesToExclude
-      .map((schedule) => schedule.feeds.map((id) => new Types.ObjectId(id)))
-      .flat();
-
+  getFeedsQuery(rate: number) {
     const query: FilterQuery<UserFeedDocument> = {
       $and: [
         {
+          refreshRateSeconds: rate,
           disabledCode: {
             $exists: false,
-          },
-          "user.discordUserId": {
-            $nin: discordUserIdsToExclude,
-          },
-        },
-        ...keywordConditions,
-        {
-          _id: {
-            $nin: feedIdConditions,
           },
         },
         {
@@ -653,18 +454,6 @@ export class ScheduleHandlerService {
                   },
                 },
               },
-            },
-          ],
-        },
-        {
-          $or: [
-            {
-              refreshRateSeconds: {
-                $exists: false,
-              },
-            },
-            {
-              refreshRateSeconds: rate,
             },
           ],
         },
@@ -683,6 +472,70 @@ export class ScheduleHandlerService {
         discordUserId,
         maxUserFeeds,
       }))
+    );
+  }
+
+  async syncRefreshRates() {
+    const benefits =
+      await this.supportersService.getBenefitsOfAllDiscordUsers();
+
+    const validSupporters = benefits.filter(({ isSupporter }) => isSupporter);
+
+    const supportersByRefreshRates = new Map<number, string[]>();
+
+    for (const s of validSupporters) {
+      const { refreshRateSeconds } = s;
+
+      const currentDiscordUserIds =
+        supportersByRefreshRates.get(refreshRateSeconds);
+
+      if (!currentDiscordUserIds) {
+        supportersByRefreshRates.set(refreshRateSeconds, [s.discordUserId]);
+      } else {
+        currentDiscordUserIds.push(s.discordUserId);
+      }
+    }
+
+    const refreshRates = Array.from(supportersByRefreshRates.entries());
+
+    const specialDiscordUserIds: string[] = [];
+
+    await Promise.all(
+      refreshRates.map(async ([refreshRateSeconds, discordUserIds]) => {
+        await this.userFeedModel.updateMany(
+          {
+            "user.discordUserId": {
+              $in: discordUserIds,
+            },
+            refreshRateSeconds: {
+              $ne: refreshRateSeconds,
+            },
+          },
+          {
+            $set: {
+              refreshRateSeconds,
+            },
+          }
+        );
+
+        specialDiscordUserIds.push(...discordUserIds);
+      })
+    );
+
+    await this.userFeedModel.updateMany(
+      {
+        "user.discordUserId": {
+          $nin: specialDiscordUserIds,
+        },
+        refreshRateSeconds: {
+          $ne: this.defaultRefreshRateSeconds,
+        },
+      },
+      {
+        $set: {
+          refreshRateSeconds: this.defaultRefreshRateSeconds,
+        },
+      }
     );
   }
 }
