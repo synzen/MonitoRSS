@@ -370,8 +370,8 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             <Text>
               Change the rate at which the bot sends requests for this feed. If you are facing rate
               limits for this feed, this may be helpful, but is not guaranteed to resolve
-              rate-limit-related issues. If other users are using this feed at a faster refresh
-              rate, the bot will ignore this setting,
+              rate-limit-related issues. If other users are using this feed at a rate faster than
+              what you set here, the bot will ignore this setting.
             </Text>
           </Stack>
           <Controller
