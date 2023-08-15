@@ -22,7 +22,7 @@ export interface UpdateUserFeedInput {
         discordUserId: string;
       }>;
     };
-    refreshRateSeconds?: number;
+    userRefreshRateSeconds?: number;
   };
 }
 

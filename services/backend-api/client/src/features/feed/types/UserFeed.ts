@@ -21,6 +21,7 @@ export const UserFeedSchema = object({
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
   connections: array(FeedConnectionSchema).required(),
   refreshRateSeconds: number().required(),
+  userRefreshRateSeconds: number(),
   formatOptions: object({
     dateFormat: string().optional().default(undefined),
     dateTimezone: string().optional().default(undefined),

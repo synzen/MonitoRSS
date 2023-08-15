@@ -22,6 +22,8 @@ import {
   NumberInput,
   NumberInputField,
   NumberInputStepper,
+  Radio,
+  RadioGroup,
   Stack,
   Table,
   TableContainer,
@@ -94,7 +96,7 @@ const FormSchema = object({
     .optional()
     .nullable()
     .default(null),
-  refreshRateSeconds: number().optional(),
+  userRefreshRateSeconds: number().optional(),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -123,7 +125,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
       dateTimezone: feed?.formatOptions?.dateTimezone || "",
       oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
       shareManageOptions: feed?.shareManageOptions || null,
-      refreshRateSeconds: feed?.refreshRateSeconds,
+      userRefreshRateSeconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
     },
   });
 
@@ -151,7 +153,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
-          refreshRateSeconds: values.refreshRateSeconds || feed?.refreshRateSeconds,
+          userRefreshRateSeconds: values.userRefreshRateSeconds,
         },
       });
 
@@ -161,7 +163,8 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
-        refreshRateSeconds: updatedFeed.result.refreshRateSeconds,
+        userRefreshRateSeconds:
+          updatedFeed.result.userRefreshRateSeconds || updatedFeed.result.refreshRateSeconds,
       });
       notifySuccess(t("common.success.savedChanges"));
     } catch (error) {
@@ -359,7 +362,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             </Menu>
           </Stack>
         </Stack>
-        {/* <Stack spacing={4}>
+        <Stack spacing={4}>
           <Stack>
             <Heading size="md" as="h3">
               Refresh Rate
@@ -372,7 +375,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             </Text>
           </Stack>
           <Controller
-            name="refreshRateSeconds"
+            name="userRefreshRateSeconds"
             control={control}
             render={({ field }) => {
               return (
@@ -401,14 +404,14 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       })}
                     </Stack>
                   </RadioGroup>
-                  {formErrors.refreshRateSeconds && (
-                    <FormErrorMessage>{formErrors.refreshRateSeconds.message}</FormErrorMessage>
+                  {formErrors.userRefreshRateSeconds && (
+                    <FormErrorMessage>{formErrors.userRefreshRateSeconds.message}</FormErrorMessage>
                   )}
                 </FormControl>
               );
             }}
           />
-        </Stack> */}
+        </Stack>
         <Stack spacing={4}>
           <Stack>
             <Heading size="md" as="h3">

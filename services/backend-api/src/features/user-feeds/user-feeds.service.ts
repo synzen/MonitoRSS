@@ -64,7 +64,7 @@ interface UpdateFeedInput {
   shareManageOptions?: {
     invites: Array<{ discordUserId: string }>;
   };
-  refreshRateSeconds?: number;
+  userRefreshRateSeconds?: number;
 }
 
 @Injectable()
@@ -442,7 +442,7 @@ export class UserFeedsService {
       useUpdateObject.$set!.shareManageOptions = updates.shareManageOptions;
     }
 
-    if (updates.refreshRateSeconds) {
+    if (updates.userRefreshRateSeconds) {
       const found = await this.userFeedModel
         .findById(new Types.ObjectId(id))
         .select("user")
@@ -458,21 +458,22 @@ export class UserFeedsService {
         );
 
       if (
-        updates.refreshRateSeconds === null ||
-        updates.refreshRateSeconds === fastestPossibleRate
+        updates.userRefreshRateSeconds === null ||
+        updates.userRefreshRateSeconds === fastestPossibleRate
       ) {
-        useUpdateObject.$unset!.refreshRateSeconds = "";
+        useUpdateObject.$unset!.userRefreshRateSeconds = "";
       } else if (
-        updates.refreshRateSeconds !==
+        updates.userRefreshRateSeconds !==
           this.supportersService.defaultRefreshRateSeconds &&
-        updates.refreshRateSeconds !==
+        updates.userRefreshRateSeconds !==
           this.supportersService.defaultSupporterRefreshRateSeconds
       ) {
         throw new Error(
-          `Refresh rate ${updates.refreshRateSeconds} is not allowed for user ${found.user.discordUserId}`
+          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${found.user.discordUserId}`
         );
       } else {
-        useUpdateObject.$set!.refreshRateSeconds = updates.refreshRateSeconds;
+        useUpdateObject.$set!.userRefreshRateSeconds =
+          updates.userRefreshRateSeconds;
       }
     }
 

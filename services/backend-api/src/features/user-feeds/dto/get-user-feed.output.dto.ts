@@ -99,6 +99,8 @@ class GetUserFeedOutputResultDto {
   sharedAccessDetails?: {
     inviteId: string;
   };
+
+  userRefreshRateSeconds?: number;
 }
 
 export class GetUserFeedOutputDto {

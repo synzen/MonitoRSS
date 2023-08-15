@@ -282,7 +282,7 @@ export class UserFeedsController {
       formatOptions,
       dateCheckOptions,
       shareManageOptions,
-      refreshRateSeconds,
+      userRefreshRateSeconds,
     }: UpdateUserFeedInputDto,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
@@ -302,7 +302,7 @@ export class UserFeedsController {
         formatOptions,
         dateCheckOptions,
         shareManageOptions,
-        refreshRateSeconds,
+        userRefreshRateSeconds,
       }
     )) as UserFeed;
 
@@ -440,6 +440,7 @@ export class UserFeedsController {
         dateCheckOptions: feed.dateCheckOptions,
         refreshRateSeconds:
           feed.refreshRateSeconds || benefits.refreshRateSeconds,
+        userRefreshRateSeconds: feed.userRefreshRateSeconds,
         shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
       },
     };

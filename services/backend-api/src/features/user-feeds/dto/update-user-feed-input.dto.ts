@@ -68,7 +68,9 @@ export class UpdateUserFeedInputDto {
   @IsPositive()
   @IsInt()
   @ValidateIf(
-    (o) => o.refreshRateSeconds !== null && o.refreshRateSeconds !== undefined
+    (o) =>
+      o.userRefreshRateSeconds !== null &&
+      o.userRefreshRateSeconds !== undefined
   )
-  refreshRateSeconds?: number;
+  userRefreshRateSeconds?: number;
 }

@@ -410,7 +410,7 @@ export const UserFeed: React.FC = () => {
               >
                 <CategoryText title={t("pages.feed.refreshRateLabel")}>
                   {t("pages.feed.refreshRateValue", {
-                    seconds: feed?.refreshRateSeconds,
+                    seconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
                   })}
                 </CategoryText>
                 <CategoryText title={t("pages.feed.createdAtLabel")}>

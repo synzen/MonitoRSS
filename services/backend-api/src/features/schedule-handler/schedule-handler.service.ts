@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { SupportersService } from "../supporters/supporters.service";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, PipelineStage } from "mongoose";
 import logger from "../../utils/logger";
 import {
   UserFeedDisabledCode,
@@ -26,7 +26,6 @@ import {
   getUserFeedDisableCodeByFeedRejectCode,
 } from "./utils";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
-import { chunk } from "lodash";
 
 interface PublishFeedDeliveryArticlesData {
   timestamp: number;
@@ -371,25 +370,31 @@ export class ScheduleHandlerService {
       ])
     );
 
-    const urls = await this.getUrlsMatchingRefreshRate(refreshRateSeconds);
+    const urlsCursor =
+      this.getUrlsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
 
-    logger.debug(
-      `Found ${urls.length} urls with refresh rate ${refreshRateSeconds}`,
-      {
-        urls,
+    let urlBatch: { url: string }[] = [];
+
+    for await (const { _id: url } of urlsCursor) {
+      if (!url) {
+        // Just in case
+        continue;
       }
-    );
 
-    await Promise.all(
-      chunk(
-        urls.map((url) => ({ url })),
-        25
-      ).map((urlsChunk) => urlsHandler(urlsChunk))
-    );
+      urlBatch.push({ url });
 
-    const feedCursor = await this.getFeedCursorMatchingRefreshRate(
-      refreshRateSeconds
-    );
+      if (urlBatch.length === 25) {
+        await urlsHandler(urlBatch);
+        urlBatch = [];
+      }
+    }
+
+    if (urlBatch.length > 0) {
+      await urlsHandler(urlBatch);
+    }
+
+    const feedCursor =
+      this.getFeedsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
 
     for await (const feed of feedCursor) {
       const discordUserId = feed.user.discordUserId;
@@ -403,14 +408,22 @@ export class ScheduleHandlerService {
     }
   }
 
-  async getUrlsMatchingRefreshRate(
-    refreshRateSeconds: number
-  ): Promise<string[]> {
-    return this.getFeedsQuery(refreshRateSeconds).distinct("url");
+  getUrlsQueryMatchingRefreshRate(refreshRateSeconds: number) {
+    const pipeline = this.getCommonFeedAggregateStages(refreshRateSeconds);
+
+    pipeline.push({
+      $group: {
+        _id: "$url",
+      },
+    });
+
+    return this.userFeedModel.aggregate(pipeline);
   }
 
-  async getFeedCursorMatchingRefreshRate(refreshRateSeconds: number) {
-    return this.getFeedsQuery(refreshRateSeconds).cursor();
+  getFeedsQueryMatchingRefreshRate(refreshRateSeconds: number) {
+    return this.userFeedModel.aggregate(
+      this.getCommonFeedAggregateStages(refreshRateSeconds)
+    );
   }
 
   async getValidDiscordUserSupporters() {
@@ -420,47 +433,58 @@ export class ScheduleHandlerService {
     return allBenefits.filter(({ isSupporter }) => isSupporter);
   }
 
-  getFeedsQuery(rate: number) {
+  private getCommonFeedAggregateStages(rate: number) {
     const query: FilterQuery<UserFeedDocument> = {
-      $and: [
+      disabledCode: {
+        $exists: false,
+      },
+      $or: [
         {
-          refreshRateSeconds: rate,
-          disabledCode: {
-            $exists: false,
+          "connections.discordChannels.0": {
+            $exists: true,
+          },
+          "connections.discordChannels": {
+            $elemMatch: {
+              disabledCode: {
+                $exists: false,
+              },
+            },
           },
         },
         {
-          $or: [
-            {
-              "connections.discordChannels.0": {
-                $exists: true,
-              },
-              "connections.discordChannels": {
-                $elemMatch: {
-                  disabledCode: {
-                    $exists: false,
-                  },
-                },
+          "connections.discordWebhooks.0": {
+            $exists: true,
+          },
+          "connections.discordWebhooks": {
+            $elemMatch: {
+              disabledCode: {
+                $exists: false,
               },
             },
-            {
-              "connections.discordWebhooks.0": {
-                $exists: true,
-              },
-              "connections.discordWebhooks": {
-                $elemMatch: {
-                  disabledCode: {
-                    $exists: false,
-                  },
-                },
-              },
-            },
-          ],
+          },
         },
       ],
     };
 
-    return this.userFeedModel.find(query);
+    const pipelineStages: PipelineStage[] = [
+      {
+        $match: query,
+      },
+      {
+        $addFields: {
+          useRefreshRate: {
+            $ifNull: ["$userRefreshRateSeconds", "$refreshRateSeconds"],
+          },
+        },
+      },
+      {
+        $match: {
+          useRefreshRate: rate,
+        },
+      },
+    ];
+
+    return pipelineStages;
   }
 
   async enforceUserFeedLimits() {
