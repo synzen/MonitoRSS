@@ -199,7 +199,9 @@ export class FeedFetcherListenerService {
         url,
       );
 
-      if (latestRequest.status !== RequestStatus.OK) {
+      if (latestRequest.status === RequestStatus.REFUSED_LARGE_FEED) {
+        this.emitRejectedUrl({ url });
+      } else if (latestRequest.status !== RequestStatus.OK) {
         const nextRetryDate = this.calculateNextRetryDate(
           new Date(),
           failedAttemptsCount,
@@ -283,6 +285,28 @@ export class FeedFetcherListenerService {
       skip: false,
       failedAttemptsCount: failedAttempts,
     };
+  }
+
+  emitRejectedUrl({ url }: { url: string }) {
+    try {
+      logger.info(`Emitting rejected url for feeds with url "${url}" `, {
+        url,
+      });
+
+      this.amqpConnection.publish<{
+        data: { url: string; status: RequestStatus };
+      }>('', 'url.rejected.disable-feeds', {
+        data: {
+          url,
+          status: RequestStatus.REFUSED_LARGE_FEED,
+        },
+      });
+    } catch (err) {
+      logger.error(`Failed to publish rejected url event: ${url}`, {
+        stack: (err as Error).stack,
+        url,
+      });
+    }
   }
 
   emitFailedUrl({ url }: { url: string }) {

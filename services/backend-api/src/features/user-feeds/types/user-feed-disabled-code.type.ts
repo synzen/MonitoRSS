@@ -5,4 +5,5 @@ export enum UserFeedDisabledCode {
   InvalidFeed = "INVALID_FEED",
   ExceededFeedLimit = "EXCEEDED_FEED_LIMIT",
   ExcessivelyActive = "EXCESSIVELY_ACTIVE",
+  FeedTooLarge = "FEED_TOO_LARGE",
 }

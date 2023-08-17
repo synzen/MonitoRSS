@@ -22,6 +22,7 @@ enum ApiErrorCode {
   BANNED_FEED = "BANNED_FEED",
   FEED_NOT_FAILED = "FEED_NOT_FAILED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
+  FEED_TOO_LARGE = "FEED_TOO_LARGE",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = "FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED",
   FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
@@ -56,6 +57,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   INTERNAL_ERROR: t("common.errors.somethingWentWrong"),
   FEED_NOT_FAILED: t("common.apiErrors.feedNotFailed"),
   FEED_NOT_FOUND: t("common.apiErrors.feedNotFound"),
+  FEED_TOO_LARGE: "Feed is too large (larger than 3 MB) to be processed",
   FEED_INVALID_FILTER_EXPRESSION: t("common.apiErrors.feedFilterInvalidExpression"),
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED: t(
     "common.apiErrors.feedConnectionCannotEnableAutoDisabled"

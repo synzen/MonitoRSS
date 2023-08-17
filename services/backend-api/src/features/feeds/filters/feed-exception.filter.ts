@@ -14,6 +14,7 @@ import {
   InvalidFeedException,
   FeedFetchTimeoutException,
 } from "../../../services/feed-fetcher/exceptions";
+import { FeedTooLargeException } from "../../../services/feed-fetcher/exceptions/FeedTooLargeException";
 import { FeedLimitReachedException } from "../exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
@@ -65,6 +66,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [FeedNotFoundException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_NOT_FOUND,
+    },
+    [FeedTooLargeException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_TOO_LARGE,
     },
   };
 

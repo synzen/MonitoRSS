@@ -149,6 +149,8 @@
       "exceededFeedLimitText": "You currently have exceeded your feed limit. You may either become a supporter, or delete some of your other feeds to re-enable this feed automatically after some time.",
       "adminDisabledTitle": "Disabled by an administrator",
       "adminDisabledText": "This feed has been disabled by an administrator. Please contact support for more details.",
+      "feedTooLargeTitle": "Disabled due to feed size",
+      "feedTooLargeText": "The feed is too large to be processed. If you believe this is a mistake, please contact support.",
       "unknownTitle": "Disabled",
       "unknownText": "This feed has been disabled. Please contact support for more details."
     },

@@ -143,6 +143,12 @@ export class FeedFetcherController {
       }
     }
 
+    if (latestRequest.status === RequestStatus.REFUSED_LARGE_FEED) {
+      return {
+        requestStatus: 'REFUSED_LARGE_FEED' as const,
+      };
+    }
+
     if (latestRequest.status === RequestStatus.FETCH_TIMEOUT) {
       return {
         requestStatus: 'FETCH_TIMEOUT' as const,

@@ -6,6 +6,7 @@ export enum FeedFetcherFetchStatus {
   InteralError = "INTERNAL_ERROR",
   BadStatusCode = "BAD_STATUS_CODE",
   Pending = "PENDING",
+  RefusedLargeFeed = "REFUSED_LARGE_FEED",
 }
 
 interface FetchFeedResponseSuccess {
@@ -14,6 +15,10 @@ interface FetchFeedResponseSuccess {
     body: string;
     statusCode: number;
   };
+}
+
+interface FetchFeedResponseTooLarge {
+  requestStatus: FeedFetcherFetchStatus.RefusedLargeFeed;
 }
 
 interface FetchFeedResponsePending {
@@ -43,4 +48,5 @@ export type FeedFetcherFetchFeedResponse =
   | FetchFeedResponseBadStatus
   | FetchFeedResponsePending
   | FeedFetchResponseParseError
-  | FeedFetchResponseFetchTimeout;
+  | FeedFetchResponseFetchTimeout
+  | FetchFeedResponseTooLarge;

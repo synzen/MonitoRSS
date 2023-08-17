@@ -124,6 +124,19 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
     );
   }
 
+  if (disabledCode === UserFeedDisabledCode.FeedTooLarge) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <Box>
+          <AlertTitle>{t("pages.userFeed.feedTooLargeTitle")}</AlertTitle>
+          <AlertDescription display="block">
+            {t("pages.userFeed.feedTooLargeText")}
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
   if (disabledCode === UserFeedDisabledCode.ExcessivelyActive) {
     return (
       <Alert status="error" borderRadius="md">

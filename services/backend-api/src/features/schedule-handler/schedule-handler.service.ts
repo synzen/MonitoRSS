@@ -26,6 +26,7 @@ import {
   getUserFeedDisableCodeByFeedRejectCode,
 } from "./utils";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
+import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 
 interface PublishFeedDeliveryArticlesData {
   timestamp: number;
@@ -96,6 +97,43 @@ export class ScheduleHandlerService {
           }
         );
       }
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.UrlRejectedDisableFeeds,
+    createQueueIfNotExists: true,
+  })
+  async handleUrlRejectedDisableFeedsEvent({
+    data: { url, status },
+  }: {
+    data: {
+      url: string;
+      status: Extract<
+        FeedFetcherFetchStatus,
+        FeedFetcherFetchStatus.RefusedLargeFeed
+      >;
+    };
+  }) {
+    logger.debug(`handling url rejected disable feeds event for url ${url}`);
+
+    if (status === FeedFetcherFetchStatus.RefusedLargeFeed) {
+      await this.userFeedModel
+        .updateMany(
+          {
+            url,
+            disabledCode: {
+              $exists: false,
+            },
+          },
+          {
+            $set: {
+              disabledCode: UserFeedDisabledCode.FeedTooLarge,
+            },
+          }
+        )
+        .lean();
     }
   }
 

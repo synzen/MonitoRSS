@@ -20,6 +20,7 @@ export enum ApiErrorCode {
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
   FEED_NOT_FAILED = "FEED_NOT_FAILED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
+  FEED_TOO_LARGE = "FEED_TOO_LARGE",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
   BANNED_FEED = "BANNED_FEED",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
@@ -70,6 +71,7 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_NOT_FAILED:
     "The feed is not in a failed state. It must be in a failed state for it to be retried.",
   FEED_NOT_FOUND: "Feed does not exist",
+  FEED_TOO_LARGE: "Feed is too large to be processed",
   FEED_INVALID_FILTER_EXPRESSION: "Invalid filter expression",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED:
     "Cannot enable a feed that was automatically disabled",

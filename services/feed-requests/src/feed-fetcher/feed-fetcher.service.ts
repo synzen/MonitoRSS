@@ -12,6 +12,7 @@ import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
 import { createHash } from 'crypto';
 import { CacheStorageService } from '../cache-storage/cache-storage.service';
+import { FeedTooLargeException } from './exceptions';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -169,6 +170,12 @@ export class FeedFetcherService {
       try {
         text = await res.text();
 
+        const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
+
+        if (sizeOfTextInMb > 3) {
+          throw new FeedTooLargeException(`Response body is too large`);
+        }
+
         try {
           const deflated = await deflatePromise(text);
           const compressedText = deflated.toString('base64');
@@ -186,6 +193,10 @@ export class FeedFetcherService {
             body: compressedText,
           });
         } catch (err) {
+          if (err instanceof FeedTooLargeException) {
+            throw err;
+          }
+
           logger.error(
             `Failed to upload feed html content for url ${url} to cache`,
             {
@@ -194,10 +205,14 @@ export class FeedFetcherService {
           );
         }
       } catch (err) {
-        request.status = RequestStatus.PARSE_ERROR;
-        logger.debug(`Failed to parse response text of url ${url}`, {
-          stack: (err as Error).stack,
-        });
+        if (err instanceof FeedTooLargeException) {
+          request.status = RequestStatus.REFUSED_LARGE_FEED;
+        } else {
+          request.status = RequestStatus.PARSE_ERROR;
+          logger.debug(`Failed to parse response text of url ${url}`, {
+            stack: (err as Error).stack,
+          });
+        }
       }
 
       const isCloudflareServer = !!res.headers

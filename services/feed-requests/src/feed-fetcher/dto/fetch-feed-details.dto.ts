@@ -6,7 +6,8 @@ export interface FetchFeedDetailsDto {
     | 'PENDING'
     | 'FETCH_ERROR'
     | 'PARSE_ERROR'
-    | 'FETCH_TIMEOUT';
+    | 'FETCH_TIMEOUT'
+    | 'REFUSED_LARGE_FEED';
   response?: {
     statusCode: number;
     body?: string;

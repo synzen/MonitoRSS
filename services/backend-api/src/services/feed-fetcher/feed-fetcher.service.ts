@@ -22,6 +22,7 @@ import {
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import { Readable } from "stream";
 import { FeedFetcherFetchStatus } from "./types/feed-fetcher-fetch-feed-response.type";
+import { FeedTooLargeException } from "./exceptions/FeedTooLargeException";
 
 interface FetchFeedOptions {
   formatTables?: boolean;
@@ -111,6 +112,10 @@ export class FeedFetcherService {
 
     if (result.requestStatus === FeedFetcherFetchStatus.FetchTimeout) {
       throw new FeedFetchTimeoutException(`Feed fetch timed out`);
+    }
+
+    if (result.requestStatus === FeedFetcherFetchStatus.RefusedLargeFeed) {
+      throw new FeedTooLargeException(`Feed is too large to be processed`);
     }
 
     if (result.requestStatus === FeedFetcherFetchStatus.Success) {
