@@ -821,7 +821,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
   private replacePlaceholdersInString(
     article: Article,
-    str: string | undefined,
+    str: string | undefined | null,
     {
       filterReferences,
       mentions: inputMentions,

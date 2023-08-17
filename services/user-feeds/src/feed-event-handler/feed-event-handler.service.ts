@@ -30,6 +30,7 @@ import { FeedDeletedEvent } from "./types";
 import { feedDeletedEventSchema } from "./schemas";
 import { InvalidFeedException } from "../articles/exceptions";
 import pRetry from "p-retry";
+import tracer from "dd-trace";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -53,10 +54,13 @@ export class FeedEventHandlerService {
         abortEarly: false,
       });
     } catch (err) {
-      const validationErrr = err as ValidationError;
+      const validationErr = err as ValidationError;
 
-      throw new Error(
-        `Validation failed on incoming Feed V2 event: ${validationErrr.errors}`
+      logger.error(
+        `Validation failed on incoming Feed V2 event. ${validationErr.errors}`,
+        {
+          feedId: event.data.feed.id,
+        }
       );
     }
 
@@ -226,145 +230,179 @@ export class FeedEventHandlerService {
 
   @UseRequestContext()
   private async handleV2EventWithDb(event: FeedV2Event) {
-    try {
-      // Used for displaying in UIs
-      await this.articleRateLimitService.addOrUpdateFeedLimit(
-        event.data.feed.id,
-        {
-          // hardcode seconds in a day for now
-          timeWindowSec: 86400,
-          limit: event.data.articleDayLimit,
-        },
-        false
-      );
-
-      const {
-        data: {
-          feed: { url, blockingComparisons, passingComparisons },
-        },
-      } = event;
-
-      let feedXml: string | null;
+    logger.debug(
+      `Handling event for feed ${event.data.feed.id} with url ${event.data.feed.url}`
+    );
+    await tracer.trace("deliverfeedevent.handle", async (span) => {
+      span?.setTag("feedId", event.data.feed.id);
+      span?.setTag("feedUrl", event.data.feed.url);
 
       try {
-        feedXml = await this.feedFetcherService.fetchWithGrpc(url);
-      } catch (err) {
-        if (
-          err instanceof FeedRequestInternalException ||
-          err instanceof FeedRequestParseException ||
-          err instanceof FeedRequestBadStatusCodeException ||
-          err instanceof FeedRequestFetchException ||
-          err instanceof FeedRequestTimedOutException ||
-          err instanceof FeedFetchGrpcException
-        ) {
-          logger.debug(`Ignoring feed event due to expected exception`, {
-            exceptionName: (err as Error).name,
-          });
+        // Used for displaying in UIs
+        await tracer.trace("deliverfeedevent.updateLimit", async () => {
+          await this.articleRateLimitService.addOrUpdateFeedLimit(
+            event.data.feed.id,
+            {
+              // hardcode seconds in a day for now
+              timeWindowSec: 86400,
+              limit: event.data.articleDayLimit,
+            },
+            false
+          );
+        });
+
+        const {
+          data: {
+            feed: { url, blockingComparisons, passingComparisons },
+          },
+        } = event;
+
+        logger.debug(`Fetching feed XML from ${url}`);
+
+        const feedXml = await tracer.trace(
+          "deliverfeedevent.fetchWithGrpc",
+          async () => {
+            try {
+              return await this.feedFetcherService.fetchWithGrpc(url);
+            } catch (err) {
+              if (
+                err instanceof FeedRequestInternalException ||
+                err instanceof FeedRequestParseException ||
+                err instanceof FeedRequestBadStatusCodeException ||
+                err instanceof FeedRequestFetchException ||
+                err instanceof FeedRequestTimedOutException ||
+                err instanceof FeedFetchGrpcException
+              ) {
+                logger.debug(`Ignoring feed event due to expected exception`, {
+                  exceptionName: (err as Error).name,
+                });
+
+                return "";
+              }
+
+              throw err;
+            }
+          }
+        );
+
+        if (!feedXml) {
+          logger.debug(
+            `Ignoring feed event due to empty feed XML (likely pending request)`
+          );
 
           return;
         }
 
-        throw err;
-      }
-
-      if (!feedXml) {
         logger.debug(
-          `Ignoring feed event due to empty feed XML (likely pending request)`
+          `Parsing feed XML for feed ${event.data.feed.id} from ${url}`
         );
 
-        return;
-      }
-
-      const articles = await this.articlesService.getArticlesToDeliverFromXml(
-        feedXml,
-        {
-          id: event.data.feed.id,
-          blockingComparisons,
-          passingComparisons,
-          formatOptions: {
-            dateFormat: event.data.feed.formatOptions?.dateFormat,
-            dateTimezone: event.data.feed.formatOptions?.dateTimezone,
-            disableImageLinkPreviews:
-              event.data.feed.formatOptions?.disableImageLinkPreviews,
-          },
-          dateChecks: event.data.feed.dateChecks,
-        }
-      );
-
-      if (!articles.length) {
-        return;
-      }
-
-      const deliveryStates = await this.deliveryService.deliver(
-        event,
-        articles
-      );
-
-      try {
-        await this.deliveryRecordService.store(
-          event.data.feed.id,
-          deliveryStates,
-          false
-        );
-      } catch (err) {
-        logger.error(
-          `Failed to store delivery states while handling feed event`,
-          {
-            event,
-            deliveryStates,
-            error: (err as Error).stack,
-          }
-        );
-      }
-
-      try {
-        await this.orm.em.flush();
-      } catch (err) {
-        logger.error(`Failed to flush ORM while handling feed event`, {
-          event,
-          error: (err as Error).stack,
-        });
-      }
-    } catch (err) {
-      if (err instanceof InvalidFeedException) {
-        logger.debug(`Ignoring feed event due to invalid feed`, {
-          event,
-          stack: (err as Error).stack,
-        });
-
-        this.amqpConnection.publish(
-          "",
-          MessageBrokerQueue.FeedRejectedDisableFeed,
-          {
-            data: {
-              rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
-              feed: {
-                id: event.data.feed.id,
+        const articles = await tracer.trace(
+          "deliverfeedevent.getArticlesToDeliverFromXml",
+          async () => {
+            return this.articlesService.getArticlesToDeliverFromXml(feedXml, {
+              id: event.data.feed.id,
+              blockingComparisons,
+              passingComparisons,
+              formatOptions: {
+                dateFormat: event.data.feed.formatOptions?.dateFormat,
+                dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+                disableImageLinkPreviews:
+                  event.data.feed.formatOptions?.disableImageLinkPreviews,
               },
-            },
+              dateChecks: event.data.feed.dateChecks,
+            });
           }
         );
-      } else {
-        logger.error(
-          `Error while handling feed event: ${(err as Error).message}`,
-          {
-            err,
+
+        if (!articles.length) {
+          logger.debug(
+            `Ignoring feed event due to no articles to deliver for feed` +
+              ` ${event.data.feed.id} from ${url}`
+          );
+
+          return;
+        }
+
+        const deliveryStates = await tracer.trace(
+          "deliverfeedevent.deliverArticles",
+          async () => {
+            return this.deliveryService.deliver(event, articles);
+          }
+        );
+
+        await tracer.trace("deliverfeedevent.flushEntities", async () => {
+          try {
+            await this.deliveryRecordService.store(
+              event.data.feed.id,
+              deliveryStates,
+              false
+            );
+          } catch (err) {
+            logger.error(
+              `Failed to store delivery states while handling feed event`,
+              {
+                event,
+                deliveryStates,
+                error: (err as Error).stack,
+              }
+            );
+          }
+
+          try {
+            await this.orm.em.flush();
+          } catch (err) {
+            logger.error(`Failed to flush ORM while handling feed event`, {
+              event,
+              error: (err as Error).stack,
+            });
+          }
+        });
+      } catch (err) {
+        if (err instanceof InvalidFeedException) {
+          logger.debug(`Ignoring feed event due to invalid feed`, {
             event,
             stack: (err as Error).stack,
-          }
-        );
-      }
-    } finally {
-      if (event.timestamp) {
-        const nowTs = Date.now();
-        const finishedTs = nowTs - event.timestamp;
+          });
 
-        logger.datadog(`Finished handling user feed event in ${finishedTs}ms`, {
-          duration: finishedTs,
-          feedId: event.data.feed.id,
-        });
+          this.amqpConnection.publish(
+            "",
+            MessageBrokerQueue.FeedRejectedDisableFeed,
+            {
+              data: {
+                rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
+                feed: {
+                  id: event.data.feed.id,
+                },
+              },
+            }
+          );
+        } else {
+          logger.error(
+            `Error while handling feed event: ${(err as Error).message}`,
+            {
+              err,
+              event,
+              stack: (err as Error).stack,
+            }
+          );
+        }
+      } finally {
+        if (event.timestamp) {
+          const nowTs = Date.now();
+          const finishedTs = nowTs - event.timestamp;
+
+          logger.datadog(
+            `Finished handling user feed event in ${finishedTs}ms`,
+            {
+              duration: finishedTs,
+              feedId: event.data.feed.id,
+              feedURL: event.data.feed.url,
+            }
+          );
+        }
       }
-    }
+    });
   }
 
   @UseRequestContext()

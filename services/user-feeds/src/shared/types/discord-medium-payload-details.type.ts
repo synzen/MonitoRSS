@@ -74,7 +74,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
         color: number().optional(),
         footer: object({
           text: string().required(),
-          iconUrl: string().optional(),
+          iconUrl: string().optional().nullable().default(undefined),
         })
           .optional()
           .default(undefined),

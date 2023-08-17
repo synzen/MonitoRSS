@@ -92,6 +92,7 @@ export class ScheduleEmitterService {
         await onTimerTrigger(refreshRate / 1000);
       }, refreshRate);
       inputTimers.set(refreshRate, timer);
+      onTimerTrigger(refreshRate / 1000);
     });
 
     logger.debug(

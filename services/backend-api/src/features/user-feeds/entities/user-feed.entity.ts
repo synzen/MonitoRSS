@@ -104,6 +104,11 @@ export class UserFeed {
 
   @Prop({
     required: false,
+  })
+  maxDailyArticles?: number;
+
+  @Prop({
+    required: false,
     index: true,
   })
   userRefreshRateSeconds?: number;

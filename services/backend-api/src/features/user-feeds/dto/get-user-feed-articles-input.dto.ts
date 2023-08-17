@@ -34,11 +34,11 @@ class FiltersDto {
 class FormatterOptionsDto {
   @IsBoolean()
   @Type(() => Boolean)
-  formatTables: boolean;
+  formatTables = false;
 
   @IsBoolean()
   @Type(() => Boolean)
-  stripImages: boolean;
+  stripImages = false;
 
   @IsBoolean()
   @Type(() => Boolean)

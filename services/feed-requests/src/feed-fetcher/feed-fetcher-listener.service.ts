@@ -84,11 +84,7 @@ export class FeedFetcherListenerService {
       return;
     }
 
-    logger.debug(`Fetch request message received for url ${url}`, {
-      message,
-    });
-
-    await this.handleBrokerFetchRequest({ url, rateSeconds });
+    logger.debug(`Fetch request message received for url ${url}`);
 
     await this.em.flush();
 
@@ -108,7 +104,7 @@ export class FeedFetcherListenerService {
       logger.error(
         `Received fetch batch request message has no urls and/or rateSeconds, skipping`,
         {
-          message,
+          event: message,
         },
       );
 
@@ -116,12 +112,15 @@ export class FeedFetcherListenerService {
     }
 
     logger.debug(`Fetch batch request message received for batch urls`, {
-      message,
+      event: message,
     });
 
     try {
       const results = await Promise.allSettled(
-        urls.map((url) => this.handleBrokerFetchRequest({ url, rateSeconds })),
+        urls.map(async (url) => {
+          await this.handleBrokerFetchRequest({ url, rateSeconds });
+          await this.emitFetchCompleted({ url: url, rateSeconds: rateSeconds });
+        }),
       );
 
       for (let i = 0; i < results.length; ++i) {
@@ -143,7 +142,7 @@ export class FeedFetcherListenerService {
       });
     } catch (err) {
       logger.error(`Error processing fetch batch request message`, {
-        message,
+        event: message,
         err: (err as Error).stack,
       });
     } finally {
@@ -307,6 +306,30 @@ export class FeedFetcherListenerService {
       );
     } catch (err) {
       logger.error(`Failed to publish failed url event: ${url}`, {
+        stack: (err as Error).stack,
+        url,
+      });
+    }
+  }
+
+  emitFetchCompleted({
+    url,
+    rateSeconds,
+  }: {
+    url: string;
+    rateSeconds: number;
+  }) {
+    try {
+      this.amqpConnection.publish<{
+        data: { url: string; rateSeconds: number };
+      }>('', 'url.fetch.completed', {
+        data: {
+          url,
+          rateSeconds,
+        },
+      });
+    } catch (err) {
+      logger.error(`Failed to publish fetch completed event: ${url}`, {
         stack: (err as Error).stack,
         url,
       });

@@ -1,6 +1,6 @@
 export function replaceTemplateString(
   object: Record<string, string>,
-  str: string | undefined,
+  str: string | undefined | null,
   options?: {
     supportFallbacks?: boolean;
     split?: {
@@ -17,7 +17,7 @@ export function replaceTemplateString(
   }
 ) {
   if (!str) {
-    return str;
+    return str || undefined;
   }
 
   const regex = new RegExp(/{{2}(.+?)}{2}/gi);

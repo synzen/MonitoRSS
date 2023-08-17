@@ -5,7 +5,6 @@ import { AppModule } from "../app.module";
 import { ScheduleEmitterService } from "../features/schedule-emitter/schedule-emitter.service";
 import { ScheduleHandlerService } from "../features/schedule-handler/schedule-handler.service";
 import logger from "../utils/logger";
-import { UserFeed } from "../features/user-feeds/entities";
 
 bootstrap();
 
@@ -48,8 +47,6 @@ async function runTimerSync(app: INestApplicationContext) {
               data,
               rateSeconds: refreshRateSeconds,
             }),
-          feedHandler: async (feed, { maxDailyArticles }) =>
-            feedEventHandler(app, { feed, maxDailyArticles }),
         });
       } catch (err) {
         logger.error(`Failed to handle schedule event`, {
@@ -74,36 +71,12 @@ async function urlsEventHandler(
   const scheduleHandlerService = app.get(ScheduleHandlerService);
 
   try {
-    logger.debug(`Handling urls event`, {
+    logger.debug(`Handling urls event for refresh rate ${data.rateSeconds}`, {
       data,
     });
     await scheduleHandlerService.emitUrlRequestBatchEvent(data);
   } catch (err) {
     logger.error(`Failed to handle url event`, {
-      stack: err.stack,
-    });
-  }
-}
-
-async function feedEventHandler(
-  app: INestApplicationContext,
-  data: {
-    feed: UserFeed;
-    maxDailyArticles: number;
-  }
-) {
-  const scheduleHandlerService = app.get(ScheduleHandlerService);
-
-  try {
-    logger.debug(`Handling feed event`, {
-      data,
-    });
-    await scheduleHandlerService.emitDeliverFeedArticlesEvent({
-      userFeed: data.feed,
-      maxDailyArticles: data.maxDailyArticles,
-    });
-  } catch (err) {
-    logger.error(`Failed to handle feed event`, {
       stack: err.stack,
     });
   }

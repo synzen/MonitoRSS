@@ -15,6 +15,7 @@ import { Article, UserFeedFormatOptions } from "../shared/types";
 import { ArticleParserService } from "../article-parser/article-parser.service";
 import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-options.type";
 import dayjs from "dayjs";
+import logger from "../shared/utils/logger";
 
 @Injectable()
 export class ArticlesService {
@@ -48,6 +49,10 @@ export class ArticlesService {
   ) {
     const { articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions,
+    });
+
+    logger.debug(`Found articles:`, {
+      titles: articles.map((a) => a.raw.title),
     });
 
     if (!articles.length) {

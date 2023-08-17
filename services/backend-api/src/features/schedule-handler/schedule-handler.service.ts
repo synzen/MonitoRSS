@@ -67,6 +67,40 @@ export class ScheduleHandlerService {
 
   @RabbitSubscribe({
     exchange: "",
+    queue: MessageBrokerQueue.UrlFetchCompleted,
+    createQueueIfNotExists: true,
+  })
+  async handleUrlFetchCompletedEvent({
+    data: { url, rateSeconds },
+  }: {
+    data: { url: string; rateSeconds: number };
+  }) {
+    const feedCursor = this.getFeedsQueryMatchingRefreshRate({
+      url,
+      refreshRateSeconds: rateSeconds,
+    }).cursor();
+
+    for await (const feed of feedCursor) {
+      try {
+        await this.emitDeliverFeedArticlesEvent({
+          userFeed: feed,
+          maxDailyArticles: feed.maxDailyArticles,
+        });
+      } catch (err) {
+        logger.error(
+          `Failed to emit deliver feed articles event: ${
+            (err as Error).message
+          }`,
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
     queue: MessageBrokerQueue.UrlFailedDisableFeeds,
   })
   async handleUrlRequestFailureEvent({
@@ -345,30 +379,15 @@ export class ScheduleHandlerService {
     refreshRateSeconds: number,
     {
       urlsHandler,
-      feedHandler,
     }: {
       urlsHandler: (data: Array<{ url: string }>) => Promise<void>;
-      feedHandler: (
-        feed: UserFeed,
-        {
-          maxDailyArticles,
-        }: {
-          maxDailyArticles: number;
-        }
-      ) => Promise<void>;
     }
   ) {
-    await this.syncRefreshRates();
-
     const allBenefits =
       await this.supportersService.getBenefitsOfAllDiscordUsers();
 
-    const dailyLimitsByDiscordUserId = new Map<string, number>(
-      allBenefits.map<[string, number]>((benefit) => [
-        benefit.discordUserId,
-        benefit.maxDailyArticles,
-      ])
-    );
+    await this.syncRefreshRates(allBenefits);
+    await this.syncMaxDailyArticles(allBenefits);
 
     const urlsCursor =
       this.getUrlsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
@@ -392,24 +411,10 @@ export class ScheduleHandlerService {
     if (urlBatch.length > 0) {
       await urlsHandler(urlBatch);
     }
-
-    const feedCursor =
-      this.getFeedsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
-
-    for await (const feed of feedCursor) {
-      const discordUserId = feed.user.discordUserId;
-      const maxDailyArticles =
-        dailyLimitsByDiscordUserId.get(discordUserId) ||
-        this.supportersService.maxDailyArticlesDefault;
-
-      await feedHandler(feed, {
-        maxDailyArticles,
-      });
-    }
   }
 
   getUrlsQueryMatchingRefreshRate(refreshRateSeconds: number) {
-    const pipeline = this.getCommonFeedAggregateStages(refreshRateSeconds);
+    const pipeline = this.getCommonFeedAggregateStages({ refreshRateSeconds });
 
     pipeline.push({
       $group: {
@@ -420,9 +425,12 @@ export class ScheduleHandlerService {
     return this.userFeedModel.aggregate(pipeline);
   }
 
-  getFeedsQueryMatchingRefreshRate(refreshRateSeconds: number) {
+  getFeedsQueryMatchingRefreshRate(data: {
+    refreshRateSeconds: number;
+    url: string;
+  }) {
     return this.userFeedModel.aggregate(
-      this.getCommonFeedAggregateStages(refreshRateSeconds)
+      this.getCommonFeedAggregateStages(data)
     );
   }
 
@@ -433,8 +441,15 @@ export class ScheduleHandlerService {
     return allBenefits.filter(({ isSupporter }) => isSupporter);
   }
 
-  private getCommonFeedAggregateStages(rate: number) {
+  private getCommonFeedAggregateStages({
+    refreshRateSeconds,
+    url,
+  }: {
+    refreshRateSeconds: number;
+    url?: string;
+  }) {
     const query: FilterQuery<UserFeedDocument> = {
+      ...(url ? { url } : {}),
       disabledCode: {
         $exists: false,
       },
@@ -479,7 +494,7 @@ export class ScheduleHandlerService {
       },
       {
         $match: {
-          useRefreshRate: rate,
+          useRefreshRate: refreshRateSeconds,
         },
       },
     ];
@@ -499,10 +514,11 @@ export class ScheduleHandlerService {
     );
   }
 
-  async syncRefreshRates() {
-    const benefits =
-      await this.supportersService.getBenefitsOfAllDiscordUsers();
-
+  async syncRefreshRates(
+    benefits: Awaited<
+      ReturnType<typeof this.supportersService.getBenefitsOfAllDiscordUsers>
+    >
+  ) {
     const validSupporters = benefits.filter(({ isSupporter }) => isSupporter);
 
     const supportersByRefreshRates = new Map<number, string[]>();
@@ -558,6 +574,71 @@ export class ScheduleHandlerService {
       {
         $set: {
           refreshRateSeconds: this.defaultRefreshRateSeconds,
+        },
+      }
+    );
+  }
+
+  async syncMaxDailyArticles(
+    benefits: Awaited<
+      ReturnType<typeof this.supportersService.getBenefitsOfAllDiscordUsers>
+    >
+  ) {
+    const validSupporters = benefits.filter(({ isSupporter }) => isSupporter);
+
+    const supportersByMaxDailyArticles = new Map<number, string[]>();
+
+    for (const s of validSupporters) {
+      const { maxDailyArticles } = s;
+
+      const currentDiscordUserIdsByMaxDailyArticles =
+        supportersByMaxDailyArticles.get(maxDailyArticles);
+
+      if (!currentDiscordUserIdsByMaxDailyArticles) {
+        supportersByMaxDailyArticles.set(maxDailyArticles, [s.discordUserId]);
+      } else {
+        currentDiscordUserIdsByMaxDailyArticles.push(s.discordUserId);
+      }
+    }
+
+    const maxDailyArticles = Array.from(supportersByMaxDailyArticles.entries());
+
+    const specialDiscordUserIds: string[] = [];
+
+    await Promise.all(
+      maxDailyArticles.map(async ([maxDailyArticles, discordUserIds]) => {
+        await this.userFeedModel.updateMany(
+          {
+            "user.discordUserId": {
+              $in: discordUserIds,
+            },
+            maxDailyArticles: {
+              $ne: maxDailyArticles,
+            },
+          },
+          {
+            $set: {
+              maxDailyArticles,
+            },
+          }
+        );
+
+        specialDiscordUserIds.push(...discordUserIds);
+      })
+    );
+
+    await this.userFeedModel.updateMany(
+      {
+        "user.discordUserId": {
+          $nin: specialDiscordUserIds,
+        },
+        maxDailyArticles: {
+          $ne: this.supportersService.maxDailyArticlesDefault,
+        },
+      },
+      {
+        $set: {
+          maxDailyArticles: this.supportersService.maxDailyArticlesDefault,
         },
       }
     );
