@@ -58,6 +58,10 @@ export class EnvironmentVariables {
 
   @IsString()
   USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS!: string;
+
+  @IsString()
+  @IsOptional()
+  USER_FEEDS_POSTGRES_REPLICA1_URI?: string;
 }
 
 export function validateConfig(

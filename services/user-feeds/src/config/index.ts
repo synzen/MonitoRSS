@@ -51,6 +51,8 @@ export function config(options?: {
     USER_FEEDS_API_KEY: process.env.USER_FEEDS_API_KEY as string,
     USER_FEEDS_RABBITMQ_BROKER_URL: process.env
       .USER_FEEDS_RABBITMQ_BROKER_URL as string,
+    USER_FEEDS_POSTGRES_REPLICA1_URI: process.env
+      .USER_FEEDS_POSTGRES_REPLICA1_URI as string,
   } as const;
 
   if (!options?.skipValidation) {

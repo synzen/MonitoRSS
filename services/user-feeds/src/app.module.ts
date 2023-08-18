@@ -1,6 +1,6 @@
 import { MikroOrmModule } from "@mikro-orm/nestjs";
 import { DynamicModule, Module, OnApplicationShutdown } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { config } from "./config";
 import { FeedFetcherModule } from "./feed-fetcher/feed-fetcher.module";
@@ -33,17 +33,38 @@ export class AppModule implements OnApplicationShutdown {
       module: AppModule,
       imports: [
         FeedEventHandlerModule.forRoot(),
-        MikroOrmModule.forRoot({
-          entities: ["dist/**/*.entity.js"],
-          entitiesTs: ["src/**/*.entity.ts"],
-          clientUrl: configVals.USER_FEEDS_POSTGRES_URI,
-          dbName: configVals.USER_FEEDS_POSTGRES_DATABASE,
-          type: "postgresql",
-          forceUtcTimezone: true,
-          timezone: "UTC",
-          pool: {
-            min: 0,
+        MikroOrmModule.forRootAsync({
+          useFactory: (configService: ConfigService) => {
+            const replicaUris: string[] = [];
+
+            const replica1 = configService.get<string>(
+              "USER_FEEDS_POSTGRES_REPLICA1_URI"
+            );
+
+            if (replica1) {
+              replicaUris.push(replica1);
+            }
+
+            logger.info(`${replicaUris.length} read replicas discovered`);
+
+            return {
+              entities: ["dist/**/*.entity.js"],
+              entitiesTs: ["src/**/*.entity.ts"],
+              clientUrl: configVals.USER_FEEDS_POSTGRES_URI,
+              dbName: configVals.USER_FEEDS_POSTGRES_DATABASE,
+              type: "postgresql",
+              forceUtcTimezone: true,
+              timezone: "UTC",
+              pool: {
+                min: 0,
+              },
+              preferReadReplicas: replicaUris.length > 0,
+              replicas: replicaUris.map((url) => ({
+                clientUrl: url,
+              })),
+            };
           },
+          inject: [ConfigService],
         }),
         ConfigModule.forRoot({
           isGlobal: true,
