@@ -208,7 +208,7 @@ const UserFeedsFAQ: React.FC = () => {
                     a: (
                       <Text>
                         No. The same permissions are required as legacy feeds, which is that you
-                        must have Manage Server permission in the Discord server that you&apos;re
+                        must have Manage Channels permission in the Discord server that you&apos;re
                         trying to connect a feed to.
                       </Text>
                     ),
