@@ -129,18 +129,23 @@ export class FeedFetcherController {
       data.url,
     );
 
+    let responseText: string | undefined = undefined;
+
     // If there's no text, response must be fetched to be cached
     if (
       !latestRequest ||
       (latestRequest.response?.redisCacheKey && !latestRequest?.response?.text)
     ) {
       if (data.executeFetchIfNotExists) {
-        latestRequest = await this.feedFetcherService.fetchAndSaveResponse(
+        const savedData = await this.feedFetcherService.fetchAndSaveResponse(
           data.url,
           {
             flushEntities: true,
           },
         );
+
+        latestRequest = savedData.request;
+        responseText = savedData.responseText || undefined;
       } else {
         return {
           requestStatus: 'PENDING' as const,
@@ -174,7 +179,7 @@ export class FeedFetcherController {
         requestStatus: 'SUCCESS' as const,
         response: {
           hash: latestRequest.response.textHash,
-          body: latestRequest.response.text as string,
+          body: responseText as string,
           statusCode: latestRequest.response.statusCode,
         },
       };

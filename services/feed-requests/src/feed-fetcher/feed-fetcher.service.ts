@@ -143,7 +143,10 @@ export class FeedFetcherService {
     options?: {
       flushEntities?: boolean;
     },
-  ): Promise<Request> {
+  ): Promise<{
+    request: Request;
+    responseText?: string | null;
+  }> {
     const fetchOptions: FetchOptions = {
       userAgent: this.configService.get<string>('feedUserAgent'),
     };
@@ -228,11 +231,8 @@ export class FeedFetcherService {
       await this.requestRepo.persist(request);
 
       return {
-        ...request,
-        response: {
-          ...response,
-          text,
-        },
+        request,
+        responseText: text,
       };
     } catch (err) {
       logger.debug(`Failed to fetch url ${url}`, {
@@ -249,7 +249,7 @@ export class FeedFetcherService {
 
       await this.requestRepo.persist(request);
 
-      return { ...request };
+      return { request };
     } finally {
       if (options?.flushEntities) {
         await this.requestRepo.flush();

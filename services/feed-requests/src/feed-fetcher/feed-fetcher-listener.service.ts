@@ -195,13 +195,13 @@ export class FeedFetcherListenerService {
           `recently failed and will be skipped until ${nextRetryDate}`,
       );
     } else {
-      const latestRequest = await this.feedFetcherService.fetchAndSaveResponse(
+      const { request } = await this.feedFetcherService.fetchAndSaveResponse(
         url,
       );
 
-      if (latestRequest.status === RequestStatus.REFUSED_LARGE_FEED) {
+      if (request.status === RequestStatus.REFUSED_LARGE_FEED) {
         this.emitRejectedUrl({ url });
-      } else if (latestRequest.status !== RequestStatus.OK) {
+      } else if (request.status !== RequestStatus.OK) {
         const nextRetryDate = this.calculateNextRetryDate(
           new Date(),
           failedAttemptsCount,
@@ -211,7 +211,7 @@ export class FeedFetcherListenerService {
           `Request with url ${url} failed, next retry date: ${nextRetryDate}`,
         );
 
-        latestRequest.nextRetryDate = nextRetryDate;
+        request.nextRetryDate = nextRetryDate;
       }
     }
 
