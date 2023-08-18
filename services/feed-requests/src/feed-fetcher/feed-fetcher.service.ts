@@ -187,6 +187,7 @@ export class FeedFetcherService {
           });
 
           response.redisCacheKey = sha1.copy().update(url).digest('hex');
+          response.textHash = sha1.copy().update(text).digest('hex');
 
           await this.cacheStorageService.setFeedHtmlContent({
             key: response.redisCacheKey,

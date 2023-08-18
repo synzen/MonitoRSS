@@ -90,7 +90,10 @@ export class FeedFetcherController {
 
   @GrpcMethod('FeedFetcherGrpc', 'FetchFeed')
   @UseRequestContext()
-  async fetchFeedGrpc(data: FetchFeedDto, metadata: Metadata) {
+  async fetchFeedGrpc(
+    data: FetchFeedDto,
+    metadata: Metadata,
+  ): Promise<FetchFeedDetailsDto> {
     const classData = plainToClass(FetchFeedDto, data);
     const results = validateSync(classData);
 
@@ -107,7 +110,9 @@ export class FeedFetcherController {
     return this.getLatestRequest(data);
   }
 
-  private async getLatestRequest(data: FetchFeedDto) {
+  private async getLatestRequest(
+    data: FetchFeedDto,
+  ): Promise<FetchFeedDetailsDto> {
     if (data.executeFetch) {
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url);
@@ -168,6 +173,7 @@ export class FeedFetcherController {
       return {
         requestStatus: 'SUCCESS' as const,
         response: {
+          hash: latestRequest.response.textHash,
           body: latestRequest.response.text as string,
           statusCode: latestRequest.response.statusCode,
         },

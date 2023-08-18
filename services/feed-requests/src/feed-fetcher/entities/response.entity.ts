@@ -18,6 +18,12 @@ export class Response {
 
   @Property({
     nullable: true,
+    type: 'text',
+  })
+  textHash?: string | null;
+
+  @Property({
+    nullable: true,
     type: 'bool',
     default: false,
   })

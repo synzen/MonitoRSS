@@ -9,6 +9,7 @@ export interface FetchFeedDetailsDto {
     | 'FETCH_TIMEOUT'
     | 'REFUSED_LARGE_FEED';
   response?: {
+    hash?: string | null;
     statusCode: number;
     body?: string;
   };
