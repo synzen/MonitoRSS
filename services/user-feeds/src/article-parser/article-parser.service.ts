@@ -108,13 +108,7 @@ export class ArticleParserService {
     }
 
     return {
-      flattened: {
-        ...newRecord,
-        ...this.createCustomPlaceholders(
-          formatOptions?.customPlaceholders,
-          newRecord
-        ),
-      },
+      flattened: newRecord,
     };
   }
 
@@ -147,36 +141,5 @@ export class ArticleParserService {
       images,
       anchors,
     };
-  }
-
-  createCustomPlaceholders(
-    config: UserFeedFormatOptions["customPlaceholders"] | undefined,
-    record: Record<string, string>
-  ): Record<string, string> {
-    const toAdd: Record<string, string> = {};
-
-    if (!config?.length) {
-      return toAdd;
-    }
-
-    for (const {
-      id,
-      regexSearch,
-      replacementString,
-      sourcePlaceholder,
-    } of config) {
-      const sourceValue = record[sourcePlaceholder];
-
-      if (!sourceValue) {
-        continue;
-      }
-
-      const regex = new RegExp(regexSearch, "gi");
-      const replaced = sourceValue.replace(regex, replacementString);
-
-      toAdd[`custom::${id}`] = replaced;
-    }
-
-    return toAdd;
   }
 }

@@ -20,16 +20,8 @@ export interface FeedV2Event {
 }
 
 export const feedV2EventSchemaFormatOptions = object({
-  dateFormat: string().optional().default(undefined),
-  dateTimezone: string().optional().default(undefined),
-  customPlaceholders: array(
-    object({
-      id: string().required(),
-      sourcePlaceholder: string().required(),
-      regexSearch: string().required(),
-      replacementString: string().required(),
-    }).required()
-  ).optional(),
+  dateFormat: string().optional(),
+  dateTimezone: string().optional(),
 });
 
 export const feedV2EventSchemaDateChecks = object({

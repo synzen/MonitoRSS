@@ -163,7 +163,6 @@ export class UserFeedsController {
   ): Promise<GetUserFeedArticlePropertiesOutputDto> {
     const input: GetFeedArticlePropertiesInput = {
       url: feed.url,
-      feed,
     };
 
     const { properties, requestStatus } =
@@ -204,7 +203,6 @@ export class UserFeedsController {
           ...formatter.options,
           dateFormat: feed.formatOptions?.dateFormat,
           dateTimezone: feed.formatOptions?.dateTimezone,
-          customPlaceholders: feed.formatOptions?.customPlaceholders,
         },
       },
     };
@@ -414,6 +412,8 @@ export class UserFeedsController {
         u.discordUserId === discordUserId &&
         u.status === UserFeedManagerStatus.Accepted
     )?.id;
+
+    console.log("benefit", benefits, "feed", feed.refreshRateSeconds);
 
     return {
       result: {

@@ -309,8 +309,6 @@ export class FeedEventHandlerService {
                 dateTimezone: event.data.feed.formatOptions?.dateTimezone,
                 disableImageLinkPreviews:
                   event.data.feed.formatOptions?.disableImageLinkPreviews,
-                customPlaceholders:
-                  event.data.feed.formatOptions?.customPlaceholders,
               },
               dateChecks: event.data.feed.dateChecks,
             });

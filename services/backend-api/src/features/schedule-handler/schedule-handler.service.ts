@@ -39,12 +39,6 @@ interface PublishFeedDeliveryArticlesData {
       formatOptions: {
         dateFormat: string | undefined;
         dateTimezone: string | undefined;
-        customPlaceholders?: Array<{
-          id: string;
-          regexSearch: string;
-          replacementString: string;
-          sourcePlaceholder: string;
-        }>;
       };
       dateChecks?: {
         oldArticleDateDiffMsThreshold?: number;
@@ -405,7 +399,6 @@ export class ScheduleHandlerService {
             formatOptions: {
               dateFormat: userFeed.formatOptions?.dateFormat,
               dateTimezone: userFeed.formatOptions?.dateTimezone,
-              customPlaceholders: userFeed.formatOptions?.customPlaceholders,
             },
             dateChecks: userFeed.dateCheckOptions,
           },
