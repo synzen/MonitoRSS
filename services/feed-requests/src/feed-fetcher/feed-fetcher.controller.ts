@@ -129,7 +129,8 @@ export class FeedFetcherController {
       data.url,
     );
 
-    let responseText: string | undefined = undefined;
+    let responseText: string | undefined =
+      latestRequest?.response?.text || undefined;
 
     // If there's no text, response must be fetched to be cached
     if (
@@ -175,6 +176,8 @@ export class FeedFetcherController {
     }
 
     if (latestRequest.status === RequestStatus.OK) {
+      console.log('return ok', responseText);
+
       return {
         requestStatus: 'SUCCESS' as const,
         response: {

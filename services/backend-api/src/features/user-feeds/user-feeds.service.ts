@@ -567,6 +567,7 @@ export class UserFeedsService {
 
   async getFeedArticleProperties({
     url,
+    feed,
   }: GetFeedArticlePropertiesInput): Promise<GetFeedArticlePropertiesOutput> {
     const input: GetArticlesInput = {
       url,
@@ -581,6 +582,7 @@ export class UserFeedsService {
           dateFormat: undefined,
           dateTimezone: undefined,
           disableImageLinkPreviews: false,
+          customPlaceholders: feed.formatOptions?.customPlaceholders,
         },
       },
     };

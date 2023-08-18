@@ -113,6 +113,7 @@ export class FeedsController {
           dateFormat: formatter.options.dateFormat,
           dateTimezone: formatter.options.dateTimezone,
           disableImageLinkPreviews: formatter.options.disableImageLinkPreviews,
+          customPlaceholders: formatter.options.customPlaceholders,
         },
       });
 
@@ -263,6 +264,7 @@ export class FeedsController {
           dateTimezone: withType.feed.formatOptions?.dateTimezone,
           disableImageLinkPreviews:
             mediumDetails.formatter.disableImageLinkPreviews,
+          customPlaceholders: withType.feed.formatOptions?.customPlaceholders,
         };
 
         if (!withType.article) {
@@ -377,11 +379,7 @@ export class FeedsController {
           feed: object()
             .shape({
               url: string().required(),
-              formatOptions: object()
-                .shape({
-                  dateFormat: string().optional().default(undefined),
-                  dateTimezone: string().optional().default(undefined),
-                })
+              formatOptions: feedV2EventSchemaFormatOptions
                 .optional()
                 .default(undefined),
             })
@@ -409,6 +407,7 @@ export class FeedsController {
           dateTimezone: withType.feed.formatOptions?.dateTimezone,
           disableImageLinkPreviews:
             mediumDetails.formatter.disableImageLinkPreviews,
+          customPlaceholders: withType.feed.formatOptions?.customPlaceholders,
         };
 
         const article = await this.feedFetcherService.fetchFeedArticle(
