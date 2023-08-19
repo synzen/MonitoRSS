@@ -129,7 +129,8 @@ export class FeedFetcherController {
       data.url,
     );
 
-    let responseText: string | undefined = latestRequest?.response?.text || undefined;
+    let responseText: string | undefined =
+      latestRequest?.response?.text || undefined;
 
     // If there's no text, response must be fetched to be cached
     if (

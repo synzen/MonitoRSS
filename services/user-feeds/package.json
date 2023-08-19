@@ -21,10 +21,11 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "sync-db": "mikro-orm schema:update --run",
-    "migration:create:local": "cross-env NODE_ENV=local mikro-orm migration:create",
-    "migration:up:local": "cross-env NODE_ENV=local mikro-orm migration:up",
-    "migration:create:prod": "cross-env NODE_ENV=production mikro-orm migration:create",
-    "migration:up:prod": "cross-env NODE_ENV=production mikro-orm migration:up"
+    "migration:local:create": "cross-env NODE_ENV=local mikro-orm migration:create",
+    "migration:local:up": "cross-env NODE_ENV=local mikro-orm migration:up",
+    "migration:local:down": "cross-env NODE_ENV=local mikro-orm migration:down",
+    "migration:prod:create": "cross-env NODE_ENV=production mikro-orm migration:create",
+    "migration:prod:up": "cross-env NODE_ENV=production mikro-orm migration:up"
   },
   "dependencies": {
     "@fastify/compress": "^6.4.0",

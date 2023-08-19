@@ -150,15 +150,15 @@ export class FeedFetcherService implements OnModuleInit {
     url: string,
     { formatOptions }: FetchFeedArticleOptions
   ) {
-    const feedXml = await this.fetch(url, {
+    const response = await this.fetch(url, {
       executeFetchIfNotInCache: true,
     });
 
-    if (!feedXml) {
+    if (!response) {
       return null;
     }
 
-    return this.articlesService.getArticlesFromXml(feedXml, {
+    return this.articlesService.getArticlesFromXml(response.body, {
       formatOptions,
     });
   }
@@ -267,7 +267,10 @@ export class FeedFetcherService implements OnModuleInit {
     }
 
     if (requestStatus === FeedResponseRequestStatus.Success) {
-      return response.response.body;
+      return {
+        body: response.response.body,
+        bodyHash: response.response.hash,
+      };
     }
 
     if (requestStatus === FeedResponseRequestStatus.FetchTimeout) {

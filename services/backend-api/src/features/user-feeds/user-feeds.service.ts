@@ -207,6 +207,16 @@ export class UserFeedsService {
       });
     }
 
+    for (let i = 0; i < found.length; i++) {
+      const thisId = found[i]._id.toHexString();
+
+      this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
+        "",
+        MessageBrokerQueue.FeedDeleted,
+        { data: { feed: { id: thisId } } }
+      );
+    }
+
     return feedIds.map((id) => ({
       id,
       deleted: foundIds.has(id),

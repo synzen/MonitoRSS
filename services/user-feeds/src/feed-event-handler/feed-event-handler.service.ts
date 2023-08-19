@@ -31,6 +31,7 @@ import { feedDeletedEventSchema } from "./schemas";
 import { InvalidFeedException } from "../articles/exceptions";
 import pRetry from "p-retry";
 import tracer from "dd-trace";
+import { ResponseHashService } from "../response-hash/response-hash.service";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -41,6 +42,7 @@ export class FeedEventHandlerService {
     private readonly deliveryService: DeliveryService,
     private readonly deliveryRecordService: DeliveryRecordService,
     private readonly amqpConnection: AmqpConnection,
+    private readonly responseHashService: ResponseHashService,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
@@ -98,8 +100,9 @@ export class FeedEventHandlerService {
     allowNonJsonMessages: true,
   })
   async onFeedDeleted(event: FeedDeletedEvent): Promise<void> {
+    logger.debug(`Received feed deleted event`, { event });
+
     try {
-      logger.debug(`Received feed deleted event`, { event });
       const data = await feedDeletedEventSchema.validate(event);
 
       await this.handleFeedDeletedEvent(data);
@@ -259,7 +262,7 @@ export class FeedEventHandlerService {
 
         logger.debug(`Fetching feed XML from ${url}`);
 
-        const feedXml = await tracer.trace(
+        const response = await tracer.trace(
           "deliverfeedevent.fetchWithGrpc",
           async () => {
             try {
@@ -285,12 +288,32 @@ export class FeedEventHandlerService {
           }
         );
 
-        if (!feedXml) {
+        if (!response) {
           logger.debug(
             `Ignoring feed event due to empty feed XML (likely pending request)`
           );
 
           return;
+        }
+
+        const lastHashIsSame = await this.responseHashService.exists({
+          feedId: event.data.feed.id,
+          hash: response.bodyHash,
+        });
+
+        if (lastHashIsSame) {
+          logger.debug(
+            `Ignoring feed event for feed ${event.data.feed.id} due` +
+              ` to matching body hash ${response.bodyHash}` +
+              ` from previous request`
+          );
+
+          return;
+        } else {
+          logger.debug(
+            `Previous body hash for feed ${event.data.feed.id} did not` +
+              ` match current body hash (${response.bodyHash}). Continuing to process`
+          );
         }
 
         logger.debug(
@@ -300,18 +323,21 @@ export class FeedEventHandlerService {
         const articles = await tracer.trace(
           "deliverfeedevent.getArticlesToDeliverFromXml",
           async () => {
-            return this.articlesService.getArticlesToDeliverFromXml(feedXml, {
-              id: event.data.feed.id,
-              blockingComparisons,
-              passingComparisons,
-              formatOptions: {
-                dateFormat: event.data.feed.formatOptions?.dateFormat,
-                dateTimezone: event.data.feed.formatOptions?.dateTimezone,
-                disableImageLinkPreviews:
-                  event.data.feed.formatOptions?.disableImageLinkPreviews,
-              },
-              dateChecks: event.data.feed.dateChecks,
-            });
+            return this.articlesService.getArticlesToDeliverFromXml(
+              response.body,
+              {
+                id: event.data.feed.id,
+                blockingComparisons,
+                passingComparisons,
+                formatOptions: {
+                  dateFormat: event.data.feed.formatOptions?.dateFormat,
+                  dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+                  disableImageLinkPreviews:
+                    event.data.feed.formatOptions?.disableImageLinkPreviews,
+                },
+                dateChecks: event.data.feed.dateChecks,
+              }
+            );
           }
         );
 
@@ -320,6 +346,11 @@ export class FeedEventHandlerService {
             `Ignoring feed event due to no articles to deliver for feed` +
               ` ${event.data.feed.id} from ${url}`
           );
+
+          await this.responseHashService.set({
+            feedId: event.data.feed.id,
+            hash: response.bodyHash,
+          });
 
           return;
         }
@@ -357,6 +388,11 @@ export class FeedEventHandlerService {
               error: (err as Error).stack,
             });
           }
+        });
+
+        await this.responseHashService.set({
+          feedId: event.data.feed.id,
+          hash: response.bodyHash,
         });
       } catch (err) {
         if (err instanceof InvalidFeedException) {
@@ -414,6 +450,10 @@ export class FeedEventHandlerService {
     } = data;
 
     await this.articlesService.deleteInfoForFeed(id);
+
+    await this.responseHashService.remove({
+      feedId: id,
+    });
 
     logger.debug(`Deleted feed info for feed ${id}`);
   }

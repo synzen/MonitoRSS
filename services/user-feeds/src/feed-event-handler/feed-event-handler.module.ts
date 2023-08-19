@@ -6,6 +6,7 @@ import { DeliveryModule } from "../delivery/delivery.module";
 import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { FeedEventHandlerService } from "./feed-event-handler.service";
 import { MessageBrokerModule } from "../message-broker/message-broker.module";
+import { ResponseHashModule } from "../response-hash/response-hash.module";
 
 @Module({
   controllers: [],
@@ -28,7 +29,11 @@ export class FeedEventHandlerModule {
     return {
       module: FeedEventHandlerModule,
       providers: [FeedEventHandlerService],
-      imports: [DeliveryModule, MessageBrokerModule.forRoot()],
+      imports: [
+        DeliveryModule,
+        MessageBrokerModule.forRoot(),
+        ResponseHashModule,
+      ],
     };
   }
 }

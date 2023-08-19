@@ -16,6 +16,7 @@ message FetchFeedDetailsDto {
   message FetchFeedResponseDto {
     int32 statusCode = 1;
     optional string body = 2;
+    optional string hash = 3;
   }
   string requestStatus = 1;
   optional FetchFeedResponseDto response = 2;

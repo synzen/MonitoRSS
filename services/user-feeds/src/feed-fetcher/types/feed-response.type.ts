@@ -30,6 +30,7 @@ interface FeedResponseSuccess {
   requestStatus: FeedResponseRequestStatus.Success;
   response: {
     body: string;
+    hash: string;
     statusCode: number;
   };
 }

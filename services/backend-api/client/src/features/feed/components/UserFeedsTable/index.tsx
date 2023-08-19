@@ -289,6 +289,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           feeds: feedIds.map((id) => ({ id })),
         },
       });
+      setRowSelection({});
       notifySuccess(t("common.success.deleted"));
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);

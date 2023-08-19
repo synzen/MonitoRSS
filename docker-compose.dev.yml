@@ -10,6 +10,17 @@ services:
       - cache-feed-requests:/data
     networks:
       - monitorss-default
+  
+  mrss-user-feeds-cache:
+    image: redis:7.0.7-alpine
+    restart: always
+    ports:
+      - 6380:6379
+    command: redis-server --save 60 1
+    volumes: 
+      - cache-user-feeds:/data
+    networks:
+      - monitorss-default
 
   mrss-seaweed-fs:
     image: chrislusf/seaweedfs
@@ -151,6 +162,7 @@ services:
       - FEED_REQUESTS_S3_ENDPOINT=http://mrss-seaweed-fs:8333
       - FEED_REQUESTS_REDIS_URI=redis://mrss-feed-requests-cache:6379
       - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+      - LOG_LEVEL=debug
     networks:
       - monitorss-default
 
@@ -217,6 +229,8 @@ services:
       - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
       - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - USER_FEEDS_API_KEY=user-feeds-api-key
+      - USER_FEEDS_REDIS_URI=redis://mrss-user-feeds-cache:6379
+      - LOG_LEVEL=debug
     networks:
       - monitorss-default
 
@@ -248,6 +262,7 @@ services:
       - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
       - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
+      - LOG_LEVEL=debug
     command: npm run start:schedule-emitter:local
     networks:
       - monitorss-default
@@ -351,6 +366,7 @@ volumes:
   db-feedrequests-postgres-data:
   db-user-feeds-postgres-data:
   cache-feed-requests:
+  cache-user-feeds:
   fs-s3-storage-data:
     driver: local
 
