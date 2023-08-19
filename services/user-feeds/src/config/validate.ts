@@ -62,10 +62,6 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   USER_FEEDS_POSTGRES_REPLICA1_URI?: string;
-
-  @IsString()
-  @IsOptional()
-  USER_FEEDS_REDIS_URI?: string;
 }
 
 export function validateConfig(
