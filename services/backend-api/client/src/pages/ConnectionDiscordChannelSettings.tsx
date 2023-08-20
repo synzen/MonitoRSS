@@ -312,9 +312,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     forumThreadTitle: connection?.details.forumThreadTitle,
                     forumThreadTags: connection?.details.forumThreadTags || [],
                     mentions: connection?.mentions,
+                    customPlaceholders: connection?.customPlaceholders,
                     ...connection?.details,
                   }}
                   articleFormatter={{
+                    customPlaceholders: connection?.customPlaceholders,
                     options: {
                       formatTables: connection?.details.formatter?.formatTables,
                       stripImages: connection?.details.formatter?.stripImages,

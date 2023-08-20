@@ -157,7 +157,10 @@ export class FeedsController {
           matchedArticles.map(async (article) => {
             return this.articleFormatterService.formatArticleForDiscord(
               article,
-              formatter.options
+              {
+                ...formatter.options,
+                customPlaceholders: formatter.customPlaceholders,
+              }
             );
           })
         )
@@ -289,10 +292,10 @@ export class FeedsController {
         }
 
         const formattedArticle =
-          await this.articleFormatterService.formatArticleForDiscord(
-            article,
-            mediumDetails.formatter
-          );
+          await this.articleFormatterService.formatArticleForDiscord(article, {
+            ...mediumDetails.formatter,
+            customPlaceholders: mediumDetails.customPlaceholders,
+          });
 
         const filterReferences =
           await this.articleFiltersService.buildReferences({
@@ -426,10 +429,10 @@ export class FeedsController {
         }
 
         const formattedArticle =
-          await this.articleFormatterService.formatArticleForDiscord(
-            article,
-            mediumDetails.formatter
-          );
+          await this.articleFormatterService.formatArticleForDiscord(article, {
+            ...mediumDetails.formatter,
+            customPlaceholders: mediumDetails.customPlaceholders,
+          });
 
         const filterReferences =
           await this.articleFiltersService.buildReferences({

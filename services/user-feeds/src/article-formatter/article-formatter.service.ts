@@ -19,6 +19,30 @@ export class ArticleFormatterService {
       flattened[key] = value;
     });
 
+    if (options.customPlaceholders) {
+      for (const {
+        id,
+        regexSearch,
+        sourcePlaceholder,
+        replacementString,
+      } of options.customPlaceholders) {
+        const sourceValue = flattened[sourcePlaceholder];
+        const placeholderKeyToUse = `custom::${id}`;
+
+        if (!sourceValue) {
+          flattened[placeholderKeyToUse] = "";
+
+          continue;
+        }
+
+        const regex = new RegExp(regexSearch, "gmi");
+
+        const finalVal = sourceValue.replace(regex, replacementString || "");
+
+        flattened[placeholderKeyToUse] = finalVal;
+      }
+    }
+
     return {
       flattened,
       raw: {

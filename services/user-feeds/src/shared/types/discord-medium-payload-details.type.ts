@@ -49,6 +49,16 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     )
       .nullable()
       .default(undefined),
+    customPlaceholders: array(
+      object({
+        id: string().required(),
+        sourcePlaceholder: string().required(),
+        regexSearch: string().required(),
+        replacementString: string().nullable(),
+      }).required()
+    )
+      .nullable()
+      .default([]),
     mentions: object({
       targets: array(
         object({

@@ -34,6 +34,12 @@ export interface CreateDiscordChannelConnectionPreviewInput {
         } | null;
       }> | null;
     } | null;
+    customPlaceholders?: Array<{
+      id: string;
+      sourcePlaceholder: string;
+      regexSearch: string;
+      replacementString?: string | null;
+    }> | null;
     placeholderLimits?: Array<{
       placeholder: string;
       characterCount: number;

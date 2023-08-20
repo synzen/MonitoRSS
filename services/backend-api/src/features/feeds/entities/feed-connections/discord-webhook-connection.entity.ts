@@ -6,6 +6,10 @@ import {
 } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
 import {
+  CustomPlaceholder,
+  CustomPlaceholderSchema,
+} from "./custom-placeholder.entity";
+import {
   DiscordFormatter,
   DiscordFormatterSchema,
 } from "./discord-formatter.entity";
@@ -253,6 +257,12 @@ export class DiscordWebhookConnection {
     schema: SplitOptionsSchema,
   })
   splitOptions?: SplitOptions;
+
+  @Prop({
+    required: false,
+    type: [CustomPlaceholderSchema],
+  })
+  customPlaceholders?: CustomPlaceholder[];
 
   createdAt: Date;
   updatedAt: Date;

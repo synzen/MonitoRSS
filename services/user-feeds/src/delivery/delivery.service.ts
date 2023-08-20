@@ -109,10 +109,10 @@ export class DeliveryService {
 
       const mediumService = this.mediumServices[medium.key];
 
-      const formattedArticle = await mediumService.formatArticle(
-        article,
-        medium.details.formatter
-      );
+      const formattedArticle = await mediumService.formatArticle(article, {
+        ...medium.details.formatter,
+        customPlaceholders: medium.details.customPlaceholders,
+      });
 
       const filterReferences = this.articleFiltersService.buildReferences({
         article: formattedArticle,

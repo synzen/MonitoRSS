@@ -72,6 +72,7 @@ interface CreatePreviewInput {
     | null;
   articleId?: string;
   mentions?: DiscordChannelConnection["mentions"] | null;
+  customPlaceholders?: DiscordChannelConnection["customPlaceholders"] | null;
   placeholderLimits?:
     | DiscordChannelConnection["details"]["placeholderLimits"]
     | null;
@@ -374,6 +375,8 @@ export class FeedConnectionsDiscordChannelsService {
         formatter:
           previewInput?.connectionFormatOptions || connection.details.formatter,
         mentions: previewInput?.mentions || connection.mentions,
+        customPlaceholders:
+          previewInput?.customPlaceholders || connection.customPlaceholders,
         splitOptions: previewInput?.splitOptions?.isEnabled
           ? previewInput.splitOptions
           : connection.splitOptions,
@@ -403,6 +406,7 @@ export class FeedConnectionsDiscordChannelsService {
     mentions,
     placeholderLimits,
     enablePlaceholderFallback,
+    customPlaceholders,
   }: CreatePreviewInput) {
     const payload = {
       type: "discord",
@@ -443,6 +447,7 @@ export class FeedConnectionsDiscordChannelsService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
         mentions: mentions,
+        customPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
       },

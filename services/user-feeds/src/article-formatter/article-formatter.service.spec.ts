@@ -19,6 +19,181 @@ describe("ArticleFormatterService", () => {
         expect(result.value).toEqual("Text\n\n ");
       });
     });
+
+    describe("custom placeholders", () => {
+      it("adds the custom placeholder if the source key exists", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: "Hello World",
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              regexSearch: "Hello",
+              sourcePlaceholder: "title",
+              replacementString: "Goodbye",
+            },
+          ],
+        });
+
+        expect(result.flattened["custom::test"]).toEqual("Goodbye World");
+      });
+
+      it("does not modify the source placeholder", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: "Hello World",
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              regexSearch: "Hello",
+              sourcePlaceholder: "title",
+              replacementString: "Goodbye",
+            },
+          ],
+        });
+
+        expect(result.flattened["title"]).toEqual("Hello World");
+      });
+
+      it("replaces matches with an empty string if no replacement is specified", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: "Hello World",
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              regexSearch: "Hello",
+              sourcePlaceholder: "title",
+              replacementString: null,
+            },
+          ],
+        });
+
+        expect(result.flattened["custom::test"]).toEqual(" World");
+      });
+
+      it("replaces matches globally", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: "Hello World",
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              regexSearch: "l",
+              sourcePlaceholder: "title",
+              replacementString: "z",
+            },
+          ],
+        });
+
+        expect(result.flattened["custom::test"]).toEqual("Hezzo Worzd");
+      });
+
+      it("replaces searches multi-line", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: `q hello<br />q<br />q<br />q world`,
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              regexSearch: "^q$",
+              sourcePlaceholder: "title",
+              replacementString: "replaced",
+            },
+          ],
+        });
+
+        expect(result.flattened["custom::test"]).toEqual(
+          "q hello\nreplaced\nreplaced\nq world"
+        );
+      });
+
+      it("replaces searches case-insensitive", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: `hello HELLO world`,
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              regexSearch: "hello",
+              sourcePlaceholder: "title",
+              replacementString: "replaced",
+            },
+          ],
+        });
+
+        expect(result.flattened["custom::test"]).toEqual(
+          "replaced replaced world"
+        );
+      });
+    });
+
     describe("img", () => {
       it("returns the image link with no alt", async () => {
         const value = '<img src="https://example.com/image.png" />';
@@ -44,6 +219,7 @@ describe("ArticleFormatterService", () => {
           stripImages: true,
           formatTables: false,
           disableImageLinkPreviews: false,
+          customPlaceholders: [],
         });
 
         expect(result.value).toEqual("Hello World");
@@ -57,6 +233,7 @@ describe("ArticleFormatterService", () => {
           stripImages: false,
           formatTables: false,
           disableImageLinkPreviews: true,
+          customPlaceholders: [],
         });
 
         expect(result.value).toEqual(
@@ -133,6 +310,7 @@ describe("ArticleFormatterService", () => {
           formatTables: true,
           stripImages: false,
           disableImageLinkPreviews: false,
+          customPlaceholders: [],
         });
 
         expect(result.value).toEqual(
@@ -182,7 +360,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       expect(result.value).toEqual(
         `
-Mission Alerts 12:00AM UTC 22/Jan/2023 https://image.com submitted by /u/FortniteStatusBot to r/FORTnITE
+https://image.com submitted by /u/FortniteStatusBot to r/FORTnITE
 [link] [comments]
 `.trim()
       );

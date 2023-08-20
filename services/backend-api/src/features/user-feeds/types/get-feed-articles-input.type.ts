@@ -1,3 +1,4 @@
+import { CustomPlaceholderDto } from "../../../common";
 import { GetFeedArticlesFilterReturnType } from "../constants";
 
 export interface GetFeedArticlesInput {
@@ -12,6 +13,7 @@ export interface GetFeedArticlesInput {
     search?: string;
   };
   formatter: {
+    customPlaceholders?: Array<CustomPlaceholderDto> | null;
     options: {
       stripImages: boolean;
       formatTables: boolean;

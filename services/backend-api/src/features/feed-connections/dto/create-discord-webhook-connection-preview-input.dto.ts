@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import {
+  CustomPlaceholderDto,
   DiscordConnectionFormatterOptions,
   DiscordPlaceholderLimitOptions,
   DiscordSplitOptions,
@@ -53,6 +54,13 @@ export class CreateDiscordWebhookConnectionPreviewInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   mentions?: MentionsOptionsDto | null;
+
+  @IsObject({ each: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholderDto)
+  customPlaceholders?: CustomPlaceholderDto[] | undefined | null;
 
   @IsArray()
   @IsOptional()

@@ -12,6 +12,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
+import { CustomPlaceholderDto } from "../../../common";
 import { GetFeedArticlesFilterReturnType } from "../types";
 
 class FiltersDto {
@@ -58,6 +59,14 @@ class FormatterDto {
   @IsObject()
   @ValidateNested()
   options: FormatterOptionsDto;
+
+  @IsObject({ each: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholderDto)
+  @ValidateIf((v) => v.customPlaceholders !== null)
+  customPlaceholders?: CustomPlaceholderDto[] | null;
 }
 
 export class GetUserFeedArticlesInputDto {

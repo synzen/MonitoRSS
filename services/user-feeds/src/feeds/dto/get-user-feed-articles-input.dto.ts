@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -10,16 +11,44 @@ import {
   IsString,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { GetUserFeedArticlesFilterReturnType } from "../constants";
 import { GetUserFeedArticlesFormatterDto } from "./shared";
+
+export class CustomPlaceholderDto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  sourcePlaceholder: string;
+
+  @IsString()
+  @IsNotEmpty()
+  regexSearch: string;
+
+  @IsString()
+  @IsOptional()
+  @ValidateIf((v) => v.replacementString !== null)
+  replacementString?: string | null;
+}
 
 class FormatterDto {
   @IsObject()
   @Type(() => GetUserFeedArticlesFormatterDto)
   @ValidateNested()
   options: GetUserFeedArticlesFormatterDto;
+
+  @IsObject({ each: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholderDto)
+  @ValidateIf((v) => v.customPlaceholders !== null)
+  customPlaceholders?: CustomPlaceholderDto[] | null;
 }
 
 class FiltersDto {

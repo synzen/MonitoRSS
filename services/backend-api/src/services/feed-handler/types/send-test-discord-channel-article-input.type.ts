@@ -36,6 +36,7 @@ export interface SendTestDiscordChannelArticleInput {
       mentions?: DiscordChannelConnection["mentions"];
       placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
       enablePlaceholderFallback?: DiscordChannelConnection["details"]["enablePlaceholderFallback"];
+      customPlaceholders: DiscordChannelConnection["customPlaceholders"];
     };
   };
 }

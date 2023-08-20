@@ -186,6 +186,7 @@ export class FeedConnectionsDiscordChannelsController {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      customPlaceholders,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -200,6 +201,7 @@ export class FeedConnectionsDiscordChannelsController {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      customPlaceholders,
     });
 
     return {

@@ -286,9 +286,11 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     splitOptions: connection?.splitOptions || null,
                     forumThreadTags: null,
                     mentions: connection?.mentions || null,
+                    customPlaceholders: connection?.customPlaceholders || null,
                     ...connection?.details,
                   }}
                   articleFormatter={{
+                    customPlaceholders: connection?.customPlaceholders,
                     options: {
                       formatTables: connection?.details?.formatter?.formatTables || false,
                       stripImages: connection?.details?.formatter?.stripImages || false,

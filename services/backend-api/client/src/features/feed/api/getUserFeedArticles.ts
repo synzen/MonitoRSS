@@ -17,6 +17,12 @@ export interface GetUserFeedArticlesInput {
       search?: string;
     };
     formatter: {
+      customPlaceholders?: Array<{
+        id: string;
+        sourcePlaceholder: string;
+        regexSearch: string;
+        replacementString?: string | null;
+      }> | null;
       options: {
         formatTables: boolean;
         stripImages: boolean;

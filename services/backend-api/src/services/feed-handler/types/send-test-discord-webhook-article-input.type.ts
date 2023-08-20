@@ -32,6 +32,7 @@ export interface SendTestDiscordWebhookArticleInput {
         prependChar?: string | null;
       };
       mentions?: DiscordWebhookConnection["mentions"];
+      customPlaceholders?: DiscordWebhookConnection["customPlaceholders"];
       placeholderLimits?: DiscordWebhookConnection["details"]["placeholderLimits"];
       enablePlaceholderFallback?: boolean;
     };

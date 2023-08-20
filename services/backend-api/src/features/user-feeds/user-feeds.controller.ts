@@ -384,6 +384,7 @@ export class UserFeedsController {
         disabledCode: con.disabledCode,
         splitOptions: con.splitOptions,
         mentions: con.mentions,
+        customPlaceholders: con.customPlaceholders,
       }));
 
     const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
@@ -399,6 +400,7 @@ export class UserFeedsController {
         disabledCode: con.disabledCode,
         splitOptions: con.splitOptions,
         mentions: con.mentions,
+        customPlaceholders: con.customPlaceholders,
       }));
 
     const benefits = await this.supportersService.getBenefitsOfDiscordUser(
@@ -412,8 +414,6 @@ export class UserFeedsController {
         u.discordUserId === discordUserId &&
         u.status === UserFeedManagerStatus.Accepted
     )?.id;
-
-    console.log("benefit", benefits, "feed", feed.refreshRateSeconds);
 
     return {
       result: {

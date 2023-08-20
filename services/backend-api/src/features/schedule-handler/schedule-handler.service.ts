@@ -339,6 +339,7 @@ export class ScheduleHandlerService {
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
           mentions: con.mentions,
+          customPlaceholders: con.customPlaceholders,
           formatter: {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,
@@ -377,6 +378,7 @@ export class ScheduleHandlerService {
             ? con.splitOptions
             : undefined,
           mentions: con.mentions,
+          customPlaceholders: con.customPlaceholders,
           placeholderLimits: con.details.placeholderLimits,
           enablePlaceholderFallback: con.details.enablePlaceholderFallback,
         },

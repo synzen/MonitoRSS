@@ -102,6 +102,7 @@ export const DiscordMessageForm = ({
     watchedMentions,
     placeholderLimits,
     enablePlaceholderFallback,
+    customPlaceholders,
   ] = useWatch({
     control,
     name: [
@@ -112,6 +113,7 @@ export const DiscordMessageForm = ({
       "mentions",
       "placeholderLimits",
       "enablePlaceholderFallback",
+      "customPlaceholders",
     ],
   });
 
@@ -133,6 +135,7 @@ export const DiscordMessageForm = ({
       splitOptions,
       connectionFormatOptions: formatOptions,
       mentions: watchedMentions,
+      customPlaceholders,
       placeholderLimits,
       enablePlaceholderFallback,
     },

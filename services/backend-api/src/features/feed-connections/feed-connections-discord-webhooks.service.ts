@@ -62,6 +62,7 @@ interface CreatePreviewInput {
   connection: DiscordWebhookConnection;
   splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
   mentions?: DiscordWebhookConnection["mentions"] | null;
+  customPlaceholders?: DiscordWebhookConnection["customPlaceholders"] | null;
   content?: string;
   embeds?: DiscordPreviewEmbed[];
   feedFormatOptions: UserFeed["formatOptions"] | null;
@@ -381,6 +382,8 @@ export class FeedConnectionsDiscordWebhooksService {
           ? previewInput.splitOptions
           : connection.splitOptions,
         mentions: previewInput?.mentions || connection.mentions,
+        customPlaceholders:
+          previewInput?.customPlaceholders || connection.customPlaceholders,
         placeholderLimits:
           previewInput?.placeholderLimits ||
           connection.details.placeholderLimits,
@@ -407,6 +410,7 @@ export class FeedConnectionsDiscordWebhooksService {
     mentions,
     placeholderLimits,
     enablePlaceholderFallback,
+    customPlaceholders,
   }: CreatePreviewInput): Promise<SendTestArticleResult> {
     const payload = {
       type: "discord",
@@ -455,6 +459,7 @@ export class FeedConnectionsDiscordWebhooksService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions || undefined,
         mentions: mentions || undefined,
+        customPlaceholders: customPlaceholders || undefined,
         placeholderLimits,
         enablePlaceholderFallback,
       },

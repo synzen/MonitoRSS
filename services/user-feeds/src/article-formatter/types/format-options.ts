@@ -1,7 +1,9 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsInt,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsPositive,
@@ -38,6 +40,25 @@ class SplitOptions {
   isEnabled?: boolean;
 }
 
+class CustomPlaceholder {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  sourcePlaceholder: string;
+
+  @IsString()
+  @IsNotEmpty()
+  regexSearch: string;
+
+  @IsString()
+  @IsOptional()
+  @ValidateIf((v) => v.replacementString !== null)
+  replacementString?: string | null;
+}
+
 export class FormatOptions {
   @IsBoolean()
   @Type(() => Boolean)
@@ -56,4 +77,11 @@ export class FormatOptions {
   @Type(() => SplitOptions)
   @ValidateNested()
   split?: SplitOptions;
+
+  @IsObject({ each: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholder)
+  customPlaceholders: CustomPlaceholder[] | undefined | null;
 }

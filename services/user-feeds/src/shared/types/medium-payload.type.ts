@@ -1,4 +1,4 @@
-import { object, InferType, string } from "yup";
+import { object, InferType, string, array } from "yup";
 import { baseMediumpayloadSchema } from "./base-medium-payload.type";
 import { discordMediumPayloadDetailsSchema } from "./discord-medium-payload-details.type";
 import { MediumFilters, mediumFiltersSchema } from "./medium-filters.type";
