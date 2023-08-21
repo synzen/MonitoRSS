@@ -113,6 +113,11 @@ export class UserFeed {
   })
   userRefreshRateSeconds?: number;
 
+  @Prop({
+    required: false,
+  })
+  debug?: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }

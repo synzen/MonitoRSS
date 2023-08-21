@@ -142,6 +142,7 @@ export class FeedFetcherService {
     url: string,
     options?: {
       flushEntities?: boolean;
+      saveResponseToObjectStorage?: boolean;
     },
   ): Promise<{
     request: Request;
@@ -189,7 +190,27 @@ export class FeedFetcherService {
             byteSize: Buffer.byteLength(compressedText),
           });
 
-          response.redisCacheKey = sha1.copy().update(url).digest('hex');
+          const urlHash = sha1.copy().update(url).digest('hex');
+
+          if (options?.saveResponseToObjectStorage) {
+            response.s3ObjectKey = urlHash;
+
+            try {
+              await this.objectFileStorageService.uploadFeedHtmlContent({
+                key: urlHash,
+                body: compressedText,
+              });
+            } catch (err) {
+              logger.error(
+                `Failed to upload feed hmtl content to object file storage`,
+                {
+                  stack: (err as Error).stack,
+                },
+              );
+            }
+          }
+
+          response.redisCacheKey = urlHash;
           response.textHash = sha1.copy().update(text).digest('hex');
 
           await this.cacheStorageService.setFeedHtmlContent({

@@ -56,6 +56,14 @@ export class EnvironmentVariables {
   FEED_REQUESTS_S3_ENDPOINT?: string;
 
   @IsString()
+  @IsOptional()
+  FEED_REQUESTS_S3_API_KEY_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_S3_API_KEY?: string;
+
+  @IsString()
   @IsNotEmpty()
   FEED_REQUESTS_REDIS_URI!: string;
 

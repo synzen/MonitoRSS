@@ -299,7 +299,7 @@ export class ScheduleHandlerService {
     this.amqpConnection.publish<{
       rateSeconds: number;
       timestamp: number;
-      data: Array<{ url: string }>;
+      data: Array<{ url: string; saveToObjectStorage?: boolean }>;
     }>(
       "",
       MessageBrokerQueue.UrlFetchBatch,
@@ -429,10 +429,19 @@ export class ScheduleHandlerService {
     await this.syncRefreshRates(allBenefits);
     await this.syncMaxDailyArticles(allBenefits);
 
+    const feedsToDebug = await this.userFeedModel
+      .find({
+        debug: true,
+      })
+      .select("_id url")
+      .lean();
+
+    const urlsToDebug = new Set(feedsToDebug.map((f) => f.url));
+
     const urlsCursor =
       this.getUrlsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
 
-    let urlBatch: { url: string }[] = [];
+    let urlBatch: { url: string; saveToObjectStorage?: boolean }[] = [];
 
     for await (const { _id: url } of urlsCursor) {
       if (!url) {
@@ -440,7 +449,7 @@ export class ScheduleHandlerService {
         continue;
       }
 
-      urlBatch.push({ url });
+      urlBatch.push({ url, saveToObjectStorage: urlsToDebug.has(url) });
 
       if (urlBatch.length === 25) {
         await urlsHandler(urlBatch);

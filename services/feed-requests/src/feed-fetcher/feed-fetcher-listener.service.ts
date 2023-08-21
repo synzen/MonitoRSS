@@ -10,6 +10,12 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { MikroORM, UseRequestContext } from '@mikro-orm/core';
 import { FeedFetcherService } from './feed-fetcher.service';
 
+interface BatchRequestMessage {
+  timestamp: number;
+  data: Array<{ url: string; saveToObjectStorage?: boolean }>;
+  rateSeconds: number;
+}
+
 @Injectable()
 export class FeedFetcherListenerService {
   failedDurationThresholdHours: number;
@@ -55,11 +61,7 @@ export class FeedFetcherListenerService {
     },
     createQueueIfNotExists: true,
   })
-  async onBrokerFetchRequestBatch(message: {
-    timestamp: number;
-    data: Array<{ url: string }>;
-    rateSeconds: number;
-  }) {
+  async onBrokerFetchRequestBatch(message: BatchRequestMessage) {
     logger.datadog(`Received fetch batch request message`, {
       event: message,
     });
@@ -92,15 +94,13 @@ export class FeedFetcherListenerService {
   }
 
   @UseRequestContext()
-  private async onBrokerFetchRequestBatchHandler(message: {
-    timestamp: number;
-    data: Array<{ url: string }>;
-    rateSeconds: number;
-  }): Promise<void> {
+  private async onBrokerFetchRequestBatchHandler(
+    message: BatchRequestMessage,
+  ): Promise<void> {
     const urls = message?.data?.map((u) => u.url);
     const rateSeconds = message?.rateSeconds;
 
-    if (!urls || rateSeconds == null) {
+    if (!message.data || rateSeconds == null) {
       logger.error(
         `Received fetch batch request message has no urls and/or rateSeconds, skipping`,
         {
@@ -117,8 +117,12 @@ export class FeedFetcherListenerService {
 
     try {
       const results = await Promise.allSettled(
-        urls.map(async (url) => {
-          await this.handleBrokerFetchRequest({ url, rateSeconds });
+        message.data.map(async ({ url, saveToObjectStorage }) => {
+          await this.handleBrokerFetchRequest({
+            url,
+            rateSeconds,
+            saveToObjectStorage,
+          });
           await this.emitFetchCompleted({ url: url, rateSeconds: rateSeconds });
         }),
       );
@@ -163,6 +167,7 @@ export class FeedFetcherListenerService {
   private async handleBrokerFetchRequest(data: {
     url: string;
     rateSeconds: number;
+    saveToObjectStorage?: boolean;
   }): Promise<void> {
     const url = data?.url;
     const rateSeconds = data?.rateSeconds;
@@ -197,6 +202,9 @@ export class FeedFetcherListenerService {
     } else {
       const { request } = await this.feedFetcherService.fetchAndSaveResponse(
         url,
+        {
+          saveResponseToObjectStorage: data.saveToObjectStorage,
+        },
       );
 
       if (request.status === RequestStatus.REFUSED_LARGE_FEED) {
