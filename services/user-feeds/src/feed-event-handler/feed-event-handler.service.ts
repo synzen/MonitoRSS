@@ -262,11 +262,17 @@ export class FeedEventHandlerService {
 
         logger.debug(`Fetching feed XML from ${url}`);
 
+        const lastHashSaved = await this.responseHashService.get({
+          feedId: event.data.feed.id,
+        });
+
         const response = await tracer.trace(
           "deliverfeedevent.fetchWithGrpc",
           async () => {
             try {
-              return await this.feedFetcherService.fetchWithGrpc(url);
+              return await this.feedFetcherService.fetchWithGrpc(url, {
+                hashToCompare: lastHashSaved || undefined,
+              });
             } catch (err) {
               if (
                 err instanceof FeedRequestInternalException ||
@@ -280,7 +286,7 @@ export class FeedEventHandlerService {
                   exceptionName: (err as Error).name,
                 });
 
-                return "";
+                return null;
               }
 
               throw err;
@@ -288,32 +294,13 @@ export class FeedEventHandlerService {
           }
         );
 
-        if (!response) {
+        if (!response || !response.body) {
           logger.debug(
-            `Ignoring feed event due to empty feed XML (likely pending request)`
+            `Ignoring feed event due to empty feed XML (likely pending request) or matched hash.` +
+              ` Request status: ${response?.requestStatus}`
           );
 
           return;
-        }
-
-        const lastHashIsSame = await this.responseHashService.exists({
-          feedId: event.data.feed.id,
-          hash: response.bodyHash,
-        });
-
-        if (lastHashIsSame) {
-          logger.debug(
-            `Ignoring feed event for feed ${event.data.feed.id} due` +
-              ` to matching body hash ${response.bodyHash}` +
-              ` from previous request`
-          );
-
-          return;
-        } else {
-          logger.debug(
-            `Previous body hash for feed ${event.data.feed.id} did not` +
-              ` match current body hash (${response.bodyHash}). Continuing to process`
-          );
         }
 
         logger.debug(

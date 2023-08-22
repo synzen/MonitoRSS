@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsOptional, IsUrl } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class FetchFeedDto {
   @IsUrl()
@@ -14,4 +14,8 @@ export class FetchFeedDto {
   @IsOptional()
   @Type(() => Boolean)
   executeFetchIfNotExists?: boolean;
+
+  @IsString()
+  @IsOptional()
+  hashToCompare?: string;
 }

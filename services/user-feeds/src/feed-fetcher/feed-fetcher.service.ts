@@ -103,6 +103,7 @@ export class FeedFetcherService implements OnModuleInit {
     options?: {
       executeFetchIfNotInCache?: boolean;
       retries?: number;
+      hashToCompare?: string;
     }
   ) {
     const span = tracer.scope().active();
@@ -124,6 +125,7 @@ export class FeedFetcherService implements OnModuleInit {
           {
             url,
             executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
+            hashToCompare: options?.hashToCompare || undefined,
           },
           metadata
         );
@@ -154,7 +156,7 @@ export class FeedFetcherService implements OnModuleInit {
       executeFetchIfNotInCache: true,
     });
 
-    if (!response) {
+    if (!response.body) {
       return null;
     }
 
@@ -262,12 +264,18 @@ export class FeedFetcherService implements OnModuleInit {
       );
     }
 
-    if (requestStatus === FeedResponseRequestStatus.Pending) {
-      return null;
+    if (
+      requestStatus === FeedResponseRequestStatus.Pending ||
+      requestStatus === FeedResponseRequestStatus.MatchedHash
+    ) {
+      return {
+        requestStatus,
+      };
     }
 
     if (requestStatus === FeedResponseRequestStatus.Success) {
       return {
+        requestStatus,
         body: response.response.body,
         bodyHash: response.response.hash,
       };

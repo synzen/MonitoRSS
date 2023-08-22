@@ -21,6 +21,16 @@ export class ResponseHashService {
     }
   }
 
+  async get({ feedId }: { feedId: string }): Promise<string | null> {
+    return (
+      (
+        await this.orm.em.findOne(ResponseHash, {
+          feed_id: feedId,
+        })
+      )?.hash || null
+    );
+  }
+
   async exists({
     feedId,
     hash,

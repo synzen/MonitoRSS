@@ -7,7 +7,8 @@ export interface FetchFeedDetailsDto {
     | 'FETCH_ERROR'
     | 'PARSE_ERROR'
     | 'FETCH_TIMEOUT'
-    | 'REFUSED_LARGE_FEED';
+    | 'REFUSED_LARGE_FEED'
+    | 'MATCHED_HASH';
   response?: {
     hash?: string | null;
     statusCode: number;

@@ -10,6 +10,7 @@ message FetchDetails {
   string url = 1;
   optional bool executeFetch = 2;
   optional bool executeFetchIfNotExists = 3;
+  optional string hashToCompare = 4;
 }
 
 message FetchFeedDetailsDto {

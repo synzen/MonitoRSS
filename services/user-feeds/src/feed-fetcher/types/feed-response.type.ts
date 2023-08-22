@@ -4,6 +4,10 @@ interface FeedResponseInernalError {
   requestStatus: FeedResponseRequestStatus.InternalError;
 }
 
+interface FeedResponseMatchedHash {
+  requestStatus: FeedResponseRequestStatus.MatchedHash;
+}
+
 interface FeedResponseFetchError {
   requestStatus: FeedResponseRequestStatus.FetchError;
 }
@@ -41,4 +45,5 @@ export type FeedResponse =
   | FeedResponsePending
   | FeedResponseSuccess
   | FeedResponseFetchError
-  | FeedResponseBadStatusCodeError;
+  | FeedResponseBadStatusCodeError
+  | FeedResponseMatchedHash;

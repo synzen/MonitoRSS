@@ -36,6 +36,7 @@ import { FeedFetcherService } from "./feed-fetcher.service";
                 credentials: useTls ? credentials.createSsl() : undefined,
                 channelOptions: {
                   "grpc.max_receive_message_length": 1024 * 1024 * 100,
+                  "grpc.use_local_subchannel_pool": 1,
                 },
               },
             };

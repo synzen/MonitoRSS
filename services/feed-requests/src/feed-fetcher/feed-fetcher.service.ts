@@ -10,7 +10,7 @@ import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { CacheStorageService } from '../cache-storage/cache-storage.service';
 import { FeedTooLargeException } from './exceptions';
 
@@ -190,14 +190,12 @@ export class FeedFetcherService {
             byteSize: Buffer.byteLength(compressedText),
           });
 
-          const urlHash = sha1.copy().update(url).digest('hex');
-
           if (options?.saveResponseToObjectStorage) {
-            response.s3ObjectKey = urlHash;
+            response.s3ObjectKey = randomUUID();
 
             try {
               await this.objectFileStorageService.uploadFeedHtmlContent({
-                key: urlHash,
+                key: response.s3ObjectKey,
                 body: compressedText,
               });
             } catch (err) {
@@ -210,7 +208,7 @@ export class FeedFetcherService {
             }
           }
 
-          response.redisCacheKey = urlHash;
+          response.redisCacheKey = sha1.copy().update(url).digest('hex');
           response.textHash = sha1.copy().update(text).digest('hex');
 
           await this.cacheStorageService.setFeedHtmlContent({

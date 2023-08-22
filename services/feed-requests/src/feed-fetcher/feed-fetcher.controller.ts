@@ -154,6 +154,15 @@ export class FeedFetcherController {
       }
     }
 
+    if (
+      data.hashToCompare &&
+      data.hashToCompare === latestRequest.response?.textHash
+    ) {
+      return {
+        requestStatus: 'MATCHED_HASH' as const,
+      };
+    }
+
     if (latestRequest.status === RequestStatus.REFUSED_LARGE_FEED) {
       return {
         requestStatus: 'REFUSED_LARGE_FEED' as const,
