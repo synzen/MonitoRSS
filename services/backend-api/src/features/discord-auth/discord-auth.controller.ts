@@ -12,12 +12,14 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { DiscordAccessToken } from "./decorators/DiscordAccessToken";
 import { SessionAccessToken } from "./types/SessionAccessToken.type";
 import { ConfigService } from "@nestjs/config";
+import { UsersService } from "../users/users.service";
 
 @Controller("discord")
 export class DiscordAuthController {
   constructor(
     private readonly discordAuthService: DiscordAuthService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly usersService: UsersService
   ) {}
 
   @Get("login")
@@ -48,6 +50,8 @@ export class DiscordAuthController {
     const loginRedirectUri = this.configService.get<string>(
       "BACKEND_API_LOGIN_REDIRECT_URI"
     ) as string;
+
+    await this.usersService.initDiscordUser(accessToken.discord.id);
 
     return res.redirect(301, loginRedirectUri);
   }
