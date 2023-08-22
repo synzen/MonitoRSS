@@ -168,10 +168,9 @@ const UserFeedsFAQ: React.FC = () => {
                     q: "What am I required to do?",
                     a: (
                       <Text>
-                        Nothing, for now. Personal feeds are in beta, but it is available for
-                        everyone to try. Once it reaches feature parity with legacy feeds, everyone
-                        is encouraged to start converting their legacy feeds to personal feeds.
-                        Legacy feeds will eventually be disabled and removed.
+                        If you are using legacy feeds, you must convert them to personal feeds.
+                        Legacy feeds will start getting disabled on 1 September 2023. All legacy
+                        feeds will be disabled by 1 October 2023.
                       </Text>
                     ),
                   },
@@ -237,13 +236,10 @@ const UserFeedsFAQ: React.FC = () => {
                     q: "What do I do if I am a self-hoster?",
                     a: (
                       <Stack>
-                        <Text>
-                          For now, you don&apos;t need to do anything. Until personal feeds are out
-                          of beta, you can continue using what you have.
-                        </Text>
+                        <Text>For now, you don&apos;t need to do anything.=</Text>
                         <Text>
                           If you are interested in using personal feeds however, documentation will
-                          be available soon on new deployment procedures. Deployment has
+                          be eventually be available on new deployment procedures. Deployment has
                           unfortunately gotten more complicated due to the new architecture, but
                           it&apos;s still possible to self-host and everything is still open-source
                           on the MIT license.
@@ -271,23 +267,6 @@ const UserFeedsFAQ: React.FC = () => {
                   },
                 ]}
               />
-              {/* <Accordion>
-                <FAQItem
-                <AccordionItem>
-                  <Heading as="h2" size="lg">
-                    <AccordionButton>
-                    <BoxWhat am I required to do?
-
-                    </AccordionButton>
-                  </Heading>
-                  <Text>
-                    Nothing, for now. Personal feeds are in beta, but it is available for everyone
-                    to try. Once it reaches feature parity with legacy feeds, everyone is encouraged
-                    to start converting their legacy feeds to personal feeds. Legacy feeds will
-                    eventually be disabled and removed.
-                  </Text>
-                </AccordionItem>
-              </Accordion> */}
             </Stack>
           </Stack>
         </Stack>
