@@ -55,7 +55,7 @@ export const FiltersTabSection = ({
   } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
-      selectProperties: selectedArticleProperty ? [selectedArticleProperty, "id"] : ["id"],
+      selectProperties: selectedArticleProperty ? [selectedArticleProperty, "id"] : ["title"],
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
         expression: filters || undefined,

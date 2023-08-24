@@ -22,26 +22,40 @@ export const ArticleFilterResultsTable = ({ articles, displayPropertyName }: Pro
             <Table size="sm">
               <Thead>
                 <Tr>
-                  <Th>{displayPropertyName}</Th>
-                  <Th isNumeric>
+                  <Th>
                     {t(
                       "features.feedConnections.components" +
                         ".articleFilterResultsTable.columnHeaderPassedFilters"
                     )}
                   </Th>
+                  <Th width="100%">{displayPropertyName}</Th>
                 </Tr>
               </Thead>
               <Tbody>
-                {articles.map(({ passedFilters, propertyValue, id }) => (
-                  <Tr key={id}>
-                    <Td>{propertyValue}</Td>
-                    <Td isNumeric>
-                      {passedFilters === true && <CheckIcon color="green.500" />}
-                      {passedFilters === false && <CloseIcon color="red.500" />}
-                      {passedFilters === undefined && <span>?</span>}
-                    </Td>
-                  </Tr>
-                ))}
+                {articles.map(({ passedFilters, propertyValue, id }) => {
+                  let valueColor: string | undefined;
+
+                  if (passedFilters === true) {
+                    valueColor = "rgba(23, 99, 27, 0.5)";
+                  } else if (passedFilters === false) {
+                    valueColor = "rgba(99, 23, 27, 0.5)";
+                  }
+
+                  return (
+                    <Tr key={id} bg={valueColor}>
+                      <Td>
+                        {passedFilters === true && (
+                          <CheckIcon aria-label="passed" color="green.500" />
+                        )}
+                        {passedFilters === false && (
+                          <CloseIcon aria-label="blocked" color="red.500" />
+                        )}
+                        {passedFilters === undefined && <span>?</span>}
+                      </Td>
+                      <Td>{propertyValue}</Td>
+                    </Tr>
+                  );
+                })}
               </Tbody>
             </Table>
           </TableContainer>
