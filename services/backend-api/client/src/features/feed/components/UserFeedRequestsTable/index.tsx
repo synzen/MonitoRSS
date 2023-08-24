@@ -40,6 +40,7 @@ const createStatusLabel = (status: UserFeedRequestStatus) => {
     case UserFeedRequestStatus.BAD_STATUS_CODE:
     case UserFeedRequestStatus.INTERNAL_ERROR:
     case UserFeedRequestStatus.PARSE_ERROR:
+    case UserFeedRequestStatus.TIMED_OUT:
       return (
         <Badge fontSize="sm" colorScheme="red">
           {status}

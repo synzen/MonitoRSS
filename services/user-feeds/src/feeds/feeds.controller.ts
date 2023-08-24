@@ -20,6 +20,7 @@ import {
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestParseException,
+  FeedRequestTimedOutException,
 } from "../feed-fetcher/exceptions";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import {
@@ -210,6 +211,17 @@ export class FeedsController {
             response: {
               statusCode: err.statusCode,
             },
+            selectedProperties: [],
+          },
+        };
+      }
+
+      if (err instanceof FeedRequestTimedOutException) {
+        return {
+          result: {
+            requestStatus: GetFeedArticlesRequestStatus.TimedOut,
+            articles: [],
+            totalArticles: 0,
             selectedProperties: [],
           },
         };

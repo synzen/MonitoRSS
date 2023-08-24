@@ -10,6 +10,12 @@ export const getErrorMessageForArticleRequestStatus = (
     };
   }
 
+  if (status === UserFeedArticleRequestStatus.TimedOut) {
+    return {
+      ref: "common.apiErrors.feedRequestTimeout",
+    };
+  }
+
   if (status === UserFeedArticleRequestStatus.Pending) {
     return {
       ref: "common.apiErrors.feedRequestPendingArticles",
