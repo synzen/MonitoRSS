@@ -690,11 +690,10 @@ export class DiscordMediumService implements DeliveryMedium {
         )[0];
 
         const embedUrl =
-          this.replacePlaceholdersInString(
-            article,
-            embed.url,
-            replacePlaceholderStringArgs
-          ) || null;
+          this.replacePlaceholdersInString(article, embed.url, {
+            ...replacePlaceholderStringArgs,
+            encodeUrl: true,
+          }) || null;
 
         const embedDescription = this.articleFormatterService.applySplit(
           this.replacePlaceholdersInString(
@@ -750,18 +749,17 @@ export class DiscordMediumService implements DeliveryMedium {
                 this.replacePlaceholdersInString(
                   article,
                   embed.footer.iconUrl,
-                  replacePlaceholderStringArgs
+                  { ...replacePlaceholderStringArgs, encodeUrl: true }
                 ) || null,
             };
 
         const embedImage = !embed.image?.url
           ? undefined
           : {
-              url: this.replacePlaceholdersInString(
-                article,
-                embed.image.url,
-                replacePlaceholderStringArgs
-              ) as string,
+              url: this.replacePlaceholdersInString(article, embed.image.url, {
+                ...replacePlaceholderStringArgs,
+                encodeUrl: true,
+              }) as string,
             };
 
         const embedThumbnail = !embed.thumbnail?.url
@@ -770,7 +768,7 @@ export class DiscordMediumService implements DeliveryMedium {
               url: this.replacePlaceholdersInString(
                 article,
                 embed.thumbnail.url,
-                replacePlaceholderStringArgs
+                { ...replacePlaceholderStringArgs, encodeUrl: true }
               ) as string,
             };
 
@@ -787,11 +785,10 @@ export class DiscordMediumService implements DeliveryMedium {
                   limit: 256,
                 }
               )[0],
-              url: this.replacePlaceholdersInString(
-                article,
-                embed.author.url,
-                replacePlaceholderStringArgs
-              ),
+              url: this.replacePlaceholdersInString(article, embed.author.url, {
+                ...replacePlaceholderStringArgs,
+                encodeUrl: true,
+              }),
               icon_url:
                 this.replacePlaceholdersInString(
                   article,
@@ -827,11 +824,13 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions: inputMentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      encodeUrl,
     }: {
       filterReferences: FilterExpressionReference;
       mentions: DeliveryDetails["deliverySettings"]["mentions"];
       placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
       enablePlaceholderFallback: boolean;
+      encodeUrl?: boolean;
     }
   ): string {
     const referenceObject = {
@@ -865,7 +864,7 @@ export class DiscordMediumService implements DeliveryMedium {
       referenceObject["discord::mentions"] = mentions;
     }
 
-    return (
+    let value =
       replaceTemplateString(referenceObject, str, {
         supportFallbacks: enablePlaceholderFallback,
         split: {
@@ -882,7 +881,12 @@ export class DiscordMediumService implements DeliveryMedium {
             ...r,
           })),
         },
-      }) || ""
-    );
+      }) || "";
+
+    if (encodeUrl) {
+      value = value.replace(/\s/g, "%20");
+    }
+
+    return value;
   }
 }
