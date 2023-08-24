@@ -1,5 +1,16 @@
 import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
-import { Box, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Spinner,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -9,13 +20,30 @@ interface Props {
     propertyValue: string;
     passedFilters?: boolean;
   }>;
+  isLoading?: boolean;
 }
 
-export const ArticleFilterResultsTable = ({ articles, displayPropertyName }: Props) => {
+export const ArticleFilterResultsTable = ({ articles, displayPropertyName, isLoading }: Props) => {
   const { t } = useTranslation();
 
   return (
-    <Box>
+    <Box position="relative">
+      {isLoading && (
+        <Flex
+          position="absolute"
+          top="0"
+          left="0"
+          width="100%"
+          height="100%"
+          bg="blackAlpha.700"
+          alignItems="center"
+          justifyContent="center"
+          zIndex={10}
+          borderRadius="md"
+        >
+          <Spinner />
+        </Flex>
+      )}
       <Box position="relative" border="solid 1px" borderColor="gray.600" borderRadius="md">
         <Box maxHeight="sm" overflow="auto">
           <TableContainer>

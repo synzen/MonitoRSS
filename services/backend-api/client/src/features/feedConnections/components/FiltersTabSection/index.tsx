@@ -38,9 +38,7 @@ export const FiltersTabSection = ({
   onFiltersUpdated,
   articleFormatter,
 }: Props) => {
-  const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
-    undefined
-  );
+  const [selectedArticleProperty, setSelectedArticleProperty] = useState<string>("title");
 
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
     useUserFeedArticleProperties({ feedId });
@@ -55,7 +53,7 @@ export const FiltersTabSection = ({
   } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
-      selectProperties: selectedArticleProperty ? [selectedArticleProperty, "id"] : ["title"],
+      selectProperties: [selectedArticleProperty, "id"],
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
         expression: filters || undefined,
@@ -156,6 +154,7 @@ export const FiltersTabSection = ({
           {!hasAlert && userFeedArticlesStatus !== "loading" && (
             <Stack>
               <ArticleFilterResultsTable
+                isLoading={fetchStatus === "fetching"}
                 articles={
                   articles?.map((article: Record<string, any>, index) => ({
                     id: article.id,
