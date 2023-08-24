@@ -14,18 +14,29 @@ import {
   CardHeader,
   Center,
   Checkbox,
+  Divider,
   HStack,
   Heading,
+  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Spinner,
   Stack,
   Text,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FiMousePointer } from "react-icons/fi";
 import { useState } from "react";
+import { FaExpandAlt } from "react-icons/fa";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
@@ -62,6 +73,7 @@ export const MessageTabSection = ({
   include,
   guildId,
 }: Props) => {
+  const { isOpen, onClose, onOpen } = useDisclosure();
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
   const [placeholderTableSearch, setPlaceholderTableSearch] = useState<string>("");
   const [hideEmptyPlaceholders, setHideEmptyPlaceholders] = useState<boolean>(false);
@@ -136,8 +148,79 @@ export const MessageTabSection = ({
   const firstArticleTitle = (firstArticle as Record<string, string>)?.title;
   const firstArticleDate = (firstArticle as Record<string, string>)?.date;
 
+  const onClickExpand = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onOpen();
+  };
+
+  const accordionPanelContent = (
+    <Stack flex={1}>
+      <Stack bg="gray.800" position="sticky" top={0} zIndex={10} pt={4}>
+        <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
+          <InputGroup maxWidth={["100%", "100%", "400px"]}>
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.300" />
+            </InputLeftElement>
+            <Input
+              isDisabled={userFeedArticlesFetchStatus === "fetching"}
+              placeholder={t(
+                "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder"
+              )}
+              onChange={(e) => setPlaceholderTableSearch(e.target.value.toLowerCase())}
+            />
+          </InputGroup>
+          <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
+            <Text whiteSpace="nowrap">
+              {t(
+                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
+              )}
+            </Text>
+          </Checkbox>
+        </HStack>
+        <Divider />
+      </Stack>
+      <Stack>
+        {userFeedArticlesStatus === "loading" && (
+          <Stack alignItems="center">
+            <Spinner size="xl" />
+            <Text>
+              {t("features.feedConnections.components.articlePlaceholderTable.loadingArticle")}
+            </Text>
+          </Stack>
+        )}
+        {!hasAlert && firstArticle && (
+          <ArticlePlaceholderTable
+            asPlaceholders
+            article={userFeedArticles.result.articles[0]}
+            searchText={placeholderTableSearch}
+            hideEmptyPlaceholders={hideEmptyPlaceholders}
+            isFetching={userFeedArticlesFetchStatus === "fetching"}
+          />
+        )}
+      </Stack>
+    </Stack>
+  );
+
   return (
     <Stack spacing={24}>
+      <Modal isOpen={isOpen} onClose={onClose} size="full" scrollBehavior="inside">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Placeholders</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody as={Stack} paddingTop={0}>
+            <Stack bg="gray.800" flex={1} borderRadius="md" pb={4} pl={4} pr={4}>
+              {accordionPanelContent}
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <Button mr={3} onClick={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <Stack spacing={4}>
         <Stack>
           <Heading as="h2" size="md">
@@ -221,58 +304,30 @@ export const MessageTabSection = ({
                       minHeight="50px"
                       color="blue.300"
                     >
-                      <HStack spacing={2}>
-                        <Text>View Placeholders</Text>
-                        <AccordionIcon />
+                      <HStack justifyContent="space-between" width="100%">
+                        <HStack spacing={2}>
+                          <Text>View Placeholders</Text>
+                          <AccordionIcon />
+                        </HStack>
+                        <IconButton
+                          icon={<FaExpandAlt />}
+                          aria-label="Show bigger"
+                          variant="ghost"
+                          size="sm"
+                          color="blue.300"
+                          onClick={onClickExpand}
+                        />
                       </HStack>
                     </AccordionButton>
-                    <AccordionPanel bg="gray.800" borderRadius="md">
-                      <Stack>
-                        <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-                          <InputGroup maxWidth={["100%", "100%", "400px"]}>
-                            <InputLeftElement pointerEvents="none">
-                              <SearchIcon color="gray.300" />
-                            </InputLeftElement>
-                            <Input
-                              isDisabled={userFeedArticlesFetchStatus === "fetching"}
-                              placeholder={t(
-                                "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder"
-                              )}
-                              onChange={(e) =>
-                                setPlaceholderTableSearch(e.target.value.toLowerCase())
-                              }
-                            />
-                          </InputGroup>
-                          <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
-                            <Text whiteSpace="nowrap">
-                              {t(
-                                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
-                              )}
-                            </Text>
-                          </Checkbox>
-                        </HStack>
-                        <Box>
-                          {userFeedArticlesStatus === "loading" && (
-                            <Stack alignItems="center">
-                              <Spinner size="xl" />
-                              <Text>
-                                {t(
-                                  "features.feedConnections.components.articlePlaceholderTable.loadingArticle"
-                                )}
-                              </Text>
-                            </Stack>
-                          )}
-                          {!hasAlert && firstArticle && (
-                            <ArticlePlaceholderTable
-                              asPlaceholders
-                              article={userFeedArticles.result.articles[0]}
-                              searchText={placeholderTableSearch}
-                              hideEmptyPlaceholders={hideEmptyPlaceholders}
-                              isFetching={userFeedArticlesFetchStatus === "fetching"}
-                            />
-                          )}
-                        </Box>
-                      </Stack>
+                    <AccordionPanel
+                      bg="gray.800"
+                      borderRadius="md"
+                      maxHeight="sm"
+                      overflow="auto"
+                      paddingTop={0}
+                      mt={-4}
+                    >
+                      {accordionPanelContent}
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
