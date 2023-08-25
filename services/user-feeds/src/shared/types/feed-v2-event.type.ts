@@ -5,6 +5,7 @@ import { UserFeedFormatOptions } from "./user-feed-format-options.type";
 
 export interface FeedV2Event {
   timestamp: number;
+  debug?: boolean;
   data: {
     feed: {
       id: string;

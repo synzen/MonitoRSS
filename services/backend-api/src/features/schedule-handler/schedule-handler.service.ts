@@ -30,6 +30,7 @@ import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 
 interface PublishFeedDeliveryArticlesData {
   timestamp: number;
+  debug?: boolean;
   data: {
     feed: {
       id: string;
@@ -390,6 +391,7 @@ export class ScheduleHandlerService {
       "",
       MessageBrokerQueue.FeedDeliverArticles,
       {
+        debug: userFeed.debug,
         timestamp: Date.now(),
         data: {
           articleDayLimit: maxDailyArticles,

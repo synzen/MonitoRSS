@@ -39,12 +39,14 @@ export class ArticlesService {
       passingComparisons,
       formatOptions,
       dateChecks,
+      debug,
     }: {
       id: string;
       blockingComparisons: string[];
       passingComparisons: string[];
       formatOptions: UserFeedFormatOptions;
       dateChecks?: UserFeedDateCheckOptions;
+      debug?: boolean;
     }
   ) {
     const { articles } = await this.getArticlesFromXml(feedXml, {
@@ -54,6 +56,13 @@ export class ArticlesService {
     logger.debug(`Found articles:`, {
       titles: articles.map((a) => a.raw.title),
     });
+
+    if (debug) {
+      logger.datadog(`Debug feed ${id}: found articles`, {
+        articles: articles.map((a) => a.raw.title),
+        level: "debug",
+      });
+    }
 
     if (!articles.length) {
       return [];
@@ -70,6 +79,14 @@ export class ArticlesService {
     }
 
     const newArticles = await this.filterForNewArticles(id, articles);
+
+    if (debug) {
+      logger.datadog(`Debug feed ${id}: new articles determined`, {
+        articles: newArticles.map((a) => a.raw.title),
+        level: "debug",
+      });
+    }
+
     const seenArticles = articles.filter(
       (article) =>
         !newArticles.find((a) => a.flattened.id === article.flattened.id)
@@ -133,6 +150,13 @@ export class ArticlesService {
       articlesPreCheck,
       dateChecks
     );
+
+    if (debug) {
+      logger.datadog(`Debug feed ${id}: articles after date checks`, {
+        articles: articlesPostDateCheck.map((a) => a.raw.title),
+        level: "debug",
+      });
+    }
 
     /**
      * Reverse since feed XMLs typically store newest articles at the top, so we want to deliver

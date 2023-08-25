@@ -295,6 +295,16 @@ export class FeedEventHandlerService {
         );
 
         if (!response || !response.body) {
+          if (event.debug) {
+            logger.datadog(
+              `Debug feed ${event.data.feed.id}: no response body. is pending request or` +
+                ` matched hash`,
+              {
+                level: "debug",
+              }
+            );
+          }
+
           logger.debug(
             `Ignoring feed event due to empty feed XML (likely pending request) or matched hash.` +
               ` Request status: ${response?.requestStatus}`
@@ -323,6 +333,7 @@ export class FeedEventHandlerService {
                     event.data.feed.formatOptions?.disableImageLinkPreviews,
                 },
                 dateChecks: event.data.feed.dateChecks,
+                debug: event.debug,
               }
             );
           }
