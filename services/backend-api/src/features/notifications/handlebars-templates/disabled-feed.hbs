@@ -1,0 +1,101 @@
+<html>
+  <body style="background: #CBD5E0; color: #171923; font-size: 16px;">
+    <table border="0" cellspacing="0" cellpadding="0" role="presentation" style=" border-radius: 4px; padding: 24px;" width="100%">
+      <tr>
+        <td align="center">
+          <table border="0" cellspacing="0" cellpadding="0" role="presentation" width="600" style="border-radius: 8px;  padding-bottom: 24px;">
+            <tr>
+              <td align="left" style="padding-top: 24px; padding-left: 0px; padding-right: 24px; font-size: 18px; font-weight: 600">
+                MonitoRSS
+              </td>
+            </tr>
+          </table>
+          <table border="0" cellspacing="0" cellpadding="0" role="presentation" width="600" style="background: #EDF2F7; border-radius: 8px;  padding-bottom: 24px;">
+            <tr>
+              <td style="background: red; padding-bottom: 4px; border-top-left-radius: 4px; border-top-right-radius: 4px;"></td>
+            </tr>
+            <tr>
+              <td style="padding-top: 24px; padding-left: 24px; padding-right: 24px; font-size: 24px; font-weight: 600">
+                {{#if connectionName}}
+                Your connection "{{connectionName}}" assigned to your feed "{{feedName}}" has been disabled
+                {{else}}
+                Your feed, {{feedName}}, has been disabled
+                {{/if}}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top: 24px; padding-left: 24px; padding-right: 24px;">
+                {{#if connectionName}}
+                There was an issue while processing your feed that forced the connection to be disabled. Articles will no longer be delivered for this connection until it is re-enabled. See below for details.
+                {{else}}
+                There was an issue while processing your feed that forced it to be disabled. Articles will no longer be delivered for this feed until it is re-enabled. See below for details.
+                {{/if}}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top: 32px; padding-left: 24px; padding-right: 24px;">
+                <table border="0" cellspacing="0" role="presentation" cellpadding="0" >
+                  <tr>
+                    <td style="padding-bottom: 4px"><strong>Feed Name:</strong></td>
+                    <td style="padding-left: 24px; padding-bottom: 4px">{{feedName}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 4px"><strong>Feed URL:</strong></td>
+                    <td style="padding-left: 24px; padding-bottom: 4px">
+                      <a href="{{feedUrl}}" target="_blank" rel="noreferrer noopener">{{feedUrl}}</a>
+                    </td>
+                  </tr>
+                  {{#if connectionName}}
+                  <tr>
+                    <td style="padding-bottom: 4px"><strong>Connection Name:</strong></td>
+                    <td style="padding-left: 24px; padding-bottom: 4px">{{connectionName}}</td>
+                  </tr>
+                  {{/if}}
+                  <tr>
+                    <td style="padding-bottom: 4px"><strong>Reason:</strong></td>
+                    <td style="padding-left: 24px; padding-bottom: 4px">{{reason}}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top: 32px; padding-left: 24px; padding-right: 24px;"> 
+<div><!--[if mso]>
+  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{controlPanelUrl}}" style="height:50px;v-text-anchor:middle;width:240px;" arcsize="8%" stroke="f" fillcolor="#3182ce">
+    <w:anchorlock/>
+    <center>
+  <![endif]-->
+      <a href="{{controlPanelUrl}}"
+      target="_blank"
+style="background-color:#3182ce;border-radius:4px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:16px;line-height:50px;text-align:center;text-decoration:none;width:240px;-webkit-text-size-adjust:none;">
+{{#if connectionName}}
+Manage feed connection
+{{else}}
+Manage feed
+{{/if}}
+</a>
+  <!--[if mso]>
+    </center>
+  </v:roundrect>
+<![endif]--></div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td align="center">
+          <table border="0" cellspacing="0" cellpadding="0" role="presentation" width="600" style="border-radius: 8px;  padding-bottom: 24px;">
+            <tr>
+              <td align="left" style="font-size: 14px; padding-top: 24px">
+                You are currently receiving these emails because you have opted in to receive notifications about feed-related failures. To manage your notifications, <a target="_blank" href="{{manageNotificationsUrl}}">click here</a>.
+                </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+
+    </table>
+  </body>
+</html>

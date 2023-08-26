@@ -12,6 +12,16 @@ import {
   DiscordChannelConnection,
   DiscordWebhookConnection,
 } from "../feeds/entities/feed-connections";
+import fs from "fs";
+import { join } from "path";
+import Handlebars from "handlebars";
+
+const disabledFeedHandlebarsText = fs.readFileSync(
+  join(__dirname, "handlebars-templates", "disabled-feed.hbs"),
+  "utf8"
+);
+
+const disabledFeedTemplate = Handlebars.compile(disabledFeedHandlebarsText);
 
 @Injectable()
 export class NotificationsService {
@@ -59,11 +69,19 @@ export class NotificationsService {
             return;
           }
 
+          const templateData = {
+            feedName: feed.title,
+            feedUrl: feed.url,
+            controlPanelUrl: `https://my.monitorss.xyz`,
+            reason: data.reason,
+            manageNotificationsUrl: "https://my.monitorss.xyz",
+          };
+
           return await this.smtpTransport?.sendMail({
             from: NotificationsService.EMAIL_ALERT_FROM,
             to: emails,
-            subject: `Disabled feed: ${feed.title}`,
-            html: `<p>The feed <strong>${feed.title}</strong> has been disabled for the following reason:</p><p>${data.reason}</p>`,
+            subject: `Feed has been disabled: ${feed.title}`,
+            html: disabledFeedTemplate(templateData),
           });
         } catch (err) {
           logger.error(
@@ -101,11 +119,20 @@ export class NotificationsService {
       return;
     }
 
+    const templateData = {
+      feedName: feed.title,
+      feedUrl: feed.url,
+      controlPanelUrl: `https://my.monitorss.xyz`,
+      reason: data.reason,
+      connectionName: connection.name,
+      manageNotificationsUrl: "https://my.monitorss.xyz",
+    };
+
     return await this.smtpTransport?.sendMail({
       from: NotificationsService.EMAIL_ALERT_FROM,
       to: emails,
-      subject: `Disabled feed connection: ${connection.name}`,
-      html: `<p>The feed connection <strong>${connection.name}</strong> has been disabled for the following reason:</p><p>${data.reason}</p>`,
+      subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
+      html: disabledFeedTemplate(templateData),
     });
   }
 }
