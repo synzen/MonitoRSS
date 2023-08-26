@@ -27,6 +27,8 @@ import {
 } from "./utils";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
+import { NotificationsService } from "../notifications/notifications.service";
+import { UsersService } from "../users/users.service";
 
 interface PublishFeedDeliveryArticlesData {
   timestamp: number;
@@ -59,7 +61,9 @@ export class ScheduleHandlerService {
     private readonly supportersService: SupportersService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly amqpConnection: AmqpConnection,
-    private readonly userFeedsService: UserFeedsService
+    private readonly userFeedsService: UserFeedsService,
+    private readonly notificationsService: NotificationsService,
+    private readonly usersService: UsersService
   ) {
     this.defaultRefreshRateSeconds =
       (this.configService.get<number>(
@@ -149,12 +153,23 @@ export class ScheduleHandlerService {
   }) {
     logger.debug(`handling url request failure event for url ${url}`);
 
+    const relevantFeeds = await this.userFeedModel
+      .find({
+        url,
+        disabledCode: {
+          $exists: false,
+        },
+      })
+      .select("_id")
+      .lean();
+
+    const relevantFeedIds = relevantFeeds.map((f) => f._id);
+
     await this.userFeedModel
       .updateMany(
         {
-          url,
-          disabledCode: {
-            $exists: false,
+          _id: {
+            $in: relevantFeedIds,
           },
         },
         {
@@ -165,6 +180,16 @@ export class ScheduleHandlerService {
         }
       )
       .lean();
+
+    try {
+      await this.notificationsService.sendDisabledFeedsAlert(relevantFeedIds, {
+        reason: UserFeedDisabledCode.FailedRequests,
+      });
+    } catch (err) {
+      logger.error(`Failed to send disabled feeds alert`, {
+        stack: (err as Error).stack,
+      });
+    }
   }
 
   @RabbitSubscribe({
@@ -199,7 +224,7 @@ export class ScheduleHandlerService {
 
     await this.userFeedModel.updateOne(
       {
-        _id: feedId,
+        _id: foundFeed._id,
         disabledCode: {
           $exists: false,
         },
@@ -210,6 +235,19 @@ export class ScheduleHandlerService {
         },
       }
     );
+
+    try {
+      logger.debug(
+        `Preparing to send disabled feeds alert to ${foundFeed._id} for reason ${disabledCode}`
+      );
+      await this.notificationsService.sendDisabledFeedsAlert([foundFeed._id], {
+        reason: disabledCode,
+      });
+    } catch (err) {
+      logger.error(`Failed to send disabled feeds alert`, {
+        stack: (err as Error).stack,
+      });
+    }
   }
 
   @RabbitSubscribe({

@@ -15,4 +15,20 @@ export class UsersService {
       });
     }
   }
+
+  async getEmailsForAlerts(discordUserIds: string[]): Promise<string[]> {
+    const users = await this.userModel
+      .find({
+        discordUserId: {
+          $in: discordUserIds,
+        },
+        email: {
+          $exists: true,
+        },
+        "preferences.alertOnDisabledFeeds": true,
+      })
+      .distinct("email");
+
+    return users;
+  }
 }

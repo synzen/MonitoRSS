@@ -90,6 +90,9 @@ export default function config(options?: {
     BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT: Number(
       (process.env.BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT as string) || 0
     ),
+    BACKEND_API_SMTP_HOST: process.env.BACKEND_API_SMTP_HOST as string,
+    BACKEND_API_SMTP_USERNAME: process.env.BACKEND_API_SMTP_USERNAME as string,
+    BACKEND_API_SMTP_PASSWORD: process.env.BACKEND_API_SMTP_PASSWORD as string,
   } as const;
 
   if (!options?.skipValidation) {

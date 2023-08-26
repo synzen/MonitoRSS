@@ -2,6 +2,18 @@ import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Model, Types } from "mongoose";
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+export class UserPreferences {
+  @Prop()
+  alertOnDisabledFeeds?: boolean;
+}
+
+export const UserPreferencesSchema =
+  SchemaFactory.createForClass(UserPreferences);
+
+@Schema({
   timestamps: true,
 })
 export class User {
@@ -12,6 +24,17 @@ export class User {
     unique: true,
   })
   discordUserId: string;
+
+  @Prop({
+    required: false,
+  })
+  email?: string;
+
+  @Prop({
+    required: false,
+    type: UserPreferencesSchema,
+  })
+  preferences?: UserPreferences;
 
   createdAt: Date;
 

@@ -365,11 +365,20 @@ export class FeedEventHandlerService {
           );
         }
 
+        logger.debug(
+          `Delivering ${articles.length} articles for feed ${event.data.feed.id} from ${url}`
+        );
+
         const deliveryStates = await tracer.trace(
           "deliverfeedevent.deliverArticles",
           async () => {
             return this.deliveryService.deliver(event, articles);
           }
+        );
+
+        logger.debug(
+          `Storing delivery states for feed ${event.data.feed.id} from ${url}`,
+          deliveryStates
         );
 
         await tracer.trace("deliverfeedevent.flushEntities", async () => {

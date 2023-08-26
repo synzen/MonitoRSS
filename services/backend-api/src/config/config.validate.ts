@@ -133,6 +133,18 @@ export class EnvironmentVariables {
   @IsOptional()
   @Type(() => Number)
   BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT?: number;
+
+  @IsOptional()
+  @IsString()
+  BACKEND_API_SMTP_HOST?: string;
+
+  @IsOptional()
+  @IsString()
+  BACKEND_API_SMTP_USERNAME?: string;
+
+  @IsOptional()
+  @IsString()
+  BACKEND_API_SMTP_PASSWORD?: string;
 }
 
 export function validateConfig(
