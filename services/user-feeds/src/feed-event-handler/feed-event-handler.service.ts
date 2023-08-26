@@ -262,9 +262,15 @@ export class FeedEventHandlerService {
 
         logger.debug(`Fetching feed XML from ${url}`);
 
-        const lastHashSaved = await this.responseHashService.get({
-          feedId: event.data.feed.id,
-        });
+        let lastHashSaved: string | null;
+
+        if (
+          await this.articlesService.hasPriorArticlesStored(event.data.feed.id)
+        ) {
+          lastHashSaved = await this.responseHashService.get({
+            feedId: event.data.feed.id,
+          });
+        }
 
         const response = await tracer.trace(
           "deliverfeedevent.fetchWithGrpc",
@@ -351,6 +357,12 @@ export class FeedEventHandlerService {
           });
 
           return;
+        }
+
+        if (event.debug) {
+          logger.datadog(
+            `Debug feed ${event.data.feed.id}: delivering ${articles.length} articles`
+          );
         }
 
         const deliveryStates = await tracer.trace(

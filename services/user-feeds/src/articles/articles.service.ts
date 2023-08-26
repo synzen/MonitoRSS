@@ -59,7 +59,7 @@ export class ArticlesService {
 
     if (debug) {
       logger.datadog(`Debug feed ${id}: found articles`, {
-        articles: articles.map((a) => a.raw.title),
+        articles: articles.map((a) => a.flattened.title),
         level: "debug",
       });
     }
@@ -81,10 +81,12 @@ export class ArticlesService {
     const newArticles = await this.filterForNewArticles(id, articles);
 
     if (debug) {
-      logger.datadog(`Debug feed ${id}: new articles determined`, {
-        articles: newArticles.map((a) => a.raw.title),
-        level: "debug",
-      });
+      logger.datadog(
+        `Debug feed ${id}: ${newArticles.length} new articles determined`,
+        {
+          articles: newArticles.map((a) => a.flattened.title),
+        }
+      );
     }
 
     const seenArticles = articles.filter(
@@ -152,10 +154,12 @@ export class ArticlesService {
     );
 
     if (debug) {
-      logger.datadog(`Debug feed ${id}: articles after date checks`, {
-        articles: articlesPostDateCheck.map((a) => a.raw.title),
-        level: "debug",
-      });
+      logger.datadog(
+        `Debug feed ${id}: ${articlesPostDateCheck.length} articles after date checks`,
+        {
+          articles: newArticles.map((a) => a.flattened.title),
+        }
+      );
     }
 
     /**
