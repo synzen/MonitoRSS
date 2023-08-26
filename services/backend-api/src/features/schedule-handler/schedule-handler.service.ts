@@ -314,6 +314,28 @@ export class ScheduleHandlerService {
             },
           }
         );
+
+        try {
+          logger.debug(
+            `Sending disabled feed connection alert email for ${foundFeed._id}, ${connection.id}`
+          );
+          await this.notificationsService.sendDisabledFeedConnectionAlert(
+            foundFeed,
+            connection,
+            {
+              reason: disableCode,
+            }
+          );
+        } catch (err) {
+          logger.error(
+            "Failed to send disabled feed connection alert email in notifications service",
+            {
+              stack: (err as Error).stack,
+            }
+          );
+        }
+
+        break;
       }
     }
   }
