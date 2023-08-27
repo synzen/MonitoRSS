@@ -13,6 +13,7 @@ import { DiscordAccessToken } from "./decorators/DiscordAccessToken";
 import { SessionAccessToken } from "./types/SessionAccessToken.type";
 import { ConfigService } from "@nestjs/config";
 import { UsersService } from "../users/users.service";
+import { randomUUID } from "crypto";
 
 @Controller("discord")
 export class DiscordAuthController {
@@ -27,6 +28,34 @@ export class DiscordAuthController {
     const authorizationUri = this.discordAuthService.getAuthorizationUrl();
 
     res.redirect(301, authorizationUri);
+  }
+
+  @Get("login-v2")
+  loginV2(
+    @Res() res: FastifyReply,
+    @Session() session: FastifyRequest["session"],
+    @Query("jsonState") jsonState?: string
+  ) {
+    const authStateId = randomUUID();
+
+    const authState: { id: string; path?: string } = {
+      id: authStateId,
+    };
+
+    if (jsonState) {
+      const json = JSON.parse(decodeURIComponent(jsonState));
+      authState.path = json.path;
+    }
+
+    const authStateString = encodeURIComponent(JSON.stringify(authState));
+
+    session.set("authState", authStateString);
+
+    const authorizationUri = this.discordAuthService.getAuthorizationUrl({
+      state: authStateString,
+    });
+
+    res.redirect(303, authorizationUri);
   }
 
   @Get("callback")
@@ -54,6 +83,48 @@ export class DiscordAuthController {
     await this.usersService.initDiscordUser(accessToken.discord.id);
 
     return res.redirect(301, loginRedirectUri);
+  }
+
+  @Get("callback-v2")
+  async discordCallbackV2(
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Session() session: FastifyRequest["session"],
+    @Query("code") code?: string,
+    @Query("error") error?: string,
+    @Query("state") state?: string
+  ) {
+    if (error === "access_denied") {
+      return res.redirect(303, "/");
+    }
+
+    if (!code) {
+      return res.status(400).send("Invalid code");
+    }
+
+    const storedState = session.get("authState");
+    const providedStateEncoded = encodeURIComponent(state || "");
+
+    if (!providedStateEncoded || providedStateEncoded !== storedState) {
+      return res.status(400).send("Invalid state");
+    }
+
+    const {
+      path,
+    }: {
+      id: string;
+      path?: string;
+    } = JSON.parse(decodeURIComponent(providedStateEncoded));
+
+    const accessToken = await this.discordAuthService.createAccessToken(code);
+    session.set("accessToken", accessToken);
+
+    const loginRedirectUri = this.configService.get<string>(
+      "BACKEND_API_LOGIN_REDIRECT_URI"
+    ) as string;
+
+    await this.usersService.initDiscordUser(accessToken.discord.id);
+
+    return res.redirect(303, `${loginRedirectUri}${path || ""}`);
   }
 
   @Get("logout")

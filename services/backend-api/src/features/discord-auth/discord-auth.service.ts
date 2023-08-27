@@ -44,11 +44,13 @@ export class DiscordAuthService {
     ) as string;
   }
 
-  getAuthorizationUrl() {
+  getAuthorizationUrl(options?: { state?: string }) {
     return (
       `${DISCORD_API_BASE_URL}/${DISCORD_AUTH_ENDPOINT}?response_type=code` +
       `&client_id=${this.CLIENT_ID}&scope=${this.OAUTH_SCOPES}&` +
-      `redirect_uri=${this.OAUTH_REDIRECT_URI}&prompt=consent`
+      `redirect_uri=${this.OAUTH_REDIRECT_URI}&prompt=consent${
+        options?.state ? `&state=${options.state}` : ""
+      }`
     );
   }
 

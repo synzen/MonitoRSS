@@ -2,18 +2,18 @@ import { Center, Heading, Stack } from "@chakra-ui/react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Loading } from "@/components";
-import { useAuth } from "../hooks";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { useDiscordAuthStatus } from "../../discordUser";
 
 interface Props {
   children?: React.ReactNode;
 }
 
 export const RequireAuth = ({ children }: Props) => {
-  const { status, error, authenticated } = useAuth();
+  const { data: authStatusData, status: authStatus, error: authError } = useDiscordAuthStatus();
   const { t } = useTranslation();
 
-  if (status === "loading" || status === "idle") {
+  if (authStatus === "loading") {
     return (
       <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
         <Loading size="xl" />
@@ -22,21 +22,26 @@ export const RequireAuth = ({ children }: Props) => {
     );
   }
 
-  if (status === "error") {
+  if (authStatus === "error") {
     return (
       <Center height="100%">
-        <ErrorAlert description={error?.message} withGoBack />
+        <ErrorAlert description={authError?.message} withGoBack />
       </Center>
     );
   }
 
-  if (status === "success" && !authenticated) {
-    window.location.href = "/api/v1/discord/login";
+  if (authStatus === "success" && !authStatusData?.authenticated) {
+    const currentPath = window.location.pathname;
+    const jsonState = JSON.stringify({
+      path: currentPath,
+    });
+
+    window.location.href = `/api/v1/discord/login-v2?jsonState=${encodeURIComponent(jsonState)}`;
 
     return null;
   }
 
-  if (status === "success" && authenticated) {
+  if (authStatus === "success" && authStatusData?.authenticated) {
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <>{children}</>;
   }
