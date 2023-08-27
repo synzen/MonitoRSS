@@ -165,7 +165,7 @@ export class ArticleParserService {
     const article = { ...flattenedArticle };
 
     if (stripRedditCommentLink && typeof article.description === "string") {
-      article["processed::description::strip-links"] = article.description
+      article["processed::description::reddit1"] = article.description
         .replace("[link]", "")
         .replace("[comments]", "");
     }
