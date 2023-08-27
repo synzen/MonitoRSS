@@ -25,6 +25,7 @@ import { FeedConnectionType } from "../types";
 import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
+import { AlertSettings } from "./AlertSettings";
 
 const Pages: React.FC = () => (
   <Routes>
@@ -72,6 +73,16 @@ const Pages: React.FC = () => (
               <Feeds />
             </PageContent>
           </RequireDiscordServers>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path={pages.alerting()}
+      element={
+        <RequireAuth>
+          <PageContentV2 invertBackground>
+            <AlertSettings />
+          </PageContentV2>
         </RequireAuth>
       }
     />

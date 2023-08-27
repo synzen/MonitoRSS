@@ -5,6 +5,8 @@ import {
   GetDiscordBotOutput,
   GetDiscordMeOutput,
   GetDiscordUserOutput,
+  GetUserMeOutput,
+  UpdateUserMeOutput,
 } from "@/features/discordUser";
 import { GetServersOutput } from "../features/discordServers/api/getServer";
 import {
@@ -80,8 +82,17 @@ import mockUserFeedSummary from "./data/userFeedSummary";
 import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 import { UserFeedManagerStatus } from "../constants";
 import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
+import mockUserMe from "./data/userMe";
 
 const handlers = [
+  rest.get("/api/v1/users/@me", (req, res, ctx) => {
+    return res(ctx.delay(500), ctx.json<GetUserMeOutput>({ result: mockUserMe }));
+  }),
+
+  rest.patch("/api/v1/users/@me", (req, res, ctx) => {
+    return res(ctx.delay(500), ctx.json<UpdateUserMeOutput>({ result: mockUserMe }));
+  }),
+
   rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
     res(
       ctx.json<GetDiscordBotOutput>({

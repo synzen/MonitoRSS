@@ -44,10 +44,12 @@ export class DiscordAuthService {
     ) as string;
   }
 
-  getAuthorizationUrl(options?: { state?: string }) {
+  getAuthorizationUrl(options?: { state?: string; additionalScopes?: string }) {
     return (
       `${DISCORD_API_BASE_URL}/${DISCORD_AUTH_ENDPOINT}?response_type=code` +
-      `&client_id=${this.CLIENT_ID}&scope=${this.OAUTH_SCOPES}&` +
+      `&client_id=${this.CLIENT_ID}&scope=${`${this.OAUTH_SCOPES}${
+        options?.additionalScopes || ""
+      }`}&` +
       `redirect_uri=${this.OAUTH_REDIRECT_URI}&prompt=consent${
         options?.state ? `&state=${options.state}` : ""
       }`
@@ -96,7 +98,11 @@ export class DiscordAuthService {
 
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
-    return this.attachExtraDetailsToToken(tokenObject);
+    const { newToken, user } = await this.attachExtraDetailsToToken(
+      tokenObject
+    );
+
+    return { token: newToken, user };
   }
 
   async refreshToken(token: DiscordAuthToken): Promise<SessionAccessToken> {
@@ -135,7 +141,9 @@ export class DiscordAuthService {
 
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
-    return this.attachExtraDetailsToToken(tokenObject);
+    const { newToken } = await this.attachExtraDetailsToToken(tokenObject);
+
+    return newToken;
   }
 
   /**
@@ -225,18 +233,21 @@ export class DiscordAuthService {
    */
   private async attachExtraDetailsToToken(
     tokenObject: DiscordAuthToken
-  ): Promise<SessionAccessToken> {
+  ): Promise<{ newToken: SessionAccessToken; user: DiscordUser }> {
     const user = await this.getUser(tokenObject.access_token);
     const now = new Date();
     // expiresAt must be in seconds to match expire_in
     const expiresAt = Math.round(now.getTime() / 1000) + tokenObject.expires_in;
 
     return {
-      ...tokenObject,
-      expiresAt,
-      discord: {
-        id: user.id,
+      newToken: {
+        ...tokenObject,
+        expiresAt,
+        discord: {
+          id: user.id,
+        },
       },
+      user,
     };
   }
 }

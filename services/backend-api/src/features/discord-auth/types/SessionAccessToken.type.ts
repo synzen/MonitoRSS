@@ -7,5 +7,6 @@ export type SessionAccessToken = DiscordAuthToken & {
   expiresAt: number;
   discord: {
     id: string;
+    email?: string;
   };
 };

@@ -12,6 +12,7 @@ const getConnectionPathByType = (type: FeedConnectionType) => {
 };
 
 export const pages = {
+  alerting: () => "/alerting",
   userFeeds: () => "/feeds",
   userFeed: (feedId: string) => `/feeds/${feedId}`,
   userFeedConnection: (data: {

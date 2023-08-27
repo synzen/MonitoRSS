@@ -1,5 +1,6 @@
 export interface DiscordUser {
   id: string;
+  email?: string;
   username: string;
   discriminator: string;
   // A snowflake of the user avatar
@@ -9,6 +10,7 @@ export interface DiscordUser {
 export type DiscordUserFormatted = DiscordUser & {
   // "avar" field on DiscordUser formatted into a url
   avatarUrl?: string;
+  email?: string;
   maxFeeds: number;
   maxUserFeeds: number;
   supporter?: {

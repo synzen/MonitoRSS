@@ -2,6 +2,7 @@ import { array, InferType, number, object, string } from "yup";
 
 export const DiscordMeUserSchema = object({
   id: string().required(),
+  email: string(),
   username: string().required(),
   iconUrl: string().optional(),
   supporter: object({

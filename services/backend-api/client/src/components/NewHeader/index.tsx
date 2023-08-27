@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
+import { FaBell, FaRightFromBracket } from "react-icons/fa6";
 import { pages } from "../../constants";
 import { LogoutButton } from "../../features/auth";
 
@@ -106,7 +107,16 @@ export const NewHeader = ({ invertBackground }: Props) => {
               />
             </MenuButton>
             <MenuList>
-              <LogoutButton trigger={<MenuItem>{t("components.pageContentV2.logout")}</MenuItem>} />
+              <MenuItem icon={<FaBell />} onClick={() => navigate(pages.alerting())}>
+                Alert Settings
+              </MenuItem>
+              <LogoutButton
+                trigger={
+                  <MenuItem icon={<FaRightFromBracket />}>
+                    {t("components.pageContentV2.logout")}
+                  </MenuItem>
+                }
+              />
             </MenuList>
           </Menu>
         </Flex>

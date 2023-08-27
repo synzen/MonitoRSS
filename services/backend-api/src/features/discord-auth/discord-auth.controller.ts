@@ -34,7 +34,8 @@ export class DiscordAuthController {
   loginV2(
     @Res() res: FastifyReply,
     @Session() session: FastifyRequest["session"],
-    @Query("jsonState") jsonState?: string
+    @Query("jsonState") jsonState?: string,
+    @Query("addScopes") addScopes?: string
   ) {
     const authStateId = randomUUID();
 
@@ -51,8 +52,15 @@ export class DiscordAuthController {
 
     session.set("authState", authStateString);
 
+    let scopes = addScopes?.trim();
+
+    if (scopes) {
+      scopes = ` ${decodeURIComponent(scopes)}`;
+    }
+
     const authorizationUri = this.discordAuthService.getAuthorizationUrl({
       state: authStateString,
+      additionalScopes: scopes,
     });
 
     res.redirect(303, authorizationUri);
@@ -73,14 +81,14 @@ export class DiscordAuthController {
       return "No code provided";
     }
 
-    const accessToken = await this.discordAuthService.createAccessToken(code);
-    session.set("accessToken", accessToken);
+    const { token } = await this.discordAuthService.createAccessToken(code);
+    session.set("accessToken", token);
 
     const loginRedirectUri = this.configService.get<string>(
       "BACKEND_API_LOGIN_REDIRECT_URI"
     ) as string;
 
-    await this.usersService.initDiscordUser(accessToken.discord.id);
+    await this.usersService.initDiscordUser(token.discord.id);
 
     return res.redirect(301, loginRedirectUri);
   }
@@ -115,14 +123,18 @@ export class DiscordAuthController {
       path?: string;
     } = JSON.parse(decodeURIComponent(providedStateEncoded));
 
-    const accessToken = await this.discordAuthService.createAccessToken(code);
-    session.set("accessToken", accessToken);
+    const { token, user } = await this.discordAuthService.createAccessToken(
+      code
+    );
+    session.set("accessToken", token);
 
     const loginRedirectUri = this.configService.get<string>(
       "BACKEND_API_LOGIN_REDIRECT_URI"
     ) as string;
 
-    await this.usersService.initDiscordUser(accessToken.discord.id);
+    await this.usersService.initDiscordUser(token.discord.id, {
+      email: user.email,
+    });
 
     return res.redirect(303, `${loginRedirectUri}${path || ""}`);
   }

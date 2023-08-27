@@ -2,6 +2,7 @@ import { DiscordMeUser } from "@/features/discordUser";
 
 const mockDiscordUserMe: DiscordMeUser = {
   id: "1",
+  email: "email@email.com",
   username: "My name".padEnd(1000, "nasd"),
   iconUrl: undefined,
   maxFeeds: 10,
