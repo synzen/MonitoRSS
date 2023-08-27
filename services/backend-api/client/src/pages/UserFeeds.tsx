@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeftIcon } from "@chakra-ui/icons";
 import { useCallback, useContext } from "react";
 import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
-import { useDiscordUserMe } from "../features/discordUser";
+import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import {
   FeedManagementInvitesDialog,
   UserFeedComputedStatus,
@@ -36,6 +36,7 @@ export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: discordUserMe } = useDiscordUserMe();
+  const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
     offset: 0,
@@ -66,6 +67,9 @@ export const UserFeeds: React.FC = () => {
     }
   }, [statusFilters, setStatusFilters]);
 
+  const hasFailedFeedAlertsDisabled =
+    userMeData && !userMeData.result?.preferences?.alertOnDisabledFeeds;
+
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
       <BoxConstrained.Container paddingTop={6} spacing={6} height="100%">
@@ -79,17 +83,30 @@ export const UserFeeds: React.FC = () => {
             userFeedsRequireAttentionResults.total > 0 && (
               <Alert status="warning">
                 <AlertIcon />
-                <AlertTitle>
-                  {userFeedsRequireAttentionResults.total} feed
-                  {userFeedsRequireAttentionResults.total > 1 ? "s" : ""} require
-                  {userFeedsRequireAttentionResults.total > 1 ? "" : "s"} your attention!
-                </AlertTitle>
-                <AlertDescription>
-                  Article delivery may be fully or partially paused.{" "}
-                  <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
-                    Apply filters to see which ones they are.
-                  </ChakraLink>
-                </AlertDescription>
+                <Box>
+                  <AlertTitle>
+                    {userFeedsRequireAttentionResults.total} feed
+                    {userFeedsRequireAttentionResults.total > 1 ? "s" : ""} require
+                    {userFeedsRequireAttentionResults.total > 1 ? "" : "s"} your attention!
+                  </AlertTitle>
+                  <AlertDescription>
+                    Article delivery may be fully or partially paused.{" "}
+                    <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
+                      Apply filters to see which ones they are.
+                    </ChakraLink>
+                    .
+                    {hasFailedFeedAlertsDisabled && (
+                      <>
+                        {" "}
+                        You can also{" "}
+                        <ChakraLink as={Link} to={pages.alerting()} color="blue.300">
+                          get notified when failures occur
+                        </ChakraLink>
+                        .
+                      </>
+                    )}
+                  </AlertDescription>
+                </Box>
               </Alert>
             )}
           {managementInvitesCount?.total && (
