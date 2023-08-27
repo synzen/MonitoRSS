@@ -227,7 +227,7 @@ export class NotificationsService {
       feedUrlLink: feed.url,
       controlPanelUrl: `https://my.monitorss.xyz/feeds/${feed._id}${
         connectionPrefix ? `/${connectionPrefix}/${connection.id}` : ""
-      }}`,
+      }`,
       reason: reason?.reason || data.disabledCode,
       actionRequired: reason?.action,
       connectionName: connectionName,
