@@ -16,6 +16,7 @@ import { ArticleParserService } from "../article-parser/article-parser.service";
 import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-options.type";
 import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
+import { PostProcessParserRule } from "../article-parser/constants";
 
 @Injectable()
 export class ArticlesService {
@@ -40,6 +41,7 @@ export class ArticlesService {
       formatOptions,
       dateChecks,
       debug,
+      useParserRules,
     }: {
       id: string;
       blockingComparisons: string[];
@@ -47,10 +49,12 @@ export class ArticlesService {
       formatOptions: UserFeedFormatOptions;
       dateChecks?: UserFeedDateCheckOptions;
       debug?: boolean;
+      useParserRules: PostProcessParserRule[] | undefined;
     }
   ) {
     const { articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions,
+      useParserRules,
     });
 
     logger.debug(`Found articles:`, {
@@ -417,6 +421,7 @@ export class ArticlesService {
     options: {
       timeout?: number;
       formatOptions: UserFeedFormatOptions;
+      useParserRules: PostProcessParserRule[] | undefined;
     }
   ): Promise<{
     articles: Article[];
@@ -466,7 +471,10 @@ export class ArticlesService {
         const mappedArticles: Article[] = rawArticles.map((rawArticle) => {
           const { flattened } = this.articleParserService.flatten(
             rawArticle as never,
-            options.formatOptions
+            {
+              formatOptions: options.formatOptions,
+              useParserRules: options.useParserRules,
+            }
           );
 
           return {

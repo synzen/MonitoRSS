@@ -190,7 +190,7 @@ export class ArticleFormatterService {
     }
 
     return {
-      value: convert(value, htmlToTextOptions),
+      value: convert(value, htmlToTextOptions).trim(),
     };
   }
 

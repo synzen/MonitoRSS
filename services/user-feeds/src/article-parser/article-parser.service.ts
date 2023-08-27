@@ -7,6 +7,7 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { parse, valid } from "node-html-parser";
 import advancedFormat from "dayjs/plugin/advancedFormat";
+import { PostProcessParserRule } from "./constants";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
@@ -18,7 +19,13 @@ type FlattenedArticleWithoutId = Omit<Article["flattened"], "id">;
 export class ArticleParserService {
   flatten(
     input: Record<string, unknown>,
-    formatOptions?: UserFeedFormatOptions
+    {
+      useParserRules,
+      formatOptions,
+    }: {
+      formatOptions?: UserFeedFormatOptions;
+      useParserRules: PostProcessParserRule[] | undefined;
+    }
   ): {
     flattened: FlattenedArticleWithoutId;
   } {
@@ -108,7 +115,7 @@ export class ArticleParserService {
     }
 
     return {
-      flattened: newRecord,
+      flattened: this.runPostProcessRules(newRecord, useParserRules),
     };
   }
 
@@ -141,5 +148,27 @@ export class ArticleParserService {
       images,
       anchors,
     };
+  }
+
+  runPostProcessRules(
+    flattenedArticle: FlattenedArticleWithoutId,
+    rules?: PostProcessParserRule[]
+  ): FlattenedArticleWithoutId {
+    if (!rules?.length) {
+      return flattenedArticle;
+    }
+
+    const stripRedditCommentLink = rules.includes(
+      PostProcessParserRule.RedditCommentLink
+    );
+
+    const article = { ...flattenedArticle };
+
+    if (stripRedditCommentLink && typeof article.description === "string") {
+      article["processed::description::stripped-tail-anchors"] =
+        article.description.replace("[link]", "").replace("[comments]", "");
+    }
+
+    return article;
   }
 }

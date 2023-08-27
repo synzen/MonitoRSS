@@ -26,6 +26,7 @@ import { lastValueFrom, Observable } from "rxjs";
 import logger from "../shared/utils/logger";
 import { Metadata } from "@grpc/grpc-js";
 import tracer from "../tracer";
+import { getParserRules } from "../feed-event-handler/utils";
 
 interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
@@ -162,6 +163,7 @@ export class FeedFetcherService implements OnModuleInit {
 
     return this.articlesService.getArticlesFromXml(response.body, {
       formatOptions,
+      useParserRules: getParserRules({ url }),
     });
   }
 

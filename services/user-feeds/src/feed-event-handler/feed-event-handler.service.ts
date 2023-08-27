@@ -32,6 +32,7 @@ import { InvalidFeedException } from "../articles/exceptions";
 import pRetry from "p-retry";
 import tracer from "dd-trace";
 import { ResponseHashService } from "../response-hash/response-hash.service";
+import { getParserRules } from "./utils";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -340,6 +341,7 @@ export class FeedEventHandlerService {
                 },
                 dateChecks: event.data.feed.dateChecks,
                 debug: event.debug,
+                useParserRules: getParserRules({ url: event.data.feed.url }),
               }
             );
           }
