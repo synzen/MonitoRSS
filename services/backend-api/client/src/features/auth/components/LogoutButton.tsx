@@ -16,7 +16,7 @@ export const LogoutButton = ({ trigger }: Props) => {
     try {
       setLoggingOut(true);
       await getLogout();
-      window.location.href = "/";
+      window.location.assign("https://monitorss.xyz");
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     } finally {
