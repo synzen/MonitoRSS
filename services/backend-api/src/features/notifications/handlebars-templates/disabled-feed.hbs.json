@@ -4,5 +4,6 @@
   "controlPanelUrl": "https://my.monitorss.xyz",
   "reason": "hello world",
   "connectionName": "#logs",
-  "manageNotificationsUrl": "https://my.monitorss.xyz"
+  "manageNotificationsUrl": "https://my.monitorss.xyz",
+  "actionRequired": "to do"
 }

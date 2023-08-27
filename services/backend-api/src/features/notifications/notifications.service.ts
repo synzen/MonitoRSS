@@ -15,6 +15,8 @@ import {
 import fs from "fs";
 import { join } from "path";
 import Handlebars from "handlebars";
+import { UserFeedDisabledCode } from "../user-feeds/types";
+import { FeedConnectionDisabledCode } from "../feeds/constants";
 
 const disabledFeedHandlebarsText = fs.readFileSync(
   join(__dirname, "handlebars-templates", "disabled-feed.hbs"),
@@ -22,6 +24,58 @@ const disabledFeedHandlebarsText = fs.readFileSync(
 );
 
 const disabledFeedTemplate = Handlebars.compile(disabledFeedHandlebarsText);
+
+const USER_FEED_DISABLED_REASONS: Partial<
+  Record<UserFeedDisabledCode, { reason: string; action: string }>
+> = {
+  [UserFeedDisabledCode.ExceededFeedLimit]: {
+    reason: "Exceeded feed limit",
+    action:
+      "Remove some feeds or become a supporter to get an increased feed limit.",
+  },
+  [UserFeedDisabledCode.FailedRequests]: {
+    reason: "Too many failed attempts to fetch feed",
+    action:
+      "Check that the feed is still valid by using online validators or by clicking the feed link." +
+      " If it is valid, try re-enabling it in the control panel.",
+  },
+  [UserFeedDisabledCode.FeedTooLarge]: {
+    reason: "Too large to be processed",
+    action:
+      "Consider an alternative feed with fewer articles. If you are the feed owner, consider reducing the number of items in the feed." +
+      " If you believe this is a mistake, please contact support.",
+  },
+  [UserFeedDisabledCode.InvalidFeed]: {
+    reason: "Not a valid RSS XML feed",
+    action:
+      "Check that the feed is still valid by using online validators or by clicking the feed link." +
+      " If it is valid, try re-enabling it in the control panel.",
+  },
+};
+
+const USER_FEED_CONNECTION_DISABLED_REASONS: Partial<
+  Record<FeedConnectionDisabledCode, { reason: string; action: string }>
+> = {
+  [FeedConnectionDisabledCode.BadFormat]: {
+    reason: "Message payload was rejected due to malformed input",
+    action:
+      "Change your message customization settings to make sure it generally works by sending test articles" +
+      ", specifically the latest articles on the feed.",
+  },
+  [FeedConnectionDisabledCode.MissingMedium]: {
+    reason: "The channel with the service provider is missing",
+    action: "Re-target the feed connection to a working channel.",
+  },
+  [FeedConnectionDisabledCode.MissingPermissions]: {
+    reason: "Service provider rejected message due to lack of permissions",
+    action:
+      "Ensure the bot has all required permissions to deliver articles to the service provider.",
+  },
+  [FeedConnectionDisabledCode.Unknown]: {
+    reason: "Unknown error",
+    action: "Contact support.",
+  },
+};
 
 @Injectable()
 export class NotificationsService {
@@ -36,7 +90,7 @@ export class NotificationsService {
 
   async sendDisabledFeedsAlert(
     feedIds: Types.ObjectId[],
-    data: { reason: string }
+    data: { disabledCode: UserFeedDisabledCode }
   ) {
     const feeds = await this.userFeedModel
       .find({
@@ -69,11 +123,27 @@ export class NotificationsService {
             return;
           }
 
+          const reason = USER_FEED_DISABLED_REASONS[data.disabledCode];
+
+          let feedName = feed.title;
+
+          if (feedName.length > 50) {
+            feedName = feedName.slice(0, 50) + "...";
+          }
+
+          let feedUrl = feed.url;
+
+          if (feedUrl.length > 50) {
+            feedUrl = feedUrl.slice(0, 50) + "...";
+          }
+
           const templateData = {
-            feedName: feed.title,
-            feedUrl: feed.url,
+            feedName,
+            feedUrlDisplay: feedUrl,
+            feedUrlLink: feed.url,
             controlPanelUrl: `https://my.monitorss.xyz`,
-            reason: data.reason,
+            reason: reason?.reason || data.disabledCode,
+            actionRequired: reason?.action,
             manageNotificationsUrl: "https://my.monitorss.xyz",
           };
 
@@ -98,7 +168,7 @@ export class NotificationsService {
   async sendDisabledFeedConnectionAlert(
     feed: UserFeed,
     connection: DiscordChannelConnection | DiscordWebhookConnection,
-    data: { reason: string }
+    data: { disabledCode: FeedConnectionDisabledCode }
   ) {
     const discordUserIdsToAlert = [
       ...(feed.shareManageOptions?.invites
@@ -119,12 +189,34 @@ export class NotificationsService {
       return;
     }
 
+    const reason = USER_FEED_CONNECTION_DISABLED_REASONS[data.disabledCode];
+
+    let feedName = feed.title;
+
+    if (feedName.length > 50) {
+      feedName = feedName.slice(0, 50) + "...";
+    }
+
+    let feedUrl = feed.url;
+
+    if (feedUrl.length > 50) {
+      feedUrl = feedUrl.slice(0, 50) + "...";
+    }
+
+    let connectionName = connection.name;
+
+    if (connectionName.length > 50) {
+      connectionName = connectionName.slice(0, 50) + "...";
+    }
+
     const templateData = {
-      feedName: feed.title,
-      feedUrl: feed.url,
+      feedName: feedName,
+      feedUrlDisplay: feedUrl,
+      feedUrlLink: feed.url,
       controlPanelUrl: `https://my.monitorss.xyz`,
-      reason: data.reason,
-      connectionName: connection.name,
+      reason: reason?.reason || data.disabledCode,
+      actionRequired: reason?.action,
+      connectionName: connectionName,
       manageNotificationsUrl: "https://my.monitorss.xyz",
     };
 

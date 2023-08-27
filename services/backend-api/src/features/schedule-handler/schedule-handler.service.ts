@@ -183,7 +183,7 @@ export class ScheduleHandlerService {
 
     try {
       await this.notificationsService.sendDisabledFeedsAlert(relevantFeedIds, {
-        reason: UserFeedDisabledCode.FailedRequests,
+        disabledCode: UserFeedDisabledCode.FailedRequests,
       });
     } catch (err) {
       logger.error(`Failed to send disabled feeds alert`, {
@@ -241,7 +241,7 @@ export class ScheduleHandlerService {
         `Preparing to send disabled feeds alert to ${foundFeed._id} for reason ${disabledCode}`
       );
       await this.notificationsService.sendDisabledFeedsAlert([foundFeed._id], {
-        reason: disabledCode,
+        disabledCode,
       });
     } catch (err) {
       logger.error(`Failed to send disabled feeds alert`, {
@@ -323,7 +323,7 @@ export class ScheduleHandlerService {
             foundFeed,
             connection,
             {
-              reason: disableCode,
+              disabledCode: disableCode,
             }
           );
         } catch (err) {
