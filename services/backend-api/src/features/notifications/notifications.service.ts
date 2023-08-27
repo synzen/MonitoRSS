@@ -141,10 +141,10 @@ export class NotificationsService {
             feedName,
             feedUrlDisplay: feedUrl,
             feedUrlLink: feed.url,
-            controlPanelUrl: `https://my.monitorss.xyz`,
+            controlPanelUrl: `https://my.monitorss.xyz/feeds/${feed._id}`,
             reason: reason?.reason || data.disabledCode,
             actionRequired: reason?.action,
-            manageNotificationsUrl: "https://my.monitorss.xyz",
+            manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
           };
 
           return await this.smtpTransport?.sendMail({
@@ -209,15 +209,29 @@ export class NotificationsService {
       connectionName = connectionName.slice(0, 50) + "...";
     }
 
+    let connectionPrefix = "";
+
+    if (
+      feed.connections.discordChannels.find((c) => c.id.equals(connection.id))
+    ) {
+      connectionPrefix = "discord-channel-connections";
+    } else if (
+      feed.connections.discordWebhooks.find((c) => c.id.equals(connection.id))
+    ) {
+      connectionPrefix = "discord-webhook-connections";
+    }
+
     const templateData = {
       feedName: feedName,
       feedUrlDisplay: feedUrl,
       feedUrlLink: feed.url,
-      controlPanelUrl: `https://my.monitorss.xyz`,
+      controlPanelUrl: `https://my.monitorss.xyz/feeds/${feed._id}${
+        connectionPrefix ? `/${connectionPrefix}/${connection.id}` : ""
+      }}`,
       reason: reason?.reason || data.disabledCode,
       actionRequired: reason?.action,
       connectionName: connectionName,
-      manageNotificationsUrl: "https://my.monitorss.xyz",
+      manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
     };
 
     return await this.smtpTransport?.sendMail({

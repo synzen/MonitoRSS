@@ -8,7 +8,7 @@ import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import { disableFeed, sendAlert } from './send-failure-notification'
+import { disableFeed } from './send-failure-notification'
 import { BAD_FORMAT } from './constants/feedDisableReasons'
 import { AmqpChannel } from './constants/amqpChannels'
 
@@ -182,14 +182,6 @@ setup().then(async (initializedData) => {
 
         if (result.status === 400) {
           await disableFeed(orm, job.meta.feedId, BAD_FORMAT)
-          const userFormattedMessage = BAD_FORMAT + ` (URL ${job.meta.feedURL} in channel <#${job.meta.channel}>)`
-          await sendAlert({
-            orm,
-            producer,
-            channelId: job.meta.channel,
-            errorMessage: userFormattedMessage,
-            guildId: job.meta.guildId
-          })
         }
       }
     } catch (err) {
