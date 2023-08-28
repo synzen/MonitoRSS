@@ -149,7 +149,11 @@ export async function processLegacyFeedBulkConversionJobs({
       err instanceof DiscordAPIError &&
       (err.statusCode === 403 || err.statusCode === 401)
     ) {
-      publicReason = `Bot is missing permissions. If this feed uses a webhook, ensure the bot has Manage Webhooks permission. If this feed uses a text channel, ensure the bot has permissions to view the channel.`;
+      if (legacyFeed.webhook) {
+        publicReason = `Bot is missing permissions. Ensure the bot has Manage Webhooks permission.`;
+      } else {
+        publicReason = `Bot is missing permissions. Ensure the bot has permissions to view the channel.`;
+      }
     }
 
     await legacyFeedConversionJobModel.updateOne(

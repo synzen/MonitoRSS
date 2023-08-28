@@ -21,7 +21,13 @@ const GetServerLegacyFeedBulkConversionOutputSchema = object({
     }).required()
   ).required(),
   status: string()
-    .oneOf(["NOT_STARTED", "COMPLETED", "IN_PROGRESS", "PARTIALLY_COMPLETED"])
+    .oneOf([
+      "NOT_STARTED",
+      "COMPLETED",
+      "IN_PROGRESS",
+      "PARTIALLY_COMPLETED",
+      "COMPLETED_WITH_FAILED",
+    ])
     .required(),
 }).required();
 

@@ -324,7 +324,9 @@ export class LegacyFeedConversionService {
     if (hasNotStarted) {
       status = "NOT_STARTED";
     } else if (hasCompleted) {
-      if (someUnconverted) {
+      if (failed > 0) {
+        status = "COMPLETED_WITH_FAILED";
+      } else if (someUnconverted) {
         status = "PARTIALLY_COMPLETED"; // some user feeds were restored to legacy feeds
       } else {
         status = "COMPLETED";

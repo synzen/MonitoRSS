@@ -280,7 +280,8 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
               )}
             {legacyConversionData &&
               (legacyConversionData.status === "IN_PROGRESS" ||
-                legacyConversionData.status === "COMPLETED") && (
+                legacyConversionData.status === "COMPLETED" ||
+                legacyConversionData.status === "COMPLETED_WITH_FAILED") && (
                 <BulkLegacyFeedConversionDialog
                   trigger={
                     <Button display="block" width="min-content" variant="outline">

@@ -161,7 +161,7 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
                             <Th>Status</Th>
                             <Th>Title</Th>
                             <Th>Url</Th>
-                            <Th>Reason</Th>
+                            <Th maxWidth="300px">Reason</Th>
                           </Tr>
                         </Thead>
                         <Tbody>
@@ -171,12 +171,7 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
                                 <WarningIcon color="red.300" />
                               </Td>
                               <Td>{feed.title}</Td>
-                              <Td
-                                maxWidth="300px"
-                                overflow="hidden"
-                                textOverflow="ellipsis"
-                                whiteSpace="nowrap"
-                              >
+                              <Td overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                                 <Link
                                   color="blue.300"
                                   href={feed.url}
@@ -186,7 +181,7 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
                                   {feed.url}
                                 </Link>
                               </Td>
-                              <Td>{feed.failReasonPublic || ""}</Td>
+                              <Td whiteSpace="normal">{feed.failReasonPublic || ""}</Td>
                             </Tr>
                           ))}
                         </Tbody>
