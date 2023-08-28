@@ -25,7 +25,7 @@ export const RequireAuth = ({ children }: Props) => {
   if (authStatus === "error") {
     return (
       <Center height="100%">
-        <ErrorAlert description={authError?.message} withGoBack />
+        <ErrorAlert description={authError?.message} />
       </Center>
     );
   }

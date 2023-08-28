@@ -96,7 +96,8 @@ export class DiscordUsersController {
     } catch (err) {
       if (
         err instanceof DiscordAPIError &&
-        err.statusCode === HttpStatus.FORBIDDEN
+        (err.statusCode === HttpStatus.FORBIDDEN ||
+          err.statusCode === HttpStatus.UNAUTHORIZED)
       ) {
         return {
           authenticated: false,

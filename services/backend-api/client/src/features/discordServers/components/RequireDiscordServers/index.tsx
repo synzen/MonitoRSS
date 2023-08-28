@@ -24,7 +24,7 @@ export const RequireDiscordServers = ({ children }: Props) => {
   if (status === "error") {
     return (
       <Center height="100%">
-        <ErrorAlert description={error?.message} withGoBack />
+        <ErrorAlert description={error?.message} />
       </Center>
     );
   }

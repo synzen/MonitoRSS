@@ -1,16 +1,13 @@
-import { ChevronLeftIcon, WarningTwoIcon } from "@chakra-ui/icons";
-import { Button, Code, Divider, Heading, Stack, Text } from "@chakra-ui/react";
+import { WarningTwoIcon } from "@chakra-ui/icons";
+import { Code, Divider, Heading, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
 interface Props {
   description?: string;
-  withGoBack?: boolean;
 }
 
-export const ErrorAlert: React.FC<Props> = ({ description, withGoBack }) => {
+export const ErrorAlert: React.FC<Props> = ({ description }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   return (
     <Stack
@@ -28,16 +25,6 @@ export const ErrorAlert: React.FC<Props> = ({ description, withGoBack }) => {
         <WarningTwoIcon fontSize="8rem" color="red.500" />
         <Heading>{t("common.errors.somethingWentWrong")}</Heading>
         <Text fontSize="lg">{t("common.errors.tryAgainLater")}</Text>
-        {withGoBack && (
-          <>
-            <br />
-            <br />
-            <br />
-            <Button onClick={() => navigate("/")} leftIcon={<ChevronLeftIcon />}>
-              {t("common.errors.goBack")}
-            </Button>
-          </>
-        )}
       </Stack>
       {description && (
         <>
