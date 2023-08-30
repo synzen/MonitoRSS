@@ -47,7 +47,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "dayjs": "^1.11.1",
-    "mongoose": "^6.6.0",
+    "mongoose": "^6.12.0",
     "node-fetch": "^2.6.7",
     "pg": "^8.7.3",
     "qs": "^6.11.2",
