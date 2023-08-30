@@ -404,6 +404,8 @@ export class ScheduleHandlerService {
           formatter: {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,
+            disableImageLinkPreviews:
+              con.details.formatter?.disableImageLinkPreviews,
           },
           splitOptions: con.splitOptions?.isEnabled
             ? con.splitOptions
@@ -434,6 +436,8 @@ export class ScheduleHandlerService {
           formatter: {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,
+            disableImageLinkPreviews:
+              con.details.formatter?.disableImageLinkPreviews,
           },
           splitOptions: con.splitOptions?.isEnabled
             ? con.splitOptions
