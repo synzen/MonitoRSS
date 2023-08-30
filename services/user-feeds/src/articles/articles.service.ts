@@ -63,7 +63,10 @@ export class ArticlesService {
 
     if (debug) {
       logger.datadog(`Debug feed ${id}: found articles`, {
-        articles: articles.map((a) => a.flattened.title),
+        articles: articles.map((a) => ({
+          id: a.flattened.id,
+          title: a.flattened.title,
+        })),
         level: "debug",
       });
     }
@@ -88,7 +91,10 @@ export class ArticlesService {
       logger.datadog(
         `Debug feed ${id}: ${newArticles.length} new articles determined`,
         {
-          articles: newArticles.map((a) => a.flattened.title),
+          articles: newArticles.map((a) => ({
+            id: a.flattened.id,
+            title: a.flattened.title,
+          })),
         }
       );
     }
@@ -161,7 +167,10 @@ export class ArticlesService {
       logger.datadog(
         `Debug feed ${id}: ${articlesPostDateCheck.length} articles after date checks`,
         {
-          articles: newArticles.map((a) => a.flattened.title),
+          articles: newArticles.map((a) => ({
+            id: a.flattened.id,
+            title: a.flattened.title,
+          })),
         }
       );
     }
