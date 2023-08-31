@@ -28,10 +28,14 @@ import {
   AlertDescription,
   MenuDivider,
   Wrap,
+  AlertTitle,
+  Box,
+  AlertIcon,
+  Tooltip,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeftIcon, ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { AddIcon, ArrowLeftIcon, ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -213,6 +217,32 @@ export const UserFeed: React.FC = () => {
     }
   };
 
+  const addConnectionButtons = (
+    <Flex gap={4} flexWrap="wrap">
+      <Button
+        variant="outline"
+        onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
+        leftIcon={<AddIcon fontSize="sm" />}
+      >
+        Add Discord channel
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => onAddConnection(FeedConnectionType.DiscordChannel, true)}
+        leftIcon={<AddIcon fontSize="sm" />}
+      >
+        Add Discord thread
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
+        leftIcon={<AddIcon fontSize="sm" />}
+      >
+        Add Discord webhook
+      </Button>
+    </Flex>
+  );
+
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <AddConnectionDialog
@@ -257,9 +287,18 @@ export const UserFeed: React.FC = () => {
                   <Stack flex={1}>
                     <HStack alignItems="flex-start" justifyContent="space-between">
                       <Stack>
-                        <Heading size="lg" marginRight={4}>
-                          {feed?.title}
-                        </Heading>
+                        <Flex alignItems="center" gap={0}>
+                          <Heading size="lg" marginRight={4}>
+                            {feed?.title}
+                          </Heading>
+                          <Tooltip
+                            isDisabled={!feed?.sharedAccessDetails?.inviteId}
+                            label={`This feed is shared with you by someone else, and currently counts towards your feed
+                            limit. You can remove your access through the Actions dropdown.`}
+                          >
+                            <Badge>Shared</Badge>
+                          </Tooltip>
+                        </Flex>
                         <Link
                           color="gray.400"
                           _hover={{
@@ -389,14 +428,6 @@ export const UserFeed: React.FC = () => {
                     </HStack>
                   </Stack>
                 </Stack>
-                {feed?.sharedAccessDetails?.inviteId && (
-                  <Alert borderRadius="md">
-                    <AlertDescription>
-                      This feed is shared with by someone else currently counts towards your feed
-                      limit. You can remove your access through the Actions dropdown.
-                    </AlertDescription>
-                  </Alert>
-                )}
                 <UserFeedDisabledAlert feedId={feedId} />
               </Stack>
               <Grid
@@ -494,102 +525,143 @@ export const UserFeed: React.FC = () => {
                       <Heading size="md" as="h3">
                         {t("pages.userFeeds.tabConnections")}
                       </Heading>
-                      <Menu>
+                      <Menu placement="bottom-end">
                         <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
                           {t("pages.feed.addConnectionButtonText")}
                         </MenuButton>
-                        <MenuList>
+                        <MenuList maxWidth="300px">
                           <MenuItem
                             onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
                           >
-                            {t("pages.feed.discordChannelMenuItem")}
+                            <Stack spacing={1}>
+                              <Text>{t("pages.feed.discordChannelMenuItem")}</Text>
+                              <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
+                                Send articles as messages authored by the bot to a Discord channel,
+                                or as a thread in a forum channel.
+                              </Text>
+                            </Stack>
                           </MenuItem>
                           <MenuItem
                             onClick={() => onAddConnection(FeedConnectionType.DiscordChannel, true)}
                           >
-                            {t("pages.feed.discordThreadMenuItem")}
+                            <Stack spacing={1}>
+                              <Text>{t("pages.feed.discordThreadMenuItem")}</Text>
+                              <Text fontSize={13} color="whiteAlpha.600">
+                                Send articles authored by the bot as a message to an existing
+                                thread.
+                              </Text>
+                            </Stack>
                           </MenuItem>
                           <MenuItem
                             onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
                           >
-                            {t("pages.feed.discordWebhookMenuItem")}
+                            <Stack spacing={1}>
+                              <Text>{t("pages.feed.discordWebhookMenuItem")}</Text>
+                              <Text fontSize={13} color="whiteAlpha.600">
+                                Send articles authored by a webhook with a custom name and avatar as
+                                a message to a Discord channel
+                              </Text>
+                            </Stack>
                           </MenuItem>
                         </MenuList>
                       </Menu>
                     </Flex>
                     <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                   </Stack>
-                  <Stack spacing={2} mb={4}>
-                    {feed?.connections?.map((connection) => {
-                      const isError = DISABLED_CODES_FOR_ERROR.includes(
-                        connection.disabledCode as FeedConnectionDisabledCode
-                      );
-
-                      return (
-                        <Link
-                          key={connection.id}
-                          as={RouterLink}
-                          to={pages.userFeedConnection({
-                            feedId: feedId as string,
-                            connectionType: connection.key,
-                            connectionId: connection.id,
-                          })}
-                          border={`solid 2px ${
-                            isError ? getChakraColor("red.300") : "transparent"
-                          }`}
-                          borderRadius="md"
-                          textDecoration="none"
-                          _hover={{
-                            textDecoration: "none",
-                            color: "blue.300",
-                            border: `solid 2px ${getChakraColor("blue.300")}`,
-                            borderRadius: "md",
-                          }}
-                          boxShadow="lg"
-                        >
-                          <Flex
-                            background="gray.700"
-                            paddingX={8}
-                            paddingY={4}
-                            borderRadius="md"
-                            alignItems="center"
-                            justifyContent="space-between"
-                          >
-                            <Stack spacing="1">
-                              <HStack>
-                                <Text color="gray.500" fontSize="sm">
-                                  {getPrettyConnectionName(connection as never)}
-                                </Text>
-                                {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
-                                  <Badge fontSize="x-small" colorScheme="blue">
-                                    Disabled
-                                  </Badge>
-                                )}
-                                {isError && (
-                                  <Badge fontSize="x-small" colorScheme="red">
-                                    Error
-                                  </Badge>
-                                )}
-                              </HStack>
-                              <Stack spacing="0">
-                                <HStack alignItems="flex-end">
-                                  <Text fontWeight={600}>{connection.name}</Text>
-                                </HStack>
-                              </Stack>
+                  {feed && !feed.connections.length && (
+                    <Stack>
+                      <Alert status="warning">
+                        <AlertIcon />
+                        <Box>
+                          <AlertTitle>You have no connections set up!</AlertTitle>
+                          <AlertDescription>
+                            <Stack>
+                              <Text>
+                                You&apos;ll need to set up at least one connection to tell the bot
+                                where to send new articles!
+                              </Text>
+                              {addConnectionButtons}
                             </Stack>
-                            <Icon
-                              as={ChevronRightIcon}
-                              alignSelf="flex-end"
-                              fontSize="xx-large"
-                              style={{
-                                alignSelf: "center",
-                              }}
-                            />
-                          </Flex>
-                        </Link>
-                      );
-                    })}
-                  </Stack>
+                          </AlertDescription>
+                        </Box>
+                      </Alert>
+                    </Stack>
+                  )}
+                  {feed?.connections.length && (
+                    <Stack spacing={2} mb={4}>
+                      {feed?.connections?.map((connection) => {
+                        const isError = DISABLED_CODES_FOR_ERROR.includes(
+                          connection.disabledCode as FeedConnectionDisabledCode
+                        );
+
+                        return (
+                          <Link
+                            key={connection.id}
+                            as={RouterLink}
+                            to={pages.userFeedConnection({
+                              feedId: feedId as string,
+                              connectionType: connection.key,
+                              connectionId: connection.id,
+                            })}
+                            border={`solid 2px ${
+                              isError ? getChakraColor("red.300") : "transparent"
+                            }`}
+                            borderRadius="md"
+                            textDecoration="none"
+                            _hover={{
+                              textDecoration: "none",
+                              color: "blue.300",
+                              border: `solid 2px ${getChakraColor("blue.300")}`,
+                              borderRadius: "md",
+                            }}
+                            boxShadow="lg"
+                          >
+                            <Flex
+                              background="gray.700"
+                              paddingX={8}
+                              paddingY={4}
+                              borderRadius="md"
+                              alignItems="center"
+                              justifyContent="space-between"
+                            >
+                              <Stack spacing="1">
+                                <HStack>
+                                  <Text color="gray.500" fontSize="sm">
+                                    {getPrettyConnectionName(connection as never)}
+                                  </Text>
+                                  {connection.disabledCode ===
+                                    FeedConnectionDisabledCode.Manual && (
+                                    <Badge fontSize="x-small" colorScheme="blue">
+                                      Disabled
+                                    </Badge>
+                                  )}
+                                  {isError && (
+                                    <Badge fontSize="x-small" colorScheme="red">
+                                      Error
+                                    </Badge>
+                                  )}
+                                </HStack>
+                                <Stack spacing="0">
+                                  <HStack alignItems="flex-end">
+                                    <Text fontWeight={600}>{connection.name}</Text>
+                                  </HStack>
+                                </Stack>
+                              </Stack>
+                              <Icon
+                                as={ChevronRightIcon}
+                                alignSelf="flex-end"
+                                fontSize="xx-large"
+                                style={{
+                                  alignSelf: "center",
+                                }}
+                              />
+                            </Flex>
+                          </Link>
+                        );
+                      })}
+                      {addConnectionButtons}
+                    </Stack>
+                  )}
                 </Stack>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

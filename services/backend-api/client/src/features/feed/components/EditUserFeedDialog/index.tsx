@@ -66,7 +66,12 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   }, [isOpen]);
 
   return (
-    <Modal finalFocusRef={onCloseRef} isOpen={isOpen} onClose={onClose}>
+    <Modal
+      finalFocusRef={onCloseRef}
+      isOpen={isOpen}
+      onClose={onClose}
+      initialFocusRef={initialFocusRef}
+    >
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>{t("features.feed.components.updateUserFeedDialog.title")}</ModalHeader>

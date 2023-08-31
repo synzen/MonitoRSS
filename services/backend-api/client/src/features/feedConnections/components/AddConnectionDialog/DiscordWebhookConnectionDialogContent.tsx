@@ -25,7 +25,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import RouteParams from "../../../../types/RouteParams";
 import { ThemedSelect } from "@/components";
 import { useDiscordWebhooks } from "../../../discordWebhooks";
@@ -80,6 +80,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
     serverId,
     isWebhooksEnabled: !!discordUser?.supporter,
   });
+  const initialFocusRef = useRef<any>(null);
 
   const { mutateAsync } = useCreateDiscordWebhookConnection();
 
@@ -111,7 +112,12 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
   const isLoading = feedStatus === "loading" || discordWebhooksFetchStatus === "fetching";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} closeOnOverlayClick={!isSubmitting}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnOverlayClick={!isSubmitting}
+      initialFocusRef={initialFocusRef}
+    >
       <ModalOverlay />
       <form onSubmit={handleSubmit(onSubmit)}>
         <ModalContent>
@@ -120,164 +126,173 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {webhooksDisabled && (
-              <Text color="orange.500">{t("common.errors.supporterRequiredAccessV2")}</Text>
-            )}
-            {!webhooksDisabled && (
-              <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.serverId}>
-                  <FormLabel>
-                    {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
+            <Stack spacing={4}>
+              <Text>
+                Send articles authored by a webhook with a custom name and avatar as a message to a
+                Discord channel.
+              </Text>
+              {webhooksDisabled && (
+                <Text color="orange.500">{t("common.errors.supporterRequiredAccessV2")}</Text>
+              )}
+              {!webhooksDisabled && (
+                <Stack spacing={4}>
+                  <FormControl isInvalid={!!errors.serverId}>
+                    <FormLabel>
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
+                      )}
+                    </FormLabel>
+                    <Controller
+                      name="serverId"
+                      control={control}
+                      render={({ field }) => (
+                        <DiscordServerSearchSelectv2
+                          {...field}
+                          onChange={(id) => field.onChange(id)}
+                          value={field.value}
+                          inputRef={initialFocusRef}
+                        />
+                      )}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog.webhookFormLabel"
+                      )}
+                    </FormLabel>
+                    <Controller
+                      name="webhook.id"
+                      control={control}
+                      render={({ field }) => (
+                        <ThemedSelect
+                          {...field}
+                          loading={isLoading}
+                          isDisabled={isSubmitting || isLoading || !serverId}
+                          options={
+                            discordWebhooks?.map((webhook) => ({
+                              label: (
+                                <span>
+                                  {webhook.name} (
+                                  <DiscordChannelName
+                                    serverId={serverId}
+                                    channelId={webhook.channelId}
+                                  />
+                                  )
+                                </span>
+                              ),
+                              value: webhook.id,
+                              icon: webhook.avatarUrl,
+                              data: webhook,
+                            })) || []
+                          }
+                          onChange={(val, data) => {
+                            field.onChange(val);
+                            setValue("name", data.name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                          }}
+                          onBlur={field.onBlur}
+                          value={field.value}
+                        />
+                      )}
+                    />
+                    {errors.webhook?.id && (
+                      <FormErrorMessage>{errors.webhook.id.message}</FormErrorMessage>
                     )}
-                  </FormLabel>
-                  <Controller
-                    name="serverId"
-                    control={control}
-                    render={({ field }) => (
-                      <DiscordServerSearchSelectv2
-                        {...field}
-                        onChange={(id) => field.onChange(id)}
-                        value={field.value}
-                      />
+                    <Stack>
+                      <FormHelperText>
+                        {t(
+                          "features.feed.components.addDiscordWebhookConnectionDialog" +
+                            ".webhooksInputHelperText"
+                        )}
+                      </FormHelperText>
+                      {discordWebhooksError && (
+                        <Alert status="error">
+                          <Box>
+                            <AlertTitle>
+                              {t(
+                                "features.feed.components." +
+                                  "addDiscordWebhookConnectionDialog.failedToGetWebhooks"
+                              )}
+                            </AlertTitle>
+                            <AlertDescription>{discordWebhooksError.message}</AlertDescription>
+                          </Box>
+                        </Alert>
+                      )}
+                    </Stack>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
+                      )}
+                    </FormLabel>
+                    <Controller
+                      name="webhook.name"
+                      control={control}
+                      render={({ field }) => (
+                        <Input {...field} placeholder="Optional" isDisabled={isSubmitting} />
+                      )}
+                    />
+                    {errors.webhook?.name && (
+                      <FormErrorMessage>{errors.webhook.name.message}</FormErrorMessage>
                     )}
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>
-                    {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookFormLabel"
-                    )}
-                  </FormLabel>
-                  <Controller
-                    name="webhook.id"
-                    control={control}
-                    render={({ field }) => (
-                      <ThemedSelect
-                        {...field}
-                        loading={isLoading}
-                        isDisabled={isSubmitting || isLoading || !serverId}
-                        options={
-                          discordWebhooks?.map((webhook) => ({
-                            label: (
-                              <span>
-                                {webhook.name} (
-                                <DiscordChannelName
-                                  serverId={serverId}
-                                  channelId={webhook.channelId}
-                                />
-                                )
-                              </span>
-                            ),
-                            value: webhook.id,
-                            icon: webhook.avatarUrl,
-                            data: webhook,
-                          })) || []
-                        }
-                        onChange={(val, data) => {
-                          field.onChange(val);
-                          setValue("name", data.name, {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                            shouldValidate: true,
-                          });
-                        }}
-                        onBlur={field.onBlur}
-                        value={field.value}
-                      />
-                    )}
-                  />
-                  {errors.webhook?.id && (
-                    <FormErrorMessage>{errors.webhook.id.message}</FormErrorMessage>
-                  )}
-                  <Stack>
                     <FormHelperText>
                       {t(
                         "features.feed.components.addDiscordWebhookConnectionDialog" +
-                          ".webhooksInputHelperText"
+                          ".webhookNameDescription"
                       )}
                     </FormHelperText>
-                    {discordWebhooksError && (
-                      <Alert status="error">
-                        <Box>
-                          <AlertTitle>
-                            {t(
-                              "features.feed.components." +
-                                "addDiscordWebhookConnectionDialog.failedToGetWebhooks"
-                            )}
-                          </AlertTitle>
-                          <AlertDescription>{discordWebhooksError.message}</AlertDescription>
-                        </Box>
-                      </Alert>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog" +
+                          ".webhookIconUrlLabel"
+                      )}
+                    </FormLabel>
+                    <Controller
+                      name="webhook.iconUrl"
+                      control={control}
+                      render={({ field }) => (
+                        <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
+                      )}
+                    />
+                    {errors.webhook?.iconUrl && (
+                      <FormErrorMessage>{errors.webhook.iconUrl.message}</FormErrorMessage>
                     )}
-                  </Stack>
-                </FormControl>
-                <FormControl>
-                  <FormLabel>
-                    {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
-                    )}
-                  </FormLabel>
-                  <Controller
-                    name="webhook.name"
-                    control={control}
-                    render={({ field }) => (
-                      <Input {...field} placeholder="Optional" isDisabled={isSubmitting} />
-                    )}
-                  />
-                  {errors.webhook?.name && (
-                    <FormErrorMessage>{errors.webhook.name.message}</FormErrorMessage>
-                  )}
-                  <FormHelperText>
-                    {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookNameDescription"
-                    )}
-                  </FormHelperText>
-                </FormControl>
-                <FormControl>
-                  <FormLabel>
-                    {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlLabel"
-                    )}
-                  </FormLabel>
-                  <Controller
-                    name="webhook.iconUrl"
-                    control={control}
-                    render={({ field }) => (
-                      <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
-                    )}
-                  />
-                  {errors.webhook?.iconUrl && (
-                    <FormErrorMessage>{errors.webhook.iconUrl.message}</FormErrorMessage>
-                  )}
-                  <FormHelperText>
-                    {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlDescription"
-                    )}
-                  </FormHelperText>
-                </FormControl>
-                <FormControl isInvalid={!!errors.name}>
-                  <FormLabel>
-                    {t("features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel")}
-                  </FormLabel>
-                  <Controller
-                    name="name"
-                    control={control}
-                    render={({ field }) => <Input {...field} />}
-                  />
-                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                  <FormHelperText>
-                    {t(
-                      "features.feed.components" +
-                        ".addDiscordWebhookConnectionDialog.formNameDescription"
-                    )}
-                  </FormHelperText>
-                </FormControl>
-              </Stack>
-            )}
+                    <FormHelperText>
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog" +
+                          ".webhookIconUrlDescription"
+                      )}
+                    </FormHelperText>
+                  </FormControl>
+                  <FormControl isInvalid={!!errors.name}>
+                    <FormLabel>
+                      {t(
+                        "features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel"
+                      )}
+                    </FormLabel>
+                    <Controller
+                      name="name"
+                      control={control}
+                      render={({ field }) => <Input {...field} />}
+                    />
+                    {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
+                    <FormHelperText>
+                      {t(
+                        "features.feed.components" +
+                          ".addDiscordWebhookConnectionDialog.formNameDescription"
+                      )}
+                    </FormHelperText>
+                  </FormControl>
+                </Stack>
+              )}
+            </Stack>
           </ModalBody>
           <ModalFooter>
             <HStack>

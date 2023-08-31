@@ -369,7 +369,6 @@
           "formTitleLabel": "Title",
           "formTitleDescription": "This is only for your reference.",
           "formChannelLabel": "Channel",
-          "formLinkLabel": "Link",
           "formLinkDescription": "Must be a link to a valid RSS XML feed.",
           "failedToAdd": "Failed to add feed"
         },
@@ -454,7 +453,7 @@
           "onlyForYourReferenceLabel": "This is only for your reference",
           "addButton": "Add Feed",
           "overLimitHint": "You have reached the maximum number of feeds available to you.",
-          "successAdd": "Successfully added feed!"
+          "successAdd": "Successfully added feed! New articles will be delivered once they are found."
         },
         "requestsTable": {
           "title": "Request History",

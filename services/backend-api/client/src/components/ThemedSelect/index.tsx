@@ -28,6 +28,7 @@ interface Props<T> {
   onInputChange?: (value: string) => void;
   placeholder?: string | React.ReactNode;
   selectProps?: React.ComponentProps<typeof StateManagedSelect>;
+  inputRef?: React.ComponentProps<typeof Select>["ref"];
 }
 
 export const ThemedSelect = <T,>({
@@ -43,6 +44,7 @@ export const ThemedSelect = <T,>({
   placeholder,
   onInputChange,
   selectProps,
+  inputRef,
 }: Props<T>) => {
   // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
@@ -59,6 +61,7 @@ export const ThemedSelect = <T,>({
       name={name}
       placeholder={placeholder}
       isClearable={isClearable}
+      ref={inputRef}
       // @ts-ignore
       styles={styles}
       value={selectedOption || ""}

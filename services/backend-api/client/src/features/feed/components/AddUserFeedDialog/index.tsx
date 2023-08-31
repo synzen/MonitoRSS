@@ -1,5 +1,11 @@
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Button,
+  Flex,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -13,6 +19,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Text,
   Tooltip,
   useDisclosure,
 } from "@chakra-ui/react";
@@ -20,13 +27,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { notifyError } from "@/utils/notifyError";
 import { useDiscordUserMe } from "../../../discordUser";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { pages } from "../../../../constants";
+import getChakraColor from "../../../../utils/getChakraColor";
 
 const formSchema = object({
   title: string().required(),
@@ -53,6 +61,7 @@ export const AddUserFeedDialog = () => {
     offset: 0,
   });
   const navigate = useNavigate();
+  const initialFocusRef = useRef<HTMLInputElement>(null);
 
   const onSubmit = async ({ title, url }: FormData) => {
     try {
@@ -101,7 +110,7 @@ export const AddUserFeedDialog = () => {
           {t("features.userFeeds.components.addUserFeedDialog.addButton")}
         </Button>
       </Tooltip>
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size="xl" initialFocusRef={initialFocusRef}>
         <ModalOverlay />
         <ModalContent>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -117,7 +126,12 @@ export const AddUserFeedDialog = () => {
                     name="title"
                     control={control}
                     render={({ field }) => (
-                      <Input isDisabled={isSubmitting} {...field} value={field.value || ""} />
+                      <Input
+                        isDisabled={isSubmitting}
+                        {...field}
+                        value={field.value || ""}
+                        ref={initialFocusRef}
+                      />
                     )}
                   />
                   <FormHelperText>
@@ -126,9 +140,7 @@ export const AddUserFeedDialog = () => {
                   <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors.url}>
-                  <FormLabel>
-                    {t("features.userFeeds.components.addUserFeedDialog.formLinkLabel")}
-                  </FormLabel>
+                  <FormLabel>RSS Feed Link</FormLabel>
                   <Controller
                     name="url"
                     control={control}
@@ -142,6 +154,42 @@ export const AddUserFeedDialog = () => {
                   </FormHelperText>
                   <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
                 </FormControl>
+                <Accordion allowToggle>
+                  <AccordionItem
+                    border="none"
+                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                  >
+                    <AccordionButton border="none">
+                      <Flex
+                        flex="1"
+                        gap={4}
+                        fontSize={13}
+                        color="blue.200"
+                        alignItems="center"
+                        textAlign="left"
+                      >
+                        What is an RSS feed?
+                        <AccordionIcon />
+                      </Flex>
+                    </AccordionButton>
+                    <AccordionPanel>
+                      <Text fontSize={13}>
+                        An RSS feed is not any regular web page - it is a specially-formatted
+                        webpage with XML text that&apos;s designed to contain news articles.
+                        <br />
+                        <br />
+                        You can usually find RSS feed pages by searching for the name of the site
+                        plus &quot;RSS feed&quot;. For example, an RSS feed link that is for IGN
+                        game reviews is{" "}
+                        <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
+                        <br />
+                        <br />
+                        To see if a link is a valid RSS feed, you may search for &quot;online feed
+                        validators&quot; and input feed URLs to test.
+                      </Text>
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
               </Stack>
             </ModalBody>
             <ModalFooter>

@@ -14,13 +14,14 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Text,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import RouteParams from "../../../../types/RouteParams";
 import { notifyError } from "../../../../utils/notifyError";
@@ -65,6 +66,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
   });
   const [serverId, channelId] = watch(["serverId", "channelId"]);
   const { mutateAsync } = useCreateDiscordChannelConnection();
+  const initialFocusRef = useRef<any>(null);
 
   const onSubmit = async ({ threadId, name }: FormData) => {
     if (!feedId) {
@@ -90,7 +92,12 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
   }, [isOpen]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} closeOnOverlayClick={!isSubmitting}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnOverlayClick={!isSubmitting}
+      initialFocusRef={initialFocusRef}
+    >
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
@@ -98,102 +105,110 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
-            <Stack spacing={4}>
-              <FormControl isInvalid={!!errors.serverId}>
-                <FormLabel>
-                  {t("features.feed.components.addDiscordChannelConnectionDialog.formServerLabel")}
-                </FormLabel>
-                <Controller
-                  name="serverId"
-                  control={control}
-                  render={({ field }) => (
-                    <DiscordServerSearchSelectv2
-                      {...field}
-                      onChange={field.onChange}
-                      value={field.value}
-                    />
-                  )}
-                />
-              </FormControl>
-              <FormControl isInvalid={!!errors.channelId}>
-                <FormLabel>
-                  {t("features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel")}
-                </FormLabel>
-                <Controller
-                  name="channelId"
-                  control={control}
-                  render={({ field }) => (
-                    <DiscordChannelDropdown
-                      value={field.value || ""}
-                      onChange={(value) => {
-                        field.onChange(value);
-                      }}
-                      include={[GetDiscordChannelType.Forum]}
-                      onBlur={field.onBlur}
-                      isDisabled={isSubmitting}
-                      serverId={serverId}
-                    />
-                  )}
-                />
-                <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
-              </FormControl>
-              <FormControl isInvalid={!!errors.channelId}>
-                <FormLabel>
-                  {t(
-                    "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"
-                  )}
-                </FormLabel>
-                <Controller
-                  name="threadId"
-                  control={control}
-                  render={({ field }) => (
-                    <DiscordActiveThreadDropdown
-                      value={field.value || ""}
-                      onChange={(value, name) => {
-                        field.onChange(value);
-                        setValue("name", name, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                          shouldValidate: true,
-                        });
-                      }}
-                      onBlur={field.onBlur}
-                      isDisabled={isSubmitting}
-                      serverId={serverId}
-                      parentChannelId={channelId}
-                    />
-                  )}
-                />
-                <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
-                <FormHelperText>
-                  {t(
-                    "features.feed.components" +
-                      ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
-                  )}
-                </FormHelperText>
-              </FormControl>
-              <FormControl isInvalid={!!errors.name}>
-                <FormLabel>
-                  {t(
-                    "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
-                  )}
-                </FormLabel>
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
-                />
-                {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                <FormHelperText>
-                  {t(
-                    "features.feed.components" +
-                      ".addDiscordChannelThreadConnectionDialog.formNameDescription"
-                  )}
-                </FormHelperText>
-              </FormControl>
-            </Stack>
-          </form>
+          <Stack spacing={4}>
+            <Text>Send articles authored by the bot as a message to an existing thread.</Text>
+            <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
+              <Stack spacing={4}>
+                <FormControl isInvalid={!!errors.serverId}>
+                  <FormLabel>
+                    {t(
+                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
+                    )}
+                  </FormLabel>
+                  <Controller
+                    name="serverId"
+                    control={control}
+                    render={({ field }) => (
+                      <DiscordServerSearchSelectv2
+                        {...field}
+                        onChange={field.onChange}
+                        value={field.value}
+                        inputRef={initialFocusRef}
+                      />
+                    )}
+                  />
+                </FormControl>
+                <FormControl isInvalid={!!errors.channelId}>
+                  <FormLabel>
+                    {t(
+                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
+                    )}
+                  </FormLabel>
+                  <Controller
+                    name="channelId"
+                    control={control}
+                    render={({ field }) => (
+                      <DiscordChannelDropdown
+                        value={field.value || ""}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
+                        include={[GetDiscordChannelType.Forum]}
+                        onBlur={field.onBlur}
+                        isDisabled={isSubmitting}
+                        serverId={serverId}
+                      />
+                    )}
+                  />
+                  <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
+                </FormControl>
+                <FormControl isInvalid={!!errors.channelId}>
+                  <FormLabel>
+                    {t(
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"
+                    )}
+                  </FormLabel>
+                  <Controller
+                    name="threadId"
+                    control={control}
+                    render={({ field }) => (
+                      <DiscordActiveThreadDropdown
+                        value={field.value || ""}
+                        onChange={(value, name) => {
+                          field.onChange(value);
+                          setValue("name", name, {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          });
+                        }}
+                        onBlur={field.onBlur}
+                        isDisabled={isSubmitting}
+                        serverId={serverId}
+                        parentChannelId={channelId}
+                      />
+                    )}
+                  />
+                  <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
+                  <FormHelperText>
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
+                    )}
+                  </FormHelperText>
+                </FormControl>
+                <FormControl isInvalid={!!errors.name}>
+                  <FormLabel>
+                    {t(
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
+                    )}
+                  </FormLabel>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => <Input {...field} value={field.value || ""} />}
+                  />
+                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
+                  <FormHelperText>
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordChannelThreadConnectionDialog.formNameDescription"
+                    )}
+                  </FormHelperText>
+                </FormControl>
+              </Stack>
+            </form>
+          </Stack>
         </ModalBody>
         <ModalFooter>
           <HStack>
