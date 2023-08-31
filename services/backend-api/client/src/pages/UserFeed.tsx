@@ -291,13 +291,14 @@ export const UserFeed: React.FC = () => {
                           <Heading size="lg" marginRight={4}>
                             {feed?.title}
                           </Heading>
-                          <Tooltip
-                            isDisabled={!feed?.sharedAccessDetails?.inviteId}
-                            label={`This feed is shared with you by someone else, and currently counts towards your feed
+                          {feed && feed?.sharedAccessDetails?.inviteId && (
+                            <Tooltip
+                              label={`This feed is shared with you by someone else, and currently counts towards your feed
                             limit. You can remove your access through the Actions dropdown.`}
-                          >
-                            <Badge>Shared</Badge>
-                          </Tooltip>
+                            >
+                              <Badge>Shared</Badge>
+                            </Tooltip>
+                          )}
                         </Flex>
                         <Link
                           color="gray.400"
