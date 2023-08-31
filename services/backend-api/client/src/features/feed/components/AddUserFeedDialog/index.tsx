@@ -179,8 +179,8 @@ export const AddUserFeedDialog = () => {
                         <br />
                         <br />
                         You can usually find RSS feed pages by searching for the name of the site
-                        plus &quot;RSS feed&quot;, such as &quot;IGN RSS feeds&quot;. An example of
-                        an RSS feed link is{" "}
+                        plus &quot;RSS feed&quot;, such as &quot;IGN RSS feeds&quot;, or contact the
+                        site owner for the RSS feed link. An example of an RSS feed link is{" "}
                         <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
                         <br />
                         <br />
