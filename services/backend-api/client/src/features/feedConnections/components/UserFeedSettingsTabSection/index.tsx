@@ -25,6 +25,7 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  StackDivider,
   Table,
   TableContainer,
   Tag,
@@ -233,7 +234,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
 
   return (
     <form onSubmit={handleSubmit(onUpdatedFeed)} id="user-management">
-      <Stack spacing={16} marginBottom={8}>
+      <Stack spacing={12} marginBottom={8} divider={<StackDivider />}>
         <Stack spacing={4}>
           <Stack>
             <Heading size="md" as="h3">
