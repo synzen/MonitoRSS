@@ -26,16 +26,19 @@ interface Props {
   searchText?: string;
   hideEmptyPlaceholders?: boolean;
   isFetching?: boolean;
+  withoutCopy?: boolean;
 }
 
 const PlaceholderRow = ({
   key,
   placeholderKey,
   value,
+  withoutCopy,
 }: {
   placeholderKey: string;
   value: string;
   key: string;
+  withoutCopy?: boolean;
 }) => {
   const { onCopy, setValue, value: copiedVal } = useClipboard("");
 
@@ -55,7 +58,7 @@ const PlaceholderRow = ({
       key={key}
       _hover={{
         ".copy-button": {
-          display: "block",
+          opacity: 1,
         },
       }}
     >
@@ -63,7 +66,8 @@ const PlaceholderRow = ({
         <HStack width="min-content">
           <Code>{placeholderKey}</Code>
           <IconButton
-            display="none"
+            display={withoutCopy ? "none" : "block"}
+            opacity={0}
             className="copy-button"
             onClick={() => onClickCopy(placeholderKey)}
             icon={<CopyIcon />}
@@ -91,6 +95,7 @@ export const ArticlePlaceholderTable = ({
   searchText,
   hideEmptyPlaceholders,
   isFetching,
+  withoutCopy,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -155,7 +160,14 @@ export const ArticlePlaceholderTable = ({
                     return null;
                   }
 
-                  return <PlaceholderRow key={key} placeholderKey={placeholderKey} value={value} />;
+                  return (
+                    <PlaceholderRow
+                      withoutCopy={withoutCopy}
+                      key={key}
+                      placeholderKey={placeholderKey}
+                      value={value}
+                    />
+                  );
                 })}
               </Tbody>
             </Table>
