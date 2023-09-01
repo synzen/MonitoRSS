@@ -7,7 +7,6 @@ import {
   Grid,
   Heading,
   HStack,
-  Icon,
   Link,
   Menu,
   MenuButton,
@@ -32,6 +31,10 @@ import {
   Box,
   AlertIcon,
   Tooltip,
+  SimpleGrid,
+  Card,
+  CardHeader,
+  CardFooter,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -589,50 +592,32 @@ export const UserFeed: React.FC = () => {
                     </Stack>
                   )}
                   {feed?.connections.length && (
-                    <Stack spacing={2} mb={4}>
+                    <SimpleGrid spacing={4} templateColumns="repeat(auto-fill, minmax(320px, 1fr))">
                       {feed?.connections?.map((connection) => {
                         const isError = DISABLED_CODES_FOR_ERROR.includes(
                           connection.disabledCode as FeedConnectionDisabledCode
                         );
 
+                        let cardLeftBorder = "";
+
+                        if (isError) {
+                          cardLeftBorder = `solid 3px ${getChakraColor("red.400")}`;
+                        } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
+                          cardLeftBorder = `solid 3px ${getChakraColor("gray.400")}`;
+                        }
+
                         return (
-                          <Link
-                            key={connection.id}
-                            as={RouterLink}
-                            to={pages.userFeedConnection({
-                              feedId: feedId as string,
-                              connectionType: connection.key,
-                              connectionId: connection.id,
-                            })}
-                            border={`solid 2px ${
-                              isError ? getChakraColor("red.300") : "transparent"
-                            }`}
-                            borderRadius="md"
-                            textDecoration="none"
-                            _hover={{
-                              textDecoration: "none",
-                              color: "blue.300",
-                              border: `solid 2px ${getChakraColor("blue.300")}`,
-                              borderRadius: "md",
-                            }}
-                            boxShadow="lg"
-                          >
-                            <Flex
-                              background="gray.700"
-                              paddingX={8}
-                              paddingY={4}
-                              borderRadius="md"
-                              alignItems="center"
-                              justifyContent="space-between"
-                            >
+                          <Card variant="elevated" size="sm" borderLeft={cardLeftBorder}>
+                            <CardHeader>
                               <Stack spacing="1">
+                                <Text color="gray.500" fontSize="sm">
+                                  {getPrettyConnectionName(connection as never)}
+                                </Text>
                                 <HStack>
-                                  <Text color="gray.500" fontSize="sm">
-                                    {getPrettyConnectionName(connection as never)}
-                                  </Text>
+                                  <Text fontWeight={600}>{connection.name}</Text>
                                   {connection.disabledCode ===
                                     FeedConnectionDisabledCode.Manual && (
-                                    <Badge fontSize="x-small" colorScheme="blue">
+                                    <Badge fontSize="x-small" colorScheme="gray">
                                       Disabled
                                     </Badge>
                                   )}
@@ -642,27 +627,28 @@ export const UserFeed: React.FC = () => {
                                     </Badge>
                                   )}
                                 </HStack>
-                                <Stack spacing="0">
-                                  <HStack alignItems="flex-end">
-                                    <Text fontWeight={600}>{connection.name}</Text>
-                                  </HStack>
-                                </Stack>
                               </Stack>
-                              <Icon
-                                as={ChevronRightIcon}
-                                alignSelf="flex-end"
-                                fontSize="xx-large"
-                                style={{
-                                  alignSelf: "center",
-                                }}
-                              />
-                            </Flex>
-                          </Link>
+                            </CardHeader>
+                            <CardFooter justifyContent="space-between">
+                              <Box />
+                              <Button
+                                as={RouterLink}
+                                to={pages.userFeedConnection({
+                                  feedId: feedId as string,
+                                  connectionType: connection.key,
+                                  connectionId: connection.id,
+                                })}
+                                rightIcon={<ChevronRightIcon />}
+                              >
+                                Manage
+                              </Button>
+                            </CardFooter>
+                          </Card>
                         );
                       })}
-                      {addConnectionButtons}
-                    </Stack>
+                    </SimpleGrid>
                   )}
+                  {addConnectionButtons}
                 </Stack>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
