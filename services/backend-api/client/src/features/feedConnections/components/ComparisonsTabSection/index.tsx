@@ -7,6 +7,7 @@ import {
   Flex,
   Heading,
   HStack,
+  Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -23,6 +24,8 @@ import { ComparisonTag } from "./ComparisonTag";
 import { ArticleSelectDialog } from "../../../feed/components";
 import { notifyError } from "../../../../utils/notifyError";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
+import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
+import { UserFeedArticleRequestStatus } from "../../../feed/types";
 
 interface Props {
   feedId: string;
@@ -124,6 +127,38 @@ export const ComparisonsTabSection = ({
     });
   };
 
+  const requestStatus = userFeedArticles?.result.requestStatus;
+
+  const alertStatus =
+    requestStatus && requestStatus !== UserFeedArticleRequestStatus.Success
+      ? getErrorMessageForArticleRequestStatus(
+          requestStatus,
+          userFeedArticles?.result?.response?.statusCode
+        )
+      : null;
+
+  const parseErrorAlert = alertStatus && (
+    <Alert status={alertStatus.status || "error"}>
+      <AlertIcon />
+      {t(alertStatus.ref)}
+    </Alert>
+  );
+  const fetchErrorAlert = userFeedArticlesStatus === "error" && (
+    <Alert status="error">
+      <AlertIcon />
+      {t("common.errors.somethingWentWrong")}
+    </Alert>
+  );
+
+  const noArticlesAlert = userFeedArticles?.result.articles.length === 0 && (
+    <Alert status="info">
+      <AlertIcon />
+      {t("features.feedConnections.components.articlePlaceholderTable.noArticles")}
+    </Alert>
+  );
+
+  const hasAlert = !!(fetchErrorAlert || parseErrorAlert || noArticlesAlert);
+
   return (
     <Stack spacing={16} marginBottom={8}>
       {error && (
@@ -139,7 +174,7 @@ export const ComparisonsTabSection = ({
           </Alert>
         </Stack>
       )}
-      <Stack>
+      <Stack background="gray.700" padding={4} borderRadius="md">
         <Flex justifyContent="space-between">
           <Heading size="sm" as="h3">
             Sample Article Properties
@@ -162,13 +197,22 @@ export const ComparisonsTabSection = ({
             onClickRandomArticle={onClickRandomFeedArticle}
           />
         </Flex>
-        {userFeedArticles && userFeedArticles.result.articles.length && (
-          <ArticlePlaceholderTable
-            article={userFeedArticles?.result.articles[0]}
-            searchText=""
-            isFetching={userFeedArticlesFetchStatus === "fetching"}
-            withoutCopy
-          />
+        {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
+        {userFeedArticlesStatus === "loading" && (
+          <Stack alignItems="center">
+            <Spinner size="md" />
+            <Text>Loading article...</Text>
+          </Stack>
+        )}
+        {!hasAlert && userFeedArticles?.result.articles.length && (
+          <Stack maxHeight={400} overflow="auto" borderRadius="lg" background="gray.800">
+            <ArticlePlaceholderTable
+              article={userFeedArticles?.result.articles[0]}
+              searchText=""
+              isFetching={userFeedArticlesFetchStatus === "fetching"}
+              withoutCopy
+            />
+          </Stack>
         )}
       </Stack>
       <Stack spacing={4}>
