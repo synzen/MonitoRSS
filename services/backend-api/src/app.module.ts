@@ -20,6 +20,7 @@ import { FeedConnectionsDiscordWebhooksModule } from "./features/feed-connection
 import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-handler.module";
 import { LegacyFeedConversionModule } from "./features/legacy-feed-conversion/legacy-feed-conversion.module";
 import { UserFeedManagementInvitesModule } from "./features/user-feed-management-invites/user-feed-management-invites.module";
+import { ErrorReportsController } from "./error-reports.controller";
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { UserFeedManagementInvitesModule } from "./features/user-feed-management
       rootPath: join(__dirname, "..", "client", "dist"),
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, ErrorReportsController],
   providers: [AppService],
 })
 export class AppModule {

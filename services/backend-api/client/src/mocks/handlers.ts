@@ -85,6 +85,10 @@ import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
 
 const handlers = [
+  rest.post("/api/v1/error-reports", (req, res, ctx) => {
+    return res(ctx.delay(500), ctx.json({}));
+  }),
+
   rest.get("/api/v1/users/@me", (req, res, ctx) => {
     return res(ctx.delay(500), ctx.json<GetUserMeOutput>({ result: mockUserMe }));
   }),

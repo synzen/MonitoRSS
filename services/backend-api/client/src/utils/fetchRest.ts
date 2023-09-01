@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Schema, ValidationError } from "yup";
 import ApiAdapterError from "./ApiAdapterError";
 import { getStandardErrorCodeMessage } from "./getStandardErrorCodeMessage copy";
@@ -67,6 +68,28 @@ const fetchRest = async <T>(url: string, fetchOptions?: FetchOptions<T>): Promis
       return validationResult;
     } catch (err) {
       const yupErr = err as ValidationError;
+
+      try {
+        const errorReportRes = await fetch("/api/v1/error-reports", {
+          method: "POST",
+          body: JSON.stringify({
+            message: `Frontend contract violation`,
+            errors: yupErr.errors,
+            url,
+            jsonResponse: json,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!errorReportRes.ok) {
+          throw new Error(`Bad status code: ${res.status}`);
+        }
+      } catch (reportErr) {
+        console.error("Error reporting api contract validation failed", reportErr);
+      }
+
       // eslint-disable-next-line no-console
       console.error(url, yupErr.errors);
       throw new ApiAdapterError(
