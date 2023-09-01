@@ -607,7 +607,12 @@ export const UserFeed: React.FC = () => {
                         }
 
                         return (
-                          <Card variant="elevated" size="sm" borderLeft={cardLeftBorder}>
+                          <Card
+                            variant="elevated"
+                            size="sm"
+                            borderLeft={cardLeftBorder}
+                            rounded="lg"
+                          >
                             <CardHeader>
                               <Stack spacing="1">
                                 <Text color="gray.500" fontSize="sm">
