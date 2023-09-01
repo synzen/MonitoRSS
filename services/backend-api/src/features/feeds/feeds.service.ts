@@ -525,11 +525,18 @@ export class FeedsService {
         feedStatus = FeedStatus.OK;
       }
 
+      let disabledReason = feed.disabled;
+
+      if (feed.disabled === "DISABLED_FOR_PERSONAL_ROLLOUT") {
+        disabledReason =
+          "Deprecated for personal feeds. Must convert to personal feed to restore function.";
+      }
+
       return {
         ...feed,
         status: feedStatus,
         failReason: feed.failRecord?.reason,
-        disabledReason: feed.disabled,
+        disabledReason,
         refreshRateSeconds: refreshRates[index],
       };
     });
