@@ -205,7 +205,13 @@ export const ComparisonsTabSection = ({
           </Stack>
         )}
         {!hasAlert && userFeedArticles?.result.articles.length && (
-          <Stack maxHeight={400} overflow="auto" borderRadius="lg" background="gray.800">
+          <Stack
+            maxHeight={400}
+            overflow="auto"
+            borderRadius="lg"
+            background="gray.800"
+            padding={4}
+          >
             <ArticlePlaceholderTable
               article={userFeedArticles?.result.articles[0]}
               searchText=""
