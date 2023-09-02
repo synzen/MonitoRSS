@@ -33,7 +33,7 @@ export const discordMessageEmbedFormLegacySchema = object().shape({
   })
     .optional()
     .nullable(),
-  title: string().max(256),
+  title: string().nullable().max(256),
   url: string()
     .nullable()
     .when("title", ([title], schema) => {
