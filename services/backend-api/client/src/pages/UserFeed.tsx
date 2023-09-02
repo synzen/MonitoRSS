@@ -612,6 +612,7 @@ export const UserFeed: React.FC = () => {
                             size="sm"
                             borderLeft={cardLeftBorder}
                             rounded="lg"
+                            paddingX={1}
                           >
                             <CardHeader>
                               <Stack spacing="1">
@@ -653,7 +654,7 @@ export const UserFeed: React.FC = () => {
                       })}
                     </SimpleGrid>
                   )}
-                  {addConnectionButtons}
+                  {feed?.connections.length && addConnectionButtons}
                 </Stack>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
