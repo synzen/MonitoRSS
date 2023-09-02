@@ -1,32 +1,42 @@
 import { array, boolean, object, string } from "yup";
 
 export const FeedEmbedSchema = object({
-  title: string().optional(),
-  description: string().optional(),
-  url: string().optional(),
-  timestamp: string().oneOf(["now", "article", ""]).optional(),
+  title: string().optional().nullable(),
+  description: string().optional().nullable(),
+  url: string().optional().nullable(),
+  timestamp: string().oneOf(["now", "article", ""]).optional().nullable(),
   footer: object({
-    text: string().optional(),
-    iconUrl: string().optional(),
-  }).optional(),
+    text: string().optional().nullable(),
+    iconUrl: string().optional().nullable(),
+  })
+    .optional()
+    .nullable(),
   thumbnail: object({
-    url: string().optional(),
-  }).optional(),
+    url: string().optional().nullable(),
+  })
+    .optional()
+    .nullable(),
   image: object({
-    url: string().optional(),
-  }).optional(),
+    url: string().optional().nullable(),
+  })
+    .optional()
+    .nullable(),
   author: object({
-    name: string().optional(),
-    url: string().optional(),
-    iconUrl: string().optional(),
-  }).optional(),
+    name: string().optional().nullable(),
+    url: string().optional().nullable(),
+    iconUrl: string().optional().nullable(),
+  })
+    .optional()
+    .nullable(),
   color: string().optional(),
   fields: array(
     object({
-      id: string().required(),
-      name: string().required(),
-      value: string().required(),
-      inline: boolean().default(false).required().optional(),
+      id: string().required().nullable(),
+      name: string().required().nullable(),
+      value: string().required().nullable(),
+      inline: boolean().default(false).nullable(),
     })
-  ).optional(),
+  )
+    .optional()
+    .nullable(),
 }).required();
