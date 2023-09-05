@@ -528,6 +528,7 @@ export class UserFeedsService {
       fetchOptions: {
         useServiceApi: true,
         useServiceApiCache: false,
+        debug: feed.debug,
       },
     });
 

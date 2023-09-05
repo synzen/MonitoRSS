@@ -18,4 +18,9 @@ export class FetchFeedDto {
   @IsString()
   @IsOptional()
   hashToCompare?: string;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  debug?: boolean;
 }

@@ -115,7 +115,9 @@ export class FeedFetcherController {
   ): Promise<FetchFeedDetailsDto> {
     if (data.executeFetch) {
       try {
-        await this.feedFetcherService.fetchAndSaveResponse(data.url);
+        await this.feedFetcherService.fetchAndSaveResponse(data.url, {
+          saveResponseToObjectStorage: data.debug,
+        });
       } catch (err) {
         logger.error(`Failed to fetch and save response of feed ${data.url}`, {
           stack: (err as Error).stack,

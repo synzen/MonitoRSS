@@ -11,6 +11,7 @@ import { FeedFetcherGetRequestsResponse } from "./types/feed-fetcher-get-request
 
 interface FeedFetchOptions {
   getCachedResponse?: boolean;
+  debug?: boolean;
 }
 
 @Injectable()
@@ -44,6 +45,7 @@ export class FeedFetcherApiService {
         body: JSON.stringify({
           url,
           executeFetch: options?.getCachedResponse ? false : true,
+          debug: options?.debug,
         }),
         headers: {
           "Content-Type": "application/json",

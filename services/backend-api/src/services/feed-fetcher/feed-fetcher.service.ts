@@ -31,6 +31,7 @@ interface FetchFeedOptions {
   fetchOptions: {
     useServiceApi: boolean;
     useServiceApiCache: boolean;
+    debug?: boolean;
   };
 }
 
@@ -57,6 +58,7 @@ export class FeedFetcherService {
     } else {
       inputStream = await this.fetchFeedStreamFromApiService(url, {
         getCachedResponse: options.fetchOptions.useServiceApiCache,
+        debug: options.fetchOptions.debug,
       });
     }
 
@@ -92,6 +94,7 @@ export class FeedFetcherService {
     url: string,
     options?: {
       getCachedResponse?: boolean;
+      debug?: boolean;
     }
   ): Promise<NodeJS.ReadableStream> {
     const result = await this.feedFetcherApiService.fetchAndSave(url, options);
