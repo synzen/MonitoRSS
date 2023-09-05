@@ -189,6 +189,31 @@ export const AddUserFeedDialog = () => {
                       </Text>
                     </AccordionPanel>
                   </AccordionItem>
+                  <AccordionItem
+                    border="none"
+                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                  >
+                    <AccordionButton border="none">
+                      <Flex
+                        flex="1"
+                        gap={4}
+                        fontSize={13}
+                        color="blue.200"
+                        alignItems="center"
+                        textAlign="left"
+                      >
+                        When do new articles get delivered?
+                        <AccordionIcon />
+                      </Flex>
+                    </AccordionButton>
+                    <AccordionPanel>
+                      <Text fontSize={13}>
+                        With RSS, article delivery is not instant. Instead, we check for new
+                        articles on a regular interval (every 10 minutes by default for free). Once
+                        new articles are found, they are delivered.
+                      </Text>
+                    </AccordionPanel>
+                  </AccordionItem>
                 </Accordion>
               </Stack>
             </ModalBody>
