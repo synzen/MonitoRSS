@@ -30,10 +30,14 @@ export class FeedsService {
     { rateLimit: { limit, timeWindowSec } }: InitializeFeedInputDto
   ) {
     // Used to display in UIs. May be dynamic later.
-    await this.articleRateLimitsService.addOrUpdateFeedLimit(feedId, {
-      timeWindowSec,
-      limit,
-    });
+    await this.articleRateLimitsService.addOrUpdateFeedLimit(
+      feedId,
+      {
+        timeWindowSec,
+        limit,
+      },
+      true
+    );
   }
 
   getFilterExpressionErrors(expression: Record<string, unknown>) {
