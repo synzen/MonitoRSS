@@ -22,12 +22,30 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
           id: article.id,
           [`author${DL}name${DL}tag`]: article.author.name.tag,
+        },
+      });
+    });
+
+    it("flattens categories into a single string", () => {
+      const article = {
+        categories: ["cat1", "cat2", "cat3"],
+      };
+
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
+
+      expect(flattenedArticle).toMatchObject({
+        flattened: {
+          ["processed::categories"]: "cat1,cat2,cat3",
         },
       });
     });
@@ -38,7 +56,9 @@ describe("ArticleParserService", () => {
         tags: ["tag1", "tag2"],
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -62,7 +82,9 @@ describe("ArticleParserService", () => {
         ],
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -88,7 +110,9 @@ describe("ArticleParserService", () => {
         ],
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -111,7 +135,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -137,7 +163,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -159,7 +187,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -181,7 +211,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -203,7 +235,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -225,7 +259,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -245,7 +281,9 @@ describe("ArticleParserService", () => {
         summary: "hello world <img src='https://example.com/image3.jpg' />",
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toMatchObject({
         flattened: {
@@ -263,7 +301,9 @@ describe("ArticleParserService", () => {
         summary: 'hello world <a href="https://example.com">world</a>',
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toMatchObject({
         flattened: {
@@ -288,7 +328,9 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article);
+      const flattenedArticle = service.flatten(article, {
+        useParserRules: [],
+      });
 
       expect(flattenedArticle).toEqual({
         flattened: {
@@ -315,9 +357,12 @@ describe("ArticleParserService", () => {
       const dateFormat = "YYYY-MM-DD";
 
       const flattenedArticle = service.flatten(article, {
-        dateFormat,
-        dateTimezone: undefined,
-        disableImageLinkPreviews: false,
+        formatOptions: {
+          dateFormat,
+          dateTimezone: undefined,
+          disableImageLinkPreviews: false,
+        },
+        useParserRules: [],
       });
 
       expect(flattenedArticle).toEqual({
@@ -341,9 +386,12 @@ describe("ArticleParserService", () => {
       const dateFormat = "x";
 
       const flattenedArticle = service.flatten(article, {
-        dateFormat,
-        dateTimezone: undefined,
-        disableImageLinkPreviews: false,
+        formatOptions: {
+          dateFormat,
+          dateTimezone: undefined,
+          disableImageLinkPreviews: false,
+        },
+        useParserRules: [],
       });
 
       expect(flattenedArticle).toEqual({
@@ -370,9 +418,12 @@ describe("ArticleParserService", () => {
       const dateTimezone = "America/New_York";
 
       const flattenedArticle = service.flatten(article, {
-        dateFormat: undefined,
-        dateTimezone,
-        disableImageLinkPreviews: false,
+        formatOptions: {
+          dateFormat: undefined,
+          dateTimezone,
+          disableImageLinkPreviews: false,
+        },
+        useParserRules: [],
       });
 
       expect(flattenedArticle).toEqual({

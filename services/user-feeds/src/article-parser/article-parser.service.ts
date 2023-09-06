@@ -33,7 +33,7 @@ export class ArticleParserService {
       delimiter: ARTICLE_FIELD_DELIMITER,
     }) as Record<string, unknown>;
 
-    const newRecord: FlattenedArticleWithoutId = {};
+    const newRecord: FlattenedArticleWithoutId = this.runPreProcessRules(input);
 
     Object.entries(flattened).forEach(([key, value]) => {
       if (!value) {
@@ -148,6 +148,23 @@ export class ArticleParserService {
       images,
       anchors,
     };
+  }
+
+  runPreProcessRules<T>(
+    rawArticle: T extends Record<string, unknown> ? T : Record<string, unknown>
+  ) {
+    const flattenedArticle: FlattenedArticleWithoutId = {};
+
+    const categories = rawArticle.categories;
+
+    if (
+      Array.isArray(categories) &&
+      categories.every((item) => typeof item === "string")
+    ) {
+      flattenedArticle["processed::categories"] = categories.join(",");
+    }
+
+    return flattenedArticle;
   }
 
   runPostProcessRules(
