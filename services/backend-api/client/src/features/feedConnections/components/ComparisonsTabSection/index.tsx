@@ -199,7 +199,7 @@ export const ComparisonsTabSection = ({
         </Flex>
         {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
         {userFeedArticlesStatus === "loading" && (
-          <Stack alignItems="center">
+          <Stack borderRadius="lg" background="gray.800" padding={4} alignItems="center">
             <Spinner size="md" />
             <Text>Loading article...</Text>
           </Stack>

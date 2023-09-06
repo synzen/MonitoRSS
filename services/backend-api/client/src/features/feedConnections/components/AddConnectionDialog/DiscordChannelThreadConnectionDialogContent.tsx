@@ -32,6 +32,7 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
+import { notifySuccess } from "../../../../utils/notifySuccess";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -81,6 +82,9 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
           channelId: threadId,
         },
       });
+      notifySuccess(
+        "Succesfully added connection. New articles will be automatically delivered when found."
+      );
       onClose();
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);

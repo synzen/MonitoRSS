@@ -30,6 +30,7 @@ import {
 import RouteParams from "../../../../types/RouteParams";
 import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordChannelConnection } from "../../hooks";
+import { notifySuccess } from "../../../../utils/notifySuccess";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -75,6 +76,9 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
           channelId,
         },
       });
+      notifySuccess(
+        "Succesfully added connection. New articles will be automatically delivered when found."
+      );
       onClose();
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);

@@ -453,7 +453,7 @@
           "onlyForYourReferenceLabel": "This is only for your reference",
           "addButton": "Add Feed",
           "overLimitHint": "You have reached the maximum number of feeds available to you.",
-          "successAdd": "Successfully added feed! New articles will be delivered once they are found."
+          "successAdd": "Successfully added feed! Add connections to specify where articles will be sent to."
         },
         "requestsTable": {
           "title": "Request History",

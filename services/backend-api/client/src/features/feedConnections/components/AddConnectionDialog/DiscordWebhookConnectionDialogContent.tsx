@@ -35,6 +35,7 @@ import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordWebhookConnection } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { DiscordServerSearchSelectv2 } from "../../../discordServers";
+import { notifySuccess } from "../../../../utils/notifySuccess";
 
 const formSchema = object({
   name: string().required(),
@@ -97,6 +98,9 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
           name,
         },
       });
+      notifySuccess(
+        "Succesfully added connection. New articles will be automatically delivered when found."
+      );
       onClose();
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
