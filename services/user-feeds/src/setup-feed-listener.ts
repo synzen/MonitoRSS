@@ -28,10 +28,22 @@ async function tryDbConnection(orm: MikroORM, currentTries = 0) {
 
   await orm.em
     .getDriver()
-    .getConnection()
+    .getConnection("write")
     .execute("SELECT 1")
     .catch((err) => {
-      logger.error("Failed to ping database", {
+      logger.error("Failed to ping write database", {
+        error: (err as Error).stack,
+      });
+
+      return tryDbConnection(orm, currentTries + 1);
+    });
+
+  await orm.em
+    .getDriver()
+    .getConnection("read")
+    .execute("SELECT 1")
+    .catch((err) => {
+      logger.error("Failed to ping read database", {
         error: (err as Error).stack,
       });
 
