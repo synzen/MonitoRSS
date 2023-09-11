@@ -50,6 +50,7 @@ import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
 import { FEED_DISABLED_LEGACY_CODES } from "./constants";
 import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
+import { randomUUID } from "crypto";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -199,7 +200,13 @@ export class FeedsController {
         iconUrl: updateFeedInput.webhook?.iconUrl,
         token: foundWebhook?.token,
       },
-      embeds: convertToFlatDiscordEmbeds(updateFeedInput.embeds),
+      embeds: convertToFlatDiscordEmbeds(updateFeedInput.embeds)?.map((e) => ({
+        ...e,
+        fields: e.fields?.map((f) => ({
+          id: randomUUID(),
+          ...f,
+        })),
+      })),
       checkDates: updateFeedInput.checkDates,
       imgLinksExistence: updateFeedInput.imgLinksExistence,
       imgPreviews: updateFeedInput.imgPreviews,
