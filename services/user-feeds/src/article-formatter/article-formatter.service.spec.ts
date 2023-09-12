@@ -39,9 +39,13 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
-              regexSearch: "Hello",
               sourcePlaceholder: "title",
-              replacementString: "Goodbye",
+              steps: [
+                {
+                  regexSearch: "Hello",
+                  replacementString: "Goodbye",
+                },
+              ],
             },
           ],
         });
@@ -67,9 +71,13 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
-              regexSearch: "Hello",
               sourcePlaceholder: "title",
-              replacementString: "Goodbye",
+              steps: [
+                {
+                  regexSearch: "Hello",
+                  replacementString: "Goodbye",
+                },
+              ],
             },
           ],
         });
@@ -95,9 +103,13 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
-              regexSearch: "Hello",
               sourcePlaceholder: "title",
-              replacementString: null,
+              steps: [
+                {
+                  regexSearch: "Hello",
+                  replacementString: null,
+                },
+              ],
             },
           ],
         });
@@ -123,9 +135,13 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
-              regexSearch: "l",
               sourcePlaceholder: "title",
-              replacementString: "z",
+              steps: [
+                {
+                  regexSearch: "l",
+                  replacementString: "z",
+                },
+              ],
             },
           ],
         });
@@ -151,9 +167,13 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
-              regexSearch: "^q$",
               sourcePlaceholder: "title",
-              replacementString: "replaced",
+              steps: [
+                {
+                  regexSearch: "^q$",
+                  replacementString: "replaced",
+                },
+              ],
             },
           ],
         });
@@ -181,9 +201,13 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
-              regexSearch: "hello",
               sourcePlaceholder: "title",
-              replacementString: "replaced",
+              steps: [
+                {
+                  regexSearch: "hello",
+                  replacementString: "replaced",
+                },
+              ],
             },
           ],
         });
@@ -191,6 +215,42 @@ describe("ArticleFormatterService", () => {
         expect(result.flattened["custom::test"]).toEqual(
           "replaced replaced world"
         );
+      });
+
+      it("works with multiple steps", async () => {
+        const article = {
+          flattened: {
+            id: "1",
+            title: `hello world`,
+          },
+          raw: {
+            title: "Hello World",
+          },
+        };
+
+        const result = await service.formatArticleForDiscord(article as never, {
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+          customPlaceholders: [
+            {
+              id: "test",
+              sourcePlaceholder: "title",
+              steps: [
+                {
+                  regexSearch: "hello",
+                  replacementString: "goodbye",
+                },
+                {
+                  regexSearch: "goodbye",
+                  replacementString: "farewell",
+                },
+              ],
+            },
+          ],
+        });
+
+        expect(result.flattened["custom::test"]).toEqual("farewell world");
       });
     });
 

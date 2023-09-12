@@ -40,6 +40,17 @@ class SplitOptions {
   isEnabled?: boolean;
 }
 
+class CustomPlaceholderStep {
+  @IsString()
+  @IsNotEmpty()
+  regexSearch: string;
+
+  @IsString()
+  @IsOptional()
+  @ValidateIf((v) => v.replacementString !== null)
+  replacementString?: string | null;
+}
+
 class CustomPlaceholder {
   @IsString()
   @IsNotEmpty()
@@ -49,14 +60,10 @@ class CustomPlaceholder {
   @IsNotEmpty()
   sourcePlaceholder: string;
 
-  @IsString()
-  @IsNotEmpty()
-  regexSearch: string;
-
-  @IsString()
-  @IsOptional()
-  @ValidateIf((v) => v.replacementString !== null)
-  replacementString?: string | null;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholderStep)
+  steps: CustomPlaceholderStep[];
 }
 
 export class FormatOptions {

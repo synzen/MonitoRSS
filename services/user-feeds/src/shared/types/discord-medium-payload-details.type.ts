@@ -53,8 +53,12 @@ export const discordMediumPayloadDetailsSchema = object().shape(
       object({
         id: string().required(),
         sourcePlaceholder: string().required(),
-        regexSearch: string().required(),
-        replacementString: string().nullable(),
+        steps: array(
+          object({
+            regexSearch: string().required(),
+            replacementString: string().nullable(),
+          })
+        ).required(),
       }).required()
     )
       .nullable()
@@ -78,32 +82,36 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     content: string(),
     embeds: array(
       object({
-        title: string().optional(),
-        description: string().optional(),
-        url: string().optional(),
+        title: string().nullable().optional(),
+        description: string().nullable().optional(),
+        url: string().nullable().optional(),
         color: number().optional(),
         footer: object({
           text: string().required(),
           iconUrl: string().optional().nullable().default(undefined),
         })
           .optional()
+          .nullable()
           .default(undefined),
         image: object({
           url: string().required(),
         })
           .optional()
+          .nullable()
           .default(undefined),
         thumbnail: object({
           url: string().required(),
         })
           .optional()
+          .nullable()
           .default(undefined),
         author: object({
           name: string().required(),
-          url: string().optional(),
-          iconUrl: string().optional(),
+          url: string().optional().nullable(),
+          iconUrl: string().optional().nullable(),
         })
           .optional()
+          .nullable()
           .default(undefined),
         fields: array(
           object({

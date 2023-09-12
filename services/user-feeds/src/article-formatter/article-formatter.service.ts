@@ -22,9 +22,8 @@ export class ArticleFormatterService {
     if (options.customPlaceholders) {
       for (const {
         id,
-        regexSearch,
         sourcePlaceholder,
-        replacementString,
+        steps,
       } of options.customPlaceholders) {
         const sourceValue = flattened[sourcePlaceholder];
         const placeholderKeyToUse = `custom::${id}`;
@@ -35,11 +34,19 @@ export class ArticleFormatterService {
           continue;
         }
 
-        const regex = new RegExp(regexSearch, "gmi");
+        let lastOutput = sourceValue;
 
-        const finalVal = sourceValue.replace(regex, replacementString || "");
+        for (let i = 0; i < steps.length; ++i) {
+          const { regexSearch, replacementString } = steps[i];
 
-        flattened[placeholderKeyToUse] = finalVal;
+          const regex = new RegExp(regexSearch, "gmi");
+
+          const finalVal = lastOutput.replace(regex, replacementString || "");
+
+          lastOutput = finalVal;
+        }
+
+        flattened[placeholderKeyToUse] = lastOutput;
       }
     }
 
