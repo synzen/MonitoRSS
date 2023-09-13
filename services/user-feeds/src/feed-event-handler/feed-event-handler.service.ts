@@ -33,6 +33,9 @@ import pRetry from "p-retry";
 import tracer from "dd-trace";
 import { ResponseHashService } from "../response-hash/response-hash.service";
 import { getParserRules } from "./utils";
+import { FeedRetryRecord } from "./entities";
+import { InjectRepository } from "@mikro-orm/nestjs";
+import { EntityRepository } from "@mikro-orm/postgresql";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -44,6 +47,8 @@ export class FeedEventHandlerService {
     private readonly deliveryRecordService: DeliveryRecordService,
     private readonly amqpConnection: AmqpConnection,
     private readonly responseHashService: ResponseHashService,
+    @InjectRepository(FeedRetryRecord)
+    private readonly feedRetryRecordRepo: EntityRepository<FeedRetryRecord>,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
@@ -237,6 +242,7 @@ export class FeedEventHandlerService {
     logger.debug(
       `Handling event for feed ${event.data.feed.id} with url ${event.data.feed.url}`
     );
+
     await tracer.trace("deliverfeedevent.handle", async (span) => {
       span?.setTag("feedId", event.data.feed.id);
       span?.setTag("feedUrl", event.data.feed.url);
@@ -347,6 +353,22 @@ export class FeedEventHandlerService {
           }
         );
 
+        // START TEMPORARY - Should revisit this for a more robust retry strategy
+        
+        const foundRetryRecord = await this.feedRetryRecordRepo.findOne({
+          feed_id: event.data.feed.id,
+        }, {
+          fields: ['id']
+        })
+
+        if (foundRetryRecord) {
+          await this.feedRetryRecordRepo.nativeDelete({
+            id: foundRetryRecord.id,
+          });
+        }
+
+        // END TEMPORARY
+
         if (!articles.length) {
           logger.debug(
             `Ignoring feed event due to no articles to deliver for feed` +
@@ -415,6 +437,7 @@ export class FeedEventHandlerService {
           feedId: event.data.feed.id,
           hash: response.bodyHash,
         });
+
       } catch (err) {
         if (err instanceof InvalidFeedException) {
           logger.debug(`Ignoring feed event due to invalid feed`, {
@@ -422,18 +445,52 @@ export class FeedEventHandlerService {
             stack: (err as Error).stack,
           });
 
-          this.amqpConnection.publish(
-            "",
-            MessageBrokerQueue.FeedRejectedDisableFeed,
+          const retryRecord = await this.feedRetryRecordRepo.findOne(
             {
-              data: {
-                rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
-                feed: {
-                  id: event.data.feed.id,
-                },
-              },
+              feed_id: event.data.feed.id,
+            },
+            {
+              fields: ["id", "attempts_so_far"],
             }
           );
+
+          // Rudimentary retry to alleviate some pressure
+          if (
+            retryRecord?.attempts_so_far &&
+            retryRecord.attempts_so_far >= 4
+          ) {
+            logger.debug(`Disabling feed due to invalid feed`, {
+              id: event.data.feed.id,
+              feed: event.data.feed.url,
+            })
+            this.amqpConnection.publish(
+              "",
+              MessageBrokerQueue.FeedRejectedDisableFeed,
+              {
+                data: {
+                  rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
+                  feed: {
+                    id: event.data.feed.id,
+                  },
+                },
+              }
+            );
+
+            await this.feedRetryRecordRepo.nativeDelete({
+              id: retryRecord.id,
+            });
+          } else {
+            logger.debug(`Updating retry record`, {
+              id: event.data.feed.id,
+              feed: event.data.feed.url,
+            })
+
+            await this.feedRetryRecordRepo.upsert({
+              feed_id: event.data.feed.id,
+              attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
+            });
+            await this.orm.em.flush()
+          }
         } else {
           logger.error(
             `Error while handling feed event: ${(err as Error).message}`,

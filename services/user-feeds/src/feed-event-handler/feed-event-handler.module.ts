@@ -7,6 +7,8 @@ import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { FeedEventHandlerService } from "./feed-event-handler.service";
 import { MessageBrokerModule } from "../message-broker/message-broker.module";
 import { ResponseHashModule } from "../response-hash/response-hash.module";
+import { MikroOrmModule } from "@mikro-orm/nestjs";
+import { FeedRetryRecord } from "./entities";
 
 @Module({
   controllers: [],
@@ -16,6 +18,7 @@ import { ResponseHashModule } from "../response-hash/response-hash.module";
     FeedFetcherModule,
     ArticleRateLimitModule,
     DeliveryRecordModule,
+    MikroOrmModule.forFeature([FeedRetryRecord]),
   ],
 })
 export class FeedEventHandlerModule {
