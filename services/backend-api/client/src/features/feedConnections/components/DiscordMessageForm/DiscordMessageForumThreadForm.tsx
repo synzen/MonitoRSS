@@ -46,7 +46,7 @@ const TagCheckbox = ({
   filters: { expression: LogicalFilterExpression } | null;
   onChange: (e: boolean, filters: { expression: LogicalFilterExpression } | null) => void;
   emojiName: string | null;
-  name: string;
+  name?: string;
   hasPermissionToUse: boolean;
   feedId: string;
 }) => {
@@ -69,7 +69,7 @@ const TagCheckbox = ({
           >
             <HStack>
               <Box>{emojiName}</Box>
-              <Text>{name}</Text>
+              <Text>{name || "(no name)"}</Text>
             </HStack>
           </Checkbox>
           {isChecked && (

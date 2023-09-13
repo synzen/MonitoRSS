@@ -12,7 +12,7 @@ export const DiscordServerChannelSchema = object({
   availableTags: array(
     object({
       id: string().required(),
-      name: string().required(),
+      name: string(),
       emojiName: string().optional().nullable().default(null),
       hasPermissionToUse: bool().required(),
     }).required()
