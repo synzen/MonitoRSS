@@ -13,6 +13,9 @@ import { InvalidFeedException } from "./exceptions";
 import { Article } from "../shared/types";
 import { ArticleParserService } from "../article-parser/article-parser.service";
 import dayjs from "dayjs";
+import { createHash } from "crypto";
+
+const sha1 = createHash("sha1");
 
 const feedId = "feed-id";
 
@@ -93,6 +96,7 @@ describe("ArticlesService", () => {
         disableImageLinkPreviews: undefined,
       },
       dateChecks: {},
+      useParserRules: [],
     };
 
     it("returns empty array if there are no articles in xml", async () => {
@@ -113,6 +117,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: randomUUID(),
+            idHash: randomUUID(),
           },
           raw: {} as never,
         },
@@ -143,12 +148,14 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "article id",
+            idHash: "article id hash",
           },
           raw: {} as never,
         },
         {
           flattened: {
             id: "article id 2",
+            idHash: "article id 2 hash",
           },
           raw: {} as never,
         },
@@ -165,6 +172,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: articlesFromXml[1].flattened.id,
+            idHash: articlesFromXml[1].flattened.idHash,
           },
           raw: {} as never,
         },
@@ -195,12 +203,14 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "article id",
+            idHash: "article id hash",
           },
           raw: {} as never,
         },
         {
           flattened: {
             id: "article id 2",
+            idHash: "article id 2 hash",
           },
           raw: {} as never,
         },
@@ -214,6 +224,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: articlesFromXml[1].flattened.id,
+            idHash: articlesFromXml[1].flattened.idHash,
           },
           raw: {} as never,
         },
@@ -346,6 +357,7 @@ describe("ArticlesService", () => {
         dateTimezone: undefined,
         disableImageLinkPreviews: undefined,
       },
+      useParserRules: [],
     };
 
     it("returns no articles for an empty feed", async () => {
@@ -382,12 +394,14 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-1",
+            idHash: "id-2-hash",
           },
           raw: {} as never,
         },
         {
           flattened: {
             id: "id-2",
+            idHash: "id-2-hash",
           },
           raw: {} as never,
         },
@@ -397,9 +411,12 @@ describe("ArticlesService", () => {
 
       const found = await articleFieldRepo.findAll();
       const fieldValues = found.map((f) => f.field_value);
-      expect(fieldValues).toHaveLength(2);
+      expect(fieldValues).toHaveLength(4);
       expect(fieldValues).toEqual(
-        expect.arrayContaining(articles.map((a) => a.flattened.id))
+        expect.arrayContaining(articles.map((a) => a.flattened.idHash))
+      );
+      expect(fieldValues).toEqual(
+        expect.arrayContaining(articles.map((a) => a.flattened.idHash))
       );
     });
 
@@ -409,6 +426,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-1",
+            idHash: "id-1-hash",
             title: "foo",
           },
           raw: {} as never,
@@ -416,6 +434,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-2",
+            idHash: "id-2-hash",
             title: "bar",
           },
           raw: {} as never,
@@ -423,6 +442,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-2",
+            idHash: "id-2-hash",
           },
           raw: {} as never,
         },
@@ -439,11 +459,31 @@ describe("ArticlesService", () => {
             feed_id: feedId,
             field_name: "title",
             field_value: articles[0].flattened.title,
+            is_hashed: false,
           }),
           expect.objectContaining({
             feed_id: feedId,
             field_name: "title",
             field_value: articles[1].flattened.title,
+            is_hashed: false,
+          }),
+          expect.objectContaining({
+            feed_id: feedId,
+            field_name: "title",
+            field_value: sha1
+              .copy()
+              .update(articles[0].flattened.title)
+              .digest("hex"),
+            is_hashed: true,
+          }),
+          expect.objectContaining({
+            feed_id: feedId,
+            field_name: "title",
+            field_value: sha1
+              .copy()
+              .update(articles[1].flattened.title)
+              .digest("hex"),
+            is_hashed: true,
           }),
         ])
       );
@@ -455,6 +495,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-1",
+            idHash: "id-1-hash",
             title: "foo",
             description: "bar",
           },
@@ -463,13 +504,15 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-2",
+            idHash: "id-2-hash",
             title: "bar",
           },
           raw: {} as never,
         },
         {
           flattened: {
-            id: "id-2",
+            id: "id-3",
+            idHash: "id-3-hash",
           },
           raw: {} as never,
         },
@@ -503,6 +546,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-1",
+            idHash: "id-1-hash",
             title: "foo",
             description: "bar",
           },
@@ -511,6 +555,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-2",
+            idHash: "id-2-hash",
             title: "bar",
           },
           raw: {} as never,
@@ -518,6 +563,7 @@ describe("ArticlesService", () => {
         {
           flattened: {
             id: "id-2",
+            idHash: "id-2-hash",
           },
           raw: {} as never,
         },
@@ -565,6 +611,7 @@ describe("ArticlesService", () => {
       const articles = ["1", "2", "3", "4"].map((id) => ({
         flattened: {
           id,
+          idHash: `${id}-hash`,
         },
         raw: {} as never,
       }));
@@ -572,8 +619,8 @@ describe("ArticlesService", () => {
       const newArticles = await service.filterForNewArticles(feedId, articles);
 
       expect(newArticles).toEqual([
-        { flattened: { id: "3" }, raw: {} as never },
-        { flattened: { id: "4" }, raw: {} as never },
+        { flattened: { id: "3", idHash: "3-hash" }, raw: {} as never },
+        { flattened: { id: "4", idHash: "4-hash" }, raw: {} as never },
       ]);
     });
   });
@@ -616,7 +663,12 @@ describe("ArticlesService", () => {
       });
 
       const article: Article = {
-        flattened: { id: "1", title: "foobar", description: "baz" },
+        flattened: {
+          id: "1",
+          idHash: "1-hash",
+          title: "foobar",
+          description: "baz",
+        },
         raw: {} as never,
       };
 
@@ -642,7 +694,12 @@ describe("ArticlesService", () => {
       });
 
       const article: Article = {
-        flattened: { id: "1", title: "title", description: "baz" },
+        flattened: {
+          id: "1",
+          idHash: "1-hash",
+          title: "title",
+          description: "baz",
+        },
         raw: {} as never,
       };
 
@@ -662,7 +719,7 @@ describe("ArticlesService", () => {
       });
 
       const article: Article = {
-        flattened: { id: "1", author: "hi" },
+        flattened: { id: "1", idHash: "1-hash", author: "hi" },
         raw: {} as never,
       };
 
@@ -679,8 +736,14 @@ describe("ArticlesService", () => {
       passingComparisons: ["title"],
     };
     const articles = [
-      { flattened: { id: "1", title: "foo" }, raw: {} as never },
-      { flattened: { id: "2", title: "bar" }, raw: {} as never },
+      {
+        flattened: { id: "1", idHash: "1-hash", title: "foo" },
+        raw: {} as never,
+      },
+      {
+        flattened: { id: "2", idHash: "2-hash", title: "bar" },
+        raw: {} as never,
+      },
     ];
 
     it("returns an empty array if there were no seen articles", async () => {

@@ -109,6 +109,7 @@ export class FeedsService {
       const trimmed: Article = {
         flattened: {
           id: article.flattened.id,
+          idHash: article.flattened.idHash,
         },
         raw: article.raw,
       };

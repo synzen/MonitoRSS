@@ -17,6 +17,9 @@ import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-o
 import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
 import { PostProcessParserRule } from "../article-parser/constants";
+import { createHash } from "crypto";
+
+const sha1 = createHash("sha1");
 
 @Injectable()
 export class ArticlesService {
@@ -101,7 +104,9 @@ export class ArticlesService {
 
     const seenArticles = articles.filter(
       (article) =>
-        !newArticles.find((a) => a.flattened.id === article.flattened.id)
+        !newArticles.find(
+          (a) => a.flattened.idHash === article.flattened.idHash
+        )
     );
 
     const allComparisons = [...blockingComparisons, ...passingComparisons];
@@ -223,6 +228,7 @@ export class ArticlesService {
     const result = await this.articleFieldRepo.findOne(
       {
         feed_id: feedId,
+        is_hashed: true,
       },
       {
         fields: ["id"],
@@ -252,7 +258,8 @@ export class ArticlesService {
         new FeedArticleField({
           feed_id: feedId,
           field_name: "id",
-          field_value: article.flattened.id,
+          field_value: article.flattened.idHash,
+          is_hashed: true,
         })
       );
     }
@@ -324,11 +331,14 @@ export class ArticlesService {
         const fieldValue = getNestedPrimitiveValue(article.flattened, field);
 
         if (fieldValue) {
+          const hashedValue = sha1.copy().update(fieldValue).digest("hex");
+
           fieldsToSave.push(
             new FeedArticleField({
               feed_id: feedId,
               field_name: field,
-              field_value: fieldValue,
+              field_value: hashedValue,
+              is_hashed: true,
             })
           );
         }
@@ -343,7 +353,7 @@ export class ArticlesService {
     articles: Article[]
   ): Promise<Article[]> {
     const mapOfArticles = new Map(
-      articles.map((article) => [article.flattened.id, article])
+      articles.map((article) => [article.flattened.idHash, article])
     );
     const articleIds = Array.from(mapOfArticles.keys());
     const foundFieldVals = await this.articleFieldRepo.find(
@@ -353,6 +363,7 @@ export class ArticlesService {
         field_value: {
           $in: articleIds,
         },
+        is_hashed: true,
       },
       {
         fields: ["field_value"],
@@ -394,17 +405,20 @@ export class ArticlesService {
   ) {
     const queries: Pick<
       FeedArticleField,
-      "feed_id" | "field_name" | "field_value"
+      "feed_id" | "field_name" | "field_value" | "is_hashed"
     >[] = [];
 
     for (const key of fieldKeys) {
       const value = getNestedPrimitiveValue(article.flattened, key);
 
       if (value) {
+        const hashedValue = sha1.copy().update(value).digest("hex");
+
         queries.push({
           feed_id: feedId,
           field_name: key,
-          field_value: value,
+          field_value: hashedValue,
+          is_hashed: true,
         });
       }
     }
@@ -486,10 +500,16 @@ export class ArticlesService {
             }
           );
 
+          const id = ArticleIDResolver.getIDTypeValue(
+            rawArticle as never,
+            idType
+          );
+
           return {
             flattened: {
               ...flattened,
-              id: ArticleIDResolver.getIDTypeValue(rawArticle as never, idType),
+              id,
+              idHash: sha1.copy().update(id).digest("hex"),
             },
             raw: rawArticle,
           };

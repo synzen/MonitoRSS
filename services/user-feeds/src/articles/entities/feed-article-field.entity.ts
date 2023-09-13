@@ -20,6 +20,12 @@ export class FeedArticleField {
   })
   field_value: string;
 
+  @Property({
+    type: "boolean",
+    default: false,
+  })
+  is_hashed? = false;
+
   @Property()
   created_at: Date = new Date();
 
@@ -27,5 +33,6 @@ export class FeedArticleField {
     this.feed_id = data.feed_id;
     this.field_name = data.field_name;
     this.field_value = data.field_value;
+    this.is_hashed = data.is_hashed || false;
   }
 }

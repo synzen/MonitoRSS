@@ -13,7 +13,7 @@ dayjs.extend(timezone);
 dayjs.extend(utc);
 dayjs.extend(advancedFormat);
 
-type FlattenedArticleWithoutId = Omit<Article["flattened"], "id">;
+type FlattenedArticleWithoutId = Omit<Article["flattened"], "id" | "idHash">;
 
 @Injectable()
 export class ArticleParserService {
