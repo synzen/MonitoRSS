@@ -4,4 +4,5 @@ export enum FeedFetcherRequestStatus {
   BAD_STATUS_CODE = "BAD_STATUS_CODE",
   FETCH_ERROR = "FETCH_ERROR",
   PARSE_ERROR = "PARSE_ERROR",
+  FETCH_TIMEOUT = "FETCH_TIMEOUT",
 }
