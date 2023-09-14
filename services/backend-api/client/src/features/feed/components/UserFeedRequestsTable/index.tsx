@@ -85,7 +85,7 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
   return (
     <Stack spacing={4}>
       <Heading size="md">{t("features.userFeeds.components.requestsTable.title")}</Heading>
-      {typeof nextRetryTimestamp === "number" && (
+      {onFirstPage && typeof nextRetryTimestamp === "number" && (
         <Alert status="warning" borderRadius="md">
           <AlertIcon />
           <Box>
