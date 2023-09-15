@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { SupportersService } from "../supporters/supporters.service";
-import { FilterQuery, PipelineStage } from "mongoose";
+import { Aggregate, Cursor, FilterQuery, PipelineStage } from "mongoose";
 import logger from "../../utils/logger";
 import {
   UserFeedDisabledCode,
@@ -29,6 +29,10 @@ import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import { NotificationsService } from "../notifications/notifications.service";
 import { UsersService } from "../users/users.service";
+import {
+  DiscordChannelConnection,
+  DiscordWebhookConnection,
+} from "../feeds/entities/feed-connections";
 
 interface PublishFeedDeliveryArticlesData {
   timestamp: number;
@@ -81,16 +85,37 @@ export class ScheduleHandlerService {
   }: {
     data: { url: string; rateSeconds: number };
   }) {
-    const feedCursor = this.getFeedsQueryMatchingRefreshRate({
-      url,
-      refreshRateSeconds: rateSeconds,
-    }).cursor();
+    const feedCursor: Cursor<UserFeedDocument> =
+      this.getFeedsQueryMatchingRefreshRate({
+        url,
+        refreshRateSeconds: rateSeconds,
+      }).cursor();
 
     for await (const feed of feedCursor) {
       try {
+        const cons = Object.values(feed.connections).flat() as Array<
+          DiscordChannelConnection | DiscordWebhookConnection
+        >;
+
+        const hasCustomPlaceholders = cons.find(
+          (c) => !c.customPlaceholders?.length
+        );
+
+        let allowCustomPlaceholders = false;
+
+        if (hasCustomPlaceholders) {
+          const benefits =
+            await this.supportersService.getBenefitsOfDiscordUser(
+              feed.user.discordUserId
+            );
+
+          allowCustomPlaceholders = benefits.allowCustomPlaceholders;
+        }
+
         await this.emitDeliverFeedArticlesEvent({
           userFeed: feed,
-          maxDailyArticles: feed.maxDailyArticles,
+          maxDailyArticles: feed.maxDailyArticles as number,
+          parseCustomPlaceholders: allowCustomPlaceholders,
         });
       } catch (err) {
         logger.error(
@@ -376,9 +401,11 @@ export class ScheduleHandlerService {
   emitDeliverFeedArticlesEvent({
     userFeed,
     maxDailyArticles,
+    parseCustomPlaceholders,
   }: {
     userFeed: UserFeed;
     maxDailyArticles: number;
+    parseCustomPlaceholders: boolean;
   }) {
     const discordChannelMediums = userFeed.connections.discordChannels
       .filter((c) => !c.disabledCode)
@@ -400,7 +427,9 @@ export class ScheduleHandlerService {
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
           mentions: con.mentions,
-          customPlaceholders: con.customPlaceholders,
+          customPlaceholders: parseCustomPlaceholders
+            ? con.customPlaceholders
+            : [],
           formatter: {
             formatTables: con.details.formatter?.formatTables,
             stripImages: con.details.formatter?.stripImages,
@@ -443,7 +472,9 @@ export class ScheduleHandlerService {
             ? con.splitOptions
             : undefined,
           mentions: con.mentions,
-          customPlaceholders: con.customPlaceholders,
+          customPlaceholders: parseCustomPlaceholders
+            ? con.customPlaceholders
+            : [],
           placeholderLimits: con.details.placeholderLimits,
           enablePlaceholderFallback: con.details.enablePlaceholderFallback,
         },
@@ -543,7 +574,7 @@ export class ScheduleHandlerService {
   getFeedsQueryMatchingRefreshRate(data: {
     refreshRateSeconds: number;
     url: string;
-  }) {
+  }): Aggregate<UserFeedDocument[]> {
     return this.userFeedModel.aggregate(
       this.getCommonFeedAggregateStages(data)
     );

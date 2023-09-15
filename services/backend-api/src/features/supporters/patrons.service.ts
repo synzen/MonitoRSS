@@ -10,6 +10,7 @@ interface PatronBenefits {
   maxGuilds: number;
   allowWebhooks: boolean;
   refreshRateSeconds?: number;
+  allowCustomPlaceholders: boolean;
 }
 
 interface PatronDetails {
@@ -47,6 +48,7 @@ export class PatronsService {
         maxGuilds: 0,
         allowWebhooks: false,
         maxUserFeeds: this.defaultMaxUserFeeds,
+        allowCustomPlaceholders: false,
       };
     }
 
@@ -61,6 +63,9 @@ export class PatronsService {
       )?.refreshRateSeconds,
       maxUserFeeds: Math.max(
         ...allBenefits.map((benefits) => benefits.maxUserFeeds)
+      ),
+      allowCustomPlaceholders: allBenefits.some(
+        (benefits) => benefits.allowCustomPlaceholders
       ),
     };
   }
@@ -111,6 +116,7 @@ export class PatronsService {
       maxGuilds: this.getMaxServersFromPledgeLifetime(pledgeLifetime),
       refreshRateSeconds: this.getRefreshRateSecondsFromPledge(usePledge),
       allowWebhooks: true,
+      allowCustomPlaceholders: usePledge >= 500,
     };
   }
 

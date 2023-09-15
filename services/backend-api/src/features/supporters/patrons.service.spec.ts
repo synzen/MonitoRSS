@@ -45,6 +45,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         })
         .mockReturnValueOnce({
           maxFeeds: 10,
@@ -52,6 +54,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         });
 
       expect(
@@ -74,6 +78,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
@@ -81,6 +87,8 @@ describe("PatronsService", () => {
           maxGuilds: 10,
           allowWebhooks: true,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         });
 
       expect(
@@ -101,6 +109,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
@@ -108,6 +118,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: false,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         });
 
       expect(
@@ -129,6 +141,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 1,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         })
         .mockReturnValueOnce({
           maxFeeds: 5,
@@ -136,6 +150,8 @@ describe("PatronsService", () => {
           maxGuilds: 1,
           allowWebhooks: true,
           refreshRateSeconds: 10,
+          allowCustomPlaceholders: true,
+          existsAndIsValid: true,
         });
 
       expect(

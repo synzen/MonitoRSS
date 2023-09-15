@@ -126,26 +126,12 @@ describe("handle-schedule", () => {
       ]);
 
       const urlsHandler = jest.fn();
-      const feedHandler = jest.fn();
 
       await service.handleRefreshRate(service.defaultRefreshRateSeconds, {
         urlsHandler,
-        feedHandler,
       });
 
       expect(urlsHandler).toHaveBeenCalledWith([{ url: "new-york-times.com" }]);
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[0].title,
-        }),
-        expect.anything()
-      );
-      expect(feedHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: createdFeeds[1].title,
-        }),
-        expect.anything()
-      );
     });
 
     it("calls the handlers in batches for feeds with default refresh rate", async () => {
@@ -161,11 +147,9 @@ describe("handle-schedule", () => {
       await userFeedModel.insertMany(generatedEntities);
 
       const urlsHandler = jest.fn();
-      const feedHandler = jest.fn();
 
       await service.handleRefreshRate(service.defaultRefreshRateSeconds, {
         urlsHandler,
-        feedHandler,
       });
 
       expect(urlsHandler).toHaveBeenCalledTimes(2);
@@ -236,39 +220,6 @@ describe("handle-schedule", () => {
   });
 
   describe("getFeedsQueryMatchingRefreshRate", () => {
-    it("returns correctly", async () => {
-      const created = await userFeedModel.create([
-        {
-          title: "feed-title",
-          url: "new-york-times.com",
-          user: {
-            discordUserId: "user-id-1",
-          },
-          connections: sampleConnections,
-          refreshRateSeconds: service.defaultRefreshRateSeconds,
-        },
-        {
-          title: "feed-title",
-          url: "yahoo-news.com",
-          user: {
-            discordUserId: "user-id-2",
-          },
-          connections: sampleConnections,
-          refreshRateSeconds: service.defaultRefreshRateSeconds,
-        },
-      ]);
-
-      const result = await service.getFeedsQueryMatchingRefreshRate(
-        service.defaultRefreshRateSeconds
-      );
-
-      const resultUrls = result.map((feed) => feed.url);
-
-      expect(resultUrls).toHaveLength(2);
-      expect(resultUrls).toEqual(
-        expect.arrayContaining([created[0].url, created[1].url])
-      );
-    });
     it("returns correctly for alternate rates", async () => {
       const created = await userFeedModel.create([
         {
@@ -291,7 +242,10 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getFeedsQueryMatchingRefreshRate(40);
+      const result = await service.getFeedsQueryMatchingRefreshRate({
+        refreshRateSeconds: 40,
+        url: "yahoo-news.com",
+      });
 
       const resultUrls = result.map((feed) => feed.url);
 
@@ -311,9 +265,10 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getFeedsQueryMatchingRefreshRate(
-        service.defaultRefreshRateSeconds
-      );
+      const result = await service.getFeedsQueryMatchingRefreshRate({
+        refreshRateSeconds: service.defaultRefreshRateSeconds,
+        url: "new-york-times.com",
+      });
 
       const resultUrls = result.map((feed) => feed.url);
 
@@ -341,9 +296,10 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getFeedsQueryMatchingRefreshRate(
-        service.defaultRefreshRateSeconds
-      );
+      const result = await service.getFeedsQueryMatchingRefreshRate({
+        refreshRateSeconds: service.defaultRefreshRateSeconds,
+        url: "new-york-times.com",
+      });
 
       expect(result).toHaveLength(0);
     });
@@ -373,9 +329,10 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getFeedsQueryMatchingRefreshRate(
-        service.defaultRefreshRateSeconds
-      );
+      const result = await service.getFeedsQueryMatchingRefreshRate({
+        refreshRateSeconds: service.defaultRefreshRateSeconds,
+        url: "new-york-times.com",
+      });
 
       expect(result).toHaveLength(1);
     });
@@ -394,9 +351,10 @@ describe("handle-schedule", () => {
         },
       ]);
 
-      const result = await service.getFeedsQueryMatchingRefreshRate(
-        service.defaultRefreshRateSeconds
-      );
+      const result = await service.getFeedsQueryMatchingRefreshRate({
+        refreshRateSeconds: service.defaultRefreshRateSeconds,
+        url: "new-york-times.com",
+      });
 
       expect(result).toHaveLength(0);
     });
@@ -640,6 +598,7 @@ describe("handle-schedule", () => {
       await service.emitDeliverFeedArticlesEvent({
         userFeed: foundLean as UserFeed,
         maxDailyArticles: 100,
+        parseCustomPlaceholders: true,
       });
 
       const args = amqpConnection.publish.mock.calls[0];
@@ -786,6 +745,7 @@ describe("handle-schedule", () => {
       await service.emitDeliverFeedArticlesEvent({
         userFeed: foundLean as UserFeed,
         maxDailyArticles: 102,
+        parseCustomPlaceholders: true,
       });
 
       const args = amqpConnection.publish.mock.calls[0];

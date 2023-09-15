@@ -27,6 +27,7 @@ interface SupporterBenefits {
     base: number;
     legacy: number;
   };
+  allowCustomPlaceholders: boolean;
 }
 
 interface ServerBenefits {
@@ -171,6 +172,7 @@ export class SupportersService {
           base: base,
           legacy: legacyAdd,
         },
+        allowCustomPlaceholders: false,
       };
     }
 
@@ -188,6 +190,7 @@ export class SupportersService {
         : this.maxDailyArticlesDefault,
       maxUserFeeds: benefits.maxUserFeeds,
       maxUserFeedsComposition: benefits.maxUserFeedsComposition,
+      allowCustomPlaceholders: benefits.allowCustomPlaceholders,
     };
   }
 
@@ -450,6 +453,7 @@ export class SupportersService {
           base: this.defaultMaxUserFeeds,
           legacy: 0,
         },
+        allowCustomPlaceholders: false,
       };
     }
 
@@ -461,6 +465,7 @@ export class SupportersService {
       maxUserFeeds: patronMaxUserFeeds,
       maxGuilds: patronMaxGuilds,
       refreshRateSeconds: patronRefreshRateSeconds,
+      allowCustomPlaceholders,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
     let refreshRateSeconds = this.defaultRefreshRateSeconds;
@@ -508,6 +513,7 @@ export class SupportersService {
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
       webhooks: true,
+      allowCustomPlaceholders,
     };
   }
 

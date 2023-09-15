@@ -108,6 +108,8 @@ describe("SupportersService", () => {
       allowWebhooks: true,
       maxGuilds: 15,
       refreshRateSeconds: 2,
+      allowCustomPlaceholders: true,
+      existsAndIsValid: true,
     };
 
     beforeEach(() => {
@@ -132,6 +134,7 @@ describe("SupportersService", () => {
         isSupporter: false,
         webhooks: false,
         refreshRateSeconds: defaultRefreshRateSeconds,
+        allowCustomPlaceholders: false,
       });
     });
 
@@ -189,6 +192,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -212,6 +217,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -235,6 +242,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -258,6 +267,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -283,6 +294,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 10,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -306,6 +319,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -329,6 +344,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 0,
             refreshRateSeconds: 2,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -354,6 +371,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 10,
             refreshRateSeconds: 1,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -385,6 +404,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: 8,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
@@ -415,6 +436,8 @@ describe("SupportersService", () => {
             allowWebhooks: true,
             maxGuilds: 15,
             refreshRateSeconds: undefined,
+            allowCustomPlaceholders: true,
+            existsAndIsValid: true,
           };
           jest
             .spyOn(patronsService, "getMaxBenefitsFromPatrons")
