@@ -37,6 +37,7 @@ export enum ApiErrorCode {
   MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
   USER_MANAGER_ALREADY_INVITED = "USER_MANAGER_ALREADY_INVITED",
   USER_FEED_TRANSFER_REQUEST_EXISTS = "USER_FEED_TRANSFER_REQUEST_EXISTS",
+  INSUFFICIENT_SUPPORTER_LEVEL = "INSUFFICIENT_SUPPORTER_LEVEL",
 }
 
 // Create a package for the frontend?
@@ -91,4 +92,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   USER_MANAGER_ALREADY_INVITED: "Invitation exists for this user.",
   USER_FEED_TRANSFER_REQUEST_EXISTS:
     "Transfer request already exists for this feed.",
+  INSUFFICIENT_SUPPORTER_LEVEL: "Insufficient supporter level",
 };

@@ -29,7 +29,7 @@
     "react": "^18.2.0",
     "react-color": "^2.19.3",
     "react-dom": "^18.2.0",
-    "react-hook-form": "^7.43.9",
+    "react-hook-form": "^7.46.1",
     "react-i18next": "^11.15.5",
     "react-icons": "^4.10.1",
     "react-intersection-observer": "^9.5.2",
@@ -39,6 +39,7 @@
     "react-textarea-autosize": "^8.3.3",
     "simple-markdown": "^0.7.3",
     "twemoji": "^14.0.2",
+    "uuid": "^9.0.1",
     "yup": "^1.0.2"
   },
   "devDependencies": {
@@ -52,6 +53,7 @@
     "@types/react-dom": "^18.0.6",
     "@types/react-table": "^7.7.12",
     "@types/twemoji": "^13.1.2",
+    "@types/uuid": "^9.0.4",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "@vitejs/plugin-react": "^4.0.3",

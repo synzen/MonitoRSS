@@ -6,9 +6,10 @@ interface Props {
   feedId?: string;
   data: GetUserFeedArticlesInput["data"];
   onSuccess?: (data: GetUserFeedArticlesOutput) => void;
+  disabled?: boolean;
 }
 
-export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess }: Props) => {
+export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess, disabled }: Props) => {
   const queryKey = [
     "user-feed-articles",
     {
@@ -34,7 +35,7 @@ export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess }: Prop
       });
     },
     {
-      enabled: !!feedId && !!inputData.selectProperties?.length,
+      enabled: !!feedId && !!inputData.selectProperties?.length && !disabled,
       onSuccess,
       keepPreviousData: true,
       staleTime: 1000 * 60 * 5, // 5 minutes

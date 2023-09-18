@@ -1,4 +1,5 @@
 import { array, boolean, InferType, number, object, string } from "yup";
+import { CustomPlaceholderSchema } from "../CustomPlaceholder";
 
 export const discordMessageEmbedFieldFormSchema = object({
   name: string().max(256).required(),
@@ -109,14 +110,7 @@ export const discordMessageFormSchema = object({
       }).required()
     ).nullable(),
   }).nullable(),
-  customPlaceholders: array(
-    object({
-      id: string().required(),
-      sourcePlaceholder: string().required(),
-      regexSearch: string().required(),
-      replacementString: string().nullable(),
-    }).required()
-  ).nullable(),
+  customPlaceholders: array(CustomPlaceholderSchema.required()).nullable(),
   placeholderLimits: array(
     object({
       characterCount: number().min(1).positive().integer().required(),

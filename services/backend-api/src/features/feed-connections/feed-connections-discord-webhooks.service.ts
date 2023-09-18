@@ -5,6 +5,7 @@ import {
   DiscordWebhookInvalidTypeException,
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
+  InsufficientSupporterLevelException,
   InvalidFilterExpressionException,
 } from "../../common/exceptions";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
@@ -25,7 +26,7 @@ import {
 } from "../../common/utils";
 import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
-import { DiscordChannelType } from "../../common";
+import { CustomPlaceholderDto, DiscordChannelType } from "../../common";
 import { DiscordWebhookForumChannelUnsupportedException } from "./exceptions";
 import { CreateDiscordWebhookConnectionCloneInputDto } from "./dto";
 import { SupportersService } from "../supporters/supporters.service";
@@ -34,9 +35,16 @@ export interface UpdateDiscordWebhookConnectionInput {
   accessToken: string;
   feedId: string;
   connectionId: string;
+  feed: {
+    user: {
+      discordUserId: string;
+    };
+  };
   updates: {
     filters?: DiscordWebhookConnection["filters"] | null;
     name?: string;
+    customPlaceholders?: CustomPlaceholderDto[] | null;
+
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
     mentions?: DiscordWebhookConnection["mentions"] | null;
@@ -62,7 +70,7 @@ interface CreatePreviewInput {
   connection: DiscordWebhookConnection;
   splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
   mentions?: DiscordWebhookConnection["mentions"] | null;
-  customPlaceholders?: DiscordWebhookConnection["customPlaceholders"] | null;
+  customPlaceholders?: CustomPlaceholderDto[] | null;
   content?: string;
   embeds?: DiscordPreviewEmbed[];
   feedFormatOptions: UserFeed["formatOptions"] | null;
@@ -159,8 +167,19 @@ export class FeedConnectionsDiscordWebhooksService {
   async cloneConnection(
     userFeed: UserFeed,
     connection: DiscordWebhookConnection,
+    discordUserId: string,
     { name }: CreateDiscordWebhookConnectionCloneInputDto
   ) {
+    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+      discordUserId
+    );
+
+    if (!benefits.isSupporter) {
+      throw new InsufficientSupporterLevelException(
+        "User must be a supporter to add webhooks"
+      );
+    }
+
     const newId = new Types.ObjectId();
 
     await this.userFeedModel.findOneAndUpdate(
@@ -186,9 +205,36 @@ export class FeedConnectionsDiscordWebhooksService {
   async updateDiscordWebhookConnection({
     feedId,
     connectionId,
-    updates: { details, filters, name, disabledCode, splitOptions, mentions },
+    updates: {
+      details,
+      filters,
+      name,
+      disabledCode,
+      splitOptions,
+      mentions,
+      customPlaceholders,
+    },
     accessToken,
+    feed: {
+      user: { discordUserId },
+    },
   }: UpdateDiscordWebhookConnectionInput) {
+    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+      discordUserId
+    );
+
+    if (!benefits.isSupporter) {
+      throw new InsufficientSupporterLevelException(
+        "User must be a supporter to modify webhooks"
+      );
+    }
+
+    if (customPlaceholders?.length && !benefits.allowCustomPlaceholders) {
+      throw new InsufficientSupporterLevelException(
+        "User must be a supporter of a sufficient tier to use custom placeholders"
+      );
+    }
+
     let webhookUpdates:
       | undefined
       | DiscordWebhookConnection["details"]["webhook"] = undefined;
@@ -264,6 +310,10 @@ export class FeedConnectionsDiscordWebhooksService {
         ...(mentions && {
           "connections.discordWebhooks.$.mentions": mentions,
         }),
+        ...(customPlaceholders && {
+          "connections.discordWebhooks.$.customPlaceholders":
+            customPlaceholders,
+        }),
       },
       $unset: {
         ...(filters === null && {
@@ -331,6 +381,21 @@ export class FeedConnectionsDiscordWebhooksService {
     }
   ): Promise<SendTestArticleResult> {
     const previewInput = details?.previewInput;
+
+    let useCustomPlaceholders =
+      previewInput?.customPlaceholders || connection.customPlaceholders;
+
+    if (previewInput?.customPlaceholders?.length) {
+      const { allowCustomPlaceholders } =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          userFeed.user.discordUserId
+        );
+
+      if (!allowCustomPlaceholders) {
+        useCustomPlaceholders = [];
+      }
+    }
+
     const cleanedPreviewEmbeds = previewInput?.embeds
       ? previewInput.embeds.map((e) => ({
           title: e.title || undefined,
@@ -382,8 +447,7 @@ export class FeedConnectionsDiscordWebhooksService {
           ? previewInput.splitOptions
           : connection.splitOptions,
         mentions: previewInput?.mentions || connection.mentions,
-        customPlaceholders:
-          previewInput?.customPlaceholders || connection.customPlaceholders,
+        customPlaceholders: useCustomPlaceholders,
         placeholderLimits:
           previewInput?.placeholderLimits ||
           connection.details.placeholderLimits,
@@ -412,6 +476,19 @@ export class FeedConnectionsDiscordWebhooksService {
     enablePlaceholderFallback,
     customPlaceholders,
   }: CreatePreviewInput): Promise<SendTestArticleResult> {
+    let useCustomPlaceholders = customPlaceholders || [];
+
+    if (useCustomPlaceholders?.length) {
+      const { allowCustomPlaceholders } =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          userFeed.user.discordUserId
+        );
+
+      if (!allowCustomPlaceholders) {
+        useCustomPlaceholders = [];
+      }
+    }
+
     const payload = {
       type: "discord",
       feed: {
@@ -459,7 +536,7 @@ export class FeedConnectionsDiscordWebhooksService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions || undefined,
         mentions: mentions || undefined,
-        customPlaceholders: customPlaceholders || undefined,
+        customPlaceholders: useCustomPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback,
       },

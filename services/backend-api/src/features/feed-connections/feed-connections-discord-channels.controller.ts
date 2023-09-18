@@ -232,6 +232,7 @@ export class FeedConnectionsDiscordChannelsController {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      customPlaceholders,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -275,12 +276,14 @@ export class FeedConnectionsDiscordChannelsController {
       connection.id.toHexString(),
       {
         accessToken: access_token,
+        feed,
         updates: {
           filters,
           name,
           disabledCode: useDisableCode,
           splitOptions,
           mentions,
+          customPlaceholders,
           details: {
             placeholderLimits,
             channel: useChannelId

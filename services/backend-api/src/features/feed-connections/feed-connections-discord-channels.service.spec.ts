@@ -1,4 +1,5 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
+import { randomUUID } from "crypto";
 import { Model, Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { InvalidFilterExpressionException } from "../../common/exceptions";
@@ -169,7 +170,8 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connection,
         {
           name: connection.name + "new-name",
-        }
+        },
+        "token"
       );
 
       const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
@@ -195,6 +197,11 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     let createdFeed: UserFeed;
     const updateInput = {
       accessToken: "access-token",
+      feed: {
+        user: {
+          discordUserId: "user-id",
+        },
+      },
       guildId,
       updates: {
         name: "updatedName",
@@ -203,6 +210,20 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             foo: "bar",
           },
         },
+        customPlaceholders: [
+          {
+            id: randomUUID(),
+            referenceName: "refe",
+            sourcePlaceholder: "title",
+            steps: [
+              {
+                id: randomUUID(),
+                regexSearch: "regex-search",
+                replacementString: "replacement",
+              },
+            ],
+          },
+        ],
         splitOptions: {
           splitChar: "s",
           appendChar: "a",
@@ -284,6 +305,20 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         id: connectionIdToUse,
         name: updateInput.updates.name,
         filters: updateInput.updates.filters,
+        customPlaceholders: [
+          {
+            id: updateInput.updates.customPlaceholders[0].id,
+            referenceName: "refe",
+            sourcePlaceholder: "title",
+            steps: [
+              {
+                id: updateInput.updates.customPlaceholders[0].steps[0].id,
+                regexSearch: "regex-search",
+                replacementString: "replacement",
+              },
+            ],
+          },
+        ],
         details: {
           embeds: updateInput.updates.details?.embeds,
           channel: {
@@ -301,6 +336,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connectionIdToUse.toHexString(),
         {
           accessToken: updateInput.accessToken,
+          feed: createdFeed,
           updates: {
             disabledCode: FeedConnectionDisabledCode.BadFormat,
           },
@@ -322,6 +358,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connectionIdToUse.toHexString(),
         {
           accessToken: updateInput.accessToken,
+          feed: createdFeed,
           updates: {
             splitOptions: updateInput.updates.splitOptions,
           },
@@ -343,6 +380,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connectionIdToUse.toHexString(),
         {
           accessToken: updateInput.accessToken,
+          feed: createdFeed,
           updates: {
             filters: null,
             disabledCode: null,
@@ -404,6 +442,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           connectionIdToUse.toHexString(),
           {
             accessToken: updateInput.accessToken,
+            feed: createdFeed,
             updates: {
               filters: {
                 expression: {

@@ -41,6 +41,7 @@ import {
   UpdateDiscordChannelConnectionInput,
   CloneDiscordConnectionCloneDialog,
 } from "../features/feedConnections";
+import { CustomPlaceholdersTabSection } from "../features/feedConnections/components/CustomPlaceholdersTabSection";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
@@ -53,11 +54,13 @@ import { notifySuccess } from "../utils/notifySuccess";
 enum TabSearchParam {
   Message = "?view=message",
   Filters = "?view=filters",
+  CustomPlaceholders = "?view=custom-placeholders",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Message, 0],
   [TabSearchParam.Filters, 1],
+  [TabSearchParam.CustomPlaceholders, 2],
 ]);
 
 const getPrettyChannelType = (
@@ -295,6 +298,15 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               >
                 Filters
               </Tab>
+              <Tab
+                onClick={() => {
+                  navigate({
+                    search: TabSearchParam.CustomPlaceholders,
+                  });
+                }}
+              >
+                Custom Placeholders
+              </Tab>
             </TabList>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
@@ -357,6 +369,27 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       stripImages: connection?.details.formatter?.stripImages,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                    },
+                  }}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <CustomPlaceholdersTabSection
+                  connectionId={connectionId as string}
+                  feedId={feedId as string}
+                  connectionType={FeedConnectionType.DiscordChannel}
+                  articleFormat={{
+                    customPlaceholders: connection?.customPlaceholders,
+                    options: {
+                      formatTables: connection?.details.formatter?.formatTables,
+                      stripImages: connection?.details.formatter?.stripImages,
+                      dateFormat: feed?.formatOptions?.dateFormat,
+                      dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ...feed?.formatOptions,
                     },
                   }}
                 />

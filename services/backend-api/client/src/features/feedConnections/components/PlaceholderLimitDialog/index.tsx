@@ -30,7 +30,7 @@ const formDataSchema = object({
     .min(1, "This is a required field")
     .required("This is a required field")
     .default(""),
-  characterCount: number().positive().integer().min(1).required("This is required field"),
+  characterCount: number().positive().integer().min(1).required("This is a required field"),
   appendString: string().optional().default(""),
 });
 

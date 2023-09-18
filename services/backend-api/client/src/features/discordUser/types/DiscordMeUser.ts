@@ -1,4 +1,4 @@
-import { array, InferType, number, object, string } from "yup";
+import { array, bool, InferType, number, object, string } from "yup";
 
 export const DiscordMeUserSchema = object({
   id: string().required(),
@@ -23,6 +23,7 @@ export const DiscordMeUserSchema = object({
       disabledCode: string().default(undefined),
     }).required()
   ).required(),
+  allowCustomPlaceholders: bool(),
 });
 
 export type DiscordMeUser = InferType<typeof DiscordMeUserSchema>;

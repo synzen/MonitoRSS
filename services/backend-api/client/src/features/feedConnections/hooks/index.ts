@@ -10,3 +10,6 @@ export * from "./useCreateConnectionPreview";
 export * from "./useDiscordChannelForumTags";
 export * from "./useCreateDiscordChannelConnectionClone";
 export * from "./useCreateDiscordWebhookConnectionClone";
+export * from "./useConnection";
+export * from "./useUpdateConnection";
+export * from "./useGetUserFeedArticlesError";

@@ -120,6 +120,32 @@ const mockUserFeeds: UserFeed[] = [
             },
           ],
         },
+        customPlaceholders: [
+          {
+            id: "customtitle",
+            referenceName: "Custom Title",
+            sourcePlaceholder: "title",
+            steps: [
+              {
+                id: "1",
+                regexSearch: "^(.*)$",
+                replacementString: "xx",
+              },
+            ],
+          },
+          // {
+          //   id: "customid",
+          //   referenceName: "Custom ID",
+          //   sourcePlaceholder: "id",
+          //   steps: [
+          //     {
+          //       id: "1",
+          //       regexSearch: "^(.*)$",
+          //       replacementString: "xx",
+          //     },
+          //   ],
+          // },
+        ],
         splitOptions: null,
         mentions: {
           targets: [

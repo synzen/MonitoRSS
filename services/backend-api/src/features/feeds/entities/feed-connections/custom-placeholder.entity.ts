@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Types } from "mongoose";
 
 @Schema({
   _id: false,
@@ -6,6 +7,12 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
   versionKey: false,
 })
 export class CustomPlaceholderStep {
+  @Prop({
+    required: true,
+    default: () => new Types.ObjectId().toHexString(),
+  })
+  id: string;
+
   @Prop({
     required: true,
   })
@@ -30,8 +37,14 @@ export const CustomPlaceholderStepSchema = SchemaFactory.createForClass(
 export class CustomPlaceholder {
   @Prop({
     required: true,
+    default: () => new Types.ObjectId().toHexString(),
   })
   id: string;
+
+  @Prop({
+    required: true,
+  })
+  referenceName: string;
 
   @Prop({
     required: true,

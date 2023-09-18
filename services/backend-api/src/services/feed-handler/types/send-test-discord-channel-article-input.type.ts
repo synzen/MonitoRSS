@@ -1,4 +1,4 @@
-import { DiscordMediumEvent } from "../../../common";
+import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
 import { FeedConnectionDiscordChannelType } from "../../../features/feeds/constants";
 import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
 
@@ -36,7 +36,7 @@ export interface SendTestDiscordChannelArticleInput {
       mentions?: DiscordChannelConnection["mentions"];
       placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
       enablePlaceholderFallback?: DiscordChannelConnection["details"]["enablePlaceholderFallback"];
-      customPlaceholders: DiscordChannelConnection["customPlaceholders"];
+      customPlaceholders?: CustomPlaceholderDto[];
     };
   };
 }

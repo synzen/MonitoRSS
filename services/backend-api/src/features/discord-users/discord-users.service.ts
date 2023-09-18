@@ -146,6 +146,7 @@ export class DiscordUsersService {
           rateSeconds: this.supportersService.defaultRefreshRateSeconds,
         },
       ],
+      allowCustomPlaceholders: benefits.allowCustomPlaceholders,
     };
 
     if (supportersEnabled) {

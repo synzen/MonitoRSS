@@ -18,6 +18,7 @@ import {
   FiltersDto,
   MentionsOptionsDto,
   DiscordPlaceholderLimitOptions,
+  CustomPlaceholderDto,
 } from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
@@ -103,4 +104,11 @@ export class UpdateDiscordChannelConnectionInputDto {
   @Type(() => Boolean)
   @IsBoolean()
   enablePlaceholderFallback?: boolean;
+
+  @IsObject({ each: true })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholderDto)
+  customPlaceholders?: CustomPlaceholderDto[];
 }

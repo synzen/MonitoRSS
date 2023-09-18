@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { convert, HtmlToTextOptions, SelectorDefinition } from "html-to-text";
 import { Article, ArticleDiscordFormatted } from "../shared";
 import { FormatOptions } from "./types";
+import vm from "node:vm";
+import { RegexEvalException } from "../article-filters/exceptions";
 
 @Injectable()
 export class ArticleFormatterService {
@@ -21,12 +23,12 @@ export class ArticleFormatterService {
 
     if (options.customPlaceholders) {
       for (const {
-        id,
         sourcePlaceholder,
+        referenceName,
         steps,
       } of options.customPlaceholders) {
         const sourceValue = flattened[sourcePlaceholder];
-        const placeholderKeyToUse = `custom::${id}`;
+        const placeholderKeyToUse = `custom::${referenceName}`;
 
         if (!sourceValue) {
           flattened[placeholderKeyToUse] = "";
@@ -39,11 +41,32 @@ export class ArticleFormatterService {
         for (let i = 0; i < steps.length; ++i) {
           const { regexSearch, replacementString } = steps[i];
 
-          const regex = new RegExp(regexSearch, "gmi");
+          const context = {
+            reference: lastOutput,
+            replacementString,
+            inputRegex: regexSearch,
+            finalVal: lastOutput,
+          };
 
-          const finalVal = lastOutput.replace(regex, replacementString || "");
+          const script = new vm.Script(`
+            const regex = new RegExp(inputRegex, 'gmi');
+            finalVal = reference.replace(regex, replacementString || '');
+        `);
 
-          lastOutput = finalVal;
+          try {
+            script.runInNewContext(context, {
+              timeout: 5000,
+            });
+
+            lastOutput = context.finalVal;
+          } catch (err) {
+            throw new RegexEvalException(
+              `Custom placeholder with regex regex "${regexSearch}" evaluation` +
+                ` on string "${lastOutput}"` +
+                ` with replacement string "${replacementString}" errored: ` +
+                `${(err as Error).message}`
+            );
+          }
         }
 
         flattened[placeholderKeyToUse] = lastOutput;

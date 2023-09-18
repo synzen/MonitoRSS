@@ -27,4 +27,5 @@ export type DiscordUserFormatted = DiscordUser & {
     rateSeconds: number;
     disabledCode?: string;
   }>;
+  allowCustomPlaceholders?: boolean;
 };

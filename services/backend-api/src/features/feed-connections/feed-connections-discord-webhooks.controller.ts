@@ -109,6 +109,7 @@ export class FeedConnectionsDiscordWebhooksController {
         userFeed: feed,
         connection,
         feedFormatOptions: data.userFeedFormatOptions,
+        customPlaceholders: data.customPlaceholders,
       },
     });
 
@@ -122,9 +123,16 @@ export class FeedConnectionsDiscordWebhooksController {
     @Param("feedId", GetUserFeedPipe(), GetFeedDiscordWebhookConnectionPipe)
     { feed, connection }: GetFeedDiscordWebhookConnectionPipeOutput,
     @Body(ValidationPipe)
-    data: CreateDiscordWebhookConnectionCloneInputDto
+    data: CreateDiscordWebhookConnectionCloneInputDto,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
   ) {
-    const result = await this.service.cloneConnection(feed, connection, data);
+    const result = await this.service.cloneConnection(
+      feed,
+      connection,
+      discordUserId,
+      data
+    );
 
     return {
       result,
@@ -146,6 +154,7 @@ export class FeedConnectionsDiscordWebhooksController {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      customPlaceholders,
     }: CreateDiscordWebhookConnectionPreviewInputDto
   ): Promise<CreateDiscordWebhookConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -160,6 +169,7 @@ export class FeedConnectionsDiscordWebhooksController {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      customPlaceholders,
     });
 
     return {
@@ -185,6 +195,7 @@ export class FeedConnectionsDiscordWebhooksController {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      customPlaceholders,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -228,12 +239,14 @@ export class FeedConnectionsDiscordWebhooksController {
         accessToken: access_token,
         connectionId: connection.id.toHexString(),
         feedId: feed._id.toHexString(),
+        feed,
         updates: {
           name,
           filters,
           disabledCode: useDisableCode,
           splitOptions,
           mentions,
+          customPlaceholders,
           details: {
             formatter,
             content,

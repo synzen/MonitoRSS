@@ -354,12 +354,15 @@ export class FeedEventHandlerService {
         );
 
         // START TEMPORARY - Should revisit this for a more robust retry strategy
-        
-        const foundRetryRecord = await this.feedRetryRecordRepo.findOne({
-          feed_id: event.data.feed.id,
-        }, {
-          fields: ['id']
-        })
+
+        const foundRetryRecord = await this.feedRetryRecordRepo.findOne(
+          {
+            feed_id: event.data.feed.id,
+          },
+          {
+            fields: ["id"],
+          }
+        );
 
         if (foundRetryRecord) {
           await this.feedRetryRecordRepo.nativeDelete({
@@ -437,7 +440,6 @@ export class FeedEventHandlerService {
           feedId: event.data.feed.id,
           hash: response.bodyHash,
         });
-
       } catch (err) {
         if (err instanceof InvalidFeedException) {
           logger.debug(`Ignoring feed event due to invalid feed`, {
@@ -462,7 +464,7 @@ export class FeedEventHandlerService {
             logger.debug(`Disabling feed due to invalid feed`, {
               id: event.data.feed.id,
               feed: event.data.feed.url,
-            })
+            });
             this.amqpConnection.publish(
               "",
               MessageBrokerQueue.FeedRejectedDisableFeed,
@@ -483,13 +485,13 @@ export class FeedEventHandlerService {
             logger.debug(`Updating retry record`, {
               id: event.data.feed.id,
               feed: event.data.feed.url,
-            })
+            });
 
             await this.feedRetryRecordRepo.upsert({
               feed_id: event.data.feed.id,
               attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
             });
-            await this.orm.em.flush()
+            await this.orm.em.flush();
           }
         } else {
           logger.error(

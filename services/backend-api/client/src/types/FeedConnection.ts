@@ -1,5 +1,6 @@
 import { array, boolean, InferType, number, object, string } from "yup";
 import { FeedEmbedSchema } from "./FeedEmbed";
+import { CustomPlaceholderSchema } from "./CustomPlaceholder";
 
 export enum FeedConnectionType {
   DiscordChannel = "DISCORD_CHANNEL",
@@ -113,16 +114,7 @@ export const FeedConnectionSchema = object({
   })
     .nullable()
     .default(undefined),
-  customPlaceholders: array(
-    object({
-      id: string().required(),
-      sourcePlaceholder: string().required(),
-      regexSearch: string().required(),
-      replacementString: string().nullable(),
-    }).required()
-  )
-    .nullable()
-    .default(undefined),
+  customPlaceholders: array(CustomPlaceholderSchema.required()).nullable().default(undefined),
   details: object().when("key", ([key]) => {
     if (key === FeedConnectionType.DiscordWebhook) {
       return DiscordWebhookConnectionDetailsSchema;

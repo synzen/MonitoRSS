@@ -6,11 +6,17 @@ import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discor
 import { FeedConnectionsDiscordChannelsController } from "./feed-connections-discord-channels.controller";
 import { UserFeedsModule } from "../user-feeds/user-feeds.module";
 import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
+import { SupportersModule } from "../supporters/supporters.module";
 
 @Module({
   controllers: [FeedConnectionsDiscordChannelsController],
   providers: [FeedConnectionsDiscordChannelsService],
-  imports: [FeedsModule, DiscordAuthModule, FeedHandlerModule],
+  imports: [
+    FeedsModule,
+    DiscordAuthModule,
+    FeedHandlerModule,
+    SupportersModule,
+  ],
 })
 export class FeedConnectionsDiscordChannelsModule {
   static forRoot(): DynamicModule {

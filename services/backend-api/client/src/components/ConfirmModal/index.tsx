@@ -1,12 +1,11 @@
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Text,
   ThemingProps,
   useDisclosure,
@@ -40,6 +39,7 @@ export const ConfirmModal = ({
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const onClickConfirm = async () => {
     setLoading(true);
@@ -55,19 +55,18 @@ export const ConfirmModal = ({
   return (
     <>
       {React.cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} size={size}>
-        <ModalOverlay />
-        <ModalContent>
-          {title && <ModalHeader marginRight={4}>{title}</ModalHeader>}
-          <ModalCloseButton />
+      <AlertDialog isOpen={isOpen} onClose={onClose} size={size} leastDestructiveRef={cancelRef}>
+        <AlertDialogOverlay />
+        <AlertDialogContent>
+          {title && <AlertDialogHeader marginRight={4}>{title}</AlertDialogHeader>}
           {description && !descriptionNode && (
-            <ModalBody>
+            <AlertDialogBody>
               <Text>{description}</Text>
-            </ModalBody>
+            </AlertDialogBody>
           )}
-          {descriptionNode && !description && <ModalBody>{descriptionNode}</ModalBody>}
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
+          {descriptionNode && !description && <AlertDialogBody>{descriptionNode}</AlertDialogBody>}
+          <AlertDialogFooter>
+            <Button ref={cancelRef} variant="ghost" mr={3} onClick={onClose}>
               {cancelText || t("common.buttons.cancel")}
             </Button>
             <Button
@@ -78,9 +77,9 @@ export const ConfirmModal = ({
             >
               {okText || t("common.buttons.confirm")}
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

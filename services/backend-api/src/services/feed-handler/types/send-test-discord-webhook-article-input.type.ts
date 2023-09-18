@@ -1,4 +1,4 @@
-import { DiscordMediumEvent } from "../../../common";
+import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
 import { DiscordWebhookConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface SendTestDiscordWebhookArticleInput {
@@ -32,7 +32,7 @@ export interface SendTestDiscordWebhookArticleInput {
         prependChar?: string | null;
       };
       mentions?: DiscordWebhookConnection["mentions"];
-      customPlaceholders?: DiscordWebhookConnection["customPlaceholders"];
+      customPlaceholders?: CustomPlaceholderDto[];
       placeholderLimits?: DiscordWebhookConnection["details"]["placeholderLimits"];
       enablePlaceholderFallback?: boolean;
     };

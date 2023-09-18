@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import {
+  CustomPlaceholderDto,
   DiscordEmbed,
   DiscordPlaceholderLimitOptions,
   MentionsOptionsDto,
@@ -129,4 +130,11 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @Type(() => Boolean)
   @IsBoolean()
   enablePlaceholderFallback?: boolean;
+
+  @IsObject({ each: true })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CustomPlaceholderDto)
+  customPlaceholders?: CustomPlaceholderDto[];
 }

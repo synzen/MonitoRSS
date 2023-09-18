@@ -7,8 +7,6 @@ import {
   Center,
   Divider,
   Flex,
-  FormControl,
-  FormLabel,
   HStack,
   Input,
   InputGroup,
@@ -30,7 +28,11 @@ import { useTranslation } from "react-i18next";
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { Loading, Menu, ThemedSelect } from "@/components";
 import { GetArticlesFilterReturnType } from "../../constants";
-import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from "../../hooks";
+import {
+  useUserFeedArticleProperties,
+  useUserFeedArticles,
+  useUserFeedArticlesWithPagination,
+} from "../../hooks";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { GetUserFeedArticlesInput } from "../../api";
 import { useDebounce } from "../../../../hooks";
@@ -38,24 +40,20 @@ import { useDebounce } from "../../../../hooks";
 interface Props {
   feedId: string;
   trigger: React.ReactElement;
-  onArticleSelected: (articleId: string) => void;
   onClickRandomArticle: () => void;
   articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
-  singleProperty?: string;
 }
 
 export const ArticleSelectDialog = ({
   feedId,
   trigger,
-  onArticleSelected,
   onClickRandomArticle,
   articleFormatter,
-  singleProperty,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
-    singleProperty || "title"
+    "title"
   );
   const [search, setSearch] = useState("");
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
@@ -89,6 +87,25 @@ export const ArticleSelectDialog = ({
       formatter: articleFormatter,
     },
   });
+  const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
+  const {
+    data: dataUserFeedArticles,
+    refetch: refetchUserFeedArticles,
+    fetchStatus: fetchStatusUserFeedArticles,
+    status: statusUserFeedArticles,
+  } = useUserFeedArticles({
+    feedId,
+    disabled: !selectedArticleId,
+    data: {
+      limit: 1,
+      skip: 0,
+      selectProperties: ["*"],
+      formatter: articleFormatter,
+      filters: {
+        articleId: selectedArticleId,
+      },
+    },
+  });
 
   const onChangeFeedArticleProperty = (value: string) => {
     setSelectedArticleProperty(value);
@@ -96,7 +113,7 @@ export const ArticleSelectDialog = ({
 
   const onClickArticle = async (articleId?: string) => {
     if (articleId) {
-      onArticleSelected(articleId);
+      setSelectedArticleId(articleId);
     } else {
       onClickRandomArticle();
     }
@@ -145,50 +162,49 @@ export const ArticleSelectDialog = ({
                 )}
                 {articles && (
                   <Stack>
-                    {!singleProperty && (
-                      <Flex>
-                        <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
-                          <FormControl flexGrow={1}>
-                            <FormLabel>Property</FormLabel>
-                            <ThemedSelect
-                              options={
-                                feedArticlePropertiesResult?.result.properties.map((property) => ({
-                                  value: property,
-                                  label: property,
-                                  data: property,
-                                })) || []
-                              }
-                              isDisabled={feedArticlePropertiesStatus === "loading"}
-                              loading={feedArticlePropertiesStatus === "loading"}
-                              value={useArticleProperty}
-                              onChange={onChangeFeedArticleProperty}
-                            />
-                          </FormControl>
-                        </HStack>
-                      </Flex>
-                    )}
+                    <Flex>
+                      <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
+                        <Text whiteSpace="nowrap">Property:</Text>
+                        <Box flexGrow={1}>
+                          <ThemedSelect
+                            options={
+                              feedArticlePropertiesResult?.result.properties.map((property) => ({
+                                value: property,
+                                label: property,
+                                data: property,
+                              })) || []
+                            }
+                            isDisabled={feedArticlePropertiesStatus === "loading"}
+                            loading={feedArticlePropertiesStatus === "loading"}
+                            value={useArticleProperty}
+                            onChange={onChangeFeedArticleProperty}
+                          />
+                        </Box>
+                        {/* <IconButton
+                          aria-label="Reload"
+                          icon={<RepeatIcon />}
+                          isLoading={fetchStatus === "fetching"}
+                          onClick={() => refetch()}
+                        /> */}
+                        <Button
+                          leftIcon={<RepeatIcon />}
+                          isLoading={fetchStatus === "fetching"}
+                          onClick={() => refetch()}
+                        >
+                          Reload
+                        </Button>
+                      </HStack>
+                    </Flex>
                     <Stack>
-                      <FormControl>
-                        <FormLabel>Search</FormLabel>
-                        <HStack flexWrap="wrap">
-                          <InputGroup flex={1}>
-                            <InputLeftElement pointerEvents="none">
-                              <SearchIcon color="gray.300" />
-                            </InputLeftElement>
-                            <Input
-                              onChange={(e) => setSearch(e.target.value)}
-                              placeholder="Search..."
-                            />
-                          </InputGroup>
-                          <Button
-                            leftIcon={<RepeatIcon />}
-                            isLoading={fetchStatus === "fetching"}
-                            onClick={() => refetch()}
-                          >
-                            Reload
-                          </Button>
-                        </HStack>
-                      </FormControl>
+                      <InputGroup>
+                        <InputLeftElement pointerEvents="none">
+                          <SearchIcon color="gray.300" />
+                        </InputLeftElement>
+                        <Input
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search..."
+                        />
+                      </InputGroup>
                     </Stack>
                     <Stack spacing={8} position="relative" rounded="lg">
                       {fetchStatus === "fetching" && (

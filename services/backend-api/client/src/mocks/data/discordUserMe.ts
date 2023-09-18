@@ -7,6 +7,7 @@ const mockDiscordUserMe: DiscordMeUser = {
   iconUrl: undefined,
   maxFeeds: 10,
   maxUserFeeds: 5,
+  allowCustomPlaceholders: true,
   supporter: {
     expireAt: new Date().toISOString(),
     guilds: [],

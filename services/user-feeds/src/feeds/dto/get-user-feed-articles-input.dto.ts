@@ -16,7 +16,7 @@ import {
 } from "class-validator";
 import { GetUserFeedArticlesFilterReturnType } from "../constants";
 import { GetUserFeedArticlesFormatterDto } from "./shared";
-
+import { CustomPlaceholder } from "../../article-formatter/types/format-options";
 export class CustomPlaceholderStepDto {
   @IsString()
   @IsNotEmpty()
@@ -26,21 +26,6 @@ export class CustomPlaceholderStepDto {
   @IsOptional()
   @ValidateIf((v) => v.replacementString !== null)
   replacementString?: string | null;
-}
-
-export class CustomPlaceholderDto {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @IsString()
-  @IsNotEmpty()
-  sourcePlaceholder: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CustomPlaceholderStepDto)
-  steps: CustomPlaceholderStepDto[];
 }
 
 class FormatterDto {
@@ -53,9 +38,9 @@ class FormatterDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CustomPlaceholderDto)
+  @Type(() => CustomPlaceholder)
   @ValidateIf((v) => v.customPlaceholders !== null)
-  customPlaceholders?: CustomPlaceholderDto[] | null;
+  customPlaceholders?: CustomPlaceholder[] | null;
 }
 
 class FiltersDto {

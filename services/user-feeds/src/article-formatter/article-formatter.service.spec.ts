@@ -39,6 +39,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {
@@ -71,6 +72,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {
@@ -103,6 +105,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {
@@ -135,6 +138,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {
@@ -167,6 +171,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {
@@ -201,6 +206,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {
@@ -235,6 +241,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [
             {
               id: "test",
+              referenceName: "test",
               sourcePlaceholder: "title",
               steps: [
                 {

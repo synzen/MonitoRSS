@@ -1,6 +1,6 @@
 import { InferType, object } from "yup";
 import fetchRest from "../../../utils/fetchRest";
-import { FeedConnectionDisabledCode, FeedConnectionSchema } from "@/types";
+import { CustomPlaceholder, FeedConnectionDisabledCode, FeedConnectionSchema } from "@/types";
 
 export interface UpdateDiscordChannelConnectionInput {
   feedId: string;
@@ -46,6 +46,7 @@ export interface UpdateDiscordChannelConnectionInput {
       formatTables?: boolean | null;
       stripImages?: boolean | null;
     } | null;
+    customPlaceholders?: CustomPlaceholder[] | null;
     mentions?: {
       targets?: Array<{
         id: string;

@@ -45,15 +45,18 @@ import { notifyError } from "../utils/notifyError";
 import { FeedConnectionDisabledCode, FeedConnectionType } from "../types";
 import { pages } from "../constants";
 import { DiscordServerName } from "../features/discordServers";
+import { CustomPlaceholdersTabSection } from "../features/feedConnections/components/CustomPlaceholdersTabSection";
 
 enum TabSearchParam {
   Message = "?view=message",
   Filters = "?view=filters",
+  CustomPlaceholders = "?view=custom-placeholders",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Message, 0],
   [TabSearchParam.Filters, 1],
+  [TabSearchParam.CustomPlaceholders, 2],
 ]);
 
 export const ConnectionDiscordWebhookSettings: React.FC = () => {
@@ -271,6 +274,15 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
               >
                 Filters
               </Tab>
+              <Tab
+                onClick={() => {
+                  navigate({
+                    search: TabSearchParam.CustomPlaceholders,
+                  });
+                }}
+              >
+                Custom Placeholders
+              </Tab>
             </TabList>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
@@ -328,6 +340,27 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                       stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                    },
+                  }}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <CustomPlaceholdersTabSection
+                  connectionId={connectionId as string}
+                  feedId={feedId as string}
+                  connectionType={FeedConnectionType.DiscordWebhook}
+                  articleFormat={{
+                    customPlaceholders: connection?.customPlaceholders,
+                    options: {
+                      formatTables: connection?.details.formatter?.formatTables || false,
+                      stripImages: connection?.details.formatter?.stripImages || false,
+                      dateFormat: feed?.formatOptions?.dateFormat,
+                      dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ...feed?.formatOptions,
                     },
                   }}
                 />

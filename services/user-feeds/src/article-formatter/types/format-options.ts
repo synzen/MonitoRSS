@@ -51,10 +51,14 @@ class CustomPlaceholderStep {
   replacementString?: string | null;
 }
 
-class CustomPlaceholder {
+export class CustomPlaceholder {
   @IsString()
   @IsNotEmpty()
   id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  referenceName: string;
 
   @IsString()
   @IsNotEmpty()

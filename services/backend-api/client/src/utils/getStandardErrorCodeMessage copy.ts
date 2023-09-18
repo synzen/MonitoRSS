@@ -35,6 +35,7 @@ enum ApiErrorCode {
   MISSING_SHARED_MANAGER_PERMISSIONS = "MISSING_SHARED_MANAGER_PERMISSIONS",
   USER_MANAGER_ALREADY_INVITED = "USER_MANAGER_ALREADY_INVITED",
   USER_FEED_TRANSFER_REQUEST_EXISTS = "USER_FEED_TRANSFER_REQUEST_EXISTS",
+  INSUFFICIENT_SUPPORTER_LEVEL = "INSUFFICIENT_SUPPORTER_LEVEL",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -73,6 +74,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   USER_MANAGER_ALREADY_INVITED: "You have already invited this user to manage this feed",
   USER_FEED_TRANSFER_REQUEST_EXISTS:
     "You already have a feed ownership transfer invite for this feed.",
+  INSUFFICIENT_SUPPORTER_LEVEL: "Must be a supporter of the proper tier.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

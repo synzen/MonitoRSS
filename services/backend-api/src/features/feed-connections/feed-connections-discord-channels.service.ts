@@ -1,9 +1,12 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { DiscordChannelType } from "../../common";
+import { CustomPlaceholderDto, DiscordChannelType } from "../../common";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
-import { InvalidFilterExpressionException } from "../../common/exceptions";
+import {
+  InsufficientSupporterLevelException,
+  InvalidFilterExpressionException,
+} from "../../common/exceptions";
 import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
 import {
   castDiscordContentForMedium,
@@ -22,6 +25,7 @@ import {
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { NoDiscordChannelPermissionOverwritesException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
+import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { CreateDiscordChannelConnectionCloneInputDto } from "./dto";
 import {
@@ -32,12 +36,18 @@ import {
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
+  feed: {
+    user: {
+      discordUserId: string;
+    };
+  };
   updates: {
     filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordChannelConnection["splitOptions"] | null;
     mentions?: DiscordChannelConnection["mentions"] | null;
+    customPlaceholders?: CustomPlaceholderDto[] | null;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       formatter?: DiscordChannelConnection["details"]["formatter"] | null;
@@ -72,7 +82,7 @@ interface CreatePreviewInput {
     | null;
   articleId?: string;
   mentions?: DiscordChannelConnection["mentions"] | null;
-  customPlaceholders?: DiscordChannelConnection["customPlaceholders"] | null;
+  customPlaceholders?: CustomPlaceholderDto[] | null;
   placeholderLimits?:
     | DiscordChannelConnection["details"]["placeholderLimits"]
     | null;
@@ -86,7 +96,8 @@ export class FeedConnectionsDiscordChannelsService {
   constructor(
     private readonly feedsService: FeedsService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    private readonly feedHandlerService: FeedHandlerService
+    private readonly feedHandlerService: FeedHandlerService,
+    private readonly supportersService: SupportersService
   ) {}
 
   async createDiscordChannelConnection({
@@ -202,8 +213,21 @@ export class FeedConnectionsDiscordChannelsService {
   async updateDiscordChannelConnection(
     feedId: string,
     connectionId: string,
-    { accessToken, updates }: UpdateDiscordChannelConnectionInput
+    { accessToken, feed, updates }: UpdateDiscordChannelConnectionInput
   ): Promise<DiscordChannelConnection> {
+    if (updates.customPlaceholders?.length) {
+      const { allowCustomPlaceholders } =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          feed.user.discordUserId
+        );
+
+      if (!allowCustomPlaceholders) {
+        throw new InsufficientSupporterLevelException(
+          "Must be a supporter of a sufficient tier to use custom placeholders."
+        );
+      }
+    }
+
     const setRecordDetails: Partial<DiscordChannelConnection["details"]> =
       Object.entries(updates.details || {}).reduce(
         (acc, [key, value]) => ({
@@ -261,6 +285,10 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.mentions && {
           [`connections.discordChannels.$.mentions`]: updates.mentions,
+        }),
+        ...(updates.customPlaceholders && {
+          [`connections.discordChannels.$.customPlaceholders`]:
+            updates.customPlaceholders,
         }),
       },
       $unset: {
@@ -325,6 +353,20 @@ export class FeedConnectionsDiscordChannelsService {
   ): Promise<SendTestArticleResult> {
     const previewInput = details?.previewInput;
 
+    let useCustomPlaceholders =
+      previewInput?.customPlaceholders || connection.customPlaceholders;
+
+    if (previewInput?.customPlaceholders?.length) {
+      const { allowCustomPlaceholders } =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          userFeed.user.discordUserId
+        );
+
+      if (!allowCustomPlaceholders) {
+        useCustomPlaceholders = [];
+      }
+    }
+
     const cleanedPreviewEmbeds = previewInput?.embeds
       ? previewInput.embeds.map((e) => ({
           title: e.title || undefined,
@@ -375,8 +417,7 @@ export class FeedConnectionsDiscordChannelsService {
         formatter:
           previewInput?.connectionFormatOptions || connection.details.formatter,
         mentions: previewInput?.mentions || connection.mentions,
-        customPlaceholders:
-          previewInput?.customPlaceholders || connection.customPlaceholders,
+        customPlaceholders: useCustomPlaceholders,
         splitOptions: previewInput?.splitOptions?.isEnabled
           ? previewInput.splitOptions
           : connection.splitOptions,
@@ -408,6 +449,19 @@ export class FeedConnectionsDiscordChannelsService {
     enablePlaceholderFallback,
     customPlaceholders,
   }: CreatePreviewInput) {
+    let useCustomPlaceholders = customPlaceholders;
+
+    if (customPlaceholders?.length) {
+      const { allowCustomPlaceholders } =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          userFeed.user.discordUserId
+        );
+
+      if (!allowCustomPlaceholders) {
+        useCustomPlaceholders = [];
+      }
+    }
+
     const payload = {
       type: "discord",
       feed: {
@@ -447,7 +501,7 @@ export class FeedConnectionsDiscordChannelsService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
         mentions: mentions,
-        customPlaceholders,
+        customPlaceholders: useCustomPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
       },

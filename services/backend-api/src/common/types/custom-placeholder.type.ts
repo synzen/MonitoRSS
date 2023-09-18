@@ -10,6 +10,10 @@ import {
 
 export class CustomPlaceholderStepDto {
   @IsString()
+  @IsOptional()
+  id?: string;
+
+  @IsString()
   @IsNotEmpty()
   regexSearch: string;
 
@@ -21,8 +25,12 @@ export class CustomPlaceholderStepDto {
 
 export class CustomPlaceholderDto {
   @IsString()
+  @IsOptional()
+  id?: string;
+
+  @IsString()
   @IsNotEmpty()
-  id: string;
+  referenceName: string;
 
   @IsString()
   @IsNotEmpty()

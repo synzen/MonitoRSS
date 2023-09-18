@@ -2,6 +2,7 @@ import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
 import {
   CannotEnableAutoDisabledConnection,
+  InsufficientSupporterLevelException,
   InvalidFilterExpressionException,
 } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
@@ -45,6 +46,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [MissingChannelPermissionsException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+    },
+    [InsufficientSupporterLevelException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
     },
   };
 

@@ -2,6 +2,7 @@ import { array, boolean, InferType, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { GetArticlesFilterReturnType } from "../constants";
 import { UserFeedArticleRequestStatus } from "../types";
+import { CustomPlaceholder } from "../../../types";
 
 export interface GetUserFeedArticlesInput {
   feedId: string;
@@ -17,12 +18,7 @@ export interface GetUserFeedArticlesInput {
       search?: string;
     };
     formatter: {
-      customPlaceholders?: Array<{
-        id: string;
-        sourcePlaceholder: string;
-        regexSearch: string;
-        replacementString?: string | null;
-      }> | null;
+      customPlaceholders?: CustomPlaceholder[] | null;
       options: {
         formatTables: boolean;
         stripImages: boolean;

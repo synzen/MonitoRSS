@@ -52,6 +52,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
     customPlaceholders: array(
       object({
         id: string().required(),
+        referenceName: string().required(),
         sourcePlaceholder: string().required(),
         steps: array(
           object({
