@@ -15,6 +15,7 @@ import {
   FormLabel,
   HStack,
   Input,
+  Link,
   Stack,
   Text,
   Textarea,
@@ -121,7 +122,19 @@ const CustomPlaceholderStep = ({
               }}
             />
             {!regexSearchError && (
-              <FormHelperText>The regular expression to find the text of interest.</FormHelperText>
+              <FormHelperText>
+                The regular expression to find the text of interest. For more information on your
+                regular expressions, you may visit{" "}
+                <Link
+                  color="blue.300"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="https://regex101.com/"
+                >
+                  https://regex101.com/
+                </Link>
+                .
+              </FormHelperText>
             )}
             {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
           </FormControl>
