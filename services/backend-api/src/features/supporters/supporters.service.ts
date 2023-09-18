@@ -51,6 +51,7 @@ interface SupportPatronAggregateResult {
     pledgeOverride?: number;
   }>;
   customers: Array<Customer>;
+  allowCustomPlaceholders?: boolean;
 }
 
 @Injectable()
@@ -513,7 +514,8 @@ export class SupportersService {
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
       webhooks: true,
-      allowCustomPlaceholders,
+      allowCustomPlaceholders:
+        supporter.allowCustomPlaceholders || allowCustomPlaceholders,
     };
   }
 

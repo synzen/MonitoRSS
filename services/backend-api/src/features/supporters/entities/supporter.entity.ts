@@ -29,6 +29,9 @@ export class Supporter {
   @Prop()
   maxUserFeeds?: number;
 
+  @Prop()
+  allowCustomPlaceholders?: boolean;
+
   @Prop({
     type: [String],
     required: true,
