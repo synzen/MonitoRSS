@@ -25,7 +25,7 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { Loading, Menu, ThemedSelect } from "@/components";
@@ -52,6 +52,7 @@ export const ArticleSelectDialog = ({
   articleFormatter,
   singleProperty,
 }: Props) => {
+  console.log("🚀 ~ file: index.tsx:55 ~ singleProperty:", singleProperty);
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
@@ -104,6 +105,12 @@ export const ArticleSelectDialog = ({
     onClose();
   };
 
+  useEffect(() => {
+    if (singleProperty) {
+      setSelectedArticleProperty(singleProperty);
+    }
+  }, [singleProperty]);
+
   const useArticleProperty =
     selectedArticleProperty || userFeedArticlesResults?.result.selectedProperties[0];
   const articles = userFeedArticlesResults?.result.articles;
@@ -145,28 +152,28 @@ export const ArticleSelectDialog = ({
                 )}
                 {articles && (
                   <Stack>
-                    {!singleProperty && (
-                      <Flex>
-                        <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
-                          <FormControl flexGrow={1}>
-                            <FormLabel>Property</FormLabel>
-                            <ThemedSelect
-                              options={
-                                feedArticlePropertiesResult?.result.properties.map((property) => ({
-                                  value: property,
-                                  label: property,
-                                  data: property,
-                                })) || []
-                              }
-                              isDisabled={feedArticlePropertiesStatus === "loading"}
-                              loading={feedArticlePropertiesStatus === "loading"}
-                              value={useArticleProperty}
-                              onChange={onChangeFeedArticleProperty}
-                            />
-                          </FormControl>
-                        </HStack>
-                      </Flex>
-                    )}
+                    {/* {!singleProperty && ( */}
+                    <Flex>
+                      <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
+                        <FormControl flexGrow={1}>
+                          <FormLabel>Property</FormLabel>
+                          <ThemedSelect
+                            options={
+                              feedArticlePropertiesResult?.result.properties.map((property) => ({
+                                value: property,
+                                label: property,
+                                data: property,
+                              })) || []
+                            }
+                            isDisabled={feedArticlePropertiesStatus === "loading"}
+                            loading={feedArticlePropertiesStatus === "loading"}
+                            value={useArticleProperty}
+                            onChange={onChangeFeedArticleProperty}
+                          />
+                        </FormControl>
+                      </HStack>
+                    </Flex>
+                    {/* )} */}
                     <Stack>
                       <FormControl>
                         <FormLabel>Search</FormLabel>
