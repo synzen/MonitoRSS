@@ -92,7 +92,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                 </FormHelperText>
               </FormControl>
               <FormControl isInvalid={!!errors.title}>
-                <FormLabel>{t("features.feed.components.addFeedDialog.formLinkLabel")}</FormLabel>
+                <FormLabel>RSS Feed Link</FormLabel>
                 <Controller
                   name="url"
                   control={control}
