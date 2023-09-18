@@ -17,6 +17,7 @@ import {
   Input,
   Stack,
   Text,
+  Textarea,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
@@ -116,7 +117,7 @@ const CustomPlaceholderStep = ({
               name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
               control={control}
               render={({ field }) => {
-                return <Input bg="gray.800" size="sm" {...field} value={field.value || ""} />;
+                return <Textarea bg="gray.800" size="sm" {...field} value={field.value || ""} />;
               }}
             />
             {!regexSearchError && (
