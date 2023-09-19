@@ -126,6 +126,10 @@ const CustomPlaceholderStep = ({
                       bg="gray.800"
                       size="sm"
                       fontFamily="mono"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck="false"
+                      autoComplete="off"
                       {...field}
                       value={field.value.replaceAll("\n", "\\n") || ""}
                     />
@@ -161,6 +165,10 @@ const CustomPlaceholderStep = ({
                       fontFamily="mono"
                       size="sm"
                       bg="gray.800"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck="false"
+                      autoComplete="off"
                       {...field}
                       value={field.value || ""}
                     />
@@ -304,7 +312,17 @@ export const CustomPlaceholderForm = ({
           name={`customPlaceholders.${index}.referenceName`}
           control={control}
           defaultValue=""
-          render={({ field }) => <Input bg="gray.800" {...field} value={field.value || ""} />}
+          render={({ field }) => (
+            <Input
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              autoComplete="off"
+              bg="gray.800"
+              {...field}
+              value={field.value || ""}
+            />
+          )}
         />
         {!referenceNameError && (
           <FormHelperText>
