@@ -267,7 +267,11 @@ export class FeedEventHandlerService {
           },
         } = event;
 
-        logger.debug(`Fetching feed XML from ${url}`);
+        this.debugLog(
+          `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
+          {},
+          event.debug
+        );
 
         let lastHashSaved: string | null;
 
@@ -295,9 +299,11 @@ export class FeedEventHandlerService {
                 err instanceof FeedRequestTimedOutException ||
                 err instanceof FeedFetchGrpcException
               ) {
-                logger.debug(`Ignoring feed event due to expected exception`, {
-                  exceptionName: (err as Error).name,
-                });
+                this.debugLog(
+                  `Debug ${event.data.feed.id}: Ignoring feed event due to expected exception`,
+                  { exceptionName: (err as Error).name },
+                  event.debug
+                );
 
                 return null;
               }
@@ -308,26 +314,22 @@ export class FeedEventHandlerService {
         );
 
         if (!response || !response.body) {
-          if (event.debug) {
-            logger.datadog(
-              `Debug feed ${event.data.feed.id}: no response body. is pending request or` +
-                ` matched hash`,
-              {
-                level: "debug",
-              }
-            );
-          }
-
-          logger.debug(
-            `Ignoring feed event due to empty feed XML (likely pending request) or matched hash.` +
-              ` Request status: ${response?.requestStatus}`
+          this.debugLog(
+            `Debug ${event.data.feed.id}: no response body. is pending request or` +
+              ` matched hash`,
+            {
+              response,
+            },
+            event.debug
           );
 
           return;
         }
 
-        logger.debug(
-          `Parsing feed XML for feed ${event.data.feed.id} from ${url}`
+        this.debugLog(
+          `Debug ${event.data.feed.id}: Parsing feed XML from ${url}`,
+          {},
+          event.debug
         );
 
         const articles = await tracer.trace(
@@ -365,6 +367,12 @@ export class FeedEventHandlerService {
         );
 
         if (foundRetryRecord) {
+          this.debugLog(
+            `Debug ${event.data.feed.id}: Found and deleting retry record`,
+            {},
+            event.debug
+          );
+
           await this.feedRetryRecordRepo.nativeDelete({
             id: foundRetryRecord.id,
           });
@@ -373,9 +381,11 @@ export class FeedEventHandlerService {
         // END TEMPORARY
 
         if (!articles.length) {
-          logger.debug(
-            `Ignoring feed event due to no articles to deliver for feed` +
-              ` ${event.data.feed.id} from ${url}`
+          this.debugLog(
+            `Debug ${event.data.feed.id}: Ignoring feed event due to no` +
+              ` articles to deliver for url ${url}`,
+            {},
+            event.debug
           );
 
           await this.responseHashService.set({
@@ -386,14 +396,10 @@ export class FeedEventHandlerService {
           return;
         }
 
-        if (event.debug) {
-          logger.datadog(
-            `Debug feed ${event.data.feed.id}: delivering ${articles.length} articles`
-          );
-        }
-
-        logger.debug(
-          `Delivering ${articles.length} articles for feed ${event.data.feed.id} from ${url}`
+        this.debugLog(
+          `Debug ${event.data.feed.id}: Delivering ${articles.length} articles`,
+          {},
+          event.debug
         );
 
         const deliveryStates = await tracer.trace(
@@ -403,9 +409,10 @@ export class FeedEventHandlerService {
           }
         );
 
-        logger.debug(
-          `Storing delivery states for feed ${event.data.feed.id} from ${url}`,
-          deliveryStates
+        this.debugLog(
+          `Debug ${event.data.feed.id}: Storing delivery states`,
+          {},
+          event.debug
         );
 
         await tracer.trace("deliverfeedevent.flushEntities", async () => {
@@ -461,10 +468,13 @@ export class FeedEventHandlerService {
             retryRecord?.attempts_so_far &&
             retryRecord.attempts_so_far >= 4
           ) {
-            logger.debug(`Disabling feed due to invalid feed`, {
-              id: event.data.feed.id,
-              feed: event.data.feed.url,
-            });
+            this.debugLog(
+              `Debug ${event.data.feed.id}: Exceeded retry limit for invalid feed` +
+                `, sending disable event`,
+              {},
+              event.debug
+            );
+
             this.amqpConnection.publish(
               "",
               MessageBrokerQueue.FeedRejectedDisableFeed,
@@ -482,10 +492,14 @@ export class FeedEventHandlerService {
               id: retryRecord.id,
             });
           } else {
-            logger.debug(`Updating retry record`, {
-              id: event.data.feed.id,
-              feed: event.data.feed.url,
-            });
+            this.debugLog(
+              `Debug ${event.data.feed.id}: Updating retry record`,
+              {
+                currentAttempts: retryRecord?.attempts_so_far || 0,
+                newAttempts: (retryRecord?.attempts_so_far || 0) + 1,
+              },
+              event.debug
+            );
 
             await this.feedRetryRecordRepo.upsert({
               feed_id: event.data.feed.id,
@@ -536,5 +550,14 @@ export class FeedEventHandlerService {
     });
 
     logger.debug(`Deleted feed info for feed ${id}`);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private debugLog(message: string, data: any, enable?: boolean) {
+    if (enable) {
+      logger.datadog(message, data);
+    }
+
+    logger.debug(message, data);
   }
 }
