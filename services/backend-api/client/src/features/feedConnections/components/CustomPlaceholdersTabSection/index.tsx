@@ -240,19 +240,6 @@ export const CustomPlaceholdersTabSection = ({
                   Add Custom Placeholder
                 </Button>
               </Box>
-              {/* <HStack justifyContent="flex-end">
-                <Button variant="ghost" onClick={onReset} isDisabled={!isDirty || isSubmitting}>
-                  Reset
-                </Button>
-                <Button
-                  colorScheme="blue"
-                  isDisabled={!isDirty || isSubmitting || !isValid}
-                  isLoading={isSubmitting}
-                  type="submit"
-                >
-                  Save
-                </Button>
-              </HStack> */}
             </Stack>
             <SavedUnsavedChangesPopupBar />
           </form>

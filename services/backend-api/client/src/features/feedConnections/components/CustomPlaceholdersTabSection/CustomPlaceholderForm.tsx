@@ -88,109 +88,118 @@ const CustomPlaceholderStep = ({
   };
 
   return (
-    <Box
-      as={motion.div}
-      exit={{
-        opacity: 0,
-      }}
-      initial={{
-        opacity: 0,
-      }}
-      animate={{
-        opacity: 1,
-      }}
-    >
-      <HStack
-        borderStyle="solid"
-        borderWidth="2px"
-        borderColor="whiteAlpha.300"
-        paddingX={5}
-        paddingY={5}
-        rounded="lg"
-        // mb={1}
-        alignItems="flex-start"
+    <Stack>
+      <Box
+        as={motion.div}
+        exit={{
+          opacity: 0,
+        }}
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
       >
-        <Stack flex={1} spacing={4}>
-          <FormControl isInvalid={!!regexSearchError}>
-            <FormLabel variant="inline">Regex Search</FormLabel>
-            <Controller
-              key={step.id}
-              name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
-              control={control}
-              render={({ field }) => {
-                return <Textarea bg="gray.800" size="sm" {...field} value={field.value || ""} />;
-              }}
-            />
-            {!regexSearchError && (
-              <FormHelperText>
-                The regular expression to find the text of interest. For more information on your
-                regular expressions, you may visit{" "}
-                <Link
-                  color="blue.300"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href="https://regex101.com/"
-                >
-                  https://regex101.com/
-                </Link>
-                .
-              </FormHelperText>
-            )}
-            {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
-          </FormControl>
-          <FormControl isInvalid={!!replacementStringError}>
-            <FormLabel variant="inline">Replacement String</FormLabel>
-            <Controller
-              key={step.id}
-              name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.replacementString`}
-              control={control}
-              render={({ field }) => {
-                return <Input size="sm" bg="gray.800" {...field} value={field.value || ""} />;
-              }}
-            />
-            {!replacementStringError && (
-              <FormHelperText>
-                The string to replace the matched text with. If empty, the matched content will be
-                removed from the placeholder.
-              </FormHelperText>
-            )}
-            {replacementStringError && (
-              <FormErrorMessage>{replacementStringError.message}</FormErrorMessage>
-            )}
-          </FormControl>
+        <HStack
+          borderStyle="solid"
+          borderWidth="2px"
+          borderColor="whiteAlpha.300"
+          paddingX={5}
+          paddingY={5}
+          rounded="lg"
+          // mb={1}
+          alignItems="flex-start"
+        >
+          <Stack flex={1} spacing={4}>
+            <FormControl isInvalid={!!regexSearchError}>
+              <FormLabel variant="inline">Regex Search</FormLabel>
+              <Controller
+                key={step.id}
+                name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
+                control={control}
+                render={({ field }) => {
+                  return <Textarea bg="gray.800" size="sm" {...field} value={field.value || ""} />;
+                }}
+              />
+              {!regexSearchError && (
+                <FormHelperText>
+                  The regular expression to find the text of interest. For more information on your
+                  regular expressions, you may visit{" "}
+                  <Link
+                    color="blue.300"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://regex101.com/"
+                  >
+                    https://regex101.com/
+                  </Link>
+                  .
+                </FormHelperText>
+              )}
+              {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!replacementStringError}>
+              <FormLabel variant="inline">Replacement String</FormLabel>
+              <Controller
+                key={step.id}
+                name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.replacementString`}
+                control={control}
+                render={({ field }) => {
+                  return <Input size="sm" bg="gray.800" {...field} value={field.value || ""} />;
+                }}
+              />
+              {!replacementStringError && (
+                <FormHelperText>
+                  The string to replace the matched text with. If empty, the matched content will be
+                  removed from the placeholder.
+                </FormHelperText>
+              )}
+              {replacementStringError && (
+                <FormErrorMessage>{replacementStringError.message}</FormErrorMessage>
+              )}
+            </FormControl>
+          </Stack>
+          <CloseButton
+            size="sm"
+            isDisabled={steps.length === 1}
+            onClick={() => {
+              const newSteps = [...steps];
+
+              newSteps.splice(stepIndex, 1);
+
+              setValue(`customPlaceholders.${customPlaceholderIndex}.steps`, newSteps, {
+                shouldTouch: true,
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+            }}
+          />
+        </HStack>
+        <Flex justifyContent="center" py={2}>
+          <ChevronDownIcon fontSize={24} />
+        </Flex>
+        <Stack>
+          {stepIndex === steps.length - 1 && (
+            <Text fontSize={12} color="whiteAlpha.700">
+              Final Output
+            </Text>
+          )}
+          {/** Debouncing values works at the upper level, but not here does not work for some reason... */}
+          <CustomPlaceholderPreview
+            articleFormat={articleFormat}
+            feedId={feedId}
+            connectionId={connectionId}
+            connectionType={connectionType}
+            customPlaceholder={customPlaceholderPreviewInput}
+            selectedArticleId={selectedArticleId}
+          />
         </Stack>
-        <CloseButton
-          size="sm"
-          isDisabled={steps.length === 1}
-          onClick={() => {
-            const newSteps = [...steps];
-
-            newSteps.splice(stepIndex, 1);
-
-            setValue(`customPlaceholders.${customPlaceholderIndex}.steps`, newSteps, {
-              shouldTouch: true,
-              shouldDirty: true,
-              shouldValidate: true,
-            });
-          }}
-        />
-      </HStack>
-      <Flex justifyContent="center" py={2}>
-        <ChevronDownIcon fontSize={24} />
-      </Flex>
-      {/** Debouncing values works at the upper level, but not here does not work for some reason... */}
-      <CustomPlaceholderPreview
-        articleFormat={articleFormat}
-        feedId={feedId}
-        connectionId={connectionId}
-        connectionType={connectionType}
-        customPlaceholder={customPlaceholderPreviewInput}
-        selectedArticleId={selectedArticleId}
-      />
-      <Flex justifyContent="center" opacity={stepIndex < steps.length - 1 ? 1 : 0} py={2}>
-        <ChevronDownIcon fontSize={24} />
-      </Flex>
-    </Box>
+        <Flex justifyContent="center" opacity={stepIndex < steps.length - 1 ? 1 : 0} py={2}>
+          <ChevronDownIcon fontSize={24} />
+        </Flex>
+      </Box>
+    </Stack>
   );
 };
 
@@ -327,9 +336,6 @@ export const CustomPlaceholderForm = ({
         {!isNewAndIncompletePlaceholder && (
           <Stack>
             <Box>
-              <Text fontSize={12} pb={2} pt={4}>
-                Preview Input
-              </Text>
               <Stack width="100%">
                 {userFeedArticlesMessage && (
                   <Alert status="error" mb={2} rounded="lg">
@@ -355,6 +361,9 @@ export const CustomPlaceholderForm = ({
                   onArticleSelected={setSelectedArticleId}
                   onClickRandomArticle={onClickRandomFeedArticle}
                 />
+                <Text fontSize={12} color="whiteAlpha.700">
+                  Preview Input
+                </Text>
                 <CustomPlaceholderPreview
                   articleFormat={articleFormat}
                   connectionId={connectionId}

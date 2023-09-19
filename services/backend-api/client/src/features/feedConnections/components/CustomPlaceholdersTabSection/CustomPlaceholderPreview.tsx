@@ -74,7 +74,15 @@ export const CustomPlaceholderPreview = ({
   return (
     <Stack spacing={4} flex={1}>
       <Stack>
-        <Box bg="gray.600" py={4} px={4} rounded="lg">
+        <Box
+          bg="whiteAlpha.200"
+          borderStyle="solid"
+          borderWidth="1px"
+          borderColor="whiteAlpha.300"
+          py={4}
+          px={4}
+          rounded="lg"
+        >
           <HStack pb={2} flexWrap="wrap">
             <Badge variant="subtle" size="sm">
               Preview
