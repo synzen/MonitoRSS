@@ -2,22 +2,10 @@ import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
-import {
-  FeedArticleNotFoundException,
-  InvalidPreviewCustomPlaceholdersRegexException,
-} from "../../../services/feed-fetcher/exceptions";
-import { FeedConnectionNotFoundException } from "../exceptions";
+import { InvalidPreviewCustomPlaceholdersRegexException } from "../../../services/feed-fetcher/exceptions";
 
 const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   {
-    [FeedConnectionNotFoundException.name]: {
-      status: HttpStatus.NOT_FOUND,
-      code: ApiErrorCode.FEED_CONNECTION_NOT_FOUND,
-    },
-    [FeedArticleNotFoundException.name]: {
-      status: HttpStatus.NOT_FOUND,
-      code: ApiErrorCode.FEED_ARTICLE_NOT_FOUND,
-    },
     [InvalidPreviewCustomPlaceholdersRegexException.name]: {
       status: HttpStatus.UNPROCESSABLE_ENTITY,
       code: ApiErrorCode.INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT,
@@ -25,6 +13,6 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
   };
 
 @Catch(StandardException)
-export class CreateDiscordWebhookTestArticleFilter extends StandardBaseExceptionFilter {
+export class GetUserFeedArticlesExceptionFilter extends StandardBaseExceptionFilter {
   exceptions = ERROR_CODES;
 }

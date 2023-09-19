@@ -38,6 +38,7 @@ export enum ApiErrorCode {
   USER_MANAGER_ALREADY_INVITED = "USER_MANAGER_ALREADY_INVITED",
   USER_FEED_TRANSFER_REQUEST_EXISTS = "USER_FEED_TRANSFER_REQUEST_EXISTS",
   INSUFFICIENT_SUPPORTER_LEVEL = "INSUFFICIENT_SUPPORTER_LEVEL",
+  INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT = "INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT",
 }
 
 // Create a package for the frontend?
@@ -93,4 +94,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   USER_FEED_TRANSFER_REQUEST_EXISTS:
     "Transfer request already exists for this feed.",
   INSUFFICIENT_SUPPORTER_LEVEL: "Insufficient supporter level",
+  INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT:
+    "Invalid preview input in regex search for custom placeholders",
 };

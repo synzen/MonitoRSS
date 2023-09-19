@@ -61,10 +61,13 @@ export class ArticleFormatterService {
             lastOutput = context.finalVal;
           } catch (err) {
             throw new RegexEvalException(
-              `Custom placeholder with regex regex "${regexSearch}" evaluation` +
+              `Custom placeholder with regex "${regexSearch}" evaluation` +
                 ` on string "${lastOutput}"` +
                 ` with replacement string "${replacementString}" errored: ` +
-                `${(err as Error).message}`
+                `${(err as Error).message}`,
+              {
+                regexErrors: [err as Error],
+              }
             );
           }
         }

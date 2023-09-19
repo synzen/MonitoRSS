@@ -1,15 +1,20 @@
 export class StandardException extends Error {
   subErrors: StandardException[];
 
-  constructor(message?: string | StandardException[]) {
+  constructor(
+    message?: string | StandardException[],
+    options?: {
+      subErrors?: StandardException[];
+    }
+  ) {
     if (typeof message === "string") {
       super(message);
     } else {
       super();
     }
 
-    if (Array.isArray(message)) {
-      this.subErrors = message;
+    if (options?.subErrors) {
+      this.subErrors = options.subErrors;
     } else {
       this.subErrors = [];
     }

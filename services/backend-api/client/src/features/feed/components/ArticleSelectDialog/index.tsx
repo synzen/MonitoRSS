@@ -1,7 +1,6 @@
 import {
   Alert,
   AlertDescription,
-  AlertIcon,
   Box,
   Button,
   Center,
@@ -34,6 +33,7 @@ import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from 
 import getChakraColor from "../../../../utils/getChakraColor";
 import { GetUserFeedArticlesInput } from "../../api";
 import { useDebounce } from "../../../../hooks";
+import { useGetUserFeedArticlesError } from "../../../feedConnections/hooks";
 
 interface Props {
   feedId: string;
@@ -52,7 +52,6 @@ export const ArticleSelectDialog = ({
   articleFormatter,
   singleProperty,
 }: Props) => {
-  console.log("🚀 ~ file: index.tsx:55 ~ singleProperty:", singleProperty);
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
   const [selectedArticleProperty, setSelectedArticleProperty] = useState<string | undefined>(
@@ -89,6 +88,11 @@ export const ArticleSelectDialog = ({
       },
       formatter: articleFormatter,
     },
+  });
+  const { alertComponent } = useGetUserFeedArticlesError({
+    getUserFeedArticlesStatus: userFeedArticlesStatus,
+    getUserFeedArticlesError: error,
+    getUserFeedArticlesOutput: userFeedArticlesResults,
   });
 
   const onChangeFeedArticleProperty = (value: string) => {
@@ -144,36 +148,31 @@ export const ArticleSelectDialog = ({
                     </Center>
                   </Stack>
                 )}
-                {error && (
-                  <Alert status="error" title={t("common.errors.somethingWentWrong")}>
-                    <AlertIcon />
-                    {error.message}
-                  </Alert>
-                )}
+                {alertComponent}
                 {articles && (
                   <Stack>
-                    {/* {!singleProperty && ( */}
-                    <Flex>
-                      <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
-                        <FormControl flexGrow={1}>
-                          <FormLabel>Property</FormLabel>
-                          <ThemedSelect
-                            options={
-                              feedArticlePropertiesResult?.result.properties.map((property) => ({
-                                value: property,
-                                label: property,
-                                data: property,
-                              })) || []
-                            }
-                            isDisabled={feedArticlePropertiesStatus === "loading"}
-                            loading={feedArticlePropertiesStatus === "loading"}
-                            value={useArticleProperty}
-                            onChange={onChangeFeedArticleProperty}
-                          />
-                        </FormControl>
-                      </HStack>
-                    </Flex>
-                    {/* )} */}
+                    {!singleProperty && (
+                      <Flex>
+                        <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
+                          <FormControl flexGrow={1}>
+                            <FormLabel>Property</FormLabel>
+                            <ThemedSelect
+                              options={
+                                feedArticlePropertiesResult?.result.properties.map((property) => ({
+                                  value: property,
+                                  label: property,
+                                  data: property,
+                                })) || []
+                              }
+                              isDisabled={feedArticlePropertiesStatus === "loading"}
+                              loading={feedArticlePropertiesStatus === "loading"}
+                              value={useArticleProperty}
+                              onChange={onChangeFeedArticleProperty}
+                            />
+                          </FormControl>
+                        </HStack>
+                      </Flex>
+                    )}
                     <Stack>
                       <FormControl>
                         <FormLabel>Search</FormLabel>
@@ -223,7 +222,7 @@ export const ArticleSelectDialog = ({
                             items={articles.map((article) => ({
                               id: article.id,
                               title: article[useArticleProperty as never] || (
-                                <Text color="gray.400">unknown</Text>
+                                <Text color="gray.400">(empty)</Text>
                               ),
                               value: article.id,
                               description: "",
@@ -268,17 +267,21 @@ export const ArticleSelectDialog = ({
                   </Stack>
                 )}
               </Box>
-              <Alert borderRadius="md">
-                <AlertDescription>
-                  <Text fontSize="sm">
-                    {t("features.userFeeds.components.articleSelectPrompt.mayBeDelayWarning")}
-                  </Text>
-                </AlertDescription>
-              </Alert>
-              <Divider />
-              <Button onClick={() => onClickArticle()} leftIcon={<RepeatIcon />}>
-                {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
-              </Button>
+              {!alertComponent && (
+                <>
+                  <Alert borderRadius="md">
+                    <AlertDescription>
+                      <Text fontSize="sm">
+                        {t("features.userFeeds.components.articleSelectPrompt.mayBeDelayWarning")}
+                      </Text>
+                    </AlertDescription>
+                  </Alert>
+                  <Divider />
+                  <Button onClick={() => onClickArticle()} leftIcon={<RepeatIcon />}>
+                    {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
+                  </Button>
+                </>
+              )}
             </Stack>
           </ModalBody>
           <ModalFooter>

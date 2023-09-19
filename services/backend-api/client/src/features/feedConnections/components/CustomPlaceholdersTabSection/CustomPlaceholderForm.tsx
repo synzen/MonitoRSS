@@ -18,7 +18,6 @@ import {
   Link,
   Stack,
   Text,
-  Textarea,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
@@ -84,7 +83,10 @@ const CustomPlaceholderStep = ({
 
   const customPlaceholderPreviewInput = {
     ...customPlaceholder,
-    steps: customPlaceholder.steps.slice(0, stepIndex + 1),
+    steps: customPlaceholder.steps.slice(0, stepIndex + 1).map((s) => ({
+      ...s,
+      regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
+    })),
   };
 
   return (
@@ -119,7 +121,15 @@ const CustomPlaceholderStep = ({
                 name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
                 control={control}
                 render={({ field }) => {
-                  return <Textarea bg="gray.800" size="sm" {...field} value={field.value || ""} />;
+                  return (
+                    <Input
+                      bg="gray.800"
+                      size="sm"
+                      fontFamily="mono"
+                      {...field}
+                      value={field.value.replaceAll("\n", "\\n") || ""}
+                    />
+                  );
                 }}
               />
               {!regexSearchError && (
@@ -146,7 +156,15 @@ const CustomPlaceholderStep = ({
                 name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.replacementString`}
                 control={control}
                 render={({ field }) => {
-                  return <Input size="sm" bg="gray.800" {...field} value={field.value || ""} />;
+                  return (
+                    <Input
+                      fontFamily="mono"
+                      size="sm"
+                      bg="gray.800"
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  );
                 }}
               />
               {!replacementStringError && (

@@ -11,3 +11,4 @@ export * from "./FeedFetcherStatusException";
 export * from "./FeedNotFoundException";
 export * from "./FeedArticleNotFoundException";
 export * from "./FeedFetchTimeoutException";
+export * from "./InvalidPreviewCustomPlaceholdersRegexException";

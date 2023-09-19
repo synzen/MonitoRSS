@@ -54,7 +54,10 @@ import {
 import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-output.dto";
 import { UserFeed } from "./entities";
 import { UnsupportedBulkOpException } from "./exceptions";
-import { RetryUserFeedFilter } from "./filters";
+import {
+  GetUserFeedArticlesExceptionFilter,
+  RetryUserFeedFilter,
+} from "./filters";
 import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedPipe } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
@@ -158,6 +161,7 @@ export class UserFeedsController {
   }
 
   @Get("/:feedId/article-properties")
+  @UseFilters(GetUserFeedArticlesExceptionFilter)
   async getArticleProperties(
     @Param("feedId", GetUserFeedPipe()) feed: UserFeed
   ): Promise<GetUserFeedArticlePropertiesOutputDto> {
@@ -177,6 +181,7 @@ export class UserFeedsController {
   }
 
   @Post("/:feedId/get-articles")
+  @UseFilters(GetUserFeedArticlesExceptionFilter)
   @HttpCode(HttpStatus.OK)
   async getFeedArticles(
     @Body(TransformValidationPipe)

@@ -71,6 +71,20 @@ export const CustomPlaceholderPreview = ({
 
   const messages = dataPreview?.result?.messages;
 
+  let errorComponent = null;
+
+  if (error?.statusCode === 422) {
+    errorComponent = (
+      <Text fontSize={13} color="red.300" fontWeight={600}>
+        Invalid regex search in current or previous steps
+      </Text>
+    );
+  } else if (error) {
+    errorComponent = (
+      <InlineErrorAlert description={error.message} title={t("common.errors.somethingWentWrong")} />
+    );
+  }
+
   return (
     <Stack spacing={4} flex={1}>
       <Stack>
@@ -97,12 +111,18 @@ export const CustomPlaceholderPreview = ({
           )}
           {!isFetchingNewPreview && placeholderIsComplete && messages?.[0] && (
             <Box>
-              {messages[0].content?.split("\n")?.map((line, idx) => (
-                // eslint-disable-next-line react/no-array-index-key
-                <span key={idx}>
-                  {line} <br />
-                </span>
-              ))}
+              {!messages[0].content && (
+                <Text color="gray.400">
+                  <em>(empty)</em>
+                </Text>
+              )}
+              {messages[0].content &&
+                messages[0].content.split("\n")?.map((line, idx) => (
+                  // eslint-disable-next-line react/no-array-index-key
+                  <span key={idx}>
+                    {line} <br />
+                  </span>
+                ))}
             </Box>
           )}
           {!isFetchingNewPreview && placeholderIsComplete && messages && !messages.length && (
@@ -110,12 +130,7 @@ export const CustomPlaceholderPreview = ({
               <AlertDescription>No article found for preview</AlertDescription>
             </Alert>
           )}
-          {error && (
-            <InlineErrorAlert
-              description={error.message}
-              title={t("common.errors.somethingWentWrong")}
-            />
-          )}
+          {errorComponent}
           {!error && !placeholderIsComplete && (
             <Text fontSize={13} color="red.300" fontWeight="600">
               Incomplete inputs in current or previous steps

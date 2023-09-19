@@ -8,9 +8,11 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  UnprocessableEntityException,
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
+import { RegexEvalException } from "../article-filters/exceptions";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { InvalidFeedException } from "../articles/exceptions";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
@@ -225,6 +227,15 @@ export class FeedsController {
             selectedProperties: [],
           },
         };
+      }
+
+      if (err instanceof RegexEvalException) {
+        throw new UnprocessableEntityException({
+          statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: "REGEX_EVAL",
+          message: err.message,
+          errors: err.regexErrors,
+        });
       }
 
       throw err;
@@ -492,6 +503,15 @@ export class FeedsController {
     } catch (err) {
       if (err instanceof ValidationError) {
         throw new BadRequestException(err.errors);
+      }
+
+      if (err instanceof RegexEvalException) {
+        throw new UnprocessableEntityException({
+          statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: "REGEX_EVAL",
+          message: err.message,
+          errors: err.regexErrors,
+        });
       }
 
       if (err instanceof FeedArticleNotFoundException) {

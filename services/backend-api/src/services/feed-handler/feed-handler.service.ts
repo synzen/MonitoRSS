@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
@@ -8,6 +8,7 @@ import logger from "../../utils/logger";
 import {
   FeedArticleNotFoundException,
   FeedFetcherStatusException,
+  InvalidPreviewCustomPlaceholdersRegexException,
 } from "../feed-fetcher/exceptions";
 import {
   CreateFilterValidationInput,
@@ -199,6 +200,18 @@ export class FeedHandlerService {
       throw new FeedArticleNotFoundException("Feed article not found");
     }
 
+    if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
+      const json = await res.json();
+
+      const errors = json.errors;
+      throw new InvalidPreviewCustomPlaceholdersRegexException(
+        "Invalid preview input",
+        {
+          subErrors: errors,
+        }
+      );
+    }
+
     await this.validateResponseStatus(res, "Failed to create preview", {
       requestBody: details,
     });
@@ -237,6 +250,18 @@ export class FeedHandlerService {
         "api-key": this.apiKey,
       },
     });
+
+    if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
+      const json = await res.json();
+
+      const errors = json.errors;
+      throw new InvalidPreviewCustomPlaceholdersRegexException(
+        "Invalid preview input",
+        {
+          subErrors: errors,
+        }
+      );
+    }
 
     await this.validateResponseStatus(res, "Failed to get articles", {
       requestBody: body,

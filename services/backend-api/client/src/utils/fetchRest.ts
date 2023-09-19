@@ -131,6 +131,7 @@ const handleStatusCode = async (res: Response) => {
     if (json.isStandardized) {
       throw new ApiAdapterError(getStandardErrorCodeMessage(json.code), {
         statusCode: res.status,
+        errorCode: json.code,
       });
     } else if (res.status === 400) {
       // Legacy error formatting
