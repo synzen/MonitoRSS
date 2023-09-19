@@ -10,17 +10,17 @@ export const CustomPlaceholderSchema = object({
       id: string().required(),
       regexSearch: string()
         .required("This is a required field")
-        .test({
-          test: (value) => {
-            try {
-              RegExp(value);
+        .test("is-regex", function testValue(v) {
+          try {
+            RegExp(v);
 
-              return true;
-            } catch (err) {
-              return false;
-            }
-          },
-          message: "Must be a valid regex",
+            return true;
+          } catch (err) {
+            return this.createError({
+              message: `Must be a valid regex (error: ${(err as Error).message})`,
+              path: this.path,
+            });
+          }
         }),
       replacementString: string()
         .nullable()
