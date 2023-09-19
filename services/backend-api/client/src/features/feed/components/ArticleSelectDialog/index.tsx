@@ -151,28 +151,29 @@ export const ArticleSelectDialog = ({
                 {alertComponent}
                 {articles && (
                   <Stack>
-                    {!singleProperty && (
-                      <Flex>
-                        <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
-                          <FormControl flexGrow={1}>
-                            <FormLabel>Property</FormLabel>
-                            <ThemedSelect
-                              options={
-                                feedArticlePropertiesResult?.result.properties.map((property) => ({
-                                  value: property,
-                                  label: property,
-                                  data: property,
-                                })) || []
-                              }
-                              isDisabled={feedArticlePropertiesStatus === "loading"}
-                              loading={feedArticlePropertiesStatus === "loading"}
-                              value={useArticleProperty}
-                              onChange={onChangeFeedArticleProperty}
-                            />
-                          </FormControl>
-                        </HStack>
-                      </Flex>
-                    )}
+                    <Flex>
+                      <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
+                        <FormControl flexGrow={1}>
+                          <FormLabel>Property</FormLabel>
+                          {/* {!singleProperty && ( */}
+                          <ThemedSelect
+                            options={
+                              feedArticlePropertiesResult?.result.properties.map((property) => ({
+                                value: property,
+                                label: property,
+                                data: property,
+                              })) || []
+                            }
+                            isDisabled={
+                              feedArticlePropertiesStatus === "loading" || !!singleProperty
+                            }
+                            loading={feedArticlePropertiesStatus === "loading"}
+                            value={useArticleProperty}
+                            onChange={onChangeFeedArticleProperty}
+                          />
+                        </FormControl>
+                      </HStack>
+                    </Flex>
                     <Stack>
                       <FormControl>
                         <FormLabel>Search</FormLabel>
