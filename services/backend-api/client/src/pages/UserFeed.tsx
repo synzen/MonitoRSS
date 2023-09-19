@@ -608,6 +608,7 @@ export const UserFeed: React.FC = () => {
 
                         return (
                           <Card
+                            key={connection.id}
                             variant="elevated"
                             size="sm"
                             borderLeft={cardLeftBorder}
