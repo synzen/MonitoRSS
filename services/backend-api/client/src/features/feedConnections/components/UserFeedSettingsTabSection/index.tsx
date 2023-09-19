@@ -476,8 +476,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   <Input spellCheck={false} autoComplete="" {...field} />
                   {!formErrors.dateFormat && (
                     <FormHelperText>
-                      This will dictate how the placeholders with dates (such as {`{{date}}`} ) will
-                      be formatted. For more information on formatting, see
+                      This will dictate how the placeholders with dates (such as{" "}
+                      <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
+                      formatting, see{" "}
                       <Link
                         color="blue.300"
                         target="_blank"
