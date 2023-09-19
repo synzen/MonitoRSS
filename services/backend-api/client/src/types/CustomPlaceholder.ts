@@ -8,7 +8,20 @@ export const CustomPlaceholderSchema = object({
   steps: array(
     object({
       id: string().required(),
-      regexSearch: string().required("This is a required field"),
+      regexSearch: string()
+        .required("This is a required field")
+        .test({
+          test: (value) => {
+            try {
+              RegExp(value);
+
+              return true;
+            } catch (err) {
+              return false;
+            }
+          },
+          message: "Must be a valid regex",
+        }),
       replacementString: string()
         .nullable()
         .default("")
