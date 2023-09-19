@@ -515,7 +515,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                             href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                             target="_blank"
                             rel="noreferrer noopener"
-                            color="blue.400"
+                            color="blue.300"
                           />,
                         ]}
                       />
