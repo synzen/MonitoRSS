@@ -472,6 +472,16 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                     {t(
                       "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
                     )}
+                    This will dictate how the placeholders with dates (such as {`{{date}}`} ) will
+                    be formatted. For more information on formatting, see
+                    <Link
+                      color="blue.300"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      href="https://day.js.org/docs/en/display/format"
+                    >
+                      https://day.js.org/docs/en/display/format
+                    </Link>
                   </FormLabel>
                   <Input spellCheck={false} autoComplete="" {...field} />
                   {!formErrors.dateFormat && (
