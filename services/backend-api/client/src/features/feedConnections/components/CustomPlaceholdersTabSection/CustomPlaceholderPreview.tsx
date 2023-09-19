@@ -26,16 +26,17 @@ interface Props {
 }
 
 export const CustomPlaceholderPreview = ({
-  customPlaceholder,
+  customPlaceholder: inputCustomPlaceholder,
   feedId,
   connectionId,
   articleFormat,
   connectionType,
   selectedArticleId,
 }: Props) => {
-  const previewInputToDebounce = [customPlaceholder];
+  const previewInputToDebounce = [inputCustomPlaceholder];
   const customPlaceholders = useDebounce(previewInputToDebounce, 500);
   const referenceName = customPlaceholders[0]?.referenceName;
+  const customPlaceholder = customPlaceholders[0];
 
   const { t } = useTranslation();
   const allStepsAreComplete = customPlaceholder.steps.every((s) => s.regexSearch);
@@ -44,6 +45,7 @@ export const CustomPlaceholderPreview = ({
     customPlaceholder.sourcePlaceholder &&
     allStepsAreComplete
   );
+
   const {
     data: dataPreview,
     fetchStatus: fetchStatusPreview,
