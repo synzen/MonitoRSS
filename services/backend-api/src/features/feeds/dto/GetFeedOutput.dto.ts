@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { DetailedFeed } from "../types/detailed-feed.type";
 import { FeedStatus } from "../types/FeedStatus.type";
 
@@ -110,7 +111,11 @@ export class GetFeedOutputDto {
                 url: embed.authorURL,
               }
             : undefined,
-          fields: embed.fields || [],
+          fields:
+            embed.fields?.map((f) => ({
+              id: randomUUID(),
+              ...f,
+            })) || [],
           color: String(embed.color),
           footer: embed.footerText
             ? {
