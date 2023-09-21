@@ -176,9 +176,9 @@ export class FeedFetcherService {
 
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
-        if (sizeOfTextInMb > 3) {
-          throw new FeedTooLargeException(`Response body is too large`);
-        }
+        // if (sizeOfTextInMb > 3) {
+        //   throw new FeedTooLargeException(`Response body is too large`);
+        // }
 
         try {
           const deflated = await deflatePromise(text);
