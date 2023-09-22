@@ -71,6 +71,7 @@ import { notifyError } from "../utils/notifyError";
 import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
 import getChakraColor from "../utils/getChakraColor";
+import { DiscordChannelName } from "../features/discordServers";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -111,6 +112,39 @@ function getPrettyConnectionName(
 
   return "Unknown";
 }
+
+const getPrettyConnectionDetail = (
+  connection: FeedDiscordChannelConnection | FeedDiscordWebhookConnection
+) => {
+  const { key } = connection;
+
+  if (key === FeedConnectionType.DiscordChannel) {
+    const casted = connection as FeedDiscordChannelConnection;
+
+    if (casted.details.channel.type === "thread") {
+      return null;
+    }
+
+    return (
+      <DiscordChannelName
+        channelId={casted.details.channel.id}
+        serverId={casted.details.channel.guildId}
+        spinnerSize="xs"
+        textProps={{
+          color: "gray.500",
+          fontSize: 14,
+        }}
+        parenthesis
+      />
+    );
+  }
+
+  if (key === FeedConnectionType.DiscordWebhook) {
+    return null;
+  }
+
+  return null;
+};
 
 const DISABLED_CODES_FOR_ERROR = [
   FeedConnectionDisabledCode.MissingMedium,
@@ -606,6 +640,8 @@ export const UserFeed: React.FC = () => {
                           cardLeftBorder = `solid 3px ${getChakraColor("gray.400")}`;
                         }
 
+                        const connectionDetail = getPrettyConnectionDetail(connection as never);
+
                         return (
                           <Card
                             key={connection.id}
@@ -617,9 +653,12 @@ export const UserFeed: React.FC = () => {
                           >
                             <CardHeader>
                               <Stack spacing="1">
-                                <Text color="gray.500" fontSize="sm">
-                                  {getPrettyConnectionName(connection as never)}
-                                </Text>
+                                <Flex alignItems="center" gap={2}>
+                                  <Text color="gray.500" fontSize="sm">
+                                    {getPrettyConnectionName(connection as never)}
+                                  </Text>
+                                  {connectionDetail ? <> {connectionDetail}</> : null}
+                                </Flex>
                                 <HStack>
                                   <Text fontWeight={600}>{connection.name}</Text>
                                   {connection.disabledCode ===
