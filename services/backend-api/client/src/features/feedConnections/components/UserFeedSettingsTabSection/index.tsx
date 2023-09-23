@@ -427,7 +427,15 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                 <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
                   <FormLabel>Never deliver articles older than</FormLabel>
                   <HStack alignItems="center" spacing={4}>
-                    <NumberInput min={0} allowMouseWheel {...field}>
+                    <NumberInput
+                      min={0}
+                      allowMouseWheel
+                      {...field}
+                      onChange={(str, num) => field.onChange(num * 1000 * 60 * 60 * 24)}
+                      value={
+                        typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : 0
+                      }
+                    >
                       <NumberInputField />
                       <NumberInputStepper>
                         <NumberIncrementStepper />
@@ -438,7 +446,8 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   </HStack>
                   <FormHelperText>
                     Set to <Code>0</Code> to disable. Articles that have no published date will also
-                    be ignored if this is enabled.
+                    be ignored if this is enabled. It is strongly advised to leave this at the
+                    default, unless you face issues otherwise.
                   </FormHelperText>
                   {formErrors.oldArticleDateDiffMsThreshold && (
                     <FormErrorMessage>
