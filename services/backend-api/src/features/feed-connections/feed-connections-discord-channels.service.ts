@@ -420,7 +420,9 @@ export class FeedConnectionsDiscordChannelsService {
         customPlaceholders: useCustomPlaceholders,
         splitOptions: previewInput?.splitOptions?.isEnabled
           ? previewInput.splitOptions
-          : connection.splitOptions,
+          : connection.splitOptions?.isEnabled
+          ? connection.splitOptions
+          : undefined,
         placeholderLimits:
           previewInput?.placeholderLimits ||
           connection.details.placeholderLimits,

@@ -445,7 +445,9 @@ export class FeedConnectionsDiscordWebhooksService {
           previewInput?.connectionFormatOptions || connection.details.formatter,
         splitOptions: previewInput?.splitOptions?.isEnabled
           ? previewInput.splitOptions
-          : connection.splitOptions,
+          : connection.splitOptions?.isEnabled
+          ? connection.splitOptions
+          : undefined,
         mentions: previewInput?.mentions || connection.mentions,
         customPlaceholders: useCustomPlaceholders,
         placeholderLimits:
