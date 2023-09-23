@@ -5,6 +5,11 @@ import { Injectable } from "@nestjs/common";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { FeedArticleDeliveryLimit } from "./entities";
 
+interface RateLimit {
+  timeWindowSeconds: number;
+  limit: number;
+}
+
 @Injectable()
 export class ArticleRateLimitService {
   constructor(
@@ -16,6 +21,21 @@ export class ArticleRateLimitService {
 
   async getUnderLimitCheck(feedId: string) {
     const limits = await this.getFeedLimitInformation(feedId);
+
+    return {
+      underLimit: limits.every(({ remaining }) => remaining > 0),
+      remaining: Math.min(...limits.map(({ remaining }) => remaining)),
+    };
+  }
+
+  async getUnderLimitCheckFromInputLimits(
+    feedId: string,
+    inputLimits: RateLimit[]
+  ) {
+    const limits = await this.getTransientFeedLimitInformation(
+      feedId,
+      inputLimits
+    );
 
     return {
       underLimit: limits.every(({ remaining }) => remaining > 0),
@@ -57,51 +77,25 @@ export class ArticleRateLimitService {
     );
   }
 
-  async addOrUpdateFeedLimit(
+  async getTransientFeedLimitInformation(
     feedId: string,
-    { timeWindowSec, limit }: { timeWindowSec: number; limit: number },
-    flush = true
+    limits: Array<RateLimit>
   ) {
-    const countCheck = await this.deliveryLimitRepo.findOne(
-      {
-        feed_id: feedId,
-        time_window_seconds: timeWindowSec,
-        limit,
-      },
-      {
-        fields: ["id"],
-      }
+    return await Promise.all(
+      limits.map(async ({ limit, timeWindowSeconds: timeWindowSec }) => {
+        const articlesInTimeframe =
+          await this.deliveryRecordService.countDeliveriesInPastTimeframe(
+            { feedId },
+            timeWindowSec
+          );
+
+        return {
+          progress: articlesInTimeframe,
+          max: limit,
+          remaining: Math.max(limit - articlesInTimeframe, 0),
+          windowSeconds: timeWindowSec,
+        };
+      })
     );
-
-    if (countCheck) {
-      return;
-    }
-
-    const found = await this.deliveryLimitRepo.findOne({
-      feed_id: feedId,
-      time_window_seconds: timeWindowSec,
-    });
-
-    if (found) {
-      found.limit = limit;
-
-      if (flush) {
-        await this.orm.em.persistAndFlush(found);
-      } else {
-        this.orm.em.persist(found);
-      }
-    } else {
-      const newLimit = new FeedArticleDeliveryLimit({
-        feed_id: feedId,
-        time_window_seconds: timeWindowSec,
-        limit,
-      });
-
-      if (flush) {
-        await this.orm.em.persistAndFlush(newLimit);
-      } else {
-        await this.orm.em.persist(newLimit);
-      }
-    }
   }
 }

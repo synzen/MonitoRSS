@@ -18,6 +18,7 @@ import {
   GetArticlesInput,
   GetArticlesOutput,
   GetArticlesResponse,
+  GetDeliveryCountResult,
   SendTestArticleInput,
   SendTestArticleResult,
 } from "./types";
@@ -34,10 +35,6 @@ export interface FeedHandlerRateLimitsResponse {
   };
 }
 
-interface InitializeFeedInput {
-  maxDailyArticles: number;
-}
-
 @Injectable()
 export class FeedHandlerService {
   host: string;
@@ -50,41 +47,6 @@ export class FeedHandlerService {
     this.apiKey = this.configService.getOrThrow<string>(
       "BACKEND_API_USER_FEEDS_API_KEY"
     );
-  }
-
-  async initializeFeed(
-    feedId: string,
-    { maxDailyArticles }: InitializeFeedInput
-  ) {
-    const res = await fetch(`${this.host}/v1/user-feeds/initialize`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": this.apiKey,
-      },
-      body: JSON.stringify({
-        feed: {
-          id: feedId,
-        },
-        articleDailyLimit: maxDailyArticles,
-      }),
-    });
-
-    if (res.status >= 500) {
-      throw new FeedFetcherStatusException(
-        `Failed to initialize feed: >= 500 status code (${res.status}) from User feeds api`
-      );
-    }
-
-    if (!res.ok) {
-      const body = await res.json();
-
-      throw new FeedFetcherStatusException(
-        `Failed to initialize feed: non-ok status code (${
-          res.status
-        }) from User feeds api, response: ${JSON.stringify(body)}`
-      );
-    }
   }
 
   async getRateLimits(feedId: string): Promise<FeedHandlerRateLimitsResponse> {
@@ -117,6 +79,49 @@ export class FeedHandlerService {
       }
 
       return responseBody;
+    } catch (error) {
+      logger.error(
+        `Failed to execute fetch with User feeds api (${error.message})`,
+        {
+          stack: error.stack,
+        }
+      );
+
+      throw error;
+    }
+  }
+
+  async getDeliveryCount(data: {
+    feedId: string;
+    timeWindowSec: number;
+  }): Promise<GetDeliveryCountResult> {
+    try {
+      const response = await fetch(
+        `${this.host}/v1/user-feeds/${data.feedId}/delivery-count?feedId=${data.feedId}&timeWindowSec=${data.timeWindowSec}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": this.apiKey,
+          },
+        }
+      );
+
+      await this.validateResponseStatus(
+        response,
+        "Failed to get delivery count",
+        {
+          requestBody: data,
+        }
+      );
+      const json = await response.json();
+
+      const result = await this.validateResponseJson(
+        GetDeliveryCountResult,
+        json
+      );
+
+      return result;
     } catch (error) {
       logger.error(
         `Failed to execute fetch with User feeds api (${error.message})`,

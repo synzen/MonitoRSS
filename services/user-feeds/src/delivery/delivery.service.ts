@@ -36,7 +36,15 @@ export class DeliveryService {
   ): Promise<ArticleDeliveryState[]> {
     let articleStates: ArticleDeliveryState[] = [];
     const underLimitInfo =
-      await this.articleRateLimitService.getUnderLimitCheck(event.data.feed.id);
+      await this.articleRateLimitService.getUnderLimitCheckFromInputLimits(
+        event.data.feed.id,
+        [
+          {
+            limit: event.data.articleDayLimit,
+            timeWindowSeconds: 86400,
+          },
+        ]
+      );
 
     /**
      * Rate limit handling in memory is not the best, especially since articles get dropped and

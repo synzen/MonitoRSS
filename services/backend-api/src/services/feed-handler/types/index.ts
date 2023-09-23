@@ -12,3 +12,4 @@ export * from "./create-preview-input.type";
 export * from "./create-discord-channel-preview-input.type";
 export * from "./create-discord-webhook-preview-input.type";
 export * from "./discord-message-api-payload.type";
+export * from "./get-delivery-count-result.type copy";

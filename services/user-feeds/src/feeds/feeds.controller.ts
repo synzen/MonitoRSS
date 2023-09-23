@@ -9,12 +9,17 @@ import {
   HttpStatus,
   NotFoundException,
   UnprocessableEntityException,
+  Get,
+  Query,
+  ParseIntPipe,
+  Param,
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { RegexEvalException } from "../article-filters/exceptions";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { InvalidFeedException } from "../articles/exceptions";
+import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { DiscordEmbed } from "../delivery/types";
 import {
@@ -58,27 +63,9 @@ export class FeedsController {
     private readonly discordMediumService: DiscordMediumService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly articleFormatterService: ArticleFormatterService,
-    private readonly articleFiltersService: ArticleFiltersService
+    private readonly articleFiltersService: ArticleFiltersService,
+    private readonly deliveryRecordService: DeliveryRecordService
   ) {}
-
-  @Post("initialize")
-  @UseGuards(ApiGuard)
-  async initializeFeed(
-    @Body(ValidationPipe) { feed, articleDailyLimit }: CreateFeedInputDto
-  ) {
-    await this.feedsService.initializeFeed(feed.id, {
-      rateLimit: {
-        limit: articleDailyLimit,
-        timeWindowSec: 86400,
-      },
-    });
-
-    return {
-      articleRateLimits: await this.feedsService.getRateLimitInformation(
-        feed.id
-      ),
-    };
-  }
 
   @Post("filter-validation")
   @HttpCode(HttpStatus.OK)
@@ -520,5 +507,25 @@ export class FeedsController {
 
       throw err;
     }
+  }
+
+  @Get("/:feedId/delivery-count")
+  async getDeliveryCount(
+    @Query("timeWindowSec", ParseIntPipe) timeWindowSec: number,
+    @Param("feedId") feedId: string
+  ) {
+    const count =
+      await this.deliveryRecordService.countDeliveriesInPastTimeframe(
+        {
+          feedId,
+        },
+        timeWindowSec
+      );
+
+    return {
+      result: {
+        count,
+      },
+    };
   }
 }

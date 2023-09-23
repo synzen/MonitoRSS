@@ -6,6 +6,7 @@ import { DiscordMediumService } from "../delivery/mediums/discord-medium.service
 import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { ArticleFiltersModule } from "../article-filters/article-filters.module";
 import { ArticleFormatterModule } from "../article-formatter/article-formatter.module";
+import { DeliveryRecordModule } from "../delivery-record/delivery-record.module";
 
 @Module({
   controllers: [FeedsController],
@@ -15,6 +16,7 @@ import { ArticleFormatterModule } from "../article-formatter/article-formatter.m
     FeedFetcherModule,
     ArticleFiltersModule,
     ArticleFormatterModule,
+    DeliveryRecordModule,
   ],
 })
 export class FeedsModule {}

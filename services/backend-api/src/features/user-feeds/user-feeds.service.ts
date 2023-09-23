@@ -165,22 +165,7 @@ export class UserFeedsService {
     });
 
     // Primarily used to set up the daily article limit for it to be fetched
-    await this.feedHandlerService.initializeFeed(created._id.toHexString(), {
-      maxDailyArticles,
-    });
-
     return created;
-  }
-
-  async initializeFeed(feed: UserFeed, discordUserId: string) {
-    const { maxDailyArticles } =
-      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
-
-    await this.feedHandlerService.initializeFeed(feed._id.toHexString(), {
-      maxDailyArticles,
-    });
-
-    return this.getFeedDailyLimit(feed._id.toHexString());
   }
 
   async bulkDelete(feedIds: string[], discordUserId: string) {
@@ -548,12 +533,35 @@ export class UserFeedsService {
       .lean();
   }
 
-  async getFeedDailyLimit(feedId: string) {
-    const {
-      results: { limits },
-    } = await this.feedHandlerService.getRateLimits(feedId);
+  async getFeedDailyLimit(feed: UserFeed) {
+    const { articleRateLimits } =
+      await this.supportersService.getBenefitsOfDiscordUser(
+        feed.user.discordUserId
+      );
 
-    return limits.find((limit) => limit.windowSeconds === 86400);
+    // const {
+    //   results: { limits },
+    // } = await this.feedHandlerService.getRateLimits(feedId);
+
+    const dailyLimit = articleRateLimits.find(
+      (limit) => limit.timeWindowSeconds === 86400
+    );
+
+    if (!dailyLimit) {
+      throw new Error(
+        `Daily limit was not found for feed ${feed._id} whose owner is ${feed.user.discordUserId}`
+      );
+    }
+
+    const currentProgress = await this.feedHandlerService.getDeliveryCount({
+      feedId: feed._id.toHexString(),
+      timeWindowSec: 86400,
+    });
+
+    return {
+      progress: currentProgress.result.count,
+      max: dailyLimit?.max,
+    };
   }
 
   async getFeedArticles({

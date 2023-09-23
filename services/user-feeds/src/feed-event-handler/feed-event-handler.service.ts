@@ -248,19 +248,6 @@ export class FeedEventHandlerService {
       span?.setTag("feedUrl", event.data.feed.url);
 
       try {
-        // Used for displaying in UIs
-        await tracer.trace("deliverfeedevent.updateLimit", async () => {
-          await this.articleRateLimitService.addOrUpdateFeedLimit(
-            event.data.feed.id,
-            {
-              // hardcode seconds in a day for now
-              timeWindowSec: 86400,
-              limit: event.data.articleDayLimit,
-            },
-            false
-          );
-        });
-
         const {
           data: {
             feed: { url, blockingComparisons, passingComparisons },

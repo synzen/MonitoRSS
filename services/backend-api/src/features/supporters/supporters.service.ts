@@ -14,6 +14,11 @@ import {
 } from "./entities/user-feed-limit-overrides.entity";
 import { Customer } from "./entities/customer.entity";
 
+interface ArticleRateLimit {
+  max: number;
+  timeWindowSeconds: number;
+}
+
 interface SupporterBenefits {
   isSupporter: boolean;
   maxFeeds: number;
@@ -28,6 +33,7 @@ interface SupporterBenefits {
     legacy: number;
   };
   allowCustomPlaceholders: boolean;
+  articleRateLimits: Array<ArticleRateLimit>;
 }
 
 interface ServerBenefits {
@@ -63,6 +69,8 @@ export class SupportersService {
   defaultMaxSupporterUserFeeds: number;
   maxDailyArticlesSupporter: number;
   maxDailyArticlesDefault: number;
+  defaultRateLimits: Array<ArticleRateLimit>;
+  supporterRateLimits: Array<ArticleRateLimit>;
 
   constructor(
     @InjectModel(Supporter.name)
@@ -102,6 +110,20 @@ export class SupportersService {
     this.maxDailyArticlesDefault = +this.configService.getOrThrow<number>(
       "BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT"
     );
+
+    this.defaultRateLimits = [
+      {
+        max: this.maxDailyArticlesDefault,
+        timeWindowSeconds: 86400,
+      },
+    ];
+
+    this.supporterRateLimits = [
+      {
+        max: this.maxDailyArticlesSupporter,
+        timeWindowSeconds: 86400,
+      },
+    ];
   }
 
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
@@ -174,6 +196,7 @@ export class SupportersService {
           legacy: legacyAdd,
         },
         allowCustomPlaceholders: false,
+        articleRateLimits: this.defaultRateLimits,
       };
     }
 
@@ -192,6 +215,9 @@ export class SupportersService {
       maxUserFeeds: benefits.maxUserFeeds,
       maxUserFeedsComposition: benefits.maxUserFeedsComposition,
       allowCustomPlaceholders: benefits.allowCustomPlaceholders,
+      articleRateLimits: benefits.isSupporter
+        ? this.supporterRateLimits
+        : this.defaultRateLimits,
     };
   }
 

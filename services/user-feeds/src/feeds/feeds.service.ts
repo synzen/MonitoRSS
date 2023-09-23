@@ -25,21 +25,6 @@ export class FeedsService {
     return this.articleRateLimitsService.getFeedLimitInformation(feedId);
   }
 
-  async initializeFeed(
-    feedId: string,
-    { rateLimit: { limit, timeWindowSec } }: InitializeFeedInputDto
-  ) {
-    // Used to display in UIs. May be dynamic later.
-    await this.articleRateLimitsService.addOrUpdateFeedLimit(
-      feedId,
-      {
-        timeWindowSec,
-        limit,
-      },
-      true
-    );
-  }
-
   getFilterExpressionErrors(expression: Record<string, unknown>) {
     return this.articleFiltersService.getFilterExpressionErrors(expression);
   }

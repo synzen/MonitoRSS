@@ -96,44 +96,6 @@ describe("FeedHandlerService", () => {
     });
   });
 
-  describe("initializeFeed", () => {
-    const feedId = "feed-id";
-    const endpoint = `/v1/user-feeds/initialize`;
-
-    it("resolves on success", async () => {
-      nock(host)
-        .post(endpoint)
-        .matchHeader("Content-Type", "application/json")
-        .matchHeader("api-key", apiKey)
-        .reply(200, {});
-
-      await service.initializeFeed(feedId, {
-        maxDailyArticles: 100,
-      });
-    });
-
-    it("throws if the status code is >= 500", async () => {
-      nock(host).post(endpoint).reply(500, {});
-
-      await expect(
-        service.initializeFeed(feedId, {
-          maxDailyArticles: 100,
-        })
-      ).rejects.toThrow(FeedFetcherStatusException);
-    });
-
-    it("throws if the status code is not ok, and logs the response json", async () => {
-      const mockResponse = { message: "An error occurred!" };
-      nock(host).post(endpoint).reply(400, mockResponse);
-
-      await expect(
-        service.initializeFeed(feedId, {
-          maxDailyArticles: 100,
-        })
-      ).rejects.toThrow(FeedFetcherStatusException);
-    });
-  });
-
   describe("sendTestArticle", () => {
     const endpoint = `/v1/user-feeds/test`;
     const validPayload = {

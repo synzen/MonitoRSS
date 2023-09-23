@@ -56,24 +56,6 @@ describe("FeedsService", () => {
     });
   });
 
-  describe("initializeFeed", () => {
-    it("adds a feed limit", async () => {
-      const addOrUpdateFeedLimit = jest.fn();
-      articleRateLimitService.addOrUpdateFeedLimit = addOrUpdateFeedLimit;
-
-      await service.initializeFeed("feed-id", {
-        rateLimit: {
-          limit: 1,
-          timeWindowSec: 86400,
-        },
-      });
-      expect(addOrUpdateFeedLimit).toHaveBeenCalledWith("feed-id", {
-        limit: 1,
-        timeWindowSec: 86400,
-      });
-    });
-  });
-
   describe("getFilterExpressionErrors", () => {
     it("returns errors", async () => {
       const errors = ["error"];
@@ -89,6 +71,7 @@ describe("FeedsService", () => {
       {
         flattened: {
           id: "1",
+          idHash: "1-hash",
           title: "title1",
           description: "description1",
         },
@@ -97,6 +80,7 @@ describe("FeedsService", () => {
       {
         flattened: {
           id: "2",
+          idHash: "2-hash",
           title: "title2",
           description: "description2",
         },
@@ -105,6 +89,7 @@ describe("FeedsService", () => {
       {
         flattened: {
           id: "3",
+          idHash: "3-hash",
           title: "title3",
           description: "description3",
         },
@@ -263,6 +248,7 @@ describe("FeedsService", () => {
           articles: sampleInput.articles.map((article) => ({
             flattened: {
               id: article.flattened.id,
+              idHash: `hash-${article.flattened.id}`,
             },
             raw: {} as never,
           })),
@@ -302,6 +288,7 @@ describe("FeedsService", () => {
           {
             flattened: {
               id: "1",
+              idHash: "1-hash",
               title: "title1",
               description: "description1",
             },
@@ -310,6 +297,7 @@ describe("FeedsService", () => {
           {
             flattened: {
               id: "2",
+              idHash: "2-hash",
               title: "title2",
               description: "description2",
               author: "author2",
@@ -319,6 +307,7 @@ describe("FeedsService", () => {
           {
             flattened: {
               id: "3",
+              idHash: "3-hash",
               title: "title3",
               description: "description3",
               image: "image3",

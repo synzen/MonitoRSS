@@ -7,7 +7,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -249,21 +248,9 @@ export class UserFeedsController {
 
   @Get("/:feedId/daily-limit")
   async getDailyLimit(
-    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
   ): Promise<GetUserFeedDailyLimitOutputDto> {
-    let limit = await this.userFeedsService.getFeedDailyLimit(
-      feed._id.toHexString()
-    );
-
-    if (!limit) {
-      limit = await this.userFeedsService.initializeFeed(feed, discordUserId);
-
-      if (!limit) {
-        throw new NotFoundException("No limits found for feed");
-      }
-    }
+    const limit = await this.userFeedsService.getFeedDailyLimit(feed);
 
     return {
       result: {
