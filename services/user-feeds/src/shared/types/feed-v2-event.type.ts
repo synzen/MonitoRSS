@@ -17,10 +17,6 @@ export interface FeedV2Event {
     };
     mediums: MediumPayload[];
     articleDayLimit: number;
-    rateLimits?: Array<{
-      windowSeconds: number;
-      max: number;
-    }>;
   };
 }
 

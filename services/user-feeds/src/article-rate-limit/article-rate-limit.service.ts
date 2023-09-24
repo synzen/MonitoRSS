@@ -4,11 +4,7 @@ import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { FeedArticleDeliveryLimit } from "./entities";
-
-interface RateLimit {
-  timeWindowSeconds: number;
-  limit: number;
-}
+import { MediumRateLimit } from "../shared/types/medium-rate-limits.type";
 
 @Injectable()
 export class ArticleRateLimitService {
@@ -30,8 +26,15 @@ export class ArticleRateLimitService {
 
   async getUnderLimitCheckFromInputLimits(
     feedId: string,
-    inputLimits: RateLimit[]
+    inputLimits: MediumRateLimit[]
   ) {
+    if (inputLimits.length === 0) {
+      return {
+        underLimit: true,
+        remaining: Number.MAX_SAFE_INTEGER,
+      };
+    }
+
     const limits = await this.getTransientFeedLimitInformation(
       feedId,
       inputLimits
@@ -79,7 +82,7 @@ export class ArticleRateLimitService {
 
   async getTransientFeedLimitInformation(
     feedId: string,
-    limits: Array<RateLimit>
+    limits: Array<MediumRateLimit>
   ) {
     return await Promise.all(
       limits.map(async ({ limit, timeWindowSeconds: timeWindowSec }) => {

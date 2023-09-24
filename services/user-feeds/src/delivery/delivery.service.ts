@@ -16,6 +16,7 @@ import { ArticleDeliveryState, ArticleDeliveryStatus } from "./types";
 
 interface LimitState {
   remaining: number;
+  remainingInMedium: number;
 }
 
 @Injectable()
@@ -52,11 +53,20 @@ export class DeliveryService {
      */
     const limitState = {
       remaining: underLimitInfo.remaining,
+      remainingInMedium: Number.MAX_SAFE_INTEGER,
     };
 
     // Explicitly use for loop for track limit state
     for (let i = 0; i < event.data.mediums.length; ++i) {
       const medium = event.data.mediums[i];
+
+      const underLimitInfoOfMedium =
+        await this.articleRateLimitService.getUnderLimitCheckFromInputLimits(
+          event.data.feed.id,
+          medium.rateLimits || []
+        );
+
+      limitState.remainingInMedium = underLimitInfoOfMedium.remaining;
 
       const mediumStates = await this.deliverArticlesToMedium(
         event,
@@ -105,7 +115,7 @@ export class DeliveryService {
     deliveryId: string
   ): Promise<ArticleDeliveryState[]> {
     try {
-      if (limitState.remaining <= 0) {
+      if (limitState.remaining <= 0 || limitState.remainingInMedium <= 0) {
         return [
           {
             id: deliveryId,
@@ -155,6 +165,7 @@ export class DeliveryService {
       );
 
       limitState.remaining--;
+      limitState.remainingInMedium--;
 
       return articleStates;
     } catch (err) {
