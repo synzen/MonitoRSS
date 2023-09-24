@@ -11,6 +11,7 @@ import {
 } from "class-validator";
 import {
   CustomPlaceholderDto,
+  CustomRateLimitDto,
   DiscordEmbed,
   DiscordPlaceholderLimitOptions,
   MentionsOptionsDto,
@@ -137,4 +138,10 @@ export class UpdateDiscordWebhookConnectionInputDto {
   @ValidateNested({ each: true })
   @Type(() => CustomPlaceholderDto)
   customPlaceholders?: CustomPlaceholderDto[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CustomRateLimitDto)
+  rateLimits?: CustomRateLimitDto[];
 }

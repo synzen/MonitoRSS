@@ -196,6 +196,7 @@ export class FeedConnectionsDiscordWebhooksController {
       placeholderLimits,
       enablePlaceholderFallback,
       customPlaceholders,
+      rateLimits,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -247,6 +248,7 @@ export class FeedConnectionsDiscordWebhooksController {
           splitOptions,
           mentions,
           customPlaceholders,
+          rateLimits,
           details: {
             formatter,
             content,

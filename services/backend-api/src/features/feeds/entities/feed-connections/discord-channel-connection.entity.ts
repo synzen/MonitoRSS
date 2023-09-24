@@ -11,6 +11,10 @@ import {
   CustomPlaceholderSchema,
 } from "./custom-placeholder.entity";
 import {
+  CustomRateLimit,
+  CustomRateLimitSchema,
+} from "./custom-rate-limit.entity";
+import {
   DiscordFormatter,
   DiscordFormatterSchema,
 } from "./discord-formatter.entity";
@@ -264,6 +268,12 @@ export class DiscordChannelConnection {
     required: false,
   })
   filters?: Filters;
+
+  @Prop({
+    type: [CustomRateLimitSchema],
+    required: false,
+  })
+  rateLimits?: CustomRateLimit[];
 
   @Prop({
     type: MentionsSchema,

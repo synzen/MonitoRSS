@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { CustomPlaceholderDto, DiscordChannelType } from "../../common";
+import { CustomPlaceholderDto, CustomRateLimitDto } from "../../common";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import {
   InsufficientSupporterLevelException,
@@ -33,6 +33,7 @@ import {
   InvalidDiscordChannelException,
   MissingDiscordChannelException,
 } from "./exceptions";
+import { DiscordChannelType } from "../../common";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -47,6 +48,7 @@ export interface UpdateDiscordChannelConnectionInput {
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordChannelConnection["splitOptions"] | null;
     mentions?: DiscordChannelConnection["mentions"] | null;
+    rateLimits?: CustomRateLimitDto[] | null;
     customPlaceholders?: CustomPlaceholderDto[] | null;
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
@@ -289,6 +291,9 @@ export class FeedConnectionsDiscordChannelsService {
         ...(updates.customPlaceholders && {
           [`connections.discordChannels.$.customPlaceholders`]:
             updates.customPlaceholders,
+        }),
+        ...(updates.rateLimits && {
+          [`connections.discordChannels.$.rateLimits`]: updates.rateLimits,
         }),
       },
       $unset: {

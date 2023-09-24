@@ -19,6 +19,7 @@ import {
   MentionsOptionsDto,
   DiscordPlaceholderLimitOptions,
   CustomPlaceholderDto,
+  CustomRateLimitDto,
 } from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
@@ -111,4 +112,10 @@ export class UpdateDiscordChannelConnectionInputDto {
   @ValidateNested({ each: true })
   @Type(() => CustomPlaceholderDto)
   customPlaceholders?: CustomPlaceholderDto[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CustomRateLimitDto)
+  rateLimits?: CustomRateLimitDto[];
 }

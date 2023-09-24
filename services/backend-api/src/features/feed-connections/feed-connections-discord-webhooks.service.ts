@@ -26,7 +26,11 @@ import {
 } from "../../common/utils";
 import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
-import { CustomPlaceholderDto, DiscordChannelType } from "../../common";
+import {
+  CustomPlaceholderDto,
+  CustomRateLimitDto,
+  DiscordChannelType,
+} from "../../common";
 import { DiscordWebhookForumChannelUnsupportedException } from "./exceptions";
 import { CreateDiscordWebhookConnectionCloneInputDto } from "./dto";
 import { SupportersService } from "../supporters/supporters.service";
@@ -42,9 +46,9 @@ export interface UpdateDiscordWebhookConnectionInput {
   };
   updates: {
     filters?: DiscordWebhookConnection["filters"] | null;
+    rateLimits?: CustomRateLimitDto[] | null;
     name?: string;
     customPlaceholders?: CustomPlaceholderDto[] | null;
-
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordWebhookConnection["splitOptions"] | null;
     mentions?: DiscordWebhookConnection["mentions"] | null;
@@ -213,6 +217,7 @@ export class FeedConnectionsDiscordWebhooksService {
       splitOptions,
       mentions,
       customPlaceholders,
+      rateLimits,
     },
     accessToken,
     feed: {
@@ -313,6 +318,9 @@ export class FeedConnectionsDiscordWebhooksService {
         ...(customPlaceholders && {
           "connections.discordWebhooks.$.customPlaceholders":
             customPlaceholders,
+        }),
+        ...(rateLimits && {
+          "connections.discordWebhooks.$.rateLimits": rateLimits,
         }),
       },
       $unset: {
