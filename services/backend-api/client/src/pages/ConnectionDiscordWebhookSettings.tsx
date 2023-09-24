@@ -100,6 +100,8 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
     }
   };
 
+  const isForum = connection?.details?.webhook.type === "forum";
+
   return (
     <DashboardContentV2
       error={feedError || connectionError}
@@ -299,6 +301,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     forumThreadTags: null,
                     mentions: connection?.mentions || null,
                     customPlaceholders: connection?.customPlaceholders || null,
+                    forumThreadTitle: connection?.details.forumThreadTitle,
                     ...connection?.details,
                   }}
                   articleFormatter={{
@@ -314,6 +317,9 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                   connection={{
                     id: connectionId as string,
                     type: FeedConnectionType.DiscordWebhook,
+                  }}
+                  include={{
+                    forumThreadTitle: isForum,
                   }}
                 />
               </BoxConstrained.Container>

@@ -60,8 +60,10 @@ const DiscordWebhookConnectionDetailsSchema = object({
     name: string().optional(),
     iconUrl: string().optional(),
     guildId: string().required(),
+    type: string().nullable().oneOf(["forum"]),
   }).required(),
   content: string().optional(),
+  forumThreadTitle: string(),
   formatter: object({
     formatTables: boolean().default(false),
     stripImages: boolean().default(false),

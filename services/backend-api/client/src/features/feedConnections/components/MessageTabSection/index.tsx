@@ -60,6 +60,7 @@ interface Props {
   };
   include?: {
     forumThreadTitle?: boolean;
+    forumThreadTags?: boolean;
   };
   guildId: string | undefined;
 }

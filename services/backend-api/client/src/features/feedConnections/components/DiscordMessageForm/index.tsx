@@ -54,6 +54,7 @@ interface Props {
   };
   include?: {
     forumThreadTitle?: boolean;
+    forumThreadTags?: boolean;
   };
 }
 
@@ -270,7 +271,11 @@ export const DiscordMessageForm = ({
           {include?.forumThreadTitle && (
             <Stack>
               <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
-              <DiscordMessageForumThreadForm connectionId={connection.id} feedId={feedId} />
+              <DiscordMessageForumThreadForm
+                connectionId={connection.id}
+                feedId={feedId}
+                excludeForumThreadTags={!include.forumThreadTags}
+              />
             </Stack>
           )}
           <Stack>
