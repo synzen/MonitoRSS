@@ -14,7 +14,10 @@ import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { DiscordWebhookConnection } from "../feeds/entities/feed-connections";
 import _ from "lodash";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
-import { FeedConnectionDisabledCode } from "../feeds/constants";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionDiscordWebhookType,
+} from "../feeds/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
   SendTestArticleResult,
@@ -30,8 +33,8 @@ import {
   CustomPlaceholderDto,
   CustomRateLimitDto,
   DiscordChannelType,
+  DiscordGuildChannel,
 } from "../../common";
-import { DiscordWebhookForumChannelUnsupportedException } from "./exceptions";
 import { CreateDiscordWebhookConnectionCloneInputDto } from "./dto";
 import { SupportersService } from "../supporters/supporters.service";
 
@@ -61,6 +64,7 @@ export interface UpdateDiscordWebhookConnectionInput {
         name?: string;
         iconUrl?: string;
       };
+      forumThreadTitle?: string;
       placeholderLimits:
         | DiscordWebhookConnection["details"]["placeholderLimits"]
         | null;
@@ -85,6 +89,7 @@ interface CreatePreviewInput {
     | DiscordWebhookConnection["details"]["placeholderLimits"]
     | null;
   articleId?: string;
+  forumThreadTitle?: DiscordWebhookConnection["details"]["forumThreadTitle"];
   enablePlaceholderFallback?: boolean;
 }
 
@@ -124,7 +129,10 @@ export class FeedConnectionsDiscordWebhooksService {
       throw new Error("User must be a supporter to add webhooks");
     }
 
-    const webhook = await this.assertDiscordWebhookCanBeUsed(id, accessToken);
+    const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
+      id,
+      accessToken
+    );
 
     const connectionId = new Types.ObjectId();
 
@@ -145,6 +153,10 @@ export class FeedConnectionsDiscordWebhooksService {
                 name: webhookName,
                 token: webhook.token,
                 guildId: webhook.guild_id,
+                type:
+                  channel.type === DiscordChannelType.GUILD_FORUM
+                    ? FeedConnectionDiscordWebhookType.Forum
+                    : undefined,
               },
             },
           },
@@ -245,7 +257,7 @@ export class FeedConnectionsDiscordWebhooksService {
       | DiscordWebhookConnection["details"]["webhook"] = undefined;
 
     if (details?.webhook?.id) {
-      const webhook = await this.assertDiscordWebhookCanBeUsed(
+      const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
         details.webhook.id,
         accessToken
       );
@@ -257,6 +269,10 @@ export class FeedConnectionsDiscordWebhooksService {
           iconUrl: details.webhook.iconUrl,
           token: webhook.token as string,
           guildId: webhook.guild_id,
+          type:
+            channel.type === DiscordChannelType.GUILD_FORUM
+              ? FeedConnectionDiscordWebhookType.Forum
+              : undefined,
         },
         _.isUndefined
       ) as DiscordWebhookConnection["details"]["webhook"];
@@ -448,7 +464,10 @@ export class FeedConnectionsDiscordWebhooksService {
           name: connection.details.webhook.name,
           iconUrl: connection.details.webhook.iconUrl,
           token: connection.details.webhook.token,
+          type: connection.details.webhook.type,
         },
+        forumThreadTitle:
+          previewInput?.forumThreadTitle || connection.details.forumThreadTitle,
         formatter:
           previewInput?.connectionFormatOptions || connection.details.formatter,
         splitOptions: previewInput?.splitOptions?.isEnabled
@@ -560,7 +579,7 @@ export class FeedConnectionsDiscordWebhooksService {
   private async assertDiscordWebhookCanBeUsed(
     id: string,
     accessToken: string
-  ): Promise<DiscordWebhook> {
+  ): Promise<{ webhook: DiscordWebhook; channel: DiscordGuildChannel }> {
     const webhook = await this.discordWebhooksService.getWebhook(id);
 
     if (!webhook) {
@@ -587,16 +606,8 @@ export class FeedConnectionsDiscordWebhooksService {
       );
     }
 
-    const { type } = await this.discordApiService.getChannel(
-      webhook.channel_id
-    );
+    const channel = await this.discordApiService.getChannel(webhook.channel_id);
 
-    if (type === DiscordChannelType.GUILD_FORUM) {
-      throw new DiscordWebhookForumChannelUnsupportedException(
-        `Webhook attached to a forum channel is currently unsupported`
-      );
-    }
-
-    return webhook;
+    return { webhook, channel };
   }
 }

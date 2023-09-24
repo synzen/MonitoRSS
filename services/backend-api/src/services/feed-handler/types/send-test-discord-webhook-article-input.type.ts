@@ -1,4 +1,5 @@
 import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
+import { FeedConnectionDiscordWebhookType } from "../../../features/feeds/constants";
 import { DiscordWebhookConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface SendTestDiscordWebhookArticleInput {
@@ -19,8 +20,10 @@ export interface SendTestDiscordWebhookArticleInput {
         token: string;
         name?: string;
         iconUrl?: string;
+        type?: FeedConnectionDiscordWebhookType | null;
       };
       content?: string;
+      forumThreadTitle?: DiscordWebhookConnection["details"]["forumThreadTitle"];
       embeds: DiscordMediumEvent["details"]["embeds"];
       formatter?: {
         stripImages?: boolean;

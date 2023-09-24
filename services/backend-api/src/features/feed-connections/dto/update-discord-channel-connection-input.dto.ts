@@ -3,7 +3,6 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
-  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -20,20 +19,9 @@ import {
   DiscordPlaceholderLimitOptions,
   CustomPlaceholderDto,
   CustomRateLimitDto,
+  ForumThreadTagDto,
 } from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
-
-class ForumThreadTagDto {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @IsObject()
-  @IsOptional()
-  @Type(() => FiltersDto)
-  @ValidateNested({ each: true })
-  filters?: FiltersDto;
-}
 
 export class UpdateDiscordChannelConnectionInputDto {
   @IsString()

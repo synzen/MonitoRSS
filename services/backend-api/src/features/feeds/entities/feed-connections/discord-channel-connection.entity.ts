@@ -18,20 +18,11 @@ import {
   DiscordFormatter,
   DiscordFormatterSchema,
 } from "./discord-formatter.entity";
-
-@Schema({
-  _id: false,
-  versionKey: false,
-  timestamps: false,
-})
-class Filters {
-  @Prop({
-    type: MongooseSchema.Types.Mixed,
-  })
-  expression: Record<string, unknown>;
-}
-
-const FiltersSchema = SchemaFactory.createForClass(Filters);
+import { Filters, FiltersSchema } from "./filters.entity";
+import {
+  ForumThreadTag,
+  ForumThreadTagSchema,
+} from "./forum-thread-tag.entity";
 
 @Schema({
   _id: false,
@@ -136,26 +127,6 @@ class SplitOptions {
 }
 
 const SplitOptionsSchema = SchemaFactory.createForClass(SplitOptions);
-
-@Schema({
-  timestamps: false,
-  _id: false,
-})
-class ForumThreadTag {
-  @Prop({
-    required: true,
-    type: String,
-  })
-  id: string;
-
-  @Prop({
-    type: FiltersSchema,
-    required: false,
-  })
-  filters?: Filters;
-}
-
-const ForumThreadTagSchema = SchemaFactory.createForClass(ForumThreadTag);
 
 @Schema({
   timestamps: false,

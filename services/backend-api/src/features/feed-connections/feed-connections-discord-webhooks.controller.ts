@@ -197,6 +197,7 @@ export class FeedConnectionsDiscordWebhooksController {
       enablePlaceholderFallback,
       customPlaceholders,
       rateLimits,
+      forumThreadTitle,
     }: UpdateDiscordWebhookConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordWebhookConnectionOutputDto> {
@@ -252,6 +253,7 @@ export class FeedConnectionsDiscordWebhooksController {
           details: {
             formatter,
             content,
+            forumThreadTitle,
             placeholderLimits,
             embeds: convertToFlatDiscordEmbeds(embeds),
             webhook: useWebhook

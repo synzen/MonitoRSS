@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types, Schema as MongooseSchema } from "mongoose";
 import {
   FeedConnectionDisabledCode,
+  FeedConnectionDiscordWebhookType,
   FeedConnectionMentionType,
 } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
@@ -48,6 +49,13 @@ class Webhook {
     required: true,
   })
   guildId: string;
+
+  @Prop({
+    required: false,
+    enum: Object.values(FeedConnectionDiscordWebhookType),
+    type: String,
+  })
+  type?: FeedConnectionDiscordWebhookType | null;
 }
 
 const WebhookSchema = SchemaFactory.createForClass(Webhook);
@@ -141,6 +149,11 @@ class Details {
     required: false,
   })
   formatter?: DiscordFormatter;
+
+  @Prop({
+    required: false,
+  })
+  forumThreadTitle?: string;
 
   @Prop({
     type: [PlaceholderLimitSchema],
