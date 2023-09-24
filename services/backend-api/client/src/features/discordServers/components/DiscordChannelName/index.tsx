@@ -56,5 +56,9 @@ export const DiscordChannelName: React.FC<Props> = ({
 
   const useName = parenthesis ? `(#${channelName})` : `#${channelName}`;
 
-  return <Text {...textProps}>{useName}</Text>;
+  return (
+    <Text display="inline" {...textProps}>
+      {useName}
+    </Text>
+  );
 };

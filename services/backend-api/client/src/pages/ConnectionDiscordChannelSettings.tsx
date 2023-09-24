@@ -50,17 +50,20 @@ import {
 import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
+import { DeliveryRateLimitsTabSection } from "../features/feedConnections/components/DeliveryRateLimitsTabSection";
 
 enum TabSearchParam {
   Message = "?view=message",
   Filters = "?view=filters",
+  RateLimits = "?view=rate-limits",
   CustomPlaceholders = "?view=custom-placeholders",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Message, 0],
   [TabSearchParam.Filters, 1],
-  [TabSearchParam.CustomPlaceholders, 2],
+  [TabSearchParam.RateLimits, 2],
+  [TabSearchParam.CustomPlaceholders, 3],
 ]);
 
 const getPrettyChannelType = (
@@ -298,6 +301,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               >
                 Filters
               </Tab>
+              <Tab onClick={() => navigate({ search: TabSearchParam.RateLimits })}>
+                Delivery Rate Limits
+              </Tab>
               <Tab
                 onClick={() => {
                   navigate({
@@ -371,6 +377,17 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                     },
                   }}
+                />
+              </BoxConstrained.Container>
+            </BoxConstrained.Wrapper>
+          </TabPanel>
+          <TabPanel width="100%">
+            <BoxConstrained.Wrapper>
+              <BoxConstrained.Container>
+                <DeliveryRateLimitsTabSection
+                  connectionId={connectionId as string}
+                  feedId={feedId as string}
+                  connectionType={FeedConnectionType.DiscordChannel}
                 />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

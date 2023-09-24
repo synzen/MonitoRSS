@@ -415,6 +415,7 @@ export class ScheduleHandlerService {
         filters: con.filters?.expression
           ? { expression: con.filters.expression }
           : null,
+        rateLimits: con.rateLimits,
         details: {
           guildId: con.details.channel.guildId,
           channel: {
@@ -452,6 +453,7 @@ export class ScheduleHandlerService {
         filters: con.filters?.expression
           ? { expression: con.filters.expression }
           : null,
+        rateLimits: con.rateLimits,
         details: {
           guildId: con.details.webhook.guildId,
           webhook: {

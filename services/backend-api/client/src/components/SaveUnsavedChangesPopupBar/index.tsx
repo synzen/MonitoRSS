@@ -5,20 +5,24 @@ import { useTranslation } from "react-i18next";
 import { isEqual } from "lodash";
 import { AnimatedComponent } from "../AnimatedComponent";
 
-export const SavedUnsavedChangesPopupBar = () => {
-  const { t } = useTranslation();
-  const {
-    formState: { isSubmitting, isValid, defaultValues },
-    reset,
-    getValues,
-  } = useFormContext();
-
+interface Props {
   /**
    * react-hook-form isDirty does not report true in some cases
    * such as when setting an empty array for a field that was previously
    * populated (happens with custom placeholders)
    */
-  const isDirty = !isEqual(getValues(), defaultValues);
+  useDirtyFormCheck?: boolean;
+}
+
+export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
+  const { t } = useTranslation();
+  const {
+    formState: { isSubmitting, isValid, defaultValues, isDirty: formContextIsDirty },
+    reset,
+    getValues,
+  } = useFormContext();
+
+  const isDirty = useDirtyFormCheck ? formContextIsDirty : !isEqual(getValues(), defaultValues);
 
   return (
     <AnimatedComponent>

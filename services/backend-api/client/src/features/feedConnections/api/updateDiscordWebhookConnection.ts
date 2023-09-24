@@ -19,6 +19,10 @@ export interface UpdateDiscordWebhookConnectionInput {
     filters?: {
       expression: Record<string, any>;
     } | null;
+    rateLimits?: Array<{
+      timeWindowSeconds: number;
+      limit: number;
+    }> | null;
     embeds?: Array<{
       color?: string | null;
       author?: {

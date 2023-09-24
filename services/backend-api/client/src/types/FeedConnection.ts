@@ -99,6 +99,15 @@ export const FeedConnectionSchema = object({
     .optional()
     .default(undefined)
     .nullable(),
+  rateLimits: array(
+    object({
+      id: string().required(),
+      limit: number().positive().integer().required(),
+      timeWindowSeconds: number().positive().integer().required(),
+    }).required()
+  )
+    .default(undefined)
+    .nullable(),
   mentions: object({
     targets: array(
       object({

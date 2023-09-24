@@ -120,6 +120,13 @@ const mockUserFeeds: UserFeed[] = [
             },
           ],
         },
+        rateLimits: [
+          {
+            id: "1",
+            limit: 100,
+            timeWindowSeconds: 60,
+          },
+        ],
         customPlaceholders: [
           {
             id: "customtitle",
