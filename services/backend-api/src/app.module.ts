@@ -21,6 +21,7 @@ import { ScheduleHandlerModule } from "./features/schedule-handler/schedule-hand
 import { LegacyFeedConversionModule } from "./features/legacy-feed-conversion/legacy-feed-conversion.module";
 import { UserFeedManagementInvitesModule } from "./features/user-feed-management-invites/user-feed-management-invites.module";
 import { ErrorReportsController } from "./error-reports.controller";
+import { MessageBrokerEventsModule } from "./features/message-broker-events/message-broker-events.module";
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ export class AppModule {
         MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI),
         FeedConnectionsDiscordWebhooksModule.forRoot(),
         FeedConnectionsDiscordChannelsModule.forRoot(),
+        MessageBrokerEventsModule.forRoot(),
         ConfigModule.forRoot({
           isGlobal: true,
           cache: true,

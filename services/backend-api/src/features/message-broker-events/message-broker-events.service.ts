@@ -1,0 +1,461 @@
+import { AmqpConnection, RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Aggregate, Cursor } from "mongoose";
+import { DiscordMediumEvent } from "../../common";
+import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
+import {
+  castDiscordContentForMedium,
+  castDiscordEmbedsForMedium,
+  getCommonFeedAggregateStages,
+} from "../../common/utils";
+import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
+import logger from "../../utils/logger";
+import {
+  DiscordChannelConnection,
+  DiscordWebhookConnection,
+} from "../feeds/entities/feed-connections";
+import { NotificationsService } from "../notifications/notifications.service";
+import {
+  ArticleRejectCode,
+  FeedRejectCode,
+} from "../schedule-handler/constants";
+import {
+  getConnectionDisableCodeByArticleRejectCode,
+  getUserFeedDisableCodeByFeedRejectCode,
+} from "../schedule-handler/utils";
+import { SupportersService } from "../supporters/supporters.service";
+import {
+  UserFeed,
+  UserFeedDocument,
+  UserFeedModel,
+} from "../user-feeds/entities";
+import {
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../user-feeds/types";
+
+@Injectable()
+export class MessageBrokerEventsService {
+  constructor(
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    private readonly amqpConnection: AmqpConnection,
+    private readonly supportersService: SupportersService,
+    private readonly notificationsService: NotificationsService
+  ) {}
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.UrlFetchCompleted,
+    createQueueIfNotExists: true,
+  })
+  async handleUrlFetchCompletedEvent({
+    data: { url, rateSeconds },
+  }: {
+    data: { url: string; rateSeconds: number };
+  }) {
+    const feedCursor: Cursor<UserFeedDocument> =
+      this.getFeedsQueryMatchingRefreshRate({
+        url,
+        refreshRateSeconds: rateSeconds,
+      }).cursor();
+
+    for await (const feed of feedCursor) {
+      try {
+        const cons = Object.values(feed.connections).flat() as Array<
+          DiscordChannelConnection | DiscordWebhookConnection
+        >;
+
+        const hasCustomPlaceholders = cons.find(
+          (c) => !c.customPlaceholders?.length
+        );
+
+        let allowCustomPlaceholders = false;
+
+        if (hasCustomPlaceholders) {
+          const benefits =
+            await this.supportersService.getBenefitsOfDiscordUser(
+              feed.user.discordUserId
+            );
+
+          allowCustomPlaceholders = benefits.allowCustomPlaceholders;
+        }
+
+        await this.emitDeliverFeedArticlesEvent({
+          userFeed: feed,
+          maxDailyArticles: feed.maxDailyArticles as number,
+          parseCustomPlaceholders: allowCustomPlaceholders,
+        });
+      } catch (err) {
+        logger.error(
+          `Failed to emit deliver feed articles event: ${
+            (err as Error).message
+          }`,
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.UrlRejectedDisableFeeds,
+    createQueueIfNotExists: true,
+  })
+  async handleUrlRejectedDisableFeedsEvent({
+    data: { url, status },
+  }: {
+    data: {
+      url: string;
+      status: Extract<
+        FeedFetcherFetchStatus,
+        FeedFetcherFetchStatus.RefusedLargeFeed
+      >;
+    };
+  }) {
+    logger.debug(`handling url rejected disable feeds event for url ${url}`);
+
+    if (status === FeedFetcherFetchStatus.RefusedLargeFeed) {
+      await this.userFeedModel
+        .updateMany(
+          {
+            url,
+            disabledCode: {
+              $exists: false,
+            },
+          },
+          {
+            $set: {
+              disabledCode: UserFeedDisabledCode.FeedTooLarge,
+            },
+          }
+        )
+        .lean();
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.UrlFailedDisableFeeds,
+  })
+  async handleUrlRequestFailureEvent({
+    data: { url },
+  }: {
+    data: { url: string };
+  }) {
+    logger.debug(`handling url request failure event for url ${url}`);
+
+    const relevantFeeds = await this.userFeedModel
+      .find({
+        url,
+        disabledCode: {
+          $exists: false,
+        },
+      })
+      .select("_id")
+      .lean();
+
+    const relevantFeedIds = relevantFeeds.map((f) => f._id);
+
+    await this.userFeedModel
+      .updateMany(
+        {
+          _id: {
+            $in: relevantFeedIds,
+          },
+        },
+        {
+          $set: {
+            disabledCode: UserFeedDisabledCode.FailedRequests,
+            healthStatus: UserFeedHealthStatus.Failed,
+          },
+        }
+      )
+      .lean();
+
+    try {
+      await this.notificationsService.sendDisabledFeedsAlert(relevantFeedIds, {
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+      });
+    } catch (err) {
+      logger.error(`Failed to send disabled feeds alert`, {
+        stack: (err as Error).stack,
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.FeedRejectedDisableFeed,
+  })
+  async handleFeedRejectedDisableFeed({
+    data: {
+      feed: { id: feedId },
+      rejectedCode,
+    },
+  }: {
+    data: {
+      rejectedCode: FeedRejectCode;
+      feed: {
+        id: string;
+      };
+    };
+  }) {
+    const foundFeed = await this.userFeedModel.findById(feedId).lean();
+
+    if (!foundFeed) {
+      logger.warn(
+        `No feed with ID ${feedId} was found when attempting to` +
+          ` handle message from ${MessageBrokerQueue.FeedRejectedDisableFeed}`
+      );
+
+      return;
+    }
+
+    const disabledCode = getUserFeedDisableCodeByFeedRejectCode(rejectedCode);
+
+    await this.userFeedModel.updateOne(
+      {
+        _id: foundFeed._id,
+        disabledCode: {
+          $exists: false,
+        },
+      },
+      {
+        $set: {
+          disabledCode,
+        },
+      }
+    );
+
+    try {
+      logger.debug(
+        `Preparing to send disabled feeds alert to ${foundFeed._id} for reason ${disabledCode}`
+      );
+      await this.notificationsService.sendDisabledFeedsAlert([foundFeed._id], {
+        disabledCode,
+      });
+    } catch (err) {
+      logger.error(`Failed to send disabled feeds alert`, {
+        stack: (err as Error).stack,
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
+    queue: MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+  })
+  async handleRejectedArticleDisableConnection({
+    data: {
+      rejectedCode,
+      medium: { id: mediumId },
+      feed: { id: feedId },
+    },
+  }: {
+    data: {
+      rejectedCode: ArticleRejectCode;
+      medium: {
+        id: string;
+      };
+      feed: {
+        id: string;
+      };
+    };
+  }) {
+    const foundFeed = await this.userFeedModel.findById(feedId).lean();
+
+    if (!foundFeed) {
+      logger.warn(
+        `No feed with ID ${feedId} was found when attempting to` +
+          ` handle message from ${MessageBrokerQueue.FeedRejectedArticleDisableConnection}`
+      );
+
+      return;
+    }
+
+    const connectionEntries = Object.entries(foundFeed.connections) as Array<
+      [
+        keyof UserFeed["connections"],
+        UserFeed["connections"][keyof UserFeed["connections"]]
+      ]
+    >;
+
+    const disableCode =
+      getConnectionDisableCodeByArticleRejectCode(rejectedCode);
+
+    for (const [connectionKey, connections] of connectionEntries) {
+      for (let conIdx = 0; conIdx < connections.length; ++conIdx) {
+        const connection = connections[conIdx];
+
+        if (connection.id.toHexString() !== mediumId) {
+          continue;
+        }
+
+        await this.userFeedModel.updateOne(
+          {
+            _id: feedId,
+            [`connections.${connectionKey}.${conIdx}.disabledCode`]: {
+              $exists: false,
+            },
+          },
+          {
+            $set: {
+              [`connections.${connectionKey}.${conIdx}.disabledCode`]:
+                disableCode,
+            },
+          }
+        );
+
+        try {
+          logger.debug(
+            `Sending disabled feed connection alert email for ${foundFeed._id}, ${connection.id}`
+          );
+          await this.notificationsService.sendDisabledFeedConnectionAlert(
+            foundFeed,
+            connection,
+            {
+              disabledCode: disableCode,
+            }
+          );
+        } catch (err) {
+          logger.error(
+            "Failed to send disabled feed connection alert email in notifications service",
+            {
+              stack: (err as Error).stack,
+            }
+          );
+        }
+
+        break;
+      }
+    }
+  }
+
+  emitDeliverFeedArticlesEvent({
+    userFeed,
+    maxDailyArticles,
+    parseCustomPlaceholders,
+  }: {
+    userFeed: UserFeed;
+    maxDailyArticles: number;
+    parseCustomPlaceholders: boolean;
+  }) {
+    const discordChannelMediums = userFeed.connections.discordChannels
+      .filter((c) => !c.disabledCode)
+      .map<DiscordMediumEvent>((con) => ({
+        id: con.id.toHexString(),
+        key: "discord",
+        filters: con.filters?.expression
+          ? { expression: con.filters.expression }
+          : null,
+        rateLimits: con.rateLimits,
+        details: {
+          guildId: con.details.channel.guildId,
+          channel: {
+            id: con.details.channel.id,
+            type: con.details.channel.type,
+            guildId: con.details.channel.guildId,
+          },
+          content: castDiscordContentForMedium(con.details.content),
+          embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          forumThreadTitle: con.details.forumThreadTitle,
+          forumThreadTags: con.details.forumThreadTags,
+          mentions: con.mentions,
+          customPlaceholders: parseCustomPlaceholders
+            ? con.customPlaceholders
+            : [],
+          formatter: {
+            formatTables: con.details.formatter?.formatTables,
+            stripImages: con.details.formatter?.stripImages,
+            disableImageLinkPreviews:
+              con.details.formatter?.disableImageLinkPreviews,
+          },
+          splitOptions: con.splitOptions?.isEnabled
+            ? con.splitOptions
+            : undefined,
+          placeholderLimits: con.details.placeholderLimits,
+          enablePlaceholderFallback: con.details.enablePlaceholderFallback,
+        },
+      }));
+
+    const discordWebhookMediums = userFeed.connections.discordWebhooks
+      .filter((c) => !c.disabledCode)
+      .map<DiscordMediumEvent>((con) => ({
+        id: con.id.toHexString(),
+        key: "discord",
+        filters: con.filters?.expression
+          ? { expression: con.filters.expression }
+          : null,
+        rateLimits: con.rateLimits,
+        details: {
+          guildId: con.details.webhook.guildId,
+          webhook: {
+            id: con.details.webhook.id,
+            token: con.details.webhook.token,
+            name: con.details.webhook.name,
+            iconUrl: con.details.webhook.iconUrl,
+            type: con.details.webhook.type,
+          },
+          content: castDiscordContentForMedium(con.details.content),
+          embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          forumThreadTitle: con.details.forumThreadTitle,
+          formatter: {
+            formatTables: con.details.formatter?.formatTables,
+            stripImages: con.details.formatter?.stripImages,
+            disableImageLinkPreviews:
+              con.details.formatter?.disableImageLinkPreviews,
+          },
+          splitOptions: con.splitOptions?.isEnabled
+            ? con.splitOptions
+            : undefined,
+          mentions: con.mentions,
+          customPlaceholders: parseCustomPlaceholders
+            ? con.customPlaceholders
+            : [],
+          placeholderLimits: con.details.placeholderLimits,
+          enablePlaceholderFallback: con.details.enablePlaceholderFallback,
+        },
+      }));
+
+    const allMediums = discordChannelMediums.concat(discordWebhookMediums);
+
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedDeliverArticles,
+      {
+        debug: userFeed.debug,
+        timestamp: Date.now(),
+        data: {
+          articleDayLimit: maxDailyArticles,
+          feed: {
+            id: userFeed._id.toHexString(),
+            url: userFeed.url,
+            passingComparisons: userFeed.passingComparisons || [],
+            blockingComparisons: userFeed.blockingComparisons || [],
+            formatOptions: {
+              dateFormat: userFeed.formatOptions?.dateFormat,
+              dateTimezone: userFeed.formatOptions?.dateTimezone,
+            },
+            dateChecks: userFeed.dateCheckOptions,
+          },
+          mediums: allMediums,
+        },
+      },
+      {
+        expiration: 1000 * 60 * 60, // 1 hour
+      }
+    );
+
+    logger.debug("successfully emitted deliver feed articles event");
+  }
+
+  getFeedsQueryMatchingRefreshRate(data: {
+    refreshRateSeconds: number;
+    url: string;
+  }): Aggregate<UserFeedDocument[]> {
+    return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
+  }
+}

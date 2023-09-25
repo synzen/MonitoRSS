@@ -27,6 +27,8 @@ async function bootstrap() {
     })
   );
 
+  app.enableShutdownHooks();
+
   const httpAdapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
 
