@@ -107,6 +107,12 @@ function getPrettyConnectionName(
   }
 
   if (key === FeedConnectionType.DiscordWebhook) {
+    const casted = connection as FeedDiscordWebhookConnection;
+
+    if (casted.details.webhook.type === "forum") {
+      return "Discord Forum Webhook";
+    }
+
     return "Discord Webhook";
   }
 
