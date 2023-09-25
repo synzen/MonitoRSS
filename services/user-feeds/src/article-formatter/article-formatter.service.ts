@@ -130,13 +130,6 @@ export class ArticleFormatterService {
       },
     };
 
-    const unorderedListSelector: SelectorDefinition = {
-      selector: "ul",
-      options: {
-        itemPrefix: "• ",
-      },
-    };
-
     const htmlToTextOptions: HtmlToTextOptions = {
       wordwrap: false,
       formatters: {
@@ -210,7 +203,6 @@ export class ArticleFormatterService {
         emSelector,
         uSelector,
         anchorSelector,
-        unorderedListSelector,
       ],
     };
 
