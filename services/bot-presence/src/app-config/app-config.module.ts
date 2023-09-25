@@ -7,7 +7,11 @@ import { AppConfigService } from './app-config.service';
 class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
-  BOT_TOKEN: string;
+  BOT_PRESENCE_DISCORD_BOT_TOKEN: string;
+
+  @IsString()
+  @IsNotEmpty()
+  BOT_PRESENCE_RABBITMQ_URL: string;
 }
 
 function validate(config: Record<string, unknown>) {

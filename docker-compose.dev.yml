@@ -98,6 +98,28 @@ services:
     networks:
       - monitorss-default
 
+  mrss-bot-presence-service:
+    restart: on-failure:3
+    build:
+      context: services/bot-presence
+      dockerfile: Dockerfile
+      target: build
+    volumes:
+      - ./services/bot-presence:/usr/src/app
+      - /usr/src/app/node_modules/
+    depends_on:
+      mrss-rabbitmq-broker:
+        condition: service_healthy
+      mrss-mongo:
+        condition: service_started
+    command: npm run start:dev
+    env_file:
+      - ./.env.local
+    environment:
+      - BOT_PRESENCE_RABBITMQ_URL=amqp://mrss-rabbitmq-broker:5672
+    networks:
+      - monitorss-default
+
   mrss-discord-rest-listener:
     restart: on-failure:3
     build:
