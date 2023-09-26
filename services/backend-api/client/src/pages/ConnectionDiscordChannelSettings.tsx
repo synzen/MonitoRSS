@@ -167,6 +167,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       )}
       {connection?.details.webhook && (
         <EditConnectionWebhookDialog
+          feedId={feedId}
           onCloseRef={actionsButtonRef}
           isOpen={editIsOpen}
           onClose={editOnClose}
