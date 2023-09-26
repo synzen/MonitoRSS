@@ -32,7 +32,7 @@ import { useDiscordWebhooks } from "../../../discordWebhooks";
 import { useUserFeed } from "../../../feed/hooks";
 import { DiscordChannelName } from "../../../discordServers/components/DiscordChannelName";
 import { notifyError } from "../../../../utils/notifyError";
-import { useCreateDiscordWebhookConnection } from "../../hooks";
+import { useCreateDiscordChannelConnection } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { DiscordServerSearchSelectv2 } from "../../../discordServers";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -83,7 +83,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
   });
   const initialFocusRef = useRef<any>(null);
 
-  const { mutateAsync } = useCreateDiscordWebhookConnection();
+  const { mutateAsync } = useCreateDiscordChannelConnection();
 
   const onSubmit = async ({ webhook, name }: FormData) => {
     if (!feedId) {
@@ -192,7 +192,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                           }
                           onChange={(val, data) => {
                             field.onChange(val);
-                            setValue("name", data.name, {
+                            setValue("webhook.name", data.name, {
                               shouldDirty: true,
                               shouldTouch: true,
                               shouldValidate: true,

@@ -40,6 +40,7 @@ import {
   EditConnectionChannelDialog,
   UpdateDiscordChannelConnectionInput,
   CloneDiscordConnectionCloneDialog,
+  EditConnectionWebhookDialog,
 } from "../features/feedConnections";
 import { CustomPlaceholdersTabSection } from "../features/feedConnections/components/CustomPlaceholdersTabSection";
 import {
@@ -66,20 +67,34 @@ const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.CustomPlaceholders, 3],
 ]);
 
-const getPrettyChannelType = (
-  type?: FeedDiscordChannelConnection["details"]["channel"]["type"]
-) => {
+const getPrettyChannelType = (details?: FeedDiscordChannelConnection["details"]) => {
   const { t } = useTranslation();
 
-  if (type === "thread") {
-    return t("pages.discordChannelConnection.channelTypeThread");
+  if (details?.webhook) {
+    const { type } = details.webhook;
+
+    if (type === "forum") {
+      return t("pages.discordChannelConnection.channelTypeForum");
+    }
+
+    return "Discord Webhook";
   }
 
-  if (type === "forum") {
-    return t("pages.discordChannelConnection.channelTypeForum");
+  if (details?.channel) {
+    const { type } = details.channel;
+
+    if (type === "thread") {
+      return t("pages.discordChannelConnection.channelTypeThread");
+    }
+
+    if (type === "forum") {
+      return t("pages.discordChannelConnection.channelTypeForum");
+    }
+
+    return t("pages.discordChannelConnection.channelTypeTextChannel");
   }
 
-  return t("pages.discordChannelConnection.channelTypeTextChannel");
+  return "";
 };
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
@@ -107,7 +122,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { t } = useTranslation();
   const { mutateAsync, status: updateStatus } = useUpdateDiscordChannelConnection();
 
-  const serverId = connection?.details.channel.guildId;
+  const serverId = connection?.details?.channel?.guildId || connection?.details?.webhook?.guildId;
 
   const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
     if (!feedId || !connectionId) {
@@ -132,13 +147,13 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       error={feedError || connectionError}
       loading={feedStatus === "loading" || connectionStatus === "loading"}
     >
-      {connection && (
+      {connection?.details.channel && (
         <EditConnectionChannelDialog
           onCloseRef={actionsButtonRef}
           defaultValues={{
             channelId: connection.details.channel.id,
             name: connection.name,
-            serverId,
+            serverId: connection.details.channel.id,
           }}
           onUpdate={({ channelId: updatedChannelId, name }) =>
             onUpdate({
@@ -148,6 +163,31 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           }
           isOpen={editIsOpen}
           onClose={editOnClose}
+        />
+      )}
+      {connection?.details.webhook && (
+        <EditConnectionWebhookDialog
+          onCloseRef={actionsButtonRef}
+          isOpen={editIsOpen}
+          onClose={editOnClose}
+          onUpdate={({ webhook }) =>
+            onUpdate({
+              webhook: {
+                id: webhook.id,
+                name: webhook.name,
+                iconUrl: webhook.iconUrl,
+              },
+            })
+          }
+          defaultValues={{
+            name: connection.name,
+            serverId: connection.details.webhook.guildId,
+            webhook: {
+              id: connection.details.webhook.id,
+              iconUrl: connection.details.webhook.iconUrl,
+              name: connection.details.webhook.name,
+            },
+          }}
         />
       )}
       <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
@@ -271,15 +311,30 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 <CategoryText title={t("pages.discordChannelConnection.serverLabel")}>
                   <DiscordServerName serverId={serverId} />
                 </CategoryText>
-                <CategoryText title={t("pages.discordChannelConnection.channelNameLabel")}>
-                  <DiscordChannelName
-                    serverId={serverId}
-                    channelId={connection?.details.channel.id as string}
-                  />
-                </CategoryText>
-                <CategoryText title={t("pages.discordChannelConnection.channelTypeLabel")}>
-                  <Text>{getPrettyChannelType(connection?.details.channel.type)}</Text>
-                </CategoryText>
+                {connection?.details.channel && (
+                  <>
+                    <CategoryText title={t("pages.discordChannelConnection.channelNameLabel")}>
+                      <DiscordChannelName
+                        serverId={serverId}
+                        channelId={connection.details.channel.id}
+                      />
+                    </CategoryText>
+                    <CategoryText title={t("pages.discordChannelConnection.channelTypeLabel")}>
+                      <Text>{getPrettyChannelType(connection?.details)}</Text>
+                    </CategoryText>
+                  </>
+                )}
+                {connection?.details.webhook && (
+                  <>
+                    <CategoryText title="Webhook">{connection?.details.webhook.id}</CategoryText>
+                    <CategoryText title="Custom name">
+                      {connection?.details.webhook.name || "N/A"}
+                    </CategoryText>
+                    <CategoryText title="Custom icon">
+                      {connection?.details.webhook.iconUrl || "N/A"}
+                    </CategoryText>
+                  </>
+                )}
               </Grid>
             </Stack>
             <TabList>
@@ -336,8 +391,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   articleFormatter={{
                     customPlaceholders: connection?.customPlaceholders,
                     options: {
-                      formatTables: connection?.details.formatter?.formatTables,
-                      stripImages: connection?.details.formatter?.stripImages,
+                      formatTables: connection?.details.formatter?.formatTables || false,
+                      stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                       ...feed?.formatOptions,
@@ -348,7 +403,10 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     type: FeedConnectionType.DiscordChannel,
                   }}
                   include={{
-                    forumThreadTitle: connection?.details.channel.type === "forum",
+                    forumThreadTitle:
+                      connection?.details.channel?.type === "forum" ||
+                      connection?.details.webhook?.type === "forum",
+                    forumThreadTags: connection?.details.channel?.type === "forum",
                   }}
                 />
               </BoxConstrained.Container>
@@ -371,8 +429,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   filters={connection?.filters?.expression as LogicalFilterExpression}
                   articleFormatter={{
                     options: {
-                      formatTables: connection?.details.formatter?.formatTables,
-                      stripImages: connection?.details.formatter?.stripImages,
+                      formatTables: connection?.details.formatter?.formatTables || false,
+                      stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                     },
@@ -402,8 +460,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   articleFormat={{
                     customPlaceholders: connection?.customPlaceholders,
                     options: {
-                      formatTables: connection?.details.formatter?.formatTables,
-                      stripImages: connection?.details.formatter?.stripImages,
+                      formatTables: connection?.details.formatter?.formatTables || false,
+                      stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
                       ...feed?.formatOptions,

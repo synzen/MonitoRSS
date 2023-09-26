@@ -6,7 +6,12 @@ export interface CreateDiscordChannelConnectionInput {
   feedId: string;
   details: {
     name: string;
-    channelId: string;
+    channelId?: string;
+    webhook?: {
+      id: string;
+      name?: string | null;
+      iconUrl?: string | null;
+    };
   };
 }
 

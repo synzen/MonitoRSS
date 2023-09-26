@@ -140,18 +140,6 @@ const mockUserFeeds: UserFeed[] = [
               },
             ],
           },
-          // {
-          //   id: "customid",
-          //   referenceName: "Custom ID",
-          //   sourcePlaceholder: "id",
-          //   steps: [
-          //     {
-          //       id: "1",
-          //       regexSearch: "^(.*)$",
-          //       replacementString: "xx",
-          //     },
-          //   ],
-          // },
         ],
         splitOptions: null,
         mentions: {
@@ -168,6 +156,27 @@ const mockUserFeeds: UserFeed[] = [
         disabledCode: FeedConnectionDisabledCode.MissingPermissions,
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Channel 1",
+      },
+      {
+        details: {
+          webhook: {
+            id: mockDiscordWebhooks[0].id,
+            iconUrl: mockDiscordWebhooks[0].avatarUrl,
+            name: mockDiscordWebhooks[0].name,
+            guildId: mockDiscordServers[0].id,
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        mentions: null,
+        splitOptions: null,
+        filters: null,
+        id: "1a",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord Webhook in Channel",
       },
       {
         details: {

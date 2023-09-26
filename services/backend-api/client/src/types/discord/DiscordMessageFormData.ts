@@ -108,8 +108,12 @@ export const discordMessageFormSchema = object({
           .nullable()
           .default(null),
       }).required()
-    ).nullable(),
-  }).nullable(),
+    )
+      .optional()
+      .nullable(),
+  })
+    .optional()
+    .nullable(),
   customPlaceholders: array(CustomPlaceholderSchema.required()).nullable(),
   placeholderLimits: array(
     object({

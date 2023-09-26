@@ -8,6 +8,11 @@ export interface UpdateDiscordChannelConnectionInput {
   details: {
     name?: string;
     channelId?: string;
+    webhook?: {
+      id: string;
+      iconUrl?: string | null;
+      name?: string | null;
+    } | null;
     content?: string | null;
     forumThreadTitle?: string | null;
     filters?: {

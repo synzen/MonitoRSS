@@ -95,15 +95,25 @@ function getPrettyConnectionName(
   if (key === FeedConnectionType.DiscordChannel) {
     const casted = connection as FeedDiscordChannelConnection;
 
-    if (casted.details.channel.type === "thread") {
-      return "Discord Thread";
+    if (casted.details.channel) {
+      if (casted.details.channel.type === "thread") {
+        return "Discord Thread";
+      }
+
+      if (casted.details.channel.type === "forum") {
+        return "Discord Forum";
+      }
+
+      return "Discord Channel";
     }
 
-    if (casted.details.channel.type === "forum") {
-      return "Discord Forum";
-    }
+    if (casted.details.webhook) {
+      if (casted.details.webhook.type === "forum") {
+        return "Discord Forum Webhook";
+      }
 
-    return "Discord Channel";
+      return "Discord Webhook";
+    }
   }
 
   if (key === FeedConnectionType.DiscordWebhook) {
@@ -127,22 +137,24 @@ const getPrettyConnectionDetail = (
   if (key === FeedConnectionType.DiscordChannel) {
     const casted = connection as FeedDiscordChannelConnection;
 
-    if (casted.details.channel.type === "thread") {
-      return null;
-    }
+    if (casted.details.channel) {
+      if (casted.details.channel.type === "thread") {
+        return null;
+      }
 
-    return (
-      <DiscordChannelName
-        channelId={casted.details.channel.id}
-        serverId={casted.details.channel.guildId}
-        spinnerSize="xs"
-        textProps={{
-          color: "gray.500",
-          fontSize: 14,
-        }}
-        parenthesis
-      />
-    );
+      return (
+        <DiscordChannelName
+          channelId={casted.details.channel.id}
+          serverId={casted.details.channel.guildId}
+          spinnerSize="xs"
+          textProps={{
+            color: "gray.500",
+            fontSize: 14,
+          }}
+          parenthesis
+        />
+      );
+    }
   }
 
   if (key === FeedConnectionType.DiscordWebhook) {

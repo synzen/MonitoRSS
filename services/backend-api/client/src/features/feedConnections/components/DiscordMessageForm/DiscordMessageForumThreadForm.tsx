@@ -113,8 +113,8 @@ export const DiscordMessageForumThreadForm = ({
     connectionId,
   });
   const { status, data: availableTags } = useDiscordChannelForumTags({
-    channelId: connection?.details.channel.id,
-    serverId: connection?.details.channel.guildId,
+    channelId: connection?.details?.channel?.id,
+    serverId: connection?.details?.channel?.guildId,
   });
   const { t } = useTranslation();
   const availableTagIds = new Set(availableTags?.map((tag) => tag.id));

@@ -46,6 +46,7 @@ export class UpdateDiscordChannelConnectionInputDto {
   channelId?: string;
 
   @IsObject()
+  @IsOptional()
   @ValidateNested()
   @Type(() => Webhook)
   webhook?: Webhook;
