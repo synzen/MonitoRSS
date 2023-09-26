@@ -231,6 +231,7 @@ export class FeedConnectionsDiscordChannelsController {
     @Body(ValidationPipe)
     {
       channelId,
+      webhook,
       name,
       content,
       embeds,
@@ -304,6 +305,7 @@ export class FeedConnectionsDiscordChannelsController {
                   id: useChannelId,
                 }
               : undefined,
+            webhook: useChannelId ? undefined : webhook,
             embeds: convertToFlatDiscordEmbeds(embeds),
             content,
             formatter,

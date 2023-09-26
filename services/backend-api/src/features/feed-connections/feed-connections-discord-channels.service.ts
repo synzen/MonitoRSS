@@ -72,6 +72,11 @@ export interface UpdateDiscordChannelConnectionInput {
       channel?: {
         id: string;
       };
+      webhook?: {
+        id: string;
+        name?: string;
+        iconUrl?: string;
+      };
       content?: string;
       forumThreadTitle?: string;
       forumThreadTags?: {
@@ -305,6 +310,33 @@ export class FeedConnectionsDiscordChannelsService {
         id: updates.details.channel.id,
         guildId: channel.guild_id,
         type,
+      };
+    } else if (updates.details?.webhook) {
+      const webhookDetails = updates.details.webhook;
+      const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+        feed.user.discordUserId
+      );
+
+      if (!benefits.isSupporter) {
+        throw new Error("User must be a supporter to add webhooks");
+      }
+
+      const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
+        webhookDetails.id,
+        accessToken
+      );
+
+      // @ts-ignore
+      setRecordDetails["connections.discordChannels.$.details.webhook"] = {
+        iconUrl: webhookDetails.iconUrl,
+        id: webhookDetails.id,
+        name: webhookDetails.name,
+        token: webhook.token as string,
+        guildId: channel.guild_id,
+        type:
+          channel.type === DiscordChannelType.GUILD_FORUM
+            ? FeedConnectionDiscordWebhookType.Forum
+            : undefined,
       };
     }
 

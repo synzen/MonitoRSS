@@ -23,6 +23,19 @@ import {
 } from "../../../common";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
+class Webhook {
+  @IsString()
+  id: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  iconUrl?: string;
+}
+
 export class UpdateDiscordChannelConnectionInputDto {
   @IsString()
   @IsOptional()
@@ -31,6 +44,11 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsString()
   @IsOptional()
   channelId?: string;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => Webhook)
+  webhook?: Webhook;
 
   @IsString()
   @IsOptional()
