@@ -12,6 +12,7 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
+  Spinner,
   Stack,
   Tab,
   TabList,
@@ -52,6 +53,7 @@ import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { DeliveryRateLimitsTabSection } from "../features/feedConnections/components/DeliveryRateLimitsTabSection";
+import { useDiscordWebhooks } from "../features/discordWebhooks";
 
 enum TabSearchParam {
   Message = "?view=message",
@@ -123,6 +125,15 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { mutateAsync, status: updateStatus } = useUpdateDiscordChannelConnection();
 
   const serverId = connection?.details?.channel?.guildId || connection?.details?.webhook?.guildId;
+
+  const { data: discordWebhooks, status: discordWebhooksStatus } = useDiscordWebhooks({
+    serverId,
+    isWebhooksEnabled: !!connection?.details.webhook,
+  });
+
+  const matchingWebhook =
+    connection?.details.webhook &&
+    discordWebhooks?.find((webhook) => webhook.id === connection.details.webhook?.id);
 
   const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
     if (!feedId || !connectionId) {
@@ -327,7 +338,20 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 )}
                 {connection?.details.webhook && (
                   <>
-                    <CategoryText title="Webhook">{connection?.details.webhook.id}</CategoryText>
+                    <CategoryText title="Webhook">
+                      {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
+                      {matchingWebhook && (
+                        <HStack>
+                          <Text>{matchingWebhook.name}</Text>
+                          <DiscordChannelName
+                            serverId={serverId}
+                            channelId={matchingWebhook.channelId}
+                            parenthesis
+                            spinnerSize="sm"
+                          />
+                        </HStack>
+                      )}
+                    </CategoryText>
                     <CategoryText title="Custom name">
                       {connection?.details.webhook.name || "N/A"}
                     </CategoryText>
