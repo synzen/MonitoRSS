@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { useMemo } from "react";
-import { SpinnerProps, Text, TextProps, Tooltip } from "@chakra-ui/react";
+import { SpinnerProps, Text, TextProps, Tooltip, chakra } from "@chakra-ui/react";
 import { Loading } from "@/components";
 import { useDiscordServerChannels } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
@@ -11,6 +11,7 @@ interface Props {
   spinnerSize?: SpinnerProps["size"];
   textProps?: TextProps;
   parenthesis?: boolean;
+  hidden?: boolean;
 }
 
 export const DiscordChannelName: React.FC<Props> = ({
@@ -19,6 +20,7 @@ export const DiscordChannelName: React.FC<Props> = ({
   spinnerSize,
   textProps,
   parenthesis,
+  hidden,
 }) => {
   const { data, status, error } = useDiscordServerChannels({
     serverId,
@@ -40,6 +42,10 @@ export const DiscordChannelName: React.FC<Props> = ({
     return map;
   }, [data]);
 
+  if (hidden) {
+    return null;
+  }
+
   if (status === "loading") {
     return <Loading size={spinnerSize || "sm"} />;
   }
@@ -57,8 +63,8 @@ export const DiscordChannelName: React.FC<Props> = ({
   const useName = parenthesis ? `(#${channelName})` : `#${channelName}`;
 
   return (
-    <Text display="inline" {...textProps}>
+    <chakra.span display="inline" {...textProps}>
       {useName}
-    </Text>
+    </chakra.span>
   );
 };

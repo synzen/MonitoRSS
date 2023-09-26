@@ -311,6 +311,8 @@ export class FeedConnectionsDiscordChannelsService {
         guildId: channel.guild_id,
         type,
       };
+      // @ts-ignore
+      setRecordDetails["connections.discordChannels.$.details.webhook"] = null;
     } else if (updates.details?.webhook) {
       const webhookDetails = updates.details.webhook;
       const benefits = await this.supportersService.getBenefitsOfDiscordUser(
@@ -338,6 +340,8 @@ export class FeedConnectionsDiscordChannelsService {
             ? FeedConnectionDiscordWebhookType.Forum
             : undefined,
       };
+      // @ts-ignore
+      setRecordDetails["connections.discordChannels.$.details.channel"] = null;
     }
 
     if (updates.filters) {

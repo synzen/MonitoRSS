@@ -20,14 +20,18 @@ const DiscordChannelConnectionDetailsSchema = object({
     id: string().required(),
     guildId: string().required(),
     type: string().optional().nullable().oneOf(["forum", "thread"]),
-  }).optional(),
+  })
+    .optional()
+    .nullable(),
   webhook: object({
     id: string().required(),
     name: string().optional(),
     iconUrl: string().optional(),
     guildId: string().required(),
     type: string().nullable().oneOf(["forum"]),
-  }).optional(),
+  })
+    .optional()
+    .nullable(),
   content: string().optional(),
   forumThreadTitle: string().optional(),
   forumThreadTags: array(

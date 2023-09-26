@@ -36,7 +36,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
     enabled: !!(feed && connection && debouncedData.article?.id),
     data: {
-      connectionId: connection!.id,
+      connectionId: connection?.id || "",
       feedId,
       data: {
         splitOptions: connection?.splitOptions,

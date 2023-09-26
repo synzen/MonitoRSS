@@ -104,6 +104,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const {
+    isOpen: isConvertToWebhookIsOpen,
+    onClose: isConvertToWebhookOnClose,
+    onOpen: isConvertToWebhookOnOpen,
+  } = useDisclosure();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
@@ -202,6 +207,26 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
           }}
         />
       )}
+      {/** For converting a channel to webhook */}
+      {connection && connection.details.channel && (
+        <EditConnectionWebhookDialog
+          excludeName
+          title="Convert to Discord Webook"
+          feedId={feedId}
+          isOpen={isConvertToWebhookIsOpen}
+          onClose={isConvertToWebhookOnClose}
+          onCloseRef={actionsButtonRef}
+          onUpdate={({ webhook }) =>
+            onUpdate({
+              webhook: {
+                id: webhook.id,
+                name: webhook.name,
+                iconUrl: webhook.iconUrl,
+              },
+            })
+          }
+        />
+      )}
       <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
         <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
           <BoxConstrained.Container spacing={12}>
@@ -289,6 +314,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                                 }
                               />
                             )}
+                            {connection && connection.details.channel && (
+                              <MenuItem onClick={isConvertToWebhookOnOpen}>
+                                Convert to Discord Webhook
+                              </MenuItem>
+                            )}
                             <MenuDivider />
                             <DeleteConnectionButton
                               connectionId={connectionId as string}
@@ -323,43 +353,41 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 <CategoryText title={t("pages.discordChannelConnection.serverLabel")}>
                   <DiscordServerName serverId={serverId} />
                 </CategoryText>
-                {connection?.details.channel && (
-                  <>
-                    <CategoryText title={t("pages.discordChannelConnection.channelNameLabel")}>
-                      <DiscordChannelName
-                        serverId={serverId}
-                        channelId={connection.details.channel.id}
-                      />
-                    </CategoryText>
-                    <CategoryText title={t("pages.discordChannelConnection.channelTypeLabel")}>
-                      <Text>{getPrettyChannelType(connection?.details)}</Text>
-                    </CategoryText>
-                  </>
-                )}
-                {connection?.details.webhook && (
-                  <>
-                    <CategoryText title="Webhook">
-                      {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
-                      {matchingWebhook && (
-                        <HStack>
-                          <Text>{matchingWebhook.name}</Text>
-                          <DiscordChannelName
-                            serverId={serverId}
-                            channelId={matchingWebhook.channelId}
-                            parenthesis
-                            spinnerSize="sm"
-                          />
-                        </HStack>
-                      )}
-                    </CategoryText>
-                    <CategoryText title="Custom name">
-                      {connection?.details.webhook.name || "N/A"}
-                    </CategoryText>
-                    <CategoryText title="Custom icon">
-                      {connection?.details.webhook.iconUrl || "N/A"}
-                    </CategoryText>
-                  </>
-                )}
+                <CategoryText
+                  title={t("pages.discordChannelConnection.channelNameLabel")}
+                  hidden={!connection?.details.channel}
+                >
+                  <DiscordChannelName
+                    serverId={serverId}
+                    channelId={connection?.details.channel?.id || ""}
+                    hidden={!connection?.details.channel}
+                  />
+                </CategoryText>
+                <CategoryText
+                  title={t("pages.discordChannelConnection.channelTypeLabel")}
+                  hidden={!!connection?.details.webhook}
+                >
+                  <Text>{getPrettyChannelType(connection?.details)}</Text>
+                </CategoryText>
+                <CategoryText title="Webhook" hidden={!connection?.details.webhook}>
+                  {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
+                  <HStack>
+                    <Text>{matchingWebhook?.name}</Text>
+                    <DiscordChannelName
+                      serverId={serverId}
+                      channelId={matchingWebhook?.channelId || ""}
+                      parenthesis
+                      spinnerSize="sm"
+                      hidden={!matchingWebhook}
+                    />
+                  </HStack>
+                </CategoryText>
+                <CategoryText title="Custom name" hidden={!connection?.details.webhook}>
+                  {connection?.details.webhook?.name || "N/A"}
+                </CategoryText>
+                <CategoryText title="Custom icon" hidden={!connection?.details.webhook}>
+                  {connection?.details.webhook?.iconUrl || "N/A"}
+                </CategoryText>
               </Grid>
             </Stack>
             <TabList>

@@ -52,24 +52,20 @@ type FormData = InferType<typeof formSchema>;
 
 interface Props {
   feedId?: string;
-  defaultValues?: Required<FormData>;
+  defaultValues: Required<FormData>;
   onUpdate: (data: FormData) => Promise<void>;
   isOpen: boolean;
   onClose: () => void;
   onCloseRef: React.RefObject<HTMLButtonElement>;
-  excludeName?: boolean;
-  title?: string;
 }
 
-export const EditConnectionWebhookDialog: React.FC<Props> = ({
+export const ConvertConnectionToDiscordWebhookDialog: React.FC<Props> = ({
   feedId,
   defaultValues,
   onUpdate,
   isOpen,
   onClose,
   onCloseRef,
-  excludeName,
-  title,
 }) => {
   const { t } = useTranslation();
   const {
@@ -122,7 +118,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
       <ModalContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <ModalHeader>
-            {title || t("features.feed.components.updateDiscordWebhookConnectionDialog.title")}
+            {t("features.feed.components.updateDiscordWebhookConnectionDialog.title")}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -131,29 +127,23 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
             )}
             {!webhooksDisabled && (
               <Stack spacing={4}>
-                {!excludeName && (
-                  <FormControl isInvalid={!!errors.name}>
-                    <FormLabel>
-                      {t(
-                        "features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel"
-                      )}
-                    </FormLabel>
-                    <Controller
-                      name="name"
-                      control={control}
-                      render={({ field }) => (
-                        <Input {...field} ref={initialRef} value={field.value || ""} />
-                      )}
-                    />
-                    {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                    <FormHelperText>
-                      {t(
-                        "features.feed.components" +
-                          ".addDiscordWebhookConnectionDialog.formNameDescription"
-                      )}
-                    </FormHelperText>
-                  </FormControl>
-                )}
+                <FormControl isInvalid={!!errors.name}>
+                  <FormLabel>
+                    {t("features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel")}
+                  </FormLabel>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => <Input {...field} ref={initialRef} />}
+                  />
+                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
+                  <FormHelperText>
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordWebhookConnectionDialog.formNameDescription"
+                    )}
+                  </FormHelperText>
+                </FormControl>
                 <FormControl isInvalid={!!errors.serverId}>
                   <FormLabel>
                     {t(
@@ -166,6 +156,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     control={control}
                     render={({ field }) => (
                       <DiscordServerSearchSelectv2
+                        {...field}
                         onChange={(id) => field.onChange(id)}
                         value={field.value || ""}
                       />
@@ -254,12 +245,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     name="webhook.name"
                     control={control}
                     render={({ field }) => (
-                      <Input
-                        placeholder="Optional"
-                        {...field}
-                        isDisabled={isSubmitting}
-                        value={field.value || ""}
-                      />
+                      <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
                     )}
                   />
                   <FormHelperText>
@@ -280,12 +266,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     name="webhook.iconUrl"
                     control={control}
                     render={({ field }) => (
-                      <Input
-                        placeholder="Optional"
-                        {...field}
-                        isDisabled={isSubmitting}
-                        value={field.value || ""}
-                      />
+                      <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
                     )}
                   />
                   <FormHelperText>

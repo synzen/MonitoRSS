@@ -151,7 +151,6 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                       control={control}
                       render={({ field }) => (
                         <DiscordServerSearchSelectv2
-                          {...field}
                           onChange={(id) => field.onChange(id)}
                           value={field.value}
                           inputRef={initialFocusRef}
@@ -238,7 +237,12 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                       name="webhook.name"
                       control={control}
                       render={({ field }) => (
-                        <Input {...field} placeholder="Optional" isDisabled={isSubmitting} />
+                        <Input
+                          {...field}
+                          placeholder="Optional"
+                          isDisabled={isSubmitting}
+                          value={field.value || ""}
+                        />
                       )}
                     />
                     {errors.webhook?.name && (
@@ -262,7 +266,12 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                       name="webhook.iconUrl"
                       control={control}
                       render={({ field }) => (
-                        <Input placeholder="Optional" {...field} isDisabled={isSubmitting} />
+                        <Input
+                          placeholder="Optional"
+                          {...field}
+                          isDisabled={isSubmitting}
+                          value={field.value || ""}
+                        />
                       )}
                     />
                     {errors.webhook?.iconUrl && (
@@ -284,7 +293,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                     <Controller
                       name="name"
                       control={control}
-                      render={({ field }) => <Input {...field} />}
+                      render={({ field }) => <Input {...field} value={field.value || ""} />}
                     />
                     {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                     <FormHelperText>
