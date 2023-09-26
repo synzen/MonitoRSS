@@ -371,6 +371,15 @@ export class UserFeedsController {
         details: {
           ...con.details,
           embeds: convertToNestedDiscordEmbed(con.details.embeds),
+          webhook: con.details.webhook
+            ? {
+                id: con.details.webhook.id,
+                guildId: con.details.webhook.guildId,
+                iconUrl: con.details.webhook.iconUrl,
+                name: con.details.webhook.name,
+                type: con.details.webhook.type,
+              }
+            : undefined,
         },
         filters: con.filters,
         rateLimits: con.rateLimits,

@@ -1,4 +1,5 @@
-import { DiscordMediumEvent } from "../../../common";
+import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
+import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface CreateDiscordChannelPreviewInput {
   details: {
@@ -14,8 +15,14 @@ export interface CreateDiscordChannelPreviewInput {
     };
     mediumDetails: {
       guildId: string;
-      channel: {
+      channel?: {
         id: string;
+      };
+      webhook?: {
+        id: string;
+        token: string;
+        name?: string;
+        iconUrl?: string;
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];
@@ -28,6 +35,12 @@ export interface CreateDiscordChannelPreviewInput {
         appendChar?: string | null;
         prependChar?: string | null;
       };
+      mentions?: DiscordChannelConnection["mentions"];
+      customPlaceholders?: CustomPlaceholderDto[] | null;
+      placeholderLimits?:
+        | DiscordChannelConnection["details"]["placeholderLimits"]
+        | null;
+      enablePlaceholderFallback?: boolean;
     };
   };
 }

@@ -18,6 +18,7 @@ import {
   DiscordFormatter,
   DiscordFormatterSchema,
 } from "./discord-formatter.entity";
+import { DiscordWebhook, DiscordWebhookSchema } from "./discord-webhook.entity";
 import { Filters, FiltersSchema } from "./filters.entity";
 import {
   ForumThreadTag,
@@ -166,9 +167,15 @@ class Details {
 
   @Prop({
     type: ChannelSchema,
-    required: true,
+    required: false,
   })
-  channel: Channel;
+  channel?: Channel;
+
+  @Prop({
+    type: DiscordWebhookSchema,
+    required: false,
+  })
+  webhook?: DiscordWebhook;
 
   @Prop({
     required: false,

@@ -1,5 +1,8 @@
 import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
-import { FeedConnectionDiscordChannelType } from "../../../features/feeds/constants";
+import {
+  FeedConnectionDiscordChannelType,
+  FeedConnectionDiscordWebhookType,
+} from "../../../features/feeds/constants";
 import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface SendTestDiscordChannelArticleInput {
@@ -16,9 +19,16 @@ export interface SendTestDiscordChannelArticleInput {
       id: string;
     };
     mediumDetails: {
-      channel: {
+      channel?: {
         id: string;
         type?: FeedConnectionDiscordChannelType | null;
+      };
+      webhook?: {
+        id: string;
+        token: string;
+        name?: string;
+        iconUrl?: string;
+        type?: FeedConnectionDiscordWebhookType | null;
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];

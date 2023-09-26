@@ -23,6 +23,12 @@ class DetailsChannelDto {
   guildId: string;
 }
 
+class DetailsWebhookDto {
+  id: string;
+
+  guildId: string;
+}
+
 class FormatterDto {
   formatTables?: boolean | null;
 
@@ -34,10 +40,8 @@ class DetailsDto {
   @IsOptional()
   content?: string;
 
-  @IsObject()
-  @ValidateNested()
-  @Type(() => DetailsChannelDto)
-  channel: DetailsChannelDto;
+  channel?: DetailsChannelDto;
+  webhook?: DetailsWebhookDto;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -85,10 +85,18 @@ export class FeedConnectionsDiscordChannelsController {
       key: FeedConnectionType.DiscordChannel,
       filters: createdConnection.filters,
       details: {
-        channel: {
-          id: createdConnection.details.channel.id,
-          guildId: createdConnection.details.channel.guildId,
-        },
+        channel: createdConnection.details.channel
+          ? {
+              id: createdConnection.details.channel.id,
+              guildId: createdConnection.details.channel.guildId,
+            }
+          : undefined,
+        webhook: createdConnection.details.webhook
+          ? {
+              id: createdConnection.details.webhook.id,
+              guildId: createdConnection.details.webhook.guildId,
+            }
+          : undefined,
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
       },
@@ -260,7 +268,7 @@ export class FeedConnectionsDiscordChannelsController {
         connection.disabledCode ===
         FeedConnectionDisabledCode.MissingPermissions
       ) {
-        if (disabledCode === null) {
+        if (disabledCode === null && connection.details.channel) {
           // Force re-validation of channel permissions
           useChannelId = channelId || connection.details.channel.id;
           useDisableCode = null;
@@ -310,10 +318,18 @@ export class FeedConnectionsDiscordChannelsController {
       key: FeedConnectionType.DiscordChannel,
       filters: createdConnection.filters,
       details: {
-        channel: {
-          id: createdConnection.details.channel.id,
-          guildId: createdConnection.details.channel.guildId,
-        },
+        channel: createdConnection.details.channel
+          ? {
+              id: createdConnection.details.channel.id,
+              guildId: createdConnection.details.channel.guildId,
+            }
+          : undefined,
+        webhook: createdConnection.details.webhook
+          ? {
+              id: createdConnection.details.webhook.id,
+              guildId: createdConnection.details.webhook.guildId,
+            }
+          : undefined,
         embeds: createdConnection.details.embeds,
         content: createdConnection.details.content,
       },

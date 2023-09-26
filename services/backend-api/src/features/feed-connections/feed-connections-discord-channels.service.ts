@@ -14,6 +14,7 @@ import {
 } from "../../common/utils";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
+  CreateDiscordChannelPreviewInput,
   SendTestArticleResult,
   SendTestDiscordChannelArticleInput,
 } from "../../services/feed-handler/types";
@@ -169,9 +170,8 @@ export class FeedConnectionsDiscordChannelsService {
     userAccessToken: string
   ) {
     const newId = new Types.ObjectId();
-    let channelId = connection.details.channel.id;
-    let type: FeedConnectionDiscordChannelType | undefined;
-    let guildId = connection.details.channel.guildId;
+    let channelDetailsToUse: DiscordChannelConnection["details"]["channel"] =
+      connection.details.channel;
 
     if (newChannelId) {
       const channel = await this.assertDiscordChannelCanBeUsed(
@@ -179,9 +179,11 @@ export class FeedConnectionsDiscordChannelsService {
         newChannelId
       );
 
-      channelId = newChannelId;
-      type = channel.type;
-      guildId = channel.channel.guild_id;
+      channelDetailsToUse = {
+        id: newChannelId,
+        type: channel.type,
+        guildId: channel.channel.guild_id,
+      };
     }
 
     await this.userFeedModel.findOneAndUpdate(
@@ -196,11 +198,7 @@ export class FeedConnectionsDiscordChannelsService {
             name,
             details: {
               ...connection.details,
-              channel: {
-                id: channelId,
-                type,
-                guildId,
-              },
+              channel: channelDetailsToUse,
             },
           },
         },
@@ -405,10 +403,21 @@ export class FeedConnectionsDiscordChannelsService {
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {
-        channel: {
-          id: connection.details.channel.id,
-          type: connection.details.channel.type,
-        },
+        channel: connection.details.channel
+          ? {
+              id: connection.details.channel.id,
+              type: connection.details.channel.type,
+            }
+          : undefined,
+        webhook: connection.details.webhook
+          ? {
+              id: connection.details.webhook.id,
+              token: connection.details.webhook.token,
+              name: connection.details.webhook.name,
+              iconUrl: connection.details.webhook.iconUrl,
+              type: connection.details.webhook.type,
+            }
+          : undefined,
         forumThreadTitle:
           previewInput?.forumThreadTitle || connection.details.forumThreadTitle,
         forumThreadTags:
@@ -469,7 +478,7 @@ export class FeedConnectionsDiscordChannelsService {
       }
     }
 
-    const payload = {
+    const payload: CreateDiscordChannelPreviewInput["details"] = {
       type: "discord",
       feed: {
         url: userFeed.url,
@@ -479,10 +488,23 @@ export class FeedConnectionsDiscordChannelsService {
       },
       article: articleId ? { id: articleId } : undefined,
       mediumDetails: {
-        channel: {
-          id: connection.details.channel.id,
-        },
-        guildId: connection.details.channel.guildId,
+        channel: connection.details.channel
+          ? {
+              id: connection.details.channel.id,
+            }
+          : undefined,
+        webhook: connection.details.webhook
+          ? {
+              id: connection.details.webhook.id,
+              token: connection.details.webhook.token,
+              name: connection.details.webhook.name,
+              iconUrl: connection.details.webhook.iconUrl,
+            }
+          : undefined,
+        guildId:
+          connection.details.channel?.guildId ||
+          connection.details.webhook?.guildId ||
+          "",
         content: castDiscordContentForMedium(content),
         embeds: castDiscordEmbedsForMedium(
           embeds?.map((e) => ({

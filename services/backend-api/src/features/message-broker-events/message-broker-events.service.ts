@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { AmqpConnection, RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
@@ -353,12 +354,23 @@ export class MessageBrokerEventsService {
           : null,
         rateLimits: con.rateLimits,
         details: {
-          guildId: con.details.channel.guildId,
-          channel: {
-            id: con.details.channel.id,
-            type: con.details.channel.type,
-            guildId: con.details.channel.guildId,
-          },
+          guildId: con.details.channel?.guildId || con.details.webhook!.guildId,
+          channel: con.details.channel
+            ? {
+                id: con.details.channel.id,
+                type: con.details.channel.type,
+                guildId: con.details.channel.guildId,
+              }
+            : undefined,
+          webhook: con.details.webhook
+            ? {
+                id: con.details.webhook.id,
+                token: con.details.webhook.token,
+                name: con.details.webhook.name,
+                iconUrl: con.details.webhook.iconUrl,
+                type: con.details.webhook.type,
+              }
+            : undefined,
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
           forumThreadTitle: con.details.forumThreadTitle,

@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types, Schema as MongooseSchema } from "mongoose";
 import {
   FeedConnectionDisabledCode,
-  FeedConnectionDiscordWebhookType,
   FeedConnectionMentionType,
 } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
@@ -18,47 +17,7 @@ import {
   DiscordFormatter,
   DiscordFormatterSchema,
 } from "./discord-formatter.entity";
-
-@Schema({
-  _id: false,
-  versionKey: false,
-  timestamps: false,
-})
-class Webhook {
-  @Prop({
-    required: true,
-  })
-  id: string;
-
-  @Prop({
-    required: false,
-  })
-  name?: string;
-
-  @Prop({
-    required: false,
-  })
-  iconUrl?: string;
-
-  @Prop({
-    required: true,
-  })
-  token: string;
-
-  @Prop({
-    required: true,
-  })
-  guildId: string;
-
-  @Prop({
-    required: false,
-    enum: Object.values(FeedConnectionDiscordWebhookType),
-    type: String,
-  })
-  type?: FeedConnectionDiscordWebhookType | null;
-}
-
-const WebhookSchema = SchemaFactory.createForClass(Webhook);
+import { DiscordWebhook, DiscordWebhookSchema } from "./discord-webhook.entity";
 
 @Schema({
   timestamps: false,
@@ -133,10 +92,10 @@ class Details {
   embeds: FeedEmbed[];
 
   @Prop({
-    type: WebhookSchema,
+    type: DiscordWebhookSchema,
     required: true,
   })
-  webhook: Webhook;
+  webhook: DiscordWebhook;
 
   @Prop({
     type: String,
