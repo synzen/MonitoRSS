@@ -20,12 +20,9 @@ import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
 } from "../feeds/constants";
-import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordWebhookConnectionCloneInputDto,
-  CreateDiscordWebhookConnectionInputDto,
-  CreateDiscordWebhookConnectionOutputDto,
   CreateDiscordWebhookConnectionPreviewInputDto,
   CreateDiscordWebhookConnectionPreviewOutputDto,
   CreateDiscordWebhookConnectionTestArticleInputDto,
@@ -35,7 +32,6 @@ import {
 } from "./dto";
 import { FeedConnectionsDiscordWebhooksService } from "./feed-connections-discord-webhooks.service";
 import {
-  AddDiscordWebhookConnectionFilter,
   CreateDiscordWebhookTestArticleFilter,
   DeleteDiscordWebhookConnectionFilter,
   UpdateDiscordWebhookConnectionFilter,
@@ -52,47 +48,47 @@ export class FeedConnectionsDiscordWebhooksController {
     private readonly service: FeedConnectionsDiscordWebhooksService
   ) {}
 
-  @Post("/discord-webhooks")
-  @UseFilters(AddDiscordWebhookConnectionFilter)
-  async createDiscordWebhookConnection(
-    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
-    @Body(ValidationPipe)
-    { name, webhook }: CreateDiscordWebhookConnectionInputDto,
-    @DiscordAccessToken()
-    { access_token, discord: { id: discordUserId } }: SessionAccessToken
-  ): Promise<CreateDiscordWebhookConnectionOutputDto> {
-    const createdConnection = await this.service.createDiscordWebhookConnection(
-      {
-        discordUserId,
-        accessToken: access_token,
-        feedId: feed._id.toHexString(),
-        name,
-        webhook: {
-          id: webhook.id,
-          iconUrl: webhook.iconUrl,
-          name: webhook.name,
-        },
-      }
-    );
+  // @Post("/discord-webhooks")
+  // @UseFilters(AddDiscordWebhookConnectionFilter)
+  // async createDiscordWebhookConnection(
+  //   @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
+  //   @Body(ValidationPipe)
+  //   { name, webhook }: CreateDiscordWebhookConnectionInputDto,
+  //   @DiscordAccessToken()
+  //   { access_token, discord: { id: discordUserId } }: SessionAccessToken
+  // ): Promise<CreateDiscordWebhookConnectionOutputDto> {
+  //   const createdConnection = await this.service.createDiscordWebhookConnection(
+  //     {
+  //       discordUserId,
+  //       accessToken: access_token,
+  //       feedId: feed._id.toHexString(),
+  //       name,
+  //       webhook: {
+  //         id: webhook.id,
+  //         iconUrl: webhook.iconUrl,
+  //         name: webhook.name,
+  //       },
+  //     }
+  //   );
 
-    return {
-      id: createdConnection.id.toHexString(),
-      name: createdConnection.name,
-      key: FeedConnectionType.DiscordWebhook,
-      filters: createdConnection.filters,
-      splitOptions: createdConnection.splitOptions,
-      details: {
-        embeds: createdConnection.details.embeds,
-        content: createdConnection.details.content,
-        webhook: {
-          id: createdConnection.details.webhook.id,
-          iconUrl: createdConnection.details.webhook.iconUrl,
-          name: createdConnection.details.webhook.name,
-          guildId: createdConnection.details.webhook.guildId,
-        },
-      },
-    };
-  }
+  //   return {
+  //     id: createdConnection.id.toHexString(),
+  //     name: createdConnection.name,
+  //     key: FeedConnectionType.DiscordWebhook,
+  //     filters: createdConnection.filters,
+  //     splitOptions: createdConnection.splitOptions,
+  //     details: {
+  //       embeds: createdConnection.details.embeds,
+  //       content: createdConnection.details.content,
+  //       webhook: {
+  //         id: createdConnection.details.webhook.id,
+  //         iconUrl: createdConnection.details.webhook.iconUrl,
+  //         name: createdConnection.details.webhook.name,
+  //         guildId: createdConnection.details.webhook.guildId,
+  //       },
+  //     },
+  //   };
+  // }
 
   @Post("/discord-webhooks/:connectionId/test")
   @UseFilters(CreateDiscordWebhookTestArticleFilter)
