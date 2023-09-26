@@ -1,4 +1,24 @@
-import { IsString, MaxLength } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from "class-validator";
+
+class Webhook {
+  @IsString()
+  id: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  iconUrl?: string;
+}
 
 export class CreateDiscordChnnnelConnectionInputDto {
   @IsString()
@@ -6,5 +26,11 @@ export class CreateDiscordChnnnelConnectionInputDto {
   name: string;
 
   @IsString()
-  channelId: string;
+  @IsOptional()
+  channelId?: string;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => Webhook)
+  webhook?: Webhook;
 }

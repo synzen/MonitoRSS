@@ -1,4 +1,4 @@
-import { DiscordWebhook } from "../types/discord-webhook.type";
+import { DiscordWebhook } from "../../../common";
 
 interface DiscordWebhookOutputDto {
   id: string;

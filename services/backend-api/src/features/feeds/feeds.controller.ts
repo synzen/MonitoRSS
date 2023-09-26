@@ -46,11 +46,11 @@ import {
   WebhookMissingException,
   WebhooksDisabledException,
 } from "./exceptions";
-import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { convertToFlatDiscordEmbeds } from "../../utils/convert-to-flat-discord-embed";
 import { FEED_DISABLED_LEGACY_CODES } from "./constants";
 import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
 import { randomUUID } from "crypto";
+import { DiscordWebhook } from "../../common";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)

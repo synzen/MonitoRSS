@@ -662,7 +662,7 @@ export class LegacyFeedConversionService {
             iconUrl: this.convertPlaceholders(feed.webhook.avatar, {
               isYoutube,
             }),
-            token: webhook.token,
+            token: webhook.token as string,
           },
           content: this.convertPlaceholders(feed.text, {
             isYoutube,

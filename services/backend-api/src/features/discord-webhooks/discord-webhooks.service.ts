@@ -1,12 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
-import {
-  DiscordWebhook,
-  DiscordWebhookType,
-} from "./types/discord-webhook.type";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { WebhookMissingPermissionsException } from "./exceptions";
+import { DiscordWebhook, DiscordWebhookType } from "../../common";
 
 @Injectable()
 export class DiscordWebhooksService {

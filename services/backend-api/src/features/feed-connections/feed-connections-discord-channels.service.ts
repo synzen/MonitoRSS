@@ -1,9 +1,17 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { CustomPlaceholderDto, CustomRateLimitDto } from "../../common";
+import {
+  CustomPlaceholderDto,
+  CustomRateLimitDto,
+  DiscordGuildChannel,
+  DiscordWebhook,
+} from "../../common";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import {
+  DiscordWebhookInvalidTypeException,
+  DiscordWebhookMissingUserPermException,
+  DiscordWebhookNonexistentException,
   InsufficientSupporterLevelException,
   InvalidFilterExpressionException,
 } from "../../common/exceptions";
@@ -21,6 +29,7 @@ import {
 import {
   FeedConnectionDisabledCode,
   FeedConnectionDiscordChannelType,
+  FeedConnectionDiscordWebhookType,
   FeedConnectionType,
 } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
@@ -35,6 +44,9 @@ import {
   MissingDiscordChannelException,
 } from "./exceptions";
 import { DiscordChannelType } from "../../common";
+import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -100,26 +112,74 @@ export class FeedConnectionsDiscordChannelsService {
     private readonly feedsService: FeedsService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly feedHandlerService: FeedHandlerService,
-    private readonly supportersService: SupportersService
+    private readonly supportersService: SupportersService,
+    private readonly discordWebhooksService: DiscordWebhooksService,
+    private readonly discordApiService: DiscordAPIService,
+    private readonly discordAuthService: DiscordAuthService
   ) {}
 
   async createDiscordChannelConnection({
     feedId,
     name,
     channelId,
+    webhook: inputWebhook,
     userAccessToken,
+    discordUserId,
   }: {
     feedId: string;
     name: string;
-    channelId: string;
+    channelId?: string;
+    webhook?: {
+      id: string;
+      name?: string;
+      iconUrl?: string;
+    };
     userAccessToken: string;
+    discordUserId: string;
   }): Promise<DiscordChannelConnection> {
-    const { channel, type } = await this.assertDiscordChannelCanBeUsed(
-      userAccessToken,
-      channelId
-    );
-
     const connectionId = new Types.ObjectId();
+    let channelToAdd: DiscordChannelConnection["details"]["channel"];
+    let webhookToAdd: DiscordChannelConnection["details"]["webhook"];
+
+    if (channelId) {
+      const { channel, type } = await this.assertDiscordChannelCanBeUsed(
+        userAccessToken,
+        channelId
+      );
+
+      channelToAdd = {
+        id: channelId,
+        type,
+        guildId: channel.guild_id,
+      };
+    } else if (inputWebhook?.id) {
+      const benefits = await this.supportersService.getBenefitsOfDiscordUser(
+        discordUserId
+      );
+
+      if (!benefits.isSupporter) {
+        throw new Error("User must be a supporter to add webhooks");
+      }
+
+      const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
+        inputWebhook.id,
+        userAccessToken
+      );
+
+      webhookToAdd = {
+        iconUrl: inputWebhook.iconUrl,
+        id: inputWebhook.id,
+        name: inputWebhook.name,
+        token: webhook.token as string,
+        guildId: channel.guild_id,
+        type:
+          channel.type === DiscordChannelType.GUILD_FORUM
+            ? FeedConnectionDiscordWebhookType.Forum
+            : undefined,
+      };
+    } else {
+      throw new Error("Must provide either channelId or webhookId");
+    }
 
     const updated = await this.userFeedModel.findOneAndUpdate(
       {
@@ -132,11 +192,8 @@ export class FeedConnectionsDiscordChannelsService {
             name,
             details: {
               type: FeedConnectionType.DiscordChannel,
-              channel: {
-                id: channelId,
-                type,
-                guildId: channel.guild_id,
-              },
+              channel: channelToAdd,
+              webhook: webhookToAdd,
               embeds: [],
             },
           },
@@ -578,5 +635,40 @@ export class FeedConnectionsDiscordChannelsService {
 
       throw err;
     }
+  }
+
+  private async assertDiscordWebhookCanBeUsed(
+    id: string,
+    accessToken: string
+  ): Promise<{ webhook: DiscordWebhook; channel: DiscordGuildChannel }> {
+    const webhook = await this.discordWebhooksService.getWebhook(id);
+
+    if (!webhook) {
+      throw new DiscordWebhookNonexistentException(
+        `Discord webohok ${id} does not exist`
+      );
+    }
+
+    if (!this.discordWebhooksService.canBeUsedByBot(webhook)) {
+      throw new DiscordWebhookInvalidTypeException(
+        `Discord webhook ${id} is a different type and is not operable by bot to send messages`
+      );
+    }
+
+    if (
+      !webhook.guild_id ||
+      !(await this.discordAuthService.userManagesGuild(
+        accessToken,
+        webhook.guild_id
+      ))
+    ) {
+      throw new DiscordWebhookMissingUserPermException(
+        `User does not manage guild of webhook webhook ${id}`
+      );
+    }
+
+    const channel = await this.discordApiService.getChannel(webhook.channel_id);
+
+    return { webhook, channel };
   }
 }

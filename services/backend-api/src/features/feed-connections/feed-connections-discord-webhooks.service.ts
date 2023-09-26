@@ -10,7 +10,6 @@ import {
 } from "../../common/exceptions";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
-import { DiscordWebhook } from "../discord-webhooks/types/discord-webhook.type";
 import { DiscordWebhookConnection } from "../feeds/entities/feed-connections";
 import _ from "lodash";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
@@ -34,6 +33,7 @@ import {
   CustomRateLimitDto,
   DiscordChannelType,
   DiscordGuildChannel,
+  DiscordWebhook,
 } from "../../common";
 import { CreateDiscordWebhookConnectionCloneInputDto } from "./dto";
 import { SupportersService } from "../supporters/supporters.service";
