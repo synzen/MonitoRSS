@@ -319,7 +319,7 @@ export const ConnectionDiscordWebhookSettings: React.FC = () => {
                     type: FeedConnectionType.DiscordWebhook,
                   }}
                   include={{
-                    forumThreadTitle: isForum,
+                    forumForms: isForum,
                   }}
                 />
               </BoxConstrained.Container>
