@@ -229,6 +229,48 @@ export class DiscordMediumService implements DeliveryMedium {
         apiPayload: threadBody,
         result: firstResponse,
       };
+    } else if (webhook) {
+      const apiUrl = this.getWebhookApiUrl(webhook.id, webhook.token);
+      const apiPayloads = this.generateApiPayloads(article, {
+        embeds,
+        content,
+        splitOptions,
+        filterReferences,
+        mentions,
+        placeholderLimits,
+        enablePlaceholderFallback,
+      }).map((payload) => ({
+        ...payload,
+        username: this.generateApiTextPayload(article, {
+          content: webhook?.name,
+          limit: 256,
+          filterReferences,
+          mentions,
+          placeholderLimits,
+          enablePlaceholderFallback,
+        }),
+        avatar_url: this.generateApiTextPayload(article, {
+          content: webhook?.iconUrl,
+          filterReferences,
+          mentions,
+          placeholderLimits,
+          enablePlaceholderFallback,
+        }),
+      }));
+
+      const results = await Promise.all(
+        apiPayloads.map((payload) =>
+          this.producer.fetch(apiUrl, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          })
+        )
+      );
+
+      return {
+        apiPayload: apiPayloads[0] as Record<string, unknown>,
+        result: results[0],
+      };
     } else if (channelId) {
       const apiUrl = this.getChannelApiUrl(channelId);
       const apiPayloads = this.generateApiPayloads(article, {
