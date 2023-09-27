@@ -1,4 +1,3 @@
-import "../utils/dd-tracer";
 import { INestApplicationContext } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "../app.module";

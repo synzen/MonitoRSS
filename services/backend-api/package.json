@@ -42,7 +42,6 @@
     "class-validator": "^0.14.0",
     "commander": "^9.1.0",
     "dayjs": "1.10.8",
-    "dd-trace": "^2.4.0",
     "dotenv": "10.0.0",
     "fastify": "^4.6.0",
     "feedparser": "2.2.10",

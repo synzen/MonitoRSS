@@ -1,4 +1,3 @@
-import "./utils/dd-tracer";
 import { Module, VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpAdapterHost, NestFactory } from "@nestjs/core";
