@@ -53,7 +53,7 @@ import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { DeliveryRateLimitsTabSection } from "../features/feedConnections/components/DeliveryRateLimitsTabSection";
-import { useDiscordWebhooks } from "../features/discordWebhooks";
+import { useDiscordWebhook } from "../features/discordWebhooks";
 
 enum TabSearchParam {
   Message = "?view=message",
@@ -131,14 +131,11 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
 
   const serverId = connection?.details?.channel?.guildId || connection?.details?.webhook?.guildId;
 
-  const { data: discordWebhooks, status: discordWebhooksStatus } = useDiscordWebhooks({
-    serverId,
-    isWebhooksEnabled: !!connection?.details.webhook,
+  const { data: discordWebhookResult, status: discordWebhooksStatus } = useDiscordWebhook({
+    webhookId: connection?.details.webhook?.id,
   });
 
-  const matchingWebhook =
-    connection?.details.webhook &&
-    discordWebhooks?.find((webhook) => webhook.id === connection.details.webhook?.id);
+  const matchingWebhook = discordWebhookResult?.result;
 
   const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
     if (!feedId || !connectionId) {

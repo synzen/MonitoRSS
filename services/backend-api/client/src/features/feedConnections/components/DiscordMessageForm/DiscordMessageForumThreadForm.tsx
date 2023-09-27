@@ -25,7 +25,7 @@ import { DiscordMessageFormData } from "@/types/discord";
 import { useDiscordChannelConnection, useDiscordChannelForumTags } from "../../hooks";
 import { DiscordForumTagFiltersDialog } from "./DiscordForumTagFiltersDialog";
 import { LogicalFilterExpression } from "../../types";
-import { useDiscordWebhooks } from "../../../discordWebhooks";
+import { useDiscordWebhook } from "../../../discordWebhooks";
 
 interface Props {
   feedId: string;
@@ -111,14 +111,11 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
   const guildId = connection?.details?.channel?.guildId || connection?.details.webhook?.guildId;
   const channelId = connection?.details?.channel?.id;
   const webhookId = connection?.details?.webhook?.id;
-  const { data: discordWebhooksData } = useDiscordWebhooks({
-    serverId: guildId,
-    isWebhooksEnabled: !!webhookId,
+  const { data: discordWebhookData } = useDiscordWebhook({
+    webhookId,
   });
   const { status, data: availableTags } = useDiscordChannelForumTags({
-    channelId: webhookId
-      ? discordWebhooksData?.find((w) => w.id === webhookId)?.channelId
-      : channelId,
+    channelId: webhookId ? discordWebhookData?.result.id : channelId,
     serverId: guildId,
   });
   const { t } = useTranslation();

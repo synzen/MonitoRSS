@@ -93,7 +93,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     error: discordWebhooksError,
   } = useDiscordWebhooks({
     serverId,
-    isWebhooksEnabled: !!discordUser?.supporter,
+    isWebhooksEnabled: !!discordUser?.supporter && isOpen,
   });
   const initialRef = useRef<HTMLInputElement>(null);
 

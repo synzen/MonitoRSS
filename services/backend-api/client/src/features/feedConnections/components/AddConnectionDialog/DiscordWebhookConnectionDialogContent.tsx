@@ -79,7 +79,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
     error: discordWebhooksError,
   } = useDiscordWebhooks({
     serverId,
-    isWebhooksEnabled: !!discordUser?.supporter,
+    isWebhooksEnabled: !!discordUser?.supporter && isOpen,
   });
   const initialFocusRef = useRef<any>(null);
 
