@@ -29,7 +29,6 @@ import { LogicalFilterExpression } from "../../types";
 interface Props {
   feedId: string;
   connectionId: string;
-  excludeForumThreadTags?: boolean;
 }
 
 const TagCheckbox = ({
@@ -99,11 +98,7 @@ const TagCheckbox = ({
   );
 };
 
-export const DiscordMessageForumThreadForm = ({
-  feedId,
-  connectionId,
-  excludeForumThreadTags,
-}: Props) => {
+export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) => {
   const {
     control,
     formState: { errors },
@@ -148,106 +143,102 @@ export const DiscordMessageForumThreadForm = ({
           </Stack>
         </Stack>
       </FormControl>
-      {excludeForumThreadTags ? null : (
-        <FormControl isInvalid={!!errors.forumThreadTags}>
-          <Stack
-            direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
-            justify="space-between"
-          >
-            <Box>
-              <FormLabel>{t("components.discordMessageForumThreadForm.threadTagsLabel")}</FormLabel>
-              <FormHelperText>
-                {t("components.discordMessageForumThreadForm.threadTagsDescription")}
-              </FormHelperText>
-            </Box>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              {status === "loading" && (
-                <Center height="100%">
-                  <Spinner />
-                </Center>
-              )}
-              {status === "success" && !availableTags?.length && (
-                <Text>{t("components.discordMessageForumThreadForm.threadTagsNoTagsFound")}</Text>
-              )}
-              {status === "success" && availableTags && availableTags.length > 0 && (
-                <Controller
-                  name="forumThreadTags"
-                  control={control}
-                  render={({ field }) => {
-                    return (
-                      <Flex gap={4} flexWrap="wrap">
-                        {availableTags?.map(({ id, name, hasPermissionToUse, emojiName }) => {
-                          const filters =
-                            (field.value?.find((v) => v.id === id)?.filters as {
-                              expression: LogicalFilterExpression;
-                            } | null) || null;
+      <FormControl isInvalid={!!errors.forumThreadTags}>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: "1.5", md: "8" }}
+          justify="space-between"
+        >
+          <Box>
+            <FormLabel>{t("components.discordMessageForumThreadForm.threadTagsLabel")}</FormLabel>
+            <FormHelperText>
+              {t("components.discordMessageForumThreadForm.threadTagsDescription")}
+            </FormHelperText>
+          </Box>
+          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            {status === "loading" && (
+              <Center height="100%">
+                <Spinner />
+              </Center>
+            )}
+            {status === "success" && !availableTags?.length && (
+              <Text>{t("components.discordMessageForumThreadForm.threadTagsNoTagsFound")}</Text>
+            )}
+            {status === "success" && availableTags && availableTags.length > 0 && (
+              <Controller
+                name="forumThreadTags"
+                control={control}
+                render={({ field }) => {
+                  return (
+                    <Flex gap={4} flexWrap="wrap">
+                      {availableTags?.map(({ id, name, hasPermissionToUse, emojiName }) => {
+                        const filters =
+                          (field.value?.find((v) => v.id === id)?.filters as {
+                            expression: LogicalFilterExpression;
+                          } | null) || null;
 
-                          return (
-                            <TagCheckbox
-                              key={id}
-                              feedId={feedId}
-                              filters={filters || null}
-                              emojiName={emojiName}
-                              hasPermissionToUse={hasPermissionToUse}
-                              id={id}
-                              name={name}
-                              isChecked={!!field.value?.find((v) => v.id === id)}
-                              onChange={(isChecked, newFilters) => {
-                                const useNewFilters =
-                                  Object.keys(newFilters?.expression || {}).length > 0
-                                    ? newFilters
-                                    : null;
+                        return (
+                          <TagCheckbox
+                            key={id}
+                            feedId={feedId}
+                            filters={filters || null}
+                            emojiName={emojiName}
+                            hasPermissionToUse={hasPermissionToUse}
+                            id={id}
+                            name={name}
+                            isChecked={!!field.value?.find((v) => v.id === id)}
+                            onChange={(isChecked, newFilters) => {
+                              const useNewFilters =
+                                Object.keys(newFilters?.expression || {}).length > 0
+                                  ? newFilters
+                                  : null;
 
-                                const fieldsWithoutDeletedTags =
-                                  field.value?.filter((v) => !deletedTagIds.has(v.id)) || [];
+                              const fieldsWithoutDeletedTags =
+                                field.value?.filter((v) => !deletedTagIds.has(v.id)) || [];
 
-                                if (!isChecked) {
-                                  const newVal = fieldsWithoutDeletedTags.filter(
-                                    (v) => v.id !== id
-                                  );
-
-                                  field.onChange(newVal);
-
-                                  return;
-                                }
-
-                                const existingFieldIndex = fieldsWithoutDeletedTags.findIndex(
-                                  (v) => v.id === id
-                                );
-
-                                if (existingFieldIndex === -1) {
-                                  const newVal = fieldsWithoutDeletedTags.concat([
-                                    { id, filters: useNewFilters },
-                                  ]);
-
-                                  field.onChange(newVal);
-
-                                  return;
-                                }
-
-                                const newVal = [...fieldsWithoutDeletedTags];
-
-                                newVal.splice(existingFieldIndex, 1, {
-                                  id,
-                                  filters: useNewFilters,
-                                });
+                              if (!isChecked) {
+                                const newVal = fieldsWithoutDeletedTags.filter((v) => v.id !== id);
 
                                 field.onChange(newVal);
-                              }}
-                            />
-                          );
-                        })}
-                      </Flex>
-                    );
-                  }}
-                />
-              )}
-              {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
-            </Stack>
+
+                                return;
+                              }
+
+                              const existingFieldIndex = fieldsWithoutDeletedTags.findIndex(
+                                (v) => v.id === id
+                              );
+
+                              if (existingFieldIndex === -1) {
+                                const newVal = fieldsWithoutDeletedTags.concat([
+                                  { id, filters: useNewFilters },
+                                ]);
+
+                                field.onChange(newVal);
+
+                                return;
+                              }
+
+                              const newVal = [...fieldsWithoutDeletedTags];
+
+                              newVal.splice(existingFieldIndex, 1, {
+                                id,
+                                filters: useNewFilters,
+                              });
+
+                              field.onChange(newVal);
+                            }}
+                          />
+                        );
+                      })}
+                    </Flex>
+                  );
+                }}
+              />
+            )}
+            {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
           </Stack>
-        </FormControl>
-      )}
+        </Stack>
+      </FormControl>
     </Stack>
   );
 };

@@ -456,10 +456,9 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     type: FeedConnectionType.DiscordChannel,
                   }}
                   include={{
-                    forumThreadTitle:
+                    forumForms:
                       connection?.details.channel?.type === "forum" ||
                       connection?.details.webhook?.type === "forum",
-                    forumThreadTags: connection?.details.channel?.type === "forum",
                   }}
                 />
               </BoxConstrained.Container>

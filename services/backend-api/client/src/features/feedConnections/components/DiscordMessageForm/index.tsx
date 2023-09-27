@@ -53,8 +53,7 @@ interface Props {
     type: FeedConnectionType;
   };
   include?: {
-    forumThreadTitle?: boolean;
-    forumThreadTags?: boolean;
+    forumForms?: boolean;
   };
 }
 
@@ -268,14 +267,10 @@ export const DiscordMessageForm = ({
               />
             )}
           </Stack>
-          {include?.forumThreadTitle && (
+          {include?.forumForms && (
             <Stack>
               <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
-              <DiscordMessageForumThreadForm
-                connectionId={connection.id}
-                feedId={feedId}
-                excludeForumThreadTags={!include.forumThreadTags}
-              />
+              <DiscordMessageForumThreadForm connectionId={connection.id} feedId={feedId} />
             </Stack>
           )}
           <Stack>

@@ -59,8 +59,7 @@ interface Props {
     type: FeedConnectionType;
   };
   include?: {
-    forumThreadTitle?: boolean;
-    forumThreadTags?: boolean;
+    forumForms?: boolean;
   };
   guildId: string | undefined;
 }
