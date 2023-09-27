@@ -115,7 +115,7 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
     webhookId,
   });
   const { status, data: availableTags } = useDiscordChannelForumTags({
-    channelId: webhookId ? discordWebhookData?.result.id : channelId,
+    channelId: webhookId ? discordWebhookData?.result.channelId : channelId,
     serverId: guildId,
   });
   const { t } = useTranslation();
