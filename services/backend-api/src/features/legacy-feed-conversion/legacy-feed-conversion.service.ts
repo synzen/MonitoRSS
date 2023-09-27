@@ -17,10 +17,7 @@ import {
   FailRecord,
   FailRecordModel,
 } from "../feeds/entities/fail-record.entity";
-import {
-  DiscordChannelConnection,
-  DiscordWebhookConnection,
-} from "../feeds/entities/feed-connections";
+import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import {
   FeedFilteredFormat,
   FeedFilteredFormatModel,
@@ -542,9 +539,15 @@ export class LegacyFeedConversionService {
       };
     }
 
-    if (!feed.webhook) {
-      let name: string;
+    let name: string;
+    let channelToAdd:
+      | DiscordChannelConnection["details"]["channel"]
+      | undefined = undefined;
+    let webhookToAdd:
+      | DiscordChannelConnection["details"]["webhook"]
+      | undefined = undefined;
 
+    if (!feed.webhook) {
       try {
         const fetched = await this.discordApiService.getChannel(feed.channel);
         name = `Channel: #${fetched.name}`;
@@ -552,171 +555,101 @@ export class LegacyFeedConversionService {
         name = `Channel: ${feed.channel}`;
       }
 
-      const baseConnection: DiscordChannelConnection = {
-        disabledCode: getConnectionDisabledCode(feed.disabled),
-        createdAt: feed.createdAt || new Date(),
-        updatedAt: feed.updatedAt || new Date(),
-        id: new Types.ObjectId(),
-        name: name,
-        splitOptions: {
-          isEnabled: feed.split?.enabled || false,
-        },
-        mentions: {
-          targets: subscribers?.map((s) => ({
-            id: s.id,
-            type: s.type as unknown as FeedConnectionMentionType,
-            filters: s.rfilters
-              ? this.convertRegexFilters(s.rfilters)
-              : this.convertRegularFilters(s.filters),
-          })),
-        },
-        details: {
-          channel: {
-            id: feed.channel,
-            guildId,
-          },
-          content: this.convertPlaceholders(feed.text, {
-            isYoutube,
-          }),
-          embeds: convertedEmbeds,
-          formatter: {
-            formatTables: feed.formatTables ?? false,
-            stripImages: feed.imgLinksExistence ?? false,
-            disableImageLinkPreviews: feed.imgPreviews ?? false,
-          },
-          placeholderLimits: [
-            {
-              characterCount: 790,
-              placeholder: "summary",
-              appendString: "...",
-            },
-            {
-              characterCount: 790,
-              placeholder: "description",
-              appendString: "...",
-            },
-            {
-              characterCount: 150,
-              placeholder: "title",
-              appendString: "...",
-            },
-          ],
-        },
-        filters: convertedFilters,
+      channelToAdd = {
+        id: feed.channel,
+        guildId,
       };
-
-      converted.connections.discordChannels.push(baseConnection);
-
-      if (!!filteredFormats?.length) {
-        for (const format of filteredFormats) {
-          const connectionCopy: DiscordChannelConnection = {
-            ...baseConnection,
-            name: `${name} | Filtered format priority ${format.priority || 0}`,
-            details: {
-              ...baseConnection.details,
-              content: format.text || baseConnection.details.content,
-              embeds: format.embeds
-                ? this.convertEmbeds(format.embeds, {
-                    isYoutube,
-                  })
-                : baseConnection.details.embeds,
-            },
-            filters: format.filters
-              ? this.convertRegularFilters(format.filters)
-              : baseConnection.filters,
-          };
-
-          converted.connections.discordChannels.push(connectionCopy);
-        }
-      }
     } else {
-      const webhook = await this.discordApiService.getWebhook(feed.webhook.id);
+      try {
+        const webhook = await this.discordApiService.getWebhook(
+          feed.webhook.id
+        );
+        webhookToAdd = {
+          id: feed.webhook.id,
+          guildId,
+          token: webhook.token as string,
+          iconUrl: feed.webhook.avatar,
+          name: feed.webhook.name,
+        };
+        name = `Webhook: ${webhook.name || feed.webhook.id}`;
+      } catch (err) {
+        name = `Webhook: ${feed.webhook.id}`;
+      }
+    }
 
-      const name = `Webhook: ${webhook.name || feed.webhook.id}`;
-
-      const baseConnection: DiscordWebhookConnection = {
-        disabledCode: getConnectionDisabledCode(feed.disabled),
-        createdAt: feed.createdAt || new Date(),
-        updatedAt: feed.updatedAt || new Date(),
-        id: new Types.ObjectId(),
-        name,
-        splitOptions: {
-          isEnabled: feed.split?.enabled || false,
+    const baseConnection: DiscordChannelConnection = {
+      disabledCode: getConnectionDisabledCode(feed.disabled),
+      createdAt: feed.createdAt || new Date(),
+      updatedAt: feed.updatedAt || new Date(),
+      id: new Types.ObjectId(),
+      name: name,
+      splitOptions: {
+        isEnabled: feed.split?.enabled || false,
+      },
+      mentions: {
+        targets: subscribers?.map((s) => ({
+          id: s.id,
+          type: s.type as unknown as FeedConnectionMentionType,
+          filters: s.rfilters
+            ? this.convertRegexFilters(s.rfilters)
+            : this.convertRegularFilters(s.filters),
+        })),
+      },
+      details: {
+        channel: channelToAdd,
+        webhook: webhookToAdd,
+        content: this.convertPlaceholders(feed.text, {
+          isYoutube,
+        }),
+        embeds: convertedEmbeds,
+        formatter: {
+          formatTables: feed.formatTables ?? false,
+          stripImages: feed.imgLinksExistence ?? false,
+          disableImageLinkPreviews: feed.imgPreviews ?? false,
         },
-        mentions: {
-          targets: subscribers?.map((s) => ({
-            id: s.id,
-            type: s.type as unknown as FeedConnectionMentionType,
-            filters: s.rfilters
-              ? this.convertRegexFilters(s.rfilters)
-              : this.convertRegularFilters(s.filters),
-          })),
-        },
-        details: {
-          webhook: {
-            id: feed.webhook.id,
-            guildId,
-            name: this.convertPlaceholders(feed.webhook.name, {
-              isYoutube,
-            }),
-            iconUrl: this.convertPlaceholders(feed.webhook.avatar, {
-              isYoutube,
-            }),
-            token: webhook.token as string,
+        placeholderLimits: [
+          {
+            characterCount: 790,
+            placeholder: "summary",
+            appendString: "...",
           },
-          content: this.convertPlaceholders(feed.text, {
-            isYoutube,
-          }),
-          embeds: convertedEmbeds,
-          formatter: {
-            formatTables: feed.formatTables,
-            stripImages: !feed.imgLinksExistence,
-            disableImageLinkPreviews: !feed.imgPreviews,
+          {
+            characterCount: 790,
+            placeholder: "description",
+            appendString: "...",
           },
-          placeholderLimits: [
-            {
-              characterCount: 790,
-              placeholder: "summary",
-              appendString: "...",
-            },
-            {
-              characterCount: 790,
-              placeholder: "description",
-              appendString: "...",
-            },
-            {
-              characterCount: 150,
-              placeholder: "title",
-              appendString: "...",
-            },
-          ],
-        },
-        filters: convertedFilters,
-      };
+          {
+            characterCount: 150,
+            placeholder: "title",
+            appendString: "...",
+          },
+        ],
+      },
+      filters: convertedFilters,
+    };
 
-      converted.connections.discordWebhooks.push(baseConnection);
+    converted.connections.discordChannels.push(baseConnection);
 
-      if (!!filteredFormats?.length) {
-        for (const format of filteredFormats) {
-          const connectionCopy: DiscordWebhookConnection = {
-            ...baseConnection,
-            name: `${name} | Filtered format priority ${format.priority || 0}`,
-            details: {
-              ...baseConnection.details,
-              content: format.text || baseConnection.details.content,
-              embeds: format.embeds
-                ? this.convertEmbeds(format.embeds, {
-                    isYoutube,
-                  })
-                : baseConnection.details.embeds,
-            },
-            filters: format.filters
-              ? this.convertRegularFilters(format.filters)
-              : baseConnection.filters,
-          };
+    if (!!filteredFormats?.length) {
+      for (const format of filteredFormats) {
+        const connectionCopy: DiscordChannelConnection = {
+          ...baseConnection,
+          name: `${name} | Filtered format priority ${format.priority || 0}`,
+          details: {
+            ...baseConnection.details,
+            content: format.text || baseConnection.details.content,
+            embeds: format.embeds
+              ? this.convertEmbeds(format.embeds, {
+                  isYoutube,
+                })
+              : baseConnection.details.embeds,
+          },
+          filters: format.filters
+            ? this.convertRegularFilters(format.filters)
+            : baseConnection.filters,
+        };
 
-          converted.connections.discordWebhooks.push(connectionCopy);
-        }
+        converted.connections.discordChannels.push(connectionCopy);
       }
     }
 
