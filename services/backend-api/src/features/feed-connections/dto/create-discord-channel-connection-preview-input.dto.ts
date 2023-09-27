@@ -6,6 +6,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
@@ -16,6 +17,7 @@ import {
   MentionsOptionsDto,
   DiscordPlaceholderLimitOptions,
   CustomPlaceholderDto,
+  ForumThreadTagDto,
 } from "../../../common";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
 
@@ -40,6 +42,17 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @ValidateNested({ each: true })
   @Type(() => DiscordPreviewEmbed)
   embeds?: DiscordPreviewEmbed[];
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  forumThreadTitle?: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ForumThreadTagDto)
+  forumThreadTags?: ForumThreadTagDto[];
 
   @IsOptional()
   @Type(() => DiscordSplitOptions)

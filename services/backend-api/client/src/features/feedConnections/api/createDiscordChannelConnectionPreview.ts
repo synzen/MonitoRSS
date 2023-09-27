@@ -41,6 +41,11 @@ export interface CreateDiscordChannelConnectionPreviewInput {
       appendString?: string | null;
     }> | null;
     enablePlaceholderFallback?: boolean;
+    forumThreadTitle?: string | null;
+    forumThreadTags?: Array<{
+      id: string;
+      filters?: Record<string, any> | null;
+    }> | null;
   };
 }
 

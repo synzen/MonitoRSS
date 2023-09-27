@@ -103,6 +103,8 @@ export const DiscordMessageForm = ({
     placeholderLimits,
     enablePlaceholderFallback,
     customPlaceholders,
+    forumThreadTags,
+    forumThreadTitle,
   ] = useWatch({
     control,
     name: [
@@ -114,6 +116,8 @@ export const DiscordMessageForm = ({
       "placeholderLimits",
       "enablePlaceholderFallback",
       "customPlaceholders",
+      "forumThreadTags",
+      "forumThreadTitle",
     ],
   });
 
@@ -138,6 +142,8 @@ export const DiscordMessageForm = ({
       customPlaceholders,
       placeholderLimits,
       enablePlaceholderFallback,
+      forumThreadTags,
+      forumThreadTitle,
     },
   };
 

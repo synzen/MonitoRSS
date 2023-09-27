@@ -189,6 +189,10 @@ export class DiscordMediumService implements DeliveryMedium {
         threadBody = {
           ...bodies[0],
           thread_name: threadName,
+          applied_tags: this.getForumTagsToSend(
+            forumThreadTags,
+            filterReferences
+          ),
         };
       }
 
@@ -393,6 +397,7 @@ export class DiscordMediumService implements DeliveryMedium {
       deliverySettings: {
         guildId,
         forumThreadTitle,
+        forumThreadTags,
         mentions,
         enablePlaceholderFallback,
         placeholderLimits,
@@ -439,6 +444,7 @@ export class DiscordMediumService implements DeliveryMedium {
           placeholderLimits,
           enablePlaceholderFallback,
         }) || "New Article",
+      applied_tags: this.getForumTagsToSend(forumThreadTags, filterReferences),
     };
 
     const res = await this.producer.fetch(
@@ -521,6 +527,7 @@ export class DiscordMediumService implements DeliveryMedium {
       deliverySettings: {
         guildId,
         forumThreadTitle,
+        forumThreadTags,
         mentions,
         enablePlaceholderFallback,
         placeholderLimits,
@@ -551,10 +558,7 @@ export class DiscordMediumService implements DeliveryMedium {
           enablePlaceholderFallback,
         }) || "New Article",
       message: bodies[0],
-      applied_tags: this.getForumTagsToSend(
-        details.deliverySettings.forumThreadTags,
-        filterReferences
-      ),
+      applied_tags: this.getForumTagsToSend(forumThreadTags, filterReferences),
     };
 
     const res = await this.producer.fetch(
