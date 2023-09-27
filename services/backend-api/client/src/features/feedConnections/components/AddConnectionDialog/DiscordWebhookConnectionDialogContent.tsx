@@ -196,6 +196,11 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                               shouldTouch: true,
                               shouldValidate: true,
                             });
+                            setValue("name", data.name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
                           }}
                           onBlur={field.onBlur}
                           value={field.value}
