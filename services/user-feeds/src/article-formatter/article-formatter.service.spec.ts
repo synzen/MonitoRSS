@@ -393,6 +393,16 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
       });
     });
 
+    describe("unordered list", () => {
+      it("overrides the prefix", async () => {
+        const result = service.formatValueForDiscord(
+          "<ul><li>1</li><li>2</li></ul>"
+        );
+
+        expect(result.value).toEqual("* 1\n* 2");
+      });
+    });
+
     it("works", async () => {
       const val = `
     <table>
