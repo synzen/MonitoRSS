@@ -45,6 +45,9 @@ import {
 import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
 import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
 import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
+import { FeedRegexOp } from "../feeds/entities/feed-regexop.entity";
+import { randomUUID } from "crypto";
+import { escapeRegExp } from "lodash";
 
 enum ConversionDisabledCode {
   ConvertSuccess = "CONVERTED_USER_FEED",
@@ -479,6 +482,36 @@ export class LegacyFeedConversionService {
     }
   ): Promise<UserFeed> {
     const guildId = feed.guild;
+
+    const customPlaceholders: DiscordChannelConnection["customPlaceholders"] =
+      Object.keys(feed.regexOps || {}).flatMap((key) => {
+        const regexOp = feed.regexOps?.[key] as FeedRegexOp[];
+        const allNames = Array.from(new Set(regexOp.map((op) => op.name)));
+
+        const customPlaceholdersOfName: DiscordChannelConnection["customPlaceholders"] =
+          allNames.map((name) => {
+            const nameOps = regexOp.filter((op) => op.name === name);
+
+            return {
+              id: `${key}::${name}`,
+              referenceName: name,
+              sourcePlaceholder: key,
+              steps: nameOps.map((op) => ({
+                id: randomUUID(),
+                regexSearch: op.search.regex,
+                replacementString: op.replacementDirect || op.replacement || "",
+              })),
+            };
+          });
+
+        return customPlaceholdersOfName;
+      });
+
+    const regexPlaceholdersToReplace = customPlaceholders.map((c) => ({
+      regexOpPh: `${c.sourcePlaceholder}:${c.referenceName}`,
+      newPh: `custom::${c.referenceName}`,
+    }));
+
     const convertedFilters =
       feed.rfilters && Object.keys(feed.rfilters).length > 0
         ? this.convertRegexFilters(feed.rfilters, {
@@ -491,6 +524,7 @@ export class LegacyFeedConversionService {
     const isYoutube = feed.url.toLowerCase().includes("www.youtube.com/feeds");
     const convertedEmbeds = this.convertEmbeds(feed.embeds, {
       isYoutube,
+      regexPlaceholdersToReplace,
     });
 
     const healthStatus = this.getHealthStatus(failRecord);
@@ -600,6 +634,7 @@ export class LegacyFeedConversionService {
         webhook: webhookToAdd,
         content: this.convertPlaceholders(feed.text, {
           isYoutube,
+          regexPlaceholdersToReplace,
         }),
         embeds: convertedEmbeds,
         formatter: {
@@ -626,6 +661,7 @@ export class LegacyFeedConversionService {
         ],
       },
       filters: convertedFilters,
+      customPlaceholders,
     };
 
     converted.connections.discordChannels.push(baseConnection);
@@ -641,6 +677,7 @@ export class LegacyFeedConversionService {
             embeds: format.embeds
               ? this.convertEmbeds(format.embeds, {
                   isYoutube,
+                  regexPlaceholdersToReplace,
                 })
               : baseConnection.details.embeds,
           },
@@ -680,6 +717,10 @@ export class LegacyFeedConversionService {
     text: T,
     meta: {
       isYoutube: boolean;
+      regexPlaceholdersToReplace: Array<{
+        regexOpPh: string;
+        newPh: string;
+      }>;
     }
   ): T {
     if (!text) {
@@ -696,6 +737,17 @@ export class LegacyFeedConversionService {
         /\{(description|summary|title):(anchor|image)(\d+)\}/g,
         "{extracted::$1::$2$3}"
       );
+
+    meta.regexPlaceholdersToReplace.forEach((regexPlaceholder) => {
+      const inputRegex = new RegExp(
+        `{${escapeRegExp(regexPlaceholder.regexOpPh)}}`,
+        "g"
+      );
+      replacedWithKnownPlaceholders = replacedWithKnownPlaceholders.replace(
+        inputRegex,
+        `{${regexPlaceholder.newPh}}`
+      );
+    });
 
     let placeholderRegexResults = placeholderRegex.exec(
       replacedWithKnownPlaceholders
@@ -765,6 +817,10 @@ export class LegacyFeedConversionService {
     embeds: Feed["embeds"],
     meta: {
       isYoutube: boolean;
+      regexPlaceholdersToReplace: Array<{
+        regexOpPh: string;
+        newPh: string;
+      }>;
     }
   ): DiscordChannelConnection["details"]["embeds"] {
     if (!embeds || embeds.length === 0) {

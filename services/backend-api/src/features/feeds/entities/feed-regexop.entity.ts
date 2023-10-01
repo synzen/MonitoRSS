@@ -30,8 +30,9 @@ export class FeedRegexOp {
 
   @Prop({
     type: FeedRegexOpSearch,
+    required: true,
   })
-  search?: FeedRegexOpSearch;
+  search: FeedRegexOpSearch;
 
   @Prop()
   fallbackValue?: string;

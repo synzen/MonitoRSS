@@ -296,6 +296,105 @@ describe("LegacyFeedConversionService", () => {
         });
       });
 
+      it("sets custom placeholders correctly", async () => {
+        const feed: Feed = {
+          ...baseFeed,
+          split: {
+            enabled: true,
+          },
+          regexOps: {
+            title: [
+              {
+                name: "mytitle",
+                search: {
+                  regex: "myregex",
+                },
+                replacement: "myreplacement",
+                replacementDirect: "myreplacementdirect",
+              },
+              {
+                name: "mytitle",
+                search: {
+                  regex: "myregex2",
+                },
+                replacement: "myreplacement2",
+              },
+            ],
+            description: [
+              {
+                name: "mydescription",
+                search: {
+                  regex: "myregex",
+                },
+                replacement: "myreplacement",
+                replacementDirect: "myreplacementdirect2",
+              },
+              {
+                name: "mydescription2",
+                search: {
+                  regex: "myregex2",
+                },
+                replacement: "myreplacement2",
+              },
+            ],
+          },
+        };
+
+        const result = await service.getUserFeedEquivalent(feed, data);
+
+        expect(result).toMatchObject({
+          connections: {
+            discordChannels: [
+              {
+                customPlaceholders: [
+                  {
+                    id: `title::mytitle`,
+                    referenceName: "mytitle",
+                    sourcePlaceholder: "title",
+                    steps: [
+                      {
+                        id: expect.any(String),
+                        regexSearch: "myregex",
+                        replacementString: "myreplacementdirect",
+                      },
+                      {
+                        id: expect.any(String),
+                        regexSearch: "myregex2",
+                        replacementString: "myreplacement2",
+                      },
+                    ],
+                  },
+                  {
+                    id: "description::mydescription",
+                    referenceName: "mydescription",
+                    sourcePlaceholder: "description",
+                    steps: [
+                      {
+                        id: expect.any(String),
+                        regexSearch: "myregex",
+                        replacementString: "myreplacementdirect2",
+                      },
+                    ],
+                  },
+                  {
+                    id: "description::mydescription2",
+                    referenceName: "mydescription2",
+                    sourcePlaceholder: "description",
+                    steps: [
+                      {
+                        id: expect.any(String),
+                        regexSearch: "myregex2",
+                        replacementString: "myreplacement2",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      });
+
       it("sets split options correctly", async () => {
         const feed: Feed = {
           ...baseFeed,
@@ -901,10 +1000,25 @@ describe("LegacyFeedConversionService", () => {
   });
 
   describe("convertPlaceholders", () => {
+    it("converts regex placeholders", () => {
+      expect(
+        service.convertPlaceholders("test {title:custom}", {
+          isYoutube: false,
+          regexPlaceholdersToReplace: [
+            {
+              regexOpPh: "title:custom",
+              newPh: "custom::custom",
+            },
+          ],
+        })
+      ).toEqual("test {{custom::custom}}");
+    });
+
     it("converts subscriptions placeholders", () => {
       expect(
         service.convertPlaceholders("test {subscriptions}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{discord::mentions}}");
     });
@@ -913,6 +1027,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {subscribers}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{discord::mentions}}");
     });
@@ -921,6 +1036,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {date}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{pubdate}}");
     });
@@ -931,6 +1047,7 @@ describe("LegacyFeedConversionService", () => {
           "test {placeholder}\n\n{placeholder2} {{placehodler3}}",
           {
             isYoutube: false,
+            regexPlaceholdersToReplace: [],
           }
         )
       ).toEqual("test {{placeholder}}\n\n{{placeholder2}} {{{placehodler3}}}");
@@ -940,6 +1057,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders(undefined, {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toBeUndefined();
     });
@@ -948,6 +1066,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {summary:image1} {summary:image2}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual(
         "test {{extracted::summary::image1}} {{extracted::summary::image2}}"
@@ -960,6 +1079,7 @@ describe("LegacyFeedConversionService", () => {
           "test {summary:anchor1} {summary:anchor2}",
           {
             isYoutube: false,
+            regexPlaceholdersToReplace: [],
           }
         )
       ).toEqual(
@@ -973,6 +1093,7 @@ describe("LegacyFeedConversionService", () => {
           "test {description:anchor1} {description:anchor2}",
           {
             isYoutube: false,
+            regexPlaceholdersToReplace: [],
           }
         )
       ).toEqual(
@@ -986,6 +1107,7 @@ describe("LegacyFeedConversionService", () => {
           "test {description:image1} {description:image2}",
           {
             isYoutube: false,
+            regexPlaceholdersToReplace: [],
           }
         )
       ).toEqual(
@@ -997,6 +1119,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {title:anchor1} {title:anchor2}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual(
         "test {{extracted::title::anchor1}} {{extracted::title::anchor2}}"
@@ -1007,6 +1130,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {title:image1} {title:image2}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual(
         "test {{extracted::title::image1}} {{extracted::title::image2}}"
@@ -1017,6 +1141,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {raw:description}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{description}}");
     });
@@ -1025,6 +1150,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {raw:description_level1_level2}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{description__level1__level2}}");
     });
@@ -1033,6 +1159,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {raw:description-is-here}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{description:is:here}}");
     });
@@ -1041,6 +1168,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {raw:description[1]}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{description__1}}");
     });
@@ -1049,6 +1177,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {raw:description_level1[1]_level2}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{description__level1__1__level2}}");
     });
@@ -1057,6 +1186,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {raw:description-is-here[1]}", {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{description:is:here__1}}");
     });
@@ -1067,6 +1197,7 @@ describe("LegacyFeedConversionService", () => {
           "test {raw:description_level1-is-here[1]_level2}",
           {
             isYoutube: false,
+            regexPlaceholdersToReplace: [],
           }
         )
       ).toEqual("test {{description__level1:is:here__1__level2}}");
@@ -1076,6 +1207,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertPlaceholders("test {description}", {
           isYoutube: true,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual("test {{media:group__media:description__#}}");
     });
@@ -1086,6 +1218,7 @@ describe("LegacyFeedConversionService", () => {
           "test {item1||item2||https://image.com||http://image.com}",
           {
             isYoutube: true,
+            regexPlaceholdersToReplace: [],
           }
         )
       ).toEqual(
@@ -1123,6 +1256,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertEmbeds(input, {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual([
         {
@@ -1176,6 +1310,7 @@ describe("LegacyFeedConversionService", () => {
       expect(
         service.convertEmbeds(input, {
           isYoutube: false,
+          regexPlaceholdersToReplace: [],
         })
       ).toEqual([
         {

@@ -130,7 +130,7 @@ export class Feed {
     type: Map,
     of: [FeedRegexOpSchema],
   })
-  regexOps?: FeedRegexOp[];
+  regexOps?: Record<string, FeedRegexOp[]>;
 
   @Prop()
   isFeedv2?: boolean;
