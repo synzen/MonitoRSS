@@ -40,16 +40,14 @@ export class SupporterSubscriptionsController {
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(60 * 5)
   async getProducts(@Query("currency") currency?: string): Promise<{
-    data: Record<
-      ProductId,
-      {
-        prices: Array<{
-          interval: "month" | "year";
-          formattedPrice: string;
-          currencyCode: string;
-        }>;
-      }
-    >;
+    data: Array<{
+      id: ProductId;
+      prices: Array<{
+        interval: "month" | "year";
+        formattedPrice: string;
+        currencyCode: string;
+      }>;
+    }>;
   }> {
     if (!ACCEPTED_CURRENCIES.includes(currency || "USD")) {
       throw new BadRequestException(
@@ -65,7 +63,14 @@ export class SupporterSubscriptionsController {
       );
 
     return {
-      data: products,
+      data: Object.keys(products).map((p) => ({
+        id: p,
+        prices: products[p].prices.map((d) => ({
+          interval: d.interval,
+          formattedPrice: d.formattedPrice,
+          currencyCode: d.currencyCode,
+        })),
+      })),
     };
   }
 }
