@@ -22,6 +22,7 @@ import { LegacyFeedConversionModule } from "./features/legacy-feed-conversion/le
 import { UserFeedManagementInvitesModule } from "./features/user-feed-management-invites/user-feed-management-invites.module";
 import { ErrorReportsController } from "./error-reports.controller";
 import { MessageBrokerEventsModule } from "./features/message-broker-events/message-broker-events.module";
+import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions/supporter-subscriptions.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MessageBrokerEventsModule } from "./features/message-broker-events/mess
     SupportersModule,
     LegacyFeedConversionModule,
     ScheduleEmitterModule,
+    SupporterSubscriptionsModule,
     UserFeedManagementInvitesModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),

@@ -145,6 +145,14 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   BACKEND_API_SMTP_PASSWORD?: string;
+
+  @IsOptional()
+  @IsString()
+  BACKEND_API_PADDLE_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  BACKEND_API_PADDLE_URL?: string;
 }
 
 export function validateConfig(
