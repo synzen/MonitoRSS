@@ -80,7 +80,7 @@ const ACCEPTED_CURRENCIES = [
 
 const ACCEPTED_CURRENCY_CODES = ACCEPTED_CURRENCIES.map((d) => d.code);
 
-@Controller("supporter-subscriptions")
+@Controller("subscription-products")
 export class SupporterSubscriptionsController {
   constructor(
     private readonly supporterSubscriptionsService: SupporterSubscriptionsService

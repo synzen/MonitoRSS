@@ -16,3 +16,4 @@ export * from "./UserFeedStatusSelectDropdown";
 export * from "./NewHeader";
 export * from "./InsufficientSupporterTierAlert";
 export * from "./SaveUnsavedChangesPopupBar";
+export * from "./PricingDialog";

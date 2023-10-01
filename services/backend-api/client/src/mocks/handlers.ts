@@ -83,8 +83,74 @@ import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 import { UserFeedManagerStatus } from "../constants";
 import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
+import { GetSubscriptionProductsOutput } from "../features/subscriptionProducts";
 
 const handlers = [
+  rest.get("/api/v1/subscription-products", (req, res, ctx) => {
+    const currencyCode = req.url.searchParams.get("currency") || "USD";
+
+    return res(
+      ctx.delay(500),
+      ctx.json<GetSubscriptionProductsOutput>({
+        data: {
+          products: [
+            {
+              id: "tier1",
+              prices: [
+                {
+                  interval: "month",
+                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                  currencyCode,
+                },
+                {
+                  interval: "year",
+                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                  currencyCode,
+                },
+              ],
+            },
+            {
+              id: "tier2",
+              prices: [
+                {
+                  interval: "month",
+                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                  currencyCode,
+                },
+                {
+                  interval: "year",
+                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                  currencyCode,
+                },
+              ],
+            },
+            {
+              id: "tier3",
+              prices: [
+                {
+                  interval: "month",
+                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                  currencyCode,
+                },
+                {
+                  interval: "year",
+                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                  currencyCode,
+                },
+              ],
+            },
+          ],
+          currencies: [
+            { code: "USD", symbol: "$" },
+            {
+              code: "EUR",
+              symbol: "€",
+            },
+          ],
+        },
+      })
+    );
+  }),
   rest.post("/api/v1/error-reports", (req, res, ctx) => {
     return res(ctx.delay(500), ctx.json({}));
   }),

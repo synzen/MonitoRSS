@@ -26,10 +26,12 @@ import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { AlertSettings } from "./AlertSettings";
+import { Pricing } from "./Pricing";
 
 const Pages: React.FC = () => (
   <Routes>
     <Route path="/" element={<Home />} />
+    <Route path="/pricing" element={<Pricing />} />
     <Route
       path="/servers"
       element={
