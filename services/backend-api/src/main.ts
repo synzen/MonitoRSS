@@ -23,7 +23,10 @@ async function bootstrap() {
     StaticAppModule,
     new FastifyAdapter({
       logger: true,
-    })
+    }),
+    {
+      cors: true,
+    }
   );
 
   app.enableShutdownHooks();

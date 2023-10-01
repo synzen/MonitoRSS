@@ -76,7 +76,7 @@ const ACCEPTED_CURRENCIES = [
     code: "USD",
     symbol: "$",
   },
-];
+].sort((a, b) => a.code.localeCompare(b.code));
 
 const ACCEPTED_CURRENCY_CODES = ACCEPTED_CURRENCIES.map((d) => d.code);
 
