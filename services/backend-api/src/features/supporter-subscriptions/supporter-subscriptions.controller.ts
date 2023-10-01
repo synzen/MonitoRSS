@@ -12,23 +12,73 @@ import { SupporterSubscriptionsService } from "./supporter-subscriptions.service
 type ProductId = string;
 
 const ACCEPTED_CURRENCIES = [
-  "AUD",
-  "BRL",
-  "GBP",
-  "CAD",
-  "CZK",
-  "DKK",
-  "EUR",
-  "HKD",
-  "HUF",
-  "MXN",
-  "NZD",
-  "NOK",
-  "PLN",
-  "SGD",
-  "SEK",
-  "USD",
+  {
+    code: "AUD",
+    symbol: "AU$",
+  },
+  {
+    code: "BRL",
+    symbol: "R$",
+  },
+  {
+    code: "GBP",
+    symbol: "£",
+  },
+  {
+    code: "CAD",
+    symbol: "CA$",
+  },
+  {
+    code: "CZK",
+    symbol: "Kč",
+  },
+  {
+    code: "DKK",
+    symbol: "kr.",
+  },
+  {
+    code: "EUR",
+    symbol: "€",
+  },
+  {
+    code: "HKD",
+    symbol: "HK$",
+  },
+  {
+    code: "HUF",
+    symbol: "Ft",
+  },
+  {
+    code: "MXN",
+    symbol: "$",
+  },
+  {
+    code: "NZD",
+    symbol: "NZ$",
+  },
+  {
+    code: "NOK",
+    symbol: "kr",
+  },
+  {
+    code: "PLN",
+    symbol: "zł",
+  },
+  {
+    code: "SGD",
+    symbol: "S$",
+  },
+  {
+    code: "SEK",
+    symbol: "kr",
+  },
+  {
+    code: "USD",
+    symbol: "$",
+  },
 ];
+
+const ACCEPTED_CURRENCY_CODES = ACCEPTED_CURRENCIES.map((d) => d.code);
 
 @Controller("supporter-subscriptions")
 export class SupporterSubscriptionsController {
@@ -40,18 +90,24 @@ export class SupporterSubscriptionsController {
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(60 * 5)
   async getProducts(@Query("currency") currency?: string): Promise<{
-    data: Array<{
-      id: ProductId;
-      prices: Array<{
-        interval: "month" | "year";
-        formattedPrice: string;
-        currencyCode: string;
+    data: {
+      products: Array<{
+        id: ProductId;
+        prices: Array<{
+          interval: "month" | "year";
+          formattedPrice: string;
+          currencyCode: string;
+        }>;
       }>;
-    }>;
+      currencies: Array<{
+        code: string;
+        symbol: string;
+      }>;
+    };
   }> {
-    if (!ACCEPTED_CURRENCIES.includes(currency || "USD")) {
+    if (!ACCEPTED_CURRENCY_CODES.includes(currency || "USD")) {
       throw new BadRequestException(
-        `Invalid currency code ${currency}. Must be one of ${ACCEPTED_CURRENCIES.join(
+        `Invalid currency code ${currency}. Must be one of ${ACCEPTED_CURRENCY_CODES.join(
           ", "
         )}`
       );
@@ -63,14 +119,17 @@ export class SupporterSubscriptionsController {
       );
 
     return {
-      data: Object.keys(products).map((p) => ({
-        id: p,
-        prices: products[p].prices.map((d) => ({
-          interval: d.interval,
-          formattedPrice: d.formattedPrice,
-          currencyCode: d.currencyCode,
+      data: {
+        products: Object.keys(products).map((p) => ({
+          id: p,
+          prices: products[p].prices.map((d) => ({
+            interval: d.interval,
+            formattedPrice: d.formattedPrice,
+            currencyCode: d.currencyCode,
+          })),
         })),
-      })),
+        currencies: ACCEPTED_CURRENCIES,
+      },
     };
   }
 }
