@@ -594,21 +594,15 @@ export class LegacyFeedConversionService {
         guildId,
       };
     } else {
-      try {
-        const webhook = await this.discordApiService.getWebhook(
-          feed.webhook.id
-        );
-        webhookToAdd = {
-          id: feed.webhook.id,
-          guildId,
-          token: webhook.token as string,
-          iconUrl: feed.webhook.avatar,
-          name: feed.webhook.name,
-        };
-        name = `Webhook: ${webhook.name || feed.webhook.id}`;
-      } catch (err) {
-        name = `Webhook: ${feed.webhook.id}`;
-      }
+      const webhook = await this.discordApiService.getWebhook(feed.webhook.id);
+      webhookToAdd = {
+        id: feed.webhook.id,
+        guildId,
+        token: webhook.token as string,
+        iconUrl: feed.webhook.avatar,
+        name: feed.webhook.name,
+      };
+      name = `Webhook: ${webhook.name || feed.webhook.id}`;
     }
 
     const baseConnection: DiscordChannelConnection = {
