@@ -89,7 +89,7 @@ export class MessageBrokerEventsService {
         });
       } catch (err) {
         logger.error(
-          `Failed to emit deliver feed articles event: ${
+          `Failed to emit deliver feed articles event for feed ${feed._id}: ${
             (err as Error).message
           }`,
           {
