@@ -12,6 +12,7 @@ export interface UpdateDiscordChannelConnectionInput {
       id: string;
       iconUrl?: string | null;
       name?: string | null;
+      threadId?: string | null;
     } | null;
     content?: string | null;
     forumThreadTitle?: string | null;

@@ -378,6 +378,7 @@ export class UserFeedsController {
                 iconUrl: con.details.webhook.iconUrl,
                 name: con.details.webhook.name,
                 type: con.details.webhook.type,
+                threadId: con.details.webhook.threadId,
               }
             : undefined,
         },

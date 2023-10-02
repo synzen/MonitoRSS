@@ -38,6 +38,11 @@ export class DiscordWebhook {
     type: String,
   })
   type?: FeedConnectionDiscordWebhookType | null;
+
+  @Prop({
+    required: false,
+  })
+  threadId?: string;
 }
 
 export const DiscordWebhookSchema =

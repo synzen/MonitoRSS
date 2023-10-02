@@ -112,7 +112,11 @@ function getPrettyConnectionName(
         return "Discord Forum Webhook";
       }
 
-      return "Discord Webhook";
+      if (casted.details.webhook.type === "thread") {
+        return "Discord Thread Webhook";
+      }
+
+      return "Discord Channel Webhook";
     }
   }
 

@@ -30,7 +30,7 @@ import { useDiscordWebhooks } from "../../../discordWebhooks";
 import { useUserFeed } from "../../../feed/hooks";
 import { DiscordChannelName } from "../../../discordServers/components/DiscordChannelName";
 import { useDiscordUserMe } from "../../../discordUser";
-import { DiscordServerSearchSelectv2 } from "../../../discordServers";
+import { DiscordActiveThreadDropdown, DiscordServerSearchSelectv2 } from "../../../discordServers";
 
 const formSchema = object({
   name: string().optional(),
@@ -38,6 +38,7 @@ const formSchema = object({
     id: string().required("This is a required field"),
     name: string().optional(),
     iconUrl: string().optional(),
+    threadId: string().optional(),
   }).when("serverId", ([serverId], schema) => {
     if (serverId) {
       return schema.required();
@@ -82,7 +83,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     resolver: yupResolver(formSchema),
     defaultValues,
   });
-  const serverId = watch("serverId");
+  const [serverId, webhookId] = watch(["serverId", "webhook.id"]);
   const { status: feedStatus } = useUserFeed({
     feedId,
   });
@@ -142,7 +143,12 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                       name="name"
                       control={control}
                       render={({ field }) => (
-                        <Input {...field} ref={initialRef} value={field.value || ""} />
+                        <Input
+                          {...field}
+                          ref={initialRef}
+                          value={field.value || ""}
+                          bg="gray.800"
+                        />
                       )}
                     />
                     {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
@@ -198,7 +204,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                         options={
                           discordWebhooks?.map((webhook) => ({
                             label: (
-                              <span>
+                              <span key={webhook.id}>
                                 {webhook.name} (
                                 <DiscordChannelName
                                   serverId={serverId}
@@ -244,6 +250,54 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   </Stack>
                 </FormControl>
                 <FormControl>
+                  <FormLabel>Forum Thread</FormLabel>
+                  <Controller
+                    name="webhook.threadId"
+                    control={control}
+                    render={({ field }) => {
+                      const matchingWebhookChannelId = discordWebhooks?.find(
+                        (w) => w.id === webhookId
+                      )?.channelId;
+
+                      return (
+                        <DiscordActiveThreadDropdown
+                          value={field.value || ""}
+                          isClearable
+                          onChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          onBlur={field.onBlur}
+                          isDisabled={isSubmitting || !matchingWebhookChannelId}
+                          serverId={serverId}
+                          parentChannelId={matchingWebhookChannelId}
+                        />
+                      );
+                    }}
+                  />
+                  {errors.webhook?.id && (
+                    <FormErrorMessage>{errors.webhook.id.message}</FormErrorMessage>
+                  )}
+                  <Stack>
+                    <FormHelperText>
+                      If enabled, all messages will go into a specific thread. Only unlocked
+                      (unarchived) threads are listed.
+                    </FormHelperText>
+                    {discordWebhooksError && (
+                      <Alert status="error">
+                        <Box>
+                          <AlertTitle>
+                            {t(
+                              "features.feed.components." +
+                                "addDiscordWebhookConnectionDialog.failedToGetWebhooks"
+                            )}
+                          </AlertTitle>
+                          <AlertDescription>{discordWebhooksError.message}</AlertDescription>
+                        </Box>
+                      </Alert>
+                    )}
+                  </Stack>
+                </FormControl>
+                <FormControl>
                   <FormLabel>
                     {t(
                       "features.feed.components" +
@@ -259,6 +313,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                         {...field}
                         isDisabled={isSubmitting}
                         value={field.value || ""}
+                        bg="gray.800"
                       />
                     )}
                   />
@@ -285,6 +340,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                         {...field}
                         isDisabled={isSubmitting}
                         value={field.value || ""}
+                        bg="gray.800"
                       />
                     )}
                   />

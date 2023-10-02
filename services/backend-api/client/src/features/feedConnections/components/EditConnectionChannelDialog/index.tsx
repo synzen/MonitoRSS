@@ -98,7 +98,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                 <Controller
                   name="name"
                   control={control}
-                  render={({ field }) => <Input {...field} ref={initialRef} />}
+                  render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
                 />
                 {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                 <FormHelperText>

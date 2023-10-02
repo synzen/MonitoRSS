@@ -61,7 +61,7 @@ export class DiscordMediumService implements DeliveryMedium {
     webhookId: string,
     webhookToken: string,
     queries?: {
-      threadId?: string;
+      threadId?: string | null;
     }
   ) {
     const urlQueries = new URLSearchParams();
@@ -234,7 +234,9 @@ export class DiscordMediumService implements DeliveryMedium {
         result: firstResponse,
       };
     } else if (webhook) {
-      const apiUrl = this.getWebhookApiUrl(webhook.id, webhook.token);
+      const apiUrl = this.getWebhookApiUrl(webhook.id, webhook.token, {
+        threadId: webhook.threadId,
+      });
       const apiPayloads = this.generateApiPayloads(article, {
         embeds,
         content,
@@ -692,11 +694,13 @@ export class DiscordMediumService implements DeliveryMedium {
       token: webhookToken,
       name: webhookUsername,
       iconUrl: webhookIconUrl,
+      threadId,
     }: {
       id: string;
       token: string;
       name?: string;
       iconUrl?: string;
+      threadId?: string | null;
     },
     details: DeliverArticleDetails
   ): Promise<ArticleDeliveryState> {
@@ -711,7 +715,9 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
     } = details;
 
-    const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
+    const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken, {
+      threadId,
+    });
 
     const initialBodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,

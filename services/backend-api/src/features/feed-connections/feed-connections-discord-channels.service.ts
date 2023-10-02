@@ -76,6 +76,7 @@ export interface UpdateDiscordChannelConnectionInput {
         id: string;
         name?: string;
         iconUrl?: string;
+        threadId?: string;
       };
       content?: string;
       forumThreadTitle?: string;
@@ -138,6 +139,7 @@ export class FeedConnectionsDiscordChannelsService {
       id: string;
       name?: string;
       iconUrl?: string;
+      threadId?: string;
     };
     userAccessToken: string;
     discordUserId: string;
@@ -171,16 +173,32 @@ export class FeedConnectionsDiscordChannelsService {
         userAccessToken
       );
 
+      let type: FeedConnectionDiscordWebhookType | undefined = undefined;
+
+      if (inputWebhook.threadId) {
+        const { channel: threadChannel } =
+          await this.assertDiscordChannelCanBeUsed(
+            userAccessToken,
+            inputWebhook.threadId
+          );
+
+        if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
+          type = FeedConnectionDiscordWebhookType.Thread;
+        } else {
+          throw new InvalidDiscordChannelException();
+        }
+      } else if (channel.type === DiscordChannelType.GUILD_FORUM) {
+        type = FeedConnectionDiscordWebhookType.Forum;
+      }
+
       webhookToAdd = {
         iconUrl: inputWebhook.iconUrl,
         id: inputWebhook.id,
         name: inputWebhook.name,
         token: webhook.token as string,
+        threadId: inputWebhook.threadId,
         guildId: channel.guild_id,
-        type:
-          channel.type === DiscordChannelType.GUILD_FORUM
-            ? FeedConnectionDiscordWebhookType.Forum
-            : undefined,
+        type,
       };
     } else {
       throw new Error("Must provide either channelId or webhookId");
@@ -328,6 +346,24 @@ export class FeedConnectionsDiscordChannelsService {
         accessToken
       );
 
+      let type: FeedConnectionDiscordWebhookType | undefined = undefined;
+
+      if (webhookDetails.threadId) {
+        const { channel: threadChannel } =
+          await this.assertDiscordChannelCanBeUsed(
+            accessToken,
+            webhookDetails.threadId
+          );
+
+        if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
+          type = FeedConnectionDiscordWebhookType.Thread;
+        } else {
+          throw new InvalidDiscordChannelException();
+        }
+      } else if (channel.type === DiscordChannelType.GUILD_FORUM) {
+        type = FeedConnectionDiscordWebhookType.Forum;
+      }
+
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.webhook"] = {
         iconUrl: webhookDetails.iconUrl,
@@ -335,10 +371,8 @@ export class FeedConnectionsDiscordChannelsService {
         name: webhookDetails.name,
         token: webhook.token as string,
         guildId: channel.guild_id,
-        type:
-          channel.type === DiscordChannelType.GUILD_FORUM
-            ? FeedConnectionDiscordWebhookType.Forum
-            : undefined,
+        type,
+        threadId: webhookDetails.threadId,
       };
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.channel"] = null;
@@ -509,6 +543,7 @@ export class FeedConnectionsDiscordChannelsService {
               name: connection.details.webhook.name,
               iconUrl: connection.details.webhook.iconUrl,
               type: connection.details.webhook.type,
+              threadId: connection.details.webhook.threadId,
             }
           : undefined,
         forumThreadTitle:

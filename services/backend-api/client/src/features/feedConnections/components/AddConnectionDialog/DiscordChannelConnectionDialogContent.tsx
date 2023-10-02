@@ -110,7 +110,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
             </Text>
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.serverId}>
+                <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
@@ -129,7 +129,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                     )}
                   />
                 </FormControl>
-                <FormControl isInvalid={!!errors.channelId}>
+                <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
@@ -158,14 +158,14 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                   />
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
                 </FormControl>
-                <FormControl isInvalid={!!errors.name}>
+                <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t("features.feed.components.addDiscordChannelConnectionDialog.formNameLabel")}
                   </FormLabel>
                   <Controller
                     name="name"
                     control={control}
-                    render={({ field }) => <Input {...field} />}
+                    render={({ field }) => <Input {...field} bg="gray.800" />}
                   />
                   {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                   <FormHelperText>

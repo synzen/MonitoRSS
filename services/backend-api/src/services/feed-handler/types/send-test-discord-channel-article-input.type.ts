@@ -29,6 +29,7 @@ export interface SendTestDiscordChannelArticleInput {
         name?: string;
         iconUrl?: string;
         type?: FeedConnectionDiscordWebhookType | null;
+        threadId?: string;
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];

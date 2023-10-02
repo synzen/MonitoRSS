@@ -190,6 +190,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 id: webhook.id,
                 name: webhook.name,
                 iconUrl: webhook.iconUrl,
+                threadId: webhook.threadId,
               },
             })
           }
@@ -200,6 +201,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               id: connection.details.webhook.id,
               iconUrl: connection.details.webhook.iconUrl,
               name: connection.details.webhook.name,
+              threadId: connection.details.webhook.threadId,
             },
           }}
         />
@@ -219,6 +221,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 id: webhook.id,
                 name: webhook.name,
                 iconUrl: webhook.iconUrl,
+                threadId: webhook.threadId,
               },
             })
           }

@@ -369,6 +369,7 @@ export class MessageBrokerEventsService {
                 name: con.details.webhook.name,
                 iconUrl: con.details.webhook.iconUrl,
                 type: con.details.webhook.type,
+                threadId: con.details.webhook.threadId,
               }
             : undefined,
           content: castDiscordContentForMedium(con.details.content),

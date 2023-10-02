@@ -6,10 +6,11 @@ import { useDiscordServerActiveThreads } from "../../hooks";
 interface Props {
   serverId?: string;
   parentChannelId?: string;
-  onChange: (threadId: string, threadName: string) => void;
+  onChange: (threadId: string, threadName?: string) => void;
   onBlur: () => void;
   value?: string;
   isDisabled?: boolean;
+  isClearable?: boolean;
 }
 
 export const DiscordActiveThreadDropdown: React.FC<Props> = ({
@@ -19,6 +20,7 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
   onBlur,
   value,
   isDisabled,
+  isClearable,
 }) => {
   const { data, error, isFetching } = useDiscordServerActiveThreads({
     serverId,
@@ -39,9 +41,12 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
         loading={isFetching}
         isDisabled={isDisabled || isFetching || !!error}
         options={options}
-        onChange={(val, optionData) => onChange(val, optionData.name)}
+        onChange={(val, optionData) => {
+          onChange(val, optionData?.name);
+        }}
         onBlur={onBlur}
         value={value}
+        isClearable={isClearable}
       />
       {serverId && error && (
         <Alert status="error">

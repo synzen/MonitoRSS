@@ -113,7 +113,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
             <Text>Send articles authored by the bot as a message to an existing thread.</Text>
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.serverId}>
+                <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
@@ -132,7 +132,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                     )}
                   />
                 </FormControl>
-                <FormControl isInvalid={!!errors.channelId}>
+                <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
@@ -156,7 +156,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                   />
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
                 </FormControl>
-                <FormControl isInvalid={!!errors.channelId}>
+                <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"
@@ -191,7 +191,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                     )}
                   </FormHelperText>
                 </FormControl>
-                <FormControl isInvalid={!!errors.name}>
+                <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
@@ -200,7 +200,9 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                   <Controller
                     name="name"
                     control={control}
-                    render={({ field }) => <Input {...field} value={field.value || ""} />}
+                    render={({ field }) => (
+                      <Input {...field} value={field.value || ""} bg="gray.800" />
+                    )}
                   />
                   {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                   <FormHelperText>

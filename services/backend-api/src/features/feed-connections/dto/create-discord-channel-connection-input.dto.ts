@@ -18,6 +18,10 @@ class Webhook {
   @IsString()
   @IsOptional()
   iconUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  threadId?: string;
 }
 
 export class CreateDiscordChnnnelConnectionInputDto {
