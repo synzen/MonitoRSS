@@ -170,11 +170,14 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                         value={field.value || ""}
                         onChange={(value, name) => {
                           field.onChange(value);
-                          setValue("name", name, {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                            shouldValidate: true,
-                          });
+
+                          if (name) {
+                            setValue("name", name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                          }
                         }}
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
