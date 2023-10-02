@@ -393,6 +393,12 @@ export const PricingDialog = ({ trigger }: Props) => {
                             (p) => p.interval === interval
                           );
 
+                          const shorterProductPrice = price?.formattedPrice.endsWith(".00") && (
+                            <Text fontSize={priceTextSize} fontWeight="bold">
+                              {price?.formattedPrice.slice(0, -3)}
+                            </Text>
+                          );
+
                           return (
                             <Card size="lg" shadow="lg" key={name}>
                               <CardHeader pb={0}>
@@ -420,7 +426,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                                         <Spinner colorScheme="blue" color="blue.300" size="lg" />
                                       )}
                                       {fetchStatus !== "fetching" &&
-                                        (price?.formattedPrice || priceFormatted)}
+                                        (shorterProductPrice || priceFormatted)}
                                     </Text>
                                     <Text fontSize="lg" color="whiteAlpha.600">
                                       {interval === "month" && "per month"}

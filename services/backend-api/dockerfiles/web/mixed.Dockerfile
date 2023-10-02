@@ -1,5 +1,4 @@
 FROM node:18 AS build
-
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -11,6 +10,9 @@ COPY . ./
 
 FROM node:18 AS build-prod
 
+
+ARG VITE_PADDLE_SELLER_ID
+ARG VITE_FRESHDESK_WIDGET_ID
 ARG DD_CLIENT_KEY
 
 WORKDIR /usr/src/app
@@ -19,6 +21,9 @@ COPY --from=build /usr/src/app ./
 # Build production files
 ENV SKIP_PREFLIGHT_CHECK=true
 ENV REACT_APP_DD_CLIENT_KEY=$DD_CLIENT_KEY
+ENV VITE_PADDLE_SELLER_ID=$VITE_PADDLE_SELLER_ID
+ENV VITE_FRESHDESK_WIDGET_ID=$VITE_FRESHDESK_WIDGET_ID
+
 RUN npm run build && cd client && npm run build
 
 RUN apt install curl

@@ -1,5 +1,4 @@
 FROM node:18 AS build
-
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -11,8 +10,14 @@ COPY . ./
 # Build production files
 FROM node:18-alpine AS prod
 
+ARG VITE_PADDLE_SELLER_ID
+ARG VITE_FRESHDESK_WIDGET_ID
+
 RUN apt install curl
 RUN curl -sf https://gobinaries.com/tj/node-prune | sh
+
+ENV VITE_PADDLE_SELLER_ID=$VITE_PADDLE_SELLER_ID
+ENV VITE_FRESHDESK_WIDGET_ID=$VITE_FRESHDESK_WIDGET_ID
 
 RUN npm run build
 
