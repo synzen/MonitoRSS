@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Req,
+  Session,
   UseGuards,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -14,6 +15,7 @@ import { FastifyRequest } from "fastify";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { getAccessTokenFromRequest } from "../discord-auth/utils/get-access-token-from-session";
@@ -31,7 +33,8 @@ import { DiscordUserIsSupporterGuard } from "./guards/DiscordUserIsSupporter";
 export class DiscordUsersController {
   constructor(
     private readonly discordUsersService: DiscordUsersService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly discordAuthService: DiscordAuthService
   ) {}
 
   @Get("/:id")
@@ -78,17 +81,18 @@ export class DiscordUsersController {
 
   @Get("@me/auth-status")
   async getAuthStatus(
-    @Req() request: FastifyRequest
+    @Req() request: FastifyRequest,
+    @Session() session: FastifyRequest["session"]
   ): Promise<GetMeAuthStatusOutputDto> {
+    const accessToken = getAccessTokenFromRequest(request);
+
+    if (!accessToken) {
+      return {
+        authenticated: false,
+      };
+    }
+
     try {
-      const accessToken = getAccessTokenFromRequest(request);
-
-      if (!accessToken) {
-        return {
-          authenticated: false,
-        };
-      }
-
       await this.discordUsersService.getUser(accessToken.access_token);
 
       return {
@@ -100,6 +104,9 @@ export class DiscordUsersController {
         (err.statusCode === HttpStatus.FORBIDDEN ||
           err.statusCode === HttpStatus.UNAUTHORIZED)
       ) {
+        // Access token has likely expired on Discord's end
+        await session.delete();
+
         return {
           authenticated: false,
         };
