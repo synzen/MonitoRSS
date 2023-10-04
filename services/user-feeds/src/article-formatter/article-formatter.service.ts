@@ -110,6 +110,9 @@ export class ArticleFormatterService {
     const strongSelector: SelectorDefinition = {
       selector: "strong",
       format: "heading",
+      options: {
+        trailingLineBreaks: 0,
+      },
     };
 
     const emSelector: SelectorDefinition = {

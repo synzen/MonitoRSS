@@ -330,6 +330,15 @@ describe("ArticleFormatterService", () => {
 
         expect(result.value).toEqual("**hello world**");
       });
+
+      it("does not add new newlines", () => {
+        const value = `<strong>Before</strong>:`;
+        service = new ArticleFormatterService();
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("**Before**:");
+      });
     });
 
     describe("em", () => {
