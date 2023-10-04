@@ -11,7 +11,6 @@ import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
 import App from "./App";
-import { SupportWidget } from "./components/SupportWidget";
 
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
@@ -60,7 +59,8 @@ prepare().then(() => {
   root.render(
     // <React.StrictMode>
     <BrowserRouter>
-      <SupportWidget />
+      {/** Disable support widget since the iframe sometimes blocks forms */}
+      {/* <SupportWidget /> */}
       <ChakraProvider theme={theme}>
         <ColorModeScript initialColorMode={theme.config.initialColorMode} />
         <QueryClientProvider client={queryClient}>

@@ -553,7 +553,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
           </Stack>
         </Stack>
       </Stack>
-      <HStack justifyContent="flex-end">
+      <HStack justifyContent="flex-end" mb={16}>
         <Button isDisabled={!isDirty || isSubmitting} onClick={() => reset()} variant="ghost">
           {t("common.buttons.reset")}
         </Button>
