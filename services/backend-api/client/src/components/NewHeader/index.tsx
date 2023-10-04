@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaBell, FaRightFromBracket } from "react-icons/fa6";
+import { InfoIcon } from "@chakra-ui/icons";
 import { pages } from "../../constants";
 import { LogoutButton } from "../../features/auth";
 
@@ -109,6 +110,15 @@ export const NewHeader = ({ invertBackground }: Props) => {
             <MenuList>
               <MenuItem icon={<FaBell />} onClick={() => navigate(pages.alerting())}>
                 Alert Settings
+              </MenuItem>
+              <MenuItem
+                alignItems="center"
+                icon={<InfoIcon />}
+                onClick={() => {
+                  window.open("https://support.monitorss.xyz", "_blank");
+                }}
+              >
+                Support
               </MenuItem>
               <LogoutButton
                 trigger={
