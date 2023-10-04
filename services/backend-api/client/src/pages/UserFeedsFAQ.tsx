@@ -1,17 +1,4 @@
-import {
-  Box,
-  Flex,
-  Heading,
-  Stack,
-  Text,
-  Icon,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionIcon,
-  AccordionPanel,
-  Link,
-} from "@chakra-ui/react";
+import { Box, Flex, Heading, Stack, Text, Icon, Link } from "@chakra-ui/react";
 import {
   BsChatFill,
   BsClockFill,
@@ -21,7 +8,7 @@ import {
   BsToggles,
 } from "react-icons/bs";
 import { FaCloudflare } from "react-icons/fa";
-import { BoxConstrained } from "../components";
+import { BoxConstrained, FAQ } from "../components";
 
 interface FeatureProps {
   icon: React.ReactNode;
@@ -61,28 +48,6 @@ const Features = ({ features }: FeaturesProp) => {
     </Flex>
   );
 };
-
-const FAQItem = ({ q, a }: { q: string; a: string | React.ReactNode }) => (
-  <AccordionItem>
-    <AccordionButton py={8}>
-      {/* <Box as="span" flex="1" textAlign="left"> */}
-      <Text fontWeight={600} size="lg" textAlign="left" flex="1">
-        {q}
-      </Text>
-      {/* </Box> */}
-      <AccordionIcon />
-    </AccordionButton>
-    <AccordionPanel pb={8}>{a}</AccordionPanel>
-  </AccordionItem>
-);
-
-const FAQ = ({ items }: { items: Array<{ q: string; a: string | React.ReactNode }> }) => (
-  <Accordion allowToggle allowMultiple borderRadius="lg">
-    {items.map(({ q, a }) => (
-      <FAQItem q={q} a={a} />
-    ))}
-  </Accordion>
-);
 
 const UserFeedsFAQ: React.FC = () => {
   return (

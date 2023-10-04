@@ -2,6 +2,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { UpdateQuery } from "mongoose";
+import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
+import { SubscriptionDetails } from "../../common/types/subscription-details.type";
+import { SupportersService } from "../supporters/supporters.service";
 import {
   User,
   UserDocument,
@@ -9,9 +12,32 @@ import {
   UserPreferences,
 } from "./entities/user.entity";
 
+function getPrettySubscriptioNameFromKey(key: string) {
+  if (key === "free") {
+    return "Free";
+  }
+
+  if (key === "tier1") {
+    return "Tier 1";
+  }
+
+  if (key === "tier2") {
+    return "Tier 2";
+  }
+
+  if (key === "tier3") {
+    return "Tier 3";
+  }
+
+  return key;
+}
+
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly userModel: UserModel) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: UserModel,
+    private readonly supportersService: SupportersService
+  ) {}
 
   async initDiscordUser(
     discordUserId: string,
@@ -43,14 +69,33 @@ export class UsersService {
     }
   }
 
-  async getByDiscordId(discordUserId: string): Promise<User | null> {
-    const user = await this.userModel.findOne({ discordUserId }).lean();
+  async getByDiscordId(discordUserId: string): Promise<{
+    user: User;
+    subscription: SubscriptionDetails;
+  } | null> {
+    const [user, { subscription }] = await Promise.all([
+      this.userModel.findOne({ discordUserId }).lean(),
+      this.supportersService.getSupporterSubscription(discordUserId),
+    ]);
 
     if (!user) {
       return null;
     }
 
-    return user;
+    const productKey = subscription?.product.key || "free";
+
+    const formattedSubscription = {
+      product: {
+        key: productKey,
+        name: getPrettySubscriptioNameFromKey(productKey),
+      },
+      status: SubscriptionStatus.Active,
+    };
+
+    return {
+      user,
+      subscription: formattedSubscription,
+    };
   }
 
   async getEmailsForAlerts(discordUserIds: string[]): Promise<string[]> {
@@ -69,10 +114,7 @@ export class UsersService {
     return users;
   }
 
-  async updateUserByDiscordId(
-    discordUserId: string,
-    data: Partial<User>
-  ): Promise<User | null> {
+  async updateUserByDiscordId(discordUserId: string, data: Partial<User>) {
     const updateQuery: UpdateQuery<UserDocument> = {
       $set: {},
     };
@@ -100,6 +142,6 @@ export class UsersService {
       return null;
     }
 
-    return user;
+    return this.getByDiscordId(discordUserId);
   }
 }

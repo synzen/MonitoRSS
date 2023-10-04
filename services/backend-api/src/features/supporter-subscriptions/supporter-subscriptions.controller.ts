@@ -5,9 +5,11 @@ import {
   Controller,
   Get,
   Query,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
+import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 
 type ProductId = string;
 
@@ -85,6 +87,10 @@ export class SupporterSubscriptionsController {
   constructor(
     private readonly supporterSubscriptionsService: SupporterSubscriptionsService
   ) {}
+
+  @Get("@me")
+  @UseGuards(DiscordOAuth2Guard)
+  async getMySubscriptionProducts() {}
 
   @Get()
   @UseInterceptors(CacheInterceptor)

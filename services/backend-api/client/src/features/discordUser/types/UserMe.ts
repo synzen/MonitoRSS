@@ -6,6 +6,13 @@ export const UserMeSchema = object({
   preferences: object({
     alertOnDisabledFeeds: bool().default(false),
   }).default({}),
+  subscription: object({
+    product: object({
+      key: string().required(),
+      name: string().required(),
+    }).required(),
+    status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),
+  }).required(),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;

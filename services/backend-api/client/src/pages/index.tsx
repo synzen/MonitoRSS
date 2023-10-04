@@ -25,11 +25,21 @@ import { FeedConnectionType } from "../types";
 import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
-import { AlertSettings } from "./AlertSettings";
+import { UserSettings } from "./UserSettings";
 import { Pricing } from "./Pricing";
 
 const Pages: React.FC = () => (
   <Routes>
+    <Route
+      path={pages.alerting()}
+      element={
+        <RequireAuth>
+          <PageContentV2 invertBackground>
+            <UserSettings />
+          </PageContentV2>
+        </RequireAuth>
+      }
+    />
     <Route path="/" element={<Home />} />
     <Route path="/pricing" element={<Pricing />} />
     <Route
@@ -79,11 +89,11 @@ const Pages: React.FC = () => (
       }
     />
     <Route
-      path={pages.alerting()}
+      path={pages.userSettings()}
       element={
         <RequireAuth>
           <PageContentV2 invertBackground>
-            <AlertSettings />
+            <UserSettings />
           </PageContentV2>
         </RequireAuth>
       }

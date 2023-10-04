@@ -12,7 +12,8 @@ import {
   UserFeedLimitOverride,
   UserFeedLimitOverrideModel,
 } from "./entities/user-feed-limit-overrides.entity";
-import { Customer } from "./entities/customer.entity";
+import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
+import { SupporterSource } from "./constants/supporter-source.constants";
 
 interface ArticleRateLimit {
   max: number;
@@ -34,6 +35,12 @@ interface SupporterBenefits {
   };
   allowCustomPlaceholders: boolean;
   articleRateLimits: Array<ArticleRateLimit>;
+  subscription:
+    | {
+        productKey: string;
+        status: SubscriptionStatus;
+      }
+    | undefined;
 }
 
 interface ServerBenefits {
@@ -56,8 +63,8 @@ interface SupportPatronAggregateResult {
     pledgeLifetime: number;
     pledgeOverride?: number;
   }>;
-  customers: Array<Customer>;
   allowCustomPlaceholders?: boolean;
+  paddleCustomer?: Supporter["paddleCustomer"];
 }
 
 @Injectable()
@@ -143,18 +150,29 @@ export class SupportersService {
         as: "userFeedLimitOverrides",
       },
     },
-    {
-      $lookup: {
-        from: "customers",
-        localField: "_id",
-        foreignField: "connections.discord.id",
-        as: "customers",
-      },
-    },
   ];
 
   async areSupportersEnabled() {
     return !!(await this.supporterModel.findOne({}).select("_id").lean());
+  }
+
+  async getSupporterSubscription(discordId: string) {
+    const supporter = await this.supporterModel.findById(discordId).lean();
+
+    if (!supporter?.paddleCustomer) {
+      return {
+        subscription: null,
+      };
+    }
+
+    return {
+      subscription: {
+        product: {
+          key: supporter.paddleCustomer.productKey,
+        },
+        status: supporter.paddleCustomer.status,
+      },
+    };
   }
 
   async getBenefitsOfDiscordUser(
@@ -164,7 +182,6 @@ export class SupportersService {
       Supporter & {
         patrons: Patron[];
         userFeedLimitOverrides?: UserFeedLimitOverride[];
-        customers: Customer[];
       }
     > = await this.supporterModel.aggregate([
       {
@@ -197,6 +214,7 @@ export class SupportersService {
         },
         allowCustomPlaceholders: false,
         articleRateLimits: this.defaultRateLimits,
+        subscription: undefined,
       };
     }
 
@@ -218,6 +236,14 @@ export class SupportersService {
       articleRateLimits: benefits.isSupporter
         ? this.supporterRateLimits
         : this.defaultRateLimits,
+      subscription:
+        benefits.source === SupporterSource.Paddle &&
+        aggregate[0].paddleCustomer
+          ? {
+              productKey: aggregate[0].paddleCustomer?.productKey,
+              status: aggregate[0].paddleCustomer?.status,
+            }
+          : undefined,
     };
   }
 
@@ -234,7 +260,6 @@ export class SupportersService {
     const aggregate: Array<
       Supporter & {
         patrons: Patron[];
-        customers: Customer[];
       }
     > = await this.supporterModel.aggregate([
       ...SupportersService.SUPPORTER_PATRON_PIPELINE,
@@ -283,7 +308,6 @@ export class SupportersService {
     const allSupportersWithGuild: Array<
       Omit<Supporter, "guilds"> & {
         patrons: Patron[];
-        customers: Customer[];
         guilds: string; // Unwinded to actually be guild IDs
         guildId: string; // An alias to unwinded "guilds" for readability
       }
@@ -334,7 +358,6 @@ export class SupportersService {
     const allSupportersWithGuild: Array<
       Omit<Supporter, "guilds"> & {
         patrons: Patron[];
-        customers: Customer[];
         guilds: string; // Unwinded to actually be guild IDs
         guildId: string; // An alias to unwinded "guilds" for readability
       }
@@ -481,6 +504,7 @@ export class SupportersService {
           legacy: 0,
         },
         allowCustomPlaceholders: false,
+        dailyArticleLimit: this.maxDailyArticlesDefault,
       };
     }
 
@@ -495,9 +519,12 @@ export class SupportersService {
       allowCustomPlaceholders,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
+    // Refresh rate
     let refreshRateSeconds = this.defaultRefreshRateSeconds;
 
-    if (supporter.slowRate) {
+    if (supporter.paddleCustomer) {
+      refreshRateSeconds = supporter.paddleCustomer.benefits.refreshRateSeconds;
+    } else if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
     } else if (isFromPatrons) {
       if (patronExistsAndIsValid) {
@@ -508,13 +535,11 @@ export class SupportersService {
       refreshRateSeconds = this.defaultSupporterRefreshRateSeconds;
     }
 
+    // Max user feeds
     let baseMaxUserFeeds: number;
 
-    const customerMaxUserFeeds =
-      supporter.customers[0]?.connections?.discord?.benefits?.maxUserFeeds;
-
-    if (customerMaxUserFeeds) {
-      baseMaxUserFeeds = customerMaxUserFeeds;
+    if (supporter.paddleCustomer) {
+      baseMaxUserFeeds = supporter.paddleCustomer.benefits.maxUserFeeds;
     } else if (supporter.maxUserFeeds) {
       baseMaxUserFeeds = supporter.maxUserFeeds;
     } else {
@@ -526,7 +551,22 @@ export class SupportersService {
     const legacyFeedLimitAddon =
       supporter.userFeedLimitOverrides?.[0]?.additionalUserFeeds || 0;
 
+    let dailyArticleLimit = this.maxDailyArticlesDefault;
+
+    if (supporter.paddleCustomer) {
+      dailyArticleLimit = supporter.paddleCustomer.benefits.dailyArticleLimit;
+    } else if (isFromPatrons) {
+      if (patronExistsAndIsValid) {
+        dailyArticleLimit = this.maxDailyArticlesSupporter;
+      }
+    }
+
     return {
+      source: supporter.paddleCustomer?.status
+        ? SupporterSource.Paddle
+        : patronExistsAndIsValid
+        ? SupporterSource.Patron
+        : SupporterSource.Manual,
       isSupporter: isFromPatrons ? patronExistsAndIsValid : true,
       maxFeeds: Math.max(
         supporter.maxFeeds ?? this.defaultMaxFeeds,
@@ -539,15 +579,17 @@ export class SupportersService {
       },
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
-      webhooks: true,
+      webhooks: supporter.paddleCustomer?.benefits.allowWebhooks ?? true,
       allowCustomPlaceholders:
         supporter.allowCustomPlaceholders || allowCustomPlaceholders,
+      dailyArticleLimit,
     };
   }
 
   isValidSupporter(
     supporter?: {
       expireAt?: Date;
+      paddleCustomer?: Supporter["paddleCustomer"];
     } & {
       patrons: {
         status: Patron["status"];
@@ -561,16 +603,20 @@ export class SupportersService {
 
     const { expireAt, patrons } = supporter;
 
-    if (!expireAt) {
-      if (!patrons.length) {
-        return true;
-      }
+    if (expireAt) {
+      return dayjs(expireAt).isAfter(dayjs());
+    }
 
+    if (patrons.length) {
       return patrons.some((patron) =>
         this.patronsService.isValidPatron(patron)
       );
     }
 
-    return dayjs(expireAt).isAfter(dayjs());
+    if (supporter.paddleCustomer?.status === SubscriptionStatus.Active) {
+      return true;
+    }
+
+    return false;
   }
 }

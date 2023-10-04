@@ -17,3 +17,4 @@ export * from "./NewHeader";
 export * from "./InsufficientSupporterTierAlert";
 export * from "./SaveUnsavedChangesPopupBar";
 export * from "./PricingDialog";
+export * from "./FAQ";

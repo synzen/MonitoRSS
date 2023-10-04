@@ -9,10 +9,12 @@ import {
   FormControl,
   FormHelperText,
   FormLabel,
+  HStack,
   Heading,
   Stack,
   Switch,
   Text,
+  chakra,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { InferType, bool, object } from "yup";
@@ -21,7 +23,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
-import { BoxConstrained, DashboardContentV2 } from "../components";
+import { BoxConstrained, DashboardContentV2, PricingDialog } from "../components";
 import { useLogin } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
@@ -38,7 +40,7 @@ const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData =>
   };
 };
 
-export const AlertSettings = () => {
+export const UserSettings = () => {
   const { status, error, data } = useUserMe();
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
@@ -88,38 +90,100 @@ export const AlertSettings = () => {
         <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={32}>
           <Stack spacing={8}>
             <Stack justifyContent="flex-start" width="100%">
-              <Heading>Alert Settings</Heading>
-              <Text>Get emailed when events happen that may affect article delivery.</Text>
+              <Heading>Settings</Heading>
             </Stack>
-            {!hasEmailAvailable && (
-              <Alert status="warning">
-                {/* <AlertIcon /> */}
-                <Stack>
-                  <AlertTitle>To enable notifications, your email is required</AlertTitle>
-                  <AlertDescription>
-                    <Button variant="solid" colorScheme="blue" onClick={onClickGrantEmailAccess}>
-                      Grant email access
-                    </Button>
-                  </AlertDescription>
-                </Stack>
-              </Alert>
-            )}
-            {hasEmailAvailable && (
+            <Stack spacing={8}>
+              <Heading size="md">Account</Heading>
               <Stack>
-                <Text fontWeight={600} color="whiteAlpha.600">
-                  Current Email
+                <Text fontWeight={600} color="whiteAlpha.700">
+                  Email
                 </Text>
                 <Flex justifyContent="space-between" alignItems="center">
-                  <Text>{data?.result?.email}</Text>
-                  <Button variant="link" color="blue.300" leftIcon={<RepeatIcon />}>
+                  <Text>
+                    {data?.result?.email || (
+                      <chakra.span color="gray.560">(no email available)</chakra.span>
+                    )}
+                  </Text>
+                  <Button
+                    variant="link"
+                    color="blue.300"
+                    leftIcon={<RepeatIcon />}
+                    onClick={onClickGrantEmailAccess}
+                  >
                     Reauthorize
                   </Button>
                 </Flex>
               </Stack>
-            )}
+            </Stack>
             <Divider />
-            <Stack spacing={4}>
-              <Heading size="md">Events</Heading>
+            <Stack spacing={8}>
+              <Stack>
+                <Heading size="md">Billing</Heading>
+              </Stack>
+              {!hasEmailAvailable && (
+                <Alert status="warning" borderRadius="md">
+                  <Stack>
+                    <AlertTitle>
+                      To enable billing for subscriptions, your email is required
+                    </AlertTitle>
+                    <AlertDescription>
+                      <Button variant="solid" colorScheme="blue" onClick={onClickGrantEmailAccess}>
+                        Grant email access
+                      </Button>
+                    </AlertDescription>
+                  </Stack>
+                </Alert>
+              )}
+              {hasEmailAvailable && (
+                <Stack>
+                  {data && (
+                    <Stack>
+                      <Stack>
+                        <Text fontWeight={600} color="whiteAlpha.700">
+                          Current Subscription Tier
+                        </Text>
+                        <Stack>
+                          <Text>
+                            You are currently on the{" "}
+                            <chakra.span fontWeight={600}>
+                              {data.result.subscription.product.name}
+                            </chakra.span>{" "}
+                            tier.
+                          </Text>
+                          <HStack>
+                            <PricingDialog
+                              trigger={
+                                <Button size="sm" colorScheme="blue" variant="outline">
+                                  Manage Subscription
+                                </Button>
+                              }
+                            />
+                          </HStack>
+                        </Stack>
+                      </Stack>
+                    </Stack>
+                  )}
+                </Stack>
+              )}
+            </Stack>
+            <Divider />
+            <Stack spacing={8}>
+              <Stack>
+                <Heading size="md">Events</Heading>
+                <Text>Get emailed when events happen that may affect article delivery.</Text>
+              </Stack>
+              {!hasEmailAvailable && (
+                <Alert status="warning" borderRadius="md">
+                  <Stack>
+                    <AlertTitle>To enable notifications, your email is required</AlertTitle>
+                    <AlertDescription>
+                      <Button variant="solid" colorScheme="blue" onClick={onClickGrantEmailAccess}>
+                        Grant email access
+                      </Button>
+                    </AlertDescription>
+                  </Stack>
+                </Alert>
+              )}
               <form onSubmit={handleSubmit(onSubmit)}>
                 <Stack spacing={4}>
                   <FormControl as={Flex} justifyContent="space-between" flexWrap="wrap" gap={4}>

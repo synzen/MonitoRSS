@@ -6,6 +6,7 @@ import {
   Patch,
   ValidationPipe,
 } from "@nestjs/common";
+import { SubscriptionDetails } from "../../common/types/subscription-details.type";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { UpdateMeDto } from "./dto/update-me-input.dto";
@@ -48,13 +49,26 @@ export class UsersController {
     return this.formatUserMe(user);
   }
 
-  private formatUserMe(user: User) {
+  private formatUserMe({
+    user,
+    subscription,
+  }: {
+    user: User;
+    subscription: SubscriptionDetails;
+  }) {
     return {
       result: {
         id: user._id,
         discordUserId: user.discordUserId,
         email: user.email,
         preferences: user.preferences,
+        subscription: {
+          product: {
+            key: subscription.product.key,
+            name: subscription.product.name,
+          },
+          status: subscription.status,
+        },
       },
     };
   }
