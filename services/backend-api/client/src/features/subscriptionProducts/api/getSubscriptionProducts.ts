@@ -15,6 +15,7 @@ const GetSubscriptionProductsOutputSchema = object({
             interval: string().oneOf(["month", "year"]).required(),
             formattedPrice: string().required(),
             currencyCode: string().required(),
+            id: string().required(),
           }).required()
         ).required(),
       }).required()

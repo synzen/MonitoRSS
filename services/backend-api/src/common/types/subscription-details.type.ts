@@ -6,4 +6,11 @@ export interface SubscriptionDetails {
     name: string;
   };
   status: SubscriptionStatus;
+  billingPeriod?: {
+    start: Date;
+    end: Date;
+  };
+  nextBillDate?: Date | null;
+  cancellationDate?: Date | null;
+  billingInterval?: "month" | "year";
 }

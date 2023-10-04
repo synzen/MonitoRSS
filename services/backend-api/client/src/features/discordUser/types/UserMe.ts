@@ -12,6 +12,13 @@ export const UserMeSchema = object({
       name: string().required(),
     }).required(),
     status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),
+    nextBillDate: string().nullable(),
+    cancellationDate: string().nullable(),
+    billingInterval: string().oneOf(["month", "year"]).nullable(),
+    billingPeriod: object({
+      start: string().required(),
+      end: string().required(),
+    }).nullable(),
   }).required(),
 });
 

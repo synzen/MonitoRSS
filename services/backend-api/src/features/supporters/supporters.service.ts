@@ -171,6 +171,13 @@ export class SupportersService {
           key: supporter.paddleCustomer.productKey,
         },
         status: supporter.paddleCustomer.status,
+        nextBillDate: supporter.paddleCustomer.nextBillDate,
+        cancellationDate: supporter.paddleCustomer.cancellationDate,
+        billingInterval: supporter.paddleCustomer.billingInterval,
+        billingPeriod: {
+          start: supporter.paddleCustomer.billingPeriodStart,
+          end: supporter.paddleCustomer.billingPeriodEnd,
+        },
       },
     };
   }

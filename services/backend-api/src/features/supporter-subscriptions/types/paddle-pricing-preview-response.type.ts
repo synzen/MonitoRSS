@@ -17,6 +17,7 @@ export interface PaddlePricingPreviewResponse {
     details: {
       line_items: Array<{
         price: {
+          id: string;
           billing_cycle?: {
             frequency: number;
             interval: "month" | "year";

@@ -62,13 +62,7 @@ export class UsersController {
         discordUserId: user.discordUserId,
         email: user.email,
         preferences: user.preferences,
-        subscription: {
-          product: {
-            key: subscription.product.key,
-            name: subscription.product.name,
-          },
-          status: subscription.status,
-        },
+        subscription,
       },
     };
   }

@@ -22,9 +22,9 @@ const FAQItem = ({ q, a }: { q: string; a: string | React.ReactNode }) => (
 );
 
 export const FAQ = ({ items }: { items: Array<{ q: string; a: string | React.ReactNode }> }) => (
-  <Accordion allowToggle allowMultiple borderRadius="lg">
+  <Accordion allowMultiple borderRadius="lg">
     {items.map(({ q, a }) => (
-      <FAQItem q={q} a={a} />
+      <FAQItem q={q} a={a} key={q} />
     ))}
   </Accordion>
 );

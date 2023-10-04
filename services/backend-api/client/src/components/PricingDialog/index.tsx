@@ -35,6 +35,7 @@ import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
+import { usePaddleCheckout } from "../../hooks";
 
 interface Props {
   trigger: React.ReactElement;
@@ -245,6 +246,7 @@ export const PricingDialog = ({ trigger }: Props) => {
   const { data, fetchStatus, status, error } = useSubscriptionProducts({
     currency: currency.code,
   });
+  const { openCheckout } = usePaddleCheckout();
   const initialFocusRef = useRef<HTMLInputElement>(null);
 
   const onChangeInterval = (e: ChangeEvent<HTMLInputElement>) => {
@@ -268,6 +270,17 @@ export const PricingDialog = ({ trigger }: Props) => {
       <CurrencyDisplay code={c.code} symbol={c.symbol} />
     </MenuItem>
   ));
+
+  const onClickPrice = (priceId?: string) => {
+    if (!priceId) {
+      return;
+    }
+
+    onClose();
+    openCheckout({
+      priceId,
+    });
+  };
 
   useEffect(() => {
     if (status === "success") {
@@ -381,29 +394,23 @@ export const PricingDialog = ({ trigger }: Props) => {
                       >
                         {tiers.map(
                           (
-                            {
-                              name,
-                              description,
-                              priceFormatted,
-                              highlighted,
-                              disableSubscribe,
-                              features,
-                              productId,
-                            },
+                            { name, description, priceFormatted, highlighted, features, productId },
                             currentTierIndex
                           ) => {
                             const associatedProduct = products?.find((p) => p.id === productId);
 
-                            const price = associatedProduct?.prices.find(
+                            const associatedPrice = associatedProduct?.prices.find(
                               (p) => p.interval === interval
                             );
 
-                            const shorterProductPrice = price?.formattedPrice.endsWith(".00") ? (
+                            const shorterProductPrice = associatedPrice?.formattedPrice.endsWith(
+                              ".00"
+                            ) ? (
                               <Text fontSize={priceTextSize} fontWeight="bold">
-                                {price?.formattedPrice.slice(0, -3)}
+                                {associatedPrice?.formattedPrice.slice(0, -3)}
                               </Text>
                             ) : (
-                              price?.formattedPrice
+                              associatedPrice?.formattedPrice
                             );
 
                             const isOnThisTier = userSubscription.product.key === productId;
@@ -469,6 +476,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                                   <Button
                                     isDisabled={isOnThisTier}
                                     width="100%"
+                                    onClick={() => onClickPrice(associatedPrice?.id)}
                                     variant={
                                       isOnThisTier
                                         ? "outline"
@@ -494,7 +502,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                   )}
                 </Stack>
               </Flex>
-              <Text textAlign="center">
+              <Text textAlign="center" color="whiteAlpha.600">
                 By proceeding to payment, you are agreeing to our{" "}
                 <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
                   terms and conditions
@@ -503,7 +511,9 @@ export const PricingDialog = ({ trigger }: Props) => {
                 <Link target="_blank" color="blue.300" href="https://monitorss.xyz/privacy-policy">
                   privacy policy
                 </Link>
-                .
+                .<br />
+                The checkout process is handled by our reseller and Merchant of Record, Paddle.com,
+                who also handles subscription-related inquiries.
               </Text>
             </Stack>
             <Stack justifyContent="center" width="100%" alignItems="center">

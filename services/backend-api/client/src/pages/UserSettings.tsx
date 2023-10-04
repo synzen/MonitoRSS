@@ -84,6 +84,20 @@ export const UserSettings = () => {
     }
   };
 
+  const subscription = data?.result.subscription;
+
+  let subscriptionText: React.ReactNode;
+
+  if (subscription?.cancellationDate) {
+    subscriptionText = (
+      <Text>
+        You are currently on the{" "}
+        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span> tier, scheduled to
+        cancel on {new Date(subscription.cancellationDate).toLocaleDateString()}.
+      </Text>
+    );
+  }
+
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <BoxConstrained.Wrapper>
@@ -98,7 +112,7 @@ export const UserSettings = () => {
                 <Text fontWeight={600} color="whiteAlpha.700">
                   Email
                 </Text>
-                <Flex justifyContent="space-between" alignItems="center">
+                <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap">
                   <Text>
                     {data?.result?.email || (
                       <chakra.span color="gray.560">(no email available)</chakra.span>
@@ -110,7 +124,7 @@ export const UserSettings = () => {
                     leftIcon={<RepeatIcon />}
                     onClick={onClickGrantEmailAccess}
                   >
-                    Reauthorize
+                    Refresh Email
                   </Button>
                 </Flex>
               </Stack>

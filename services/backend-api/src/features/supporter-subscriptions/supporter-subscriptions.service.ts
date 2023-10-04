@@ -2,8 +2,12 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import fetch, { RequestInit } from "node-fetch";
 import { URLSearchParams } from "url";
+import { PaddleCustomerResponse } from "./types/paddle-customer-response.type";
 import { PaddlePricingPreviewResponse } from "./types/paddle-pricing-preview-response.type";
-import { PaddleProductsResponse } from "./types/paddle-products-response.type";
+import {
+  PaddleProductResponse,
+  PaddleProductsResponse,
+} from "./types/paddle-products-response.type";
 
 @Injectable()
 export class SupporterSubscriptionsService {
@@ -48,6 +52,7 @@ export class SupporterSubscriptionsService {
           interval: "month" | "year";
           formattedPrice: string;
           currencyCode: string;
+          id: string;
         }>;
       }
     > = {};
@@ -55,7 +60,7 @@ export class SupporterSubscriptionsService {
     for (const {
       formatted_totals,
       product,
-      price: { billing_cycle },
+      price: { billing_cycle, id: priceId },
     } of previewData.data.details.line_items) {
       const useProductId = product.custom_data?.key;
 
@@ -71,6 +76,7 @@ export class SupporterSubscriptionsService {
         interval: billing_cycle.interval,
         formattedPrice: formatted_totals.total,
         currencyCode: currency,
+        id: priceId,
       });
     }
 
@@ -99,6 +105,32 @@ export class SupporterSubscriptionsService {
             id: p.id,
           })),
         })),
+    };
+  }
+
+  async getProduct(productId: string) {
+    const response = await this.executeApiCall<PaddleProductResponse>(
+      `/products/${productId}`
+    );
+
+    if (!response.data.custom_data?.key) {
+      throw new Error(
+        `Paddle Product ${productId} does not have a custom_data.key set`
+      );
+    }
+
+    return {
+      id: response.data.custom_data?.key,
+    };
+  }
+
+  async getCustomer(id: string) {
+    const response = await this.executeApiCall<PaddleCustomerResponse>(
+      `/customers/${id}`
+    );
+
+    return {
+      email: response.data.email,
     };
   }
 

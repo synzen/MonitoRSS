@@ -4,6 +4,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { UpdateQuery } from "mongoose";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
+import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   User,
@@ -82,19 +83,35 @@ export class UsersService {
       return null;
     }
 
-    const productKey = subscription?.product.key || "free";
-
-    const formattedSubscription = {
-      product: {
-        key: productKey,
-        name: getPrettySubscriptioNameFromKey(productKey),
-      },
-      status: SubscriptionStatus.Active,
-    };
+    if (!subscription || subscription.status === SubscriptionStatus.Cancelled) {
+      return {
+        user,
+        subscription: {
+          product: {
+            key: SubscriptionProductKey.Free,
+            name: "Free",
+          },
+          status: SubscriptionStatus.Active,
+        },
+      };
+    }
 
     return {
       user,
-      subscription: formattedSubscription,
+      subscription: {
+        product: {
+          key: subscription.product.key,
+          name: getPrettySubscriptioNameFromKey(subscription.product.key),
+        },
+        status: subscription.status,
+        cancellationDate: subscription.cancellationDate,
+        nextBillDate: subscription.nextBillDate,
+        billingInterval: subscription.billingInterval,
+        billingPeriod: {
+          start: subscription.billingPeriod.start,
+          end: subscription.billingPeriod.end,
+        },
+      },
     };
   }
 

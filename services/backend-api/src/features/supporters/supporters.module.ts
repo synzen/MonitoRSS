@@ -18,6 +18,6 @@ import { SupportersService } from "./supporters.service";
       CustomerFeature,
     ]),
   ],
-  exports: [SupportersService],
+  exports: [SupportersService, MongooseModule.forFeature([SupporterFeature])],
 })
 export class SupportersModule {}

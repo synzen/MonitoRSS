@@ -61,6 +61,35 @@ class PaddleCustomer {
   email: string;
 
   @Prop({
+    type: Date,
+  })
+  cancellationDate?: Date | null;
+
+  @Prop({
+    type: Date,
+  })
+  nextBillDate?: Date | null;
+
+  @Prop({
+    required: true,
+    type: Date,
+  })
+  billingPeriodStart: Date;
+
+  @Prop({
+    required: true,
+    type: Date,
+  })
+  billingPeriodEnd: Date;
+
+  @Prop({
+    type: String,
+    enum: ["month", "year"],
+    required: true,
+  })
+  billingInterval: "month" | "year";
+
+  @Prop({
     required: true,
     type: PaddleCustomerBenefitsSchema,
   })
@@ -69,7 +98,7 @@ class PaddleCustomer {
   @Prop({
     required: true,
   })
-  createdAt: string;
+  createdAt: Date;
 
   @Prop({
     required: true,
@@ -113,6 +142,7 @@ export class Supporter {
   @Prop({
     type: [String],
     required: true,
+    default: [],
   })
   guilds: string[];
 

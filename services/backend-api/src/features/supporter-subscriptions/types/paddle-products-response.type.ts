@@ -2,7 +2,7 @@ interface PaddleProductPrice {
   id: string;
 }
 
-interface PaddleProduct {
+export interface PaddleProduct {
   id: string;
   name: string;
   prices: PaddleProductPrice[];
@@ -13,4 +13,8 @@ interface PaddleProduct {
 
 export interface PaddleProductsResponse {
   data: Array<PaddleProduct>;
+}
+
+export interface PaddleProductResponse {
+  data: PaddleProduct;
 }

@@ -1,15 +1,17 @@
 import {
   BadRequestException,
+  Body,
   CacheInterceptor,
   CacheTTL,
   Controller,
   Get,
+  Post,
   Query,
-  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
+import { PaddleWebhooksService } from "./paddle-webhooks.service";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
-import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
+import { PaddleSubscriptionUpdated } from "./types/paddle-webhook-events.type";
 
 type ProductId = string;
 
@@ -85,12 +87,22 @@ const ACCEPTED_CURRENCY_CODES = ACCEPTED_CURRENCIES.map((d) => d.code);
 @Controller("subscription-products")
 export class SupporterSubscriptionsController {
   constructor(
-    private readonly supporterSubscriptionsService: SupporterSubscriptionsService
+    private readonly supporterSubscriptionsService: SupporterSubscriptionsService,
+    private readonly paddleWebhooksService: PaddleWebhooksService
   ) {}
 
-  @Get("@me")
-  @UseGuards(DiscordOAuth2Guard)
-  async getMySubscriptionProducts() {}
+  @Post("paddle-webhook")
+  async handlePaddleWebhook(@Body() requestBody: Record<string, any>) {
+    if (requestBody.event_type === "subscription.updated") {
+      await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
+        requestBody as PaddleSubscriptionUpdated
+      );
+    }
+
+    return {
+      ok: 1,
+    };
+  }
 
   @Get()
   @UseInterceptors(CacheInterceptor)
@@ -132,6 +144,7 @@ export class SupporterSubscriptionsController {
             interval: d.interval,
             formattedPrice: d.formattedPrice,
             currencyCode: d.currencyCode,
+            id: d.id,
           })),
         })),
         currencies: ACCEPTED_CURRENCIES,
