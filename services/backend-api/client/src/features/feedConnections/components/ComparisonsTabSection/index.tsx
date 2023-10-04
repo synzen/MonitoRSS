@@ -160,7 +160,7 @@ export const ComparisonsTabSection = ({
   const hasAlert = !!(fetchErrorAlert || parseErrorAlert || noArticlesAlert);
 
   return (
-    <Stack spacing={16} marginBottom={8}>
+    <Stack spacing={16} marginBottom={16}>
       {error && (
         <Stack spacing={4}>
           <Alert status="error">

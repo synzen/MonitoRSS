@@ -579,7 +579,7 @@ export const UserFeed: React.FC = () => {
           <TabPanel width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
-                <Stack spacing={6}>
+                <Stack spacing={6} mb={16}>
                   <Stack spacing={3}>
                     <Flex justifyContent="space-between" alignItems="flex-start">
                       <Heading size="md" as="h3">

@@ -138,7 +138,12 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
               {t("components.discordMessageForumThreadForm.threadTitleDescription")}
             </FormHelperText>
           </Box>
-          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <Stack
+            spacing={8}
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
             <Controller
               name="forumThreadTitle"
               control={control}
@@ -162,7 +167,12 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
               {t("components.discordMessageForumThreadForm.threadTagsDescription")}
             </FormHelperText>
           </Box>
-          <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+          <Stack
+            spacing={8}
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
             {status === "loading" && (
               <Center height="100%">
                 <Spinner />
