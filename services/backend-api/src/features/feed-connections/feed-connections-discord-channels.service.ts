@@ -338,7 +338,9 @@ export class FeedConnectionsDiscordChannelsService {
       );
 
       if (!benefits.isSupporter) {
-        throw new Error("User must be a supporter to add webhooks");
+        throw new InsufficientSupporterLevelException(
+          "User must be a supporter to add webhooks"
+        );
       }
 
       const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
