@@ -15,9 +15,10 @@ type DateString = string;
  * Always check data.items[0].price for the latest benefits if product is changed
  */
 
-export interface PaddleSubscriptionUpdated {
-  event_type: "subscription_updated";
+export interface PaddleEventSubscriptionUpdated {
+  event_type: "subscription.updated";
   data: {
+    id: string;
     status: PaddleSubscriptionStatus;
     customer_id: string;
     created_at: string;
@@ -38,6 +39,33 @@ export interface PaddleSubscriptionUpdated {
       resume_at: string | null;
       effective_at: DateString; // Date
     } | null;
+    current_billing_period: {
+      ends_at: DateString;
+      starts_at: DateString;
+    };
+  };
+}
+
+export interface PaddleEventSubscriptionActivated {
+  event_type: "subscription.activated";
+  data: {
+    id: string;
+    status: PaddleSubscriptionStatus;
+    customer_id: string;
+    created_at: string;
+    updated_at: string;
+    items: Array<{
+      price: {
+        id: string;
+        product_id: string;
+      };
+    }>;
+    billing_cycle: {
+      interval: "month" | "year";
+      frequency: number;
+    };
+    next_billed_at: DateString | null;
+    scheduled_change: null;
     current_billing_period: {
       ends_at: DateString;
       starts_at: DateString;
@@ -111,5 +139,72 @@ export interface PaddleSubscriptionUpdated {
   "event_type": "subscription.updated",
   "occurred_at": "2023-10-04T17:18:43.660942Z",
   "notification_id": "ntf_01hbxv5x0r6wh4812wyqz8cmbe"
+}
+ */
+
+/**
+ * sample payload subscription activated
+ * {
+  "data": {
+    "id": "sub_01hby4pqqbekpph2xngqyt5xxy",
+    "items": [
+      {
+        "price": {
+          "id": "pri_01hb3g4mdqt1reaj00v5pkbghs",
+          "tax_mode": "account_setting",
+          "product_id": "pro_01hb3g3m6vf5gb5c4n7yak35ta",
+          "unit_price": {
+            "amount": "10200",
+            "currency_code": "USD"
+          },
+          "description": "Tier 2 Yearly",
+          "trial_period": null,
+          "billing_cycle": {
+            "interval": "year",
+            "frequency": 1
+          }
+        },
+        "status": "active",
+        "quantity": 1,
+        "recurring": true,
+        "created_at": "2023-10-04T20:05:12.555Z",
+        "updated_at": "2023-10-04T20:05:12.555Z",
+        "trial_dates": null,
+        "next_billed_at": "2024-10-04T20:05:10.967099Z",
+        "previously_billed_at": "2023-10-04T20:05:10.967099Z"
+      }
+    ],
+    "status": "active",
+    "discount": null,
+    "paused_at": null,
+    "address_id": "add_01hby4nr34s5mqcp01e3s9kw1z",
+    "created_at": "2023-10-04T20:05:12.555Z",
+    "started_at": "2023-10-04T20:05:10.967099Z",
+    "updated_at": "2023-10-04T20:05:12.555Z",
+    "business_id": null,
+    "canceled_at": null,
+    "custom_data": {
+      "userId": "64e53e3504f3ff3f1e020f1a"
+    },
+    "customer_id": "ctm_01hby2w9dgxrhgzh92a0emjmdc",
+    "billing_cycle": {
+      "interval": "year",
+      "frequency": 1
+    },
+    "currency_code": "USD",
+    "next_billed_at": "2024-10-04T20:05:10.967099Z",
+    "billing_details": null,
+    "collection_mode": "automatic",
+    "first_billed_at": "2023-10-04T20:05:10.967099Z",
+    "scheduled_change": null,
+    "current_billing_period": {
+      "ends_at": "2024-10-04T20:05:10.967099Z",
+      "starts_at": "2023-10-04T20:05:10.967099Z"
+    }
+  },
+  "event_id": "evt_01hby4prs82cns1yybfpweem7p",
+  "event_type": "subscription.activated",
+  "occurred_at": "2023-10-04T20:05:13.640616Z",
+  "notification_id": "ntf_01hby4pryxb9g32mwaa8agdnws"
 }
  */

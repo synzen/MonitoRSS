@@ -36,6 +36,7 @@ import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { usePaddleCheckout } from "../../hooks";
+import { CancelSubscriptionDialog } from "../CancelSubscriptonDialog";
 
 interface Props {
   trigger: React.ReactElement;
@@ -305,6 +306,7 @@ export const PricingDialog = ({ trigger }: Props) => {
 
   return (
     <Box>
+      <CancelSubscriptionDialog />
       {cloneElement(trigger, {
         onClick: () => onOpen(),
       })}
@@ -513,7 +515,8 @@ export const PricingDialog = ({ trigger }: Props) => {
                 </Link>
                 .<br />
                 The checkout process is handled by our reseller and Merchant of Record, Paddle.com,
-                who also handles subscription-related inquiries.
+                who also handles subscription-related inquiries. Prices will be localized your
+                location.
               </Text>
             </Stack>
             <Stack justifyContent="center" width="100%" alignItems="center">

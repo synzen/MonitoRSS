@@ -11,7 +11,10 @@ import {
 } from "@nestjs/common";
 import { PaddleWebhooksService } from "./paddle-webhooks.service";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
-import { PaddleSubscriptionUpdated } from "./types/paddle-webhook-events.type";
+import {
+  PaddleEventSubscriptionActivated,
+  PaddleEventSubscriptionUpdated,
+} from "./types/paddle-webhook-events.type";
 
 type ProductId = string;
 
@@ -93,9 +96,20 @@ export class SupporterSubscriptionsController {
 
   @Post("paddle-webhook")
   async handlePaddleWebhook(@Body() requestBody: Record<string, any>) {
+    console.log(
+      "🚀 ~ file: supporter-subscriptions.controller.ts:96 ~ SupporterSubscriptionsController ~ handlePaddleWebhook ~ requestBody:",
+      JSON.stringify(requestBody, null, 2)
+    );
+
     if (requestBody.event_type === "subscription.updated") {
       await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
-        requestBody as PaddleSubscriptionUpdated
+        requestBody as PaddleEventSubscriptionUpdated
+      );
+    }
+
+    if (requestBody.event_type === "subscription.activated") {
+      await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
+        requestBody as PaddleEventSubscriptionActivated
       );
     }
 

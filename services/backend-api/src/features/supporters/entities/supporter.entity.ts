@@ -50,6 +50,11 @@ class PaddleCustomer {
 
   @Prop({
     required: true,
+  })
+  subscriptionId: string;
+
+  @Prop({
+    required: true,
     type: String,
     enum: Object.values(SubscriptionStatus),
   })

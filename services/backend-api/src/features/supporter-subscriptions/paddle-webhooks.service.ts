@@ -6,7 +6,10 @@ import {
 } from "../supporters/entities/supporter.entity";
 import { SubscriptionProductKey } from "./constants/subscription-product-key.constants";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
-import { PaddleSubscriptionUpdated } from "./types/paddle-webhook-events.type";
+import {
+  PaddleEventSubscriptionActivated,
+  PaddleEventSubscriptionUpdated,
+} from "./types/paddle-webhook-events.type";
 import { User, UserModel } from "../users/entities/user.entity";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
 import { PaddleSubscriptionStatus } from "./constants/paddle-subscription-status.constants";
@@ -57,7 +60,9 @@ export class PaddleWebhooksService {
     private readonly userModel: UserModel
   ) {}
 
-  async handleSubscriptionUpdatedEvent(event: PaddleSubscriptionUpdated) {
+  async handleSubscriptionUpdatedEvent(
+    event: PaddleEventSubscriptionUpdated | PaddleEventSubscriptionActivated
+  ) {
     const { id: productKey } =
       await this.supporterSubscriptionsService.getProduct(
         event.data.items[0].price.product_id
@@ -80,7 +85,7 @@ export class PaddleWebhooksService {
       .findOne({
         email,
       })
-      .select("email")
+      .select("discordUserId")
       .lean();
 
     if (!foundUser) {
@@ -96,6 +101,7 @@ export class PaddleWebhooksService {
         status: event.data.status,
       }),
       email,
+      subscriptionId: event.data.id,
       createdAt: new Date(event.data.created_at),
       updatedAt: new Date(event.data.updated_at),
       benefits: benefitsOfKey,
@@ -112,6 +118,7 @@ export class PaddleWebhooksService {
     };
     console.log(
       "🚀 ~ file: paddle-webhooks.service.ts:113 ~ PaddleWebhooksService ~ handleSubscriptionUpdatedEvent ~ toSet:",
+      foundUser,
       toSet
     );
 

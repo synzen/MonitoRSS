@@ -91,9 +91,24 @@ export const UserSettings = () => {
   if (subscription?.cancellationDate) {
     subscriptionText = (
       <Text>
-        You are currently on the{" "}
-        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span> tier, scheduled to
-        cancel on {new Date(subscription.cancellationDate).toLocaleDateString()}.
+        You are currently on{" "}
+        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>, scheduled to be
+        cancelled on {new Date(subscription.cancellationDate).toLocaleDateString()}.
+      </Text>
+    );
+  } else if (subscription?.nextBillDate) {
+    subscriptionText = (
+      <Text>
+        You are currently on{" "}
+        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>, scheduled to renew
+        on {new Date(subscription.nextBillDate).toLocaleDateString()}.
+      </Text>
+    );
+  } else {
+    subscriptionText = (
+      <Text>
+        You are currently on{" "}
+        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>.
       </Text>
     );
   }
@@ -157,13 +172,7 @@ export const UserSettings = () => {
                           Current Subscription Tier
                         </Text>
                         <Stack>
-                          <Text>
-                            You are currently on the{" "}
-                            <chakra.span fontWeight={600}>
-                              {data.result.subscription.product.name}
-                            </chakra.span>{" "}
-                            tier.
-                          </Text>
+                          {subscriptionText}
                           <HStack>
                             <PricingDialog
                               trigger={
