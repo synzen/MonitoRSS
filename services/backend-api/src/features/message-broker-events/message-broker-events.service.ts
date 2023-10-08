@@ -435,27 +435,35 @@ export class MessageBrokerEventsService {
 
     const allMediums = discordChannelMediums.concat(discordWebhookMediums);
 
+    const publishData = {
+      articleDayLimit: maxDailyArticles,
+      feed: {
+        id: userFeed._id.toHexString(),
+        url: userFeed.url,
+        passingComparisons: userFeed.passingComparisons || [],
+        blockingComparisons: userFeed.blockingComparisons || [],
+        formatOptions: {
+          dateFormat: userFeed.formatOptions?.dateFormat,
+          dateTimezone: userFeed.formatOptions?.dateTimezone,
+        },
+        dateChecks: userFeed.dateCheckOptions,
+      },
+      mediums: allMediums,
+    };
+
+    if (userFeed.debug) {
+      logger.info(`DEBUG ${userFeed._id}: Emitting event`, {
+        data: publishData,
+      });
+    }
+
     this.amqpConnection.publish(
       "",
       MessageBrokerQueue.FeedDeliverArticles,
       {
         debug: userFeed.debug,
         timestamp: Date.now(),
-        data: {
-          articleDayLimit: maxDailyArticles,
-          feed: {
-            id: userFeed._id.toHexString(),
-            url: userFeed.url,
-            passingComparisons: userFeed.passingComparisons || [],
-            blockingComparisons: userFeed.blockingComparisons || [],
-            formatOptions: {
-              dateFormat: userFeed.formatOptions?.dateFormat,
-              dateTimezone: userFeed.formatOptions?.dateTimezone,
-            },
-            dateChecks: userFeed.dateCheckOptions,
-          },
-          mediums: allMediums,
-        },
+        data: publishData,
       },
       {
         expiration: 1000 * 60 * 60, // 1 hour
