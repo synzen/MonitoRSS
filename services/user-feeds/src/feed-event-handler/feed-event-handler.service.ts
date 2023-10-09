@@ -239,6 +239,12 @@ export class FeedEventHandlerService {
 
   @UseRequestContext()
   private async handleV2EventWithDb(event: FeedV2Event) {
+    this.debugLog(
+      `Handling event for feed ${event.data.feed.id} with url ${event.data.feed.url}`,
+      {
+        event: event.data,
+      }
+    );
     logger.debug(
       `Handling event for feed ${event.data.feed.id} with url ${event.data.feed.url}`
     );
