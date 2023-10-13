@@ -53,13 +53,24 @@ export class AppModule {
         MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI),
         FeedConnectionsDiscordWebhooksModule.forRoot(),
         FeedConnectionsDiscordChannelsModule.forRoot(),
-        MessageBrokerEventsModule.forRoot(),
         ConfigModule.forRoot({
           isGlobal: true,
           cache: true,
           ignoreEnvFile: true,
           load: [process.env.NODE_ENV === "test" ? testConfig : config],
         }),
+      ],
+    };
+  }
+
+  static forApi(): DynamicModule {
+    const original = this.forRoot();
+
+    return {
+      ...original,
+      imports: [
+        ...(original.imports || []),
+        MessageBrokerEventsModule.forRoot(),
       ],
     };
   }

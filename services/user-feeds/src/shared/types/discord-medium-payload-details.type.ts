@@ -28,7 +28,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
       name: string().optional(),
       iconUrl: string().optional(),
       type: string().oneOf(["forum", "thread"]).nullable().default(undefined),
-      threadId: string().nullable().default(undefined),
+      threadId: string().optional().nullable().default(undefined),
     })
       .nullable()
       .default(null)

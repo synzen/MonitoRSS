@@ -63,6 +63,12 @@ export class MessageBrokerEventsService {
 
     for await (const feed of feedCursor) {
       try {
+        if (feed.debug) {
+          logger.info(`DEBUG ${feed._id}: Handling url fetch completed event`, {
+            feed,
+          });
+        }
+
         const cons = Object.values(feed.connections).flat() as Array<
           DiscordChannelConnection | DiscordWebhookConnection
         >;
@@ -464,6 +470,7 @@ export class MessageBrokerEventsService {
         debug: userFeed.debug,
         timestamp: Date.now(),
         data: publishData,
+        source: "backend-api::message-broker-events",
       },
       {
         expiration: 1000 * 60 * 60, // 1 hour

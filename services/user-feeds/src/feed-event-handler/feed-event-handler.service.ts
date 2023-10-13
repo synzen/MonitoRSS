@@ -242,9 +242,9 @@ export class FeedEventHandlerService {
     this.debugLog(
       `Handling event for feed ${event.data.feed.id} with url ${event.data.feed.url}`,
       {
-        event: event.data,
+        event,
       },
-      event.debug,
+      event.debug
     );
 
     await tracer.trace("deliverfeedevent.handle", async (span) => {
