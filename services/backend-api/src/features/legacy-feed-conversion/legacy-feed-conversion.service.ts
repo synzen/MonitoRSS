@@ -94,6 +94,7 @@ enum LegacyFeedDisabledCode {
   MissingPermissionsViewChannel = "Missing permissions VIEW_CHANNEL",
   IncorrectFormat = "There was an issue sending an article due to an incorrectly-formatted" +
     " text or embed. Update the feed and ensure it works to re-enable",
+  DisabledForPersonalRollout = "DISABLED_FOR_PERSONAL_ROLLOUT",
 }
 
 const getConnectionDisabledCode = (legacyFeedDisabledCode?: string) => {
@@ -130,6 +131,7 @@ const getConnectionDisabledCode = (legacyFeedDisabledCode?: string) => {
   const ignore = [
     LegacyFeedDisabledCode.ExceededFeedLimit,
     LegacyFeedDisabledCode.ExcessivelyActiveFeed,
+    LegacyFeedDisabledCode.DisabledForPersonalRollout,
   ];
 
   if (ignore.includes(legacyFeedDisabledCode as LegacyFeedDisabledCode)) {
