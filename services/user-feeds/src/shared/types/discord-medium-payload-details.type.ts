@@ -1,5 +1,22 @@
 import { string, object, InferType, array, number, boolean } from "yup";
 
+const buttonSchema = object({
+  type: number().required().min(2).max(2),
+  style: number().required().min(1).max(5),
+  label: string().max(80).required(),
+  emoji: object({
+    id: string().required(),
+    name: string().nullable(),
+    animated: boolean().nullable(),
+  }).nullable(),
+  url: string().nullable(),
+});
+
+const actionRowSchema = object({
+  type: number().oneOf([1]).required(),
+  components: array(buttonSchema.required()).required(),
+});
+
 /**
  * .default(undefined) is NECESSARY when using .optional(), otherwise optional objects with
  * required fields will throw, saying the nested field is required
@@ -7,6 +24,7 @@ import { string, object, InferType, array, number, boolean } from "yup";
 export const discordMediumPayloadDetailsSchema = object().shape(
   {
     guildId: string().required(),
+    components: array(actionRowSchema.required()).nullable(),
     channel: object({
       id: string().required(),
       type: string()

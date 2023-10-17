@@ -110,6 +110,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       },
       filterReferences,
     } = details;
@@ -137,6 +138,7 @@ export class DiscordMediumService implements DeliveryMedium {
           filterReferences,
           placeholderLimits,
           enablePlaceholderFallback,
+          components,
         }) || "New Article";
 
       if (channelId) {
@@ -148,6 +150,7 @@ export class DiscordMediumService implements DeliveryMedium {
           filterReferences,
           placeholderLimits,
           enablePlaceholderFallback,
+          components,
         });
 
         threadBody = {
@@ -167,6 +170,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mentions,
           placeholderLimits,
           enablePlaceholderFallback,
+          components,
         }).map((payload) => ({
           ...payload,
           username: this.generateApiTextPayload(article, {
@@ -176,6 +180,7 @@ export class DiscordMediumService implements DeliveryMedium {
             mentions,
             placeholderLimits,
             enablePlaceholderFallback,
+            components,
           }),
           avatar_url: this.generateApiTextPayload(article, {
             content: webhook?.iconUrl,
@@ -183,6 +188,7 @@ export class DiscordMediumService implements DeliveryMedium {
             mentions,
             placeholderLimits,
             enablePlaceholderFallback,
+            components,
           }),
         }));
 
@@ -245,6 +251,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       }).map((payload) => ({
         ...payload,
         username: this.generateApiTextPayload(article, {
@@ -254,6 +261,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mentions,
           placeholderLimits,
           enablePlaceholderFallback,
+          components,
         }),
         avatar_url: this.generateApiTextPayload(article, {
           content: webhook?.iconUrl,
@@ -261,6 +269,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mentions,
           placeholderLimits,
           enablePlaceholderFallback,
+          components,
         }),
       }));
 
@@ -287,6 +296,7 @@ export class DiscordMediumService implements DeliveryMedium {
         filterReferences,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       });
 
       const results = await Promise.all(
@@ -403,6 +413,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         enablePlaceholderFallback,
         placeholderLimits,
+        components,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -417,6 +428,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       placeholderLimits: details.deliverySettings.placeholderLimits,
       enablePlaceholderFallback,
+      components,
     }).map((payload) => ({
       ...payload,
       username: this.generateApiTextPayload(article, {
@@ -426,6 +438,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       }),
       avatar_url: this.generateApiTextPayload(article, {
         content: webhookIconUrl,
@@ -433,6 +446,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       }),
     }));
 
@@ -445,6 +459,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mentions,
           placeholderLimits,
           enablePlaceholderFallback,
+          components,
         }) || "New Article",
       applied_tags: this.getForumTagsToSend(forumThreadTags, filterReferences),
     };
@@ -533,6 +548,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         enablePlaceholderFallback,
         placeholderLimits,
+        components,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -547,6 +563,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      components,
     });
 
     const threadBody = {
@@ -558,6 +575,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mentions,
           placeholderLimits: details.deliverySettings.placeholderLimits,
           enablePlaceholderFallback,
+          components,
         }) || "New Article",
       message: bodies[0],
       applied_tags: this.getForumTagsToSend(forumThreadTags, filterReferences),
@@ -643,6 +661,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -656,6 +675,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      components,
     });
 
     await Promise.all(
@@ -710,6 +730,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -727,6 +748,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      components,
     });
 
     const bodies = initialBodies.map((payload) => ({
@@ -738,6 +760,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       }),
       avatar_url: this.generateApiTextPayload(article, {
         content: webhookIconUrl,
@@ -745,6 +768,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mentions,
         placeholderLimits,
         enablePlaceholderFallback,
+        components,
       }),
     }));
 
@@ -810,6 +834,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      components,
     }: {
       content: T;
       limit?: number;
@@ -817,6 +842,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions: DeliveryDetails["deliverySettings"]["mentions"];
       placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
       enablePlaceholderFallback: boolean;
+      components: DeliveryDetails["deliverySettings"]["components"];
     }
   ): T {
     const payloads = this.generateApiPayloads(article, {
@@ -829,6 +855,7 @@ export class DiscordMediumService implements DeliveryMedium {
       mentions,
       placeholderLimits,
       enablePlaceholderFallback,
+      components,
     });
 
     return (payloads[0].content || undefined) as T;
@@ -844,6 +871,7 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
       placeholderLimits,
       enablePlaceholderFallback,
+      components,
     }: {
       embeds: DeliveryDetails["deliverySettings"]["embeds"];
       content?: string;
@@ -854,6 +882,7 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences: FilterExpressionReference;
       placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
       enablePlaceholderFallback: boolean;
+      components: DeliveryDetails["deliverySettings"]["components"];
     }
   ): DiscordMessageApiPayload[] {
     const payloadContent = this.articleFormatterService.applySplit(
@@ -1031,6 +1060,10 @@ export class DiscordMediumService implements DeliveryMedium {
       })
       // Discord only allows 10 embeds per message
       .slice(0, 10);
+
+    if (components && payloads.length > 0) {
+      payloads[payloads.length - 1].components = components;
+    }
 
     return payloads;
   }

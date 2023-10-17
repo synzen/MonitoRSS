@@ -1,6 +1,22 @@
 export interface DiscordMessageApiPayload {
   content?: string;
   embeds?: DiscordEmbed[];
+  components?: DiscordMessageComponent[];
+}
+
+export interface DiscordMessageComponent {
+  type: number;
+  components: Array<{
+    type: number;
+    style: number;
+    label: string;
+    emoji?: {
+      id: string;
+      name?: string | null;
+      animated?: boolean | null;
+    } | null;
+    url?: string | null;
+  }>;
 }
 
 export interface DiscordEmbed {
