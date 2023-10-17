@@ -20,10 +20,7 @@ import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  useCreateDiscordChannelConnectionClone,
-  useCreateDiscordWebhookConnectionClone,
-} from "../../hooks";
+import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { pages } from "../../../../constants";
 import { FeedConnectionType } from "../../../../types";
 import { notifyError } from "../../../../utils/notifyError";
@@ -64,7 +61,6 @@ export const CloneDiscordConnectionCloneDialog = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
   const { mutateAsync: createChannelClone } = useCreateDiscordChannelConnectionClone();
-  const { mutateAsync: createWebhookClone } = useCreateDiscordWebhookConnectionClone();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -80,8 +76,7 @@ export const CloneDiscordConnectionCloneDialog = ({
         const res = await createChannelClone({ feedId, connectionId, details: { name } });
         newConnectionId = res.result.id;
       } else {
-        const res = await createWebhookClone({ feedId, connectionId, details: { name } });
-        newConnectionId = res.result.id;
+        throw new Error(`Unsupported connection type when cloning discord connection: ${type}`);
       }
 
       navigate(

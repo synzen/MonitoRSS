@@ -4,7 +4,6 @@ import { CustomPlaceholderSchema } from "./CustomPlaceholder";
 
 export enum FeedConnectionType {
   DiscordChannel = "DISCORD_CHANNEL",
-  DiscordWebhook = "DISCORD_WEBHOOK",
 }
 
 export enum FeedConnectionDisabledCode {
@@ -139,11 +138,11 @@ export const FeedConnectionSchema = object({
     .default(undefined),
   customPlaceholders: array(CustomPlaceholderSchema.required()).nullable().default(undefined),
   details: object().when("key", ([key]) => {
-    if (key === FeedConnectionType.DiscordWebhook) {
-      return DiscordWebhookConnectionDetailsSchema;
+    if (key === FeedConnectionType.DiscordChannel) {
+      return DiscordChannelConnectionDetailsSchema;
     }
 
-    return DiscordChannelConnectionDetailsSchema;
+    throw new Error(`Unknown connection type: ${key}`);
   }),
 });
 

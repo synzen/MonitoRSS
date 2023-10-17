@@ -29,14 +29,10 @@ import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
 import { notifyError } from "../../../../utils/notifyError";
 import { FeedConnectionType } from "../../../../types";
 import { DiscordChannelConnectionPreview } from "./DiscordChannelConnectionPreview";
-import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPreview";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
-import {
-  CreateDiscordChannelConnectionPreviewInput,
-  CreateDiscordWebhookConnectionPreviewInput,
-} from "../../api";
+import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
 
@@ -262,13 +258,6 @@ export const DiscordMessageForm = ({
               <DiscordChannelConnectionPreview
                 connectionId={connection.id}
                 data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
-                feedId={feedId}
-              />
-            )}
-            {connection.type === FeedConnectionType.DiscordWebhook && (
-              <DiscordWebhookConnectionPreview
-                connectionId={connection.id}
-                data={previewInput.data as CreateDiscordWebhookConnectionPreviewInput["data"]}
                 feedId={feedId}
               />
             )}

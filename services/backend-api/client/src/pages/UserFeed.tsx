@@ -120,22 +120,10 @@ function getPrettyConnectionName(
     }
   }
 
-  if (key === FeedConnectionType.DiscordWebhook) {
-    const casted = connection as FeedDiscordWebhookConnection;
-
-    if (casted.details.webhook.type === "forum") {
-      return "Discord Forum Webhook";
-    }
-
-    return "Discord Webhook";
-  }
-
   return "Unknown";
 }
 
-const getPrettyConnectionDetail = (
-  connection: FeedDiscordChannelConnection | FeedDiscordWebhookConnection
-) => {
+const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => {
   const { key } = connection;
 
   if (key === FeedConnectionType.DiscordChannel) {
@@ -161,10 +149,6 @@ const getPrettyConnectionDetail = (
     }
   }
 
-  if (key === FeedConnectionType.DiscordWebhook) {
-    return null;
-  }
-
   return null;
 };
 
@@ -183,7 +167,7 @@ export const UserFeed: React.FC = () => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<
-    { type: FeedConnectionType; isChannelThread?: boolean } | undefined
+    { type: "discord-channel" | "discord-webhook"; isChannelThread?: boolean } | undefined
   >(undefined);
   const { data: dailyLimit } = useArticleDailyLimit({
     feedId,
@@ -197,7 +181,10 @@ export const UserFeed: React.FC = () => {
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
   const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInvite();
 
-  const onAddConnection = (type: FeedConnectionType, isChannelThread?: boolean) => {
+  const onAddConnection = (
+    type: "discord-channel" | "discord-webhook",
+    isChannelThread?: boolean
+  ) => {
     setAddConnectionType({ type, isChannelThread });
     onOpen();
   };
@@ -280,21 +267,21 @@ export const UserFeed: React.FC = () => {
     <Flex gap={4} flexWrap="wrap">
       <Button
         variant="outline"
-        onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
+        onClick={() => onAddConnection("discord-channel")}
         leftIcon={<AddIcon fontSize="sm" />}
       >
         Add Discord channel
       </Button>
       <Button
         variant="outline"
-        onClick={() => onAddConnection(FeedConnectionType.DiscordChannel, true)}
+        onClick={() => onAddConnection("discord-channel", true)}
         leftIcon={<AddIcon fontSize="sm" />}
       >
         Add Discord thread
       </Button>
       <Button
         variant="outline"
-        onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
+        onClick={() => onAddConnection("discord-webhook")}
         leftIcon={<AddIcon fontSize="sm" />}
       >
         Add Discord webhook
@@ -590,9 +577,7 @@ export const UserFeed: React.FC = () => {
                           {t("pages.feed.addConnectionButtonText")}
                         </MenuButton>
                         <MenuList maxWidth="300px">
-                          <MenuItem
-                            onClick={() => onAddConnection(FeedConnectionType.DiscordChannel)}
-                          >
+                          <MenuItem onClick={() => onAddConnection("discord-channel")}>
                             <Stack spacing={1}>
                               <Text>{t("pages.feed.discordChannelMenuItem")}</Text>
                               <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
@@ -601,9 +586,7 @@ export const UserFeed: React.FC = () => {
                               </Text>
                             </Stack>
                           </MenuItem>
-                          <MenuItem
-                            onClick={() => onAddConnection(FeedConnectionType.DiscordChannel, true)}
-                          >
+                          <MenuItem onClick={() => onAddConnection("discord-channel", true)}>
                             <Stack spacing={1}>
                               <Text>{t("pages.feed.discordThreadMenuItem")}</Text>
                               <Text fontSize={13} color="whiteAlpha.600">
@@ -612,9 +595,7 @@ export const UserFeed: React.FC = () => {
                               </Text>
                             </Stack>
                           </MenuItem>
-                          <MenuItem
-                            onClick={() => onAddConnection(FeedConnectionType.DiscordWebhook)}
-                          >
+                          <MenuItem onClick={() => onAddConnection("discord-webhook")}>
                             <Stack spacing={1}>
                               <Text>{t("pages.feed.discordWebhookMenuItem")}</Text>
                               <Text fontSize={13} color="whiteAlpha.600">

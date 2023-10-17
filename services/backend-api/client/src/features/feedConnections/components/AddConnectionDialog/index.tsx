@@ -1,11 +1,10 @@
 import { Box } from "@chakra-ui/react";
-import { FeedConnectionType } from "@/types";
 import { DiscordChannelConnectionDialogContent } from "./DiscordChannelConnectionDialogContent";
 import { DiscordWebhookConnectionDialogContent } from "./DiscordWebhookConnectionDialogContent";
 import { DiscordChannelThreadConnectionDialogContent } from "./DiscordChannelThreadConnectionDialogContent";
 
 interface Props {
-  type?: FeedConnectionType;
+  type?: "discord-webhook" | "discord-channel";
   isOpen: boolean;
   onClose: () => void;
   isChannelThread?: boolean;
@@ -14,7 +13,7 @@ interface Props {
 export const AddConnectionDialog = ({ type, isOpen, onClose, isChannelThread }: Props) => {
   let modalContent: React.ReactNode;
 
-  if (type === FeedConnectionType.DiscordChannel) {
+  if (type === "discord-channel") {
     if (isChannelThread) {
       modalContent = (
         <DiscordChannelThreadConnectionDialogContent onClose={onClose} isOpen={isOpen} />
@@ -22,7 +21,7 @@ export const AddConnectionDialog = ({ type, isOpen, onClose, isChannelThread }: 
     } else {
       modalContent = <DiscordChannelConnectionDialogContent onClose={onClose} isOpen={isOpen} />;
     }
-  } else if (type === FeedConnectionType.DiscordWebhook) {
+  } else if (type === "discord-webhook") {
     modalContent = <DiscordWebhookConnectionDialogContent onClose={onClose} isOpen={isOpen} />;
   }
 

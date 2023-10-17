@@ -4,7 +4,6 @@ import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   CreateDiscordChannelConnectionPreviewInput,
   createDiscordChannelConnectionTestArticle,
-  createDiscordWebhookConnectionTestArticle,
 } from "../api";
 
 interface CreateConnectionTestArticleInput {
@@ -27,7 +26,6 @@ const methodsByType: Record<
   ) => Promise<CreateConnectionTestArticleOutput>
 > = {
   [FeedConnectionType.DiscordChannel]: createDiscordChannelConnectionTestArticle,
-  [FeedConnectionType.DiscordWebhook]: createDiscordWebhookConnectionTestArticle,
 };
 
 export const useCreateConnectionTestArticle = () => {

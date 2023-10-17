@@ -201,27 +201,6 @@ const mockUserFeeds: UserFeed[] = [
       },
       {
         details: {
-          embeds: [],
-          webhook: {
-            id: mockDiscordWebhooks[0].id,
-            iconUrl: mockDiscordWebhooks[0].avatarUrl,
-            name: mockDiscordWebhooks[0].name,
-            guildId: mockDiscordServers[0].id,
-          },
-          formatter: {
-            formatTables: false,
-            stripImages: false,
-          },
-        },
-        splitOptions: null,
-        filters: null,
-        mentions: null,
-        id: "3",
-        key: FeedConnectionType.DiscordWebhook,
-        name: "Discord Webhook 1",
-      },
-      {
-        details: {
           channel: {
             id: mockDiscordChannels[4].id,
             guildId: mockDiscordServers[0].id,
