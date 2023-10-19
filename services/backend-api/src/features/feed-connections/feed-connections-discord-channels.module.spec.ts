@@ -13,12 +13,17 @@ import {
   DiscordChannelPermissionsException,
   MissingDiscordChannelException,
 } from "./exceptions";
-import { FeedConnectionType } from "../feeds/constants";
+import {
+  FeedConnectionDiscordComponentButtonStyle,
+  FeedConnectionDiscordComponentType,
+  FeedConnectionType,
+} from "../feeds/constants";
 import { Types } from "mongoose";
 import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
 import { FeedConnectionsDiscordChannelsModule } from "./feed-connections-discord-channels.module";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { TestDeliveryStatus } from "../../services/feed-handler/constants";
+import { randomUUID } from "crypto";
 
 jest.mock("../../utils/logger");
 
@@ -53,7 +58,7 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
   beforeAll(async () => {
     const { init, uncompiledModule } = setupEndpointTests({
       imports: [
-        FeedConnectionsDiscordChannelsModule,
+        FeedConnectionsDiscordChannelsModule.forRoot(),
         MongooseTestModule.forRoot(),
       ],
     });
@@ -372,6 +377,20 @@ describe("FeedConnectionsDiscordChannelsModule", () => {
   describe("PATCH /discord-channels/:id", () => {
     const validBody = {
       name: "connection-name",
+      componentRows: [
+        {
+          id: randomUUID(),
+          components: [
+            {
+              id: randomUUID(),
+              type: FeedConnectionDiscordComponentType.Button,
+              label: "label",
+              url: "url",
+              style: FeedConnectionDiscordComponentButtonStyle.Link,
+            },
+          ],
+        },
+      ],
     };
     const connectionIdToUse = new Types.ObjectId();
 

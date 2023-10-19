@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { randomUUID } from "crypto";
 import { Model, Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { InvalidFilterExpressionException } from "../../common/exceptions";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
 import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
@@ -10,9 +12,16 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { FeedConnectionDisabledCode } from "../feeds/constants";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
+import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionDiscordComponentButtonStyle,
+  FeedConnectionDiscordComponentType,
+} from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedsService } from "../feeds/feeds.service";
+import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
 import {
   DiscordChannelPermissionsException,
@@ -30,6 +39,19 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     sendTestArticle: jest.fn(),
     validateFilters: jest.fn(),
   };
+  const supportersService = {
+    getBenefitsOfDiscordUser: jest.fn(),
+  };
+  const discordWebhooksService = {
+    getWebhook: jest.fn(),
+    canBeUsedByBot: jest.fn(),
+  };
+  const discordApiService = {
+    getChannel: jest.fn(),
+  };
+  const discordAuthService = {
+    userManagesGuild: jest.fn(),
+  };
 
   beforeAll(async () => {
     const { init } = await setupIntegrationTests({
@@ -42,6 +64,22 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         {
           provide: FeedHandlerService,
           useValue: feedHandlerService,
+        },
+        {
+          provide: SupportersService,
+          useValue: supportersService,
+        },
+        {
+          provide: DiscordWebhooksService,
+          useValue: discordWebhooksService,
+        },
+        {
+          provide: DiscordAPIService,
+          useValue: discordApiService,
+        },
+        {
+          provide: DiscordAuthService,
+          useValue: discordAuthService,
         },
       ],
       imports: [
@@ -60,6 +98,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     jest.resetAllMocks();
     feedHandlerService.validateFilters.mockResolvedValue({
       errors: [],
+    });
+    supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
+      allowCustomPlaceholders: true,
     });
   });
 
@@ -94,6 +135,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         name: "name",
         userAccessToken: "user-access-token",
         guildId: guildId,
+        discordUserId: "user-id",
       };
       await service.createDiscordChannelConnection(creationDetails);
 
@@ -241,6 +283,20 @@ describe("FeedConnectionsDiscordChannelsService", () => {
               color: "123",
             },
           ],
+          componentRows: [
+            {
+              id: "row1",
+              components: [
+                {
+                  id: "comp1",
+                  type: FeedConnectionDiscordComponentType.Button,
+                  label: "label",
+                  url: "url",
+                  style: FeedConnectionDiscordComponentButtonStyle.Link,
+                },
+              ],
+            },
+          ],
         },
       },
     };
@@ -326,6 +382,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             guildId,
           },
           content: updateInput.updates.details?.content,
+          componentRows: updateInput.updates.details?.componentRows,
         },
       });
     });
@@ -541,7 +598,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           },
           mediumDetails: {
             channel: {
-              id: targetConnection.details.channel.id,
+              id: targetConnection.details.channel!.id,
               type: undefined,
             },
             content: expect.any(String),
@@ -578,7 +635,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           },
           mediumDetails: {
             channel: {
-              id: targetConnection.details.channel.id,
+              id: targetConnection.details.channel!.id,
               type: undefined,
             },
             content: expect.any(String),

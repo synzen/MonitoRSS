@@ -66,6 +66,9 @@ export interface UpdateDiscordChannelConnectionInput {
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       formatter?: DiscordChannelConnection["details"]["formatter"] | null;
+      componentRows?:
+        | DiscordChannelConnection["details"]["componentRows"]
+        | null;
       placeholderLimits?:
         | DiscordChannelConnection["details"]["placeholderLimits"]
         | null;
@@ -110,6 +113,7 @@ interface CreatePreviewInput {
   forumThreadTitle?: DiscordChannelConnection["details"]["forumThreadTitle"];
   forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
   enablePlaceholderFallback?: boolean;
+  componentRows?: DiscordChannelConnection["details"]["componentRows"] | null;
 }
 
 @Injectable()
@@ -573,6 +577,8 @@ export class FeedConnectionsDiscordChannelsService {
         enablePlaceholderFallback:
           previewInput?.enablePlaceholderFallback ??
           connection.details.enablePlaceholderFallback,
+        componentRows:
+          previewInput?.componentRows || connection.details.componentRows,
       },
     } as const;
 
@@ -594,6 +600,7 @@ export class FeedConnectionsDiscordChannelsService {
     placeholderLimits,
     enablePlaceholderFallback,
     customPlaceholders,
+    componentRows,
   }: CreatePreviewInput) {
     let useCustomPlaceholders = customPlaceholders;
 
@@ -663,6 +670,7 @@ export class FeedConnectionsDiscordChannelsService {
         customPlaceholders: useCustomPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
+        componentRows,
       },
     } as const;
 

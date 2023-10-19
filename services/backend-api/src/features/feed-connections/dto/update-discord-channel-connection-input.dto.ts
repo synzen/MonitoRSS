@@ -21,6 +21,7 @@ import {
   CustomRateLimitDto,
   ForumThreadTagDto,
 } from "../../../common";
+import { DiscordComponentRow } from "../../../common/types/discord-component-row.type";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class Webhook {
@@ -89,6 +90,12 @@ export class UpdateDiscordChannelConnectionInputDto {
   @Type(() => DiscordEmbed)
   @IsOptional()
   embeds?: DiscordEmbed[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordComponentRow)
+  componentRows?: DiscordComponentRow[];
 
   @IsIn([FeedConnectionDisabledCode.Manual, null])
   @IsOptional()

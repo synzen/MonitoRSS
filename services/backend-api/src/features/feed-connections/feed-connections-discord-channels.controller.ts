@@ -198,6 +198,7 @@ export class FeedConnectionsDiscordChannelsController {
       placeholderLimits,
       enablePlaceholderFallback,
       customPlaceholders,
+      componentRows,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -213,6 +214,7 @@ export class FeedConnectionsDiscordChannelsController {
       placeholderLimits,
       enablePlaceholderFallback,
       customPlaceholders,
+      componentRows,
     });
 
     return {
@@ -246,6 +248,7 @@ export class FeedConnectionsDiscordChannelsController {
       enablePlaceholderFallback,
       customPlaceholders,
       rateLimits,
+      componentRows,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -300,6 +303,7 @@ export class FeedConnectionsDiscordChannelsController {
           rateLimits,
           details: {
             placeholderLimits,
+            componentRows,
             channel: useChannelId
               ? {
                   id: useChannelId,

@@ -102,10 +102,18 @@ export class FeedSubscribersService {
       });
     }
 
-    return this.feedSubscriber
+    const updated = await this.feedSubscriber
       .findOneAndUpdate({ _id: subscriberId }, mongoUpdate, {
         new: true,
       })
       .lean();
+
+    if (!updated) {
+      throw new Error(
+        `Could not find subscriber with ID ${subscriberId} to update`
+      );
+    }
+
+    return updated;
   }
 }
