@@ -67,7 +67,12 @@ export class FeedConnectionsDiscordChannelsController {
     )
     feed: UserFeed,
     @Body(ValidationPipe)
-    { channelId, name, webhook }: CreateDiscordChnnnelConnectionInputDto,
+    {
+      channelId,
+      name,
+      webhook,
+      applicationWebhook,
+    }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<CreateDiscordChannelConnectionOutputDto> {
@@ -79,6 +84,7 @@ export class FeedConnectionsDiscordChannelsController {
         userAccessToken: access_token,
         discordUserId,
         webhook,
+        applicationWebhook,
       }
     );
 

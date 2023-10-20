@@ -18,6 +18,26 @@ export class DiscordWebhooksService {
     ) as string;
   }
 
+  async createWebhook(
+    channelId: string,
+    details: {
+      name: string;
+    }
+  ) {
+    const webhook: DiscordWebhook =
+      await this.discordApiService.executeBotRequest(
+        `/channels/${channelId}/webhooks`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: details.name,
+          }),
+        }
+      );
+
+    return webhook;
+  }
+
   async getWebhooksOfServer(serverId: string): Promise<DiscordWebhook[]> {
     try {
       const webhooks: DiscordWebhook[] =
@@ -26,6 +46,30 @@ export class DiscordWebhooksService {
         );
 
       return webhooks.filter((webhook) => this.canBeUsedByBot(webhook));
+    } catch (err) {
+      if (err instanceof DiscordAPIError && err.statusCode === 403) {
+        throw new WebhookMissingPermissionsException();
+      }
+
+      throw err;
+    }
+  }
+
+  async getWebhooksOfChannel(
+    channelId: string,
+    filters?: {
+      onlyApplicationOwned?: boolean;
+    }
+  ): Promise<DiscordWebhook[]> {
+    try {
+      const webhooks: DiscordWebhook[] =
+        await this.discordApiService.executeBotRequest(
+          `/channels/${channelId}/webhooks`
+        );
+
+      return webhooks.filter((webhook) =>
+        this.canBeUsedByBot(webhook, filters)
+      );
     } catch (err) {
       if (err instanceof DiscordAPIError && err.statusCode === 403) {
         throw new WebhookMissingPermissionsException();
@@ -52,11 +96,39 @@ export class DiscordWebhooksService {
     }
   }
 
-  canBeUsedByBot(webhook: DiscordWebhook): boolean {
-    return (
-      webhook.type === DiscordWebhookType.INCOMING &&
-      (webhook.application_id === null ||
-        webhook.application_id === this.clientId)
-    );
+  async deleteWebhookWithToken(webhookId: string, webhookToken: string) {
+    try {
+      await this.discordApiService.executeBotRequest(
+        `/webhooks/${webhookId}/${webhookToken}`,
+        {
+          method: "DELETE",
+        }
+      );
+    } catch (err: unknown | DiscordAPIError) {
+      if (err instanceof DiscordAPIError && err.statusCode === 404) {
+        return;
+      }
+
+      throw err;
+    }
+  }
+
+  canBeUsedByBot(
+    webhook: DiscordWebhook,
+    filters?: {
+      onlyApplicationOwned?: boolean;
+    }
+  ): boolean {
+    const base = webhook.type === DiscordWebhookType.INCOMING;
+
+    if (!filters?.onlyApplicationOwned) {
+      return (
+        base &&
+        (webhook.application_id === null ||
+          webhook.application_id === this.clientId)
+      );
+    } else {
+      return base && webhook.application_id === this.clientId;
+    }
   }
 }

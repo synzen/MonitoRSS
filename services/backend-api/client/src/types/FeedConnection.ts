@@ -57,6 +57,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     guildId: string().required(),
     type: string().nullable().oneOf(["forum", "thread"]),
     threadId: string(),
+    isApplicationOwned: boolean(),
   })
     .optional()
     .nullable(),

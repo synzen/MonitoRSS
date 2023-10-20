@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DISCORD_API_BASE_URL } from "../../../constants/discord";
 import { RESTHandler } from "@synzen/discord-rest";
@@ -14,6 +14,7 @@ import { FetchResponse } from "@synzen/discord-rest/dist/types/FetchResponse";
 
 interface RequestOptions {
   method: "GET" | "POST" | "PUT" | "DELETE";
+  body?: string;
 }
 
 @Injectable()
@@ -52,11 +53,16 @@ export class DiscordAPIService {
         Authorization: `Bot ${this.BOT_TOKEN}`,
         "Content-Type": "application/json",
       },
+      body: options?.body,
     });
 
     await this.handleJSONResponseError({ res, url });
 
-    return res.json();
+    if (res.status === HttpStatus.NO_CONTENT) {
+      return null as T;
+    } else {
+      return res.json();
+    }
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Box } from "@chakra-ui/react";
 import { DiscordChannelConnectionDialogContent } from "./DiscordChannelConnectionDialogContent";
-import { DiscordWebhookConnectionDialogContent } from "./DiscordWebhookConnectionDialogContent";
 import { DiscordChannelThreadConnectionDialogContent } from "./DiscordChannelThreadConnectionDialogContent";
+import { DiscordApplicationWebhookConnectionDialogContent } from "./DiscordApplicationWebhookConnectionDialogContent";
 
 interface Props {
   type?: "discord-webhook" | "discord-channel";
@@ -22,7 +22,10 @@ export const AddConnectionDialog = ({ type, isOpen, onClose, isChannelThread }: 
       modalContent = <DiscordChannelConnectionDialogContent onClose={onClose} isOpen={isOpen} />;
     }
   } else if (type === "discord-webhook") {
-    modalContent = <DiscordWebhookConnectionDialogContent onClose={onClose} isOpen={isOpen} />;
+    modalContent = (
+      <DiscordApplicationWebhookConnectionDialogContent onClose={onClose} isOpen={isOpen} />
+    );
+    // modalContent = <DiscordWebhookConnectionDialogContent onClose={onClose} isOpen={isOpen} />;
   }
 
   return <Box>{modalContent}</Box>;

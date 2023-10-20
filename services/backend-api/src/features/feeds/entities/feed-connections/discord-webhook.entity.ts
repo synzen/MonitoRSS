@@ -43,6 +43,9 @@ export class DiscordWebhook {
     required: false,
   })
   threadId?: string;
+
+  @Prop()
+  isApplicationOwned?: boolean;
 }
 
 export const DiscordWebhookSchema =

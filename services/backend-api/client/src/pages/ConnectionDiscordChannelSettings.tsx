@@ -369,7 +369,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 >
                   <Text>{getPrettyChannelType(connection?.details)}</Text>
                 </CategoryText>
-                <CategoryText title="Webhook" hidden={!connection?.details.webhook}>
+                <CategoryText
+                  title="Webhook"
+                  hidden={
+                    !connection?.details.webhook || connection.details.webhook.isApplicationOwned
+                  }
+                >
                   {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
                   <HStack>
                     <Text>{matchingWebhook?.name}</Text>
@@ -382,10 +387,26 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     />
                   </HStack>
                 </CategoryText>
-                <CategoryText title="Custom name" hidden={!connection?.details.webhook}>
+                <CategoryText
+                  title="Webhook Channel"
+                  hidden={
+                    !connection?.details.webhook || !connection.details.webhook.isApplicationOwned
+                  }
+                >
+                  {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
+                  <HStack>
+                    <DiscordChannelName
+                      serverId={serverId}
+                      channelId={matchingWebhook?.channelId || ""}
+                      spinnerSize="sm"
+                      hidden={!matchingWebhook}
+                    />
+                  </HStack>
+                </CategoryText>
+                <CategoryText title="Webhook name" hidden={!connection?.details.webhook}>
                   {connection?.details.webhook?.name || "N/A"}
                 </CategoryText>
-                <CategoryText title="Custom icon" hidden={!connection?.details.webhook}>
+                <CategoryText title="Webhook icon" hidden={!connection?.details.webhook}>
                   {connection?.details.webhook?.iconUrl || "N/A"}
                 </CategoryText>
               </Grid>

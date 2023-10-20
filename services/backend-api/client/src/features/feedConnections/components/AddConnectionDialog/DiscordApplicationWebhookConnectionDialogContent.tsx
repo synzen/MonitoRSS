@@ -37,8 +37,12 @@ import { notifySuccess } from "../../../../utils/notifySuccess";
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
   serverId: string().required("Server ID is required"),
-  threadId: string().required("Thread ID is required"),
   channelId: string().required("Channel ID is required"),
+  threadId: string().optional(),
+  webhook: object({
+    name: string().required("Webhook name is required"),
+    iconUrl: string().optional(),
+  }),
 });
 
 interface Props {
@@ -48,7 +52,7 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
-export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
+export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> = ({
   onClose,
   isOpen,
 }) => {
@@ -65,11 +69,11 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
     resolver: yupResolver(formSchema),
     mode: "all",
   });
-  const [serverId, channelId] = watch(["serverId", "channelId"]);
+  const [serverId, channelId, threadId] = watch(["serverId", "channelId", "threadId"]);
   const { mutateAsync } = useCreateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
 
-  const onSubmit = async ({ threadId, name }: FormData) => {
+  const onSubmit = async ({ threadId: inputThreadId, name, webhook }: FormData) => {
     if (!feedId) {
       throw new Error("Feed ID missing while creating discord channel connection");
     }
@@ -79,7 +83,12 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
         feedId,
         details: {
           name,
-          channelId: threadId,
+          applicationWebhook: {
+            channelId,
+            name: webhook.name,
+            iconUrl: webhook.iconUrl,
+            threadId: inputThreadId,
+          },
         },
       });
       notifySuccess(
@@ -104,19 +113,20 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
     >
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>
-          {t("features.feed.components.addDiscordChannelThreadConnectionDialog.title")}
-        </ModalHeader>
+        <ModalHeader>Add a Discord webhook connection</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <Text>Send articles authored by the bot as a message to an existing thread.</Text>
+            <Text>
+              Send articles authored by a webhook with a custom name and icon as a message to a
+              Discord channel or thread.
+            </Text>
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
+                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -133,19 +143,28 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                   />
                 </FormControl>
                 <FormControl isInvalid={!!errors.channelId} isRequired>
-                  <FormLabel>
-                    {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
-                    )}
-                  </FormLabel>
+                  <FormLabel>Channel</FormLabel>
                   <Controller
                     name="channelId"
                     control={control}
                     render={({ field }) => (
                       <DiscordChannelDropdown
                         value={field.value || ""}
-                        onChange={(value) => {
+                        onChange={(value, name) => {
                           field.onChange(value);
+
+                          if (name && !threadId) {
+                            setValue("name", name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                            setValue("webhook.name", name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                          }
                         }}
                         include={[GetDiscordChannelType.Forum]}
                         onBlur={field.onBlur}
@@ -154,14 +173,12 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                       />
                     )}
                   />
-                  <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
+                  {errors.channelId && (
+                    <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
+                  )}
                 </FormControl>
-                <FormControl isInvalid={!!errors.threadId} isRequired>
-                  <FormLabel>
-                    {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"
-                    )}
-                  </FormLabel>
+                <FormControl isInvalid={!!errors.threadId?.message}>
+                  <FormLabel>Forum Thread</FormLabel>
                   <Controller
                     name="threadId"
                     control={control}
@@ -177,6 +194,11 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                               shouldTouch: true,
                               shouldValidate: true,
                             });
+                            setValue("webhook.name", name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
                           }
                         }}
                         onBlur={field.onBlur}
@@ -186,13 +208,65 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                       />
                     )}
                   />
-                  <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
-                  <FormHelperText>
+                  {errors.threadId && (
+                    <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
+                  )}
+                  {!errors.threadId && (
+                    <FormHelperText>
+                      If enabled, all messages will go into a specific thread. Only unlocked
+                      (unarchived) threads are listed.
+                    </FormHelperText>
+                  )}
+                </FormControl>
+                <FormControl isInvalid={!!errors.webhook?.name} isRequired>
+                  <FormLabel>
                     {t(
-                      "features.feed.components" +
-                        ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
+                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
                     )}
-                  </FormHelperText>
+                  </FormLabel>
+                  <Controller
+                    name="webhook.name"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        placeholder="Optional"
+                        isDisabled={isSubmitting}
+                        value={field.value || ""}
+                        bg="gray.800"
+                      />
+                    )}
+                  />
+                  {errors.webhook?.name && (
+                    <FormErrorMessage>{errors.webhook.name.message}</FormErrorMessage>
+                  )}
+                  {!errors.webhook?.name && (
+                    <FormHelperText>The user name the webhook will use</FormHelperText>
+                  )}
+                </FormControl>
+                <FormControl isInvalid={!!errors.webhook?.iconUrl}>
+                  <FormLabel>
+                    {t(
+                      "features.feed.components.addDiscordWebhookConnectionDialog" +
+                        ".webhookIconUrlLabel"
+                    )}
+                  </FormLabel>
+                  <Controller
+                    name="webhook.iconUrl"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        placeholder="Optional"
+                        {...field}
+                        isDisabled={isSubmitting}
+                        value={field.value || ""}
+                        bg="gray.800"
+                      />
+                    )}
+                  />
+                  {errors.webhook?.iconUrl && (
+                    <FormErrorMessage>{errors.webhook.iconUrl.message}</FormErrorMessage>
+                  )}
                 </FormControl>
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
@@ -208,12 +282,14 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                     )}
                   />
                   {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                  <FormHelperText>
-                    {t(
-                      "features.feed.components" +
-                        ".addDiscordChannelThreadConnectionDialog.formNameDescription"
-                    )}
-                  </FormHelperText>
+                  {!errors.name && (
+                    <FormHelperText>
+                      {t(
+                        "features.feed.components" +
+                          ".addDiscordChannelThreadConnectionDialog.formNameDescription"
+                      )}
+                    </FormHelperText>
+                  )}
                 </FormControl>
               </Stack>
             </form>
