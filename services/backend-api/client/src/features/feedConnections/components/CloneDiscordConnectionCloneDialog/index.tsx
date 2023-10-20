@@ -40,6 +40,7 @@ interface Props {
     name: string;
   };
   trigger: React.ReactElement;
+  redirectOnSuccess?: boolean;
 }
 
 export const CloneDiscordConnectionCloneDialog = ({
@@ -48,6 +49,7 @@ export const CloneDiscordConnectionCloneDialog = ({
   type,
   defaultValues,
   trigger,
+  redirectOnSuccess,
 }: Props) => {
   const {
     handleSubmit,
@@ -79,19 +81,24 @@ export const CloneDiscordConnectionCloneDialog = ({
         throw new Error(`Unsupported connection type when cloning discord connection: ${type}`);
       }
 
-      navigate(
-        pages.userFeedConnection({
-          connectionId: newConnectionId,
-          feedId,
-          connectionType: type,
-        })
-      );
+      if (redirectOnSuccess) {
+        navigate(
+          pages.userFeedConnection({
+            connectionId: newConnectionId,
+            feedId,
+            connectionType: type,
+          })
+        );
+        notifySuccess(
+          t("common.success.savedChanges"),
+          "You are now viewing your newly cloned connection"
+        );
+      } else {
+        notifySuccess("Successfully cloned");
+      }
+
       onClose();
       reset({ name });
-      notifySuccess(
-        t("common.success.savedChanges"),
-        "You are now viewing your newly cloned connection"
-      );
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), (err as Error).message);
     }
@@ -112,7 +119,7 @@ export const CloneDiscordConnectionCloneDialog = ({
                 <Controller
                   name="name"
                   control={control}
-                  render={({ field }) => <Input {...field} ref={initialRef} />}
+                  render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
                 />
                 {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
               </FormControl>
@@ -120,7 +127,9 @@ export const CloneDiscordConnectionCloneDialog = ({
           </ModalBody>
           <ModalFooter>
             <HStack>
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
               <Button colorScheme="blue" type="submit" form="clonefeed" isLoading={isSubmitting}>
                 Clone
               </Button>

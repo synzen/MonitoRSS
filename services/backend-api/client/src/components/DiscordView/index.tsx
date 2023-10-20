@@ -9,6 +9,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
 // @ts-ignore
 import { uniqueId } from "lodash";
+// @ts-ignore
 import { parse, parseAllowLinks, jumboify } from "./utils/markdown";
 import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
 import Embed from "./Embed";

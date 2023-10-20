@@ -32,13 +32,10 @@ import {
   AlertIcon,
   Tooltip,
   SimpleGrid,
-  Card,
-  CardHeader,
-  CardFooter,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AddIcon, ArrowLeftIcon, ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { AddIcon, ArrowLeftIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -59,19 +56,13 @@ import {
   AddConnectionDialog,
   ComparisonsTabSection,
   UserFeedSettingsTabSection,
+  ConnectionCard,
 } from "../features/feedConnections";
-import {
-  FeedConnectionDisabledCode,
-  FeedConnectionType,
-  FeedDiscordChannelConnection,
-  FeedDiscordWebhookConnection,
-} from "../types";
+
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
-import getChakraColor from "../utils/getChakraColor";
-import { DiscordChannelName } from "../features/discordServers";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -86,77 +77,6 @@ const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Settings, 2],
   [TabSearchParam.Logs, 3],
 ]);
-
-function getPrettyConnectionName(
-  connection: FeedDiscordChannelConnection | FeedDiscordWebhookConnection
-) {
-  const { key } = connection;
-
-  if (key === FeedConnectionType.DiscordChannel) {
-    const casted = connection as FeedDiscordChannelConnection;
-
-    if (casted.details.channel) {
-      if (casted.details.channel.type === "thread") {
-        return "Discord Thread";
-      }
-
-      if (casted.details.channel.type === "forum") {
-        return "Discord Forum";
-      }
-
-      return "Discord Channel";
-    }
-
-    if (casted.details.webhook) {
-      if (casted.details.webhook.type === "forum") {
-        return "Discord Forum Webhook";
-      }
-
-      if (casted.details.webhook.type === "thread") {
-        return "Discord Thread Webhook";
-      }
-
-      return "Discord Channel Webhook";
-    }
-  }
-
-  return "Unknown";
-}
-
-const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => {
-  const { key } = connection;
-
-  if (key === FeedConnectionType.DiscordChannel) {
-    const casted = connection as FeedDiscordChannelConnection;
-
-    if (casted.details.channel) {
-      if (casted.details.channel.type === "thread") {
-        return null;
-      }
-
-      return (
-        <DiscordChannelName
-          channelId={casted.details.channel.id}
-          serverId={casted.details.channel.guildId}
-          spinnerSize="xs"
-          textProps={{
-            color: "gray.500",
-            fontSize: 14,
-          }}
-          parenthesis
-        />
-      );
-    }
-  }
-
-  return null;
-};
-
-const DISABLED_CODES_FOR_ERROR = [
-  FeedConnectionDisabledCode.MissingMedium,
-  FeedConnectionDisabledCode.MissingPermissions,
-  FeedConnectionDisabledCode.BadFormat,
-];
 
 export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
@@ -631,69 +551,7 @@ export const UserFeed: React.FC = () => {
                   {feed?.connections.length && (
                     <SimpleGrid spacing={4} templateColumns="repeat(auto-fill, minmax(320px, 1fr))">
                       {feed?.connections?.map((connection) => {
-                        const isError = DISABLED_CODES_FOR_ERROR.includes(
-                          connection.disabledCode as FeedConnectionDisabledCode
-                        );
-
-                        let cardLeftBorder = "";
-
-                        if (isError) {
-                          cardLeftBorder = `solid 3px ${getChakraColor("red.400")}`;
-                        } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
-                          cardLeftBorder = `solid 3px ${getChakraColor("gray.400")}`;
-                        }
-
-                        const connectionDetail = getPrettyConnectionDetail(connection as never);
-
-                        return (
-                          <Card
-                            key={connection.id}
-                            variant="elevated"
-                            size="sm"
-                            borderLeft={cardLeftBorder}
-                            rounded="lg"
-                            paddingX={1}
-                          >
-                            <CardHeader>
-                              <Stack spacing="1">
-                                <Flex alignItems="center" gap={2}>
-                                  <Text color="gray.500" fontSize="sm">
-                                    {getPrettyConnectionName(connection as never)}
-                                  </Text>
-                                  {connectionDetail ? <> {connectionDetail}</> : null}
-                                </Flex>
-                                <HStack>
-                                  <Text fontWeight={600}>{connection.name}</Text>
-                                  {connection.disabledCode ===
-                                    FeedConnectionDisabledCode.Manual && (
-                                    <Badge fontSize="x-small" colorScheme="gray">
-                                      Disabled
-                                    </Badge>
-                                  )}
-                                  {isError && (
-                                    <Badge fontSize="x-small" colorScheme="red">
-                                      Error
-                                    </Badge>
-                                  )}
-                                </HStack>
-                              </Stack>
-                            </CardHeader>
-                            <CardFooter justifyContent="space-between">
-                              <Box />
-                              <Button
-                                as={RouterLink}
-                                to={pages.userFeedConnection({
-                                  feedId: feedId as string,
-                                  connectionType: connection.key,
-                                  connectionId: connection.id,
-                                })}
-                                rightIcon={<ChevronRightIcon />}
-                              >
-                                Manage
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                        );
+                        return <ConnectionCard connection={connection} feedId={feedId as string} />;
                       })}
                     </SimpleGrid>
                   )}

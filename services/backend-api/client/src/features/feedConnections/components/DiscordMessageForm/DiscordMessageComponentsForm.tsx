@@ -220,7 +220,7 @@ const DiscordMessageComponentRow = ({
                               autoCapitalize="false"
                               autoComplete="false"
                               autoCorrect="false"
-                              bg="blackAlpha.300"
+                              bg="gray.800"
                               size="sm"
                               {...field}
                               value={field.value || ""}
@@ -262,7 +262,7 @@ const DiscordMessageComponentRow = ({
                               autoCapitalize="false"
                               autoComplete="false"
                               autoCorrect="false"
-                              bg="blackAlpha.300"
+                              bg="gray.800"
                               size="sm"
                               {...field}
                               value={field.value || ""}

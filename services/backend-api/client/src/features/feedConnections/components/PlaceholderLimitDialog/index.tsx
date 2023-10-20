@@ -119,7 +119,7 @@ export const PlaceholderLimitDialog = ({
                         </FormLabel>
                         <ArticlePropertySelect
                           feedId={feedId}
-                          selectProps={{ ...field }}
+                          selectProps={{ ...field, bg: "gray.800" }}
                           selectRef={initialRef}
                           excludeProperties={excludePlaceholders}
                         />
@@ -154,6 +154,7 @@ export const PlaceholderLimitDialog = ({
                           min={1}
                           max={2000}
                           isValidCharacter={(char) => /\d+/.test(char)}
+                          bg="gray.800"
                           {...field}
                         >
                           <NumberInputField />
@@ -183,7 +184,7 @@ export const PlaceholderLimitDialog = ({
                             "features.feedConnections.components.placeholderLimitDialog.appendTextInputLabel"
                           )}
                         </FormLabel>
-                        <Input {...field} />
+                        <Input {...field} bg="gray.800" />
                         <FormHelperText>
                           {t(
                             "features.feedConnections.components.placeholderLimitDialog.appendTextInputDescription"

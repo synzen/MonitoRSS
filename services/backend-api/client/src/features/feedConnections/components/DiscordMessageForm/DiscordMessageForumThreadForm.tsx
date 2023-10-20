@@ -58,7 +58,15 @@ const TagCheckbox = ({
       isDisabled={hasPermissionToUse}
       label={t("components.discordMessageForumThreadForm.threadTagMissingPermissions")}
     >
-      <Tag key={id} borderRadius="full" variant="solid" size="lg" paddingX="4" paddingY="2">
+      <Tag
+        key={id}
+        borderRadius="full"
+        variant="solid"
+        size="lg"
+        paddingX="4"
+        paddingY="2"
+        bg="gray.700"
+      >
         <HStack divider={<Divider orientation="vertical" height="5" />}>
           <Checkbox
             value={id}
@@ -148,7 +156,13 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
               name="forumThreadTitle"
               control={control}
               render={({ field }) => (
-                <Input size="sm" aria-label="Forum thread title" spellCheck={false} {...field} />
+                <Input
+                  size="sm"
+                  aria-label="Forum thread title"
+                  spellCheck={false}
+                  {...field}
+                  bg="gray.900"
+                />
               )}
             />
             {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}

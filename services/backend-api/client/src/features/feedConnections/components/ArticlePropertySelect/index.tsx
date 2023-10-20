@@ -1,4 +1,4 @@
-import { Select, SelectProps, Stack } from "@chakra-ui/react";
+import { Select, SelectProps, Stack, chakra } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { LegacyRef } from "react";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
@@ -25,9 +25,9 @@ export const ArticlePropertySelect = ({
   const options = data?.result.properties
     .filter((property) => !excludeProperties?.includes(property))
     ?.map((prop) => (
-      <option key={prop} value={prop}>
+      <chakra.option key={prop} value={prop}>
         {prop}
-      </option>
+      </chakra.option>
     ));
 
   return (

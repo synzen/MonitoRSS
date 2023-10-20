@@ -91,6 +91,7 @@ export const DiscordMessageContentForm = () => {
                   size="sm"
                   aria-label="Text content"
                   spellCheck={false}
+                  bg="gray.900"
                   {...field}
                 />
               )}
@@ -164,6 +165,7 @@ export const DiscordMessageContentForm = () => {
                           spellCheck={false}
                           isDisabled={!splitOptions}
                           value={field.value || ""}
+                          bg="gray.900"
                           onChange={(e) => {
                             field.onChange(e.target.value || null);
                           }}
@@ -189,6 +191,7 @@ export const DiscordMessageContentForm = () => {
                           spellCheck={false}
                           value={field.value || ""}
                           isDisabled={!splitOptions}
+                          bg="gray.900"
                           onChange={(e) => {
                             field.onChange(e.target.value || null);
                           }}
@@ -214,6 +217,7 @@ export const DiscordMessageContentForm = () => {
                           spellCheck={false}
                           value={field.value || ""}
                           isDisabled={!splitOptions}
+                          bg="gray.900"
                           onChange={(e) => {
                             field.onChange(e.target.value || null);
                           }}

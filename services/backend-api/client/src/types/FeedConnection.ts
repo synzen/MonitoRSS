@@ -32,13 +32,7 @@ const DiscordButtonSchema = object({
   style: number()
     .oneOf(Object.values(DiscordComponentButtonStyle) as DiscordComponentButtonStyle[])
     .required(),
-  url: string().when("style", ([style], schema) => {
-    if (style === DiscordComponentButtonStyle.Link) {
-      return schema.required("Link buttons requires a URL");
-    }
-
-    return schema.nullable();
-  }),
+  url: string().required(),
 });
 
 const DiscordChannelConnectionDetailsSchema = object({
