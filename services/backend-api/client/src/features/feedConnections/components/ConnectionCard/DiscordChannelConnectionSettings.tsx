@@ -88,24 +88,19 @@ export const DiscordChannelConnectionSettings = ({
           onCloseRef={actionsButtonRef}
           isOpen={editIsOpen}
           onClose={editOnClose}
-          onUpdate={({ webhook }) =>
+          onUpdate={({ applicationWebhook }) =>
             onUpdate({
-              webhook: {
-                id: webhook.id,
-                name: webhook.name,
-                iconUrl: webhook.iconUrl,
-                threadId: webhook.threadId,
-              },
+              applicationWebhook,
             })
           }
           defaultValues={{
             name: connection.name,
             serverId: connection.details.webhook.guildId,
-            webhook: {
-              id: connection.details.webhook.id,
+            applicationWebhook: {
               iconUrl: connection.details.webhook.iconUrl,
-              name: connection.details.webhook.name,
+              name: connection.details.webhook.name || "",
               threadId: connection.details.webhook.threadId,
+              channelId: connection.details.webhook.channelId || "",
             },
           }}
         />
@@ -118,20 +113,17 @@ export const DiscordChannelConnectionSettings = ({
         isOpen={isConvertToWebhookIsOpen}
         onClose={isConvertToWebhookOnClose}
         onCloseRef={actionsButtonRef}
-        onUpdate={({ webhook }) =>
+        onUpdate={({ applicationWebhook }) =>
           onUpdate({
-            webhook: {
-              id: webhook.id,
-              name: webhook.name,
-              iconUrl: webhook.iconUrl,
-              threadId: webhook.threadId,
-            },
+            applicationWebhook,
           })
         }
       />
       <Menu>
         {trigger ? (
-          cloneElement(trigger)
+          cloneElement(trigger, {
+            ref: actionsButtonRef,
+          })
         ) : (
           <MenuButton
             as={IconButton}

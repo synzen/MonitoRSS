@@ -321,7 +321,7 @@ export const DiscordMessageForm = ({
           </Stack>
           <Stack>
             <Heading size="md">Buttons</Heading>
-            <DiscordMessageComponentsForm />
+            <DiscordMessageComponentsForm connectionId={connection.id} feedId={feedId} />
           </Stack>
           <Stack>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>

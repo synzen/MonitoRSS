@@ -1,4 +1,8 @@
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Badge,
   Box,
   Button,
@@ -19,8 +23,15 @@ import { motion } from "framer-motion";
 import { v4 } from "uuid";
 import { useRef } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
-import { DiscordComponentButtonStyle, DiscordComponentType } from "../../../../types";
+import {
+  DiscordComponentButtonStyle,
+  DiscordComponentType,
+  FeedConnectionType,
+  FeedDiscordChannelConnection,
+} from "../../../../types";
 import { AnimatedComponent } from "../../../../components";
+import { useConnection } from "../../hooks";
+import { EditDiscordChannelWebhookConnectionButton } from "../EditDiscordChannelWebhookConnectionButton";
 
 const caclulateRowAfterDeleteRow = (
   rows: DiscordMessageFormData["componentRows"],
@@ -324,7 +335,16 @@ const DiscordMessageComponentRow = ({
   );
 };
 
-export const DiscordMessageComponentsForm = () => {
+interface Props {
+  feedId?: string;
+  connectionId?: string;
+}
+
+export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) => {
+  const { connection } = useConnection({
+    feedId,
+    connectionId,
+  });
   const { watch, setValue } = useFormContext<DiscordMessageFormData>();
   const [rows] = watch(["componentRows"]);
 
@@ -334,6 +354,34 @@ export const DiscordMessageComponentsForm = () => {
         Add buttons that contain links. You may add up to 5 rows, with up to 5 buttons in each row.
         Placeholders may be used.
       </Text>
+      {connection &&
+        connection.key === FeedConnectionType.DiscordChannel &&
+        !(connection as FeedDiscordChannelConnection).details.webhook?.isApplicationOwned && (
+          <Alert status="warning">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>
+                Buttons will not be sent to Discord until this connection&apos;s webhook is
+                converted to an application owned webhook!
+              </AlertTitle>
+              <AlertDescription>
+                <Stack spacing={2}>
+                  <Text>
+                    This connection&apos;s webhook is not currently application owned. To convert
+                    it, update this connection. Once updated, an application webhook will be
+                    automatically created and attached to this connection.
+                  </Text>
+                  <Box>
+                    <EditDiscordChannelWebhookConnectionButton
+                      feedId={feedId as string}
+                      connection={connection as FeedDiscordChannelConnection}
+                    />
+                  </Box>
+                </Stack>
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
       <Stack spacing={4}>
         {rows?.map((row, rowIndex) => {
           return <DiscordMessageComponentRow key={row.id} rows={rows} rowIndex={rowIndex} />;

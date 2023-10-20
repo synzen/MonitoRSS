@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -38,6 +39,24 @@ class Webhook {
   iconUrl?: string;
 }
 
+class ApplicationWebhook {
+  @IsString()
+  @IsNotEmpty()
+  channelId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  iconUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  threadId?: string;
+}
+
 export class UpdateDiscordChannelConnectionInputDto {
   @IsString()
   @IsOptional()
@@ -52,6 +71,12 @@ export class UpdateDiscordChannelConnectionInputDto {
   @ValidateNested()
   @Type(() => Webhook)
   webhook?: Webhook;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ApplicationWebhook)
+  applicationWebhook?: ApplicationWebhook;
 
   @IsString()
   @IsOptional()

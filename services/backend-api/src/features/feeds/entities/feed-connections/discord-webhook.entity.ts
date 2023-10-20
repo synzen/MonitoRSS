@@ -44,6 +44,11 @@ export class DiscordWebhook {
   })
   threadId?: string;
 
+  @Prop({
+    required: false,
+  })
+  channelId?: string;
+
   @Prop()
   isApplicationOwned?: boolean;
 }

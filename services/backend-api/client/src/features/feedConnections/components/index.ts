@@ -15,3 +15,4 @@ export * from "./DiscordMessageForm";
 export * from "./ArticlePropertySelect";
 export * from "./CloneDiscordConnectionCloneDialog";
 export * from "./ConnectionCard";
+export * from "./EditDiscordChannelWebhookConnectionButton";

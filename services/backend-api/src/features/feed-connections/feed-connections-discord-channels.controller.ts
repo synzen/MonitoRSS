@@ -255,6 +255,7 @@ export class FeedConnectionsDiscordChannelsController {
       customPlaceholders,
       rateLimits,
       componentRows,
+      applicationWebhook,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -299,6 +300,7 @@ export class FeedConnectionsDiscordChannelsController {
       {
         accessToken: access_token,
         feed,
+        oldConnection: connection,
         updates: {
           filters,
           name,
@@ -316,6 +318,7 @@ export class FeedConnectionsDiscordChannelsController {
                 }
               : undefined,
             webhook: useChannelId ? undefined : webhook,
+            applicationWebhook: useChannelId ? undefined : applicationWebhook,
             embeds: convertToFlatDiscordEmbeds(embeds),
             content,
             formatter,
