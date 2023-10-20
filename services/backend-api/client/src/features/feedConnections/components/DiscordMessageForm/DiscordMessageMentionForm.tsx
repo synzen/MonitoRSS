@@ -56,7 +56,7 @@ const MentionCheckbox = ({
 
   return (
     <Flex>
-      <Tag key={id} variant="solid" size="lg" paddingRight={0}>
+      <Tag key={id} variant="solid" size="lg" paddingRight={0} bg="gray.700">
         {type === "user" && userData?.result.avatarUrl && (
           <Avatar
             src={userData.result.avatarUrl}

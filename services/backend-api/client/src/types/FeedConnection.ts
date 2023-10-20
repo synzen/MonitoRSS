@@ -13,6 +13,34 @@ export enum FeedConnectionDisabledCode {
   MissingMedium = "MISSING_MEDIUM",
 }
 
+export enum DiscordComponentType {
+  Button = 2,
+}
+
+export enum DiscordComponentButtonStyle {
+  Primary = 1,
+  Secondary = 2,
+  Success = 3,
+  Danger = 4,
+  Link = 5,
+}
+
+const DiscordButtonSchema = object({
+  id: string().required(),
+  type: number().oneOf([DiscordComponentType.Button]).required(),
+  label: string().required(),
+  style: number()
+    .oneOf(Object.values(DiscordComponentButtonStyle) as DiscordComponentButtonStyle[])
+    .required(),
+  url: string().when("style", ([style], schema) => {
+    if (style === DiscordComponentButtonStyle.Link) {
+      return schema.required("Link buttons requires a URL");
+    }
+
+    return schema.nullable();
+  }),
+});
+
 const DiscordChannelConnectionDetailsSchema = object({
   embeds: array(FeedEmbedSchema).required(),
   channel: object({
@@ -32,6 +60,12 @@ const DiscordChannelConnectionDetailsSchema = object({
   })
     .optional()
     .nullable(),
+  componentRows: array(
+    object({
+      id: string().required(),
+      components: array(DiscordButtonSchema.required()).required().max(5),
+    }).required()
+  ).max(5),
   content: string().optional(),
   forumThreadTitle: string().optional(),
   forumThreadTags: array(

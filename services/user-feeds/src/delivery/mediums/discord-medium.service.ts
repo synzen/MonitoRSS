@@ -1062,7 +1062,28 @@ export class DiscordMediumService implements DeliveryMedium {
       .slice(0, 10);
 
     if (components && payloads.length > 0) {
-      payloads[payloads.length - 1].components = components;
+      payloads[payloads.length - 1].components = components.map(
+        ({ type, components: nestedComponents }) => ({
+          type,
+          components: nestedComponents.map(({ style, type, label, url }) => {
+            return {
+              style,
+              type,
+              label: (
+                this.replacePlaceholdersInString(
+                  article,
+                  label,
+                  replacePlaceholderStringArgs
+                ) || label
+              ).slice(0, 80),
+              url: this.replacePlaceholdersInString(article, url, {
+                ...replacePlaceholderStringArgs,
+                encodeUrl: true,
+              }),
+            };
+          }),
+        })
+      );
     }
 
     return payloads;

@@ -76,7 +76,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
       </HStack>
       {fields.length && (
         <Box borderStyle="solid" borderWidth="1px" borderRadius="md">
-          <TableContainer>
+          <TableContainer bg="gray.900" rounded="md">
             <Table>
               <Thead>
                 <Tr>

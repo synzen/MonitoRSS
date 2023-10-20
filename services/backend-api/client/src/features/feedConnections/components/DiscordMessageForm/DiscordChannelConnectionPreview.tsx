@@ -9,9 +9,16 @@ import { useDebounce } from "../../../../hooks";
 import { useDiscordBot } from "../../../discordUser";
 import { InlineErrorAlert } from "../../../../components";
 
-type Props = CreateDiscordChannelConnectionPreviewInput;
+type Props = CreateDiscordChannelConnectionPreviewInput & {
+  hasErrors?: boolean;
+};
 
-export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: Props) => {
+export const DiscordChannelConnectionPreview = ({
+  connectionId,
+  data,
+  feedId,
+  hasErrors,
+}: Props) => {
   const {
     feed,
     fetchStatus: feedFetchStatus,
@@ -34,7 +41,7 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    enabled: !!(feed && connection && debouncedData.article?.id),
+    enabled: !!(feed && connection && debouncedData.article?.id && !hasErrors),
     data: {
       connectionId: connection?.id || "",
       feedId,
@@ -82,9 +89,31 @@ export const DiscordChannelConnectionPreview = ({ connectionId, data, feedId }: 
           display="flex"
           alignItems="center"
           justifyContent="center"
+          p={8}
+          textAlign="center"
         >
           {isFetching && <Spinner />}
           {waitingForArticle && <Text>Waiting for article...</Text>}
+        </Box>
+      )}
+      {hasErrors && (
+        <Box
+          borderRadius="md"
+          position="absolute"
+          width="100%"
+          height="100%"
+          background="rgba(0,0,0,0.75)"
+          zIndex={10}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          p={8}
+          textAlign="center"
+        >
+          <Text color="red.400">
+            Some inputs are invalid. Please ensure all fields are valid for a preview to be
+            displayed.
+          </Text>
         </Box>
       )}
       <DiscordView

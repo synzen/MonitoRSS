@@ -1,6 +1,11 @@
 import { UserFeed } from "@/features/feed";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../../features/feed/types";
-import { FeedConnectionDisabledCode, FeedConnectionType } from "../../types";
+import {
+  DiscordComponentButtonStyle,
+  DiscordComponentType,
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../../types";
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
@@ -73,6 +78,53 @@ const mockUserFeeds: UserFeed[] = [
             id: mockDiscordChannels[0].id,
             guildId: mockDiscordServers[0].id,
           },
+          componentRows: [
+            {
+              id: "r1",
+              components: [
+                {
+                  id: "b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b1",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b3",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b4",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+            {
+              id: "r2",
+              components: [
+                {
+                  id: "r2b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+          ],
           embeds: [
             {
               title: "hello world",

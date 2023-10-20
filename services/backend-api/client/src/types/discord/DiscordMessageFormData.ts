@@ -1,5 +1,6 @@
 import { array, boolean, InferType, number, object, string } from "yup";
 import { CustomPlaceholderSchema } from "../CustomPlaceholder";
+import { DiscordComponentButtonStyle, DiscordComponentType } from "../FeedConnection";
 
 export const discordMessageEmbedFieldFormSchema = object({
   name: string().max(256).required(),
@@ -80,9 +81,27 @@ export const discordMessageEmbedFormSchema = object({
   fields: array(discordMessageEmbedFieldFormSchema.required()).nullable(),
 });
 
+const DiscordButtonSchema = object({
+  id: string().required(),
+  type: number().oneOf([DiscordComponentType.Button]).required(),
+  label: string().max(80, "Must be at most 80 characters").required("This is a required field"),
+  style: number()
+    .oneOf(Object.values(DiscordComponentButtonStyle) as DiscordComponentButtonStyle[])
+    .required(),
+  url: string().required("This is a required field"),
+});
+
 export const discordMessageFormSchema = object({
   content: string().max(2000),
-  embeds: array().of(discordMessageEmbedFormSchema),
+  embeds: array().of(discordMessageEmbedFormSchema).max(10),
+  componentRows: array(
+    object({
+      id: string().required(),
+      components: array(DiscordButtonSchema.required()).required().max(5),
+    }).required()
+  )
+    .max(5)
+    .nullable(),
   forumThreadTitle: string().optional().max(100),
   forumThreadTags: array(
     object({

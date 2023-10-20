@@ -41,9 +41,7 @@ export interface CreateDiscordChannelPreviewInput {
         | DiscordChannelConnection["details"]["placeholderLimits"]
         | null;
       enablePlaceholderFallback?: boolean;
-      componentRows?:
-        | DiscordChannelConnection["details"]["componentRows"]
-        | null;
+      components?: DiscordMediumEvent["details"]["components"];
     };
   };
 }

@@ -1,10 +1,12 @@
 import { Type } from "class-transformer";
 import {
   Allow,
+  ArrayMaxSize,
   IsArray,
   IsIn,
   IsNotEmpty,
   IsString,
+  MaxLength,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
@@ -27,6 +29,7 @@ export class DiscordButtonComponent extends DiscordBaseComponent {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(80)
   label: string;
 
   @IsString()
@@ -35,7 +38,7 @@ export class DiscordButtonComponent extends DiscordBaseComponent {
   @ValidateIf((o) => o.style === FeedConnectionDiscordComponentButtonStyle.Link)
   url?: string;
 
-  @IsIn(Object.values(FeedConnectionDiscordComponentButtonStyle))
+  @IsIn([FeedConnectionDiscordComponentButtonStyle.Link])
   style: FeedConnectionDiscordComponentButtonStyle;
 }
 
@@ -46,6 +49,7 @@ export class DiscordComponentRow {
 
   @IsArray()
   @ValidateNested({ each: true })
+  @ArrayMaxSize(5)
   @Type(() => DiscordButtonComponent, {
     keepDiscriminatorProperty: true,
     discriminator: {

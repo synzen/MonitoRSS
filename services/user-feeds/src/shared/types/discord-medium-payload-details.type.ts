@@ -8,7 +8,9 @@ const buttonSchema = object({
     id: string().required(),
     name: string().nullable(),
     animated: boolean().nullable(),
-  }).nullable(),
+  })
+    .nullable()
+    .default(undefined),
   url: string().nullable(),
 });
 

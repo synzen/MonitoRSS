@@ -8,6 +8,16 @@ export interface UpdateDiscordChannelConnectionInput {
   details: {
     name?: string;
     channelId?: string;
+    componentRows?: Array<{
+      id: string;
+      components: Array<{
+        id: string;
+        type: number;
+        label: string;
+        style: number;
+        url?: string | null;
+      }>;
+    }> | null;
     webhook?: {
       id: string;
       iconUrl?: string | null;

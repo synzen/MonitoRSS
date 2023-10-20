@@ -16,6 +16,20 @@ export interface DiscordMediumEvent {
       id: string;
       token: string;
     };
+    components?: Array<{
+      type: number;
+      components: Array<{
+        type: number;
+        style: number;
+        label: string;
+        emoji?: {
+          id: string;
+          name?: string | null;
+          animated?: boolean | null;
+        } | null;
+        url?: string | null;
+      }>;
+    }> | null;
     content?: string;
     embeds?: Array<{
       title?: string;

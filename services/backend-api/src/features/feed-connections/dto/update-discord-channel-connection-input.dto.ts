@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -92,6 +93,7 @@ export class UpdateDiscordChannelConnectionInputDto {
   embeds?: DiscordEmbed[];
 
   @IsArray()
+  @ArrayMaxSize(5)
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => DiscordComponentRow)

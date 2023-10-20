@@ -48,7 +48,7 @@ export interface SendTestDiscordChannelArticleInput {
       placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
       enablePlaceholderFallback?: DiscordChannelConnection["details"]["enablePlaceholderFallback"];
       customPlaceholders?: CustomPlaceholderDto[];
-      componentRows?: DiscordChannelConnection["details"]["componentRows"];
+      components?: DiscordMediumEvent["details"]["components"];
     };
   };
 }

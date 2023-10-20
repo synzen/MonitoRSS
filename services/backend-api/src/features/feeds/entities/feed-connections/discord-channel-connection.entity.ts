@@ -171,8 +171,13 @@ class Details {
 
   @Prop({
     type: [DiscordComponentRowSchema],
-    required: false,
     default: [],
+    validate: [
+      function (this: Array<DiscordComponentRow>) {
+        return this.length <= 5;
+      },
+      "Discord component rows cannot have more than 5 components",
+    ],
   })
   componentRows?: DiscordComponentRow[];
 

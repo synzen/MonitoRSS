@@ -35,6 +35,7 @@ import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholder
 import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
+import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -101,6 +102,7 @@ export const DiscordMessageForm = ({
     customPlaceholders,
     forumThreadTags,
     forumThreadTitle,
+    componentRows,
   ] = useWatch({
     control,
     name: [
@@ -114,6 +116,7 @@ export const DiscordMessageForm = ({
       "customPlaceholders",
       "forumThreadTags",
       "forumThreadTitle",
+      "componentRows",
     ],
   });
 
@@ -140,6 +143,7 @@ export const DiscordMessageForm = ({
       enablePlaceholderFallback,
       forumThreadTags,
       forumThreadTitle,
+      componentRows,
     },
   };
 
@@ -259,6 +263,7 @@ export const DiscordMessageForm = ({
                 connectionId={connection.id}
                 data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
                 feedId={feedId}
+                hasErrors={errorsExist}
               />
             )}
           </Stack>
@@ -313,6 +318,10 @@ export const DiscordMessageForm = ({
                 ))}
               </TabPanels>
             </Tabs>
+          </Stack>
+          <Stack>
+            <Heading size="md">Buttons</Heading>
+            <DiscordMessageComponentsForm />
           </Stack>
           <Stack>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>

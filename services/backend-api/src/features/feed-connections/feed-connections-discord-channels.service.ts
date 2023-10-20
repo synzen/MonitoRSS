@@ -47,6 +47,7 @@ import { DiscordChannelType } from "../../common";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
+import { castDiscordComponentRowsForMedium } from "../../common/utils/cast-discord-component-rows-from-connection";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -577,8 +578,9 @@ export class FeedConnectionsDiscordChannelsService {
         enablePlaceholderFallback:
           previewInput?.enablePlaceholderFallback ??
           connection.details.enablePlaceholderFallback,
-        componentRows:
-          previewInput?.componentRows || connection.details.componentRows,
+        components: castDiscordComponentRowsForMedium(
+          previewInput?.componentRows || connection.details.componentRows
+        ),
       },
     } as const;
 
@@ -670,7 +672,7 @@ export class FeedConnectionsDiscordChannelsService {
         customPlaceholders: useCustomPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
-        componentRows,
+        components: castDiscordComponentRowsForMedium(componentRows),
       },
     } as const;
 
