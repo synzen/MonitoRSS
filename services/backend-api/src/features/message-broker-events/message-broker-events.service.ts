@@ -10,6 +10,7 @@ import {
   castDiscordEmbedsForMedium,
   getCommonFeedAggregateStages,
 } from "../../common/utils";
+import { castDiscordComponentRowsForMedium } from "../../common/utils/cast-discord-component-rows-from-connection";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import logger from "../../utils/logger";
 import {
@@ -380,6 +381,9 @@ export class MessageBrokerEventsService {
             : undefined,
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          components: castDiscordComponentRowsForMedium(
+            con.details.componentRows
+          ),
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
           mentions: con.mentions,
