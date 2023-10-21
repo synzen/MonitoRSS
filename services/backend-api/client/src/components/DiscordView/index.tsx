@@ -7,8 +7,8 @@ import React from "react";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
-// @ts-ignore
 import { uniqueId } from "lodash";
+import { Box } from "@chakra-ui/react";
 // @ts-ignore
 import { parse, parseAllowLinks, jumboify } from "./utils/markdown";
 import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
@@ -187,9 +187,13 @@ const DiscordView = ({
                   {thisEmbeds?.map((e, i) => (
                     <Embed key={i} {...e} />
                   ))}
-                  {components?.map((row) => {
-                    return <ComponentRowView key={uniqueId()} components={row.components || []} />;
-                  })}
+                  <Box mt={components?.length ? 2 : 0}>
+                    {components?.map((row) => {
+                      return (
+                        <ComponentRowView key={uniqueId()} components={row.components || []} />
+                      );
+                    })}
+                  </Box>
                 </div>
               ))}
             </div>

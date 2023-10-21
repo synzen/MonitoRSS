@@ -16,7 +16,7 @@ export const ComponentRowView = ({ components }: Props) => {
   };
 
   return (
-    <Flex mt={components.length > 0 ? 2 : 0} flexWrap="wrap">
+    <Flex flexWrap="wrap">
       {components.map((c) => (
         <chakra.button
           key={uniqueId()}

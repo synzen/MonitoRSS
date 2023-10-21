@@ -356,18 +356,19 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
       </Text>
       {connection &&
         connection.key === FeedConnectionType.DiscordChannel &&
+        (connection as FeedDiscordChannelConnection).details.webhook &&
         !(connection as FeedDiscordChannelConnection).details.webhook?.isApplicationOwned && (
           <Alert status="warning">
             <AlertIcon />
             <Box>
               <AlertTitle>
                 Buttons will not be sent to Discord until this connection&apos;s webhook is
-                converted to an application owned webhook!
+                converted to an application-owned webhook!
               </AlertTitle>
               <AlertDescription>
                 <Stack spacing={2}>
                   <Text>
-                    This connection&apos;s webhook is not currently application owned. To convert
+                    This connection&apos;s webhook is not currently application-owned. To convert
                     it, update this connection. Once updated, an application webhook will be
                     automatically created and attached to this connection.
                   </Text>
