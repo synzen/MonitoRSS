@@ -96,14 +96,11 @@ export class DiscordWebhooksService {
     }
   }
 
-  async deleteWebhookWithToken(webhookId: string, webhookToken: string) {
+  async deleteWebhook(webhookId: string) {
     try {
-      await this.discordApiService.executeBotRequest(
-        `/webhooks/${webhookId}/${webhookToken}`,
-        {
-          method: "DELETE",
-        }
-      );
+      await this.discordApiService.executeBotRequest(`/webhooks/${webhookId}`, {
+        method: "DELETE",
+      });
     } catch (err: unknown | DiscordAPIError) {
       if (err instanceof DiscordAPIError && err.statusCode === 404) {
         return;
