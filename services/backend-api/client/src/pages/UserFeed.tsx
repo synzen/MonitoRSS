@@ -484,7 +484,12 @@ export const UserFeed: React.FC = () => {
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
           <TabPanel width="100%">
-            <BoxConstrained.Wrapper>
+            {/**
+             * https://github.com/chakra-ui/chakra-ui/issues/5636
+             * There is a bug with Chakra where the connection card settings dropdown will cause
+             * an overflow scroll on the tab panel.
+             */}
+            <BoxConstrained.Wrapper overflow="visible">
               <BoxConstrained.Container>
                 <Stack spacing={6} mb={16}>
                   <Stack spacing={3}>
