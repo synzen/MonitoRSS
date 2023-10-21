@@ -37,6 +37,7 @@ import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 import { useUserFeed } from "../../../feed/hooks";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -219,6 +220,17 @@ export const DiscordMessageForm = ({
     }
   };
 
+  const articleFormatOptions: GetUserFeedArticlesInput["data"]["formatter"] = {
+    customPlaceholders,
+    options: {
+      dateFormat: userFeed?.formatOptions?.dateFormat,
+      dateTimezone: userFeed?.formatOptions?.dateTimezone,
+      formatTables: formatOptions?.formatTables || false,
+      stripImages: formatOptions?.stripImages || false,
+      disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
+    },
+  };
+
   const errorsExist = Object.keys(errors).length > 0;
 
   return (
@@ -273,7 +285,11 @@ export const DiscordMessageForm = ({
           {include?.forumForms && (
             <Stack>
               <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
-              <DiscordMessageForumThreadForm connectionId={connection.id} feedId={feedId} />
+              <DiscordMessageForumThreadForm
+                articleFormatter={articleFormatOptions}
+                connectionId={connection.id}
+                feedId={feedId}
+              />
             </Stack>
           )}
           <Stack>
@@ -331,16 +347,7 @@ export const DiscordMessageForm = ({
             <DiscordMessageMentionForm
               guildId={guildId}
               feedId={feedId}
-              articleFormatter={{
-                customPlaceholders,
-                options: {
-                  dateFormat: userFeed?.formatOptions?.dateFormat,
-                  dateTimezone: userFeed?.formatOptions?.dateTimezone,
-                  formatTables: formatOptions?.formatTables || false,
-                  stripImages: formatOptions?.stripImages || false,
-                  disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
-                },
-              }}
+              articleFormatter={articleFormatOptions}
             />
           </Stack>
           <Stack>
