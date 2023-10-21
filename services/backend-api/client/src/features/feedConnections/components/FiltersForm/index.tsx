@@ -118,7 +118,7 @@ export const FiltersForm = ({
     return (
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit}>
-          <Stack spacing={4}>
+          <Stack spacing={8}>
             <ArticleFilterResults
               articleFormatter={data.articleFormatter}
               feedId={data.feedId}
