@@ -212,6 +212,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                           }}
                           onBlur={field.onBlur}
                           isDisabled={isSubmitting}
+                          isClearable
                           serverId={serverId}
                           parentChannelId={channelId}
                         />

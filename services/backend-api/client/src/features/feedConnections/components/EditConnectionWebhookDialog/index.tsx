@@ -247,6 +247,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}
+                        isClearable
                         parentChannelId={channelId}
                       />
                     )}

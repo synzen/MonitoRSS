@@ -72,7 +72,9 @@ export const DiscordMessageForm = ({
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
 
   const formMethods = useForm<DiscordMessageFormData>({
-    resolver: yupResolver(discordMessageFormSchema),
+    resolver: yupResolver(discordMessageFormSchema, {
+      stripUnknown: true
+    }),
     defaultValues,
     mode: "all",
   });
@@ -148,6 +150,7 @@ export const DiscordMessageForm = ({
   };
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
+    console.log("🚀 ~ file: index.tsx:151 ~ onSubmit ~ formData:", formData)
     try {
       const embedsWithoutEmptyObjects = formData.embeds?.map((embed) => {
         const newEmbed = { ...embed };
