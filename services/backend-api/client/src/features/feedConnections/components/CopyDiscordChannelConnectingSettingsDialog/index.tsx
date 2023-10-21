@@ -20,7 +20,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserFeed } from "../../../feed/hooks";
-import { FeedConnectionType } from "../../../../types";
+import { FeedConnectionType, FeedDiscordChannelConnection } from "../../../../types";
 import { getPrettyConnectionName } from "../../../../utils/getPrettyConnectionName";
 import { CopyableConnectionDiscordChannelSettings } from "../../constants";
 import { useConnection, useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
@@ -198,6 +198,13 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   };
 
   const checkboxesByCategories = Object.values(CopyCategory).map((category) => {
+    if (
+      category === CopyCategory.Webhook &&
+      !(connection as FeedDiscordChannelConnection)?.details.webhook
+    ) {
+      return null;
+    }
+
     const allCategorySettings = Object.values(CopyableConnectionDiscordChannelSettings).filter(
       (setting) => {
         return CopyableSettingDescriptions[setting].category === category;
