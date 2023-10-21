@@ -13,6 +13,9 @@ import {
   chakra,
   Heading,
   Text,
+  Badge,
+  Divider,
+  Box,
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,7 +23,7 @@ import { useUserFeed } from "../../../feed/hooks";
 import { FeedConnectionType } from "../../../../types";
 import { getPrettyConnectionName } from "../../../../utils/getPrettyConnectionName";
 import { CopyableConnectionDiscordChannelSettings } from "../../constants";
-import { useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
+import { useConnection, useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 
@@ -123,6 +126,10 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   onCloseRef,
 }: Props) => {
   const { mutateAsync, status } = useCreateDiscordChannelConnectionCopySettings();
+  const { connection } = useConnection({
+    feedId,
+    connectionId,
+  });
   const { t } = useTranslation();
   const { feed } = useUserFeed({ feedId });
   const [checkedSettings, setCheckedSettings] = useState<
@@ -268,9 +275,21 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={6}>
+            <Stack py={4} px={4} bg="blackAlpha.300" rounded="md">
+              <Badge bg="none" p={0}>
+                Source Connection
+              </Badge>
+              <Divider />
+              <Box>
+                <Text fontSize={14} color="whiteAlpha.500">
+                  {getPrettyConnectionName(connection as never)}
+                </Text>
+                <Heading size="sm">{connection?.name}</Heading>
+              </Box>
+            </Stack>
             <Text>
-              Mass-copy settings from one connection to another. This will overwrite the settings of
-              the target connections.
+              Mass-copy settings from this connection to another. This will overwrite the settings
+              of the target connections.
             </Text>
             <Stack spacing={2}>
               <Heading size="sm" as="h2">
