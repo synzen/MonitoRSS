@@ -62,6 +62,10 @@ export const DiscordForumTagFiltersDialog = ({
                   onFiltersUpdated(expression ? { expression } : null);
                   onClose();
                 }}
+                formContainerProps={{
+                  bg: "gray.800",
+                  rounded: "md",
+                }}
               />
             </Stack>
           </ModalBody>
