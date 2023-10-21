@@ -6,9 +6,15 @@ interface Props {
   onChange: (serverId: string) => void;
   value: string;
   inputRef?: React.ComponentProps<typeof ThemedSelect>["inputRef"];
+  isDisabled?: boolean;
 }
 
-export const DiscordServerSearchSelectv2: React.FC<Props> = ({ onChange, value, inputRef }) => {
+export const DiscordServerSearchSelectv2: React.FC<Props> = ({
+  onChange,
+  value,
+  inputRef,
+  isDisabled,
+}) => {
   const { status, data } = useDiscordServers();
 
   const loading = status === "loading";
@@ -23,6 +29,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({ onChange, value, 
       loading={loading}
       value={value}
       inputRef={inputRef}
+      isDisabled={isDisabled}
       options={
         data?.results.map((server) => ({
           value: server.id,

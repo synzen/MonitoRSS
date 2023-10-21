@@ -146,6 +146,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                           onChange={field.onChange}
                           value={field.value}
                           inputRef={initialFocusRef}
+                          isDisabled={isSubmitting}
                         />
                       )}
                     />
@@ -286,7 +287,12 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                       name="name"
                       control={control}
                       render={({ field }) => (
-                        <Input {...field} value={field.value || ""} bg="gray.800" />
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          bg="gray.800"
+                          isDisabled={isSubmitting}
+                        />
                       )}
                     />
                     {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}

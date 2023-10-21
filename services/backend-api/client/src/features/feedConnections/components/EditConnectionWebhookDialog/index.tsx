@@ -142,6 +142,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                           ref={initialRef}
                           value={field.value || ""}
                           bg="gray.800"
+                          isDisabled={isSubmitting}
                         />
                       )}
                     />
@@ -168,6 +169,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                       <DiscordServerSearchSelectv2
                         onChange={(id) => field.onChange(id)}
                         value={field.value || ""}
+                        isDisabled={isSubmitting}
                       />
                     )}
                   />
