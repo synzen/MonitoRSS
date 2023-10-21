@@ -7,7 +7,7 @@ export * from "./SendConnectionTestArticleButton";
 export * from "./ArticlePlaceholderTable";
 export * from "./FiltersTabSection";
 export * from "./MessageTabSection";
-export * from "./ArticleFilterResultsTable";
+export * from "./ArticleFilterResults/ArticleFilterResultsView";
 export * from "./ConnectionDisabledAlert";
 export * from "./ComparisonsTabSection";
 export * from "./UserFeedSettingsTabSection";

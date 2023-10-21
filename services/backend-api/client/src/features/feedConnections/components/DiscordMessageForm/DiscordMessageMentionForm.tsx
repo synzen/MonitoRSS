@@ -18,10 +18,12 @@ import { MentionSelectDialog } from "../MentionSelectDialog";
 import { useDiscordServerRoles } from "../../../discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
 import { useDiscordUser } from "../../../discordUser";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   feedId: string;
   guildId: string | undefined;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 const MentionCheckbox = ({
@@ -32,6 +34,7 @@ const MentionCheckbox = ({
   onDelete,
   feedId,
   guildId,
+  articleFormatter,
 }: {
   id: string;
   type: "role" | "user";
@@ -40,6 +43,7 @@ const MentionCheckbox = ({
   onDelete: () => void;
   feedId?: string;
   guildId?: string;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }) => {
   const { getRolebyId, isFetching: isFetchingRoles } = useDiscordServerRoles({
     serverId: guildId,
@@ -88,6 +92,7 @@ const MentionCheckbox = ({
               onChangeFilters(newFilters);
             }}
             filters={filters}
+            articleFormatter={articleFormatter}
             trigger={
               <IconButton
                 icon={<SettingsIcon fontSize="sm" />}
@@ -104,7 +109,7 @@ const MentionCheckbox = ({
   );
 };
 
-export const DiscordMessageMentionForm = ({ feedId, guildId }: Props) => {
+export const DiscordMessageMentionForm = ({ feedId, guildId, articleFormatter }: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
 
@@ -131,6 +136,7 @@ export const DiscordMessageMentionForm = ({ feedId, guildId }: Props) => {
                 return (
                   <MentionCheckbox
                     key={target.id}
+                    articleFormatter={articleFormatter}
                     filters={target.filters as any}
                     id={target.id}
                     type={target.type}

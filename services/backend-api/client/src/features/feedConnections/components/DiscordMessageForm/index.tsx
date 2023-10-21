@@ -36,6 +36,7 @@ import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
+import { useUserFeed } from "../../../feed/hooks";
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -66,14 +67,14 @@ export const DiscordMessageForm = ({
   include,
 }: Props) => {
   const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
-
+  const { feed: userFeed } = useUserFeed({ feedId });
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
 
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema, {
-      stripUnknown: true
+      stripUnknown: true,
     }),
     defaultValues,
     mode: "all",
@@ -150,7 +151,6 @@ export const DiscordMessageForm = ({
   };
 
   const onSubmit = async (formData: DiscordMessageFormData) => {
-    console.log("🚀 ~ file: index.tsx:151 ~ onSubmit ~ formData:", formData)
     try {
       const embedsWithoutEmptyObjects = formData.embeds?.map((embed) => {
         const newEmbed = { ...embed };
@@ -328,7 +328,20 @@ export const DiscordMessageForm = ({
           </Stack>
           <Stack>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
-            <DiscordMessageMentionForm guildId={guildId} feedId={feedId} />
+            <DiscordMessageMentionForm
+              guildId={guildId}
+              feedId={feedId}
+              articleFormatter={{
+                customPlaceholders,
+                options: {
+                  dateFormat: userFeed?.formatOptions?.dateFormat,
+                  dateTimezone: userFeed?.formatOptions?.dateTimezone,
+                  formatTables: formatOptions?.formatTables || false,
+                  stripImages: formatOptions?.stripImages || false,
+                  disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
+                },
+              }}
+            />
           </Stack>
           <Stack>
             <Heading size="md">Placeholder Limits</Heading>
