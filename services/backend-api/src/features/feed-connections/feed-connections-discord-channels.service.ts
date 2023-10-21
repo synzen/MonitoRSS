@@ -492,6 +492,10 @@ export class FeedConnectionsDiscordChannelsService {
         currentConnection.customPlaceholders =
           sourceConnection.customPlaceholders;
       }
+
+      if (properties.includes(CopyableSetting.DeliveryRateLimits)) {
+        currentConnection.rateLimits = sourceConnection.rateLimits;
+      }
     }
 
     await foundFeed.save();

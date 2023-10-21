@@ -97,6 +97,10 @@ const CopyableSettingDescriptions: Record<
     description: "Thread",
     category: CopyCategory.Webhook,
   },
+  [CopyableConnectionDiscordChannelSettings.DeliveryRateLimits]: {
+    description: "Delivery rate limits",
+    category: CopyCategory.Other,
+  },
   [CopyableConnectionDiscordChannelSettings.CustomPlaceholders]: {
     description: "Custom placeholders",
     category: CopyCategory.Other,

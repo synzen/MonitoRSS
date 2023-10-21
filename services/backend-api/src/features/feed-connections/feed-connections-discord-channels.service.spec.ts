@@ -552,6 +552,13 @@ describe("FeedConnectionsDiscordChannelsService", () => {
                 foo: "bar",
               },
             },
+            rateLimits: [
+              {
+                id: "1",
+                timeWindowSeconds: 100,
+                limit: 10,
+              },
+            ],
             splitOptions: {
               splitChar: "1",
               appendChar: "2",
@@ -696,6 +703,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         expect(c).toMatchObject({
           filters: sourceConnection.filters,
           splitOptions: sourceConnection.splitOptions,
+          rateLimits: sourceConnection.rateLimits,
           details: {
             embeds: sourceConnection.details.embeds,
             formatter: sourceConnection.details.formatter,

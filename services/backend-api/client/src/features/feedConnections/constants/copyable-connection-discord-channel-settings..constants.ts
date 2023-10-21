@@ -15,4 +15,5 @@ export enum CopyableConnectionDiscordChannelSettings {
   Filters = "filters",
   SplitOptions = "splitOptions",
   CustomPlaceholders = "customPlaceholders",
+  DeliveryRateLimits = "deliveryRateLimits",
 }
