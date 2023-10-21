@@ -110,6 +110,11 @@ const CopyableSettingDescriptions: Record<
   },
 };
 
+const FORUM_RELATED_SETTINGS = [
+  CopyableConnectionDiscordChannelSettings.ForumThreadTags,
+  CopyableConnectionDiscordChannelSettings.ForumThreadTitle,
+];
+
 interface Props {
   feedId?: string;
   connectionId?: string;
@@ -126,10 +131,13 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   onCloseRef,
 }: Props) => {
   const { mutateAsync, status } = useCreateDiscordChannelConnectionCopySettings();
-  const { connection } = useConnection({
+  const { connection: uncastedConnection } = useConnection({
     feedId,
     connectionId,
   });
+  const connection = uncastedConnection as FeedDiscordChannelConnection;
+  const connectionIsInForum =
+    connection?.details.channel?.type === "forum" || connection?.details.webhook?.type === "forum";
   const { t } = useTranslation();
   const { feed } = useUserFeed({ feedId });
   const [checkedSettings, setCheckedSettings] = useState<
@@ -198,10 +206,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   };
 
   const checkboxesByCategories = Object.values(CopyCategory).map((category) => {
-    if (
-      category === CopyCategory.Webhook &&
-      !(connection as FeedDiscordChannelConnection)?.details.webhook
-    ) {
+    if (category === CopyCategory.Webhook && !connection?.details.webhook) {
       return null;
     }
 
@@ -249,6 +254,14 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         {Object.entries(CopyableSettingDescriptions).map(
           ([setting, { description, category: settingCategory }]) => {
             if (settingCategory !== category) {
+              return null;
+            }
+
+            const isForumRelated = FORUM_RELATED_SETTINGS.includes(
+              setting as CopyableConnectionDiscordChannelSettings
+            );
+
+            if (isForumRelated && !connectionIsInForum) {
               return null;
             }
 
