@@ -52,7 +52,8 @@ class DiscordButtonComponent {
 
   @Prop({
     type: Number,
-    enum: Object.values(FeedConnectionDiscordComponentButtonStyle),
+    min: FeedConnectionDiscordComponentButtonStyle.Primary,
+    max: FeedConnectionDiscordComponentButtonStyle.Link,
     required: true,
   })
   style: FeedConnectionDiscordComponentButtonStyle;
@@ -77,7 +78,7 @@ export class DiscordComponentRow {
     type: [DiscordBaseComponentSchema],
     validate: [
       function (this: Array<DiscordComponentRow>) {
-        return this.length <= 5;
+        return this.length ? this.length <= 5 : true;
       },
       "Discord component rows cannot have more than 5 components",
     ],

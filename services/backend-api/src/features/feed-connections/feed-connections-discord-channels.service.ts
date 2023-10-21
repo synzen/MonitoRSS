@@ -37,7 +37,11 @@ import { NoDiscordChannelPermissionOverwritesException } from "../feeds/exceptio
 import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
-import { CreateDiscordChannelConnectionCloneInputDto } from "./dto";
+import {
+  CopyableSetting,
+  CreateDiscordChannelConnectionCloneInputDto,
+  CreateDiscordChannelConnectionCopyConnectionSettingsInputDto,
+} from "./dto";
 import {
   DiscordChannelPermissionsException,
   InvalidDiscordChannelException,
@@ -377,6 +381,126 @@ export class FeedConnectionsDiscordChannelsService {
     return {
       id: newId,
     };
+  }
+
+  async copySettings(
+    userFeed: UserFeed,
+    sourceConnection: DiscordChannelConnection,
+    {
+      properties,
+      targetDiscordChannelConnectionIds,
+    }: CreateDiscordChannelConnectionCopyConnectionSettingsInputDto
+  ) {
+    const foundFeed = await this.userFeedModel
+      .findById(userFeed._id)
+      .select("connections");
+
+    if (!foundFeed) {
+      throw new Error(`Could not find feed ${userFeed._id}`);
+    }
+
+    const relevantConnections = targetDiscordChannelConnectionIds.map((id) => {
+      const connection = foundFeed?.connections.discordChannels.find((c) =>
+        c.id.equals(id)
+      );
+
+      if (!connection) {
+        throw new Error(
+          `Could not find connection ${id} on feed ${userFeed._id}`
+        );
+      }
+
+      return connection;
+    });
+
+    for (let i = 0; i < relevantConnections.length; ++i) {
+      const currentConnection = relevantConnections[i];
+
+      if (properties.includes(CopyableSetting.Embeds)) {
+        currentConnection.details.embeds = sourceConnection.details.embeds;
+      }
+
+      if (
+        currentConnection.details.webhook &&
+        sourceConnection.details.webhook
+      ) {
+        if (properties.includes(CopyableSetting.WebhookName)) {
+          currentConnection.details.webhook.name =
+            sourceConnection.details.webhook.name;
+        }
+
+        if (properties.includes(CopyableSetting.WebhookIconUrl)) {
+          currentConnection.details.webhook.iconUrl =
+            sourceConnection.details.webhook.iconUrl;
+        }
+
+        if (properties.includes(CopyableSetting.WebhookThread)) {
+          currentConnection.details.webhook.threadId =
+            sourceConnection.details.webhook.threadId;
+        }
+      }
+
+      if (properties.includes(CopyableSetting.PlaceholderLimits)) {
+        currentConnection.details.placeholderLimits =
+          sourceConnection.details.placeholderLimits;
+      }
+
+      if (properties.includes(CopyableSetting.Content)) {
+        currentConnection.details.content = sourceConnection.details.content;
+      }
+
+      if (properties.includes(CopyableSetting.ContentFormatTables)) {
+        currentConnection.details.formatter.disableImageLinkPreviews =
+          sourceConnection.details.formatter.disableImageLinkPreviews;
+      }
+
+      if (properties.includes(CopyableSetting.ContentStripImages)) {
+        currentConnection.details.formatter.formatTables =
+          sourceConnection.details.formatter.formatTables;
+      }
+
+      if (
+        properties.includes(CopyableSetting.ContentDisableImageLinkPreviews)
+      ) {
+        currentConnection.details.formatter.stripImages =
+          sourceConnection.details.formatter.stripImages;
+      }
+
+      if (properties.includes(CopyableSetting.Components)) {
+        currentConnection.details.componentRows =
+          sourceConnection.details.componentRows;
+      }
+
+      if (properties.includes(CopyableSetting.ForumThreadTitle)) {
+        currentConnection.details.forumThreadTitle =
+          sourceConnection.details.forumThreadTitle;
+      }
+
+      if (properties.includes(CopyableSetting.ForumThreadTags)) {
+        currentConnection.details.forumThreadTags =
+          sourceConnection.details.forumThreadTags;
+      }
+
+      if (properties.includes(CopyableSetting.placeholderFallbackSetting)) {
+        currentConnection.details.enablePlaceholderFallback =
+          sourceConnection.details.enablePlaceholderFallback;
+      }
+
+      if (properties.includes(CopyableSetting.Filters)) {
+        currentConnection.filters = sourceConnection.filters;
+      }
+
+      if (properties.includes(CopyableSetting.SplitOptions)) {
+        currentConnection.splitOptions = sourceConnection.splitOptions;
+      }
+
+      if (properties.includes(CopyableSetting.CustomPlaceholders)) {
+        currentConnection.customPlaceholders =
+          sourceConnection.customPlaceholders;
+      }
+    }
+
+    await foundFeed.save();
   }
 
   async updateDiscordChannelConnection(

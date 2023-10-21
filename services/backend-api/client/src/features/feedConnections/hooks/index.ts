@@ -9,3 +9,4 @@ export * from "./useCreateDiscordChannelConnectionClone";
 export * from "./useConnection";
 export * from "./useUpdateConnection";
 export * from "./useGetUserFeedArticlesError";
+export * from "./useCreateDiscordChannelConnectionCopySettings";

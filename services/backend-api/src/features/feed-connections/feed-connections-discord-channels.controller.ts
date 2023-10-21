@@ -25,6 +25,7 @@ import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionCloneInputDto,
+  CreateDiscordChannelConnectionCopyConnectionSettingsInputDto,
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordChannelConnectionPreviewInputDto,
   CreateDiscordChannelConnectionPreviewOutputDto,
@@ -147,6 +148,32 @@ export class FeedConnectionsDiscordChannelsController {
         apiResponse: result.apiResponse,
       },
     };
+  }
+
+  @Post("/discord-channels/:connectionId/copy-connection-settings")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async copyConnectionSettings(
+    @Param(
+      "feedId",
+      GetUserFeedPipe({
+        userTypes: [
+          UserFeedManagerType.Creator,
+          UserFeedManagerType.SharedManager,
+        ],
+      }),
+      GetFeedDiscordChannelConnectionPipe
+    )
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Body(ValidationPipe)
+    {
+      properties,
+      targetDiscordChannelConnectionIds,
+    }: CreateDiscordChannelConnectionCopyConnectionSettingsInputDto
+  ) {
+    await this.service.copySettings(feed, connection, {
+      properties,
+      targetDiscordChannelConnectionIds,
+    });
   }
 
   @Post("/discord-channels/:connectionId/clone")

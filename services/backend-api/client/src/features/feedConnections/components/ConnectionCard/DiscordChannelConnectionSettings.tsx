@@ -24,6 +24,7 @@ import { notifyError } from "../../../../utils/notifyError";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 import { DeleteConnectionButton } from "../DeleteConnectionButton";
 import { EditConnectionChannelDialog } from "../EditConnectionChannelDialog";
+import { CopyDiscordChannelConnectionSettingsDialog } from "../CopyDiscordChannelConnectingSettingsDialog";
 
 interface Props {
   feedId: string;
@@ -46,6 +47,11 @@ export const DiscordChannelConnectionSettings = ({
     onClose: isConvertToWebhookOnClose,
     onOpen: isConvertToWebhookOnOpen,
   } = useDisclosure();
+  const {
+    isOpen: isCopySettingsIsOpen,
+    onClose: isCopySettingsOnClose,
+    onOpen: isCopySettingsOnOpen,
+  } = useDisclosure();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
@@ -64,6 +70,13 @@ export const DiscordChannelConnectionSettings = ({
 
   return (
     <>
+      <CopyDiscordChannelConnectionSettingsDialog
+        feedId={feedId}
+        connectionId={connection.id}
+        isOpen={isCopySettingsIsOpen}
+        onClose={isCopySettingsOnClose}
+        onCloseRef={actionsButtonRef}
+      />
       {connection.details.channel && (
         <EditConnectionChannelDialog
           onCloseRef={actionsButtonRef}
@@ -137,6 +150,9 @@ export const DiscordChannelConnectionSettings = ({
         <MenuList>
           <MenuItem aria-label="Edit" onClick={editOnOpen}>
             {t("common.buttons.configure")}
+          </MenuItem>
+          <MenuItem aria-label="Edit" onClick={isCopySettingsOnOpen}>
+            Copy Settings
           </MenuItem>
           <CloneDiscordConnectionCloneDialog
             trigger={<MenuItem>Clone</MenuItem>}

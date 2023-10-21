@@ -755,6 +755,11 @@ const handlers = [
     )
   ),
 
+  rest.post(
+    "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/copy-connection-settings",
+    (req, res, ctx) => res(ctx.delay(500), ctx.status(204))
+  ),
+
   rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/test", (req, res, ctx) =>
     res(
       ctx.delay(500),

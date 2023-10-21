@@ -31,6 +31,9 @@ export const RequireAuth = ({ children }: Props) => {
   }
 
   if (authStatus === "success" && !authStatusData?.authenticated) {
+    console.log("🚀 ~ file: RequireAuth.tsx:34 ~ RequireAuth ~ authStatusData:", authStatusData);
+    console.log("🚀 ~ file: RequireAuth.tsx:34 ~ RequireAuth ~ authStatus:", authStatus);
+
     const currentPath = window.location.pathname;
     const jsonState = JSON.stringify({
       path: currentPath,
