@@ -228,9 +228,9 @@ const DiscordMessageComponentRow = ({
                           <FormControl isInvalid={!!error}>
                             <FormLabel fontSize={12}>Label</FormLabel>
                             <Input
-                              autoCapitalize="false"
-                              autoComplete="false"
-                              autoCorrect="false"
+                              autoCapitalize="off"
+                              autoComplete="off"
+                              autoCorrect="off"
                               bg="gray.800"
                               size="sm"
                               {...field}
@@ -270,9 +270,9 @@ const DiscordMessageComponentRow = ({
                           <FormControl isInvalid={!!error}>
                             <FormLabel fontSize={12}>URL</FormLabel>
                             <Input
-                              autoCapitalize="false"
-                              autoComplete="false"
-                              autoCorrect="false"
+                              autoCapitalize="off"
+                              autoComplete="off"
+                              autoCorrect="off"
                               bg="gray.800"
                               size="sm"
                               {...field}
