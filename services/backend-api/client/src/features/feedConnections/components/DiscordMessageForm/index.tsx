@@ -74,10 +74,20 @@ export const DiscordMessageForm = ({
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
 
   const formMethods = useForm<DiscordMessageFormData>({
-    resolver: yupResolver(discordMessageFormSchema, {
-      stripUnknown: true,
-    }),
-    defaultValues,
+    resolver: yupResolver(discordMessageFormSchema),
+    defaultValues: {
+      componentRows: defaultValues?.componentRows,
+      content: defaultValues?.content || "",
+      customPlaceholders: defaultValues?.customPlaceholders,
+      embeds: defaultValues?.embeds,
+      enablePlaceholderFallback: defaultValues?.enablePlaceholderFallback,
+      formatter: defaultValues?.formatter,
+      forumThreadTags: defaultValues?.forumThreadTags,
+      forumThreadTitle: defaultValues?.forumThreadTitle,
+      mentions: defaultValues?.mentions,
+      placeholderLimits: defaultValues?.placeholderLimits,
+      splitOptions: defaultValues?.splitOptions,
+    },
     mode: "all",
   });
   const {
