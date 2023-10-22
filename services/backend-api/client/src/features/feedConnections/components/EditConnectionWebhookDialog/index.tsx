@@ -115,7 +115,12 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     >
       <ModalOverlay />
       <ModalContent>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form
+          onSubmit={(e) => {
+            e.stopPropagation();
+            handleSubmit(onSubmit)(e);
+          }}
+        >
           <ModalHeader>
             {title || t("features.feed.components.updateDiscordWebhookConnectionDialog.title")}
           </ModalHeader>

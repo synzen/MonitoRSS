@@ -703,7 +703,10 @@ export class FeedConnectionsDiscordChannelsService {
         );
       }
 
-      if (oldConnection.details.webhook?.isApplicationOwned) {
+      if (
+        createdApplicationWebhookId &&
+        oldConnection.details.webhook?.isApplicationOwned
+      ) {
         try {
           await this.discordWebhooksService.deleteWebhook(
             oldConnection.details.webhook.id
