@@ -23,6 +23,8 @@
     "sync-db": "mikro-orm schema:update --run",
     "migration:local:create": "cross-env NODE_ENV=local mikro-orm migration:create",
     "migration:local:up": "cross-env NODE_ENV=local mikro-orm migration:up",
+    "migration:local:list": "cross-env NODE_ENV=local mikro-orm migration:list",
+    "migration:local:pending": "cross-env NODE_ENV=local mikro-orm migration:pending",
     "migration:local:down": "cross-env NODE_ENV=local mikro-orm migration:down",
     "migration:prod:create": "cross-env NODE_ENV=production mikro-orm migration:create",
     "migration:prod:up": "cross-env NODE_ENV=production mikro-orm migration:up"

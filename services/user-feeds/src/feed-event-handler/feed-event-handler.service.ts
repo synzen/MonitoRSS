@@ -126,22 +126,27 @@ export class FeedEventHandlerService {
     job,
   }: ArticleDeliveryResult) {
     const deliveryRecordId = job.id;
+    const articleId = job.meta?.articleID;
 
     if (result.state === "error") {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.Internal,
         internalMessage: result.message,
+        articleId,
       });
     } else if (result.status === 400) {
+      const responseBody = JSON.stringify(result.body);
       const record = await this.deliveryRecordService.updateDeliveryStatus(
         deliveryRecordId,
         {
           status: ArticleDeliveryStatus.Rejected,
           errorCode: ArticleDeliveryRejectedCode.BadRequest,
-          internalMessage: `Discord rejected the request with status code ${
-            result.status
-          } Body: ${JSON.stringify(result.body)}`,
+          internalMessage:
+            `Discord rejected the request with status code` +
+            ` ${result.status} Body: ${responseBody}`,
+          externalDetail: responseBody,
+          articleId,
         }
       );
 
@@ -151,6 +156,8 @@ export class FeedEventHandlerService {
         {
           data: {
             rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
+            articleId,
+            rejectedMessage: responseBody,
             medium: {
               id: record.medium_id,
             },
@@ -167,6 +174,7 @@ export class FeedEventHandlerService {
         internalMessage: `Discord rejected the request with status code ${
           result.status
         } Body: ${JSON.stringify(result.body)}`,
+        articleId,
       });
     } else if (result.status === 403) {
       const record = await this.deliveryRecordService.updateDeliveryStatus(
@@ -177,6 +185,7 @@ export class FeedEventHandlerService {
           internalMessage: `Discord rejected the request with status code ${
             result.status
           } Body: ${JSON.stringify(result.body)}`,
+          articleId,
         }
       );
 
@@ -204,6 +213,7 @@ export class FeedEventHandlerService {
           internalMessage: `Discord rejected the request with status code ${
             result.status
           } Body: ${JSON.stringify(result.body)}`,
+          articleId,
         }
       );
 
@@ -229,10 +239,12 @@ export class FeedEventHandlerService {
         internalMessage: `Unhandled status code from Discord ${
           result.status
         } received. Body: ${JSON.stringify(result.body)}`,
+        articleId,
       });
     } else {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Sent,
+        articleId,
       });
     }
   }

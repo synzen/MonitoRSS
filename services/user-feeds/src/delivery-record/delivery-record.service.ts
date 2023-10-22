@@ -84,15 +84,20 @@ export class DeliveryRecordService {
       status: ArticleDeliveryStatus;
       errorCode?: string;
       internalMessage?: string;
+      externalDetail?: string;
+      articleId?: string;
     }
   ) {
-    const { status, errorCode, internalMessage } = details;
+    const { status, errorCode, internalMessage, externalDetail, articleId } =
+      details;
 
     const record = await this.recordRepo.findOneOrFail(id);
 
     record.status = status;
     record.error_code = errorCode;
     record.internal_message = internalMessage;
+    record.external_detail = externalDetail;
+    record.article_id = articleId;
 
     await this.recordRepo.persistAndFlush(record);
 

@@ -168,7 +168,15 @@ export class NotificationsService {
   async sendDisabledFeedConnectionAlert(
     feed: UserFeed,
     connection: DiscordChannelConnection | DiscordWebhookConnection,
-    data: { disabledCode: FeedConnectionDisabledCode }
+    {
+      disabledCode,
+      articleId,
+      rejectedMessage,
+    }: {
+      disabledCode: FeedConnectionDisabledCode;
+      articleId?: string;
+      rejectedMessage?: string;
+    }
   ) {
     const discordUserIdsToAlert = [
       ...(feed.shareManageOptions?.invites
@@ -189,7 +197,7 @@ export class NotificationsService {
       return;
     }
 
-    const reason = USER_FEED_CONNECTION_DISABLED_REASONS[data.disabledCode];
+    const reason = USER_FEED_CONNECTION_DISABLED_REASONS[disabledCode];
 
     let feedName = feed.title;
 
@@ -228,10 +236,12 @@ export class NotificationsService {
       controlPanelUrl: `https://my.monitorss.xyz/feeds/${feed._id}${
         connectionPrefix ? `/${connectionPrefix}/${connection.id}` : ""
       }`,
-      reason: reason?.reason || data.disabledCode,
+      reason: reason?.reason || disabledCode,
       actionRequired: reason?.action,
       connectionName: connectionName,
       manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
+      articleId,
+      rejectedMessage,
     };
 
     return await this.smtpTransport?.sendMail({

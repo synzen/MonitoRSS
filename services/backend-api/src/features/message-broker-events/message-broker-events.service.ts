@@ -259,12 +259,16 @@ export class MessageBrokerEventsService {
   async handleRejectedArticleDisableConnection({
     data: {
       rejectedCode,
+      articleId,
+      rejectedMessage,
       medium: { id: mediumId },
       feed: { id: feedId },
     },
   }: {
     data: {
       rejectedCode: ArticleRejectCode;
+      rejectedMessage?: string;
+      articleId?: string;
       medium: {
         id: string;
       };
@@ -326,6 +330,8 @@ export class MessageBrokerEventsService {
             connection,
             {
               disabledCode: disableCode,
+              articleId,
+              rejectedMessage,
             }
           );
         } catch (err) {

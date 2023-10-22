@@ -6,5 +6,7 @@
   "reason": "hello world",
   "connectionName": "#logs",
   "manageNotificationsUrl": "https://my.monitorss.xyz",
-  "actionRequired": "to do"
+  "actionRequired": "to do",
+  "articleId": "article-id",
+  "rejectedMessage": "rejected message"
 }

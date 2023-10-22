@@ -248,6 +248,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "internal-message",
+          articleId: "article-id",
         }
       );
 
@@ -257,6 +258,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.Failed,
           error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internal_message: "internal-message",
+          article_id: "article-id",
         })
       );
     });
