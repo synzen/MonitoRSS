@@ -496,6 +496,18 @@ export class FeedConnectionsDiscordChannelsService {
       if (properties.includes(CopyableSetting.DeliveryRateLimits)) {
         currentConnection.rateLimits = sourceConnection.rateLimits;
       }
+
+      if (properties.includes(CopyableSetting.MessageMentions)) {
+        currentConnection.mentions = sourceConnection.mentions;
+      }
+
+      if (
+        properties.includes(CopyableSetting.Channel) &&
+        sourceConnection.details.channel &&
+        currentConnection.details.channel
+      ) {
+        currentConnection.details.channel = sourceConnection.details.channel;
+      }
     }
 
     await foundFeed.save();

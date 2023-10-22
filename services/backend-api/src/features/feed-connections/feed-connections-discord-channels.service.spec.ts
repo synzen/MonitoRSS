@@ -18,6 +18,7 @@ import {
   FeedConnectionDisabledCode,
   FeedConnectionDiscordComponentButtonStyle,
   FeedConnectionDiscordComponentType,
+  FeedConnectionMentionType,
 } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedsService } from "../feeds/feeds.service";
@@ -564,6 +565,19 @@ describe("FeedConnectionsDiscordChannelsService", () => {
               appendChar: "2",
               prependChar: "3",
             },
+            mentions: {
+              targets: [
+                {
+                  id: "1",
+                  type: FeedConnectionMentionType.Role,
+                  filters: {
+                    expression: {
+                      foo: "bar",
+                    },
+                  },
+                },
+              ],
+            },
             details: {
               webhook: {
                 id: "webhook-id-1",
@@ -704,6 +718,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           filters: sourceConnection.filters,
           splitOptions: sourceConnection.splitOptions,
           rateLimits: sourceConnection.rateLimits,
+          mentions: sourceConnection.mentions,
           details: {
             embeds: sourceConnection.details.embeds,
             formatter: sourceConnection.details.formatter,

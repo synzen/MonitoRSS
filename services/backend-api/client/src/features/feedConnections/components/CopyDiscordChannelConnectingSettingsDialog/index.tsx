@@ -30,19 +30,22 @@ import { notifySuccess } from "../../../../utils/notifySuccess";
 enum CopyCategory {
   Message = "Message",
   Webhook = "Webhook",
-  Other = "Other",
 }
 
 const CopyableSettingDescriptions: Record<
   CopyableConnectionDiscordChannelSettings,
   {
     description: string;
-    category: CopyCategory;
+    category?: CopyCategory;
+    hint?: string;
   }
 > = {
+  [CopyableConnectionDiscordChannelSettings.Channel]: {
+    description: "Channel",
+    hint: "Only applicable if the target connection does not use a webhook",
+  },
   [CopyableConnectionDiscordChannelSettings.Filters]: {
     description: "Filters",
-    category: CopyCategory.Other,
   },
   [CopyableConnectionDiscordChannelSettings.Embeds]: {
     description: "Embeds",
@@ -76,6 +79,10 @@ const CopyableSettingDescriptions: Record<
     description: "Buttons",
     category: CopyCategory.Message,
   },
+  [CopyableConnectionDiscordChannelSettings.MessageMentions]: {
+    description: "Mentions",
+    category: CopyCategory.Message,
+  },
   [CopyableConnectionDiscordChannelSettings.ForumThreadTitle]: {
     description: "Forum thread title",
     category: CopyCategory.Message,
@@ -102,11 +109,9 @@ const CopyableSettingDescriptions: Record<
   },
   [CopyableConnectionDiscordChannelSettings.DeliveryRateLimits]: {
     description: "Delivery rate limits",
-    category: CopyCategory.Other,
   },
   [CopyableConnectionDiscordChannelSettings.CustomPlaceholders]: {
     description: "Custom placeholders",
-    category: CopyCategory.Other,
   },
 };
 
@@ -287,6 +292,12 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     );
   });
 
+  const otherSettings = Object.values(CopyableConnectionDiscordChannelSettings).filter(
+    (setting) => {
+      return !CopyableSettingDescriptions[setting].category;
+    }
+  );
+
   return (
     <Modal size="xl" isOpen={isOpen} onClose={onClose} finalFocusRef={onCloseRef}>
       <ModalOverlay />
@@ -308,15 +319,42 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
               </Box>
             </Stack>
             <Text>
-              Mass-copy settings from this connection to another. This will overwrite the settings
-              of the target connections.
+              Mass-copy settings from the source connection to another. This will overwrite the
+              settings of the target connections.
             </Text>
             <Stack spacing={2}>
               <Heading size="sm" as="h2">
                 Settings to Copy
               </Heading>
-              <Text>Settings to copy from this connection.</Text>
-              <Stack>{checkboxesByCategories}</Stack>
+              <Text>Settings to copy from the source connection.</Text>
+              <Stack>
+                {checkboxesByCategories}
+                {otherSettings.map((setting) => {
+                  const settingDescription = CopyableSettingDescriptions[setting];
+
+                  if (
+                    setting === CopyableConnectionDiscordChannelSettings.Channel &&
+                    !connection.details.channel
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <Checkbox
+                      onChange={(e) => onCheckSettingChange(setting, e.target.checked)}
+                      isChecked={checkedSettings.includes(setting)}
+                    >
+                      {settingDescription.description}
+                      <br />
+                      {settingDescription.hint && (
+                        <chakra.span color="whiteAlpha.600" fontSize={14}>
+                          {settingDescription.hint}
+                        </chakra.span>
+                      )}
+                    </Checkbox>
+                  );
+                })}
+              </Stack>
             </Stack>
             <Stack spacing={2}>
               <Heading size="sm" as="h2">
@@ -360,7 +398,9 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         </ModalBody>
         <ModalFooter>
           <HStack>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
             <Button
               colorScheme="blue"
               mr={3}

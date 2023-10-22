@@ -18,6 +18,8 @@ export enum CopyableSetting {
   SplitOptions = "splitOptions",
   CustomPlaceholders = "customPlaceholders",
   DeliveryRateLimits = "deliveryRateLimits",
+  MessageMentions = "messageMentions",
+  Channel = "channel",
 }
 
 export class CreateDiscordChannelConnectionCopyConnectionSettingsInputDto {
