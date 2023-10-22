@@ -115,14 +115,14 @@
                     </td>
                   </tr>
                   {{#if articleId}}
-                  <tr>
-                    <td style="color: #718096; font-weight: 600;">Article ID</td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 16px">
+                    <tr>
+                      <td style="color: #718096; font-weight: 600;">Article ID</td>
+                    </tr>
+                    <tr>
+                      <td style="padding-bottom: 16px">
                         {{articleId}}
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
                   {{/if}}
                   {{#if connectionName}}
                     <tr>
@@ -140,8 +140,21 @@
                   </tr>
                   <tr>
                     <td style="padding-bottom: 16px">
-                      {{reason}}{{#if rejectedMessage}}
-                        ({{rejectedMessage}}){{/if}}
+                      {{reason}}
+                      {{#if rejectedMessage}}
+                        <table
+                          border="0"
+                          cellspacing="0"
+                          role="presentation"
+                          cellpadding="0"
+                        >
+                          <tr>
+                            <td style="font-family: monospace; padding-top: 8px;">
+                              {{rejectedMessage}}
+                            </td>
+                          </tr>
+                        </table>
+                      {{/if}}
                     </td>
                   </tr>
                   <tr>
