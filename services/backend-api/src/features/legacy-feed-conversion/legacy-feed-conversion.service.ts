@@ -43,11 +43,11 @@ import {
   LegacyFeedConversionJobModel,
 } from "./entities/legacy-feed-conversion-job.entity";
 import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
-import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
-import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
 import { FeedRegexOp } from "../feeds/entities/feed-regexop.entity";
 import { randomUUID } from "crypto";
 import { escapeRegExp } from "lodash";
+import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
+import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
 
 enum ConversionDisabledCode {
   ConvertSuccess = "CONVERTED_USER_FEED",
@@ -361,7 +361,12 @@ export class LegacyFeedConversionService {
     {
       discordUserId,
       isBulkConversion,
-    }: { discordUserId: string; isBulkConversion?: boolean }
+      doNotSave,
+    }: {
+      discordUserId: string;
+      isBulkConversion?: boolean;
+      doNotSave?: boolean;
+    }
   ) {
     try {
       if (feed.disabled === ConversionDisabledCode.ConvertSuccess) {
@@ -421,6 +426,10 @@ export class LegacyFeedConversionService {
         subscribers: subscribers,
         filteredFormats,
       });
+
+      if (doNotSave) {
+        return converted;
+      }
 
       await this.userFeedModel.create([converted]);
 
@@ -617,13 +626,16 @@ export class LegacyFeedConversionService {
         isEnabled: feed.split?.enabled || false,
       },
       mentions: {
-        targets: subscribers?.map((s) => ({
-          id: s.id,
-          type: s.type as unknown as FeedConnectionMentionType,
-          filters: s.rfilters
-            ? this.convertRegexFilters(s.rfilters)
-            : this.convertRegularFilters(s.filters),
-        })),
+        targets: subscribers?.map((s) => {
+          return {
+            id: s.id,
+            type: s.type as unknown as FeedConnectionMentionType,
+            filters:
+              Object.keys(s.rfilters || {}).length > 0
+                ? this.convertRegexFilters(s.rfilters)
+                : this.convertRegularFilters(s.filters),
+          };
+        }),
       },
       details: {
         channel: channelToAdd,
@@ -677,9 +689,10 @@ export class LegacyFeedConversionService {
                 })
               : baseConnection.details.embeds,
           },
-          filters: format.filters
-            ? this.convertRegularFilters(format.filters)
-            : baseConnection.filters,
+          filters:
+            Object.keys(format.filters || {}).length > 0
+              ? this.convertRegularFilters(format.filters)
+              : baseConnection.filters,
         };
 
         converted.connections.discordChannels.push(connectionCopy);
