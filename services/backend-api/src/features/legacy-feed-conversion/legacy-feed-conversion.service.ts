@@ -926,9 +926,20 @@ export class LegacyFeedConversionService {
     // !(a & b & c) = !a | !b | !c
     // !(a & b & (c | d)) = !a | !b | !(c & d) = !a | !b | (!c | !d)
 
-    Object.entries(filters).forEach(([category, filterVals]) => {
+    Object.entries(filters).forEach(([origCategory, filterVals]) => {
+      let category = origCategory;
+
+      if (origCategory === "tags") {
+        category = "processed::categories";
+      }
+
       for (let i = 0; i < filterVals.length; ++i) {
-        const filterVal = filterVals[i];
+        let filterVal = filterVals[i];
+
+        if (origCategory === "tags" && !filterVal.startsWith("~")) {
+          // Old tag filters were separated by newlines, but new ones are separated by commas
+          filterVal = `~${filterVal}`;
+        }
 
         const isBroad = filterVal.startsWith("~");
         const isBlocking = filterVal.startsWith("!");
