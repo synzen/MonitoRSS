@@ -155,7 +155,7 @@ export class NotificationsService {
           });
         } catch (err) {
           logger.error(
-            "Failed to send disabled feed alert email in notifications service",
+            `Failed to send disabled feed alert email in notifications service for feed ${feed._id}`,
             {
               stack: (err as Error).stack,
             }
