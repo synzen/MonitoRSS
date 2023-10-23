@@ -177,38 +177,67 @@ export class NotificationsService {
             manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
           };
 
-          const results = await this.smtpTransport?.sendMail({
-            from: NotificationsService.EMAIL_ALERT_FROM,
-            to: emails,
-            subject: `Feed has been disabled: ${feed.title}`,
-            html: disabledFeedTemplate(templateData),
-          });
+          try {
+            const results = await this.smtpTransport?.sendMail({
+              from: NotificationsService.EMAIL_ALERT_FROM,
+              to: emails,
+              subject: `Feed has been disabled: ${feed.title}`,
+              html: disabledFeedTemplate(templateData),
+            });
 
-          if (createdAttemptIds) {
-            try {
-              await this.notificationDeliveryAttemptModel.updateMany(
-                {
-                  _id: {
-                    $in: createdAttemptIds,
+            if (createdAttemptIds) {
+              try {
+                await this.notificationDeliveryAttemptModel.updateMany(
+                  {
+                    _id: {
+                      $in: createdAttemptIds,
+                    },
                   },
-                },
-                {
-                  $set: {
-                    status: NotificationDeliveryAttemptStatus.Success,
-                  },
-                }
-              );
-            } catch (err) {
-              logger.error(
-                `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled feed`,
-                {
-                  stack: (err as Error).stack,
-                }
-              );
+                  {
+                    $set: {
+                      status: NotificationDeliveryAttemptStatus.Success,
+                    },
+                  }
+                );
+              } catch (err) {
+                logger.error(
+                  `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled feed`,
+                  {
+                    stack: (err as Error).stack,
+                  }
+                );
+              }
             }
-          }
 
-          return results;
+            return results;
+          } catch (err) {
+            if (createdAttemptIds) {
+              try {
+                await this.notificationDeliveryAttemptModel.updateMany(
+                  {
+                    _id: {
+                      $in: createdAttemptIds,
+                    },
+                  },
+                  {
+                    $set: {
+                      status: NotificationDeliveryAttemptStatus.Failure,
+                      failReasonInternal: (err as Error).message,
+                    },
+                  }
+                );
+              } catch (err) {
+                logger.error(
+                  `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled feed`,
+                  {
+                    stack: (err as Error).stack,
+                  }
+                );
+              }
+            }
+
+            throw err;
+          }
         } catch (err) {
           logger.error(
             `Failed to send disabled feed alert email in notifications service for feed ${feed._id} for disabled feed`,
@@ -322,37 +351,66 @@ export class NotificationsService {
       rejectedMessage,
     };
 
-    const results = await this.smtpTransport?.sendMail({
-      from: NotificationsService.EMAIL_ALERT_FROM,
-      to: emails,
-      subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
-      html: disabledFeedTemplate(templateData),
-    });
+    try {
+      const results = await this.smtpTransport?.sendMail({
+        from: NotificationsService.EMAIL_ALERT_FROM,
+        to: emails,
+        subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
+        html: disabledFeedTemplate(templateData),
+      });
 
-    if (createdAttemptIds) {
-      try {
-        await this.notificationDeliveryAttemptModel.updateMany(
-          {
-            _id: {
-              $in: createdAttemptIds,
+      if (createdAttemptIds) {
+        try {
+          await this.notificationDeliveryAttemptModel.updateMany(
+            {
+              _id: {
+                $in: createdAttemptIds,
+              },
             },
-          },
-          {
-            $set: {
-              status: NotificationDeliveryAttemptStatus.Success,
-            },
-          }
-        );
-      } catch (err) {
-        logger.error(
-          `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled connection`,
-          {
-            stack: (err as Error).stack,
-          }
-        );
+            {
+              $set: {
+                status: NotificationDeliveryAttemptStatus.Success,
+              },
+            }
+          );
+        } catch (err) {
+          logger.error(
+            `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled connection`,
+            {
+              stack: (err as Error).stack,
+            }
+          );
+        }
       }
-    }
 
-    return results;
+      return results;
+    } catch (err) {
+      if (createdAttemptIds) {
+        try {
+          await this.notificationDeliveryAttemptModel.updateMany(
+            {
+              _id: {
+                $in: createdAttemptIds,
+              },
+            },
+            {
+              $set: {
+                status: NotificationDeliveryAttemptStatus.Failure,
+                failReasonInternal: (err as Error).message,
+              },
+            }
+          );
+        } catch (err) {
+          logger.error(
+            `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled connection`,
+            {
+              stack: (err as Error).stack,
+            }
+          );
+        }
+      }
+
+      throw err;
+    }
   }
 }
