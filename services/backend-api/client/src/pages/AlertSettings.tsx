@@ -111,7 +111,12 @@ export const AlertSettings = () => {
                 </Text>
                 <Flex justifyContent="space-between" alignItems="center">
                   <Text>{data?.result?.email}</Text>
-                  <Button variant="link" color="blue.300" leftIcon={<RepeatIcon />}>
+                  <Button
+                    variant="link"
+                    color="blue.300"
+                    leftIcon={<RepeatIcon />}
+                    onClick={onClickGrantEmailAccess}
+                  >
                     Reauthorize
                   </Button>
                 </Flex>
