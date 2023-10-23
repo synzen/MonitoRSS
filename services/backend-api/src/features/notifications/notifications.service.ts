@@ -17,6 +17,12 @@ import { join } from "path";
 import Handlebars from "handlebars";
 import { UserFeedDisabledCode } from "../user-feeds/types";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
+import {
+  NotificationDeliveryAttempt,
+  NotificationDeliveryAttemptModel,
+} from "./entities/notification-delivery-attempt.entity";
+import { NotificationDeliveryAttemptStatus } from "./constants/notification-delivery-attempt-status.constants";
+import { NotificationDeliveryAttemptType } from "./constants/notification-delivery-attempt-type.constants";
 
 const disabledFeedHandlebarsText = fs.readFileSync(
   join(__dirname, "handlebars-templates", "disabled-feed.hbs"),
@@ -83,7 +89,9 @@ export class NotificationsService {
     @Inject(SmtpTransport)
     private readonly smtpTransport: nodemailer.Transporter<SMTPTransport.SentMessageInfo> | null,
     private readonly usersService: UsersService,
-    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    @InjectModel(NotificationDeliveryAttempt.name)
+    private readonly notificationDeliveryAttemptModel: NotificationDeliveryAttemptModel
   ) {}
 
   static EMAIL_ALERT_FROM = '"MonitoRSS Alerts" <alerts@monitorss.xyz>';
@@ -98,7 +106,7 @@ export class NotificationsService {
           $in: feedIds,
         },
       })
-      .select("_id title user shareManageOptions")
+      .select("_id title user shareManageOptions url")
       .lean();
 
     await Promise.all(
@@ -121,6 +129,28 @@ export class NotificationsService {
             );
 
             return;
+          }
+
+          let createdAttemptIds: Types.ObjectId[] = [];
+
+          try {
+            const created = await this.notificationDeliveryAttemptModel.create(
+              emails.map((e) => ({
+                email: e,
+                status: NotificationDeliveryAttemptStatus.Pending,
+                type: NotificationDeliveryAttemptType.DisabledFeed,
+                feedId: feed._id,
+              }))
+            );
+
+            createdAttemptIds = created.map((c) => c._id);
+          } catch (err) {
+            logger.error(
+              `Failed to create notification delivery attempts in notifications service for feed ${feed._id}`,
+              {
+                stack: (err as Error).stack,
+              }
+            );
           }
 
           const reason = USER_FEED_DISABLED_REASONS[data.disabledCode];
@@ -147,15 +177,41 @@ export class NotificationsService {
             manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
           };
 
-          return await this.smtpTransport?.sendMail({
+          const results = await this.smtpTransport?.sendMail({
             from: NotificationsService.EMAIL_ALERT_FROM,
             to: emails,
             subject: `Feed has been disabled: ${feed.title}`,
             html: disabledFeedTemplate(templateData),
           });
+
+          if (createdAttemptIds) {
+            try {
+              await this.notificationDeliveryAttemptModel.updateMany(
+                {
+                  _id: {
+                    $in: createdAttemptIds,
+                  },
+                },
+                {
+                  $set: {
+                    status: NotificationDeliveryAttemptStatus.Success,
+                  },
+                }
+              );
+            } catch (err) {
+              logger.error(
+                `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled feed`,
+                {
+                  stack: (err as Error).stack,
+                }
+              );
+            }
+          }
+
+          return results;
         } catch (err) {
           logger.error(
-            `Failed to send disabled feed alert email in notifications service for feed ${feed._id}`,
+            `Failed to send disabled feed alert email in notifications service for feed ${feed._id} for disabled feed`,
             {
               stack: (err as Error).stack,
             }
@@ -195,6 +251,28 @@ export class NotificationsService {
       );
 
       return;
+    }
+
+    let createdAttemptIds: Types.ObjectId[] = [];
+
+    try {
+      const created = await this.notificationDeliveryAttemptModel.create(
+        emails.map((e) => ({
+          email: e,
+          status: NotificationDeliveryAttemptStatus.Pending,
+          type: NotificationDeliveryAttemptType.DisabledConnection,
+          feedId: feed._id,
+        }))
+      );
+
+      createdAttemptIds = created.map((c) => c._id);
+    } catch (err) {
+      logger.error(
+        `Failed to create notification delivery attempts in notifications service for feed ${feed._id} for disabled connection`,
+        {
+          stack: (err as Error).stack,
+        }
+      );
     }
 
     const reason = USER_FEED_CONNECTION_DISABLED_REASONS[disabledCode];
@@ -244,11 +322,37 @@ export class NotificationsService {
       rejectedMessage,
     };
 
-    return await this.smtpTransport?.sendMail({
+    const results = await this.smtpTransport?.sendMail({
       from: NotificationsService.EMAIL_ALERT_FROM,
       to: emails,
       subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
       html: disabledFeedTemplate(templateData),
     });
+
+    if (createdAttemptIds) {
+      try {
+        await this.notificationDeliveryAttemptModel.updateMany(
+          {
+            _id: {
+              $in: createdAttemptIds,
+            },
+          },
+          {
+            $set: {
+              status: NotificationDeliveryAttemptStatus.Success,
+            },
+          }
+        );
+      } catch (err) {
+        logger.error(
+          `Failed to update notification delivery attempts in notifications service for feed ${feed._id} for disabled connection`,
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
+    }
+
+    return results;
   }
 }

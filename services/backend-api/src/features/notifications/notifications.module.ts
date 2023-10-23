@@ -6,6 +6,7 @@ import nodemailer from "nodemailer";
 import { UsersModule } from "../users/users.module";
 import { MongooseModule } from "@nestjs/mongoose";
 import { UserFeedFeature } from "../user-feeds/entities";
+import { NotificationDeliveryAttemptFeature } from "./entities/notification-delivery-attempt.entity";
 
 @Module({
   providers: [
@@ -37,7 +38,10 @@ import { UserFeedFeature } from "../user-feeds/entities";
   exports: [NotificationsService],
   imports: [
     UsersModule.forRoot(),
-    MongooseModule.forFeature([UserFeedFeature]),
+    MongooseModule.forFeature([
+      UserFeedFeature,
+      NotificationDeliveryAttemptFeature,
+    ]),
   ],
 })
 export class NotificationsModule {
