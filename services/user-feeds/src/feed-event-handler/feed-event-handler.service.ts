@@ -144,7 +144,11 @@ export class FeedEventHandlerService {
           errorCode: ArticleDeliveryRejectedCode.BadRequest,
           internalMessage:
             `Discord rejected the request with status code` +
-            ` ${result.status} Body: ${responseBody}`,
+            ` ${
+              result.status
+            } Body: ${responseBody}, Request Body: ${JSON.stringify(
+              job.options.body
+            )}`,
           externalDetail: responseBody,
           articleId,
         }
