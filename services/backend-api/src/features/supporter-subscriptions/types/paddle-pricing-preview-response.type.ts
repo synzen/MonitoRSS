@@ -1,22 +1,10 @@
-interface PaddleProductPrice {
-  id: string;
-}
-
-interface PaddleProduct {
-  id: string;
-  name: string;
-  prices: PaddleProductPrice[];
-  custom_data?: {
-    key?: string;
-  };
-}
-
 export interface PaddlePricingPreviewResponse {
   data: {
     currency_code: string;
     details: {
       line_items: Array<{
         price: {
+          id: string;
           billing_cycle?: {
             frequency: number;
             interval: "month" | "year";

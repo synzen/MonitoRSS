@@ -1,12 +1,19 @@
 import {
   BadRequestException,
+  Body,
   CacheInterceptor,
   CacheTTL,
   Controller,
   Get,
   Query,
+  UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from "@nestjs/common";
+import { UserAuthDetails } from "../../common";
+import { UserAuth } from "../../common/decorators/user-auth.decorator";
+import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
+import { CreateSubscriptionPreviewInputDto } from "./dto/create-subscription-preview-input.dto";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
 
 type ProductId = string;
@@ -94,6 +101,7 @@ export class SupporterSubscriptionsController {
       products: Array<{
         id: ProductId;
         prices: Array<{
+          id: string;
           interval: "month" | "year";
           formattedPrice: string;
           currencyCode: string;
@@ -123,6 +131,7 @@ export class SupporterSubscriptionsController {
         products: Object.keys(products).map((p) => ({
           id: p,
           prices: products[p].prices.map((d) => ({
+            id: d.id,
             interval: d.interval,
             formattedPrice: d.formattedPrice,
             currencyCode: d.currencyCode,
@@ -130,6 +139,34 @@ export class SupporterSubscriptionsController {
         })),
         currencies: ACCEPTED_CURRENCIES,
       },
+    };
+  }
+
+  @UseGuards(DiscordOAuth2Guard)
+  async previewChange(
+    @UserAuth()
+    { email }: UserAuthDetails,
+    @Body(ValidationPipe)
+    { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
+  ) {
+    if (!email) {
+      throw new BadRequestException("No email found");
+    }
+
+    const preview =
+      await this.supporterSubscriptionsService.previewSubscriptionChange({
+        email,
+        items: [
+          {
+            priceId: priceId,
+            quantity: 1,
+          },
+        ],
+        currencyCode,
+      });
+
+    return {
+      data: preview,
     };
   }
 }
