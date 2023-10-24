@@ -7,10 +7,13 @@ import React from "react";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { uniqueId } from "lodash";
+import { Box } from "@chakra-ui/react";
 // @ts-ignore
 import { parse, parseAllowLinks, jumboify } from "./utils/markdown";
 import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
 import Embed from "./Embed";
+import { ComponentRowView } from "./ComponentRowView";
 
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
@@ -150,6 +153,15 @@ const DiscordView = ({
   messages: Array<{
     content?: string;
     embeds?: DiscordViewEmbed[];
+    components?: Array<{
+      type: number;
+      components: Array<{
+        type: number;
+        style: number;
+        label: string;
+        url?: string;
+      }>;
+    }> | null;
   }>;
 }) => {
   const bgColor = darkTheme ? "bg-discord-dark" : "bg-discord-light";
@@ -164,8 +176,8 @@ const DiscordView = ({
           <div className="comment">
             <div className="message first">
               <CozyMessageHeader username={username} compactMode={compactMode} />
-              {messages.map(({ content: thisContent, embeds: thisEmbeds }) => (
-                <div className="message-text">
+              {messages.map(({ content: thisContent, embeds: thisEmbeds, components }, index) => (
+                <div className="message-text" key={index}>
                   <MessageBody
                     content={thisContent}
                     username={username}
@@ -175,21 +187,15 @@ const DiscordView = ({
                   {thisEmbeds?.map((e, i) => (
                     <Embed key={i} {...e} />
                   ))}
+                  <Box mt={components?.length ? 2 : 0}>
+                    {components?.map((row) => {
+                      return (
+                        <ComponentRowView key={uniqueId()} components={row.components || []} />
+                      );
+                    })}
+                  </Box>
                 </div>
               ))}
-              {/* <div className="message-text">
-                <MessageBody
-                  content={content}
-                  username={username}
-                  compactMode={compactMode}
-                  webhookMode={webhookMode}
-                />
-              </div>
-              {embed ? (
-                <Embed {...embed} />
-              ) : (
-                embeds && embeds.map((e, i) => <Embed key={i} {...e} />)
-              )} */}
             </div>
           </div>
         </div>

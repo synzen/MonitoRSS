@@ -17,6 +17,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { FiltersForm } from "../FiltersForm";
 import { LogicalFilterExpression } from "../../types";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   trigger: React.ReactElement;
@@ -24,6 +25,7 @@ interface Props {
   filters: { expression: LogicalFilterExpression } | null;
   onFiltersUpdated: (filters: { expression: LogicalFilterExpression } | null) => Promise<void>;
   onRemoved: () => void;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 export const DiscordMentionSettingsDialog = ({
@@ -32,6 +34,7 @@ export const DiscordMentionSettingsDialog = ({
   filters,
   onFiltersUpdated,
   onRemoved,
+  articleFormatter,
 }: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
@@ -58,11 +61,22 @@ export const DiscordMentionSettingsDialog = ({
                 <FiltersForm
                   data={{
                     feedId,
+                    articleFormatter,
                   }}
+                  previewTitle={
+                    <Heading as="h3" size="sm">
+                      Filter Results Preview
+                    </Heading>
+                  }
                   expression={filters?.expression || null}
                   onSave={async (expression) => {
+                    console.log("🚀 ~ file: DiscordMentionSettingsDialog.tsx:73 ~ onSave={ ~ expression:", expression)
                     onFiltersUpdated(expression ? { expression } : null);
                     onClose();
+                  }}
+                  formContainerProps={{
+                    bg: "gray.800",
+                    rounded: "md",
                   }}
                 />
               </Stack>

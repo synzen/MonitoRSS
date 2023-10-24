@@ -30,14 +30,12 @@ interface Props {
 }
 
 const PlaceholderRow = ({
-  key,
   placeholderKey,
   value,
   withoutCopy,
 }: {
   placeholderKey: string;
   value: string;
-  key: string;
   withoutCopy?: boolean;
 }) => {
   const { onCopy, setValue, value: copiedVal } = useClipboard("");
@@ -55,7 +53,6 @@ const PlaceholderRow = ({
 
   return (
     <Tr
-      key={key}
       _hover={{
         ".copy-button": {
           opacity: 1,

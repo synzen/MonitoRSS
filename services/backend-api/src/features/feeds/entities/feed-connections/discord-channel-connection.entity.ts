@@ -15,6 +15,10 @@ import {
   CustomRateLimitSchema,
 } from "./custom-rate-limit.entity";
 import {
+  DiscordComponentRow,
+  DiscordComponentRowSchema,
+} from "./discord-component-row.entity";
+import {
   DiscordFormatter,
   DiscordFormatterSchema,
 } from "./discord-formatter.entity";
@@ -164,6 +168,18 @@ class Details {
     default: [],
   })
   embeds: FeedEmbed[];
+
+  @Prop({
+    type: [DiscordComponentRowSchema],
+    default: [],
+    validate: [
+      function (this: Array<DiscordComponentRow>) {
+        return this.length ? this.length <= 5 : true;
+      },
+      "Discord component rows cannot have more than 5 components",
+    ],
+  })
+  componentRows?: DiscordComponentRow[];
 
   @Prop({
     type: ChannelSchema,

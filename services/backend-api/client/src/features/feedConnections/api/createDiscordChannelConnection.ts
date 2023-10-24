@@ -11,6 +11,13 @@ export interface CreateDiscordChannelConnectionInput {
       id: string;
       name?: string | null;
       iconUrl?: string | null;
+      threadId?: string | null;
+    };
+    applicationWebhook?: {
+      channelId: string;
+      name: string;
+      iconUrl?: string | null;
+      threadId?: string | null;
     };
   };
 }

@@ -5,6 +5,7 @@ import {
   Spinner,
   Table,
   TableContainer,
+  TableHeadProps,
   Tbody,
   Td,
   Th,
@@ -21,13 +22,19 @@ interface Props {
     passedFilters?: boolean;
   }>;
   isLoading?: boolean;
+  theadProps?: TableHeadProps;
 }
 
-export const ArticleFilterResultsTable = ({ articles, displayPropertyName, isLoading }: Props) => {
+export const ArticleFilterResultsView = ({
+  articles,
+  displayPropertyName,
+  isLoading,
+  theadProps,
+}: Props) => {
   const { t } = useTranslation();
 
   return (
-    <Box position="relative">
+    <Box position="relative" rounded="md">
       {isLoading && (
         <Flex
           position="absolute"
@@ -44,11 +51,11 @@ export const ArticleFilterResultsTable = ({ articles, displayPropertyName, isLoa
           <Spinner />
         </Flex>
       )}
-      <Box position="relative" border="solid 1px" borderColor="gray.600" borderRadius="md">
-        <Box maxHeight="sm" overflow="auto">
-          <TableContainer>
-            <Table size="sm">
-              <Thead>
+      <Box position="relative" border="solid 1px" borderColor="gray.600" rounded="md">
+        <Box maxHeight="sm" overflow="auto" rounded="md">
+          <TableContainer rounded="md">
+            <Table size="sm" rounded="md">
+              <Thead borderTopLeftRadius="md" {...theadProps}>
                 <Tr>
                   <Th>
                     {t(

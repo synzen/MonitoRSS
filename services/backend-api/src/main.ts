@@ -14,7 +14,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
  * Required  because Nest's app.select() does not work for dynamic modules
  */
 @Module({
-  imports: [AppModule.forRoot()],
+  imports: [AppModule.forApi()],
 })
 class StaticAppModule {}
 

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FeedConnectionType } from "../../../types";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
-import { deleteDiscordChannelConnection, deleteDiscordWebhookConnection } from "../api";
+import { deleteDiscordChannelConnection } from "../api";
 
 interface DeleteConnectionInput {
   feedId: string;
@@ -9,7 +9,6 @@ interface DeleteConnectionInput {
 }
 
 const methodsByType: Record<FeedConnectionType, (input: DeleteConnectionInput) => Promise<void>> = {
-  [FeedConnectionType.DiscordWebhook]: deleteDiscordWebhookConnection,
   [FeedConnectionType.DiscordChannel]: deleteDiscordChannelConnection,
 };
 

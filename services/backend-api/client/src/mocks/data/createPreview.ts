@@ -36,6 +36,26 @@ export const mockCreatePreviewResult: CreatePreviewResult = {
           url: "https://example.com",
         },
       ],
+      components: [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2,
+              style: 5,
+              label:
+                "label label label label label label label label label label label label label label label label label label label ",
+              url: "https://www.google.com",
+            },
+            {
+              type: 2,
+              style: 5,
+              label: "label",
+              url: "https://www.google.com",
+            },
+          ],
+        },
+      ],
     },
   ],
 };

@@ -16,3 +16,4 @@ export * from "./create-discord-webhook-connection-preview-input.dto";
 export * from "./create-discord-webhook-connection-preview-output.dto";
 export * from "./create-discord-channel-connection-clone-input.dto";
 export * from "./create-discord-webhook-connection-clone-input.dto";
+export * from "./create-discord-channel-connection-copy-connection-settings-input.dto";

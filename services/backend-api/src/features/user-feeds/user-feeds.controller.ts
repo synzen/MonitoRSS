@@ -379,6 +379,8 @@ export class UserFeedsController {
                 name: con.details.webhook.name,
                 type: con.details.webhook.type,
                 threadId: con.details.webhook.threadId,
+                isApplicationOwned: con.details.webhook.isApplicationOwned,
+                channelId: con.details.webhook.channelId,
               }
             : undefined,
         },

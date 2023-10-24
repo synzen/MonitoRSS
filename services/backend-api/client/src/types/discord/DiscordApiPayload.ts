@@ -38,7 +38,22 @@ const DiscordEmbedSchema = object({
   timestamp: string().optional().nullable().default(undefined),
 });
 
+const DiscordButtonSchema = object({
+  type: number().required(),
+  label: string().required("This is a required field"),
+  style: number().required(),
+  url: string(),
+});
+
 export const DiscordMessageApiPayloadSchema = object({
   content: string().optional().default(undefined),
   embeds: array(DiscordEmbedSchema).optional().default(undefined),
+  components: array(
+    object({
+      type: number().required(),
+      components: array(DiscordButtonSchema.required()).required().max(5),
+    }).required()
+  )
+    .max(5)
+    .nullable(),
 });

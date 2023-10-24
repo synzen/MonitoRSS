@@ -29,16 +29,15 @@ import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
 import { notifyError } from "../../../../utils/notifyError";
 import { FeedConnectionType } from "../../../../types";
 import { DiscordChannelConnectionPreview } from "./DiscordChannelConnectionPreview";
-import { DiscordWebhookConnectionPreview } from "./DiscordWebhookConnectionPreview";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
-import {
-  CreateDiscordChannelConnectionPreviewInput,
-  CreateDiscordWebhookConnectionPreviewInput,
-} from "../../api";
+import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
+import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
+import { useUserFeed } from "../../../feed/hooks";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -69,14 +68,26 @@ export const DiscordMessageForm = ({
   include,
 }: Props) => {
   const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
-
+  const { feed: userFeed } = useUserFeed({ feedId });
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
 
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
-    defaultValues,
+    defaultValues: {
+      componentRows: defaultValues?.componentRows,
+      content: defaultValues?.content || "",
+      customPlaceholders: defaultValues?.customPlaceholders,
+      embeds: defaultValues?.embeds,
+      enablePlaceholderFallback: defaultValues?.enablePlaceholderFallback,
+      formatter: defaultValues?.formatter,
+      forumThreadTags: defaultValues?.forumThreadTags,
+      forumThreadTitle: defaultValues?.forumThreadTitle,
+      mentions: defaultValues?.mentions,
+      placeholderLimits: defaultValues?.placeholderLimits,
+      splitOptions: defaultValues?.splitOptions,
+    },
     mode: "all",
   });
   const {
@@ -105,6 +116,7 @@ export const DiscordMessageForm = ({
     customPlaceholders,
     forumThreadTags,
     forumThreadTitle,
+    componentRows,
   ] = useWatch({
     control,
     name: [
@@ -118,6 +130,7 @@ export const DiscordMessageForm = ({
       "customPlaceholders",
       "forumThreadTags",
       "forumThreadTitle",
+      "componentRows",
     ],
   });
 
@@ -144,6 +157,7 @@ export const DiscordMessageForm = ({
       enablePlaceholderFallback,
       forumThreadTags,
       forumThreadTitle,
+      componentRows,
     },
   };
 
@@ -216,6 +230,17 @@ export const DiscordMessageForm = ({
     }
   };
 
+  const articleFormatOptions: GetUserFeedArticlesInput["data"]["formatter"] = {
+    customPlaceholders,
+    options: {
+      dateFormat: userFeed?.formatOptions?.dateFormat,
+      dateTimezone: userFeed?.formatOptions?.dateTimezone,
+      formatTables: formatOptions?.formatTables || false,
+      stripImages: formatOptions?.stripImages || false,
+      disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
+    },
+  };
+
   const errorsExist = Object.keys(errors).length > 0;
 
   return (
@@ -263,20 +288,18 @@ export const DiscordMessageForm = ({
                 connectionId={connection.id}
                 data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
                 feedId={feedId}
-              />
-            )}
-            {connection.type === FeedConnectionType.DiscordWebhook && (
-              <DiscordWebhookConnectionPreview
-                connectionId={connection.id}
-                data={previewInput.data as CreateDiscordWebhookConnectionPreviewInput["data"]}
-                feedId={feedId}
+                hasErrors={errorsExist}
               />
             )}
           </Stack>
           {include?.forumForms && (
             <Stack>
               <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
-              <DiscordMessageForumThreadForm connectionId={connection.id} feedId={feedId} />
+              <DiscordMessageForumThreadForm
+                articleFormatter={articleFormatOptions}
+                connectionId={connection.id}
+                feedId={feedId}
+              />
             </Stack>
           )}
           <Stack>
@@ -326,8 +349,16 @@ export const DiscordMessageForm = ({
             </Tabs>
           </Stack>
           <Stack>
+            <Heading size="md">Buttons</Heading>
+            <DiscordMessageComponentsForm connectionId={connection.id} feedId={feedId} />
+          </Stack>
+          <Stack>
             <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
-            <DiscordMessageMentionForm guildId={guildId} feedId={feedId} />
+            <DiscordMessageMentionForm
+              guildId={guildId}
+              feedId={feedId}
+              articleFormatter={articleFormatOptions}
+            />
           </Stack>
           <Stack>
             <Heading size="md">Placeholder Limits</Heading>

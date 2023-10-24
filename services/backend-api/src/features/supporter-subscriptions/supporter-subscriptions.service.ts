@@ -8,6 +8,7 @@ import {
   PaddleProductResponse,
   PaddleProductsResponse,
 } from "./types/paddle-products-response.type";
+import { PaddleSubscriptionPreviewResponse } from "./types/paddle-subscription-preview-response.type";
 
 @Injectable()
 export class SupporterSubscriptionsService {
@@ -49,10 +50,10 @@ export class SupporterSubscriptionsService {
       string,
       {
         prices: Array<{
+          id: string;
           interval: "month" | "year";
           formattedPrice: string;
           currencyCode: string;
-          id: string;
         }>;
       }
     > = {};
@@ -73,10 +74,10 @@ export class SupporterSubscriptionsService {
       }
 
       pricesByProduct[useProductId].prices.push({
+        id: priceId,
         interval: billing_cycle.interval,
         formattedPrice: formatted_totals.total,
         currencyCode: currency,
-        id: priceId,
       });
     }
 
@@ -131,6 +132,61 @@ export class SupporterSubscriptionsService {
 
     return {
       email: response.data.email,
+    };
+  }
+
+  async previewSubscriptionChange({
+    email,
+    items,
+    currencyCode,
+  }: {
+    email: string;
+    items: Array<{ priceId: string; quantity: number }>;
+    currencyCode: string;
+  }) {
+    const postBody = {
+      items: items.map((i) => ({
+        price_id: i.priceId,
+        quantity: i.quantity,
+      })),
+      currency_code: currencyCode,
+      proration_billing_mode: "prorated_immediately",
+    };
+
+    const existingSubscriptionId = "PLACEHOLDER";
+
+    if (!existingSubscriptionId) {
+      throw new Error("No existing subscription for user found");
+    }
+
+    const response =
+      await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+        `/subscriptions/${existingSubscriptionId}/preview`,
+        {
+          method: "POST",
+          body: JSON.stringify(postBody),
+        }
+      );
+
+    if (!response.data.immediate_transaction) {
+      throw new Error(
+        `Failed to get immediate transaction from preview response (check proration billing mode)`
+      );
+    }
+
+    return {
+      immediateTransaction: {
+        billingPeriod: {
+          startsAt:
+            response.data.immediate_transaction.billing_period.starts_at,
+          endsAt: response.data.immediate_transaction.billing_period.ends_at,
+        },
+        subtotal: response.data.immediate_transaction.details.totals.subtotal,
+        tax: response.data.immediate_transaction.details.totals.tax,
+        credit: response.data.immediate_transaction.details.totals.credit,
+        total: response.data.immediate_transaction.details.totals.total,
+        grandTotal: response.data.immediate_transaction.details.totals,
+      },
     };
   }
 

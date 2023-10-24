@@ -156,7 +156,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                   />
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
                 </FormControl>
-                <FormControl isInvalid={!!errors.channelId} isRequired>
+                <FormControl isInvalid={!!errors.threadId} isRequired>
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"

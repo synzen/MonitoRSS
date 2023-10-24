@@ -6,3 +6,5 @@ export * from "./feed-connection-discord-channel-type.constants";
 export * from "./feed-connection-mention-type.constants";
 export * from "./feed-connection-type-entity-key.constants";
 export * from "./feed-connection-discord-webhook-type.constants";
+export * from "./feed-connection-discord-component-type.constants";
+export * from "./feed-connection-discord-component-button-style.constants";

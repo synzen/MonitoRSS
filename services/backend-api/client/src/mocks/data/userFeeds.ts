@@ -1,6 +1,11 @@
 import { UserFeed } from "@/features/feed";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../../features/feed/types";
-import { FeedConnectionDisabledCode, FeedConnectionType } from "../../types";
+import {
+  DiscordComponentButtonStyle,
+  DiscordComponentType,
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
+} from "../../types";
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
@@ -73,6 +78,53 @@ const mockUserFeeds: UserFeed[] = [
             id: mockDiscordChannels[0].id,
             guildId: mockDiscordServers[0].id,
           },
+          componentRows: [
+            {
+              id: "r1",
+              components: [
+                {
+                  id: "b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b1",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b3",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b4",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+            {
+              id: "r2",
+              components: [
+                {
+                  id: "r2b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+          ],
           embeds: [
             {
               title: "hello world",
@@ -198,27 +250,6 @@ const mockUserFeeds: UserFeed[] = [
         disabledCode: FeedConnectionDisabledCode.Manual,
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Forum 1",
-      },
-      {
-        details: {
-          embeds: [],
-          webhook: {
-            id: mockDiscordWebhooks[0].id,
-            iconUrl: mockDiscordWebhooks[0].avatarUrl,
-            name: mockDiscordWebhooks[0].name,
-            guildId: mockDiscordServers[0].id,
-          },
-          formatter: {
-            formatTables: false,
-            stripImages: false,
-          },
-        },
-        splitOptions: null,
-        filters: null,
-        mentions: null,
-        id: "3",
-        key: FeedConnectionType.DiscordWebhook,
-        name: "Discord Webhook 1",
       },
       {
         details: {

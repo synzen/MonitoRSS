@@ -25,6 +25,7 @@ import { UserFeed } from "../user-feeds/entities";
 import { GetUserFeedPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionCloneInputDto,
+  CreateDiscordChannelConnectionCopyConnectionSettingsInputDto,
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordChannelConnectionPreviewInputDto,
   CreateDiscordChannelConnectionPreviewOutputDto,
@@ -67,7 +68,12 @@ export class FeedConnectionsDiscordChannelsController {
     )
     feed: UserFeed,
     @Body(ValidationPipe)
-    { channelId, name, webhook }: CreateDiscordChnnnelConnectionInputDto,
+    {
+      channelId,
+      name,
+      webhook,
+      applicationWebhook,
+    }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<CreateDiscordChannelConnectionOutputDto> {
@@ -79,6 +85,7 @@ export class FeedConnectionsDiscordChannelsController {
         userAccessToken: access_token,
         discordUserId,
         webhook,
+        applicationWebhook,
       }
     );
 
@@ -143,6 +150,32 @@ export class FeedConnectionsDiscordChannelsController {
     };
   }
 
+  @Post("/discord-channels/:connectionId/copy-connection-settings")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async copyConnectionSettings(
+    @Param(
+      "feedId",
+      GetUserFeedPipe({
+        userTypes: [
+          UserFeedManagerType.Creator,
+          UserFeedManagerType.SharedManager,
+        ],
+      }),
+      GetFeedDiscordChannelConnectionPipe
+    )
+    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Body(ValidationPipe)
+    {
+      properties,
+      targetDiscordChannelConnectionIds,
+    }: CreateDiscordChannelConnectionCopyConnectionSettingsInputDto
+  ) {
+    await this.service.copySettings(feed, connection, {
+      properties,
+      targetDiscordChannelConnectionIds,
+    });
+  }
+
   @Post("/discord-channels/:connectionId/clone")
   async clone(
     @Param(
@@ -198,6 +231,7 @@ export class FeedConnectionsDiscordChannelsController {
       placeholderLimits,
       enablePlaceholderFallback,
       customPlaceholders,
+      componentRows,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -213,6 +247,7 @@ export class FeedConnectionsDiscordChannelsController {
       placeholderLimits,
       enablePlaceholderFallback,
       customPlaceholders,
+      componentRows,
     });
 
     return {
@@ -246,6 +281,8 @@ export class FeedConnectionsDiscordChannelsController {
       enablePlaceholderFallback,
       customPlaceholders,
       rateLimits,
+      componentRows,
+      applicationWebhook,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -290,6 +327,7 @@ export class FeedConnectionsDiscordChannelsController {
       {
         accessToken: access_token,
         feed,
+        oldConnection: connection,
         updates: {
           filters,
           name,
@@ -300,12 +338,14 @@ export class FeedConnectionsDiscordChannelsController {
           rateLimits,
           details: {
             placeholderLimits,
+            componentRows,
             channel: useChannelId
               ? {
                   id: useChannelId,
                 }
               : undefined,
             webhook: useChannelId ? undefined : webhook,
+            applicationWebhook: useChannelId ? undefined : applicationWebhook,
             embeds: convertToFlatDiscordEmbeds(embeds),
             content,
             formatter,

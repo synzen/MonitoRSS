@@ -4,9 +4,6 @@ import {
   updateDiscordChannelConnection,
   UpdateDiscordChannelConnectionInput,
   UpdateDiscordChannelConnectionOutput,
-  updateDiscordWebhookConnection,
-  UpdateDiscordWebhookConnectionInput,
-  UpdateDiscordWebhookConnectionOutput,
 } from "../api";
 import { FeedConnectionType } from "../../../types";
 
@@ -53,43 +50,6 @@ export const useUpdateConnection = ({ type }: Props) => {
       ]),
   });
 
-  const {
-    mutateAsync: mutateDiscordWebhook,
-    status: statusDiscordWebhook,
-    error: errorDiscordWebhook,
-    reset: resetDiscordWebhook,
-  } = useMutation<
-    UpdateDiscordWebhookConnectionOutput,
-    ApiAdapterError,
-    UpdateDiscordWebhookConnectionInput
-  >((details) => updateDiscordWebhookConnection(details), {
-    onSuccess: (data, inputData) =>
-      Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: [
-            "user-feed",
-            {
-              feedId: inputData.feedId,
-            },
-          ],
-          refetchType: "all",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: [
-            "connection-preview",
-            {
-              inputData: {
-                data: {
-                  connectionId: inputData.connectionId,
-                },
-              },
-            },
-          ],
-          refetchType: "active",
-        }),
-      ]),
-  });
-
   if (type === FeedConnectionType.DiscordChannel) {
     return {
       mutateAsync: mutateDiscordChannel,
@@ -99,10 +59,5 @@ export const useUpdateConnection = ({ type }: Props) => {
     };
   }
 
-  return {
-    mutateAsync: mutateDiscordWebhook,
-    status: statusDiscordWebhook,
-    error: errorDiscordWebhook,
-    reset: resetDiscordWebhook,
-  };
+  throw new Error(`Unsupported connection type for useUpdateConnection: ${type}`);
 };

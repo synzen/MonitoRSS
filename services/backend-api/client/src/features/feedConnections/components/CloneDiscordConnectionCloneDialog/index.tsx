@@ -20,10 +20,7 @@ import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  useCreateDiscordChannelConnectionClone,
-  useCreateDiscordWebhookConnectionClone,
-} from "../../hooks";
+import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { pages } from "../../../../constants";
 import { FeedConnectionType } from "../../../../types";
 import { notifyError } from "../../../../utils/notifyError";
@@ -43,6 +40,7 @@ interface Props {
     name: string;
   };
   trigger: React.ReactElement;
+  redirectOnSuccess?: boolean;
 }
 
 export const CloneDiscordConnectionCloneDialog = ({
@@ -51,6 +49,7 @@ export const CloneDiscordConnectionCloneDialog = ({
   type,
   defaultValues,
   trigger,
+  redirectOnSuccess,
 }: Props) => {
   const {
     handleSubmit,
@@ -64,7 +63,6 @@ export const CloneDiscordConnectionCloneDialog = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
   const { mutateAsync: createChannelClone } = useCreateDiscordChannelConnectionClone();
-  const { mutateAsync: createWebhookClone } = useCreateDiscordWebhookConnectionClone();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -80,23 +78,27 @@ export const CloneDiscordConnectionCloneDialog = ({
         const res = await createChannelClone({ feedId, connectionId, details: { name } });
         newConnectionId = res.result.id;
       } else {
-        const res = await createWebhookClone({ feedId, connectionId, details: { name } });
-        newConnectionId = res.result.id;
+        throw new Error(`Unsupported connection type when cloning discord connection: ${type}`);
       }
 
-      navigate(
-        pages.userFeedConnection({
-          connectionId: newConnectionId,
-          feedId,
-          connectionType: type,
-        })
-      );
+      if (redirectOnSuccess) {
+        navigate(
+          pages.userFeedConnection({
+            connectionId: newConnectionId,
+            feedId,
+            connectionType: type,
+          })
+        );
+        notifySuccess(
+          t("common.success.savedChanges"),
+          "You are now viewing your newly cloned connection"
+        );
+      } else {
+        notifySuccess("Successfully cloned");
+      }
+
       onClose();
       reset({ name });
-      notifySuccess(
-        t("common.success.savedChanges"),
-        "You are now viewing your newly cloned connection"
-      );
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), (err as Error).message);
     }
@@ -117,7 +119,7 @@ export const CloneDiscordConnectionCloneDialog = ({
                 <Controller
                   name="name"
                   control={control}
-                  render={({ field }) => <Input {...field} ref={initialRef} />}
+                  render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
                 />
                 {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
               </FormControl>
@@ -125,7 +127,9 @@ export const CloneDiscordConnectionCloneDialog = ({
           </ModalBody>
           <ModalFooter>
             <HStack>
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
               <Button colorScheme="blue" type="submit" form="clonefeed" isLoading={isSubmitting}>
                 Clone
               </Button>

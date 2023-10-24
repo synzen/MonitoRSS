@@ -37,7 +37,11 @@ import { NoDiscordChannelPermissionOverwritesException } from "../feeds/exceptio
 import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
-import { CreateDiscordChannelConnectionCloneInputDto } from "./dto";
+import {
+  CopyableSetting,
+  CreateDiscordChannelConnectionCloneInputDto,
+  CreateDiscordChannelConnectionCopyConnectionSettingsInputDto,
+} from "./dto";
 import {
   DiscordChannelPermissionsException,
   InvalidDiscordChannelException,
@@ -47,6 +51,8 @@ import { DiscordChannelType } from "../../common";
 import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
+import { castDiscordComponentRowsForMedium } from "../../common/utils";
+import logger from "../../utils/logger";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -54,7 +60,9 @@ export interface UpdateDiscordChannelConnectionInput {
     user: {
       discordUserId: string;
     };
+    connections: UserFeed["connections"];
   };
+  oldConnection: DiscordChannelConnection;
   updates: {
     filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
@@ -66,6 +74,9 @@ export interface UpdateDiscordChannelConnectionInput {
     details?: {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       formatter?: DiscordChannelConnection["details"]["formatter"] | null;
+      componentRows?:
+        | DiscordChannelConnection["details"]["componentRows"]
+        | null;
       placeholderLimits?:
         | DiscordChannelConnection["details"]["placeholderLimits"]
         | null;
@@ -75,6 +86,12 @@ export interface UpdateDiscordChannelConnectionInput {
       webhook?: {
         id: string;
         name?: string;
+        iconUrl?: string;
+        threadId?: string;
+      };
+      applicationWebhook?: {
+        channelId: string;
+        name: string;
         iconUrl?: string;
         threadId?: string;
       };
@@ -110,6 +127,7 @@ interface CreatePreviewInput {
   forumThreadTitle?: DiscordChannelConnection["details"]["forumThreadTitle"];
   forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
   enablePlaceholderFallback?: boolean;
+  componentRows?: DiscordChannelConnection["details"]["componentRows"] | null;
 }
 
 @Injectable()
@@ -129,6 +147,7 @@ export class FeedConnectionsDiscordChannelsService {
     name,
     channelId,
     webhook: inputWebhook,
+    applicationWebhook,
     userAccessToken,
     discordUserId,
   }: {
@@ -138,6 +157,12 @@ export class FeedConnectionsDiscordChannelsService {
     webhook?: {
       id: string;
       name?: string;
+      iconUrl?: string;
+      threadId?: string;
+    };
+    applicationWebhook?: {
+      channelId: string;
+      name: string;
       iconUrl?: string;
       threadId?: string;
     };
@@ -159,7 +184,7 @@ export class FeedConnectionsDiscordChannelsService {
         type,
         guildId: channel.guild_id,
       };
-    } else if (inputWebhook?.id) {
+    } else if (inputWebhook?.id || applicationWebhook?.channelId) {
       const benefits = await this.supportersService.getBenefitsOfDiscordUser(
         discordUserId
       );
@@ -168,19 +193,40 @@ export class FeedConnectionsDiscordChannelsService {
         throw new Error("User must be a supporter to add webhooks");
       }
 
-      const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
-        inputWebhook.id,
-        userAccessToken
-      );
+      let webhook: DiscordWebhook;
+      let channel: DiscordGuildChannel;
+      const threadId = applicationWebhook?.threadId || inputWebhook?.threadId;
+      const iconUrl = inputWebhook?.iconUrl || applicationWebhook?.iconUrl;
+      const name = inputWebhook?.name || applicationWebhook?.name;
+
+      if (inputWebhook) {
+        ({ webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
+          inputWebhook.id,
+          userAccessToken
+        ));
+      } else if (applicationWebhook) {
+        channel = await this.discordApiService.getChannel(
+          applicationWebhook.channelId
+        );
+
+        webhook = await this.discordWebhooksService.createWebhook(channel.id, {
+          name: `feed-${feedId}-${connectionId}`,
+        });
+      } else {
+        throw new Error(
+          "Missing input webhook or application webhook in webhook condition"
+        );
+      }
+
+      if (!channel) {
+        throw new MissingDiscordChannelException();
+      }
 
       let type: FeedConnectionDiscordWebhookType | undefined = undefined;
 
-      if (inputWebhook.threadId) {
+      if (threadId) {
         const { channel: threadChannel } =
-          await this.assertDiscordChannelCanBeUsed(
-            userAccessToken,
-            inputWebhook.threadId
-          );
+          await this.assertDiscordChannelCanBeUsed(userAccessToken, threadId);
 
         if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
           type = FeedConnectionDiscordWebhookType.Thread;
@@ -192,52 +238,62 @@ export class FeedConnectionsDiscordChannelsService {
       }
 
       webhookToAdd = {
-        iconUrl: inputWebhook.iconUrl,
-        id: inputWebhook.id,
-        name: inputWebhook.name,
+        iconUrl,
+        id: webhook.id,
+        name,
         token: webhook.token as string,
-        threadId: inputWebhook.threadId,
+        threadId,
         guildId: channel.guild_id,
+        channelId: channel.id,
         type,
+        isApplicationOwned: !!applicationWebhook,
       };
     } else {
       throw new Error("Must provide either channelId or webhookId");
     }
 
-    const updated = await this.userFeedModel.findOneAndUpdate(
-      {
-        _id: feedId,
-      },
-      {
-        $push: {
-          "connections.discordChannels": {
-            id: connectionId,
-            name,
-            details: {
-              type: FeedConnectionType.DiscordChannel,
-              channel: channelToAdd,
-              webhook: webhookToAdd,
-              embeds: [],
+    try {
+      const updated = await this.userFeedModel.findOneAndUpdate(
+        {
+          _id: feedId,
+        },
+        {
+          $push: {
+            "connections.discordChannels": {
+              id: connectionId,
+              name,
+              details: {
+                type: FeedConnectionType.DiscordChannel,
+                channel: channelToAdd,
+                webhook: webhookToAdd,
+                embeds: [],
+              },
             },
           },
         },
-      },
-      {
-        new: true,
-      }
-    );
-
-    const createdConnection = updated?.connections.discordChannels.find(
-      (connection) => connection.id.equals(connectionId)
-    );
-
-    if (!createdConnection) {
-      throw new Error(
-        "Connection was not successfuly created. Check insertion statement and schemas are correct."
+        {
+          new: true,
+        }
       );
-    }
 
-    return createdConnection;
+      const createdConnection = updated?.connections.discordChannels.find(
+        (connection) => connection.id.equals(connectionId)
+      );
+
+      if (!createdConnection) {
+        throw new Error(
+          "Connection was not successfuly created. Check insertion statement and schemas are correct."
+        );
+      }
+
+      return createdConnection;
+    } catch (err) {
+      if (webhookToAdd?.isApplicationOwned) {
+        await this.discordWebhooksService.deleteWebhook(webhookToAdd.id);
+      }
+
+      throw err;
+    }
   }
 
   async cloneConnection(
@@ -266,34 +322,206 @@ export class FeedConnectionsDiscordChannelsService {
       };
     }
 
-    await this.userFeedModel.findOneAndUpdate(
-      {
-        _id: userFeed._id,
-      },
-      {
-        $push: {
-          "connections.discordChannels": {
-            ...connection,
-            id: newId,
-            name,
-            details: {
-              ...connection.details,
-              channel: channelDetailsToUse,
+    let newWebhookId: string | undefined = undefined;
+    let newWebhookToken: string | undefined = undefined;
+
+    if (connection.details.webhook?.isApplicationOwned) {
+      const newWebhook = await this.discordWebhooksService.createWebhook(
+        connection.details.webhook.channelId as string,
+        {
+          name: `feed-${userFeed._id}-${newId}`,
+        }
+      );
+
+      newWebhookId = newWebhook.id;
+      newWebhookToken = newWebhook.token as string;
+    }
+
+    try {
+      await this.userFeedModel.findOneAndUpdate(
+        {
+          _id: userFeed._id,
+        },
+        {
+          $push: {
+            "connections.discordChannels": {
+              ...connection,
+              id: newId,
+              name,
+              details: {
+                ...connection.details,
+                channel: channelDetailsToUse,
+                webhook: connection.details.webhook
+                  ? {
+                      ...connection.details.webhook,
+                      id: newWebhookId || connection.details.webhook.id,
+                      token:
+                        newWebhookToken || connection.details.webhook.token,
+                    }
+                  : undefined,
+              },
             },
           },
-        },
+        }
+      );
+    } catch (err) {
+      if (newWebhookId) {
+        await this.discordWebhooksService.deleteWebhook(newWebhookId);
       }
-    );
+
+      throw err;
+    }
 
     return {
       id: newId,
     };
   }
 
+  async copySettings(
+    userFeed: UserFeed,
+    sourceConnection: DiscordChannelConnection,
+    {
+      properties,
+      targetDiscordChannelConnectionIds,
+    }: CreateDiscordChannelConnectionCopyConnectionSettingsInputDto
+  ) {
+    const foundFeed = await this.userFeedModel
+      .findById(userFeed._id)
+      .select("connections");
+
+    if (!foundFeed) {
+      throw new Error(`Could not find feed ${userFeed._id}`);
+    }
+
+    const relevantConnections = targetDiscordChannelConnectionIds.map((id) => {
+      const connection = foundFeed?.connections.discordChannels.find((c) =>
+        c.id.equals(id)
+      );
+
+      if (!connection) {
+        throw new Error(
+          `Could not find connection ${id} on feed ${userFeed._id}`
+        );
+      }
+
+      return connection;
+    });
+
+    for (let i = 0; i < relevantConnections.length; ++i) {
+      const currentConnection = relevantConnections[i];
+
+      if (properties.includes(CopyableSetting.Embeds)) {
+        currentConnection.details.embeds = sourceConnection.details.embeds;
+      }
+
+      if (
+        currentConnection.details.webhook &&
+        sourceConnection.details.webhook
+      ) {
+        if (properties.includes(CopyableSetting.WebhookName)) {
+          currentConnection.details.webhook.name =
+            sourceConnection.details.webhook.name;
+        }
+
+        if (properties.includes(CopyableSetting.WebhookIconUrl)) {
+          currentConnection.details.webhook.iconUrl =
+            sourceConnection.details.webhook.iconUrl;
+        }
+
+        if (properties.includes(CopyableSetting.WebhookThread)) {
+          currentConnection.details.webhook.threadId =
+            sourceConnection.details.webhook.threadId;
+        }
+      }
+
+      if (properties.includes(CopyableSetting.PlaceholderLimits)) {
+        currentConnection.details.placeholderLimits =
+          sourceConnection.details.placeholderLimits;
+      }
+
+      if (properties.includes(CopyableSetting.Content)) {
+        currentConnection.details.content = sourceConnection.details.content;
+      }
+
+      if (properties.includes(CopyableSetting.ContentFormatTables)) {
+        currentConnection.details.formatter.disableImageLinkPreviews =
+          sourceConnection.details.formatter.disableImageLinkPreviews;
+      }
+
+      if (properties.includes(CopyableSetting.ContentStripImages)) {
+        currentConnection.details.formatter.formatTables =
+          sourceConnection.details.formatter.formatTables;
+      }
+
+      if (
+        properties.includes(CopyableSetting.ContentDisableImageLinkPreviews)
+      ) {
+        currentConnection.details.formatter.stripImages =
+          sourceConnection.details.formatter.stripImages;
+      }
+
+      if (properties.includes(CopyableSetting.Components)) {
+        currentConnection.details.componentRows =
+          sourceConnection.details.componentRows;
+      }
+
+      if (properties.includes(CopyableSetting.ForumThreadTitle)) {
+        currentConnection.details.forumThreadTitle =
+          sourceConnection.details.forumThreadTitle;
+      }
+
+      if (properties.includes(CopyableSetting.ForumThreadTags)) {
+        currentConnection.details.forumThreadTags =
+          sourceConnection.details.forumThreadTags;
+      }
+
+      if (properties.includes(CopyableSetting.placeholderFallbackSetting)) {
+        currentConnection.details.enablePlaceholderFallback =
+          sourceConnection.details.enablePlaceholderFallback;
+      }
+
+      if (properties.includes(CopyableSetting.Filters)) {
+        currentConnection.filters = sourceConnection.filters;
+      }
+
+      if (properties.includes(CopyableSetting.SplitOptions)) {
+        currentConnection.splitOptions = sourceConnection.splitOptions;
+      }
+
+      if (properties.includes(CopyableSetting.CustomPlaceholders)) {
+        currentConnection.customPlaceholders =
+          sourceConnection.customPlaceholders;
+      }
+
+      if (properties.includes(CopyableSetting.DeliveryRateLimits)) {
+        currentConnection.rateLimits = sourceConnection.rateLimits;
+      }
+
+      if (properties.includes(CopyableSetting.MessageMentions)) {
+        currentConnection.mentions = sourceConnection.mentions;
+      }
+
+      if (
+        properties.includes(CopyableSetting.Channel) &&
+        sourceConnection.details.channel &&
+        currentConnection.details.channel
+      ) {
+        currentConnection.details.channel = sourceConnection.details.channel;
+      }
+    }
+
+    await foundFeed.save();
+  }
+
   async updateDiscordChannelConnection(
     feedId: string,
     connectionId: string,
-    { accessToken, feed, updates }: UpdateDiscordChannelConnectionInput
+    {
+      accessToken,
+      feed,
+      oldConnection,
+      updates,
+    }: UpdateDiscordChannelConnectionInput
   ): Promise<DiscordChannelConnection> {
     if (updates.customPlaceholders?.length) {
       const { allowCustomPlaceholders } =
@@ -317,6 +545,8 @@ export class FeedConnectionsDiscordChannelsService {
         {}
       );
 
+    let createdApplicationWebhookId: string | undefined = undefined;
+
     if (updates.details?.channel?.id) {
       const { channel, type } = await this.assertDiscordChannelCanBeUsed(
         accessToken,
@@ -331,8 +561,19 @@ export class FeedConnectionsDiscordChannelsService {
       };
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.webhook"] = null;
-    } else if (updates.details?.webhook) {
-      const webhookDetails = updates.details.webhook;
+    } else if (
+      updates.details?.webhook ||
+      updates.details?.applicationWebhook
+    ) {
+      const threadId =
+        updates.details.webhook?.threadId ||
+        updates.details.applicationWebhook?.threadId;
+      const name =
+        updates.details.webhook?.name ||
+        updates.details.applicationWebhook?.name;
+      const iconUrl =
+        updates.details.webhook?.iconUrl ||
+        updates.details.applicationWebhook?.iconUrl;
       const benefits = await this.supportersService.getBenefitsOfDiscordUser(
         feed.user.discordUserId
       );
@@ -343,19 +584,35 @@ export class FeedConnectionsDiscordChannelsService {
         );
       }
 
-      const { webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
-        webhookDetails.id,
-        accessToken
-      );
+      let webhook: DiscordWebhook;
+      let channel: DiscordGuildChannel;
+
+      if (updates.details.webhook) {
+        ({ webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
+          updates.details.webhook.id,
+          accessToken
+        ));
+      } else if (updates.details.applicationWebhook) {
+        channel = await this.discordApiService.getChannel(
+          updates.details.applicationWebhook.channelId
+        );
+
+        webhook = await this.discordWebhooksService.createWebhook(channel.id, {
+          name: `feed-${feedId}-${connectionId}`,
+        });
+
+        createdApplicationWebhookId = webhook.id;
+      } else {
+        throw new Error(
+          "Missing input webhook or application webhook in webhook condition when updating connection"
+        );
+      }
 
       let type: FeedConnectionDiscordWebhookType | undefined = undefined;
 
-      if (webhookDetails.threadId) {
+      if (threadId) {
         const { channel: threadChannel } =
-          await this.assertDiscordChannelCanBeUsed(
-            accessToken,
-            webhookDetails.threadId
-          );
+          await this.assertDiscordChannelCanBeUsed(accessToken, threadId);
 
         if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
           type = FeedConnectionDiscordWebhookType.Thread;
@@ -368,13 +625,15 @@ export class FeedConnectionsDiscordChannelsService {
 
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.webhook"] = {
-        iconUrl: webhookDetails.iconUrl,
-        id: webhookDetails.id,
-        name: webhookDetails.name,
+        iconUrl,
+        id: webhook.id,
+        name,
         token: webhook.token as string,
         guildId: channel.guild_id,
         type,
-        threadId: webhookDetails.threadId,
+        threadId,
+        channelId: channel.id,
+        isApplicationOwned: !!updates.details.applicationWebhook,
       };
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.channel"] = null;
@@ -436,29 +695,70 @@ export class FeedConnectionsDiscordChannelsService {
       },
     };
 
-    const updated = await this.userFeedModel.findOneAndUpdate(
-      findQuery,
-      updateQuery,
-      {
-        new: true,
-      }
-    );
-
-    const updatedConnection = updated?.connections.discordChannels.find(
-      (connection) => connection.id.equals(connectionId)
-    );
-
-    if (!updatedConnection) {
-      throw new Error(
-        "Connection was not successfully updated." +
-          " Check insertion statement and schemas are correct."
+    try {
+      const updated = await this.userFeedModel.findOneAndUpdate(
+        findQuery,
+        updateQuery,
+        {
+          new: true,
+        }
       );
-    }
 
-    return updatedConnection;
+      const updatedConnection = updated?.connections.discordChannels.find(
+        (connection) => connection.id.equals(connectionId)
+      );
+
+      if (!updatedConnection) {
+        throw new Error(
+          "Connection was not successfully updated." +
+            " Check insertion statement and schemas are correct."
+        );
+      }
+
+      if (
+        createdApplicationWebhookId &&
+        oldConnection.details.webhook?.isApplicationOwned
+      ) {
+        try {
+          await this.discordWebhooksService.deleteWebhook(
+            oldConnection.details.webhook.id
+          );
+        } catch (err) {
+          logger.error(
+            `Failed to cleanup application webhook ${oldConnection.details.webhook.id} on feed ${feedId}, discord channel connection ${connectionId}  after update`,
+            err
+          );
+        }
+      }
+
+      return updatedConnection;
+    } catch (err) {
+      if (createdApplicationWebhookId) {
+        await this.discordWebhooksService.deleteWebhook(
+          createdApplicationWebhookId
+        );
+      }
+
+      throw err;
+    }
   }
 
   async deleteConnection(feedId: string, connectionId: string) {
+    const userFeed = await this.userFeedModel
+      .findById(feedId)
+      .select("connections")
+      .lean();
+
+    const connectionToDelete = userFeed?.connections.discordChannels.find((c) =>
+      c.id.equals(connectionId)
+    );
+
+    if (!userFeed || !connectionToDelete) {
+      throw new Error(
+        `Connection ${connectionId} on feed ${feedId} does not exist to be deleted`
+      );
+    }
+
     await this.userFeedModel.updateOne(
       {
         _id: feedId,
@@ -471,6 +771,19 @@ export class FeedConnectionsDiscordChannelsService {
         },
       }
     );
+
+    try {
+      if (connectionToDelete.details.webhook?.isApplicationOwned) {
+        await this.discordWebhooksService.deleteWebhook(
+          connectionToDelete.details.webhook.id
+        );
+      }
+    } catch (err) {
+      logger.error(
+        `Failed to cleanup application webhook ${connectionToDelete.details.webhook?.id} on feed ${feedId}, discord channel connection ${connectionId} after connection deletion`,
+        err
+      );
+    }
   }
 
   async sendTestArticle(
@@ -573,6 +886,9 @@ export class FeedConnectionsDiscordChannelsService {
         enablePlaceholderFallback:
           previewInput?.enablePlaceholderFallback ??
           connection.details.enablePlaceholderFallback,
+        components: castDiscordComponentRowsForMedium(
+          previewInput?.componentRows || connection.details.componentRows
+        ),
       },
     } as const;
 
@@ -594,6 +910,7 @@ export class FeedConnectionsDiscordChannelsService {
     placeholderLimits,
     enablePlaceholderFallback,
     customPlaceholders,
+    componentRows,
   }: CreatePreviewInput) {
     let useCustomPlaceholders = customPlaceholders;
 
@@ -663,6 +980,7 @@ export class FeedConnectionsDiscordChannelsService {
         customPlaceholders: useCustomPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
+        components: castDiscordComponentRowsForMedium(componentRows),
       },
     } as const;
 

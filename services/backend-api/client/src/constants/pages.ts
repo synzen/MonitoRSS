@@ -4,8 +4,6 @@ const getConnectionPathByType = (type: FeedConnectionType) => {
   switch (type) {
     case FeedConnectionType.DiscordChannel:
       return "/discord-channel-connections";
-    case FeedConnectionType.DiscordWebhook:
-      return "/discord-webhook-connections";
     default:
       return "";
   }

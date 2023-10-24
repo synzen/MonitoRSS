@@ -54,6 +54,20 @@ export class DeliveryRecord {
   })
   error_code?: string;
 
+  @Property({
+    nullable: true,
+    default: null,
+    type: "text",
+  })
+  external_detail?: string | null;
+
+  @Property({
+    nullable: true,
+    default: null,
+    type: "text",
+  })
+  article_id?: string | null;
+
   constructor(
     data: Omit<DeliveryRecord, "created_at">,
     overrides?: {
@@ -66,6 +80,10 @@ export class DeliveryRecord {
     this.error_code = data.error_code;
     this.internal_message = data.internal_message;
     this.medium_id = data.medium_id;
+    this.parent = data.parent;
+    this.content_type = data.content_type;
+    this.external_detail = data.external_detail;
+    this.article_id = data.article_id;
 
     if (overrides?.created_at) {
       this.created_at = overrides.created_at;

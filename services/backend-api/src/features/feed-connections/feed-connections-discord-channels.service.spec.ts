@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { randomUUID } from "crypto";
-import { Model, Types } from "mongoose";
+import { AnyKeys, Model, Types } from "mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { InvalidFilterExpressionException } from "../../common/exceptions";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
 import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 import { FeedHandlerService } from "../../services/feed-handler/feed-handler.service";
 import {
@@ -10,15 +12,27 @@ import {
   teardownIntegrationTests,
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
-import { FeedConnectionDisabledCode } from "../feeds/constants";
+import { DiscordAuthService } from "../discord-auth/discord-auth.service";
+import { DiscordWebhooksService } from "../discord-webhooks/discord-webhooks.service";
+import {
+  FeedConnectionDisabledCode,
+  FeedConnectionDiscordComponentButtonStyle,
+  FeedConnectionDiscordComponentType,
+  FeedConnectionMentionType,
+} from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedsService } from "../feeds/feeds.service";
+import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedFeature } from "../user-feeds/entities";
+import { CopyableSetting } from "./dto";
 import {
   DiscordChannelPermissionsException,
   MissingDiscordChannelException,
 } from "./exceptions";
-import { FeedConnectionsDiscordChannelsService } from "./feed-connections-discord-channels.service";
+import {
+  FeedConnectionsDiscordChannelsService,
+  UpdateDiscordChannelConnectionInput,
+} from "./feed-connections-discord-channels.service";
 
 describe("FeedConnectionsDiscordChannelsService", () => {
   let service: FeedConnectionsDiscordChannelsService;
@@ -29,6 +43,19 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   const feedHandlerService = {
     sendTestArticle: jest.fn(),
     validateFilters: jest.fn(),
+  };
+  const supportersService = {
+    getBenefitsOfDiscordUser: jest.fn(),
+  };
+  const discordWebhooksService = {
+    getWebhook: jest.fn(),
+    canBeUsedByBot: jest.fn(),
+  };
+  const discordApiService = {
+    getChannel: jest.fn(),
+  };
+  const discordAuthService = {
+    userManagesGuild: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -42,6 +69,22 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         {
           provide: FeedHandlerService,
           useValue: feedHandlerService,
+        },
+        {
+          provide: SupportersService,
+          useValue: supportersService,
+        },
+        {
+          provide: DiscordWebhooksService,
+          useValue: discordWebhooksService,
+        },
+        {
+          provide: DiscordAPIService,
+          useValue: discordApiService,
+        },
+        {
+          provide: DiscordAuthService,
+          useValue: discordAuthService,
         },
       ],
       imports: [
@@ -60,6 +103,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
     jest.resetAllMocks();
     feedHandlerService.validateFilters.mockResolvedValue({
       errors: [],
+    });
+    supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
+      allowCustomPlaceholders: true,
     });
   });
 
@@ -94,6 +140,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         name: "name",
         userAccessToken: "user-access-token",
         guildId: guildId,
+        discordUserId: "user-id",
       };
       await service.createDiscordChannelConnection(creationDetails);
 
@@ -194,56 +241,9 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   describe("updateDiscordChannelConnection", () => {
     const guildId = "guild-id";
     const connectionIdToUse = new Types.ObjectId();
+    let oldConnection: DiscordChannelConnection;
     let createdFeed: UserFeed;
-    const updateInput = {
-      accessToken: "access-token",
-      feed: {
-        user: {
-          discordUserId: "user-id",
-        },
-      },
-      guildId,
-      updates: {
-        name: "updatedName",
-        filters: {
-          expression: {
-            foo: "bar",
-          },
-        },
-        customPlaceholders: [
-          {
-            id: randomUUID(),
-            referenceName: "refe",
-            sourcePlaceholder: "title",
-            steps: [
-              {
-                id: randomUUID(),
-                regexSearch: "regex-search",
-                replacementString: "replacement",
-              },
-            ],
-          },
-        ],
-        splitOptions: {
-          splitChar: "s",
-          appendChar: "a",
-        },
-        details: {
-          channel: {
-            id: "updatedChannelId",
-          },
-          content: "updatedContent",
-          embeds: [
-            {
-              title: "updatedTitle",
-              description: "updatedDescription",
-              url: "updatedUrl",
-              color: "123",
-            },
-          ],
-        },
-      },
-    };
+    let updateInput: UpdateDiscordChannelConnectionInput;
 
     beforeEach(async () => {
       createdFeed = await userFeedsModel.create({
@@ -289,6 +289,72 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       feedsService.canUseChannel.mockResolvedValue({
         guild_id: guildId,
       });
+
+      oldConnection = createdFeed.connections.discordChannels[0];
+
+      updateInput = {
+        accessToken: "access-token",
+        oldConnection,
+        feed: {
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: createdFeed.connections,
+        },
+        updates: {
+          name: "updatedName",
+          filters: {
+            expression: {
+              foo: "bar",
+            },
+          },
+          customPlaceholders: [
+            {
+              id: randomUUID(),
+              referenceName: "refe",
+              sourcePlaceholder: "title",
+              steps: [
+                {
+                  id: randomUUID(),
+                  regexSearch: "regex-search",
+                  replacementString: "replacement",
+                },
+              ],
+            },
+          ],
+          splitOptions: {
+            splitChar: "s",
+            appendChar: "a",
+          },
+          details: {
+            channel: {
+              id: "updatedChannelId",
+            },
+            content: "updatedContent",
+            embeds: [
+              {
+                title: "updatedTitle",
+                description: "updatedDescription",
+                url: "updatedUrl",
+                color: "123",
+              },
+            ],
+            componentRows: [
+              {
+                id: "row1",
+                components: [
+                  {
+                    type: FeedConnectionDiscordComponentType.Button,
+                    label: "label",
+                    url: "url",
+                    style: FeedConnectionDiscordComponentButtonStyle.Link,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      };
     });
 
     it("updates the connection", async () => {
@@ -307,12 +373,12 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         filters: updateInput.updates.filters,
         customPlaceholders: [
           {
-            id: updateInput.updates.customPlaceholders[0].id,
+            id: updateInput.updates.customPlaceholders?.[0].id,
             referenceName: "refe",
             sourcePlaceholder: "title",
             steps: [
               {
-                id: updateInput.updates.customPlaceholders[0].steps[0].id,
+                id: updateInput.updates.customPlaceholders?.[0]?.steps?.[0].id,
                 regexSearch: "regex-search",
                 replacementString: "replacement",
               },
@@ -322,10 +388,11 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         details: {
           embeds: updateInput.updates.details?.embeds,
           channel: {
-            id: updateInput.updates.details.channel.id,
+            id: updateInput.updates.details?.channel?.id,
             guildId,
           },
           content: updateInput.updates.details?.content,
+          componentRows: updateInput.updates.details?.componentRows,
         },
       });
     });
@@ -337,6 +404,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         {
           accessToken: updateInput.accessToken,
           feed: createdFeed,
+          oldConnection,
           updates: {
             disabledCode: FeedConnectionDisabledCode.BadFormat,
           },
@@ -358,6 +426,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connectionIdToUse.toHexString(),
         {
           accessToken: updateInput.accessToken,
+          oldConnection,
           feed: createdFeed,
           updates: {
             splitOptions: updateInput.updates.splitOptions,
@@ -380,6 +449,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         connectionIdToUse.toHexString(),
         {
           accessToken: updateInput.accessToken,
+          oldConnection,
           feed: createdFeed,
           updates: {
             filters: null,
@@ -442,6 +512,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           connectionIdToUse.toHexString(),
           {
             accessToken: updateInput.accessToken,
+            oldConnection,
             feed: createdFeed,
             updates: {
               filters: {
@@ -454,6 +525,218 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           }
         )
       ).rejects.toThrow(InvalidFilterExpressionException);
+    });
+  });
+
+  describe("copySettings", () => {
+    const guildId = "guild-id";
+    let sourceConnection: DiscordChannelConnection;
+    let createdFeed: UserFeed;
+    const targetConnectionIds = [
+      new Types.ObjectId().toHexString(),
+      new Types.ObjectId().toHexString(),
+    ];
+    const userFeedDataToInsert: AnyKeys<UserFeed> = {
+      title: "my feed",
+      url: "url",
+      user: {
+        discordUserId: "user-id",
+      },
+      connections: {
+        discordChannels: [
+          {
+            id: new Types.ObjectId(),
+            name: "name",
+            disabledCode: FeedConnectionDisabledCode.BadFormat,
+            filters: {
+              expression: {
+                foo: "bar",
+              },
+            },
+            rateLimits: [
+              {
+                id: "1",
+                timeWindowSeconds: 100,
+                limit: 10,
+              },
+            ],
+            splitOptions: {
+              splitChar: "1",
+              appendChar: "2",
+              prependChar: "3",
+            },
+            mentions: {
+              targets: [
+                {
+                  id: "1",
+                  type: FeedConnectionMentionType.Role,
+                  filters: {
+                    expression: {
+                      foo: "bar",
+                    },
+                  },
+                },
+              ],
+            },
+            details: {
+              webhook: {
+                id: "webhook-id-1",
+                channel: "channel-id",
+                guildId: "guild-id",
+                token: "token",
+                iconUrl: "icon-url",
+                name: "name",
+                isApplicationOwned: true,
+                threadId: "thread-id",
+              },
+              embeds: [
+                {
+                  authorName: "auth name",
+                  authorURL: "auth url",
+                  fields: [],
+                },
+              ],
+              formatter: {
+                disableImageLinkPreviews: true,
+                formatTables: true,
+                stripImages: true,
+              },
+              componentRows: [
+                {
+                  id: "1",
+                  components: [
+                    {
+                      id: "1",
+                      label: "label",
+                      style: 5,
+                      type: FeedConnectionDiscordComponentType.Button,
+                      url: "url",
+                    },
+                  ],
+                },
+              ],
+              content: "content",
+              enablePlaceholderFallback: true,
+              forumThreadTags: [
+                {
+                  id: "1",
+                  filters: {
+                    expression: {
+                      hello: "world",
+                    },
+                  },
+                },
+              ],
+              forumThreadTitle: "forum-thread-title",
+              placeholderLimits: [
+                {
+                  characterCount: 100,
+                  placeholder: "placeholder",
+                  appendString: "append-string",
+                },
+              ],
+            },
+          },
+          {
+            id: targetConnectionIds[0],
+            name: "name",
+            details: {
+              channel: {
+                id: "channel-id2",
+                guildId,
+              },
+              embeds: [],
+              webhook: {
+                id: "webhook-id-2",
+                channel: "channel-id",
+                guildId: "guild-id",
+                token: "token",
+                iconUrl: "icon-url2",
+                name: "name2",
+                isApplicationOwned: true,
+              },
+            },
+          },
+          {
+            id: targetConnectionIds[1],
+            name: "name",
+            filters: {
+              expression: {
+                foo: "bar",
+              },
+            },
+            splitOptions: {
+              splitChar: "1",
+              appendChar: "2",
+              prependChar: "3",
+            },
+            details: {
+              channel: {
+                id: "channel-id3",
+                guildId,
+              },
+              embeds: [],
+              webhook: {
+                id: "webhook-id-3",
+                channel: "channel-id",
+                guildId: "guild-id",
+                token: "token",
+                iconUrl: "icon-url3",
+                name: "name3",
+                isApplicationOwned: true,
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    beforeEach(async () => {
+      createdFeed = await userFeedsModel.create(userFeedDataToInsert);
+      sourceConnection = userFeedDataToInsert.connections.discordChannels[0];
+    });
+
+    it("copies settings correctly", async () => {
+      await service.copySettings(createdFeed, sourceConnection, {
+        properties: Object.values(CopyableSetting) as CopyableSetting[],
+        targetDiscordChannelConnectionIds: targetConnectionIds,
+      });
+
+      // Assert all relevant fields of source connection were copied to the other two connections
+      const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
+
+      expect(updatedFeed?.connections.discordChannels).toHaveLength(3);
+
+      const targetConnections = updatedFeed?.connections.discordChannels.filter(
+        (c) => targetConnectionIds.includes(c.id.toHexString())
+      );
+
+      expect(targetConnections).toHaveLength(2);
+
+      targetConnections?.forEach((c) => {
+        expect(c).toMatchObject({
+          filters: sourceConnection.filters,
+          splitOptions: sourceConnection.splitOptions,
+          rateLimits: sourceConnection.rateLimits,
+          mentions: sourceConnection.mentions,
+          details: {
+            embeds: sourceConnection.details.embeds,
+            formatter: sourceConnection.details.formatter,
+            content: sourceConnection.details.content,
+            componentRows: sourceConnection.details.componentRows,
+            enablePlaceholderFallback:
+              sourceConnection.details.enablePlaceholderFallback,
+            forumThreadTags: sourceConnection.details.forumThreadTags,
+            forumThreadTitle: sourceConnection.details.forumThreadTitle,
+            placeholderLimits: sourceConnection.details.placeholderLimits,
+            webhook: {
+              iconUrl: sourceConnection.details.webhook?.iconUrl,
+              name: sourceConnection.details.webhook?.name,
+              threadId: sourceConnection.details.webhook?.threadId,
+            },
+          },
+        });
+      });
     });
   });
 
@@ -541,7 +824,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           },
           mediumDetails: {
             channel: {
-              id: targetConnection.details.channel.id,
+              id: targetConnection.details.channel!.id,
               type: undefined,
             },
             content: expect.any(String),
@@ -578,7 +861,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
           },
           mediumDetails: {
             channel: {
-              id: targetConnection.details.channel.id,
+              id: targetConnection.details.channel!.id,
               type: undefined,
             },
             content: expect.any(String),

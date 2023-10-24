@@ -84,7 +84,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                 <Controller
                   name="title"
                   control={control}
-                  render={({ field }) => <Input {...field} tabIndex={0} ref={initialFocusRef} />}
+                  render={({ field }) => (
+                    <Input {...field} tabIndex={0} ref={initialFocusRef} bg="gray.800" />
+                  )}
                 />
                 {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
                 <FormHelperText>
@@ -96,7 +98,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                 <Controller
                   name="url"
                   control={control}
-                  render={({ field }) => <Input {...field} tabIndex={0} />}
+                  render={({ field }) => <Input {...field} tabIndex={0} bg="gray.800" />}
                 />
                 {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
                 <FormHelperText>

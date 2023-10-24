@@ -51,6 +51,7 @@ import { FEED_DISABLED_LEGACY_CODES } from "./constants";
 import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
 import { randomUUID } from "crypto";
 import { DiscordWebhook } from "../../common";
+import { UserFeed } from "../user-feeds/entities";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -88,7 +89,7 @@ export class FeedsController {
 
     return {
       result: {
-        id: result._id.toHexString(),
+        id: (result as UserFeed)._id.toHexString(),
       },
     };
   }

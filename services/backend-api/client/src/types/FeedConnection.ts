@@ -4,7 +4,6 @@ import { CustomPlaceholderSchema } from "./CustomPlaceholder";
 
 export enum FeedConnectionType {
   DiscordChannel = "DISCORD_CHANNEL",
-  DiscordWebhook = "DISCORD_WEBHOOK",
 }
 
 export enum FeedConnectionDisabledCode {
@@ -13,6 +12,28 @@ export enum FeedConnectionDisabledCode {
   MissingPermissions = "MISSING_PERMISSIONS",
   MissingMedium = "MISSING_MEDIUM",
 }
+
+export enum DiscordComponentType {
+  Button = 2,
+}
+
+export enum DiscordComponentButtonStyle {
+  Primary = 1,
+  Secondary = 2,
+  Success = 3,
+  Danger = 4,
+  Link = 5,
+}
+
+const DiscordButtonSchema = object({
+  id: string().required(),
+  type: number().oneOf([DiscordComponentType.Button]).required(),
+  label: string().required(),
+  style: number()
+    .oneOf(Object.values(DiscordComponentButtonStyle) as DiscordComponentButtonStyle[])
+    .required(),
+  url: string().required(),
+});
 
 const DiscordChannelConnectionDetailsSchema = object({
   embeds: array(FeedEmbedSchema).required(),
@@ -30,9 +51,17 @@ const DiscordChannelConnectionDetailsSchema = object({
     guildId: string().required(),
     type: string().nullable().oneOf(["forum", "thread"]),
     threadId: string(),
+    isApplicationOwned: boolean(),
+    channelId: string(),
   })
     .optional()
     .nullable(),
+  componentRows: array(
+    object({
+      id: string().required(),
+      components: array(DiscordButtonSchema.required()).required().max(5),
+    }).required()
+  ).max(5),
   content: string().optional(),
   forumThreadTitle: string().optional(),
   forumThreadTags: array(
@@ -139,11 +168,11 @@ export const FeedConnectionSchema = object({
     .default(undefined),
   customPlaceholders: array(CustomPlaceholderSchema.required()).nullable().default(undefined),
   details: object().when("key", ([key]) => {
-    if (key === FeedConnectionType.DiscordWebhook) {
-      return DiscordWebhookConnectionDetailsSchema;
+    if (key === FeedConnectionType.DiscordChannel) {
+      return DiscordChannelConnectionDetailsSchema;
     }
 
-    return DiscordChannelConnectionDetailsSchema;
+    throw new Error(`Unknown connection type: ${key}`);
   }),
 });
 

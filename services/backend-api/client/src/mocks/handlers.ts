@@ -61,13 +61,9 @@ import {
   CreateDiscordChannelConnectionOutput,
   CreateDiscordChannelConnectionPreviewOutput,
   CreateDiscordChannelConnectionTestArticleOutput,
-  CreateDiscordWebhookConnectionOutput,
-  CreateDiscordWebhookConnectionPreviewOutput,
-  CreateDiscordWebhookConnectionTestArticleOutput,
   UpdateDiscordChannelConnectionOutput,
-  UpdateDiscordWebhookConnectionOutput,
 } from "../features/feedConnections";
-import { mockFeedChannelConnections, mockFeedWebhookConnections } from "./data/feedConnection";
+import { mockFeedChannelConnections } from "./data/feedConnection";
 import mockUserFeeds from "./data/userFeeds";
 import mockFeedSummaries from "./data/feeds";
 import { mockSendTestArticleResult } from "./data/testArticleResult";
@@ -759,6 +755,11 @@ const handlers = [
     )
   ),
 
+  rest.post(
+    "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/copy-connection-settings",
+    (req, res, ctx) => res(ctx.delay(500), ctx.status(204))
+  ),
+
   rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/test", (req, res, ctx) =>
     res(
       ctx.delay(500),
@@ -792,59 +793,6 @@ const handlers = [
   rest.delete("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) =>
     res(ctx.delay(500), ctx.status(204))
   ),
-
-  rest.post("/api/v1/user-feeds/:feedId/connections/discord-webhooks", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<CreateDiscordWebhookConnectionOutput>({
-        result: mockFeedWebhookConnections[0],
-      })
-    )
-  ),
-
-  rest.post("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id/clone", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<CreateDiscordWebhookConnectionTestArticleOutput>({
-        result: mockSendTestArticleResult,
-      })
-    )
-  ),
-
-  rest.post("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id/test", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<CreateDiscordWebhookConnectionTestArticleOutput>({
-        result: mockSendTestArticleResult,
-      })
-    )
-  ),
-
-  rest.post(
-    "/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id/preview",
-    (req, res, ctx) =>
-      res(
-        ctx.delay(500),
-        ctx.json<CreateDiscordWebhookConnectionPreviewOutput>({
-          result: mockCreatePreviewResult,
-        })
-      )
-  ),
-
-  rest.patch("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id", (req, res, ctx) => {
-    const matchingConnection = mockFeedWebhookConnections.find((c) => c.id === req.params.id);
-
-    if (!matchingConnection) {
-      return res(ctx.status(404), ctx.json({}));
-    }
-
-    return res(
-      ctx.delay(500),
-      ctx.json<UpdateDiscordWebhookConnectionOutput>({
-        result: matchingConnection,
-      })
-    );
-  }),
 
   rest.delete("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id", (req, res, ctx) =>
     res(ctx.delay(500), ctx.status(204))

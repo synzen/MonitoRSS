@@ -1,18 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import {
-  createDiscordWebhookConnection,
-  CreateDiscordWebhookConnectionInput,
-  CreateDiscordWebhookConnectionOutput,
+  createDiscordChannelConnectionCopySettings,
+  CreateDiscordChannelConnectionCopySettingsInput,
 } from "../api";
 
-export const useCreateDiscordWebhookConnection = () => {
+export const useCreateDiscordChannelConnectionCopySettings = () => {
   const queryClient = useQueryClient();
   const { mutateAsync, status, error, reset } = useMutation<
-    CreateDiscordWebhookConnectionOutput,
+    void,
     ApiAdapterError,
-    CreateDiscordWebhookConnectionInput
-  >((details) => createDiscordWebhookConnection(details), {
+    CreateDiscordChannelConnectionCopySettingsInput
+  >((details) => createDiscordChannelConnectionCopySettings(details), {
     onSuccess: (data, inputData) =>
       queryClient.invalidateQueries({
         queryKey: [

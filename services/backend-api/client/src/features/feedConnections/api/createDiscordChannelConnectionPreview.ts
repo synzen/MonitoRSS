@@ -11,6 +11,15 @@ export interface CreateDiscordChannelConnectionPreviewInput {
     };
     content?: string | null;
     embeds?: PreviewEmbedInput[];
+    componentRows?: Array<{
+      id: string;
+      components: Array<{
+        type: number;
+        label: string;
+        url?: string;
+        style: number;
+      }>;
+    }> | null;
     splitOptions?: {
       isEnabled?: boolean | null;
       appendChar?: string | null;

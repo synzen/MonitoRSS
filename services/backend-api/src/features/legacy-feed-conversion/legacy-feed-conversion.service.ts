@@ -43,11 +43,11 @@ import {
   LegacyFeedConversionJobModel,
 } from "./entities/legacy-feed-conversion-job.entity";
 import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
-import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
-import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
 import { FeedRegexOp } from "../feeds/entities/feed-regexop.entity";
 import { randomUUID } from "crypto";
 import { escapeRegExp } from "lodash";
+import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
+import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
 
 enum ConversionDisabledCode {
   ConvertSuccess = "CONVERTED_USER_FEED",
@@ -94,6 +94,7 @@ enum LegacyFeedDisabledCode {
   MissingPermissionsViewChannel = "Missing permissions VIEW_CHANNEL",
   IncorrectFormat = "There was an issue sending an article due to an incorrectly-formatted" +
     " text or embed. Update the feed and ensure it works to re-enable",
+  DisabledForPersonalRollout = "DISABLED_FOR_PERSONAL_ROLLOUT",
 }
 
 const getConnectionDisabledCode = (legacyFeedDisabledCode?: string) => {
@@ -130,6 +131,7 @@ const getConnectionDisabledCode = (legacyFeedDisabledCode?: string) => {
   const ignore = [
     LegacyFeedDisabledCode.ExceededFeedLimit,
     LegacyFeedDisabledCode.ExcessivelyActiveFeed,
+    LegacyFeedDisabledCode.DisabledForPersonalRollout,
   ];
 
   if (ignore.includes(legacyFeedDisabledCode as LegacyFeedDisabledCode)) {
@@ -359,7 +361,12 @@ export class LegacyFeedConversionService {
     {
       discordUserId,
       isBulkConversion,
-    }: { discordUserId: string; isBulkConversion?: boolean }
+      doNotSave,
+    }: {
+      discordUserId: string;
+      isBulkConversion?: boolean;
+      doNotSave?: boolean;
+    }
   ) {
     try {
       if (feed.disabled === ConversionDisabledCode.ConvertSuccess) {
@@ -419,6 +426,10 @@ export class LegacyFeedConversionService {
         subscribers: subscribers,
         filteredFormats,
       });
+
+      if (doNotSave) {
+        return converted;
+      }
 
       await this.userFeedModel.create([converted]);
 
@@ -615,13 +626,16 @@ export class LegacyFeedConversionService {
         isEnabled: feed.split?.enabled || false,
       },
       mentions: {
-        targets: subscribers?.map((s) => ({
-          id: s.id,
-          type: s.type as unknown as FeedConnectionMentionType,
-          filters: s.rfilters
-            ? this.convertRegexFilters(s.rfilters)
-            : this.convertRegularFilters(s.filters),
-        })),
+        targets: subscribers?.map((s) => {
+          return {
+            id: s.id,
+            type: s.type as unknown as FeedConnectionMentionType,
+            filters:
+              Object.keys(s.rfilters || {}).length > 0
+                ? this.convertRegexFilters(s.rfilters)
+                : this.convertRegularFilters(s.filters),
+          };
+        }),
       },
       details: {
         channel: channelToAdd,
@@ -675,9 +689,10 @@ export class LegacyFeedConversionService {
                 })
               : baseConnection.details.embeds,
           },
-          filters: format.filters
-            ? this.convertRegularFilters(format.filters)
-            : baseConnection.filters,
+          filters:
+            Object.keys(format.filters || {}).length > 0
+              ? this.convertRegularFilters(format.filters)
+              : baseConnection.filters,
         };
 
         converted.connections.discordChannels.push(connectionCopy);
@@ -924,9 +939,20 @@ export class LegacyFeedConversionService {
     // !(a & b & c) = !a | !b | !c
     // !(a & b & (c | d)) = !a | !b | !(c & d) = !a | !b | (!c | !d)
 
-    Object.entries(filters).forEach(([category, filterVals]) => {
+    Object.entries(filters).forEach(([origCategory, filterVals]) => {
+      let category = origCategory;
+
+      if (origCategory === "tags") {
+        category = "processed::categories";
+      }
+
       for (let i = 0; i < filterVals.length; ++i) {
-        const filterVal = filterVals[i];
+        let filterVal = filterVals[i];
+
+        if (origCategory === "tags" && !filterVal.startsWith("~")) {
+          // Old tag filters were separated by newlines, but new ones are separated by commas
+          filterVal = `~${filterVal}`;
+        }
 
         const isBroad = filterVal.startsWith("~");
         const isBlocking = filterVal.startsWith("!");

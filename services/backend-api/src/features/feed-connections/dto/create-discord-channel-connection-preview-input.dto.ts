@@ -19,6 +19,7 @@ import {
   CustomPlaceholderDto,
   ForumThreadTagDto,
 } from "../../../common";
+import { DiscordComponentRow } from "../../../common/types/discord-component-row.type";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
 
 class Article {
@@ -42,6 +43,12 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @ValidateNested({ each: true })
   @Type(() => DiscordPreviewEmbed)
   embeds?: DiscordPreviewEmbed[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordComponentRow)
+  componentRows?: DiscordComponentRow[];
 
   @IsString()
   @IsOptional()

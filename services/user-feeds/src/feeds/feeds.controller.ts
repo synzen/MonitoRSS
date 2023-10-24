@@ -459,6 +459,7 @@ export class FeedsController {
             mentions: mediumDetails.mentions,
             placeholderLimits: mediumDetails.placeholderLimits,
             enablePlaceholderFallback: mediumDetails.enablePlaceholderFallback,
+            components: mediumDetails.components,
           }
         );
 

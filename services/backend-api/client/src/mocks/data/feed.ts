@@ -1,7 +1,7 @@
 import { Feed } from "@/types";
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordWebhooks from "./discordWebhooks";
-import { mockFeedChannelConnections, mockFeedWebhookConnections } from "./feedConnection";
+import { mockFeedChannelConnections } from "./feedConnection";
 
 const mockFeeds: Feed[] = [
   {
@@ -44,7 +44,7 @@ const mockFeeds: Feed[] = [
       },
     ],
     disabledReason: undefined,
-    connections: [mockFeedChannelConnections[0], mockFeedWebhookConnections[0]],
+    connections: [mockFeedChannelConnections[0]],
     isFeedv2: false,
   },
 ];

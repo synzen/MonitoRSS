@@ -7,11 +7,7 @@ import {
   Grid,
   Heading,
   HStack,
-  Menu,
   MenuButton,
-  MenuDivider,
-  MenuItem,
-  MenuList,
   Spinner,
   Stack,
   Tab,
@@ -20,17 +16,15 @@ import {
   TabPanels,
   Tabs,
   Text,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
-import { BoxConstrained, CategoryText, ConfirmModal, DashboardContentV2 } from "../components";
+import { BoxConstrained, CategoryText, DashboardContentV2 } from "../components";
 import { pages } from "../constants";
 import { DiscordChannelName, DiscordServerName } from "../features/discordServers";
 import { useUserFeed } from "../features/feed";
 import {
-  DeleteConnectionButton,
   LogicalFilterExpression,
   useDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
@@ -38,22 +32,16 @@ import {
   FiltersTabSection,
   MessageTabSection,
   ConnectionDisabledAlert,
-  EditConnectionChannelDialog,
   UpdateDiscordChannelConnectionInput,
-  CloneDiscordConnectionCloneDialog,
-  EditConnectionWebhookDialog,
 } from "../features/feedConnections";
 import { CustomPlaceholdersTabSection } from "../features/feedConnections/components/CustomPlaceholdersTabSection";
-import {
-  FeedConnectionDisabledCode,
-  FeedConnectionType,
-  FeedDiscordChannelConnection,
-} from "../types";
+import { FeedConnectionType, FeedDiscordChannelConnection } from "../types";
 import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { DeliveryRateLimitsTabSection } from "../features/feedConnections/components/DeliveryRateLimitsTabSection";
 import { useDiscordWebhook } from "../features/discordWebhooks";
+import { DiscordChannelConnectionSettings } from "../features/feedConnections/components/ConnectionCard/DiscordChannelConnectionSettings";
 
 enum TabSearchParam {
   Message = "?view=message",
@@ -103,12 +91,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
-  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
-  const {
-    isOpen: isConvertToWebhookIsOpen,
-    onClose: isConvertToWebhookOnClose,
-    onOpen: isConvertToWebhookOnOpen,
-  } = useDisclosure();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
@@ -127,7 +109,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
     feedId,
   });
   const { t } = useTranslation();
-  const { mutateAsync, status: updateStatus } = useUpdateDiscordChannelConnection();
+  const { mutateAsync } = useUpdateDiscordChannelConnection();
 
   const serverId = connection?.details?.channel?.guildId || connection?.details?.webhook?.guildId;
 
@@ -160,73 +142,6 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
       error={feedError || connectionError}
       loading={feedStatus === "loading" || connectionStatus === "loading"}
     >
-      {connection?.details.channel && (
-        <EditConnectionChannelDialog
-          onCloseRef={actionsButtonRef}
-          defaultValues={{
-            channelId: connection.details.channel.id,
-            name: connection.name,
-            serverId: connection.details.channel.id,
-          }}
-          onUpdate={({ channelId: updatedChannelId, name }) =>
-            onUpdate({
-              channelId: updatedChannelId,
-              name,
-            })
-          }
-          isOpen={editIsOpen}
-          onClose={editOnClose}
-        />
-      )}
-      {connection?.details.webhook && (
-        <EditConnectionWebhookDialog
-          feedId={feedId}
-          onCloseRef={actionsButtonRef}
-          isOpen={editIsOpen}
-          onClose={editOnClose}
-          onUpdate={({ webhook }) =>
-            onUpdate({
-              webhook: {
-                id: webhook.id,
-                name: webhook.name,
-                iconUrl: webhook.iconUrl,
-                threadId: webhook.threadId,
-              },
-            })
-          }
-          defaultValues={{
-            name: connection.name,
-            serverId: connection.details.webhook.guildId,
-            webhook: {
-              id: connection.details.webhook.id,
-              iconUrl: connection.details.webhook.iconUrl,
-              name: connection.details.webhook.name,
-              threadId: connection.details.webhook.threadId,
-            },
-          }}
-        />
-      )}
-      {/** For converting a channel to webhook */}
-      {connection && connection.details.channel && (
-        <EditConnectionWebhookDialog
-          excludeName
-          title="Convert to Discord Webook"
-          feedId={feedId}
-          isOpen={isConvertToWebhookIsOpen}
-          onClose={isConvertToWebhookOnClose}
-          onCloseRef={actionsButtonRef}
-          onUpdate={({ webhook }) =>
-            onUpdate({
-              webhook: {
-                id: webhook.id,
-                name: webhook.name,
-                iconUrl: webhook.iconUrl,
-                threadId: webhook.threadId,
-              },
-            })
-          }
-        />
-      )}
       <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
         <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
           <BoxConstrained.Container spacing={12}>
@@ -267,67 +182,21 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                             },
                           }}
                         />
-                        <Menu>
-                          <MenuButton
-                            ref={actionsButtonRef}
-                            as={Button}
-                            variant="outline"
-                            rightIcon={<ChevronDownIcon />}
-                          >
-                            {t("common.buttons.actions")}
-                          </MenuButton>
-                          <MenuList>
-                            <MenuItem aria-label="Edit" onClick={editOnOpen}>
-                              {t("common.buttons.configure")}
-                            </MenuItem>
-                            {connection && (
-                              <CloneDiscordConnectionCloneDialog
-                                trigger={<MenuItem>Clone</MenuItem>}
-                                defaultValues={{
-                                  name: `${connection.name} (Clone)`,
-                                }}
-                                type={FeedConnectionType.DiscordChannel}
-                                connectionId={connectionId as string}
-                                feedId={feedId as string}
-                              />
-                            )}
-                            {connection && !connection.disabledCode && (
-                              <ConfirmModal
-                                title={t(
-                                  "pages.discordChannelConnection.manualDisableConfirmTitle"
-                                )}
-                                description={t(
-                                  "pages.discordChannelConnection" +
-                                    ".manualDisableConfirmDescription"
-                                )}
-                                trigger={
-                                  <MenuItem isDisabled={updateStatus === "loading"}>
-                                    {t("common.buttons.disable")}
-                                  </MenuItem>
-                                }
-                                okText={t("common.buttons.yes")}
-                                colorScheme="blue"
-                                onConfirm={async () =>
-                                  onUpdate({
-                                    disabledCode: FeedConnectionDisabledCode.Manual,
-                                  })
-                                }
-                              />
-                            )}
-                            {connection && connection.details.channel && (
-                              <MenuItem onClick={isConvertToWebhookOnOpen}>
-                                Convert to Discord Webhook
-                              </MenuItem>
-                            )}
-                            <MenuDivider />
-                            <DeleteConnectionButton
-                              connectionId={connectionId as string}
-                              feedId={feedId as string}
-                              type={FeedConnectionType.DiscordChannel}
-                              trigger={<MenuItem>{t("common.buttons.delete")}</MenuItem>}
-                            />
-                          </MenuList>
-                        </Menu>
+                        <DiscordChannelConnectionSettings
+                          connection={connection}
+                          redirectOnCloneSuccess
+                          trigger={
+                            <MenuButton
+                              ref={actionsButtonRef}
+                              as={Button}
+                              variant="outline"
+                              rightIcon={<ChevronDownIcon />}
+                            >
+                              {t("common.buttons.actions")}
+                            </MenuButton>
+                          }
+                          feedId={feedId as string}
+                        />
                       </HStack>
                     )}
                   </HStack>
@@ -369,7 +238,12 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 >
                   <Text>{getPrettyChannelType(connection?.details)}</Text>
                 </CategoryText>
-                <CategoryText title="Webhook" hidden={!connection?.details.webhook}>
+                <CategoryText
+                  title="Webhook"
+                  hidden={
+                    !connection?.details.webhook || connection.details.webhook.isApplicationOwned
+                  }
+                >
                   {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
                   <HStack>
                     <Text>{matchingWebhook?.name}</Text>
@@ -382,10 +256,26 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     />
                   </HStack>
                 </CategoryText>
-                <CategoryText title="Custom name" hidden={!connection?.details.webhook}>
+                <CategoryText
+                  title="Webhook Channel"
+                  hidden={
+                    !connection?.details.webhook || !connection.details.webhook.isApplicationOwned
+                  }
+                >
+                  {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
+                  <HStack>
+                    <DiscordChannelName
+                      serverId={serverId}
+                      channelId={matchingWebhook?.channelId || ""}
+                      spinnerSize="sm"
+                      hidden={!matchingWebhook}
+                    />
+                  </HStack>
+                </CategoryText>
+                <CategoryText title="Webhook name" hidden={!connection?.details.webhook}>
                   {connection?.details.webhook?.name || "N/A"}
                 </CategoryText>
-                <CategoryText title="Custom icon" hidden={!connection?.details.webhook}>
+                <CategoryText title="Webhook icon" hidden={!connection?.details.webhook}>
                   {connection?.details.webhook?.iconUrl || "N/A"}
                 </CategoryText>
               </Grid>
@@ -439,6 +329,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     forumThreadTags: connection?.details.forumThreadTags || [],
                     mentions: connection?.mentions,
                     customPlaceholders: connection?.customPlaceholders,
+                    componentRows: connection?.details.componentRows,
                     ...connection?.details,
                   }}
                   articleFormatter={{

@@ -43,6 +43,14 @@ export class DiscordWebhook {
     required: false,
   })
   threadId?: string;
+
+  @Prop({
+    required: false,
+  })
+  channelId?: string;
+
+  @Prop()
+  isApplicationOwned?: boolean;
 }
 
 export const DiscordWebhookSchema =

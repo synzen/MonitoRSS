@@ -26,10 +26,12 @@ import { useDiscordChannelConnection, useDiscordChannelForumTags } from "../../h
 import { DiscordForumTagFiltersDialog } from "./DiscordForumTagFiltersDialog";
 import { LogicalFilterExpression } from "../../types";
 import { useDiscordWebhook } from "../../../discordWebhooks";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   feedId: string;
   connectionId: string;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 const TagCheckbox = ({
@@ -41,6 +43,7 @@ const TagCheckbox = ({
   name,
   onChange,
   feedId,
+  articleFormatter,
 }: {
   id: string;
   isChecked: boolean;
@@ -50,6 +53,7 @@ const TagCheckbox = ({
   name?: string;
   hasPermissionToUse: boolean;
   feedId: string;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }) => {
   const { t } = useTranslation();
 
@@ -58,7 +62,15 @@ const TagCheckbox = ({
       isDisabled={hasPermissionToUse}
       label={t("components.discordMessageForumThreadForm.threadTagMissingPermissions")}
     >
-      <Tag key={id} borderRadius="full" variant="solid" size="lg" paddingX="4" paddingY="2">
+      <Tag
+        key={id}
+        borderRadius="full"
+        variant="solid"
+        size="lg"
+        paddingX="4"
+        paddingY="2"
+        bg="gray.700"
+      >
         <HStack divider={<Divider orientation="vertical" height="5" />}>
           <Checkbox
             value={id}
@@ -75,6 +87,7 @@ const TagCheckbox = ({
           </Checkbox>
           {isChecked && (
             <DiscordForumTagFiltersDialog
+              articleFormatter={articleFormatter}
               tagName={`${emojiName || ""} ${name || ""}`.trim()}
               feedId={feedId}
               onFiltersUpdated={async (newFilters) => {
@@ -99,7 +112,11 @@ const TagCheckbox = ({
   );
 };
 
-export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) => {
+export const DiscordMessageForumThreadForm = ({
+  feedId,
+  connectionId,
+  articleFormatter,
+}: Props) => {
   const {
     control,
     formState: { errors },
@@ -148,7 +165,13 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
               name="forumThreadTitle"
               control={control}
               render={({ field }) => (
-                <Input size="sm" aria-label="Forum thread title" spellCheck={false} {...field} />
+                <Input
+                  size="sm"
+                  aria-label="Forum thread title"
+                  spellCheck={false}
+                  {...field}
+                  bg="gray.900"
+                />
               )}
             />
             {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
@@ -197,6 +220,7 @@ export const DiscordMessageForumThreadForm = ({ feedId, connectionId }: Props) =
                         return (
                           <TagCheckbox
                             key={id}
+                            articleFormatter={articleFormatter}
                             feedId={feedId}
                             filters={filters || null}
                             emojiName={emojiName}

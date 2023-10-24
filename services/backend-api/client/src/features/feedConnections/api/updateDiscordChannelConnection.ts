@@ -8,12 +8,28 @@ export interface UpdateDiscordChannelConnectionInput {
   details: {
     name?: string;
     channelId?: string;
+    componentRows?: Array<{
+      id: string;
+      components: Array<{
+        id: string;
+        type: number;
+        label: string;
+        style: number;
+        url?: string | null;
+      }>;
+    }> | null;
     webhook?: {
       id: string;
       iconUrl?: string | null;
       name?: string | null;
       threadId?: string | null;
     } | null;
+    applicationWebhook?: {
+      name: string;
+      iconUrl?: string | null;
+      channelId: string;
+      threadId?: string | null;
+    };
     content?: string | null;
     forumThreadTitle?: string | null;
     filters?: {

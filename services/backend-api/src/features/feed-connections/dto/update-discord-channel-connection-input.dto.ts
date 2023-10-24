@@ -1,8 +1,10 @@
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsIn,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -21,6 +23,7 @@ import {
   CustomRateLimitDto,
   ForumThreadTagDto,
 } from "../../../common";
+import { DiscordComponentRow } from "../../../common/types/discord-component-row.type";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
 
 class Webhook {
@@ -34,6 +37,24 @@ class Webhook {
   @IsString()
   @IsOptional()
   iconUrl?: string;
+}
+
+class ApplicationWebhook {
+  @IsString()
+  @IsNotEmpty()
+  channelId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  iconUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  threadId?: string;
 }
 
 export class UpdateDiscordChannelConnectionInputDto {
@@ -50,6 +71,12 @@ export class UpdateDiscordChannelConnectionInputDto {
   @ValidateNested()
   @Type(() => Webhook)
   webhook?: Webhook;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ApplicationWebhook)
+  applicationWebhook?: ApplicationWebhook;
 
   @IsString()
   @IsOptional()
@@ -89,6 +116,13 @@ export class UpdateDiscordChannelConnectionInputDto {
   @Type(() => DiscordEmbed)
   @IsOptional()
   embeds?: DiscordEmbed[];
+
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordComponentRow)
+  componentRows?: DiscordComponentRow[];
 
   @IsIn([FeedConnectionDisabledCode.Manual, null])
   @IsOptional()

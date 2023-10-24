@@ -9,7 +9,6 @@ import ServerDasboard from "./ServerDashboard";
 import Servers from "./Servers";
 import { RequireAuth } from "@/features/auth";
 import { PageContent } from "@/components/PageContent";
-// import Webhooks from './Webhooks';
 import { ServerSettings } from "./ServerSettings";
 import FeedClone from "./FeedClone";
 import FeedComparisons from "./FeedComparisons";
@@ -19,7 +18,6 @@ import { PageContentV2 } from "../components/PageContentV2";
 import { UserFeeds } from "./UserFeeds";
 import { UserFeed } from "./UserFeed";
 import { ConnectionDiscordChannelSettings } from "./ConnectionDiscordChannelSettings";
-import { ConnectionDiscordWebhookSettings } from "./ConnectionDiscordWebhookSettings";
 import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
 import UserFeedsFAQ from "./UserFeedsFAQ";
@@ -154,22 +152,6 @@ const Pages: React.FC = () => (
           <PageContentV2>
             <ConnectionDiscordChannelSettings />
           </PageContentV2>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path={pages.userFeedConnection({
-        feedId: ":feedId",
-        connectionType: FeedConnectionType.DiscordWebhook,
-        connectionId: ":connectionId",
-      })}
-      element={
-        <RequireAuth>
-          <RequireDiscordServers>
-            <PageContentV2 requireFeed>
-              <ConnectionDiscordWebhookSettings />
-            </PageContentV2>
-          </RequireDiscordServers>
         </RequireAuth>
       }
     />

@@ -81,6 +81,11 @@ describe("LegacyFeedConversionService", () => {
         {
           id: "1",
           type: "role",
+          filters: {
+            tags: ["tag1"],
+          },
+          feed: baseFeed._id,
+          _id: new Types.ObjectId(),
         } as FeedSubscriber,
       ],
     };
@@ -434,6 +439,32 @@ describe("LegacyFeedConversionService", () => {
                     {
                       id: "1",
                       type: "role",
+                      filters: {
+                        expression: {
+                          type: "LOGICAL",
+                          op: "AND",
+                          children: [
+                            {
+                              type: "LOGICAL",
+                              op: "OR",
+                              children: [
+                                {
+                                  type: "RELATIONAL",
+                                  op: "CONTAINS",
+                                  left: {
+                                    type: "ARTICLE",
+                                    value: "processed::categories",
+                                  },
+                                  right: {
+                                    type: "STRING",
+                                    value: "tag1",
+                                  },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
                     },
                   ],
                 },

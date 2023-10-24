@@ -10,6 +10,7 @@ import {
   castDiscordEmbedsForMedium,
   getCommonFeedAggregateStages,
 } from "../../common/utils";
+import { castDiscordComponentRowsForMedium } from "../../common/utils/cast-discord-component-rows-from-connection";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import logger from "../../utils/logger";
 import {
@@ -63,6 +64,12 @@ export class MessageBrokerEventsService {
 
     for await (const feed of feedCursor) {
       try {
+        if (feed.debug) {
+          logger.info(`DEBUG ${feed._id}: Handling url fetch completed event`, {
+            feed,
+          });
+        }
+
         const cons = Object.values(feed.connections).flat() as Array<
           DiscordChannelConnection | DiscordWebhookConnection
         >;
@@ -252,12 +259,16 @@ export class MessageBrokerEventsService {
   async handleRejectedArticleDisableConnection({
     data: {
       rejectedCode,
+      articleId,
+      rejectedMessage,
       medium: { id: mediumId },
       feed: { id: feedId },
     },
   }: {
     data: {
       rejectedCode: ArticleRejectCode;
+      rejectedMessage?: string;
+      articleId?: string;
       medium: {
         id: string;
       };
@@ -319,6 +330,8 @@ export class MessageBrokerEventsService {
             connection,
             {
               disabledCode: disableCode,
+              articleId,
+              rejectedMessage,
             }
           );
         } catch (err) {
@@ -374,6 +387,9 @@ export class MessageBrokerEventsService {
             : undefined,
           content: castDiscordContentForMedium(con.details.content),
           embeds: castDiscordEmbedsForMedium(con.details.embeds),
+          components: castDiscordComponentRowsForMedium(
+            con.details.componentRows
+          ),
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
           mentions: con.mentions,
@@ -435,27 +451,36 @@ export class MessageBrokerEventsService {
 
     const allMediums = discordChannelMediums.concat(discordWebhookMediums);
 
+    const publishData = {
+      articleDayLimit: maxDailyArticles,
+      feed: {
+        id: userFeed._id.toHexString(),
+        url: userFeed.url,
+        passingComparisons: userFeed.passingComparisons || [],
+        blockingComparisons: userFeed.blockingComparisons || [],
+        formatOptions: {
+          dateFormat: userFeed.formatOptions?.dateFormat,
+          dateTimezone: userFeed.formatOptions?.dateTimezone,
+        },
+        dateChecks: userFeed.dateCheckOptions,
+      },
+      mediums: allMediums,
+    };
+
+    if (userFeed.debug) {
+      logger.info(`DEBUG ${userFeed._id}: Emitting event`, {
+        data: publishData,
+      });
+    }
+
     this.amqpConnection.publish(
       "",
       MessageBrokerQueue.FeedDeliverArticles,
       {
         debug: userFeed.debug,
         timestamp: Date.now(),
-        data: {
-          articleDayLimit: maxDailyArticles,
-          feed: {
-            id: userFeed._id.toHexString(),
-            url: userFeed.url,
-            passingComparisons: userFeed.passingComparisons || [],
-            blockingComparisons: userFeed.blockingComparisons || [],
-            formatOptions: {
-              dateFormat: userFeed.formatOptions?.dateFormat,
-              dateTimezone: userFeed.formatOptions?.dateTimezone,
-            },
-            dateChecks: userFeed.dateCheckOptions,
-          },
-          mediums: allMediums,
-        },
+        data: publishData,
+        source: "backend-api::message-broker-events",
       },
       {
         expiration: 1000 * 60 * 60, // 1 hour

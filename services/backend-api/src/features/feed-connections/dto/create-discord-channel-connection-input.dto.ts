@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -24,6 +25,24 @@ class Webhook {
   threadId?: string;
 }
 
+class ApplicationWebhook {
+  @IsString()
+  @IsNotEmpty()
+  channelId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  iconUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  threadId?: string;
+}
+
 export class CreateDiscordChnnnelConnectionInputDto {
   @IsString()
   @MaxLength(250)
@@ -38,4 +57,10 @@ export class CreateDiscordChnnnelConnectionInputDto {
   @ValidateNested()
   @Type(() => Webhook)
   webhook?: Webhook;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ApplicationWebhook)
+  applicationWebhook?: ApplicationWebhook;
 }

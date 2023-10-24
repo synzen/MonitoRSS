@@ -1,6 +1,7 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
   Box,
+  BoxProps,
   Button,
   CloseButton,
   Flex,
@@ -32,9 +33,10 @@ interface Props {
   data: {
     feedId?: string;
   };
+  containerProps?: BoxProps;
 }
 
-export const LogicalExpressionForm = ({ onDeleted, prefix = "", data }: Props) => {
+export const LogicalExpressionForm = ({ onDeleted, prefix = "", data, containerProps }: Props) => {
   const { control, setValue } = useFormContext();
   const { fields, append, remove, insert } = useFieldArray({
     control,
@@ -122,7 +124,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", data }: Props) =
     )?.filter((child) => child?.type === FilterExpressionType.Relational).length || 0;
 
   return (
-    <Stack>
+    <Stack {...containerProps}>
       <Box
         border="solid"
         borderWidth="1px"
