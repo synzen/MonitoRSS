@@ -156,8 +156,12 @@ export class SupportersService {
     return !!(await this.supporterModel.findOne({}).select("_id").lean());
   }
 
-  async getSupporterSubscription(discordId: string) {
-    const supporter = await this.supporterModel.findById(discordId).lean();
+  async getSupporterSubscription(email: string) {
+    const supporter = await this.supporterModel
+      .findById({
+        "paddleCustomer.email": email,
+      })
+      .lean();
 
     if (!supporter?.paddleCustomer) {
       return {
@@ -167,6 +171,7 @@ export class SupportersService {
 
     return {
       subscription: {
+        id: supporter.paddleCustomer.subscriptionId,
         product: {
           key: supporter.paddleCustomer.productKey,
         },

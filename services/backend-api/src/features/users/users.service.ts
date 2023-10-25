@@ -74,25 +74,34 @@ export class UsersService {
     user: User;
     subscription: SubscriptionDetails;
   } | null> {
-    const [user, { subscription }] = await Promise.all([
-      this.userModel.findOne({ discordUserId }).lean(),
-      this.supportersService.getSupporterSubscription(discordUserId),
-    ]);
+    const user = await this.userModel.findOne({ discordUserId }).lean();
 
     if (!user) {
       return null;
     }
 
+    const freeSubscription: SubscriptionDetails = {
+      product: {
+        key: SubscriptionProductKey.Free,
+        name: "Free",
+      },
+      status: SubscriptionStatus.Active,
+    };
+
+    if (!user.email) {
+      return {
+        user,
+        subscription: freeSubscription,
+      };
+    }
+
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription(user.email);
+
     if (!subscription || subscription.status === SubscriptionStatus.Cancelled) {
       return {
         user,
-        subscription: {
-          product: {
-            key: SubscriptionProductKey.Free,
-            name: "Free",
-          },
-          status: SubscriptionStatus.Active,
-        },
+        subscription: freeSubscription,
       };
     }
 

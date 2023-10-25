@@ -2,6 +2,9 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import fetch, { RequestInit } from "node-fetch";
 import { URLSearchParams } from "url";
+import { formatCurrency } from "../../utils/format-currency";
+import { SupportersService } from "../supporters/supporters.service";
+import { SubscriptionProductKey } from "./constants/subscription-product-key.constants";
 import { PaddleCustomerResponse } from "./types/paddle-customer-response.type";
 import { PaddlePricingPreviewResponse } from "./types/paddle-pricing-preview-response.type";
 import {
@@ -16,7 +19,10 @@ export class SupporterSubscriptionsService {
   PADDLE_KEY?: string;
   PRODUCT_IDS: Array<{ id: string; name: string }> = [];
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly supportersService: SupportersService
+  ) {
     this.PADDLE_URL = configService.get("BACKEND_API_PADDLE_URL");
     this.PADDLE_KEY = configService.get("BACKEND_API_PADDLE_KEY");
   }
@@ -121,7 +127,7 @@ export class SupporterSubscriptionsService {
     }
 
     return {
-      id: response.data.custom_data?.key,
+      id: response.data.custom_data?.key as SubscriptionProductKey | undefined,
     };
   }
 
@@ -144,6 +150,15 @@ export class SupporterSubscriptionsService {
     items: Array<{ priceId: string; quantity: number }>;
     currencyCode: string;
   }) {
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription(email);
+
+    const existingSubscriptionId = subscription?.id;
+
+    if (!existingSubscriptionId) {
+      throw new Error("No existing subscription for user found");
+    }
+
     const postBody = {
       items: items.map((i) => ({
         price_id: i.priceId,
@@ -153,17 +168,11 @@ export class SupporterSubscriptionsService {
       proration_billing_mode: "prorated_immediately",
     };
 
-    const existingSubscriptionId = "PLACEHOLDER";
-
-    if (!existingSubscriptionId) {
-      throw new Error("No existing subscription for user found");
-    }
-
     const response =
       await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
         `/subscriptions/${existingSubscriptionId}/preview`,
         {
-          method: "POST",
+          method: "PATCH",
           body: JSON.stringify(postBody),
         }
       );
@@ -174,20 +183,77 @@ export class SupporterSubscriptionsService {
       );
     }
 
+    const immediateTransaction = response.data.immediate_transaction;
+
     return {
       immediateTransaction: {
         billingPeriod: {
-          startsAt:
-            response.data.immediate_transaction.billing_period.starts_at,
-          endsAt: response.data.immediate_transaction.billing_period.ends_at,
+          startsAt: immediateTransaction.billing_period.starts_at,
+          endsAt: immediateTransaction.billing_period.ends_at,
         },
-        subtotal: response.data.immediate_transaction.details.totals.subtotal,
-        tax: response.data.immediate_transaction.details.totals.tax,
-        credit: response.data.immediate_transaction.details.totals.credit,
-        total: response.data.immediate_transaction.details.totals.total,
-        grandTotal: response.data.immediate_transaction.details.totals,
+        subtotal: immediateTransaction.details.totals.subtotal,
+        subtotalFormatted: formatCurrency(
+          immediateTransaction.details.totals.subtotal,
+          currencyCode
+        ),
+        tax: immediateTransaction.details.totals.tax,
+        taxFormatted: formatCurrency(
+          immediateTransaction.details.totals.tax,
+          currencyCode
+        ),
+        credit: immediateTransaction.details.totals.credit,
+        creditFormatted: formatCurrency(
+          immediateTransaction.details.totals.credit,
+          currencyCode
+        ),
+        total: immediateTransaction.details.totals.total,
+        totalFormatted: formatCurrency(
+          immediateTransaction.details.totals.total,
+          currencyCode
+        ),
+        grandTotal: immediateTransaction.details.totals.grand_total,
+        grandTotalFormatted: formatCurrency(
+          immediateTransaction.details.totals.grand_total,
+          currencyCode
+        ),
       },
     };
+  }
+
+  async changeSubscription({
+    email,
+    items,
+    currencyCode,
+  }: {
+    email: string;
+    items: Array<{ priceId: string; quantity: number }>;
+    currencyCode: string;
+  }) {
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription(email);
+
+    const existingSubscriptionId = subscription?.id;
+
+    if (!existingSubscriptionId) {
+      throw new Error("No existing subscription for user found");
+    }
+
+    const postBody = {
+      items: items.map((i) => ({
+        price_id: i.priceId,
+        quantity: i.quantity,
+      })),
+      currency_code: currencyCode,
+      proration_billing_mode: "prorated_immediately",
+    };
+
+    await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+      `/subscriptions/${existingSubscriptionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(postBody),
+      }
+    );
   }
 
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {

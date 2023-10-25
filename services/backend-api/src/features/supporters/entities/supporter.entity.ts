@@ -1,6 +1,8 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Model } from "mongoose";
 import { SubscriptionStatus } from "../../../common/constants/subscription-status.constants";
+import { SubscriptionProductKey } from "../../supporter-subscriptions/constants/subscription-product-key.constants";
+
 @Schema({
   _id: false,
   versionKey: false,
@@ -45,8 +47,10 @@ class PaddleCustomer {
 
   @Prop({
     required: true,
+    enum: Object.values(SubscriptionProductKey),
+    type: String,
   })
-  productKey: string;
+  productKey: SubscriptionProductKey;
 
   @Prop({
     required: true,

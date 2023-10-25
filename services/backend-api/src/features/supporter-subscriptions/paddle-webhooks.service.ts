@@ -68,6 +68,12 @@ export class PaddleWebhooksService {
         event.data.items[0].price.product_id
       );
 
+    if (!productKey) {
+      throw new Error(
+        `Could not find product key for product id ${event.data.items[0].price.product_id} when updating subscription`
+      );
+    }
+
     const benefitsOfKey =
       BENEFITS_BY_TIER[productKey as SubscriptionProductKey];
 
@@ -116,11 +122,6 @@ export class PaddleWebhooksService {
       billingPeriodEnd: new Date(event.data.current_billing_period.ends_at),
       billingInterval: event.data.billing_cycle.interval,
     };
-    console.log(
-      "🚀 ~ file: paddle-webhooks.service.ts:113 ~ PaddleWebhooksService ~ handleSubscriptionUpdatedEvent ~ toSet:",
-      foundUser,
-      toSet
-    );
 
     await this.supporterModel.findOneAndUpdate(
       {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   BadRequestException,
   Body,
@@ -5,6 +6,8 @@ import {
   CacheTTL,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Query,
   UseGuards,
@@ -174,6 +177,7 @@ export class SupporterSubscriptionsController {
   }
 
   @UseGuards(DiscordOAuth2Guard)
+  @Post("update-preview")
   async previewChange(
     @UserAuth()
     { email }: UserAuthDetails,
@@ -199,5 +203,30 @@ export class SupporterSubscriptionsController {
     return {
       data: preview,
     };
+  }
+
+  @UseGuards(DiscordOAuth2Guard)
+  @Post("update")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async uppdateSubscription(
+    @UserAuth()
+    { email }: UserAuthDetails,
+    @Body(ValidationPipe)
+    { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
+  ) {
+    if (!email) {
+      throw new BadRequestException("No email found");
+    }
+
+    await this.supporterSubscriptionsService.changeSubscription({
+      email,
+      items: [
+        {
+          priceId: priceId,
+          quantity: 1,
+        },
+      ],
+      currencyCode,
+    });
   }
 }
