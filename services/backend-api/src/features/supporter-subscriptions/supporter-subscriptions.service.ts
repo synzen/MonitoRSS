@@ -256,6 +256,29 @@ export class SupporterSubscriptionsService {
     );
   }
 
+  async cancelSubscription({ email }: { email: string }) {
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription(email);
+
+    const existingSubscriptionId = subscription?.id;
+
+    if (!existingSubscriptionId) {
+      throw new Error("No existing subscription for user found");
+    }
+
+    const postBody = {
+      effective_from: "next_billing_period",
+    };
+
+    await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+      `/subscriptions/${existingSubscriptionId}/cancel`,
+      {
+        method: "POST",
+        body: JSON.stringify(postBody),
+      }
+    );
+  }
+
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {
     if (!this.PADDLE_KEY || !this.PADDLE_URL) {
       throw new Error(

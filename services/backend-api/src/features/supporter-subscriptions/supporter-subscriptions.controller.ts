@@ -229,4 +229,20 @@ export class SupporterSubscriptionsController {
       currencyCode,
     });
   }
+
+  @UseGuards(DiscordOAuth2Guard)
+  @Post("cancel")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async cancelSubscription(
+    @UserAuth()
+    { email }: UserAuthDetails
+  ) {
+    if (!email) {
+      throw new BadRequestException("No email found");
+    }
+
+    await this.supporterSubscriptionsService.cancelSubscription({
+      email,
+    });
+  }
 }
