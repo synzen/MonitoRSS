@@ -10,6 +10,7 @@ const GetSubscriptionProductsOutputSchema = object({
     products: array(
       object({
         id: string().required(),
+        name: string().required(),
         prices: array(
           object({
             interval: string().oneOf(["month", "year"]).required(),

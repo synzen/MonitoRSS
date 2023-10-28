@@ -79,9 +79,39 @@ import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 import { UserFeedManagerStatus } from "../constants";
 import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
-import { GetSubscriptionProductsOutput } from "../features/subscriptionProducts";
+import {
+  GetSubscriptionChangePreviewOutput,
+  GetSubscriptionProductsOutput,
+} from "../features/subscriptionProducts";
 
 const handlers = [
+  rest.get("/api/v1/subscription-products/update-preview", (req, res, ctx) => {
+    return res(
+      ctx.delay(500),
+      ctx.json<GetSubscriptionChangePreviewOutput>({
+        data: {
+          immediateTransaction: {
+            billingPeriod: {
+              startsAt: new Date(2020, 1, 1).toISOString(),
+              endsAt: new Date(2021, 2, 1).toISOString(),
+            },
+            subtotalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+            taxFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+            creditFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+            credit: `${(Math.random() * 100).toFixed(2)}`,
+            totalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+            grandTotalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+          },
+        },
+      })
+    );
+  }),
+  rest.post("/api/v1/subscription-products/update", (req, res, ctx) => {
+    return res(ctx.delay(500), ctx.status(204));
+  }),
+  rest.get("/api/v1/subscription-products/cancel", (req, res, ctx) => {
+    return res(ctx.delay(500), ctx.status(204));
+  }),
   rest.get("/api/v1/subscription-products", (req, res, ctx) => {
     const currencyCode = req.url.searchParams.get("currency") || "USD";
 
@@ -91,47 +121,74 @@ const handlers = [
         data: {
           products: [
             {
+              id: "free",
+              name: "Free",
+              prices: [
+                {
+                  interval: "month",
+                  formattedPrice: "$0",
+                  currencyCode,
+                  id: "f0",
+                },
+                {
+                  interval: "year",
+                  formattedPrice: "$0",
+                  currencyCode,
+                  id: "f1",
+                },
+              ],
+            },
+            {
               id: "tier1",
+              name: "Tier 1",
               prices: [
                 {
                   interval: "month",
                   formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
                   currencyCode,
+                  id: "p1",
                 },
                 {
                   interval: "year",
                   formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
                   currencyCode,
+                  id: "p2",
                 },
               ],
             },
             {
               id: "tier2",
+              name: "Tier 2",
               prices: [
                 {
                   interval: "month",
                   formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
                   currencyCode,
+                  id: "p3",
                 },
                 {
                   interval: "year",
                   formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
                   currencyCode,
+                  id: "p4",
                 },
               ],
             },
             {
               id: "tier3",
+              name: "Tier 3",
               prices: [
                 {
                   interval: "month",
                   formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
                   currencyCode,
+                  id: "p5",
                 },
                 {
                   interval: "year",
                   formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
                   currencyCode,
+                  id: "p6",
                 },
               ],
             },

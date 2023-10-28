@@ -158,7 +158,7 @@ export class SupportersService {
 
   async getSupporterSubscription(email: string) {
     const supporter = await this.supporterModel
-      .findById({
+      .findOne({
         "paddleCustomer.email": email,
       })
       .lean();

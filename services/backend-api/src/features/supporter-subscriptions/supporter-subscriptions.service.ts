@@ -13,6 +13,13 @@ import {
 } from "./types/paddle-products-response.type";
 import { PaddleSubscriptionPreviewResponse } from "./types/paddle-subscription-preview-response.type";
 
+const PRODUCT_NAMES: Record<SubscriptionProductKey, string> = {
+  [SubscriptionProductKey.Free]: "Free",
+  [SubscriptionProductKey.Tier1]: "Tier 1",
+  [SubscriptionProductKey.Tier2]: "Tier 2",
+  [SubscriptionProductKey.Tier3]: "Tier 3",
+};
+
 @Injectable()
 export class SupporterSubscriptionsService {
   PADDLE_URL?: string;
@@ -52,39 +59,67 @@ export class SupporterSubscriptionsService {
       }
     );
 
-    const pricesByProduct: Record<
-      string,
-      {
-        prices: Array<{
-          id: string;
-          interval: "month" | "year";
-          formattedPrice: string;
-          currencyCode: string;
-        }>;
-      }
-    > = {};
+    const pricesByProduct: Partial<
+      Record<
+        SubscriptionProductKey,
+        {
+          name: string;
+          prices: Array<{
+            id: string;
+            interval: "month" | "year";
+            formattedPrice: string;
+            currencyCode: string;
+          }>;
+        }
+      >
+    > = {
+      [SubscriptionProductKey.Free]: {
+        name: "Free",
+        prices: [
+          {
+            id: "free-monthly",
+            interval: "month",
+            formattedPrice: formatCurrency("0", currency),
+            currencyCode: currency,
+          },
+          {
+            id: "free-yearly",
+            interval: "year",
+            formattedPrice: formatCurrency("0", currency),
+            currencyCode: currency,
+          },
+        ],
+      },
+    };
 
     for (const {
       formatted_totals,
       product,
       price: { billing_cycle, id: priceId },
     } of previewData.data.details.line_items) {
-      const useProductId = product.custom_data?.key;
+      const useProductId = product.custom_data?.key as SubscriptionProductKey;
 
       if (!billing_cycle || !useProductId) {
         continue;
       }
 
-      if (!pricesByProduct[useProductId]) {
-        pricesByProduct[useProductId] = { prices: [] };
-      }
-
-      pricesByProduct[useProductId].prices.push({
+      const formattedPrice = {
         id: priceId,
         interval: billing_cycle.interval,
         formattedPrice: formatted_totals.total,
         currencyCode: currency,
-      });
+      };
+
+      const prices = pricesByProduct[useProductId]?.prices;
+
+      if (!prices) {
+        pricesByProduct[useProductId] = {
+          name: PRODUCT_NAMES[useProductId],
+          prices: [formattedPrice],
+        };
+      } else {
+        prices.push(formattedPrice);
+      }
     }
 
     return {

@@ -24,6 +24,7 @@ import {
   PaddleEventSubscriptionActivated,
   PaddleEventSubscriptionUpdated,
 } from "./types/paddle-webhook-events.type";
+import { NestedQuery } from "../../common/decorators/NestedQuery";
 
 type ProductId = string;
 
@@ -155,16 +156,19 @@ export class SupporterSubscriptionsController {
       );
     }
 
+    const useCurrency = currency || "USD";
+
     const { products } =
       await this.supporterSubscriptionsService.getProductCurrencies(
-        currency || "USD"
+        useCurrency
       );
 
     return {
       data: {
-        products: Object.keys(products).map((p) => ({
-          id: p,
-          prices: products[p].prices.map((d) => ({
+        products: Object.entries(products).map(([key, value]) => ({
+          id: key,
+          name: value.name,
+          prices: value.prices.map((d) => ({
             id: d.id,
             interval: d.interval,
             formattedPrice: d.formattedPrice,
@@ -177,11 +181,11 @@ export class SupporterSubscriptionsController {
   }
 
   @UseGuards(DiscordOAuth2Guard)
-  @Post("update-preview")
+  @Get("update-preview")
   async previewChange(
     @UserAuth()
     { email }: UserAuthDetails,
-    @Body(ValidationPipe)
+    @NestedQuery(ValidationPipe)
     { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
   ) {
     if (!email) {
@@ -231,7 +235,7 @@ export class SupporterSubscriptionsController {
   }
 
   @UseGuards(DiscordOAuth2Guard)
-  @Post("cancel")
+  @Get("cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
   async cancelSubscription(
     @UserAuth()

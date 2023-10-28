@@ -171,12 +171,12 @@ export const UserSettings = () => {
                         <Text fontWeight={600} color="whiteAlpha.700">
                           Current Subscription Tier
                         </Text>
-                        <Stack>
+                        <Stack spacing={3}>
                           {subscriptionText}
                           <HStack>
                             <PricingDialog
                               trigger={
-                                <Button size="sm" colorScheme="blue" variant="outline">
+                                <Button size="sm" variant="outline">
                                   Manage Subscription
                                 </Button>
                               }

@@ -36,7 +36,7 @@ import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { usePaddleCheckout } from "../../hooks";
-import { CancelSubscriptionDialog } from "../CancelSubscriptonDialog";
+import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 
 interface Props {
   trigger: React.ReactElement;
@@ -50,6 +50,13 @@ enum Feature {
   RefreshRate = "Refresh Rate",
 }
 
+enum ProductKey {
+  Free = "free",
+  Tier1 = "tier1",
+  Tier2 = "tier2",
+  Tier3 = "tier3",
+}
+
 const tiers: Array<{
   name: string;
   productId: string;
@@ -61,10 +68,10 @@ const tiers: Array<{
 }> = [
   {
     name: "FREE",
-    productId: "free",
+    productId: ProductKey.Free,
     priceFormatted: "$0",
     disableSubscribe: true,
-    description: "For plain old news delivery",
+    description: "For basic news delivery",
     features: [
       {
         name: Feature.Feeds,
@@ -92,7 +99,7 @@ const tiers: Array<{
   },
   {
     name: "TIER 1",
-    productId: "tier1",
+    productId: ProductKey.Tier1,
     priceFormatted: "$5",
     description: "For customized deliveries",
     features: [
@@ -124,7 +131,7 @@ const tiers: Array<{
   },
   {
     name: "TIER 2",
-    productId: "tier2",
+    productId: ProductKey.Tier2,
     priceFormatted: "$10",
     description: "For time-sensitive deliveries",
     highlighted: true,
@@ -158,7 +165,7 @@ const tiers: Array<{
   },
   {
     name: "TIER 3",
-    productId: "tier3",
+    productId: ProductKey.Tier3,
     priceFormatted: "$20",
     description: "For power users",
     features: [
@@ -236,6 +243,12 @@ const initialCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
 const initialInterval =
   (localStorage.getItem("preferredPricingInterval") as "month" | "year") || "month";
 
+interface ChangeSubscriptionDetails {
+  priceId: string;
+  productId: string;
+  isDowngrade?: boolean;
+}
+
 export const PricingDialog = ({ trigger }: Props) => {
   const { status: userStatus, error: userError, data: userData } = useUserMe();
   const { onOpen, onClose, isOpen } = useDisclosure();
@@ -247,6 +260,8 @@ export const PricingDialog = ({ trigger }: Props) => {
   const { data, fetchStatus, status, error } = useSubscriptionProducts({
     currency: currency.code,
   });
+  const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
+    useState<ChangeSubscriptionDetails>();
   const { openCheckout } = usePaddleCheckout();
   const initialFocusRef = useRef<HTMLInputElement>(null);
 
@@ -272,15 +287,29 @@ export const PricingDialog = ({ trigger }: Props) => {
     </MenuItem>
   ));
 
-  const onClickPrice = (priceId?: string) => {
-    if (!priceId) {
+  const onClickPrice = (
+    priceId?: string,
+    currencyCode?: string,
+    productId?: string,
+    isDowngrade?: boolean
+  ) => {
+    if (!priceId || !currencyCode || !productId || !userData) {
       return;
     }
 
     onClose();
-    openCheckout({
-      priceId,
-    });
+
+    if (userData.result.subscription.product.key === ProductKey.Free) {
+      openCheckout({
+        priceId,
+      });
+    } else {
+      setChangeSubscriptionDetails({
+        priceId,
+        productId,
+        isDowngrade,
+      });
+    }
   };
 
   useEffect(() => {
@@ -306,7 +335,24 @@ export const PricingDialog = ({ trigger }: Props) => {
 
   return (
     <Box>
-      <CancelSubscriptionDialog />
+      <ChangeSubscriptionDialog
+        currencyCode={currency.code}
+        isDowngrade={changeSubscriptionDetails?.isDowngrade}
+        details={
+          changeSubscriptionDetails
+            ? {
+                priceId: changeSubscriptionDetails.priceId,
+              }
+            : undefined
+        }
+        onClose={(reopenPricing) => {
+          setChangeSubscriptionDetails(undefined);
+
+          if (reopenPricing) {
+            onOpen();
+          }
+        }}
+      />
       {cloneElement(trigger, {
         onClick: () => onOpen(),
       })}
@@ -335,10 +381,12 @@ export const PricingDialog = ({ trigger }: Props) => {
                   </Stack>
                   {(status === "loading" || userStatus === "loading") && <Spinner mb={8} />}
                   {(error || userError) && (
-                    <InlineErrorAlert
-                      title="Sorry, something went werong"
-                      description={(error || userError)?.message}
-                    />
+                    <Stack mb={4}>
+                      <InlineErrorAlert
+                        title="Sorry, something went werong"
+                        description={(error || userError)?.message}
+                      />
+                    </Stack>
                   )}
                   {!error && !userError && data && userSubscription && (
                     <>
@@ -358,7 +406,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                             Yearly
                           </Text>
                         </HStack>
-                        <Text color="green.300">Save 15% with a yearly plan!</Text>
+                        <Text color="green.300">Save 10% with a yearly plan!</Text>
                       </Stack>
                       <Menu>
                         <MenuButton
@@ -478,7 +526,14 @@ export const PricingDialog = ({ trigger }: Props) => {
                                   <Button
                                     isDisabled={isOnThisTier}
                                     width="100%"
-                                    onClick={() => onClickPrice(associatedPrice?.id)}
+                                    onClick={() =>
+                                      onClickPrice(
+                                        associatedPrice?.id,
+                                        currency.code,
+                                        productId,
+                                        isBelowUserTier
+                                      )
+                                    }
                                     variant={
                                       isOnThisTier
                                         ? "outline"
@@ -572,8 +627,14 @@ export const PricingDialog = ({ trigger }: Props) => {
                       q: "What if I have more requirements?",
                       a: (
                         <Text>
-                          If you have more requirements, please contact us and we will be happy to
-                          discuss a custom plan.
+                          Please contact us at{" "}
+                          <Link
+                            color="blue.300"
+                            href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
+                          >
+                            support@monitorss.xyz
+                          </Link>{" "}
+                          and we will be happy to discuss a custom plan.
                         </Text>
                       ),
                     },
