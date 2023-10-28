@@ -20,6 +20,7 @@ export const UserMeSchema = object({
       end: string().required(),
     }).nullable(),
     updatedAt: string().required(),
+    updatePaymentMethodUrl: string(),
   }).required(),
   creditBalance: object({
     availableFormatted: string().required(),

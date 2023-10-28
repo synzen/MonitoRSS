@@ -14,4 +14,5 @@ export interface SubscriptionDetails {
   cancellationDate?: Date | null;
   billingInterval?: "month" | "year";
   updatedAt: Date;
+  updatePaymentMethodUrl?: string;
 }

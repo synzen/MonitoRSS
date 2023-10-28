@@ -42,6 +42,30 @@ const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData =>
   };
 };
 
+const ChangePaymentMethodUrlButton = () => {
+  const { status, error, data } = useUserMe({
+    input: {
+      data: {
+        includeManageSubUrls: true,
+      },
+    },
+  });
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      as="a"
+      href={data?.result.subscription.updatePaymentMethodUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      isLoading={status === "loading"}
+    >
+      Change Payment Method
+    </Button>
+  );
+};
+
 export const UserSettings = () => {
   const [checkForSubscriptionUpdateAfter, setCheckForSubscriptionUpdateAfter] = useState<Date>();
   console.log(
@@ -218,6 +242,10 @@ export const UserSettings = () => {
                           <Text fontWeight={600} color="whiteAlpha.700">
                             Credit Balance
                           </Text>
+                          <Text>
+                            Credit is provided as pro-rata refunds when changing plans. It is
+                            automatically applied on future transactions.
+                          </Text>
                           <Stack spacing={3}>
                             <Text fontSize="xl" fontWeight="semibold">
                               {data.result.creditBalance.availableFormatted}
@@ -256,6 +284,7 @@ export const UserSettings = () => {
                                   </Button>
                                 }
                               />
+                              <ChangePaymentMethodUrlButton />
                             </HStack>
                           )}
                         </Stack>

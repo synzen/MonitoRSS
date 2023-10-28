@@ -15,6 +15,7 @@ import {
   PaddleProductsResponse,
 } from "./types/paddle-products-response.type";
 import { PaddleSubscriptionPreviewResponse } from "./types/paddle-subscription-preview-response.type";
+import { PaddleSubscriptionResponse } from "./types/paddle-subscription-response.type";
 
 const PRODUCT_NAMES: Record<SubscriptionProductKey, string> = {
   [SubscriptionProductKey.Free]: "Free",
@@ -193,6 +194,12 @@ export class SupporterSubscriptionsService {
     return {
       email: response.data.email,
     };
+  }
+
+  async getSubscription(subscriptionId: string) {
+    return this.executeApiCall<PaddleSubscriptionResponse>(
+      `/subscriptions/${subscriptionId}`
+    );
   }
 
   async previewSubscriptionChange({

@@ -1,16 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { getUserMe, GetUserMeOutput } from "../api";
+import { getUserMe, GetUserMeInput, GetUserMeOutput } from "../api";
 
 interface Props {
   checkForSubscriptionUpdateAfter?: Date;
+  input?: GetUserMeInput;
 }
 
 export const useUserMe = (props?: Props) => {
   const checkForSubscriptionUpdateAfter = props?.checkForSubscriptionUpdateAfter;
+  const input = props?.input;
+
   const { data, error, status, fetchStatus } = useQuery<GetUserMeOutput, ApiAdapterError>(
-    ["user-me"],
-    async () => getUserMe(),
+    [
+      "user-me",
+      {
+        input,
+      },
+    ],
+    async () => getUserMe(input),
     {
       refetchInterval: (fetchedResult) => {
         if (!checkForSubscriptionUpdateAfter) {
