@@ -121,6 +121,7 @@ export class PaddleWebhooksService {
       billingPeriodStart: new Date(event.data.current_billing_period.starts_at),
       billingPeriodEnd: new Date(event.data.current_billing_period.ends_at),
       billingInterval: event.data.billing_cycle.interval,
+      currencyCode: event.data.currency_code,
     };
 
     await this.supporterModel.findOneAndUpdate(

@@ -211,7 +211,17 @@ export const UserSettings = () => {
               {hasEmailAvailable && (
                 <Stack>
                   {data && (
-                    <Stack>
+                    <Stack spacing={8}>
+                      <Stack>
+                        <Text fontWeight={600} color="whiteAlpha.700">
+                          Credit Balance
+                        </Text>
+                        <Stack spacing={3}>
+                          <Text fontSize="xl" fontWeight="semibold">
+                            {data.result.creditBalance.availableFormatted}
+                          </Text>
+                        </Stack>
+                      </Stack>
                       <Stack>
                         <Text fontWeight={600} color="whiteAlpha.700">
                           Current Subscription Tier

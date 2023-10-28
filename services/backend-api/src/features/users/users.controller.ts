@@ -6,6 +6,7 @@ import {
   Patch,
   ValidationPipe,
 } from "@nestjs/common";
+import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
@@ -52,8 +53,10 @@ export class UsersController {
   private formatUserMe({
     user,
     subscription,
+    creditBalance,
   }: {
     user: User;
+    creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
   }) {
     return {
@@ -63,6 +66,7 @@ export class UsersController {
         email: user.email,
         preferences: user.preferences,
         subscription,
+        creditBalance,
       },
     };
   }

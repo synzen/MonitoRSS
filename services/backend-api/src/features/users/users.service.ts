@@ -3,8 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { UpdateQuery } from "mongoose";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
+import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
+import { formatCurrency } from "../../utils/format-currency";
 import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
+import { SupporterSubscriptionsService } from "../supporter-subscriptions/supporter-subscriptions.service";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   User,
@@ -37,7 +40,8 @@ function getPrettySubscriptioNameFromKey(key: string) {
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: UserModel,
-    private readonly supportersService: SupportersService
+    private readonly supportersService: SupportersService,
+    private readonly supporterSubscriptionsService: SupporterSubscriptionsService
   ) {}
 
   async initDiscordUser(
@@ -72,6 +76,7 @@ export class UsersService {
 
   async getByDiscordId(discordUserId: string): Promise<{
     user: User;
+    creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
   } | null> {
     const user = await this.userModel.findOne({ discordUserId }).lean();
@@ -92,6 +97,9 @@ export class UsersService {
     if (!user.email) {
       return {
         user,
+        creditBalance: {
+          availableFormatted: "0",
+        },
         subscription: freeSubscription,
       };
     }
@@ -102,12 +110,30 @@ export class UsersService {
     if (!subscription || subscription.status === SubscriptionStatus.Cancelled) {
       return {
         user,
+        creditBalance: {
+          availableFormatted: "0",
+        },
         subscription: freeSubscription,
       };
     }
 
+    const { data: creditBalances } =
+      await this.supporterSubscriptionsService.getCustomerCreditBalanace(
+        subscription.customerId
+      );
+
+    const creditBalanceInCurrency = creditBalances.find(
+      (d) => d.currency_code === subscription.currencyCode
+    );
+
     return {
       user,
+      creditBalance: {
+        availableFormatted: formatCurrency(
+          creditBalanceInCurrency?.balance.available || "0",
+          subscription.currencyCode
+        ),
+      },
       subscription: {
         product: {
           key: subscription.product.key,

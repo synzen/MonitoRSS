@@ -6,6 +6,9 @@ const mockUserMe: UserMe = {
   preferences: {
     alertOnDisabledFeeds: true,
   },
+  creditBalance: {
+    availableFormatted: "$100",
+  },
   subscription: {
     billingPeriod: {
       start: "2021-01-01T00:00:00.000Z",

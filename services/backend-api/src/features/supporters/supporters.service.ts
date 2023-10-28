@@ -171,10 +171,12 @@ export class SupportersService {
 
     return {
       subscription: {
+        customerId: supporter.paddleCustomer.customerId,
         id: supporter.paddleCustomer.subscriptionId,
         product: {
           key: supporter.paddleCustomer.productKey,
         },
+        currencyCode: supporter.paddleCustomer.currencyCode,
         status: supporter.paddleCustomer.status,
         nextBillDate: supporter.paddleCustomer.nextBillDate,
         cancellationDate: supporter.paddleCustomer.cancellationDate,

@@ -21,6 +21,9 @@ export const UserMeSchema = object({
     }).nullable(),
     updatedAt: string().required(),
   }).required(),
+  creditBalance: object({
+    availableFormatted: string().required(),
+  }).required(),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;

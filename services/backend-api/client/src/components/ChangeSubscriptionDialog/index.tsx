@@ -203,7 +203,7 @@ export const ChangeSubscriptionDialog = ({
                       <Box>
                         <Text>Credit</Text>
                         <Text color="whiteAlpha.700" fontSize={14}>
-                          for remaining time on current plan
+                          Includes refund for time remaining on current plan
                         </Text>
                       </Box>
                       <Text color="green.200">
@@ -242,13 +242,13 @@ export const ChangeSubscriptionDialog = ({
             colorScheme={!isDowngrade ? "blue" : "red"}
             onClick={onConfirm}
             isLoading={
-              createStatus === "loading" || cancelStatus === "loading" || subscriptionPollDate
+              createStatus === "loading" || cancelStatus === "loading" || !!subscriptionPollDate
             }
             isDisabled={
               !isChangingToFree &&
               (createStatus === "loading" ||
                 cancelStatus === "loading" ||
-                subscriptionPollDate ||
+                !!subscriptionPollDate ||
                 !data)
             }
           >

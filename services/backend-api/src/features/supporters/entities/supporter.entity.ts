@@ -66,6 +66,12 @@ class PaddleCustomer {
 
   @Prop({
     required: true,
+    type: String,
+  })
+  currencyCode: string;
+
+  @Prop({
+    required: true,
   })
   email: string;
 

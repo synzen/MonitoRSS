@@ -1,7 +1,8 @@
-import { CacheModule, Module } from "@nestjs/common";
+import { CacheModule, forwardRef, Module } from "@nestjs/common";
+import { MongooseModule } from "@nestjs/mongoose";
 import { DiscordAuthModule } from "../discord-auth/discord-auth.module";
 import { SupportersModule } from "../supporters/supporters.module";
-import { UsersModule } from "../users/users.module";
+import { UserFeature } from "../users/entities/user.entity";
 import { PaddleWebhooksService } from "./paddle-webhooks.service";
 import { SupporterSubscriptionsController } from "./supporter-subscriptions.controller";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
@@ -11,10 +12,10 @@ import { SupporterSubscriptionsService } from "./supporter-subscriptions.service
   providers: [SupporterSubscriptionsService, PaddleWebhooksService],
   imports: [
     CacheModule.register({}),
-    DiscordAuthModule,
-    UsersModule.forRoot(),
+    forwardRef(() => DiscordAuthModule),
+    MongooseModule.forFeature([UserFeature]),
     SupportersModule,
   ],
-  exports: [],
+  exports: [SupporterSubscriptionsService],
 })
 export class SupporterSubscriptionsModule {}

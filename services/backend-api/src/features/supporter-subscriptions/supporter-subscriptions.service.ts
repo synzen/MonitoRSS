@@ -7,6 +7,7 @@ import { formatCurrency } from "../../utils/format-currency";
 import { SupportersService } from "../supporters/supporters.service";
 import { User, UserModel } from "../users/entities/user.entity";
 import { SubscriptionProductKey } from "./constants/subscription-product-key.constants";
+import { PaddleCustomerCreditBalanceResponse } from "./types/paddle-customer-credit-balance-response.type";
 import { PaddleCustomerResponse } from "./types/paddle-customer-response.type";
 import { PaddlePricingPreviewResponse } from "./types/paddle-pricing-preview-response.type";
 import {
@@ -41,6 +42,15 @@ export class SupporterSubscriptionsService {
     const user = await this.userModel.findOne({ discordUserId }).lean();
 
     return user?.email || null;
+  }
+
+  async getCustomerCreditBalanace(customerId: string) {
+    const response =
+      await this.executeApiCall<PaddleCustomerCreditBalanceResponse>(
+        `/customers/${customerId}/credit-balances`
+      );
+
+    return response;
   }
 
   async getProductCurrencies(currency: string) {

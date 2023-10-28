@@ -33,6 +33,7 @@ export interface PaddleEventSubscriptionUpdated {
       interval: "month" | "year";
       frequency: number;
     };
+    currency_code: string;
     next_billed_at: DateString | null;
     scheduled_change: {
       action: "cancel";
@@ -64,6 +65,7 @@ export interface PaddleEventSubscriptionActivated {
       interval: "month" | "year";
       frequency: number;
     };
+    currency_code: string;
     next_billed_at: DateString | null;
     scheduled_change: null;
     current_billing_period: {
