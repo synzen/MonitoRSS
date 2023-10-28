@@ -183,6 +183,7 @@ export class SupportersService {
           start: supporter.paddleCustomer.billingPeriodStart,
           end: supporter.paddleCustomer.billingPeriodEnd,
         },
+        updatedAt: supporter.paddleCustomer.updatedAt,
       },
     };
   }

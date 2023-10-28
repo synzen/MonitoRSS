@@ -15,8 +15,6 @@ import {
   ValidationPipe,
 } from "@nestjs/common";
 import { PaddleWebhooksService } from "./paddle-webhooks.service";
-import { UserAuthDetails } from "../../common";
-import { UserAuth } from "../../common/decorators/user-auth.decorator";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { CreateSubscriptionPreviewInputDto } from "./dto/create-subscription-preview-input.dto";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
@@ -25,6 +23,8 @@ import {
   PaddleEventSubscriptionUpdated,
 } from "./types/paddle-webhook-events.type";
 import { NestedQuery } from "../../common/decorators/NestedQuery";
+import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
+import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 
 type ProductId = string;
 
@@ -183,11 +183,16 @@ export class SupporterSubscriptionsController {
   @UseGuards(DiscordOAuth2Guard)
   @Get("update-preview")
   async previewChange(
-    @UserAuth()
-    { email }: UserAuthDetails,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
     @NestedQuery(ValidationPipe)
     { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
   ) {
+    const email =
+      await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
+        discordUserId
+      );
+
     if (!email) {
       throw new BadRequestException("No email found");
     }
@@ -213,11 +218,16 @@ export class SupporterSubscriptionsController {
   @Post("update")
   @HttpCode(HttpStatus.NO_CONTENT)
   async uppdateSubscription(
-    @UserAuth()
-    { email }: UserAuthDetails,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
     @Body(ValidationPipe)
     { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
   ) {
+    const email =
+      await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
+        discordUserId
+      );
+
     if (!email) {
       throw new BadRequestException("No email found");
     }
@@ -238,14 +248,40 @@ export class SupporterSubscriptionsController {
   @Get("cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
   async cancelSubscription(
-    @UserAuth()
-    { email }: UserAuthDetails
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
   ) {
+    const email =
+      await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
+        discordUserId
+      );
+
     if (!email) {
       throw new BadRequestException("No email found");
     }
 
     await this.supporterSubscriptionsService.cancelSubscription({
+      email,
+    });
+  }
+
+  @UseGuards(DiscordOAuth2Guard)
+  @Get("resume")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resumeSubscription(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    const email =
+      await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
+        discordUserId
+      );
+
+    if (!email) {
+      throw new BadRequestException("No email found");
+    }
+
+    await this.supporterSubscriptionsService.resumeSubscription({
       email,
     });
   }

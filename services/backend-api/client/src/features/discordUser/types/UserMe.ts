@@ -19,6 +19,7 @@ export const UserMeSchema = object({
       start: string().required(),
       end: string().required(),
     }).nullable(),
+    updatedAt: string().required(),
   }).required(),
 });
 

@@ -86,6 +86,7 @@ export class UsersService {
         name: "Free",
       },
       status: SubscriptionStatus.Active,
+      updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
 
     if (!user.email) {
@@ -120,6 +121,7 @@ export class UsersService {
           start: subscription.billingPeriod.start,
           end: subscription.billingPeriod.end,
         },
+        updatedAt: subscription.updatedAt,
       },
     };
   }

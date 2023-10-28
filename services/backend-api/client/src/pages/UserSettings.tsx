@@ -21,12 +21,13 @@ import { InferType, bool, object } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
-import { BoxConstrained, DashboardContentV2, PricingDialog } from "../components";
+import { BoxConstrained, ConfirmModal, DashboardContentV2, PricingDialog } from "../components";
 import { useLogin } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
+import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -41,10 +42,18 @@ const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData =>
 };
 
 export const UserSettings = () => {
-  const { status, error, data } = useUserMe();
+  const [checkForSubscriptionUpdateAfter, setCheckForSubscriptionUpdateAfter] = useState<Date>();
+  console.log(
+    "🚀 ~ file: UserSettings.tsx:46 ~ UserSettings ~ checkForSubscriptionUpdateAfter:",
+    checkForSubscriptionUpdateAfter
+  );
+  const { status, error, data } = useUserMe({
+    checkForSubscriptionUpdateAfter,
+  });
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
   const { redirectToLogin } = useLogin();
+  const { mutateAsync: resumeSubscription } = useCreateSubscriptionResume();
   const {
     handleSubmit,
     control,
@@ -84,7 +93,31 @@ export const UserSettings = () => {
     }
   };
 
+  const onClickResumeSubscription = async () => {
+    try {
+      const beforeUpdateDate = new Date();
+      await resumeSubscription();
+      setCheckForSubscriptionUpdateAfter(beforeUpdateDate);
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), (err as Error).message);
+    }
+  };
+
+  // Handle polling result after clicking resume subscription
+  const subscriptionLastUpdated = data?.result.subscription.updatedAt;
+  useEffect(() => {
+    if (!subscriptionLastUpdated || !checkForSubscriptionUpdateAfter) {
+      return;
+    }
+
+    if (new Date(subscriptionLastUpdated).getTime() > checkForSubscriptionUpdateAfter.getTime()) {
+      setCheckForSubscriptionUpdateAfter(undefined);
+      notifySuccess(t("common.success.savedChanges"));
+    }
+  }, [subscriptionLastUpdated, checkForSubscriptionUpdateAfter]);
+
   const subscription = data?.result.subscription;
+  const subscriptionPendingCancellation = subscription && subscription?.cancellationDate;
 
   let subscriptionText: React.ReactNode;
 
@@ -93,7 +126,13 @@ export const UserSettings = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>, scheduled to be
-        cancelled on {new Date(subscription.cancellationDate).toLocaleDateString()}.
+        cancelled on{" "}
+        {new Date(subscription.cancellationDate).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+        .
       </Text>
     );
   } else if (subscription?.nextBillDate) {
@@ -101,7 +140,13 @@ export const UserSettings = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>, scheduled to renew
-        on {new Date(subscription.nextBillDate).toLocaleDateString()}.
+        on{" "}
+        {new Date(subscription.nextBillDate).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+        .
       </Text>
     );
   } else {
@@ -173,15 +218,33 @@ export const UserSettings = () => {
                         </Text>
                         <Stack spacing={3}>
                           {subscriptionText}
-                          <HStack>
-                            <PricingDialog
-                              trigger={
-                                <Button size="sm" variant="outline">
-                                  Manage Subscription
-                                </Button>
-                              }
-                            />
-                          </HStack>
+                          {subscriptionPendingCancellation && (
+                            <Box>
+                              <ConfirmModal
+                                trigger={
+                                  <Button size="sm" variant="solid" colorScheme="blue">
+                                    Resume subscription
+                                  </Button>
+                                }
+                                onConfirm={onClickResumeSubscription}
+                                okText="Resume subscription"
+                                colorScheme="blue"
+                                description="Are you sure you want to resume your subscription?"
+                                title="Resume subscription"
+                              />
+                            </Box>
+                          )}
+                          {!subscriptionPendingCancellation && (
+                            <HStack>
+                              <PricingDialog
+                                trigger={
+                                  <Button size="sm" variant="outline">
+                                    Manage Subscription
+                                  </Button>
+                                }
+                              />
+                            </HStack>
+                          )}
                         </Stack>
                       </Stack>
                     </Stack>

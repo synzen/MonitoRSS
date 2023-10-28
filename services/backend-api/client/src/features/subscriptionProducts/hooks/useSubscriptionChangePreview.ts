@@ -27,7 +27,6 @@ export const useSubscriptionChangePreview = (input: Partial<GetSubscriptionChang
       });
     },
     {
-      keepPreviousData: true,
       enabled: !!input.data,
     }
   );

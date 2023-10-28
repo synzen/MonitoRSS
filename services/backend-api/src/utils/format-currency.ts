@@ -19,6 +19,14 @@ const formattersByCurrency: Record<string, (input: string) => string> = {
 
 const ZERO_DECIMAL_CURRENCIES = ["JPY"];
 
+/**
+ * Cases to consider:
+ *
+ * "19"
+ * "00"
+ * "9"
+ */
+
 export const formatCurrency = (input: string, currencyCode: string) => {
   const formatter = formattersByCurrency[currencyCode];
 
@@ -30,6 +38,10 @@ export const formatCurrency = (input: string, currencyCode: string) => {
     return formatter(input);
   }
 
+  if (input === "0") {
+    return formatter("0");
+  }
+
   const decimalIndex = input.length - 2;
   const beforeDecimal = input.slice(0, decimalIndex);
   const afterDecimal = input.slice(decimalIndex);
@@ -38,5 +50,5 @@ export const formatCurrency = (input: string, currencyCode: string) => {
     return formatter(beforeDecimal);
   }
 
-  return formatter(`${beforeDecimal}.${afterDecimal}`);
+  return formatter(`${beforeDecimal || "0"}.${afterDecimal.padEnd(2, "0")}`);
 };

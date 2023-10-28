@@ -13,4 +13,5 @@ export interface SubscriptionDetails {
   nextBillDate?: Date | null;
   cancellationDate?: Date | null;
   billingInterval?: "month" | "year";
+  updatedAt: Date;
 }

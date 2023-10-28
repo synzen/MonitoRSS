@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { InjectModel } from "@nestjs/mongoose";
 import fetch, { RequestInit } from "node-fetch";
 import { URLSearchParams } from "url";
 import { formatCurrency } from "../../utils/format-currency";
 import { SupportersService } from "../supporters/supporters.service";
+import { User, UserModel } from "../users/entities/user.entity";
 import { SubscriptionProductKey } from "./constants/subscription-product-key.constants";
 import { PaddleCustomerResponse } from "./types/paddle-customer-response.type";
 import { PaddlePricingPreviewResponse } from "./types/paddle-pricing-preview-response.type";
@@ -28,10 +30,17 @@ export class SupporterSubscriptionsService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly supportersService: SupportersService
+    private readonly supportersService: SupportersService,
+    @InjectModel(User.name) private readonly userModel: UserModel
   ) {
     this.PADDLE_URL = configService.get("BACKEND_API_PADDLE_URL");
     this.PADDLE_KEY = configService.get("BACKEND_API_PADDLE_KEY");
+  }
+
+  async getEmailFromDiscordUserId(discordUserId: string) {
+    const user = await this.userModel.findOne({ discordUserId }).lean();
+
+    return user?.email || null;
   }
 
   async getProductCurrencies(currency: string) {
@@ -310,6 +319,29 @@ export class SupporterSubscriptionsService {
       {
         method: "POST",
         body: JSON.stringify(postBody),
+      }
+    );
+  }
+
+  async resumeSubscription({ email }: { email: string }) {
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription(email);
+
+    const existingSubscriptionId = subscription?.id;
+
+    if (!existingSubscriptionId) {
+      throw new Error("No existing subscription for user found");
+    }
+
+    const body = {
+      scheduled_change: null,
+    };
+
+    await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+      `/subscriptions/${existingSubscriptionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
       }
     );
   }
