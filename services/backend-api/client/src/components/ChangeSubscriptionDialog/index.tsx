@@ -173,6 +173,7 @@ export const ChangeSubscriptionDialog = ({
                     </Text>
                   </Box>
                 </Stack>
+                <Divider />
                 <Stack>
                   <HStack justifyContent="space-between">
                     <Box>

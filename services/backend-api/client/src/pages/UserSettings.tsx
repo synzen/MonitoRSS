@@ -28,6 +28,7 @@ import { useLogin } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
+import { ProductKey } from "../constants";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -212,16 +213,18 @@ export const UserSettings = () => {
                 <Stack>
                   {data && (
                     <Stack spacing={8}>
-                      <Stack>
-                        <Text fontWeight={600} color="whiteAlpha.700">
-                          Credit Balance
-                        </Text>
-                        <Stack spacing={3}>
-                          <Text fontSize="xl" fontWeight="semibold">
-                            {data.result.creditBalance.availableFormatted}
+                      {data.result.subscription.product.key !== ProductKey.Free && (
+                        <Stack>
+                          <Text fontWeight={600} color="whiteAlpha.700">
+                            Credit Balance
                           </Text>
+                          <Stack spacing={3}>
+                            <Text fontSize="xl" fontWeight="semibold">
+                              {data.result.creditBalance.availableFormatted}
+                            </Text>
+                          </Stack>
                         </Stack>
-                      </Stack>
+                      )}
                       <Stack>
                         <Text fontWeight={600} color="whiteAlpha.700">
                           Current Subscription Tier

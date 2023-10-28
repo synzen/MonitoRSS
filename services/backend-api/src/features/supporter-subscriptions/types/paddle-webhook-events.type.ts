@@ -75,6 +75,15 @@ export interface PaddleEventSubscriptionActivated {
   };
 }
 
+export interface PaddleEventSubscriptionCanceled {
+  event_type: "subscription.canceled";
+  data: {
+    id: string;
+    status: PaddleSubscriptionStatus.Cancelled;
+    customer_id: string;
+  };
+}
+
 /**
  * Sample payload:
  * {

@@ -93,7 +93,7 @@ export class SupporterSubscriptionsService {
       >
     > = {
       [SubscriptionProductKey.Free]: {
-        name: "Free",
+        name: "Free Tier",
         prices: [
           {
             id: "free-monthly",

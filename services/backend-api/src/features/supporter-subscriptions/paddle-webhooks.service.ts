@@ -8,6 +8,7 @@ import { SubscriptionProductKey } from "./constants/subscription-product-key.con
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
 import {
   PaddleEventSubscriptionActivated,
+  PaddleEventSubscriptionCanceled,
   PaddleEventSubscriptionUpdated,
 } from "./types/paddle-webhook-events.type";
 import { User, UserModel } from "../users/entities/user.entity";
@@ -17,7 +18,10 @@ import { PaddleSubscriptionStatus } from "./constants/paddle-subscription-status
 const BENEFITS_BY_TIER: Partial<
   Record<
     SubscriptionProductKey,
-    Exclude<Supporter["paddleCustomer"], undefined>["benefits"]
+    Exclude<
+      Exclude<Supporter["paddleCustomer"], undefined>["subscription"],
+      undefined | null
+    >["benefits"]
   >
 > = {
   [SubscriptionProductKey.Tier1]: {
@@ -102,26 +106,33 @@ export class PaddleWebhooksService {
 
     const toSet: Supporter["paddleCustomer"] = {
       customerId: event.data.customer_id,
-      productKey,
-      status: this.convertPaddleStatusToSubscriptionStatus({
-        status: event.data.status,
-      }),
       email,
-      subscriptionId: event.data.id,
+      lastCurrencyCodeUsed: event.data.currency_code,
+      subscription: {
+        productKey,
+        status: this.convertPaddleStatusToSubscriptionStatus({
+          status: event.data.status,
+        }),
+        id: event.data.id,
+        createdAt: new Date(event.data.created_at),
+        updatedAt: new Date(event.data.updated_at),
+        benefits: benefitsOfKey,
+        cancellationDate:
+          event.data.scheduled_change?.action === "cancel"
+            ? new Date(event.data.current_billing_period.ends_at)
+            : null,
+        nextBillDate: event.data.next_billed_at
+          ? new Date(event.data.next_billed_at)
+          : null,
+        billingPeriodStart: new Date(
+          event.data.current_billing_period.starts_at
+        ),
+        billingPeriodEnd: new Date(event.data.current_billing_period.ends_at),
+        billingInterval: event.data.billing_cycle.interval,
+        currencyCode: event.data.currency_code,
+      },
       createdAt: new Date(event.data.created_at),
       updatedAt: new Date(event.data.updated_at),
-      benefits: benefitsOfKey,
-      cancellationDate:
-        event.data.scheduled_change?.action === "cancel"
-          ? new Date(event.data.current_billing_period.ends_at)
-          : null,
-      nextBillDate: event.data.next_billed_at
-        ? new Date(event.data.next_billed_at)
-        : null,
-      billingPeriodStart: new Date(event.data.current_billing_period.starts_at),
-      billingPeriodEnd: new Date(event.data.current_billing_period.ends_at),
-      billingInterval: event.data.billing_cycle.interval,
-      currencyCode: event.data.currency_code,
     };
 
     await this.supporterModel.findOneAndUpdate(
@@ -135,6 +146,25 @@ export class PaddleWebhooksService {
       },
       {
         upsert: true,
+      }
+    );
+  }
+
+  async handleSubscriptionCancelledEvent(
+    event: PaddleEventSubscriptionCanceled
+  ) {
+    const {
+      data: { id: subscriptionId },
+    } = event;
+
+    await this.supporterModel.findOneAndUpdate(
+      {
+        "paddleCustomer.subscription.id": subscriptionId,
+      },
+      {
+        $set: {
+          "paddleCustomer.subscription": null,
+        },
       }
     );
   }

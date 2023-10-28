@@ -165,27 +165,42 @@ export class SupportersService {
 
     if (!supporter?.paddleCustomer) {
       return {
+        customer: null,
+        subscription: null,
+      };
+    }
+
+    if (!supporter.paddleCustomer.subscription) {
+      return {
+        customer: {
+          id: supporter.paddleCustomer.customerId,
+          currencyCode: supporter.paddleCustomer.lastCurrencyCodeUsed,
+        },
         subscription: null,
       };
     }
 
     return {
+      customer: {
+        id: supporter.paddleCustomer.customerId,
+        currencyCode: supporter.paddleCustomer.lastCurrencyCodeUsed,
+      },
       subscription: {
-        customerId: supporter.paddleCustomer.customerId,
-        id: supporter.paddleCustomer.subscriptionId,
+        id: supporter.paddleCustomer.subscription.id,
         product: {
-          key: supporter.paddleCustomer.productKey,
+          key: supporter.paddleCustomer.subscription.productKey,
         },
-        currencyCode: supporter.paddleCustomer.currencyCode,
-        status: supporter.paddleCustomer.status,
-        nextBillDate: supporter.paddleCustomer.nextBillDate,
-        cancellationDate: supporter.paddleCustomer.cancellationDate,
-        billingInterval: supporter.paddleCustomer.billingInterval,
+        currencyCode: supporter.paddleCustomer.subscription.currencyCode,
+        status: supporter.paddleCustomer.subscription.status,
+        nextBillDate: supporter.paddleCustomer.subscription.nextBillDate,
+        cancellationDate:
+          supporter.paddleCustomer.subscription.cancellationDate,
+        billingInterval: supporter.paddleCustomer.subscription.billingInterval,
         billingPeriod: {
-          start: supporter.paddleCustomer.billingPeriodStart,
-          end: supporter.paddleCustomer.billingPeriodEnd,
+          start: supporter.paddleCustomer.subscription.billingPeriodStart,
+          end: supporter.paddleCustomer.subscription.billingPeriodEnd,
         },
-        updatedAt: supporter.paddleCustomer.updatedAt,
+        updatedAt: supporter.paddleCustomer.subscription.updatedAt,
       },
     };
   }
@@ -253,10 +268,10 @@ export class SupportersService {
         : this.defaultRateLimits,
       subscription:
         benefits.source === SupporterSource.Paddle &&
-        aggregate[0].paddleCustomer
+        aggregate[0].paddleCustomer?.subscription
           ? {
-              productKey: aggregate[0].paddleCustomer?.productKey,
-              status: aggregate[0].paddleCustomer?.status,
+              productKey: aggregate[0].paddleCustomer?.subscription?.productKey,
+              status: aggregate[0].paddleCustomer?.subscription?.status,
             }
           : undefined,
     };
@@ -537,8 +552,9 @@ export class SupportersService {
     // Refresh rate
     let refreshRateSeconds = this.defaultRefreshRateSeconds;
 
-    if (supporter.paddleCustomer) {
-      refreshRateSeconds = supporter.paddleCustomer.benefits.refreshRateSeconds;
+    if (supporter.paddleCustomer?.subscription) {
+      refreshRateSeconds =
+        supporter.paddleCustomer.subscription.benefits.refreshRateSeconds;
     } else if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
     } else if (isFromPatrons) {
@@ -553,8 +569,9 @@ export class SupportersService {
     // Max user feeds
     let baseMaxUserFeeds: number;
 
-    if (supporter.paddleCustomer) {
-      baseMaxUserFeeds = supporter.paddleCustomer.benefits.maxUserFeeds;
+    if (supporter.paddleCustomer?.subscription) {
+      baseMaxUserFeeds =
+        supporter.paddleCustomer.subscription.benefits.maxUserFeeds;
     } else if (supporter.maxUserFeeds) {
       baseMaxUserFeeds = supporter.maxUserFeeds;
     } else {
@@ -568,8 +585,9 @@ export class SupportersService {
 
     let dailyArticleLimit = this.maxDailyArticlesDefault;
 
-    if (supporter.paddleCustomer) {
-      dailyArticleLimit = supporter.paddleCustomer.benefits.dailyArticleLimit;
+    if (supporter.paddleCustomer?.subscription) {
+      dailyArticleLimit =
+        supporter.paddleCustomer.subscription.benefits.dailyArticleLimit;
     } else if (isFromPatrons) {
       if (patronExistsAndIsValid) {
         dailyArticleLimit = this.maxDailyArticlesSupporter;
@@ -577,7 +595,7 @@ export class SupportersService {
     }
 
     return {
-      source: supporter.paddleCustomer?.status
+      source: supporter.paddleCustomer?.subscription?.status
         ? SupporterSource.Paddle
         : patronExistsAndIsValid
         ? SupporterSource.Patron
@@ -594,7 +612,8 @@ export class SupportersService {
       },
       maxGuilds: Math.max(supporter.maxGuilds ?? 1, patronMaxGuilds),
       refreshRateSeconds,
-      webhooks: supporter.paddleCustomer?.benefits.allowWebhooks ?? true,
+      webhooks:
+        supporter.paddleCustomer?.subscription?.benefits.allowWebhooks ?? true,
       allowCustomPlaceholders:
         supporter.allowCustomPlaceholders || allowCustomPlaceholders,
       dailyArticleLimit,
@@ -628,7 +647,10 @@ export class SupportersService {
       );
     }
 
-    if (supporter.paddleCustomer?.status === SubscriptionStatus.Active) {
+    if (
+      supporter.paddleCustomer?.subscription?.status ===
+      SubscriptionStatus.Active
+    ) {
       return true;
     }
 

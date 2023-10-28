@@ -39,12 +39,7 @@ const PaddleCustomerBenefitsSchema = SchemaFactory.createForClass(
   versionKey: false,
   timestamps: false,
 })
-class PaddleCustomer {
-  @Prop({
-    required: true,
-  })
-  customerId: string;
-
+class PaddleCustomerSubscription {
   @Prop({
     required: true,
     enum: Object.values(SubscriptionProductKey),
@@ -55,7 +50,7 @@ class PaddleCustomer {
   @Prop({
     required: true,
   })
-  subscriptionId: string;
+  id: string;
 
   @Prop({
     required: true,
@@ -69,11 +64,6 @@ class PaddleCustomer {
     type: String,
   })
   currencyCode: string;
-
-  @Prop({
-    required: true,
-  })
-  email: string;
 
   @Prop({
     type: Date,
@@ -118,6 +108,39 @@ class PaddleCustomer {
   @Prop({
     required: true,
   })
+  updatedAt: Date;
+}
+
+const PaddleCustomerSubscriptionSchema = SchemaFactory.createForClass(
+  PaddleCustomerSubscription
+);
+
+@Schema({
+  _id: false,
+  versionKey: false,
+  timestamps: true,
+})
+class PaddleCustomer {
+  @Prop({
+    required: true,
+  })
+  customerId: string;
+
+  @Prop({
+    type: PaddleCustomerSubscriptionSchema,
+  })
+  subscription?: PaddleCustomerSubscription | null;
+
+  @Prop({ required: true })
+  lastCurrencyCodeUsed: string;
+
+  @Prop({
+    required: true,
+  })
+  email: string;
+
+  createdAt: Date;
+
   updatedAt: Date;
 }
 

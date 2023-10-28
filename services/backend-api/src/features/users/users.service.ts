@@ -104,35 +104,41 @@ export class UsersService {
       };
     }
 
-    const { subscription } =
+    const { subscription, customer } =
       await this.supportersService.getSupporterSubscription(user.email);
+
+    let creditAvailableBalanceFormatted = "0";
+
+    if (customer) {
+      const { data: creditBalances } =
+        await this.supporterSubscriptionsService.getCustomerCreditBalanace(
+          customer.id
+        );
+
+      const creditBalanceInCurrency = creditBalances.find(
+        (d) => d.currency_code === customer.currencyCode
+      );
+
+      creditAvailableBalanceFormatted = formatCurrency(
+        creditBalanceInCurrency?.balance.available || "0",
+        customer.currencyCode
+      );
+    }
 
     if (!subscription || subscription.status === SubscriptionStatus.Cancelled) {
       return {
         user,
         creditBalance: {
-          availableFormatted: "0",
+          availableFormatted: creditAvailableBalanceFormatted,
         },
         subscription: freeSubscription,
       };
     }
 
-    const { data: creditBalances } =
-      await this.supporterSubscriptionsService.getCustomerCreditBalanace(
-        subscription.customerId
-      );
-
-    const creditBalanceInCurrency = creditBalances.find(
-      (d) => d.currency_code === subscription.currencyCode
-    );
-
     return {
       user,
       creditBalance: {
-        availableFormatted: formatCurrency(
-          creditBalanceInCurrency?.balance.available || "0",
-          subscription.currencyCode
-        ),
+        availableFormatted: creditAvailableBalanceFormatted,
       },
       subscription: {
         product: {

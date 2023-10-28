@@ -20,6 +20,7 @@ import { CreateSubscriptionPreviewInputDto } from "./dto/create-subscription-pre
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
 import {
   PaddleEventSubscriptionActivated,
+  PaddleEventSubscriptionCanceled,
   PaddleEventSubscriptionUpdated,
 } from "./types/paddle-webhook-events.type";
 import { NestedQuery } from "../../common/decorators/NestedQuery";
@@ -115,11 +116,13 @@ export class SupporterSubscriptionsController {
       await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
         requestBody as PaddleEventSubscriptionUpdated
       );
-    }
-
-    if (requestBody.event_type === "subscription.activated") {
+    } else if (requestBody.event_type === "subscription.activated") {
       await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
         requestBody as PaddleEventSubscriptionActivated
+      );
+    } else if (requestBody.event_type === "subscription.canceled") {
+      await this.paddleWebhooksService.handleSubscriptionCancelledEvent(
+        requestBody as PaddleEventSubscriptionCanceled
       );
     }
 

@@ -37,6 +37,7 @@ import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { usePaddleCheckout } from "../../hooks";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
+import { ProductKey } from "../../constants";
 
 interface Props {
   trigger: React.ReactElement;
@@ -48,13 +49,6 @@ enum Feature {
   Webhooks = "Webhooks",
   CustomPlaceholders = "Custom Placeholders",
   RefreshRate = "Refresh Rate",
-}
-
-enum ProductKey {
-  Free = "free",
-  Tier1 = "tier1",
-  Tier2 = "tier2",
-  Tier3 = "tier3",
 }
 
 const tiers: Array<{
@@ -408,23 +402,25 @@ export const PricingDialog = ({ trigger }: Props) => {
                         </HStack>
                         <Text color="green.300">Save 10% with a yearly plan!</Text>
                       </Stack>
-                      <Menu>
-                        <MenuButton
-                          as={Button}
-                          width={[200]}
-                          rightIcon={<ChevronDownIcon />}
-                          textAlign="left"
-                        >
-                          <CurrencyDisplay
-                            minimizeGap
-                            code={currency.code}
-                            symbol={currency.symbol}
-                          />
-                        </MenuButton>
-                        <MenuList maxHeight="300px" overflow="auto">
-                          {currencyElements}
-                        </MenuList>
-                      </Menu>
+                      {userData.result.subscription.product.key === ProductKey.Free && (
+                        <Menu>
+                          <MenuButton
+                            as={Button}
+                            width={[200]}
+                            rightIcon={<ChevronDownIcon />}
+                            textAlign="left"
+                          >
+                            <CurrencyDisplay
+                              minimizeGap
+                              code={currency.code}
+                              symbol={currency.symbol}
+                            />
+                          </MenuButton>
+                          <MenuList maxHeight="300px" overflow="auto">
+                            {currencyElements}
+                          </MenuList>
+                        </Menu>
+                      )}
                       <SimpleGrid
                         // gap={4}
                         // alignItems="center"
