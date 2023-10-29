@@ -13,6 +13,7 @@ import { ObjectFileStorageService } from '../object-file-storage/object-file-sto
 import { createHash, randomUUID } from 'crypto';
 import { CacheStorageService } from '../cache-storage/cache-storage.service';
 import { FeedTooLargeException } from './exceptions';
+import iconv from 'iconv-lite';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -172,7 +173,7 @@ export class FeedFetcherService {
       let text: string | null = null;
 
       try {
-        text = await res.text();
+        text = await this.maybeDecodeResponse(res);
 
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
@@ -289,5 +290,25 @@ export class FeedFetcherService {
     });
 
     return res;
+  }
+
+  private async maybeDecodeResponse(
+    res: Awaited<ReturnType<typeof fetch>>,
+  ): Promise<string> {
+    const charset = res.headers
+      .get('content-type')
+      ?.split(';')
+      .find((s) => s.includes('charset'))
+      ?.split('=')[1]
+      .trim();
+
+    if (!charset || /utf-*8/i.test(charset)) {
+      return res.text();
+    }
+
+    const arrBuffer = await res.arrayBuffer();
+    const decoded = iconv.decode(Buffer.from(arrBuffer), charset).toString();
+
+    return decoded;
   }
 }
