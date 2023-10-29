@@ -25,7 +25,6 @@ import { ClientGrpc } from "@nestjs/microservices/interfaces";
 import { lastValueFrom, Observable } from "rxjs";
 import logger from "../shared/utils/logger";
 import { Metadata } from "@grpc/grpc-js";
-import tracer from "../tracer";
 import { getParserRules } from "../feed-event-handler/utils";
 
 interface FetchFeedArticleOptions {
@@ -107,16 +106,6 @@ export class FeedFetcherService implements OnModuleInit {
       hashToCompare?: string;
     }
   ) {
-    const span = tracer.scope().active();
-
-    if (span) {
-      span.setTag("url", url);
-      span.setTag(
-        "executeFetchIfNotInCache",
-        options?.executeFetchIfNotInCache
-      );
-    }
-
     try {
       const metadata = new Metadata();
       metadata.add("api-key", this.API_KEY);
