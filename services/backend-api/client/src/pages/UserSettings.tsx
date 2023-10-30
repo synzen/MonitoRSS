@@ -43,13 +43,17 @@ const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData =>
 };
 
 const ChangePaymentMethodUrlButton = () => {
-  const { status, error, data } = useUserMe({
+  const { status, data } = useUserMe({
     input: {
       data: {
         includeManageSubUrls: true,
       },
     },
   });
+
+  if (!data || data.result.subscription.product.key === ProductKey.Free) {
+    return null;
+  }
 
   return (
     <Button
@@ -68,10 +72,6 @@ const ChangePaymentMethodUrlButton = () => {
 
 export const UserSettings = () => {
   const [checkForSubscriptionUpdateAfter, setCheckForSubscriptionUpdateAfter] = useState<Date>();
-  console.log(
-    "🚀 ~ file: UserSettings.tsx:46 ~ UserSettings ~ checkForSubscriptionUpdateAfter:",
-    checkForSubscriptionUpdateAfter
-  );
   const { status, error, data } = useUserMe({
     checkForSubscriptionUpdateAfter,
   });
@@ -275,6 +275,7 @@ export const UserSettings = () => {
                               />
                             </Box>
                           )}
+                          {/* <Button onClick={() => refetch()}>Refetch</Button> */}
                           {!subscriptionPendingCancellation && (
                             <HStack>
                               <PricingDialog

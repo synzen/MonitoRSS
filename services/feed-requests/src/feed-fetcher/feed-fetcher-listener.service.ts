@@ -24,8 +24,8 @@ export class FeedFetcherListenerService {
   constructor(
     @InjectRepository(Request)
     private readonly requestRepo: EntityRepository<Request>,
-    @InjectRepository(Response)
-    private readonly responseRepo: EntityRepository<Response>,
+    // @InjectRepository(Response)
+    // private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly amqpConnection: AmqpConnection,

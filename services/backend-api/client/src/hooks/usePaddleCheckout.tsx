@@ -4,7 +4,11 @@ import { useUserMe } from "../features/discordUser";
 
 const paddleSellerId = Number(import.meta.env.VITE_PADDLE_SELLER_ID);
 
-export function usePaddleCheckout() {
+interface Props {
+  onCheckoutSuccess: () => void;
+}
+
+export function usePaddleCheckout({ onCheckoutSuccess }: Props) {
   // Create a local state to store Paddle instance
   const [paddle, setPaddle] = useState<Paddle>();
   const { data: user } = useUserMe();
@@ -18,6 +22,11 @@ export function usePaddleCheckout() {
     initializePaddle({
       environment: import.meta.env.PROD ? "production" : "sandbox",
       seller: paddleSellerId,
+      eventCallback(event) {
+        if (event.name === "checkout.completed") {
+          onCheckoutSuccess();
+        }
+      },
     }).then((paddleInstance: Paddle | undefined) => {
       if (paddleInstance) {
         setPaddle(paddleInstance);
