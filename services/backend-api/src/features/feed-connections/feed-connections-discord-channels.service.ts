@@ -523,19 +523,6 @@ export class FeedConnectionsDiscordChannelsService {
       updates,
     }: UpdateDiscordChannelConnectionInput
   ): Promise<DiscordChannelConnection> {
-    if (updates.customPlaceholders?.length) {
-      const { allowCustomPlaceholders } =
-        await this.supportersService.getBenefitsOfDiscordUser(
-          feed.user.discordUserId
-        );
-
-      if (!allowCustomPlaceholders) {
-        throw new InsufficientSupporterLevelException(
-          "Must be a supporter of a sufficient tier to use custom placeholders."
-        );
-      }
-    }
-
     const setRecordDetails: Partial<DiscordChannelConnection["details"]> =
       Object.entries(updates.details || {}).reduce(
         (acc, [key, value]) => ({
@@ -912,19 +899,6 @@ export class FeedConnectionsDiscordChannelsService {
     customPlaceholders,
     componentRows,
   }: CreatePreviewInput) {
-    let useCustomPlaceholders = customPlaceholders;
-
-    if (customPlaceholders?.length) {
-      const { allowCustomPlaceholders } =
-        await this.supportersService.getBenefitsOfDiscordUser(
-          userFeed.user.discordUserId
-        );
-
-      if (!allowCustomPlaceholders) {
-        useCustomPlaceholders = [];
-      }
-    }
-
     const payload: CreateDiscordChannelPreviewInput["details"] = {
       type: "discord",
       feed: {
@@ -977,7 +951,7 @@ export class FeedConnectionsDiscordChannelsService {
         formatter: connectionFormatOptions || undefined,
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
         mentions: mentions,
-        customPlaceholders: useCustomPlaceholders,
+        customPlaceholders,
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
         components: castDiscordComponentRowsForMedium(componentRows),

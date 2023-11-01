@@ -173,85 +173,83 @@ export const CustomPlaceholdersTabSection = ({
         </Text>
       </Stack>
       {!allowed && <InsufficientSupporterTier tier={SupporterTier.T3} />}
-      {allowed && (
-        <FormProvider {...formMethods}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Stack spacing={4}>
-              {fields.length && (
-                <Accordion
-                  allowToggle
-                  index={activeIndex}
-                  onChange={(newIndex) => setActiveIndex(newIndex)}
-                >
-                  {fields.map((item, index) => {
-                    const hasUnsavedChanges = dirtyFields.customPlaceholders?.[index];
+      <FormProvider {...formMethods}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack spacing={4}>
+            {fields.length && (
+              <Accordion
+                allowToggle
+                index={activeIndex}
+                onChange={(newIndex) => setActiveIndex(newIndex)}
+              >
+                {fields.map((item, index) => {
+                  const hasUnsavedChanges = dirtyFields.customPlaceholders?.[index];
 
-                    return (
-                      <AccordionItem key={item.id}>
-                        <h2>
-                          <AccordionButton>
-                            <HStack width="100%" spacing={4}>
-                              <AccordionIcon />
-                              <HStack flexWrap="wrap">
-                                <Box as="span" flex="1" textAlign="left" paddingY={2}>
-                                  {!item.referenceName && (
-                                    <Text color="gray.500">Unnamed custom placeholder</Text>
-                                  )}
-                                  {item.referenceName && (
-                                    <Code>{`{{custom::${item.referenceName}}}`}</Code>
-                                  )}
-                                </Box>
-                                {hasUnsavedChanges && (
-                                  <Text fontSize="sm" fontWeight={600}>
-                                    <Highlight
-                                      query="Unsaved changes"
-                                      styles={{
-                                        bg: "orange.200",
-                                        rounded: "full",
-                                        px: "2",
-                                        py: "1",
-                                      }}
-                                    >
-                                      Unsaved changes
-                                    </Highlight>
-                                  </Text>
+                  return (
+                    <AccordionItem key={item.id}>
+                      <h2>
+                        <AccordionButton>
+                          <HStack width="100%" spacing={4}>
+                            <AccordionIcon />
+                            <HStack flexWrap="wrap">
+                              <Box as="span" flex="1" textAlign="left" paddingY={2}>
+                                {!item.referenceName && (
+                                  <Text color="gray.500">Unnamed custom placeholder</Text>
                                 )}
-                              </HStack>
+                                {item.referenceName && (
+                                  <Code>{`{{custom::${item.referenceName}}}`}</Code>
+                                )}
+                              </Box>
+                              {hasUnsavedChanges && (
+                                <Text fontSize="sm" fontWeight={600}>
+                                  <Highlight
+                                    query="Unsaved changes"
+                                    styles={{
+                                      bg: "orange.200",
+                                      rounded: "full",
+                                      px: "2",
+                                      py: "1",
+                                    }}
+                                  >
+                                    Unsaved changes
+                                  </Highlight>
+                                </Text>
+                              )}
                             </HStack>
-                          </AccordionButton>
-                        </h2>
-                        <AccordionPanel pb={4}>
-                          <Stack>
-                            <CustomPlaceholderForm
-                              articleFormat={articleFormat}
-                              isExpanded={activeIndex === index}
-                              feedId={feedId}
-                              connectionId={connectionId}
-                              index={index}
-                              onDelete={onDeleteCustomPlaceholder}
-                              connectionType={connectionType}
-                            />
-                          </Stack>
-                        </AccordionPanel>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              )}
-              <Box>
-                <Button
-                  onClick={onAddCustomPlaceholder}
-                  leftIcon={<AddIcon fontSize={13} />}
-                  colorScheme="blue"
-                >
-                  Add Custom Placeholder
-                </Button>
-              </Box>
-            </Stack>
-            <SavedUnsavedChangesPopupBar />
-          </form>
-        </FormProvider>
-      )}
+                          </HStack>
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4}>
+                        <Stack>
+                          <CustomPlaceholderForm
+                            articleFormat={articleFormat}
+                            isExpanded={activeIndex === index}
+                            feedId={feedId}
+                            connectionId={connectionId}
+                            index={index}
+                            onDelete={onDeleteCustomPlaceholder}
+                            connectionType={connectionType}
+                          />
+                        </Stack>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
+            <Box>
+              <Button
+                onClick={onAddCustomPlaceholder}
+                leftIcon={<AddIcon fontSize={13} />}
+                colorScheme="blue"
+              >
+                Add Custom Placeholder
+              </Button>
+            </Box>
+          </Stack>
+          <SavedUnsavedChangesPopupBar />
+        </form>
+      </FormProvider>
     </Stack>
   );
 };

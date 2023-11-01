@@ -33,17 +33,6 @@ async function runTimerSync(app: INestApplicationContext) {
   const scheduleEmitterService = app.get(ScheduleEmitterService);
   const scheduleHandlerService = app.get(ScheduleHandlerService);
 
-  // await scheduleHandlerService.enforceUserFeedLimits();
-  // setInterval(async () => {
-  //   try {
-  //     await scheduleHandlerService.enforceUserFeedLimits();
-  //   } catch (err) {
-  //     console.error(`Failed to enforce user feed limits`, {
-  //       stack: err.stack,
-  //     });
-  //   }
-  // }, 1000 * 60 * 10);
-
   try {
     logger.debug(`Syncing timer states`);
     await scheduleEmitterService.syncTimerStates(async (refreshRateSeconds) => {
