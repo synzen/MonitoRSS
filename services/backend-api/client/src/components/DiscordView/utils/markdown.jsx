@@ -228,6 +228,7 @@ const baseRules = {
           title={node.name}
           src={node.src}
           key={state.key}
+          style={{ display: "inline-block" }}
         />
       ) : (
         <span key={state.key}>{node.surrogate}</span>
