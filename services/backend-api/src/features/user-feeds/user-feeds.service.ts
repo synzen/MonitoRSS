@@ -38,7 +38,6 @@ import {
   UserFeedLimitOverride,
   UserFeedLimitOverrideModel,
 } from "../supporters/entities/user-feed-limit-overrides.entity";
-import { IneligibleForRestorationException } from "./exceptions";
 import {
   LegacyFeedConversionJob,
   LegacyFeedConversionJobModel,
@@ -83,50 +82,6 @@ export class UserFeedsService {
     private readonly feedFetcherApiService: FeedFetcherApiService,
     private readonly amqpConnection: AmqpConnection
   ) {}
-
-  async restoreToLegacyFeed(userFeed: UserFeed) {
-    if (!userFeed.legacyFeedId) {
-      throw new IneligibleForRestorationException(
-        `User feed ${userFeed._id} is not related to a legacy feed for restoration`
-      );
-    }
-
-    if (userFeed.disabledCode === UserFeedDisabledCode.ExcessivelyActive) {
-      throw new IneligibleForRestorationException(
-        `User feed ${userFeed._id} is excessively active and cannot be restored`
-      );
-    }
-
-    await this.feedModel.updateOne(
-      {
-        _id: userFeed.legacyFeedId,
-      },
-      {
-        $unset: {
-          disabled: "",
-        },
-      }
-    );
-
-    await this.userFeedModel.deleteOne({
-      _id: userFeed._id,
-    });
-
-    await this.limitOverrideModel.updateOne(
-      {
-        _id: userFeed.user.discordUserId,
-      },
-      {
-        $inc: {
-          additionalUserFeeds: -1,
-        },
-      }
-    );
-
-    await this.legacyFeedConversionJobModel.deleteOne({
-      legacyFeedId: userFeed.legacyFeedId,
-    });
-  }
 
   async addFeed(
     {
