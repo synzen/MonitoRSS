@@ -35,6 +35,7 @@ import {
   UserFeedManagerType,
 } from "../user-feed-management-invites/constants";
 import {
+  CreateUserFeedCloneInput,
   CreateUserFeedInputDto,
   GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
@@ -140,6 +141,29 @@ export class UserFeedsController {
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
     return await this.formatFeedForResponse(feed, discordUserId);
+  }
+
+  @Post("/:feedId/clone")
+  @UseFilters(FeedExceptionFilter)
+  async createFeedClone(
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
+    @DiscordAccessToken()
+    { access_token }: SessionAccessToken,
+    @Body(ValidationPipe) { title }: CreateUserFeedCloneInput
+  ) {
+    const { id } = await this.userFeedsService.clone(
+      feed._id.toHexString(),
+      access_token,
+      {
+        title,
+      }
+    );
+
+    return {
+      result: {
+        id,
+      },
+    };
   }
 
   @Get("/:feed/requests")

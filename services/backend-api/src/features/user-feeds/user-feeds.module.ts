@@ -16,6 +16,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { FeedFeature } from "../feeds/entities/feed.entity";
 import { UserFeedLimitOverrideFeature } from "../supporters/entities/user-feed-limit-overrides.entity";
 import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
+import { FeedConnectionsDiscordChannelsModule } from "../feed-connections/feed-connections-discord-channels.module";
 
 @Module({
   controllers: [UserFeedsController],
@@ -42,7 +43,10 @@ export class UserFeedsModule {
   static forRoot(): DynamicModule {
     return {
       module: UserFeedsModule,
-      imports: [MessageBrokerModule.forRoot()],
+      imports: [
+        MessageBrokerModule.forRoot(),
+        FeedConnectionsDiscordChannelsModule.forRoot(),
+      ],
     };
   }
 

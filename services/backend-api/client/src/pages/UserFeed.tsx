@@ -38,6 +38,7 @@ import { AddIcon, ArrowLeftIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
+  CloneUserFeedDialog,
   EditUserFeedDialog,
   UpdateUserFeedInput,
   useArticleDailyLimit,
@@ -272,6 +273,16 @@ export const UserFeed: React.FC = () => {
                           <MenuItem aria-label="Edit" onClick={editOnOpen}>
                             {t("common.buttons.configure")}
                           </MenuItem>
+                          {feed && (
+                            <CloneUserFeedDialog
+                              trigger={<MenuItem>Clone</MenuItem>}
+                              defaultValues={{
+                                title: feed.title,
+                              }}
+                              feedId={feed.id}
+                              redirectOnSuccess
+                            />
+                          )}
                           {feed?.sharedAccessDetails?.inviteId && (
                             <ConfirmModal
                               title="Remove my shared access"

@@ -34,3 +34,4 @@ export * from "./updateUserFeedManagementInvite";
 export * from "./getUserFeedManagementInvites";
 export * from "./getUserFeedManagementInvitesCount";
 export * from "./createUserFeedManagementInviteResend";
+export * from "./createUserFeedClone";

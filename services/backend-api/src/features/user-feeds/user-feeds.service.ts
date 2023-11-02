@@ -43,6 +43,7 @@ import {
   LegacyFeedConversionJobModel,
 } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
+import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -80,7 +81,8 @@ export class UserFeedsService {
     private readonly supportersService: SupportersService,
     private readonly feedHandlerService: FeedHandlerService,
     private readonly feedFetcherApiService: FeedFetcherApiService,
-    private readonly amqpConnection: AmqpConnection
+    private readonly amqpConnection: AmqpConnection,
+    private readonly feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService
   ) {}
 
   async addFeed(
@@ -123,6 +125,57 @@ export class UserFeedsService {
     return created;
   }
 
+  async clone(
+    feedId: string,
+    userAccessToken: string,
+    data?: {
+      title?: string;
+    }
+  ) {
+    const found = await this.userFeedModel.findById(feedId).lean();
+
+    if (!found) {
+      throw new Error(`Feed ${feedId} not found while cloning`);
+    }
+
+    const { maxUserFeeds } =
+      await this.supportersService.getBenefitsOfDiscordUser(
+        found.user.discordUserId
+      );
+
+    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
+      found.user.discordUserId
+    );
+
+    if (feedCount >= maxUserFeeds) {
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
+
+    const newFeedId = new Types.ObjectId();
+
+    const created = await this.userFeedModel.create({
+      ...found,
+      _id: newFeedId,
+      title: data?.title || found.title,
+      connections: {},
+    });
+
+    for (const c of found.connections.discordChannels) {
+      await this.feedConnectionsDiscordChannelsService.cloneConnection(
+        created,
+        c,
+        {
+          name: c.name,
+        },
+        userAccessToken
+      );
+    }
+
+    return {
+      id: newFeedId.toHexString(),
+    };
+  }
+
   async bulkDelete(feedIds: string[], discordUserId: string) {
     const found = await this.userFeedModel
       .find({
@@ -131,7 +184,7 @@ export class UserFeedsService {
         },
         "user.discordUserId": discordUserId,
       })
-      .select("_id legacyFeedId")
+      .select("_id legacyFeedId connections")
       .lean();
 
     const foundIds = new Set(found.map((doc) => doc._id.toHexString()));
@@ -140,6 +193,27 @@ export class UserFeedsService {
     );
 
     if (found.length > 0) {
+      try {
+        await Promise.all(
+          found.flatMap((f) =>
+            f.connections.discordChannels.map(
+              async (c) =>
+                await this.feedConnectionsDiscordChannelsService.deleteConnection(
+                  f._id.toHexString(),
+                  c.id.toHexString()
+                )
+            )
+          )
+        );
+      } catch (err) {
+        logger.error(
+          "Failed to delete connections while bulk deleting feed connections",
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
+
       await this.userFeedModel.deleteMany({
         _id: {
           $in: found.map((doc) => doc._id),
@@ -435,7 +509,24 @@ export class UserFeedsService {
   }
 
   async deleteFeedById(id: string) {
-    const found = await this.userFeedModel.findByIdAndDelete(id);
+    const found = await this.userFeedModel.findById(id).lean();
+
+    if (!found) {
+      return null;
+    }
+
+    await Promise.all(
+      found.connections.discordChannels.map((c) =>
+        this.feedConnectionsDiscordChannelsService.deleteConnection(
+          id,
+          c.id.toHexString()
+        )
+      )
+    );
+
+    await this.userFeedModel.deleteOne({
+      _id: id,
+    });
 
     this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
       "",

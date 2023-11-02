@@ -9,7 +9,6 @@ import {
 } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
 import { Types } from "mongoose";
-import { UserFeedsService } from "../user-feeds.service";
 import { FastifyRequest } from "fastify";
 import { getAccessTokenFromRequest } from "../../discord-auth/utils/get-access-token-from-session";
 import { memoize } from "lodash";
@@ -18,6 +17,8 @@ import {
   UserFeedManagerStatus,
   UserFeedManagerType,
 } from "../../user-feed-management-invites/constants";
+import { InjectModel } from "@nestjs/mongoose";
+import { UserFeed, UserFeedModel } from "../entities";
 
 interface PipeOptions {
   userTypes: UserFeedManagerType[];
@@ -30,8 +31,8 @@ const createGetUserFeedPipe = (
 ): Type<PipeTransform> => {
   class GetUserFeedPipe implements PipeTransform {
     constructor(
-      @Inject(forwardRef(() => UserFeedsService))
-      private readonly userFeedsService: UserFeedsService,
+      @InjectModel(UserFeed.name)
+      private readonly userFeedModel: UserFeedModel,
       @Inject(forwardRef(() => REQUEST))
       private readonly request: FastifyRequest
     ) {}
@@ -47,7 +48,7 @@ const createGetUserFeedPipe = (
         throw new UnauthorizedException();
       }
 
-      const found = await this.userFeedsService.getFeedById(feedId);
+      const found = await this.userFeedModel.findById(feedId);
 
       const allowOwner =
         data.userTypes.includes(UserFeedManagerType.Creator) &&
