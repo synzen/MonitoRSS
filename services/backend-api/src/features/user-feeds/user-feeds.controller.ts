@@ -149,13 +149,14 @@ export class UserFeedsController {
     @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
     @DiscordAccessToken()
     { access_token }: SessionAccessToken,
-    @Body(ValidationPipe) { title }: CreateUserFeedCloneInput
+    @Body(ValidationPipe) { title, url }: CreateUserFeedCloneInput
   ) {
     const { id } = await this.userFeedsService.clone(
       feed._id.toHexString(),
       access_token,
       {
         title,
+        url,
       }
     );
 

@@ -5,6 +5,7 @@ export interface CreateUserFeedCloneInput {
   feedId: string;
   details: {
     title?: string;
+    url?: string;
   };
 }
 

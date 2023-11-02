@@ -278,6 +278,7 @@ export const UserFeed: React.FC = () => {
                               trigger={<MenuItem>Clone</MenuItem>}
                               defaultValues={{
                                 title: feed.title,
+                                url: feed.url,
                               }}
                               feedId={feed.id}
                               redirectOnSuccess

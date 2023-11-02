@@ -70,4 +70,8 @@ export class CreateUserFeedCloneInput {
   @IsString()
   @IsOptional()
   title?: string;
+
+  @IsString()
+  @IsOptional()
+  url?: string;
 }

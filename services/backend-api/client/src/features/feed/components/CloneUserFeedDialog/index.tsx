@@ -12,6 +12,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Stack,
   useDisclosure,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -27,6 +28,7 @@ import { useCreateUserFeedClone } from "../../hooks";
 
 const formSchema = object({
   title: string().required(),
+  url: string().required(),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -35,6 +37,7 @@ interface Props {
   feedId: string;
   defaultValues: {
     title: string;
+    url: string;
   };
   trigger: React.ReactElement;
   redirectOnSuccess?: boolean;
@@ -65,11 +68,11 @@ export const CloneUserFeedDialog = ({
     reset(defaultValues);
   }, [isOpen]);
 
-  const onSubmit = async ({ title }: FormData) => {
+  const onSubmit = async ({ title, url }: FormData) => {
     try {
       const {
         result: { id },
-      } = await mutateAsync({ feedId, details: { title } });
+      } = await mutateAsync({ feedId, details: { title, url } });
 
       if (redirectOnSuccess) {
         navigate(pages.userFeed(id));
@@ -98,15 +101,26 @@ export const CloneUserFeedDialog = ({
           <ModalCloseButton />
           <ModalBody>
             <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-              <FormControl isInvalid={!!errors.title}>
-                <FormLabel>Title</FormLabel>
-                <Controller
-                  name="title"
-                  control={control}
-                  render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
-                />
-                {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
-              </FormControl>
+              <Stack spacing={4}>
+                <FormControl isInvalid={!!errors.title}>
+                  <FormLabel>Title</FormLabel>
+                  <Controller
+                    name="title"
+                    control={control}
+                    render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+                  />
+                  {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
+                </FormControl>
+                <FormControl isInvalid={!!errors.url}>
+                  <FormLabel>RSS Feed Link</FormLabel>
+                  <Controller
+                    name="url"
+                    control={control}
+                    render={({ field }) => <Input {...field} bg="gray.800" />}
+                  />
+                  {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
+                </FormControl>
+              </Stack>
             </form>
           </ModalBody>
           <ModalFooter>

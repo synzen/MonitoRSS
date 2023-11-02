@@ -121,7 +121,6 @@ export class UserFeedsService {
       refreshRateSeconds,
     });
 
-    // Primarily used to set up the daily article limit for it to be fetched
     return created;
   }
 
@@ -130,6 +129,7 @@ export class UserFeedsService {
     userAccessToken: string,
     data?: {
       title?: string;
+      url?: string;
     }
   ) {
     const found = await this.userFeedModel.findById(feedId).lean();
@@ -153,10 +153,15 @@ export class UserFeedsService {
 
     const newFeedId = new Types.ObjectId();
 
+    if (data?.url && data.url !== found.url) {
+      await this.checkUrlIsValid(data.url);
+    }
+
     const created = await this.userFeedModel.create({
       ...found,
       _id: newFeedId,
       title: data?.title || found.title,
+      url: data?.url || found.url,
       connections: {},
     });
 
