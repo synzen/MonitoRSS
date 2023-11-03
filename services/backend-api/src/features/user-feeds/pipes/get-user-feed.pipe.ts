@@ -48,7 +48,7 @@ const createGetUserFeedPipe = (
         throw new UnauthorizedException();
       }
 
-      const found = await this.userFeedModel.findById(feedId);
+      const found = await this.userFeedModel.findById(feedId).lean();
 
       const allowOwner =
         data.userTypes.includes(UserFeedManagerType.Creator) &&
