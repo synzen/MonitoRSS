@@ -4,9 +4,10 @@ import { useDiscordServers } from "../../hooks";
 
 interface Props {
   serverId?: string;
+  textStyle?: React.CSSProperties;
 }
 
-export const DiscordServerName = ({ serverId }: Props) => {
+export const DiscordServerName = ({ serverId, textStyle }: Props) => {
   const { data, status, error } = useDiscordServers();
 
   const matched = data?.results.find(({ id }) => {
@@ -25,5 +26,5 @@ export const DiscordServerName = ({ serverId }: Props) => {
     );
   }
 
-  return <span>{matched?.name || serverId || "?"}</span>;
+  return <span style={textStyle}>{matched?.name || serverId || "?"}</span>;
 };
