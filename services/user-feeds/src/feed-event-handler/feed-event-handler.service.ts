@@ -30,7 +30,6 @@ import { FeedDeletedEvent } from "./types";
 import { feedDeletedEventSchema } from "./schemas";
 import { InvalidFeedException } from "../articles/exceptions";
 import pRetry from "p-retry";
-import tracer from "dd-trace";
 import { ResponseHashService } from "../response-hash/response-hash.service";
 import { getParserRules } from "./utils";
 import { FeedRetryRecord } from "./entities";
@@ -263,283 +262,262 @@ export class FeedEventHandlerService {
       event.debug
     );
 
-    await tracer.trace("deliverfeedevent.handle", async (span) => {
-      span?.setTag("feedId", event.data.feed.id);
-      span?.setTag("feedUrl", event.data.feed.url);
+    try {
+      const {
+        data: {
+          feed: { url, blockingComparisons, passingComparisons },
+        },
+      } = event;
+
+      this.debugLog(
+        `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
+        {},
+        event.debug
+      );
+
+      let lastHashSaved: string | null = null;
+
+      if (
+        await this.articlesService.hasPriorArticlesStored(event.data.feed.id)
+      ) {
+        lastHashSaved = await this.responseHashService.get({
+          feedId: event.data.feed.id,
+        });
+      }
+
+      let response: Awaited<
+        ReturnType<typeof this.feedFetcherService.fetchWithGrpc>
+      > | null = null;
 
       try {
-        const {
-          data: {
-            feed: { url, blockingComparisons, passingComparisons },
-          },
-        } = event;
-
-        this.debugLog(
-          `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
-          {},
-          event.debug
-        );
-
-        let lastHashSaved: string | null;
-
-        if (
-          await this.articlesService.hasPriorArticlesStored(event.data.feed.id)
-        ) {
-          lastHashSaved = await this.responseHashService.get({
-            feedId: event.data.feed.id,
-          });
-        }
-
-        const response = await tracer.trace(
-          "deliverfeedevent.fetchWithGrpc",
-          async () => {
-            try {
-              return await this.feedFetcherService.fetchWithGrpc(url, {
-                hashToCompare: lastHashSaved || undefined,
-              });
-            } catch (err) {
-              if (
-                err instanceof FeedRequestInternalException ||
-                err instanceof FeedRequestParseException ||
-                err instanceof FeedRequestBadStatusCodeException ||
-                err instanceof FeedRequestFetchException ||
-                err instanceof FeedRequestTimedOutException ||
-                err instanceof FeedFetchGrpcException
-              ) {
-                this.debugLog(
-                  `Debug ${event.data.feed.id}: Ignoring feed event due to expected exception`,
-                  { exceptionName: (err as Error).name },
-                  event.debug
-                );
-
-                return null;
-              }
-
-              throw err;
-            }
-          }
-        );
-
-        if (!response || !response.body) {
-          this.debugLog(
-            `Debug ${event.data.feed.id}: no response body. is pending request or` +
-              ` matched hash`,
-            {
-              response,
-            },
-            event.debug
-          );
-
-          return;
-        }
-
-        this.debugLog(
-          `Debug ${event.data.feed.id}: Parsing feed XML from ${url}`,
-          {},
-          event.debug
-        );
-
-        const articles = await tracer.trace(
-          "deliverfeedevent.getArticlesToDeliverFromXml",
-          async () => {
-            return this.articlesService.getArticlesToDeliverFromXml(
-              response.body,
-              {
-                id: event.data.feed.id,
-                blockingComparisons,
-                passingComparisons,
-                formatOptions: {
-                  dateFormat: event.data.feed.formatOptions?.dateFormat,
-                  dateTimezone: event.data.feed.formatOptions?.dateTimezone,
-                  disableImageLinkPreviews:
-                    event.data.feed.formatOptions?.disableImageLinkPreviews,
-                },
-                dateChecks: event.data.feed.dateChecks,
-                debug: event.debug,
-                useParserRules: getParserRules({ url: event.data.feed.url }),
-              }
-            );
-          }
-        );
-
-        // START TEMPORARY - Should revisit this for a more robust retry strategy
-
-        const foundRetryRecord = await this.feedRetryRecordRepo.findOne(
-          {
-            feed_id: event.data.feed.id,
-          },
-          {
-            fields: ["id"],
-          }
-        );
-
-        if (foundRetryRecord) {
-          this.debugLog(
-            `Debug ${event.data.feed.id}: Found and deleting retry record`,
-            {},
-            event.debug
-          );
-
-          await this.feedRetryRecordRepo.nativeDelete({
-            id: foundRetryRecord.id,
-          });
-        }
-
-        // END TEMPORARY
-
-        if (!articles.length) {
-          this.debugLog(
-            `Debug ${event.data.feed.id}: Ignoring feed event due to no` +
-              ` articles to deliver for url ${url}`,
-            {},
-            event.debug
-          );
-
-          await this.responseHashService.set({
-            feedId: event.data.feed.id,
-            hash: response.bodyHash,
-          });
-
-          return;
-        }
-
-        this.debugLog(
-          `Debug ${event.data.feed.id}: Delivering ${articles.length} articles`,
-          {},
-          event.debug
-        );
-
-        const deliveryStates = await tracer.trace(
-          "deliverfeedevent.deliverArticles",
-          async () => {
-            return this.deliveryService.deliver(event, articles);
-          }
-        );
-
-        this.debugLog(
-          `Debug ${event.data.feed.id}: Storing delivery states`,
-          {},
-          event.debug
-        );
-
-        await tracer.trace("deliverfeedevent.flushEntities", async () => {
-          try {
-            await this.deliveryRecordService.store(
-              event.data.feed.id,
-              deliveryStates,
-              false
-            );
-          } catch (err) {
-            logger.error(
-              `Failed to store delivery states while handling feed event`,
-              {
-                event,
-                deliveryStates,
-                error: (err as Error).stack,
-              }
-            );
-          }
-
-          try {
-            await this.orm.em.flush();
-          } catch (err) {
-            logger.error(`Failed to flush ORM while handling feed event`, {
-              event,
-              error: (err as Error).stack,
-            });
-          }
+        response = await this.feedFetcherService.fetchWithGrpc(url, {
+          hashToCompare: lastHashSaved || undefined,
         });
+      } catch (err) {
+        if (
+          err instanceof FeedRequestInternalException ||
+          err instanceof FeedRequestParseException ||
+          err instanceof FeedRequestBadStatusCodeException ||
+          err instanceof FeedRequestFetchException ||
+          err instanceof FeedRequestTimedOutException ||
+          err instanceof FeedFetchGrpcException
+        ) {
+          this.debugLog(
+            `Debug ${event.data.feed.id}: Ignoring feed event due to expected exception`,
+            { exceptionName: (err as Error).name },
+            event.debug
+          );
+
+          response = null;
+        }
+
+        throw err;
+      }
+
+      if (!response || !response.body) {
+        this.debugLog(
+          `Debug ${event.data.feed.id}: no response body. is pending request or` +
+            ` matched hash`,
+          {
+            response,
+          },
+          event.debug
+        );
+
+        return;
+      }
+
+      this.debugLog(
+        `Debug ${event.data.feed.id}: Parsing feed XML from ${url}`,
+        {},
+        event.debug
+      );
+
+      const articles = await this.articlesService.getArticlesToDeliverFromXml(
+        response.body,
+        {
+          id: event.data.feed.id,
+          blockingComparisons,
+          passingComparisons,
+          formatOptions: {
+            dateFormat: event.data.feed.formatOptions?.dateFormat,
+            dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+            disableImageLinkPreviews:
+              event.data.feed.formatOptions?.disableImageLinkPreviews,
+          },
+          dateChecks: event.data.feed.dateChecks,
+          debug: event.debug,
+          useParserRules: getParserRules({ url: event.data.feed.url }),
+        }
+      );
+
+      // START TEMPORARY - Should revisit this for a more robust retry strategy
+
+      const foundRetryRecord = await this.feedRetryRecordRepo.findOne(
+        {
+          feed_id: event.data.feed.id,
+        },
+        {
+          fields: ["id"],
+        }
+      );
+
+      if (foundRetryRecord) {
+        this.debugLog(
+          `Debug ${event.data.feed.id}: Found and deleting retry record`,
+          {},
+          event.debug
+        );
+
+        await this.feedRetryRecordRepo.nativeDelete({
+          id: foundRetryRecord.id,
+        });
+      }
+
+      // END TEMPORARY
+
+      if (!articles.length) {
+        this.debugLog(
+          `Debug ${event.data.feed.id}: Ignoring feed event due to no` +
+            ` articles to deliver for url ${url}`,
+          {},
+          event.debug
+        );
 
         await this.responseHashService.set({
           feedId: event.data.feed.id,
           hash: response.bodyHash,
         });
+
+        return;
+      }
+
+      this.debugLog(
+        `Debug ${event.data.feed.id}: Delivering ${articles.length} articles`,
+        {},
+        event.debug
+      );
+
+      const deliveryStates = await this.deliveryService.deliver(
+        event,
+        articles
+      );
+
+      this.debugLog(
+        `Debug ${event.data.feed.id}: Storing delivery states`,
+        {},
+        event.debug
+      );
+
+      try {
+        await this.deliveryRecordService.store(
+          event.data.feed.id,
+          deliveryStates,
+          false
+        );
       } catch (err) {
-        if (err instanceof InvalidFeedException) {
-          logger.debug(`Ignoring feed event due to invalid feed`, {
+        logger.error(
+          `Failed to store delivery states while handling feed event`,
+          {
+            event,
+            deliveryStates,
+            error: (err as Error).stack,
+          }
+        );
+      }
+
+      try {
+        await this.orm.em.flush();
+      } catch (err) {
+        logger.error(`Failed to flush ORM while handling feed event`, {
+          event,
+          error: (err as Error).stack,
+        });
+      }
+
+      await this.responseHashService.set({
+        feedId: event.data.feed.id,
+        hash: response.bodyHash,
+      });
+    } catch (err) {
+      if (err instanceof InvalidFeedException) {
+        logger.debug(`Ignoring feed event due to invalid feed`, {
+          event,
+          stack: (err as Error).stack,
+        });
+
+        const retryRecord = await this.feedRetryRecordRepo.findOne(
+          {
+            feed_id: event.data.feed.id,
+          },
+          {
+            fields: ["id", "attempts_so_far"],
+          }
+        );
+
+        // Rudimentary retry to alleviate some pressure
+        if (retryRecord?.attempts_so_far && retryRecord.attempts_so_far >= 4) {
+          this.debugLog(
+            `Debug ${event.data.feed.id}: Exceeded retry limit for invalid feed` +
+              `, sending disable event`,
+            {},
+            event.debug
+          );
+
+          this.amqpConnection.publish(
+            "",
+            MessageBrokerQueue.FeedRejectedDisableFeed,
+            {
+              data: {
+                rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
+                feed: {
+                  id: event.data.feed.id,
+                },
+              },
+            }
+          );
+
+          await this.feedRetryRecordRepo.nativeDelete({
+            id: retryRecord.id,
+          });
+        } else {
+          this.debugLog(
+            `Debug ${event.data.feed.id}: Updating retry record`,
+            {
+              currentAttempts: retryRecord?.attempts_so_far || 0,
+              newAttempts: (retryRecord?.attempts_so_far || 0) + 1,
+            },
+            event.debug
+          );
+
+          await this.feedRetryRecordRepo.upsert({
+            feed_id: event.data.feed.id,
+            attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
+          });
+          await this.orm.em.flush();
+        }
+      } else {
+        logger.error(
+          `Error while handling feed event: ${(err as Error).message}`,
+          {
+            err,
             event,
             stack: (err as Error).stack,
-          });
-
-          const retryRecord = await this.feedRetryRecordRepo.findOne(
-            {
-              feed_id: event.data.feed.id,
-            },
-            {
-              fields: ["id", "attempts_so_far"],
-            }
-          );
-
-          // Rudimentary retry to alleviate some pressure
-          if (
-            retryRecord?.attempts_so_far &&
-            retryRecord.attempts_so_far >= 4
-          ) {
-            this.debugLog(
-              `Debug ${event.data.feed.id}: Exceeded retry limit for invalid feed` +
-                `, sending disable event`,
-              {},
-              event.debug
-            );
-
-            this.amqpConnection.publish(
-              "",
-              MessageBrokerQueue.FeedRejectedDisableFeed,
-              {
-                data: {
-                  rejectedCode: FeedRejectedDisabledCode.InvalidFeed,
-                  feed: {
-                    id: event.data.feed.id,
-                  },
-                },
-              }
-            );
-
-            await this.feedRetryRecordRepo.nativeDelete({
-              id: retryRecord.id,
-            });
-          } else {
-            this.debugLog(
-              `Debug ${event.data.feed.id}: Updating retry record`,
-              {
-                currentAttempts: retryRecord?.attempts_so_far || 0,
-                newAttempts: (retryRecord?.attempts_so_far || 0) + 1,
-              },
-              event.debug
-            );
-
-            await this.feedRetryRecordRepo.upsert({
-              feed_id: event.data.feed.id,
-              attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
-            });
-            await this.orm.em.flush();
           }
-        } else {
-          logger.error(
-            `Error while handling feed event: ${(err as Error).message}`,
-            {
-              err,
-              event,
-              stack: (err as Error).stack,
-            }
-          );
-        }
-      } finally {
-        if (event.timestamp) {
-          const nowTs = Date.now();
-          const finishedTs = nowTs - event.timestamp;
-
-          logger.datadog(
-            `Finished handling user feed event in ${finishedTs}ms`,
-            {
-              duration: finishedTs,
-              feedId: event.data.feed.id,
-              feedURL: event.data.feed.url,
-            }
-          );
-        }
+        );
       }
-    });
+    } finally {
+      if (event.timestamp) {
+        const nowTs = Date.now();
+        const finishedTs = nowTs - event.timestamp;
+
+        logger.datadog(`Finished handling user feed event in ${finishedTs}ms`, {
+          duration: finishedTs,
+          feedId: event.data.feed.id,
+          feedURL: event.data.feed.url,
+        });
+      }
+    }
   }
 
   @UseRequestContext()

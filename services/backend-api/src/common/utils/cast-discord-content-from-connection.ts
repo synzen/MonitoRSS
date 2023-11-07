@@ -1,3 +1,3 @@
 export const castDiscordContentForMedium = (content?: string) => {
-  return content || `📰 | {{title}}\n\n{{link}}`;
+  return content || `📰 | **{{title}}**\n\n{{link}}`;
 };

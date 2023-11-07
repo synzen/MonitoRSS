@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -36,6 +35,7 @@ import {
   UserFeedManagerType,
 } from "../user-feed-management-invites/constants";
 import {
+  CreateUserFeedCloneInput,
   CreateUserFeedInputDto,
   GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
@@ -57,7 +57,6 @@ import {
   GetUserFeedArticlesExceptionFilter,
   RetryUserFeedFilter,
 } from "./filters";
-import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedPipe } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
@@ -142,6 +141,30 @@ export class UserFeedsController {
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
     return await this.formatFeedForResponse(feed, discordUserId);
+  }
+
+  @Post("/:feedId/clone")
+  @UseFilters(FeedExceptionFilter)
+  async createFeedClone(
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
+    @DiscordAccessToken()
+    { access_token }: SessionAccessToken,
+    @Body(ValidationPipe) { title, url }: CreateUserFeedCloneInput
+  ) {
+    const { id } = await this.userFeedsService.clone(
+      feed._id.toHexString(),
+      access_token,
+      {
+        title,
+        url,
+      }
+    );
+
+    return {
+      result: {
+        id,
+      },
+    };
   }
 
   @Get("/:feed/requests")
@@ -299,22 +322,6 @@ export class UserFeedsController {
     )) as UserFeed;
 
     return this.formatFeedForResponse(updated, discordUserId);
-  }
-
-  @Post("/:feedId/restore-to-legacy")
-  @UseFilters(RestoreLegacyUserFeedExceptionFilter)
-  async restoreToLegacy(@Param("feedId", GetUserFeedPipe()) feed: UserFeed) {
-    if (!feed.legacyFeedId) {
-      throw new BadRequestException("Feed is not related to a legacy feed");
-    }
-
-    await this.userFeedsService.restoreToLegacyFeed(feed);
-
-    return {
-      result: {
-        status: "success",
-      },
-    };
   }
 
   @Get()

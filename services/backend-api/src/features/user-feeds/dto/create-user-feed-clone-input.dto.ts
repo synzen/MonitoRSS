@@ -3,9 +3,12 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
@@ -66,12 +69,40 @@ class FormatterDto {
   customPlaceholders?: CustomPlaceholderDto[] | null;
 }
 
-export class CreateUserFeedCloneInput {
-  @IsString()
+export class GetUserFeedArticlesInputDto {
+  @IsInt()
+  @Max(50)
+  @Min(1)
+  @Type(() => Number)
   @IsOptional()
-  title?: string;
+  limit = 25;
 
-  @IsString()
+  @IsInt()
+  @Max(1000)
+  @Min(0)
+  @Type(() => Number)
   @IsOptional()
-  url?: string;
+  skip = 0;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  random?: boolean;
+
+  /**
+   * Properties of each article to send back in the response
+   */
+  @IsString({ each: true })
+  @IsArray()
+  @IsOptional()
+  selectProperties?: string[];
+
+  @Type(() => FiltersDto)
+  @IsOptional()
+  @IsObject()
+  filters?: FiltersDto;
+
+  @Type(() => FormatterDto)
+  @IsObject()
+  formatter: FormatterDto;
 }

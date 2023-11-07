@@ -48,7 +48,6 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "dayjs": "^1.11.5",
-    "dd-trace": "^4.11.1",
     "dotenv": "^16.0.1",
     "feedparser": "^2.2.10",
     "flat": "^5.0.2",

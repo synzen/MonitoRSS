@@ -1,80 +1,148 @@
 version: "3.8"
 services:
-  # Feed-fetcher
-  # request-queue:
-  #   image: s12v/elasticmq
-  #   volumes:
-  #     - ./elasticmq.conf:/etc/elasticmq/elasticmq.conf
-  #   ports:
-  #     - "9324:9324"
-  #     - "9325:9325"
-  # mrss-postgres:
-  #   restart: always
-  #   healthcheck:
-  #     test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
-  #     timeout: 45s
-  #     interval: 10s
-  #     retries: 10
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   # Comment below to show mongo logs
-  #   # logging:
-  #   #   driver: none
-  #   image: postgres:14.1-alpine
-  #   ports:
-  #     - "5444:5432"
-  #   volumes:
-  #     - db:/var/lib/postgresql/data
-  #     - ./sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
-  # mrss-feedfetcher:
-  #   restart: on-failure:3
-  #   build:
-  #     context: services/feed-fetcher
-  #     dockerfile: Dockerfile
-  #     target: build
-  #   ports:
-  #     - "5000:5000"
-  #   volumes:
-  #     - ./:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   command: npm run start:dev
-  #   depends_on:
-  #     - mrss-postgres
-  #     - request-queue
-  #   env_file:
-  #     - .env.local
-  #   environment:
-  #     - POSTGRES_URI=postgres://postgres:postgres@mrss-postgres:5432/feedfetcher
-  #     - AWS_SQS_QUEUE_URL=http://localhost:9324/queue/request-queue
-  #     - AWS_SQS_QUEUE_SERVICE_ENDPOINT=http://localhost:9324
-  #     - AWS_REGION=us-east-1
-  #     - AWS_SQS_FAILED_URL_QUEUE_ENDPOINT=http://localhost:9324/queue/failed-requests-queue
-  #     - AWS_SQS_FAILED_URL_QUEUE_REGION=us-east-1
-  #     - FAILED_REQUEST_DURATION_THRESHOLD_HOURS=36
+  mrss-feed-requests-cache:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-feed-requests-cache
+  
+  mrss-rabbitmq-broker:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-rabbitmq-broker
 
-  # Web
   mrss-mongo:
-    restart: on-failure:5
-    command: mongod --port 27017
-    logging:
-      driver: none
-    image: mongo:latest
-    volumes:
-      - "db-data:/data/db"
-  mrss-web:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-mongo
+  
+  mrss-postgres-feed-requests:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-postgres-feed-requests
+      
+  mrss-postgres-user-feeds-service:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-postgres-user-feeds-service
+
+  mrss-discord-rest-listener:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-discord-rest-listener
+    build:
+      context: services/discord-rest-listener
+      dockerfile: Dockerfile
+      target: prod
+    command: ["node", "build/app.js"]
+
+  mrss-feed-requests-service:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-feed-requests-service
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: prod
+    command: ["node", "dist/main.js"]
+
+  mrss-feed-requests-api:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-feed-requests-api
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: prod
+    command: ["node", "dist/main.js"]
+
+  mrss-feed-requests-db-migration:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-feed-requests-service
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    command: "npm run migration:local:up"
+
+  mrss-user-feeds-service:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-user-feeds-service
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: prod
+    command: ["node", "dist/main.js"]
+
+  mrss-user-feeds-db-migration:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-user-feeds-db-migration
+
+  mrss-legacy-feed-bulk-converter-service:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-legacy-feed-bulk-converter-service
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/web/Dockerfile
+      dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
+      target: prod
+    command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
+
+  mrss-schedule-emitter-service:
+    extends:
+      file: ./docker-compose.dev.yml
+      service: mrss-schedule-emitter-service
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/schedule-emitter/Dockerfile
+      target: prod
+    command: ["node", "dist/scripts/schedule-emitter.js"]
+
+  mrss-monolith:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/mixed.Dockerfile
+      target: prod
     restart: on-failure:3
     depends_on:
       - mrss-mongo
+      - mrss-user-feeds-service
+      - mrss-feed-requests-service
     ports:
       - "8000:8000"
-    env_file: services/backend-api/.env.local
+    env_file:
+      - ./.env.local
     environment:
-      - NODE_ENV=local
-      - MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - BACKEND_API_NODE_ENV=local
+      - BACKEND_API_PORT=8000
+      - BACKEND_API_MONGODB_URI=mongodb://mrss-mongo:27017/rss
+      - BACKEND_API_USER_FEEDS_API_HOST=http://mrss-user-feeds-service:5000
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://mrss-feed-requests-api:5000
+      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:8000
+      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8000/api/v1/discord/callback-v2
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=0.1
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672/
+      - BACKEND_API_DEFAULT_MAX_USER_FEEDS=1
+      - BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT=50
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
+    command: ["node", "dist/main.js"]
+    networks:
+      - monitorss-default
+
 
 volumes:
-  db-data:
+  db-mongodb-data:
+  db-feedrequests-postgres-data:
+  db-user-feeds-postgres-data:
+  cache-feed-requests:
+  fs-s3-storage-data:
+    driver: local
+
+networks:
+  monitorss-default:
+    driver: bridge

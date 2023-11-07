@@ -245,7 +245,36 @@ services:
       - LOG_LEVEL=debug
     networks:
       - monitorss-default
-
+  
+  mrss-user-feeds-db-migration:
+    restart: on-failure:3
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: build
+    volumes:
+      - ./services/user-feeds:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npm run migration:local:up
+    depends_on:
+      - mrss-postgres-user-feeds-service
+    env_file:
+      - ./.env.local
+    environment:
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@mrss-postgres-user-feeds-service:5432
+      - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://mrss-rabbitmq-broker:5672
+      - USER_FEEDS_POSTGRES_DATABASE=userfeeds
+      - USER_FEEDS_API_PORT=5000
+      - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@mrss-rabbitmq-broker:5672
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://mrss-feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///mrss-feed-requests-api:4999
+      - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
+      - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - USER_FEEDS_API_KEY=user-feeds-api-key
+      - LOG_LEVEL=debug
+    networks:
+      - monitorss-default
+  
   # Schedule emitter
   mrss-schedule-emitter-service:
     build:

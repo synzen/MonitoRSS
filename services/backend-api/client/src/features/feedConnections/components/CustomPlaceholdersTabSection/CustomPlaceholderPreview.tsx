@@ -107,8 +107,8 @@ export const CustomPlaceholderPreview = ({
           </HStack>
           {isFetchingNewPreview && placeholderIsComplete && <Spinner display="block" size="sm" />}
           {!selectedArticleId && placeholderIsComplete && !isFetchingNewPreview && (
-            <Text fontSize={13} color="gray.300">
-              No article selected for preview
+            <Text color="gray.400">
+              <em>No article selected for preview</em>
             </Text>
           )}
           {!isFetchingNewPreview && placeholderIsComplete && messages?.[0] && (

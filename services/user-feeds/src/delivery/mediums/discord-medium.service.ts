@@ -950,7 +950,7 @@ export class DiscordMediumService implements DeliveryMedium {
             replacePlaceholderStringArgs
           ),
           {
-            limit: 2048,
+            limit: 4096,
           }
         )[0];
 

@@ -131,6 +131,7 @@ export const AddUserFeedDialog = () => {
                         {...field}
                         value={field.value || ""}
                         ref={initialFocusRef}
+                        bg="gray.800"
                       />
                     )}
                   />
@@ -145,7 +146,12 @@ export const AddUserFeedDialog = () => {
                     name="url"
                     control={control}
                     render={({ field }) => (
-                      <Input isDisabled={isSubmitting} {...field} value={field.value || ""} />
+                      <Input
+                        isDisabled={isSubmitting}
+                        {...field}
+                        value={field.value || ""}
+                        bg="gray.800"
+                      />
                     )}
                   />
                   <FormHelperText>

@@ -1,4 +1,4 @@
-FROM node:16 AS build
+FROM node:18 AS build
 
 RUN apt install curl
 
@@ -10,7 +10,7 @@ RUN npm install
 
 COPY . ./
 
-FROM node:16 AS build-prod
+FROM build AS build-prod
 
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app ./
@@ -23,7 +23,7 @@ RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
-FROM node:16-alpine AS prod
+FROM node:18-alpine AS prod
 
 WORKDIR /usr/src/app
 

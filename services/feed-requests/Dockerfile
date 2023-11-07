@@ -8,7 +8,7 @@ RUN npm install
 
 COPY . ./
 
-FROM node:18 AS build-prod
+FROM build AS build-prod
 
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app ./

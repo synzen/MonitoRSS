@@ -18,7 +18,7 @@ import {
   FeedConnectionType,
   FeedDiscordChannelConnection,
 } from "../../../../types";
-import { DiscordChannelName } from "../../../discordServers";
+import { DiscordChannelName, DiscordServerName } from "../../../discordServers";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { pages } from "../../../../constants";
 import { DiscordChannelConnectionSettings } from "./DiscordChannelConnectionSettings";
@@ -68,24 +68,45 @@ const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => 
   if (key === FeedConnectionType.DiscordChannel) {
     const casted = connection as FeedDiscordChannelConnection;
 
-    if (casted.details.channel) {
-      if (casted.details.channel.type === "thread") {
-        return null;
-      }
+    const useServerId = casted.details.channel?.guildId || casted.details.webhook?.guildId;
+    const useChannelId = casted.details.channel?.id || casted.details.webhook?.channelId;
 
+    if ((casted.details.channel && casted.details.channel.type === "thread") || !useChannelId) {
       return (
-        <DiscordChannelName
-          channelId={casted.details.channel.id}
-          serverId={casted.details.channel.guildId}
-          spinnerSize="xs"
-          textProps={{
-            color: "gray.500",
+        <DiscordServerName
+          serverId={useServerId}
+          textStyle={{
             fontSize: 14,
+            color: getChakraColor("whiteAlpha.800"),
           }}
-          parenthesis
         />
       );
     }
+
+    return (
+      <Flex alignItems="center" fontSize={14} gap={1} color="whiteAlpha.800">
+        <DiscordServerName
+          serverId={useServerId}
+          textStyle={{
+            fontSize: 14,
+            color: getChakraColor("whiteAlpha.800"),
+          }}
+        />{" "}
+        <span>
+          (
+          <DiscordChannelName
+            channelId={useChannelId}
+            serverId={useServerId}
+            spinnerSize="xs"
+            textProps={{
+              fontSize: 14,
+              color: getChakraColor("whiteAlpha.800"),
+            }}
+          />
+          )
+        </span>
+      </Flex>
+    );
   }
 
   return null;
@@ -124,12 +145,12 @@ export const ConnectionCard = ({ feedId, connection }: Props) => {
       <CardHeader>
         <HStack justifyContent="space-between" alignItems="flex-start">
           <Stack spacing="1">
-            <Flex alignItems="center" gap={2}>
+            <Box>
               <Text color="gray.500" fontSize="sm">
                 {getPrettyConnectionName(connection as never)}
               </Text>
-              {connectionDetail ? <> {connectionDetail}</> : null}
-            </Flex>
+              {connectionDetail ? <Box> {connectionDetail}</Box> : null}
+            </Box>
             <HStack>
               <Text fontWeight={600}>{connection.name}</Text>
               {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
