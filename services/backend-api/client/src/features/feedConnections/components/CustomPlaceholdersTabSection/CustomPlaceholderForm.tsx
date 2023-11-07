@@ -148,7 +148,7 @@ const CustomPlaceholderStep = ({
                   >
                     https://regex101.com/
                   </Link>
-                  .
+                  {" "}(be sure to select the JavaScript flavor).
                 </FormHelperText>
               )}
               {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
