@@ -77,17 +77,19 @@ const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => 
           serverId={useServerId}
           textStyle={{
             fontSize: 14,
+            color: getChakraColor("whiteAlpha.800"),
           }}
         />
       );
     }
 
     return (
-      <Flex alignItems="center" fontSize={14} gap={1}>
+      <Flex alignItems="center" fontSize={14} gap={1} color="whiteAlpha.800">
         <DiscordServerName
           serverId={useServerId}
           textStyle={{
             fontSize: 14,
+            color: getChakraColor("whiteAlpha.800"),
           }}
         />{" "}
         <span>
@@ -98,6 +100,7 @@ const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => 
             spinnerSize="xs"
             textProps={{
               fontSize: 14,
+              color: getChakraColor("whiteAlpha.800"),
             }}
           />
           )
