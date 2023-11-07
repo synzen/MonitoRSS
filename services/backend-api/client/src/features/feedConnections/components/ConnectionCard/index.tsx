@@ -68,34 +68,42 @@ const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => 
   if (key === FeedConnectionType.DiscordChannel) {
     const casted = connection as FeedDiscordChannelConnection;
 
-    if (casted.details.channel) {
-      if (casted.details.channel.type === "thread") {
-        return null;
-      }
+    const useServerId = casted.details.channel?.guildId || casted.details.webhook?.guildId;
+    const useChannelId = casted.details.channel?.id || casted.details.webhook?.channelId;
 
+    if ((casted.details.channel && casted.details.channel.type === "thread") || !useChannelId) {
       return (
-        <Flex alignItems="center" fontSize={14} gap={1}>
-          <DiscordServerName
-            serverId={casted.details.channel.guildId}
-            textStyle={{
-              fontSize: 14,
-            }}
-          />{" "}
-          <span>
-            (
-            <DiscordChannelName
-              channelId={casted.details.channel.id}
-              serverId={casted.details.channel.guildId}
-              spinnerSize="xs"
-              textProps={{
-                fontSize: 14,
-              }}
-            />
-            )
-          </span>
-        </Flex>
+        <DiscordServerName
+          serverId={useServerId}
+          textStyle={{
+            fontSize: 14,
+          }}
+        />
       );
     }
+
+    return (
+      <Flex alignItems="center" fontSize={14} gap={1}>
+        <DiscordServerName
+          serverId={useServerId}
+          textStyle={{
+            fontSize: 14,
+          }}
+        />{" "}
+        <span>
+          (
+          <DiscordChannelName
+            channelId={useChannelId}
+            serverId={useServerId}
+            spinnerSize="xs"
+            textProps={{
+              fontSize: 14,
+            }}
+          />
+          )
+        </span>
+      </Flex>
+    );
   }
 
   return null;
