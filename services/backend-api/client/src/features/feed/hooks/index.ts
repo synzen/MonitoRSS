@@ -27,6 +27,7 @@ export * from "./useConvertLegacyFeedToUserFeed";
 export * from "./useLegacyFeedCount";
 export * from "./useServerLegacyFeedBulkConversion";
 export * from "./useCreateServerLegacyFeedBulkConversion";
+export * from "./useCreateUserFeedLegacyRestore";
 export * from "./useCreateUserFeedManagementInvite";
 export * from "./useDeleteUserFeedManagementInvite";
 export * from "./useUpdateUserFeedManagementInvite";

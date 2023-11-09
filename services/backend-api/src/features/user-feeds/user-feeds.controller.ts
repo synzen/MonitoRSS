@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -57,6 +58,7 @@ import {
   GetUserFeedArticlesExceptionFilter,
   RetryUserFeedFilter,
 } from "./filters";
+import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedPipe } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
@@ -322,6 +324,22 @@ export class UserFeedsController {
     )) as UserFeed;
 
     return this.formatFeedForResponse(updated, discordUserId);
+  }
+
+  @Post("/:feedId/restore-to-legacy")
+  @UseFilters(RestoreLegacyUserFeedExceptionFilter)
+  async restoreToLegacy(@Param("feedId", GetUserFeedPipe()) feed: UserFeed) {
+    if (!feed.legacyFeedId) {
+      throw new BadRequestException("Feed is not related to a legacy feed");
+    }
+
+    await this.userFeedsService.restoreToLegacyFeed(feed);
+
+    return {
+      result: {
+        status: "success",
+      },
+    };
   }
 
   @Get()
