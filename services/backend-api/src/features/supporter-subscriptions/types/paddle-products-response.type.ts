@@ -1,5 +1,6 @@
 interface PaddleProductPrice {
   id: string;
+  status: "active" | "archived";
 }
 
 export interface PaddleProduct {

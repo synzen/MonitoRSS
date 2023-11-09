@@ -10,6 +10,7 @@ const mockUserMe: UserMe = {
     availableFormatted: "$100",
   },
   subscription: {
+    updatedAt: new Date(2020, 1, 1).toISOString(),
     billingPeriod: {
       start: "2021-01-01T00:00:00.000Z",
       end: "2021-02-01T00:00:00.000Z",

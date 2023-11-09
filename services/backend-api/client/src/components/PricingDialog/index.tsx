@@ -245,10 +245,6 @@ interface ChangeSubscriptionDetails {
 
 export const PricingDialog = ({ trigger }: Props) => {
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
-  console.log(
-    "🚀 ~ file: index.tsx:248 ~ PricingDialog ~ checkForSubscriptionCreated:",
-    checkForSubscriptionCreated
-  );
   const {
     status: userStatus,
     error: userError,
@@ -469,10 +465,6 @@ export const PricingDialog = ({ trigger }: Props) => {
                           </Menu>
                         )}
                         <SimpleGrid
-                          // gap={4}
-                          // alignItems="center"
-                          // flexWrap="wrap"
-                          // templateColumns="repeat(auto-fill, minmax(350px, 1fr))"
                           justifyContent="center"
                           gridTemplateColumns={[
                             "350px",
@@ -548,7 +540,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                                             />
                                           )}
                                           {fetchStatus !== "fetching" &&
-                                            (shorterProductPrice || priceFormatted)}
+                                            (shorterProductPrice || "N/A")}
                                         </Text>
                                         <Text fontSize="lg" color="whiteAlpha.600">
                                           {interval === "month" && "per month"}

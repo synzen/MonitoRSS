@@ -163,9 +163,11 @@ export class SupporterSubscriptionsService {
         .map((p) => ({
           id: p.custom_data?.key as string,
           name: p.name,
-          prices: p.prices.map((p) => ({
-            id: p.id,
-          })),
+          prices: p.prices
+            .filter((s) => s.status === "active")
+            .map((p) => ({
+              id: p.id,
+            })),
         })),
     };
   }
