@@ -336,7 +336,7 @@ export const UserFeed: React.FC = () => {
                             />
                           )}
                           <MenuDivider />
-                          {feed?.isLegacyFeed && (
+                          {feed?.isLegacyFeed && feed.allowLegacyReversion && (
                             <ConfirmModal
                               title="Restore legacy feed"
                               size="xl"
@@ -347,14 +347,15 @@ export const UserFeed: React.FC = () => {
                                   </Text>
                                   <Stack>
                                     <Text>
-                                      If you are currently facing issues with personal feeds, you
-                                      may convert this feed back to a legacy feed.
+                                      If you are currently facing issues with converting to personal
+                                      feeds, you may convert this feed back to a legacy feed until a
+                                      fix is applied.
                                     </Text>
                                     <Text>
-                                      Legacy feeds are still scheduled to be permanently disabled.
-                                      If you are facing issues, please reach out to Support for
-                                      remediation so that you can convert this back to a personal
-                                      feed as soon as possible.
+                                      Legacy feeds are still permanently disabled. If you are facing
+                                      issues, please reach out to Support for remediation so that
+                                      you can convert this back to a personal feed as soon as
+                                      possible.
                                     </Text>
                                     <Text>
                                       After this feed has been restored, this personal feed will be

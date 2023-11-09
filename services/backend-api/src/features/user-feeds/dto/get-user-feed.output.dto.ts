@@ -28,6 +28,8 @@ class GetUserFeedOutputResultDto {
   @IsNotEmpty()
   id: string;
 
+  allowLegacyReversion?: boolean;
+
   @IsString()
   @IsNotEmpty()
   title: string;

@@ -449,6 +449,7 @@ export class UserFeedsController {
     return {
       result: {
         id: feed._id.toHexString(),
+        allowLegacyReversion: feed.allowLegacyReversion,
         sharedAccessDetails: userInviteId
           ? {
               inviteId: userInviteId.toHexString(),
