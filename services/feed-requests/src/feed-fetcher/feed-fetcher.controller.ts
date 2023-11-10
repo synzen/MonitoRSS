@@ -131,13 +131,11 @@ export class FeedFetcherController {
       data.url,
     );
 
-    let responseText: string | undefined =
-      latestRequest?.response?.text || undefined;
-
     // If there's no text, response must be fetched to be cached
     if (
       !latestRequest ||
-      (latestRequest.response?.redisCacheKey && !latestRequest?.response?.text)
+      (latestRequest.request.response?.redisCacheKey &&
+        !latestRequest.decodedResponseText)
     ) {
       if (data.executeFetchIfNotExists) {
         const savedData = await this.feedFetcherService.fetchAndSaveResponse(
@@ -147,8 +145,10 @@ export class FeedFetcherController {
           },
         );
 
-        latestRequest = savedData.request;
-        responseText = savedData.responseText || undefined;
+        latestRequest = {
+          request: savedData.request,
+          decodedResponseText: savedData.responseText,
+        };
       } else {
         return {
           requestStatus: 'PENDING' as const,
@@ -156,71 +156,74 @@ export class FeedFetcherController {
       }
     }
 
+    const latestRequestStatus = latestRequest.request.status;
+    const latestRequestResponse = latestRequest.request.response;
+
     if (
       data.hashToCompare &&
-      data.hashToCompare === latestRequest.response?.textHash
+      data.hashToCompare === latestRequest.request.response?.textHash
     ) {
       return {
         requestStatus: 'MATCHED_HASH' as const,
       };
     }
 
-    if (latestRequest.status === RequestStatus.REFUSED_LARGE_FEED) {
+    if (latestRequestStatus === RequestStatus.REFUSED_LARGE_FEED) {
       return {
         requestStatus: 'REFUSED_LARGE_FEED' as const,
       };
     }
 
-    if (latestRequest.status === RequestStatus.FETCH_TIMEOUT) {
+    if (latestRequestStatus === RequestStatus.FETCH_TIMEOUT) {
       return {
         requestStatus: 'FETCH_TIMEOUT' as const,
       };
     }
 
     if (
-      latestRequest.status === RequestStatus.FETCH_ERROR ||
-      !latestRequest.response
+      latestRequestStatus === RequestStatus.FETCH_ERROR ||
+      !latestRequestResponse
     ) {
       return {
         requestStatus: 'FETCH_ERROR' as const,
       };
     }
 
-    if (latestRequest.status === RequestStatus.OK) {
+    if (latestRequestStatus === RequestStatus.OK) {
       return {
         requestStatus: 'SUCCESS' as const,
         response: {
-          hash: latestRequest.response.textHash,
-          body: responseText as string,
-          statusCode: latestRequest.response.statusCode,
+          hash: latestRequestResponse.textHash,
+          body: latestRequest.decodedResponseText as string,
+          statusCode: latestRequestResponse.statusCode,
         },
       };
     }
 
-    if (latestRequest.status === RequestStatus.PARSE_ERROR) {
+    if (latestRequestStatus === RequestStatus.PARSE_ERROR) {
       return {
         requestStatus: 'PARSE_ERROR' as const,
         response: {
-          statusCode: latestRequest.response.statusCode,
+          statusCode: latestRequestResponse.statusCode,
         },
       };
     }
 
-    if (latestRequest.status === RequestStatus.INTERNAL_ERROR) {
+    if (latestRequestStatus === RequestStatus.INTERNAL_ERROR) {
       return {
         requestStatus: 'INTERNAL_ERROR' as const,
       };
     }
 
-    if (latestRequest.status === RequestStatus.BAD_STATUS_CODE) {
+    if (latestRequestStatus === RequestStatus.BAD_STATUS_CODE) {
       return {
         requestStatus: 'BAD_STATUS_CODE' as const,
         response: {
-          statusCode: latestRequest.response.statusCode,
+          statusCode: latestRequestResponse.statusCode,
         },
       };
     }
 
-    throw new Error(`Unhandled request status: ${latestRequest.status}`);
+    throw new Error(`Unhandled request status: ${latestRequestStatus}`);
   }
 }

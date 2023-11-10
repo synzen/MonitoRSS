@@ -311,7 +311,7 @@ export class FeedEventHandlerService {
           response = null;
         }
 
-        throw err;
+        return;
       }
 
       if (!response || !response.body) {

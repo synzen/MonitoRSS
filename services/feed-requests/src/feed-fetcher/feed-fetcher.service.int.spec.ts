@@ -10,6 +10,9 @@ import {
 import { Request, Response } from './entities';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { getRepositoryToken } from '@mikro-orm/nestjs';
+import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
+import { CacheStorageService } from '../cache-storage/cache-storage.service';
+import { FastifyAdapter } from '@nestjs/platform-fastify';
 
 jest.mock('../utils/logger');
 
@@ -22,7 +25,23 @@ describe('FeedFetcherService (Integration)', () => {
   beforeAll(async () => {
     const setupData = await setupPostgresTests(
       {
-        providers: [FeedFetcherService],
+        providers: [
+          FeedFetcherService,
+          {
+            provide: ObjectFileStorageService,
+            useValue: {
+              getFeedHtmlContent: jest.fn(),
+              uploadFeedHtmlContent: jest.fn(),
+            },
+          },
+          {
+            provide: CacheStorageService,
+            useValue: {
+              getFeedHtmlContent: jest.fn(),
+              setFeedHtmlContent: jest.fn(),
+            },
+          },
+        ],
       },
       {
         models: [Request, Response],
@@ -31,7 +50,7 @@ describe('FeedFetcherService (Integration)', () => {
 
     const { module } = await setupData.init();
 
-    app = module.createNestApplication();
+    app = module.createNestApplication(new FastifyAdapter());
     await app.init();
 
     service = app.get(FeedFetcherService);
@@ -100,7 +119,6 @@ describe('FeedFetcherService (Integration)', () => {
 
       const response = new Response();
       response.statusCode = 200;
-      response.text = 'text';
       response.isCloudflare = false;
 
       req1.response = response;
@@ -109,10 +127,9 @@ describe('FeedFetcherService (Integration)', () => {
 
       const latestRequest = await service.getLatestRequest(url);
 
-      expect(latestRequest?.id).toEqual(req1.id);
-      expect(latestRequest?.response).toMatchObject({
+      expect(latestRequest?.request.id).toEqual(req1.id);
+      expect(latestRequest?.request.response).toMatchObject({
         statusCode: 200,
-        text: 'text',
         isCloudflare: false,
       });
     });

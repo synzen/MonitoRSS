@@ -14,12 +14,6 @@ export class Response {
     nullable: true,
     type: 'text',
   })
-  text?: string | null;
-
-  @Property({
-    nullable: true,
-    type: 'text',
-  })
   textHash?: string | null;
 
   @Property({
@@ -45,6 +39,15 @@ export class Response {
     default: null,
   })
   redisCacheKey?: string | null;
+
+  @Property({
+    type: 'json',
+    nullable: true,
+  })
+  headers?: {
+    etag?: string;
+    lastModified?: string;
+  } | null;
 
   @Property({
     type: 'timestamp with time zone',
