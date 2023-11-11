@@ -3,7 +3,7 @@ name: monitorss-dev
 services:
   feed-requests-redis-cache:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: feed-requests-redis-cache
 
   seaweed-fs:
@@ -24,27 +24,27 @@ services:
   
   rabbitmq-broker:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: rabbitmq-broker
 
   mongo:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: mongo
   
   feed-requests-postgres-db:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: feed-requests-postgres-db
       
   user-feeds-postgres-db:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: user-feeds-postgres-db
 
   bot-presence-service:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: bot-presence-service
     volumes:
       - ./services/bot-presence:/usr/src/app
@@ -55,7 +55,7 @@ services:
 
   discord-rest-listener-service:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: discord-rest-listener-service
     volumes:
       - ./services/discord-rest-listener:/usr/src/app
@@ -66,7 +66,7 @@ services:
 
   feed-requests-service:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: feed-requests-service
     volumes:
       - ./services/feed-requests:/usr/src/app
@@ -82,7 +82,7 @@ services:
 
   feed-requests-postgres-migration:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: feed-requests-postgres-migration
     command: "npm run migration:local:up"
     env_file:
@@ -95,7 +95,7 @@ services:
 
   feed-requests-api:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: feed-requests-api
     volumes:
       - ./services/feed-requests:/usr/src/app
@@ -106,7 +106,7 @@ services:
 
   user-feeds-service:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: user-feeds-service
     volumes:
       - ./services/user-feeds:/usr/src/app
@@ -119,7 +119,7 @@ services:
 
   user-feeds-postgres-migration:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: user-feeds-postgres-migration
     command: npm run migration:local:up
     env_file:
@@ -128,7 +128,7 @@ services:
   # Schedule emitter
   schedule-emitter-service:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: schedule-emitter-service
     volumes:
       - ./services/backend-api:/usr/src/app
@@ -143,7 +143,7 @@ services:
   # Schedule emitter
   legacy-feed-bulk-converter-service:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: legacy-feed-bulk-converter-service
     volumes:
       - ./services/backend-api:/usr/src/app
@@ -157,7 +157,7 @@ services:
   # Web - Backend api
   web-api:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: web-api
     volumes:
       - ./services/backend-api:/usr/src/app
@@ -172,7 +172,7 @@ services:
 
   web-client:
     extends:
-      file: docker-compose.yml
+      file: docker-compose.base.yml
       service: web-client
 
 volumes:
