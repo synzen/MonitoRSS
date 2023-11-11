@@ -3,8 +3,6 @@ services:
   feed-requests-redis-cache:
     image: redis:7.0.7-alpine
     restart: always
-    ports:
-      - 6379:6379
     command: redis-server --save 60 1
     volumes: 
       - feed-requests-redis-data:/data
@@ -14,9 +12,6 @@ services:
   rabbitmq-broker:
     image: rabbitmq:3-management-alpine
     container_name: 'rabbitmq-broker'
-    ports:
-        - 5672:5672
-        - 15672:15672
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 5s
@@ -30,9 +25,7 @@ services:
     command: mongod --port 27017
     logging:
       driver: none
-    image: mongo:latest
-    ports:
-      - "27018:27017"
+    image: mongo:7.0.2
     volumes:
       - "mongodb-data:/data/db"
     networks:
@@ -52,8 +45,6 @@ services:
     logging:
       driver: none
     image: postgres:14.1-alpine
-    ports:
-      - "5431:5432"
     volumes:
       - feed-requests-postgres-data:/var/lib/postgresql/data
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
@@ -74,8 +65,6 @@ services:
     logging:
       driver: none
     image: postgres:14.1-alpine
-    ports:
-      - '5430:5432'
     volumes:
       - user-feeds-postgres-data:/var/lib/postgresql/data
       - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
@@ -173,9 +162,6 @@ services:
       context: services/feed-requests
       dockerfile: Dockerfile
       target: build
-    ports:
-      - "5000:5000"
-      - "4999:4999"
     depends_on:
       feed-requests-postgres-db:
         condition: service_started
@@ -201,8 +187,6 @@ services:
       context: services/user-feeds
       dockerfile: Dockerfile
       target: build
-    ports:
-      - "5001:5000"
     depends_on:
       - user-feeds-postgres-db
       - feed-requests-service

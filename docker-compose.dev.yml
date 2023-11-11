@@ -5,6 +5,8 @@ services:
     extends:
       file: docker-compose.base.yml
       service: feed-requests-redis-cache
+    ports:
+      - 6379:6379
 
   seaweed-fs:
     image: chrislusf/seaweedfs
@@ -26,21 +28,30 @@ services:
     extends:
       file: docker-compose.base.yml
       service: rabbitmq-broker
+    ports:
+        - 5672:5672
+        - 15672:15672
 
   mongo:
     extends:
       file: docker-compose.base.yml
       service: mongo
+    ports:
+      - "27018:27017"
   
   feed-requests-postgres-db:
     extends:
       file: docker-compose.base.yml
       service: feed-requests-postgres-db
+    ports:
+      - "5431:5432"
       
   user-feeds-postgres-db:
     extends:
       file: docker-compose.base.yml
       service: user-feeds-postgres-db
+    ports:
+      - '5430:5432'
 
   bot-presence-service:
     extends:
@@ -100,6 +111,9 @@ services:
     volumes:
       - ./services/feed-requests:/usr/src/app
       - /usr/src/app/node_modules/
+    ports:
+      - "5000:5000"
+      - "4999:4999"
     command: npm run start:local
     env_file:
       - ./.env.local
@@ -111,6 +125,8 @@ services:
     volumes:
       - ./services/user-feeds:/usr/src/app
       - /usr/src/app/node_modules/
+    ports:
+      - "5001:5000"
     command: npm run start:local
     env_file:
       - ./.env.local
