@@ -19,6 +19,7 @@ import {
 } from "../../user-feed-management-invites/constants";
 import { InjectModel } from "@nestjs/mongoose";
 import { UserFeed, UserFeedModel } from "../entities";
+import { ConfigService } from "@nestjs/config";
 
 interface PipeOptions {
   userTypes: UserFeedManagerType[];
@@ -34,10 +35,11 @@ const createGetUserFeedPipe = (
       @InjectModel(UserFeed.name)
       private readonly userFeedModel: UserFeedModel,
       @Inject(forwardRef(() => REQUEST))
-      private readonly request: FastifyRequest
+      private readonly request: FastifyRequest,
+      private readonly configService: ConfigService
     ) {}
 
-    async transform(feedId: string) {
+    async transform(feedId: string): Promise<UserFeed> {
       if (!Types.ObjectId.isValid(feedId)) {
         throw new NotFoundException("Feed not found. Invalid Object Id.");
       }
@@ -72,7 +74,12 @@ const createGetUserFeedPipe = (
         throw new NotFoundException(`Feed ${feedId} not found`);
       }
 
-      return found;
+      return {
+        ...found,
+        allowLegacyReversion:
+          !!this.configService.get("BACKEND_API_ALLOW_LEGACY_REVERSION") ||
+          found.allowLegacyReversion,
+      };
     }
   }
 

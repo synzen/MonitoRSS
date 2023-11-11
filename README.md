@@ -1,9 +1,9 @@
 # MonitoRSS (formerly Discord.RSS)
 
-A bot that delivers highly-customized news feeds to Discord.
+Delivers highly-customized news feeds to Discord!
 
 - [MonitoRSS (formerly Discord.RSS)](#monitorss-formerly-discordrss)
-  - [Getting Started](#getting-started)
+  - [Get Started](#get-started)
     - [Use Public Instance](#use-public-instance)
     - [Self Host](#self-host)
       - [Customize Site Domain](#customize-site-domain)
@@ -11,20 +11,22 @@ A bot that delivers highly-customized news feeds to Discord.
   - [Migrating from v6](#migrating-from-v6)
 
 
-## Getting Started
+## Get Started
 
 ### Use Public Instance
-To use the public hosted instance for free, visit https://monitorss.xyz!
+To use the publicly hosted instance for free, visit https://monitorss.xyz!
 
 ### Self Host
+
+Docker is required to easily coordinate and run multiple services at once.
 
 > [!NOTE]  
 >  General knowledge of how Docker, Docker volumes, and docker-compose works is highly recommended to avoid accidental data loss.
 
 1. Install [Docker Engine](https://docs.docker.com/engine/install/)
 2. Install [Docker Compose](https://docs.docker.com/compose/install/)
-3. Clone this repo
-4. Create a copy of the existing `.env.example` file and rename it to `.env.prod`.
+3. Clone this repo's `main` (the default) branch - `git clone https://github.com/synzen/MonitoRSS.git`
+4. Create a copy of the existing `.env.example` file and rename it to `.env.prod`
 5. Replace all relevant values
    1. If you have your own MongoDB instance, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
    2. Replace all instances of "BOT_TOKEN_HERE" with your Discord bot token
@@ -43,8 +45,8 @@ To use the public hosted instance for free, visit https://monitorss.xyz!
 
 #### Updating
 
-1. Pull the latest files from this repo
-2. Rebuild containers with `docker-compose up -d --build`. If containers fail to restart, try running `docker-compose up -d --force-recreate`.
+1. Pull the latest files from the main branch
+2. Rebuild containers with `docker-compose up -d --build`
 
 ## Migrating from v6
 
@@ -53,3 +55,4 @@ If you've been using MonitoRSS v6 (used by the repo https://github.com/synzen/Mo
 1. Follow the instructions above to self host. Be sure to clone this repo - the [clone repo](https://github.com/synzen/MonitoRSS-Clone) is no longer used or maintained.
 2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
 3. Run `docker-compose up -d --build`
+4. Access the control panel via http://localhost:8000 and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
