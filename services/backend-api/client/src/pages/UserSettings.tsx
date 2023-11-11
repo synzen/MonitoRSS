@@ -150,8 +150,10 @@ export const UserSettings = () => {
     subscriptionText = (
       <Text>
         You are currently on{" "}
-        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>, scheduled to be
-        cancelled on{" "}
+        <chakra.span fontWeight={600}>
+          {subscription?.product.name} (billed every {subscription.billingInterval})
+        </chakra.span>
+        , scheduled to be cancelled on{" "}
         {new Date(subscription.cancellationDate).toLocaleDateString(undefined, {
           year: "numeric",
           month: "long",
@@ -164,8 +166,10 @@ export const UserSettings = () => {
     subscriptionText = (
       <Text>
         You are currently on{" "}
-        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>, scheduled to renew
-        on{" "}
+        <chakra.span fontWeight={600}>
+          {subscription?.product.name} (billed every {subscription.billingInterval})
+        </chakra.span>
+        , scheduled to renew on{" "}
         {new Date(subscription.nextBillDate).toLocaleDateString(undefined, {
           year: "numeric",
           month: "long",
@@ -178,7 +182,10 @@ export const UserSettings = () => {
     subscriptionText = (
       <Text>
         You are currently on{" "}
-        <chakra.span fontWeight={600}>{subscription?.product.name}</chakra.span>.
+        <chakra.span fontWeight={600}>
+          {subscription?.product.name} (billed every {subscription.billingInterval})
+        </chakra.span>
+        .
       </Text>
     );
   }

@@ -505,9 +505,19 @@ export const PricingDialog = ({ trigger }: Props) => {
                                 associatedPrice?.formattedPrice
                               );
 
-                              const isOnThisTier = userSubscription.product.key === productId;
-                              const isAboveUserTier = userTierIndex < currentTierIndex;
-                              const isBelowUserTier = userTierIndex > currentTierIndex;
+                              const isOnThisTier =
+                                userSubscription.product.key === productId &&
+                                userSubscription.billingInterval === interval;
+                              const isAboveUserTier =
+                                userTierIndex < currentTierIndex ||
+                                (userSubscription.product.key === productId &&
+                                  userSubscription.billingInterval !== interval &&
+                                  userSubscription.billingInterval === "month");
+                              const isBelowUserTier =
+                                userTierIndex > currentTierIndex ||
+                                (userSubscription.product.key === productId &&
+                                  userSubscription.billingInterval !== interval &&
+                                  userSubscription.billingInterval === "year");
 
                               return (
                                 <Card size="lg" shadow="lg" key={name}>
@@ -595,7 +605,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                                           : undefined
                                       }
                                     >
-                                      {isOnThisTier && "Current Tier"}
+                                      {isOnThisTier && "Current Plan"}
                                       {isBelowUserTier && "Downgrade"}
                                       {isAboveUserTier && "Upgrade"}
                                     </Button>
