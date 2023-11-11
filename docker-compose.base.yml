@@ -310,8 +310,6 @@ services:
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-service:5000
       - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
-      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:8000
-      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8000/api/v1/discord/callback-v2
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=MonitoRSS
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/

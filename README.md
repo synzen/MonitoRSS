@@ -1,15 +1,38 @@
 # MonitoRSS (formerly Discord.RSS)
 
-This is the core repository of the MonitoRSS bot (formerly known as Discord.RSS) for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/MonitoRSS-Web.
+A bot that delivers highly-customized news feeds to Discord.
 
-For users who want to deploy MonitoRSS for personal use, see https://github.com/synzen/MonitoRSS-Clone.
+## Getting Started
 
-Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
+### Use Public Instance
+To use the public hosted instance for free, visit https://monitorss.xyz!
 
-All documentation can be found at https://docs.monitorss.xyz.
+### Self Host
 
-***
+> [!NOTE]  
+>  General knowledge of how Docker, Docker volumes, and docker-compose works is highly recommended to avoid accidental data loss.
 
-Note that this is the `dev` branch. This is a monorepo representing the re-write of the bot TO better handle the growing demands of the publicly hosted version. This work is still in-progress. For the stable version, please switch to the `master` branch.
+1. Install [Docker Engine](https://docs.docker.com/engine/install/)
+2. Install [Docker Compose](https://docs.docker.com/compose/install/)
+3. Clone this repo
+4. Create a copy of the existing `.env.example` file and rename it to `.env.prod`.
+   1. If you have your own MongoDB instance, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
+   2. Replace all instances of "BOT_TOKEN_HERE" with your Discord bot token
+   3. Replace all instances of "BOT_CLIENT_ID_HERE" with your Discord bot client ID
+   4. Set `BACKEND_API_SESSION_SECRET` to a random 64-character string
+   5. Set `BACKEND_API_SESSION_SALT` to a random 16-character string
+   6. Add `http://localhost:8000/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page
+5. Replace all relevant values
+6. Run `docker-compose up -d`
+7. Access the control panel via http://localhost:8000
 
-More documentation is TBD, however some processes will be stored in the diagrams folder while they are being worked on as draw.io files.
+#### Customize Site Domain
+
+1. Set up your domain to point to the server running the bot on localhost:8000
+2. Update all references to `http://localhost:8000` in your `.env.prod` to your desired domain. For example, `https://mynewdomain.com`.
+3. Add `{DOMAIN_HERE}/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 pge, replacing `DOMAIN_HERE` with the value you set in step 1
+
+#### Updating
+
+1. Pull the latest files from this repo
+2. Rebuild containers with `docker-compose up -d --build`. If containers fail to restart, try running `docker-compose up -d --force-recreate`.
