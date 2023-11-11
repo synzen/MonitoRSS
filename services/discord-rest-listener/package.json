@@ -5,7 +5,7 @@
   "main": "build/app.js",
   "scripts": {
     "test": "jest",
-    "start": "nodemon src/app.ts",
+    "start": "nodemon src/app.ts --legacy-watch",
     "build": "tsc",
     "lint": "eslint src",
     "dev": "nodemon"
