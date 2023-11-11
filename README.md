@@ -2,6 +2,15 @@
 
 A bot that delivers highly-customized news feeds to Discord.
 
+- [MonitoRSS (formerly Discord.RSS)](#monitorss-formerly-discordrss)
+  - [Getting Started](#getting-started)
+    - [Use Public Instance](#use-public-instance)
+    - [Self Host](#self-host)
+      - [Customize Site Domain](#customize-site-domain)
+      - [Updating](#updating)
+  - [Migrating from v6](#migrating-from-v6)
+
+
 ## Getting Started
 
 ### Use Public Instance
@@ -36,3 +45,11 @@ To use the public hosted instance for free, visit https://monitorss.xyz!
 
 1. Pull the latest files from this repo
 2. Rebuild containers with `docker-compose up -d --build`. If containers fail to restart, try running `docker-compose up -d --force-recreate`.
+
+## Migrating from v6
+
+If you've been using MonitoRSS v6 (used by the repo https://github.com/synzen/MonitoRSS-Clone), then these are instructions to migrate off of that repo to use the latest changes.
+
+1. Follow the instructions above to self host. Be sure to clone this repo - the [clone repo](https://github.com/synzen/MonitoRSS-Clone) is no longer used or maintained.
+2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
+3. Run `docker-compose up -d --build`
