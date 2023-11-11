@@ -28,7 +28,7 @@ To use the public hosted instance for free, visit https://monitorss.xyz!
 
 #### Customize Site Domain
 
-1. Set up your domain to point to the server running the bot on localhost:8000
+1. Set up your domain to point to the server running the control panel on localhost
 2. Update all references to `http://localhost:8000` in your `.env.prod` to your desired domain. For example, `https://mynewdomain.com`.
 3. Add `{DOMAIN_HERE}/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 pge, replacing `DOMAIN_HERE` with the value you set in step 1
 
