@@ -200,10 +200,17 @@ export class FeedFetcherListenerService {
           `recently failed and will be skipped until ${nextRetryDate}`,
       );
     } else {
+      const headers = await this.feedFetcherService.getLatestRequestHeaders({
+        url,
+      });
       const { request } = await this.feedFetcherService.fetchAndSaveResponse(
         url,
         {
           saveResponseToObjectStorage: data.saveToObjectStorage,
+          headers: {
+            'If-Modified-Since': headers?.lastModified || '',
+            'If-None-Match': headers?.etag || '',
+          },
         },
       );
 

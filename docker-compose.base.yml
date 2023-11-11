@@ -1,0 +1,355 @@
+version: "3.8"
+services:
+  feed-requests-redis-cache:
+    image: redis:7.0.7-alpine
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --save 60 1
+    volumes: 
+      - feed-requests-redis-data:/data
+    networks:
+      - monitorss-default
+  
+  rabbitmq-broker:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq-broker'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 1s
+      retries: 20
+    networks:
+      - monitorss-default
+
+  mongo:
+    restart: on-failure:5
+    command: mongod --port 27017
+    logging:
+      driver: none
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - "mongodb-data:/data/db"
+    networks:
+      - monitorss-default
+  
+  feed-requests-postgres-db:
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    # Comment below to show logs
+    logging:
+      driver: none
+    image: postgres:14.1-alpine
+    ports:
+      - "5431:5432"
+    volumes:
+      - feed-requests-postgres-data:/var/lib/postgresql/data
+      - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    networks:
+      - monitorss-default
+      
+  user-feeds-postgres-db:
+    restart: always
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', 'postgres', '-U', 'postgres']
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    # Comment below to show logs
+    logging:
+      driver: none
+    image: postgres:14.1-alpine
+    ports:
+      - '5430:5432'
+    volumes:
+      - user-feeds-postgres-data:/var/lib/postgresql/data
+      - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    networks:
+      - monitorss-default
+
+  bot-presence-service:
+    restart: on-failure:3
+    build:
+      context: services/bot-presence
+      dockerfile: Dockerfile
+      target: build
+    depends_on:
+      rabbitmq-broker:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    environment:
+      - BOT_PRESENCE_RABBITMQ_URL=amqp://rabbitmq-broker:5672
+    networks:
+      - monitorss-default
+
+  discord-rest-listener-service:
+    restart: on-failure:3
+    build:
+      context: services/discord-rest-listener
+      dockerfile: Dockerfile
+      target: build
+    depends_on:
+      rabbitmq-broker:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    environment:
+      - DISCORD_REST_LISTENER_RABBITMQ_URI=amqp://rabbitmq-broker:5672
+      - DISCORD_REST_LISTENER_MONGO_URI=mongodb://mongo:27017/rss
+      - DISCORD_REST_LISTENER_MAX_REQ_PER_SEC=40
+    networks:
+      - monitorss-default
+
+  feed-requests-service:
+    restart: on-failure:3
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_started
+      rabbitmq-broker:
+        condition: service_healthy
+    environment:
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
+      - FEED_REQUESTS_START_TARGET=service
+      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - monitorss-default
+
+  feed-requests-postgres-migration:
+    restart: on-failure:3
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    command: "npm run migration:local:up"
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_started
+    environment:
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
+      - FEED_REQUESTS_START_TARGET=service
+      - FEED_REQUESTS_S3_API_KEY_ID=1
+      - FEED_REQUESTS_S3_API_KEY=1
+      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - monitorss-default
+
+  feed-requests-api:
+    restart: on-failure:3
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "5000:5000"
+      - "4999:4999"
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_started
+    environment:
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      # - FEED_REQUESTS_SYNC_DB=true
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=0.02
+      - FEED_REQUESTS_START_TARGET=api
+      - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
+      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - monitorss-default
+
+  user-feeds-service:
+    restart: on-failure:3
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "5001:5000"
+    depends_on:
+      - user-feeds-postgres-db
+      - feed-requests-service
+      - rabbitmq-broker
+    environment:
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@user-feeds-postgres-db:5432
+      - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://rabbitmq-broker:5672
+      - USER_FEEDS_POSTGRES_DATABASE=userfeeds
+      - USER_FEEDS_API_PORT=5000
+      - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-api:4999
+      - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
+      - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - USER_FEEDS_API_KEY=user-feeds-api-key
+    networks:
+      - monitorss-default
+  
+  user-feeds-postgres-migration:
+    restart: on-failure:3
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: build
+    command: npm run migration:local:up
+    depends_on:
+      - user-feeds-postgres-db
+    environment:
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@user-feeds-postgres-db:5432
+      - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://rabbitmq-broker:5672
+      - USER_FEEDS_POSTGRES_DATABASE=userfeeds
+      - USER_FEEDS_API_PORT=5000
+      - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-api:4999
+      - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
+      - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - USER_FEEDS_API_KEY=user-feeds-api-key
+    networks:
+      - monitorss-default
+  
+  # Schedule emitter
+  schedule-emitter-service:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/api.Dockerfile
+      target: build
+    restart: on-failure:3
+    depends_on:
+      - mongo
+    environment:
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
+      - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
+      - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
+      - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
+      - BACKEND_API_FEED_REQUESTS_API_KEY=----IRRELEVANT----
+      - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+    networks:
+      - monitorss-default
+
+  # Schedule emitter
+  legacy-feed-bulk-converter-service:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
+      target: build
+    restart: on-failure:3
+    depends_on:
+      - mongo
+    environment:
+      - NODE_ENV=local
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
+      - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
+      - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
+      - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
+      - BACKEND_API_FEED_REQUESTS_API_KEY=----IRRELEVANT----
+      - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+    networks:
+      - monitorss-default
+
+  # Web - Backend api
+  web-api:
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/api.Dockerfile
+      target: build
+    restart: on-failure:3
+    depends_on:
+      - mongo
+      - user-feeds-service
+      - feed-requests-service
+    ports:
+      - "8000:8000"
+    environment:
+      - BACKEND_API_NODE_ENV=local
+      - BACKEND_API_PORT=8000
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
+      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-service:5000
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
+    networks:
+      - monitorss-default
+
+  web-client:
+    build:
+      context: services/backend-api/client
+      dockerfile: ../dockerfiles/web/client.Dockerfile
+      target: build
+    restart: on-failure:3
+    ports:
+      - "3000:3000"
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=local
+      - HOST=0.0.0.0
+      - API_PROXY_URL=http://web-api:8000
+      - VITE_USE_POLLING=true
+    depends_on:
+      - web-api
+    volumes:
+      - ./services/backend-api/client:/usr/src/app
+      - /usr/src/app/node_modules/
+    command: npx vite --host
+    networks:
+      - monitorss-default
+
+volumes:
+  mongodb-data:
+  feed-requests-postgres-data:
+  user-feeds-postgres-data:
+  feed-requests-redis-data:
+  fs-s3-storage-data:
+    driver: local
+
+networks:
+  monitorss-default:
+    driver: bridge

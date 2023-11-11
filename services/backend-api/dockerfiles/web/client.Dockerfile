@@ -7,6 +7,9 @@ RUN npm install
 
 COPY . ./
 
+# Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
+FROM node:18-slim  AS prod
+
 ARG VITE_PADDLE_SELLER_ID
 ARG VITE_FRESHDESK_WIDGET_ID
 
@@ -20,9 +23,6 @@ RUN npm run build
 
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
-
-# Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
-FROM node:18-slim  AS prod
 
 WORKDIR /usr/src/app
 

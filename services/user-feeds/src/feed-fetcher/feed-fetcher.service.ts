@@ -106,19 +106,18 @@ export class FeedFetcherService implements OnModuleInit {
       hashToCompare?: string;
     }
   ) {
+    const payload = {
+      url,
+      executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
+      hashToCompare: options?.hashToCompare || undefined,
+    };
+
     try {
       const metadata = new Metadata();
       metadata.add("api-key", this.API_KEY);
       metadata.add("grpc-target", "feed-requests");
       const observable: Observable<string> =
-        await this.feedFetcherGrpcPackage.fetchFeed(
-          {
-            url,
-            executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
-            hashToCompare: options?.hashToCompare || undefined,
-          },
-          metadata
-        );
+        await this.feedFetcherGrpcPackage.fetchFeed(payload, metadata);
 
       const lastVal = await lastValueFrom(observable);
 
@@ -132,6 +131,7 @@ export class FeedFetcherService implements OnModuleInit {
         grpcErrorMessage: typedErr.message,
         code: typedErr.code,
         details: typedErr.details,
+        payload,
       });
 
       throw new FeedFetchGrpcException(typedErr.message);

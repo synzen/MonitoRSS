@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import fetch, { FetchError } from 'node-fetch';
+import fetch, { FetchError, HeadersInit } from 'node-fetch';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
@@ -20,8 +20,25 @@ const inflatePromise = promisify(inflate);
 
 const sha1 = createHash('sha1');
 
+const trimHeadersForStorage = (obj?: HeadersInit) => {
+  if (!obj) {
+    return obj;
+  }
+
+  const newObj: HeadersInit = {};
+
+  for (const key in obj) {
+    if (obj[key]) {
+      newObj[key] = obj[key];
+    }
+  }
+
+  return newObj;
+};
+
 interface FetchOptions {
   userAgent?: string;
+  headers?: HeadersInit;
 }
 
 @Injectable()
@@ -61,10 +78,44 @@ export class FeedFetcherService {
     return this.requestRepo.count({ url });
   }
 
-  async getLatestRequest(url: string): Promise<Request | null> {
+  async getLatestRequestHeaders({
+    url,
+  }: {
+    url: string;
+  }): Promise<Response['headers']> {
     const request = await this.requestRepo.findOne(
       {
         url,
+        status: RequestStatus.OK,
+      },
+      {
+        orderBy: {
+          createdAt: 'DESC',
+        },
+        populate: ['response'],
+        fields: ['response.headers'],
+      },
+    );
+
+    if (!request) {
+      return {};
+    }
+
+    return request.response?.headers || {};
+  }
+
+  async getLatestRequest(url: string): Promise<{
+    request: Request;
+    decodedResponseText: string | null | undefined;
+  } | null> {
+    const request = await this.requestRepo.findOne(
+      {
+        url,
+        response: {
+          statusCode: {
+            $ne: HttpStatus.NOT_MODIFIED,
+          },
+        },
       },
       {
         orderBy: {
@@ -86,7 +137,6 @@ export class FeedFetcherService {
       });
     }
 
-    const s3ObjectKey = response?.s3ObjectKey;
     const cacheKey = response?.redisCacheKey;
 
     if (response && cacheKey) {
@@ -101,42 +151,17 @@ export class FeedFetcherService {
         : '';
 
       return {
-        ...request,
-        response: {
-          ...response,
-          text: text,
+        request: {
+          ...request,
+          response: {
+            ...response,
+          },
         },
-      };
-    } else if (response && s3ObjectKey) {
-      const compressedText =
-        await this.objectFileStorageService.getFeedHtmlContent({
-          key: s3ObjectKey,
-        });
-
-      return {
-        ...request,
-        response: {
-          ...response,
-          text: compressedText
-            ? (
-                await inflatePromise(Buffer.from(compressedText, 'base64'))
-              ).toString()
-            : '',
-        },
-      };
-    } else if (response?.text && response?.hasCompressedText) {
-      return {
-        ...request,
-        response: {
-          ...response,
-          text: (
-            await inflatePromise(Buffer.from(response.text, 'base64'))
-          ).toString(),
-        },
+        decodedResponseText: text,
       };
     }
 
-    return request;
+    return { request, decodedResponseText: '' };
   }
 
   async fetchAndSaveResponse(
@@ -144,6 +169,7 @@ export class FeedFetcherService {
     options?: {
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
+      headers?: Record<string, string>;
     },
   ): Promise<{
     request: Request;
@@ -151,29 +177,47 @@ export class FeedFetcherService {
   }> {
     const fetchOptions: FetchOptions = {
       userAgent: this.configService.get<string>('feedUserAgent'),
+      headers: options?.headers,
     };
     const request = new Request();
     request.url = url;
-    request.fetchOptions = fetchOptions;
+    request.fetchOptions = {
+      ...fetchOptions,
+      headers: trimHeadersForStorage(fetchOptions.headers),
+    };
 
     try {
       const res = await this.fetchFeedResponse(url, fetchOptions);
 
-      if (res.ok) {
+      if (res.ok || res.status === HttpStatus.NOT_MODIFIED) {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.BAD_STATUS_CODE;
       }
 
+      const etag = res.headers.get('etag');
+      const lastModified = res.headers.get('last-modified');
+
       const response = new Response();
       response.createdAt = request.createdAt;
       response.statusCode = res.status;
-      response.text = null;
+      response.headers = {};
+
+      if (etag) {
+        response.headers.etag = etag;
+      }
+
+      if (lastModified) {
+        response.headers.lastModified = lastModified;
+      }
 
       let text: string | null = null;
 
       try {
-        text = await this.maybeDecodeResponse(res);
+        text =
+          res.status === HttpStatus.NOT_MODIFIED
+            ? ''
+            : await this.maybeDecodeResponse(res);
 
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
@@ -184,7 +228,6 @@ export class FeedFetcherService {
         try {
           const deflated = await deflatePromise(text);
           const compressedText = deflated.toString('base64');
-          response.text = null;
 
           logger.datadog('saving response', {
             url,
@@ -210,7 +253,9 @@ export class FeedFetcherService {
           }
 
           response.redisCacheKey = sha1.copy().update(url).digest('hex');
-          response.textHash = sha1.copy().update(text).digest('hex');
+          response.textHash = text
+            ? sha1.copy().update(text).digest('hex')
+            : '';
 
           await this.cacheStorageService.setFeedHtmlContent({
             key: response.redisCacheKey,
@@ -285,6 +330,7 @@ export class FeedFetcherService {
       timeout: 15000,
       follow: 5,
       headers: {
+        ...options?.headers,
         'user-agent': options?.userAgent || this.defaultUserAgent,
       },
     });

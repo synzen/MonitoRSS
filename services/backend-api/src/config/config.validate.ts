@@ -153,6 +153,10 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   BACKEND_API_PADDLE_URL?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  BACKEND_API_ALLOW_LEGACY_REVERSION?: boolean;
 }
 
 export function validateConfig(

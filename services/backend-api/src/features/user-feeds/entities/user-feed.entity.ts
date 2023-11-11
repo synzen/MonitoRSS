@@ -116,6 +116,11 @@ export class UserFeed {
   @Prop({
     required: false,
   })
+  allowLegacyReversion?: boolean;
+
+  @Prop({
+    required: false,
+  })
   debug?: boolean;
 
   createdAt: Date;
