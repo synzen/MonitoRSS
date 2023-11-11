@@ -341,6 +341,26 @@ describe("ArticleFormatterService", () => {
       });
     });
 
+    describe("code", () => {
+      it("returns the text in a inline code block", async () => {
+        const value = "<code>hello world</code>";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("`hello world`");
+      });
+    });
+
+    describe("pre", () => {
+      it("returns the text in a code block", async () => {
+        const value = "<pre>hello world</pre>";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("```hello world```");
+      });
+    });
+
     describe("em", () => {
       it("returns the text italicized", async () => {
         const value = "<em>hello world</em>";
