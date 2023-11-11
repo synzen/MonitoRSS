@@ -23,7 +23,7 @@
     "dotenv": "^16.0.1",
     "source-map-support": "^0.5.21",
     "winston": "^3.3.3",
-    "zod": "^1.11.17"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.0",
