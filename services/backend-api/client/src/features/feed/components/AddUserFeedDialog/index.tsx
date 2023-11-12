@@ -38,7 +38,10 @@ import getChakraColor from "../../../../utils/getChakraColor";
 
 const formSchema = object({
   title: string().required(),
-  url: string().url().required(),
+  // test url is a string that starts with http
+  url: string().required().matches(/^http/, {
+    message: "Must be a valid URL",
+  }),
 });
 
 type FormData = InferType<typeof formSchema>;
