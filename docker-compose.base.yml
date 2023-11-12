@@ -122,7 +122,6 @@ services:
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
-      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
       - FEED_REQUESTS_START_TARGET=service
       - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
