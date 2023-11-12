@@ -30,5 +30,6 @@ COPY --from=build-prod /usr/src/app/node_modules node_modules
 COPY --from=build-prod /usr/src/app/dist dist
 
 ENV USER_FEEDS_API_PORT=3000
+HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD wget http://localhost:3000/v1/user-feeds/health -q -O - > /dev/null 2>&1
 
 CMD [ "node", "./dist/main" ]

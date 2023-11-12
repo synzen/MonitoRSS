@@ -165,6 +165,11 @@ services:
     depends_on:
       feed-requests-postgres-db:
         condition: service_started
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:5000/v1/feed-requests/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
@@ -191,6 +196,11 @@ services:
       - user-feeds-postgres-db
       - feed-requests-service
       - rabbitmq-broker
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:5000/v1/user-feeds/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
     environment:
       - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@user-feeds-postgres-db:5432
       - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://rabbitmq-broker:5672
