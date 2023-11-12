@@ -1,8 +1,33 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from 'class-validator';
+import { URL } from 'url';
+
+@ValidatorConstraint({ name: 'HTTPValidator' })
+export class HttpValidator implements ValidatorConstraintInterface {
+  validate(text: string) {
+    const parsedUrl = new URL(text);
+
+    if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+      return true;
+    }
+
+    return false;
+  }
+
+  defaultMessage() {
+    return 'Must a HTTP URI';
+  }
+}
 
 export class FetchFeedDto {
-  @IsUrl()
+  @Validate(HttpValidator)
   url!: string;
 
   @IsBoolean()
