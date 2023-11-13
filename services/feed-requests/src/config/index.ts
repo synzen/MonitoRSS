@@ -47,6 +47,8 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_REDIS_URI: process.env.FEED_REQUESTS_REDIS_URI as string,
     FEED_REQUESTS_REDIS_DISABLE_CLUSTER:
       process.env.FEED_REQUESTS_REDIS_DISABLE_CLUSTER === 'true',
+    FEED_REQUESTS_POSTGRES_REPLICA1_URI: process.env
+      .FEED_REQUESTS_POSTGRES_REPLICA1_URI as string,
   };
 
   validateConfig(values);

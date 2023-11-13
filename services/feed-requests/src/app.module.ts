@@ -18,6 +18,15 @@ import { CacheStorageModule } from './cache-storage/cache-storage.module';
 export class AppModule implements OnApplicationShutdown {
   static _forCommon(): DynamicModule {
     const configVals = config();
+    const replicaUris: string[] = [];
+
+    const replica1 = configVals.FEED_REQUESTS_POSTGRES_REPLICA1_URI;
+
+    if (replica1) {
+      replicaUris.push(replica1);
+    }
+
+    logger.info(`${replicaUris.length} read replicas discovered`);
 
     return {
       module: AppModule,
@@ -38,6 +47,10 @@ export class AppModule implements OnApplicationShutdown {
           pool: {
             min: 0,
           },
+          preferReadReplicas: replicaUris.length > 0,
+          replicas: replicaUris.map((url) => ({
+            clientUrl: url,
+          })),
         }),
       ],
     };

@@ -70,6 +70,10 @@ export class EnvironmentVariables {
   @IsBoolean()
   @IsOptional()
   FEED_REQUESTS_REDIS_DISABLE_CLUSTER?: boolean;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_POSTGRES_REPLICA1_URI?: string;
 }
 
 export function validateConfig(
