@@ -214,6 +214,12 @@ export class FeedFetcherService {
             ? ''
             : await this.maybeDecodeResponse(res);
 
+        if (request.status !== RequestStatus.OK) {
+          logger.debug(`Bad status code ${res.status} for url ${url}`, {
+            responseText: text,
+          });
+        }
+
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
         // if (sizeOfTextInMb > 3) {
