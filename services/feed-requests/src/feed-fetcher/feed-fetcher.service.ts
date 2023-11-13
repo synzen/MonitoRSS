@@ -78,31 +78,31 @@ export class FeedFetcherService {
     return this.requestRepo.count({ url });
   }
 
-  async getLatestRequestHeaders({
-    url,
-  }: {
-    url: string;
-  }): Promise<Response['headers']> {
-    const request = await this.requestRepo.findOne(
-      {
-        url,
-        status: RequestStatus.OK,
-      },
-      {
-        orderBy: {
-          createdAt: 'DESC',
-        },
-        populate: ['response'],
-        fields: ['response.headers'],
-      },
-    );
+  // async getLatestRequestHeaders({
+  //   url,
+  // }: {
+  //   url: string;
+  // }): Promise<Response['headers']> {
+  //   const request = await this.requestRepo.findOne(
+  //     {
+  //       url,
+  //       status: RequestStatus.OK,
+  //     },
+  //     {
+  //       orderBy: {
+  //         createdAt: 'DESC',
+  //       },
+  //       populate: ['response'],
+  //       fields: ['response.headers'],
+  //     },
+  //   );
 
-    if (!request) {
-      return {};
-    }
+  //   if (!request) {
+  //     return {};
+  //   }
 
-    return request.response?.headers || {};
-  }
+  //   return request.response?.headers || {};
+  // }
 
   async getLatestRequest(url: string): Promise<{
     request: Request;
@@ -111,11 +111,6 @@ export class FeedFetcherService {
     const request = await this.requestRepo.findOne(
       {
         url,
-        response: {
-          statusCode: {
-            $ne: HttpStatus.NOT_MODIFIED,
-          },
-        },
       },
       {
         orderBy: {

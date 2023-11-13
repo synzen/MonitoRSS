@@ -1,6 +1,7 @@
-import { Entity, Property, PrimaryKey } from '@mikro-orm/core';
+import { Entity, Property, PrimaryKey, Index } from '@mikro-orm/core';
 
 @Entity()
+@Index({ properties: ['statusCode'], name: 'status_code_index' })
 export class Response {
   @PrimaryKey({
     autoincrement: true,
