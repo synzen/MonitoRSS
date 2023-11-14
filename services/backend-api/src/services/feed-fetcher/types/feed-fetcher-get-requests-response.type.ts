@@ -5,11 +5,18 @@ import {
   IsInt,
   IsNumber,
   IsObject,
+  IsOptional,
   IsPositive,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { FeedFetcherRequestStatus } from "./feed-fetcher-request-status.type";
+
+class Response {
+  @IsNumber()
+  @IsOptional()
+  statusCode?: number;
+}
 
 class Request {
   @IsInt()
@@ -23,6 +30,11 @@ class Request {
 
   @IsIn(Object.values(FeedFetcherRequestStatus))
   status: FeedFetcherRequestStatus;
+
+  @Type(() => Response)
+  @ValidateNested()
+  @IsObject()
+  response: Response;
 }
 
 class Result {

@@ -14,6 +14,9 @@ export const UserFeedRequestSchema = object({
   id: number().required(),
   status: string().oneOf(Object.values(UserFeedRequestStatus)).required(),
   createdAt: number().required(),
+  response: object({
+    statusCode: number().nullable(),
+  }).required(),
 });
 
 export type UserFeedRequest = InferType<typeof UserFeedRequestSchema>;

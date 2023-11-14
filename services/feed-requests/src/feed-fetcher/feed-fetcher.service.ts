@@ -60,18 +60,20 @@ export class FeedFetcherService {
   }
 
   async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
-    return this.requestRepo
-      .createQueryBuilder()
-      .select(select || '*')
-      .where({
+    return this.requestRepo.find(
+      {
         url,
-      })
-      .limit(limit)
-      .offset(skip)
-      .orderBy({
-        createdAt: 'DESC',
-      })
-      .execute('all', true);
+      },
+      {
+        limit,
+        offset: skip,
+        orderBy: {
+          createdAt: 'DESC',
+        },
+        fields: [...(select || []), 'response.statusCode'],
+        populate: ['response'],
+      },
+    );
   }
 
   async countRequests({ url }: GetFeedRequestsCountInput) {

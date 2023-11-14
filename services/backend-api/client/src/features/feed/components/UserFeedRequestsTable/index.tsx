@@ -28,7 +28,12 @@ interface Props {
   feedId?: string;
 }
 
-const createStatusLabel = (status: UserFeedRequestStatus) => {
+const createStatusLabel = (
+  status: UserFeedRequestStatus,
+  response: {
+    statusCode?: number | null;
+  }
+) => {
   switch (status) {
     case UserFeedRequestStatus.OK:
       return (
@@ -36,8 +41,14 @@ const createStatusLabel = (status: UserFeedRequestStatus) => {
           {status}
         </Badge>
       );
-    case UserFeedRequestStatus.FETCH_ERROR:
     case UserFeedRequestStatus.BAD_STATUS_CODE:
+      return (
+        <Badge fontSize="sm" colorScheme="red">
+          {status}
+          {response.statusCode ? ` (${response.statusCode})` : ""}
+        </Badge>
+      );
+    case UserFeedRequestStatus.FETCH_ERROR:
     case UserFeedRequestStatus.INTERNAL_ERROR:
     case UserFeedRequestStatus.PARSE_ERROR:
     case UserFeedRequestStatus.TIMED_OUT:
@@ -114,7 +125,11 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
                 {data?.result.requests.map((req) => (
                   <Tr key={req.id}>
                     <Td>{dayjs.unix(req.createdAt).format("DD MMM YYYY, HH:mm:ss")}</Td>
-                    <Td>{createStatusLabel(req.status)}</Td>
+                    <Td>
+                      {createStatusLabel(req.status, {
+                        statusCode: req.response.statusCode,
+                      })}
+                    </Td>
                   </Tr>
                 ))}
               </Tbody>

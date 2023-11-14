@@ -5,6 +5,9 @@ interface Request {
   id: number;
   status: FeedFetcherRequestStatus;
   createdAt: number;
+  response: {
+    statusCode?: number;
+  };
 }
 
 interface Result {
