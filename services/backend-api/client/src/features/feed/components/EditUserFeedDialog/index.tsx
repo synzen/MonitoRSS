@@ -22,7 +22,7 @@ import React, { useEffect, useRef } from "react";
 
 const formSchema = object({
   title: string().optional(),
-  url: string().url().optional(),
+  url: string().optional(),
 });
 
 type FormData = InferType<typeof formSchema>;
