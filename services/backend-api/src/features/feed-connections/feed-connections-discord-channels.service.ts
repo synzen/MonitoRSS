@@ -328,12 +328,12 @@ export class FeedConnectionsDiscordChannelsService {
     let newWebhookToken: string | undefined = undefined;
 
     if (connection.details.webhook?.isApplicationOwned) {
-      const newWebhook = await this.discordWebhooksService.createWebhook(
-        connection.details.webhook.channelId as string,
-        {
+      const newWebhook = await this.getOrCreateApplicationWebhook({
+        channelId: connection.details.webhook.channelId as string,
+        webhook: {
           name: `feed-${userFeed._id}-${newId}`,
-        }
-      );
+        },
+      });
 
       newWebhookId = newWebhook.id;
       newWebhookToken = newWebhook.token as string;
@@ -582,12 +582,16 @@ export class FeedConnectionsDiscordChannelsService {
           accessToken
         ));
       } else if (updates.details.applicationWebhook) {
+        // When converting a regular webhook to application webhook
         channel = await this.discordApiService.getChannel(
           updates.details.applicationWebhook.channelId
         );
 
-        webhook = await this.discordWebhooksService.createWebhook(channel.id, {
-          name: `feed-${feedId}-${connectionId}`,
+        webhook = await this.getOrCreateApplicationWebhook({
+          channelId: channel.id,
+          webhook: {
+            name: `feed-${feedId}-${connectionId}`,
+          },
         });
 
         createdApplicationWebhookId = webhook.id;
