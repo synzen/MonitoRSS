@@ -265,6 +265,7 @@ export const PricingDialog = ({ trigger }: Props) => {
     useState<ChangeSubscriptionDetails>();
   const paidSubscriptionExists =
     userData && userData?.result.subscription.product.key !== ProductKey.Free;
+  const userBillingInterval = userData?.result.subscription.billingInterval;
 
   const onCheckoutSuccess = () => {
     setCheckForSubscriptionCreated(true);
@@ -333,6 +334,12 @@ export const PricingDialog = ({ trigger }: Props) => {
       setCheckForSubscriptionCreated(false);
     }
   }, [checkForSubscriptionCreated, paidSubscriptionExists]);
+
+  useEffect(() => {
+    if (userBillingInterval) {
+      setInterval(userBillingInterval);
+    }
+  }, [userBillingInterval]);
 
   const products = data?.data.products;
 

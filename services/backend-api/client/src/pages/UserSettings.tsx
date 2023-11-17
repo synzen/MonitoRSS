@@ -178,12 +178,12 @@ export const UserSettings = () => {
         .
       </Text>
     );
-  } else {
+  } else if (subscription) {
     subscriptionText = (
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {subscription?.product.name} (billed every {subscription.billingInterval})
+          {subscription.product.name} (billed every {subscription.billingInterval})
         </chakra.span>
         .
       </Text>

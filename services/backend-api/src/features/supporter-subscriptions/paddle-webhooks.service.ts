@@ -14,7 +14,8 @@ import {
 import { User, UserModel } from "../users/entities/user.entity";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
 import { PaddleSubscriptionStatus } from "./constants/paddle-subscription-status.constants";
-
+import { ConfigService } from "@nestjs/config";
+import { createHmac } from "crypto";
 const BENEFITS_BY_TIER: Partial<
   Record<
     SubscriptionProductKey,
@@ -56,13 +57,64 @@ const SUBSCRIPTION_STATUS_MAPPING: Record<
 
 @Injectable()
 export class PaddleWebhooksService {
+  paddleWebhookSecret?: string;
   constructor(
     private readonly supporterSubscriptionsService: SupporterSubscriptionsService,
     @InjectModel(Supporter.name)
     private readonly supporterModel: SupporterModel,
     @InjectModel(User.name)
-    private readonly userModel: UserModel
-  ) {}
+    private readonly userModel: UserModel,
+    private readonly configService: ConfigService
+  ) {
+    this.paddleWebhookSecret = this.configService.get<string>(
+      "BACKEND_API_PADDLE_WEBHOOK_SECRET"
+    );
+  }
+
+  async isVerifiedWebhookEvent({
+    signature,
+    requestBody,
+  }: {
+    signature?: string;
+    requestBody: string;
+  }) {
+    if (!signature) {
+      return false;
+    }
+
+    if (!this.paddleWebhookSecret) {
+      throw new Error(
+        "Missing webhook secret in config while verifying paddle webhook event"
+      );
+    }
+
+    const [timestampStr, eventSignatureStr] = signature.split(";");
+
+    if (!timestampStr || !eventSignatureStr) {
+      return false;
+    }
+
+    const timestamp = timestampStr.split("=")[1];
+
+    if (!timestamp) {
+      return false;
+    }
+
+    const eventSignature = eventSignatureStr.split("=")[1];
+
+    if (!eventSignature) {
+      return false;
+    }
+
+    const signedPayload = `${timestamp}:${requestBody}`;
+
+    // generate hmac using sha256 with paddleWebhookSecret as secret key
+    const expected = createHmac("sha256", this.paddleWebhookSecret)
+      .update(signedPayload)
+      .digest("hex");
+
+    return expected === eventSignature;
+  }
 
   async handleSubscriptionUpdatedEvent(
     event: PaddleEventSubscriptionUpdated | PaddleEventSubscriptionActivated

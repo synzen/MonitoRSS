@@ -97,6 +97,8 @@ export default function config(options?: {
     BACKEND_API_SMTP_PASSWORD: process.env.BACKEND_API_SMTP_PASSWORD as string,
     BACKEND_API_PADDLE_KEY: process.env.BACKEND_API_PADDLE_KEY as string,
     BACKEND_API_PADDLE_URL: process.env.BACKEND_API_PADDLE_URL as string,
+    BACKEND_API_PADDLE_WEBHOOK_SECRET: process.env
+      .BACKEND_API_PADDLE_WEBHOOK_SECRET as string,
     BACKEND_API_ALLOW_LEGACY_REVERSION:
       process.env.BACKEND_API_ALLOW_LEGACY_REVERSION === "true" || false,
   } as const;

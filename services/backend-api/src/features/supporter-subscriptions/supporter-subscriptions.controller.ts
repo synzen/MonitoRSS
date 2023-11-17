@@ -6,10 +6,12 @@ import {
   CacheTTL,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Post,
   Query,
+  UnauthorizedException,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -26,6 +28,7 @@ import {
 import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import logger from "../../utils/logger";
 
 type ProductId = string;
 
@@ -106,11 +109,28 @@ export class SupporterSubscriptionsController {
   ) {}
 
   @Post("paddle-webhook")
-  async handlePaddleWebhook(@Body() requestBody: Record<string, any>) {
+  async handlePaddleWebhook(
+    @Body() requestBody: Record<string, any>,
+    @Headers("Paddle-Signature") signature?: string
+  ) {
     console.log(
       "🚀 ~ file: supporter-subscriptions.controller.ts:96 ~ SupporterSubscriptionsController ~ handlePaddleWebhook ~ requestBody:",
       JSON.stringify(requestBody, null, 2)
     );
+
+    if (
+      !this.paddleWebhooksService.isVerifiedWebhookEvent({
+        signature,
+        requestBody: JSON.stringify(requestBody),
+      })
+    ) {
+      logger.warn("Invalid signature received for paddle webhook event", {
+        requestBody,
+        signature,
+      });
+
+      throw new UnauthorizedException();
+    }
 
     if (requestBody.event_type === "subscription.updated") {
       await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
