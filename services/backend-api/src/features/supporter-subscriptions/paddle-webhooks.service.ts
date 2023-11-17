@@ -43,6 +43,42 @@ const BENEFITS_BY_TIER: Partial<
     maxUserFeeds: 100,
     refreshRateSeconds: 120,
   },
+  [SubscriptionProductKey.Tier1Legacy]: {
+    allowWebhooks: true,
+    dailyArticleLimit: 1000,
+    maxUserFeeds: 5,
+    refreshRateSeconds: 600,
+  },
+  [SubscriptionProductKey.Tier2Legacy]: {
+    allowWebhooks: true,
+    dailyArticleLimit: 1000,
+    maxUserFeeds: 15,
+    refreshRateSeconds: 600,
+  },
+  [SubscriptionProductKey.Tier3Legacy]: {
+    allowWebhooks: true,
+    dailyArticleLimit: 1000,
+    maxUserFeeds: 35,
+    refreshRateSeconds: 120,
+  },
+  [SubscriptionProductKey.Tier4Legacy]: {
+    allowWebhooks: true,
+    dailyArticleLimit: 1000,
+    maxUserFeeds: 70,
+    refreshRateSeconds: 120,
+  },
+  [SubscriptionProductKey.Tier5Legacy]: {
+    allowWebhooks: true,
+    dailyArticleLimit: 1000,
+    maxUserFeeds: 105,
+    refreshRateSeconds: 120,
+  },
+  [SubscriptionProductKey.Tier6Legacy]: {
+    allowWebhooks: true,
+    dailyArticleLimit: 1000,
+    maxUserFeeds: 140,
+    refreshRateSeconds: 120,
+  },
 };
 
 const SUBSCRIPTION_STATUS_MAPPING: Record<
