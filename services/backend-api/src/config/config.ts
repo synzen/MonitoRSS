@@ -81,6 +81,8 @@ export default function config(options?: {
     BACKEND_API_DEFAULT_MAX_USER_FEEDS: Number(
       (process.env.BACKEND_API_DEFAULT_MAX_USER_FEEDS as string) || 0
     ),
+    BACKEND_API_ENABLE_SUPPORTERS:
+      process.env.BACKEND_API_ENABLE_SUPPORTERS === "true",
     BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: Number(
       (process.env.BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS as string) || 5
     ),
