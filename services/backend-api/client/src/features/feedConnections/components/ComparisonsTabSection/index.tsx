@@ -100,31 +100,47 @@ export const ComparisonsTabSection = ({
   );
 
   const onAddPassingComparison = async (value: string) => {
-    await onUpdate({
-      passingComparisons: [...(passingComparisons || []), value],
-      blockingComparisons,
-    });
+    try {
+      await onUpdate({
+        passingComparisons: [...(passingComparisons || []), value],
+        blockingComparisons,
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const onAddBlockingComparison = async (value: string) => {
-    await onUpdate({
-      passingComparisons,
-      blockingComparisons: [...(blockingComparisons || []), value],
-    });
+    try {
+      await onUpdate({
+        passingComparisons,
+        blockingComparisons: [...(blockingComparisons || []), value],
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const onRemovePassingComparison = async (value: string) => {
-    await onUpdate({
-      passingComparisons: passingComparisons?.filter((comparison) => comparison !== value),
-      blockingComparisons,
-    });
+    try {
+      await onUpdate({
+        passingComparisons: passingComparisons?.filter((comparison) => comparison !== value),
+        blockingComparisons,
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const onRemoveBlockingComparison = async (value: string) => {
-    await onUpdate({
-      passingComparisons,
-      blockingComparisons: blockingComparisons?.filter((comparison) => comparison !== value),
-    });
+    try {
+      await onUpdate({
+        passingComparisons,
+        blockingComparisons: blockingComparisons?.filter((comparison) => comparison !== value),
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const requestStatus = userFeedArticles?.result.requestStatus;

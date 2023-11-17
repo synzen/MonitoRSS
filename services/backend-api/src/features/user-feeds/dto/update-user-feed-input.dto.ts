@@ -8,7 +8,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUrl,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
@@ -27,7 +26,6 @@ export class UpdateUserFeedInputDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsUrl()
   @IsOptional()
   url?: string;
 
