@@ -140,6 +140,16 @@ export class ArticleFormatterService {
       },
     };
 
+    const codeSelector: SelectorDefinition = {
+      selector: "code",
+      format: "inlineCode",
+    };
+
+    const preSelector: SelectorDefinition = {
+      selector: "pre",
+      format: "blockCode",
+    };
+
     const htmlToTextOptions: HtmlToTextOptions = {
       wordwrap: false,
       formatters: {
@@ -206,6 +216,20 @@ export class ArticleFormatterService {
             }
           }
         },
+        inlineCode: (elem, walk, builder, options) => {
+          builder.openBlock(options);
+          builder.addInline("`");
+          walk(elem.children, builder);
+          builder.addInline("`");
+          builder.closeBlock(options);
+        },
+        blockCode: (elem, walk, builder, options) => {
+          builder.openBlock(options);
+          builder.addInline("```");
+          walk(elem.children, builder);
+          builder.addInline("```");
+          builder.closeBlock(options);
+        },
       },
       selectors: [
         imageSelector,
@@ -214,6 +238,8 @@ export class ArticleFormatterService {
         uSelector,
         anchorSelector,
         unorderedListSelector,
+        codeSelector,
+        preSelector,
       ],
     };
 

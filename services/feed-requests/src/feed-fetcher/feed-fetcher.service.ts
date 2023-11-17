@@ -60,49 +60,51 @@ export class FeedFetcherService {
   }
 
   async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
-    return this.requestRepo
-      .createQueryBuilder()
-      .select(select || '*')
-      .where({
+    return this.requestRepo.find(
+      {
         url,
-      })
-      .limit(limit)
-      .offset(skip)
-      .orderBy({
-        createdAt: 'DESC',
-      })
-      .execute('all', true);
+      },
+      {
+        limit,
+        offset: skip,
+        orderBy: {
+          createdAt: 'DESC',
+        },
+        fields: [...(select || []), 'response.statusCode'],
+        populate: ['response'],
+      },
+    );
   }
 
   async countRequests({ url }: GetFeedRequestsCountInput) {
     return this.requestRepo.count({ url });
   }
 
-  async getLatestRequestHeaders({
-    url,
-  }: {
-    url: string;
-  }): Promise<Response['headers']> {
-    const request = await this.requestRepo.findOne(
-      {
-        url,
-        status: RequestStatus.OK,
-      },
-      {
-        orderBy: {
-          createdAt: 'DESC',
-        },
-        populate: ['response'],
-        fields: ['response.headers'],
-      },
-    );
+  // async getLatestRequestHeaders({
+  //   url,
+  // }: {
+  //   url: string;
+  // }): Promise<Response['headers']> {
+  //   const request = await this.requestRepo.findOne(
+  //     {
+  //       url,
+  //       status: RequestStatus.OK,
+  //     },
+  //     {
+  //       orderBy: {
+  //         createdAt: 'DESC',
+  //       },
+  //       populate: ['response'],
+  //       fields: ['response.headers'],
+  //     },
+  //   );
 
-    if (!request) {
-      return {};
-    }
+  //   if (!request) {
+  //     return {};
+  //   }
 
-    return request.response?.headers || {};
-  }
+  //   return request.response?.headers || {};
+  // }
 
   async getLatestRequest(url: string): Promise<{
     request: Request;
@@ -111,11 +113,6 @@ export class FeedFetcherService {
     const request = await this.requestRepo.findOne(
       {
         url,
-        response: {
-          statusCode: {
-            $ne: HttpStatus.NOT_MODIFIED,
-          },
-        },
       },
       {
         orderBy: {
@@ -218,6 +215,12 @@ export class FeedFetcherService {
           res.status === HttpStatus.NOT_MODIFIED
             ? ''
             : await this.maybeDecodeResponse(res);
+
+        if (request.status !== RequestStatus.OK) {
+          logger.debug(`Bad status code ${res.status} for url ${url}`, {
+            responseText: text,
+          });
+        }
 
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 

@@ -157,6 +157,10 @@ export class EnvironmentVariables {
   @IsOptional()
   @Type(() => Boolean)
   BACKEND_API_ALLOW_LEGACY_REVERSION?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  BACKEND_API_ENABLE_SUPPORTERS?: boolean;
 }
 
 export function validateConfig(

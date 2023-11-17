@@ -28,7 +28,9 @@ import { useCreateUserFeedClone } from "../../hooks";
 
 const formSchema = object({
   title: string().required(),
-  url: string().required(),
+  url: string().required().matches(/^http/, {
+    message: "Must be a valid URL",
+  }),
 });
 
 type FormData = InferType<typeof formSchema>;

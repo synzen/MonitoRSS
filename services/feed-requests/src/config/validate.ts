@@ -38,7 +38,7 @@ export class EnvironmentVariables {
   FEED_REQUESTS_SYNC_DB?: boolean;
 
   @IsNumber()
-  FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS!: number;
+  FEED_REQUESTS_MAX_FAIL_ATTEMPTS!: number;
 
   @IsNumber()
   FEED_REQUESTS_API_PORT!: number;
@@ -70,6 +70,10 @@ export class EnvironmentVariables {
   @IsBoolean()
   @IsOptional()
   FEED_REQUESTS_REDIS_DISABLE_CLUSTER?: boolean;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_POSTGRES_REPLICA1_URI?: string;
 }
 
 export function validateConfig(

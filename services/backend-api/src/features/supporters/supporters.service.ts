@@ -78,6 +78,7 @@ export class SupportersService {
   maxDailyArticlesDefault: number;
   defaultRateLimits: Array<ArticleRateLimit>;
   supporterRateLimits: Array<ArticleRateLimit>;
+  enableSupporters?: boolean;
 
   constructor(
     @InjectModel(Supporter.name)
@@ -118,6 +119,10 @@ export class SupportersService {
       "BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT"
     );
 
+    this.enableSupporters = this.configService.get<boolean>(
+      "BACKEND_API_ENABLE_SUPPORTERS"
+    );
+
     this.defaultRateLimits = [
       {
         max: this.maxDailyArticlesDefault,
@@ -153,7 +158,7 @@ export class SupportersService {
   ];
 
   async areSupportersEnabled() {
-    return !!(await this.supporterModel.findOne({}).select("_id").lean());
+    return this.enableSupporters;
   }
 
   async getSupporterSubscription(email: string) {
@@ -208,6 +213,26 @@ export class SupportersService {
   async getBenefitsOfDiscordUser(
     discordId: string
   ): Promise<SupporterBenefits> {
+    console.log(this.enableSupporters);
+
+    if (!this.enableSupporters) {
+      return {
+        isSupporter: true,
+        maxFeeds: this.defaultMaxFeeds,
+        guilds: [],
+        maxGuilds: 0,
+        refreshRateSeconds: this.defaultRefreshRateSeconds,
+        maxDailyArticles: this.maxDailyArticlesDefault, // hardcode for now
+        maxUserFeeds: this.defaultMaxUserFeeds,
+        maxUserFeedsComposition: {
+          base: this.defaultMaxUserFeeds,
+          legacy: 0,
+        },
+        allowCustomPlaceholders: false,
+        articleRateLimits: this.defaultRateLimits,
+      };
+    }
+
     const aggregate: Array<
       Supporter & {
         patrons: Patron[];
@@ -286,6 +311,10 @@ export class SupportersService {
       maxUserFeeds: number;
     }>
   > {
+    if (!this.enableSupporters) {
+      return [];
+    }
+
     // TODO: Must implement user-level subscriptions on the payments api and include them here
     const aggregate: Array<
       Supporter & {
@@ -330,6 +359,10 @@ export class SupportersService {
   async getBenefitsOfAllServers() {
     const subscriptions =
       await this.guildSubscriptionsService.getAllSubscriptions();
+
+    if (subscriptions.length === 0) {
+      return [];
+    }
 
     const subscriptionsByGuildId = new Map<string, GuildSubscriptionFormatted>(
       subscriptions.map((sub) => [sub.guildId, sub])

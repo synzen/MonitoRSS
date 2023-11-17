@@ -122,7 +122,6 @@ services:
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
-      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
       - FEED_REQUESTS_START_TARGET=service
       - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
@@ -165,6 +164,11 @@ services:
     depends_on:
       feed-requests-postgres-db:
         condition: service_started
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:5000/v1/feed-requests/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
@@ -191,6 +195,11 @@ services:
       - user-feeds-postgres-db
       - feed-requests-service
       - rabbitmq-broker
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:5000/v1/user-feeds/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
     environment:
       - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@user-feeds-postgres-db:5432
       - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://rabbitmq-broker:5672

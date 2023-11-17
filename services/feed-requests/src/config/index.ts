@@ -33,8 +33,8 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_DATADOG_API_KEY: process.env
       .FEED_REQUESTS_DATADOG_API_KEY as string,
     FEED_REQUESTS_SYNC_DB: process.env.FEED_REQUESTS_SYNC_DB === 'true',
-    FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS: Number(
-      process.env.FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS,
+    FEED_REQUESTS_MAX_FAIL_ATTEMPTS: Number(
+      process.env.FEED_REQUESTS_MAX_FAIL_ATTEMPTS || 11,
     ),
     FEED_REQUESTS_API_PORT: Number(process.env.FEED_REQUESTS_API_PORT),
     FEED_REQUESTS_RABBITMQ_BROKER_URL: process.env
@@ -47,6 +47,8 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_REDIS_URI: process.env.FEED_REQUESTS_REDIS_URI as string,
     FEED_REQUESTS_REDIS_DISABLE_CLUSTER:
       process.env.FEED_REQUESTS_REDIS_DISABLE_CLUSTER === 'true',
+    FEED_REQUESTS_POSTGRES_REPLICA1_URI: process.env
+      .FEED_REQUESTS_POSTGRES_REPLICA1_URI as string,
   };
 
   validateConfig(values);

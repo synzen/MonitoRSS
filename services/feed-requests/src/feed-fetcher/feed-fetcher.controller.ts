@@ -72,6 +72,9 @@ export class FeedFetcherController {
           createdAt: dayjs(r.createdAt).unix(),
           id: r.id,
           status: r.status,
+          response: {
+            statusCode: r.response?.statusCode,
+          },
         })),
         totalRequests: total,
         // unix timestamp in seconds

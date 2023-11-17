@@ -29,6 +29,4 @@ COPY --from=build-prod /usr/src/app/package*.json ./
 COPY --from=build-prod /usr/src/app/node_modules node_modules
 COPY --from=build-prod /usr/src/app/dist dist
 
-ENV USER_FEEDS_API_PORT=3000
-
 CMD [ "node", "./dist/main" ]

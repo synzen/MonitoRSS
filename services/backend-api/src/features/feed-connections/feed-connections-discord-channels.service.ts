@@ -208,9 +208,11 @@ export class FeedConnectionsDiscordChannelsService {
         channel = await this.discordApiService.getChannel(
           applicationWebhook.channelId
         );
-
-        webhook = await this.discordWebhooksService.createWebhook(channel.id, {
-          name: `feed-${feedId}-${connectionId}`,
+        webhook = await this.getOrCreateApplicationWebhook({
+          channelId: channel.id,
+          webhook: {
+            name: `feed-${feedId}-${connectionId}`,
+          },
         });
       } else {
         throw new Error(
@@ -289,7 +291,7 @@ export class FeedConnectionsDiscordChannelsService {
       return createdConnection;
     } catch (err) {
       if (webhookToAdd?.isApplicationOwned) {
-        await this.discordWebhooksService.deleteWebhook(webhookToAdd.id);
+        await this.cleanupWebhook(webhookToAdd.id);
       }
 
       throw err;
@@ -326,12 +328,12 @@ export class FeedConnectionsDiscordChannelsService {
     let newWebhookToken: string | undefined = undefined;
 
     if (connection.details.webhook?.isApplicationOwned) {
-      const newWebhook = await this.discordWebhooksService.createWebhook(
-        connection.details.webhook.channelId as string,
-        {
+      const newWebhook = await this.getOrCreateApplicationWebhook({
+        channelId: connection.details.webhook.channelId as string,
+        webhook: {
           name: `feed-${userFeed._id}-${newId}`,
-        }
-      );
+        },
+      });
 
       newWebhookId = newWebhook.id;
       newWebhookToken = newWebhook.token as string;
@@ -366,7 +368,7 @@ export class FeedConnectionsDiscordChannelsService {
       );
     } catch (err) {
       if (newWebhookId) {
-        await this.discordWebhooksService.deleteWebhook(newWebhookId);
+        await this.cleanupWebhook(newWebhookId);
       }
 
       throw err;
@@ -580,12 +582,16 @@ export class FeedConnectionsDiscordChannelsService {
           accessToken
         ));
       } else if (updates.details.applicationWebhook) {
+        // When converting a regular webhook to application webhook
         channel = await this.discordApiService.getChannel(
           updates.details.applicationWebhook.channelId
         );
 
-        webhook = await this.discordWebhooksService.createWebhook(channel.id, {
-          name: `feed-${feedId}-${connectionId}`,
+        webhook = await this.getOrCreateApplicationWebhook({
+          channelId: channel.id,
+          webhook: {
+            name: `feed-${feedId}-${connectionId}`,
+          },
         });
 
         createdApplicationWebhookId = webhook.id;
@@ -707,9 +713,8 @@ export class FeedConnectionsDiscordChannelsService {
         oldConnection.details.webhook?.isApplicationOwned
       ) {
         try {
-          await this.discordWebhooksService.deleteWebhook(
-            oldConnection.details.webhook.id
-          );
+          // Changed webhooks, should attempt to cleanup old one
+          await this.cleanupWebhook(oldConnection.details.webhook.id);
         } catch (err) {
           logger.error(
             `Failed to cleanup application webhook ${oldConnection.details.webhook.id} on feed ${feedId}, discord channel connection ${connectionId}  after update`,
@@ -721,9 +726,7 @@ export class FeedConnectionsDiscordChannelsService {
       return updatedConnection;
     } catch (err) {
       if (createdApplicationWebhookId) {
-        await this.discordWebhooksService.deleteWebhook(
-          createdApplicationWebhookId
-        );
+        await this.cleanupWebhook(createdApplicationWebhookId);
       }
 
       throw err;
@@ -761,9 +764,7 @@ export class FeedConnectionsDiscordChannelsService {
 
     try {
       if (connectionToDelete.details.webhook?.isApplicationOwned) {
-        await this.discordWebhooksService.deleteWebhook(
-          connectionToDelete.details.webhook.id
-        );
+        await this.cleanupWebhook(connectionToDelete.details.webhook.id);
       }
     } catch (err) {
       logger.error(
@@ -1035,5 +1036,62 @@ export class FeedConnectionsDiscordChannelsService {
     const channel = await this.discordApiService.getChannel(webhook.channel_id);
 
     return { webhook, channel };
+  }
+
+  private async getOrCreateApplicationWebhook({
+    channelId,
+    webhook: { name },
+  }: {
+    channelId: string;
+    webhook: {
+      name: string;
+    };
+  }) {
+    const channelWebhooks =
+      await this.discordWebhooksService.getWebhooksOfChannel(channelId, {
+        onlyApplicationOwned: true,
+      });
+
+    if (channelWebhooks[0]) {
+      // Use an existing application-owned webhook if it exists
+      return channelWebhooks[0];
+    } else {
+      // Otherwise create a new one
+      return this.discordWebhooksService.createWebhook(channelId, {
+        name,
+      });
+    }
+  }
+
+  private async cleanupWebhook(webhookId: string) {
+    const existingFeedUseCount = await this.userFeedModel.countDocuments({
+      "connections.discordChannels.details.webhook.id": webhookId,
+    });
+
+    if (existingFeedUseCount === 0) {
+      await this.discordWebhooksService.deleteWebhook(webhookId);
+
+      return;
+    }
+
+    if (existingFeedUseCount > 1) {
+      return;
+    }
+
+    const found = await this.userFeedModel.findOne({
+      "connections.discordChannels.details.webhook.id": webhookId,
+    });
+
+    if (!found) {
+      return;
+    }
+
+    const connectionUseCount = await found.connections.discordChannels.filter(
+      (c) => c.details.webhook?.id === webhookId
+    ).length;
+
+    if (connectionUseCount === 0) {
+      await this.discordWebhooksService.deleteWebhook(webhookId);
+    }
   }
 }

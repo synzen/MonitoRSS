@@ -18,7 +18,7 @@ interface BatchRequestMessage {
 
 @Injectable()
 export class FeedFetcherListenerService {
-  failedDurationThresholdHours: number;
+  maxFailAttempts: number;
   defaultUserAgent: string;
 
   constructor(
@@ -32,8 +32,8 @@ export class FeedFetcherListenerService {
     private readonly orm: MikroORM, // For @UseRequestContext decorator
     private readonly em: EntityManager,
   ) {
-    this.failedDurationThresholdHours = this.configService.get(
-      'FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS',
+    this.maxFailAttempts = this.configService.get(
+      'FEED_REQUESTS_MAX_FAIL_ATTEMPTS',
     ) as number;
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
@@ -200,17 +200,11 @@ export class FeedFetcherListenerService {
           `recently failed and will be skipped until ${nextRetryDate}`,
       );
     } else {
-      const headers = await this.feedFetcherService.getLatestRequestHeaders({
-        url,
-      });
       const { request } = await this.feedFetcherService.fetchAndSaveResponse(
         url,
         {
           saveResponseToObjectStorage: data.saveToObjectStorage,
-          headers: {
-            'If-Modified-Since': headers?.lastModified || '',
-            'If-None-Match': headers?.etag || '',
-          },
+          headers: {},
         },
       );
 
@@ -327,8 +321,7 @@ export class FeedFetcherListenerService {
   emitFailedUrl({ url }: { url: string }) {
     try {
       logger.info(
-        `Disabling feeds with url "${url}" due to failure threshold ` +
-          `(${this.failedDurationThresholdHours}hrs)`,
+        `Disabling feeds with url "${url}" due to failure threshold `,
         {
           url,
         },

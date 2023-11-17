@@ -47,7 +47,8 @@ Docker is required to easily coordinate and run multiple services at once.
 #### Updating
 
 1. Pull the latest files from the main branch
-2. Rebuild containers with `docker-compose up -d --build`
+2. Stop containers with `docker-compose down`
+3. Rebuild containers with `docker-compose up -d --build`
 
 ## Migrating from v6
 
@@ -59,3 +60,4 @@ It's recommended that you don't delete your v6 files until you've confirmed that
 2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
 3. Run `docker-compose up -d --build`
 4. Access the control panel via http://localhost:8000 and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
+5. After verifying that all is working as expected, you may delete your v6 files.
