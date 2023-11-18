@@ -56,9 +56,13 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   });
 
   const onSubmit = async ({ title, url }: FormData) => {
-    await onUpdate({ title, url });
-    onClose();
-    reset({ title, url });
+    try {
+      await onUpdate({ title, url });
+      onClose();
+      reset({ title, url });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {

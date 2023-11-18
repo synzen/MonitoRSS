@@ -213,8 +213,6 @@ export class SupportersService {
   async getBenefitsOfDiscordUser(
     discordId: string
   ): Promise<SupporterBenefits> {
-    console.log(this.enableSupporters);
-
     if (!this.enableSupporters) {
       return {
         isSupporter: true,
