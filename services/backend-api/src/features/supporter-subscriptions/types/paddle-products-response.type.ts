@@ -1,6 +1,13 @@
 interface PaddleProductPrice {
   id: string;
   status: "active" | "archived";
+  billing_cycle: {
+    frequency: number;
+    interval: "day" | "week" | "month" | "year";
+  } | null;
+  custom_data?: {
+    key?: string;
+  } | null;
 }
 
 export interface PaddleProduct {

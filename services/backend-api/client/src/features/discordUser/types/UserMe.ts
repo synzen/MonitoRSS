@@ -25,6 +25,7 @@ export const UserMeSchema = object({
   creditBalance: object({
     availableFormatted: string().required(),
   }).required(),
+  isOnPatreon: bool(),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;

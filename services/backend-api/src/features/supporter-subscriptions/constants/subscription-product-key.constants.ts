@@ -3,6 +3,11 @@ export enum SubscriptionProductKey {
   Tier1 = "tier1",
   Tier2 = "tier2",
   Tier3 = "tier3",
+}
+
+export const SUBSCRIPTION_PRODUCT_KEYS = Object.values(SubscriptionProductKey);
+
+export enum LegacySubscriptionProductKey {
   Tier1Legacy = "tier1-legacy",
   Tier2Legacy = "tier2-legacy",
   Tier3Legacy = "tier3-legacy",

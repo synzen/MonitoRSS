@@ -11,6 +11,7 @@ interface PatronBenefits {
   allowWebhooks: boolean;
   refreshRateSeconds?: number;
   allowCustomPlaceholders: boolean;
+  maxPatreonPledge: number;
 }
 
 interface PatronDetails {
@@ -41,6 +42,11 @@ export class PatronsService {
       .filter((patron) => this.isValidPatron(patron))
       .map((patron) => this.getBenefitsFromPatron(patron));
 
+    const maxPatreonPledge = Math.max(
+      ...patrons.map((patron) => patron.pledgeOverride || patron.pledge),
+      0
+    );
+
     if (allBenefits.length === 0) {
       return {
         existsAndIsValid: false,
@@ -49,6 +55,7 @@ export class PatronsService {
         allowWebhooks: false,
         maxUserFeeds: this.defaultMaxUserFeeds,
         allowCustomPlaceholders: false,
+        maxPatreonPledge,
       };
     }
 
@@ -67,6 +74,7 @@ export class PatronsService {
       allowCustomPlaceholders: allBenefits.some(
         (benefits) => benefits.allowCustomPlaceholders
       ),
+      maxPatreonPledge,
     };
   }
 
@@ -117,6 +125,7 @@ export class PatronsService {
       refreshRateSeconds: this.getRefreshRateSecondsFromPledge(usePledge),
       allowWebhooks: true,
       allowCustomPlaceholders: usePledge >= 500,
+      maxPatreonPledge: usePledge,
     };
   }
 

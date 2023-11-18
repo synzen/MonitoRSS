@@ -83,6 +83,7 @@ export class UsersService {
     user: User;
     creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
+    isOnPatreon?: boolean;
   } | null> {
     const user = await this.userModel.findOne({ discordUserId }).lean();
 
@@ -98,6 +99,11 @@ export class UsersService {
       status: SubscriptionStatus.Active,
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
+
+    const legacyPatreonDetails =
+      await this.supportersService.getLegacyPatreonDetails(discordUserId);
+
+    const isOnPatreon = !!legacyPatreonDetails.maxPatreonPledge;
 
     if (!user.email) {
       return {
@@ -137,6 +143,7 @@ export class UsersService {
           availableFormatted: creditAvailableBalanceFormatted,
         },
         subscription: freeSubscription,
+        isOnPatreon,
       };
     }
 

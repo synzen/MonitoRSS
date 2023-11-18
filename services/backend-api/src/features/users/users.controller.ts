@@ -61,10 +61,12 @@ export class UsersController {
     user,
     subscription,
     creditBalance,
+    isOnPatreon,
   }: {
     user: User;
     creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
+    isOnPatreon?: boolean;
   }) {
     return {
       result: {
@@ -74,6 +76,7 @@ export class UsersController {
         preferences: user.preferences,
         subscription,
         creditBalance,
+        isOnPatreon,
       },
     };
   }

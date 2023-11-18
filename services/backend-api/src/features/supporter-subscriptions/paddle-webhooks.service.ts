@@ -4,7 +4,10 @@ import {
   Supporter,
   SupporterModel,
 } from "../supporters/entities/supporter.entity";
-import { SubscriptionProductKey } from "./constants/subscription-product-key.constants";
+import {
+  LegacySubscriptionProductKey,
+  SubscriptionProductKey,
+} from "./constants/subscription-product-key.constants";
 import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
 import {
   PaddleEventSubscriptionActivated,
@@ -18,7 +21,7 @@ import { ConfigService } from "@nestjs/config";
 import { createHmac } from "crypto";
 const BENEFITS_BY_TIER: Partial<
   Record<
-    SubscriptionProductKey,
+    SubscriptionProductKey | LegacySubscriptionProductKey,
     Exclude<
       Exclude<Supporter["paddleCustomer"], undefined>["subscription"],
       undefined | null
@@ -43,37 +46,37 @@ const BENEFITS_BY_TIER: Partial<
     maxUserFeeds: 100,
     refreshRateSeconds: 120,
   },
-  [SubscriptionProductKey.Tier1Legacy]: {
+  [LegacySubscriptionProductKey.Tier1Legacy]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
     maxUserFeeds: 5,
     refreshRateSeconds: 600,
   },
-  [SubscriptionProductKey.Tier2Legacy]: {
+  [LegacySubscriptionProductKey.Tier2Legacy]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
     maxUserFeeds: 15,
     refreshRateSeconds: 600,
   },
-  [SubscriptionProductKey.Tier3Legacy]: {
+  [LegacySubscriptionProductKey.Tier3Legacy]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
     maxUserFeeds: 35,
     refreshRateSeconds: 120,
   },
-  [SubscriptionProductKey.Tier4Legacy]: {
+  [LegacySubscriptionProductKey.Tier4Legacy]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
     maxUserFeeds: 70,
     refreshRateSeconds: 120,
   },
-  [SubscriptionProductKey.Tier5Legacy]: {
+  [LegacySubscriptionProductKey.Tier5Legacy]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
     maxUserFeeds: 105,
     refreshRateSeconds: 120,
   },
-  [SubscriptionProductKey.Tier6Legacy]: {
+  [LegacySubscriptionProductKey.Tier6Legacy]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
     maxUserFeeds: 140,

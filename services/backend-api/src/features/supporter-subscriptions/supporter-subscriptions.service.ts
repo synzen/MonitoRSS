@@ -6,7 +6,10 @@ import { URLSearchParams } from "url";
 import { formatCurrency } from "../../utils/format-currency";
 import { SupportersService } from "../supporters/supporters.service";
 import { User, UserModel } from "../users/entities/user.entity";
-import { SubscriptionProductKey } from "./constants/subscription-product-key.constants";
+import {
+  SubscriptionProductKey,
+  SUBSCRIPTION_PRODUCT_KEYS,
+} from "./constants/subscription-product-key.constants";
 import { PaddleCustomerCreditBalanceResponse } from "./types/paddle-customer-credit-balance-response.type";
 import { PaddleCustomerResponse } from "./types/paddle-customer-response.type";
 import { PaddlePricingPreviewResponse } from "./types/paddle-pricing-preview-response.type";
@@ -23,6 +26,17 @@ const PRODUCT_NAMES: Record<SubscriptionProductKey, string> = {
   [SubscriptionProductKey.Tier2]: "Tier 2",
   [SubscriptionProductKey.Tier3]: "Tier 3",
 };
+
+const PRODUCT_KEYS_BY_PLEDGE: Record<string, string> = {
+  "100": "tier1-legacy",
+  "250": "tier2-legacy",
+  "500": "tier3-legacy",
+  "1000": "tier4-legacy",
+  "1500": "tier5-legacy",
+  "2000": "tier6-legacy",
+};
+
+const LEGACY_PRODUCT_KEYS = Object.values(PRODUCT_KEYS_BY_PLEDGE);
 
 @Injectable()
 export class SupporterSubscriptionsService {
@@ -54,14 +68,59 @@ export class SupporterSubscriptionsService {
     return response;
   }
 
+  async getConversionPriceIdsFromPatreon({ pledge }: { pledge: number }) {
+    const productKey = PRODUCT_KEYS_BY_PLEDGE[String(pledge)];
+
+    if (!productKey) {
+      throw new Error(`No price key found for pledge amount ${pledge}`);
+    }
+
+    const products = await this.getProducts();
+
+    const relevantProduct = products.products.filter(
+      (p) => p.customData?.key === productKey
+    );
+
+    if (relevantProduct.length === 0) {
+      throw new Error(`No product found for key ${productKey}`);
+    }
+
+    const relevantProductPrices = relevantProduct[0].prices;
+    const monthlyPriceId = relevantProductPrices.find(
+      (p) => p.billingCycle?.interval === "month"
+    )?.id;
+    const yearlyPriceId = relevantProductPrices.find(
+      (p) => p.billingCycle?.interval === "year"
+    )?.id;
+
+    if (!monthlyPriceId || !yearlyPriceId) {
+      throw new Error(
+        `No monthly or yearly price found for product ${productKey}`
+      );
+    }
+
+    return {
+      monthlyPriceId,
+      yearlyPriceId,
+    };
+  }
+
   async getProductCurrencies(currency: string) {
     const { products } = await this.getProducts();
 
-    const priceIds = products.flatMap((d) => {
-      return d.prices.map((p) => {
-        return p.id;
+    const priceIds = products
+      .filter(
+        (p) =>
+          p.customData?.key &&
+          SUBSCRIPTION_PRODUCT_KEYS.includes(
+            p.customData.key as SubscriptionProductKey
+          )
+      )
+      .flatMap((d) => {
+        return d.prices.map((p) => {
+          return p.id;
+        });
       });
-    });
 
     const payload = {
       items: priceIds.map((id) => ({
@@ -167,7 +226,10 @@ export class SupporterSubscriptionsService {
             .filter((s) => s.status === "active")
             .map((p) => ({
               id: p.id,
+              customData: p.custom_data,
+              billingCycle: p.billing_cycle,
             })),
+          customData: p.custom_data,
         })),
     };
   }

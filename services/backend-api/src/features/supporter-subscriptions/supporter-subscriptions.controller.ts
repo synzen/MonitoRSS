@@ -132,17 +132,22 @@ export class SupporterSubscriptionsController {
       throw new UnauthorizedException();
     }
 
-    if (requestBody.event_type === "subscription.updated") {
+    if (
+      requestBody.event_type === "subscription.canceled" ||
+      (requestBody.event_type === "subscription.updated" &&
+        requestBody.status === "canceled" &&
+        !requestBody.items[0].current_billing_period)
+    ) {
+      await this.paddleWebhooksService.handleSubscriptionCancelledEvent(
+        requestBody as PaddleEventSubscriptionCanceled
+      );
+    } else if (requestBody.event_type === "subscription.updated") {
       await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
         requestBody as PaddleEventSubscriptionUpdated
       );
     } else if (requestBody.event_type === "subscription.activated") {
       await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
         requestBody as PaddleEventSubscriptionActivated
-      );
-    } else if (requestBody.event_type === "subscription.canceled") {
-      await this.paddleWebhooksService.handleSubscriptionCancelledEvent(
-        requestBody as PaddleEventSubscriptionCanceled
       );
     }
 

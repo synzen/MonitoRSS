@@ -1,4 +1,9 @@
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Alert,
   AlertDescription,
   AlertTitle,
@@ -11,6 +16,9 @@ import {
   FormLabel,
   HStack,
   Heading,
+  Link,
+  ListItem,
+  OrderedList,
   Stack,
   Switch,
   Text,
@@ -29,6 +37,7 @@ import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
 import { ProductKey } from "../constants";
+import getChakraColor from "../utils/getChakraColor";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -183,7 +192,8 @@ export const UserSettings = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {subscription.product.name} (billed every {subscription.billingInterval})
+          {subscription.product.name}
+          {subscription.billingInterval && ` (billed every ${subscription.billingInterval})`}
         </chakra.span>
         .
       </Text>
@@ -244,6 +254,105 @@ export const UserSettings = () => {
                 <Stack>
                   {data && (
                     <Stack spacing={8}>
+                      {data.result.isOnPatreon && (
+                        <Alert status="info" borderRadius="md">
+                          <Stack width="100%">
+                            <AlertTitle>
+                              You are currently still on a legacy Patreon plan!
+                            </AlertTitle>
+                            <AlertDescription>
+                              <Text>
+                                Subscriptions have moved off of Patreon. You are advised to move
+                                your pledge off of Patreon so that you may:
+                              </Text>
+                              <br />
+                              <OrderedList>
+                                <ListItem>Manage your subscription on this site</ListItem>
+                                <ListItem>Start your subscription on any day of the month</ListItem>
+                                <ListItem>Optionally pay upfront for a year at a discount</ListItem>
+                                <ListItem>
+                                  Receive feature updates that may not be available on legacy
+                                  Patreon plans going forward
+                                </ListItem>
+                              </OrderedList>
+                              <br />
+                              <Text>
+                                Be sure to manually cancel your Patreon pledge to avoid double
+                                charges. To cancel your pledge, visit{" "}
+                                <Link
+                                  href="https://www.patreon.com/monitorss"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  color="blue.300"
+                                >
+                                  Patreon
+                                </Link>
+                                .
+                              </Text>
+                              <Divider mt={4} mb={4} />
+                              <Stack spacing={4}>
+                                <Text fontWeight={600}>Frequently Asked Questions</Text>
+                                <Accordion allowToggle>
+                                  <AccordionItem
+                                    border="none"
+                                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                                  >
+                                    <AccordionButton border="none">
+                                      <Flex
+                                        flex="1"
+                                        gap={4}
+                                        fontSize={13}
+                                        color="blue.200"
+                                        alignItems="center"
+                                        textAlign="left"
+                                      >
+                                        Why are subscriptions moving off of Patreon?
+                                        <AccordionIcon />
+                                      </Flex>
+                                    </AccordionButton>
+                                    <AccordionPanel>
+                                      <Text fontSize={13}>
+                                        Patreon has very high fees and its API has had limitations
+                                        that both disallowed yearly plans and prevented
+                                        subscriptions from starting on any day of the month. While
+                                        it has worked well enough in the past, it is not viable
+                                        long-term.
+                                      </Text>
+                                    </AccordionPanel>
+                                  </AccordionItem>
+                                  <AccordionItem
+                                    border="none"
+                                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                                  >
+                                    <AccordionButton border="none">
+                                      <Flex
+                                        flex="1"
+                                        gap={4}
+                                        fontSize={13}
+                                        color="blue.200"
+                                        alignItems="center"
+                                        textAlign="left"
+                                      >
+                                        Are the prices different?
+                                        <AccordionIcon />
+                                      </Flex>
+                                    </AccordionButton>
+                                    <AccordionPanel>
+                                      <Text fontSize={13}>
+                                        Yes. Even though pricing has stayed the same since MonitoRSS
+                                        started over 7 years ago, costs have increased over time
+                                        with both usage and inflation. As a result, to keep up with
+                                        costs and to maintain the public hosting of MonitoRSS, the
+                                        prices had to have been adjusted.
+                                      </Text>
+                                    </AccordionPanel>
+                                  </AccordionItem>
+                                </Accordion>
+                              </Stack>
+                            </AlertDescription>
+                          </Stack>
+                        </Alert>
+                      )}
                       {data.result.subscription.product.key !== ProductKey.Free && (
                         <Stack>
                           <Text fontWeight={600} color="whiteAlpha.700">
@@ -305,7 +414,7 @@ export const UserSettings = () => {
             <Divider />
             <Stack spacing={8}>
               <Stack>
-                <Heading size="md">Events</Heading>
+                <Heading size="md">Notifications</Heading>
                 <Text>Get emailed when events happen that may affect article delivery.</Text>
               </Stack>
               {!hasEmailAvailable && (

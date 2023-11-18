@@ -635,10 +635,6 @@ export class UserFeedsService {
         feed.user.discordUserId
       );
 
-    // const {
-    //   results: { limits },
-    // } = await this.feedHandlerService.getRateLimits(feedId);
-
     const dailyLimit = articleRateLimits.find(
       (limit) => limit.timeWindowSeconds === 86400
     );

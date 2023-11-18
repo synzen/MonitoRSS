@@ -24,6 +24,7 @@ interface SupporterBenefits {
   isSupporter: boolean;
   maxFeeds: number;
   guilds: string[];
+  source?: SupporterSource;
   maxGuilds: number;
   expireAt?: Date;
   refreshRateSeconds: number;
@@ -41,6 +42,7 @@ interface SupporterBenefits {
         status: SubscriptionStatus;
       }
     | undefined;
+  maxPatreonPledge?: number;
 }
 
 interface ServerBenefits {
@@ -210,6 +212,16 @@ export class SupportersService {
     };
   }
 
+  async getLegacyPatreonDetails(discordId: string): Promise<{
+    maxPatreonPledge?: number;
+  }> {
+    const { maxPatreonPledge } = await this.getBenefitsOfDiscordUser(discordId);
+
+    return {
+      maxPatreonPledge,
+    };
+  }
+
   async getBenefitsOfDiscordUser(
     discordId: string
   ): Promise<SupporterBenefits> {
@@ -276,6 +288,7 @@ export class SupportersService {
 
     return {
       isSupporter: benefits.isSupporter,
+      source: benefits.source,
       maxFeeds: benefits.maxFeeds,
       guilds: aggregate[0].guilds,
       maxGuilds: benefits.maxGuilds,
@@ -298,6 +311,7 @@ export class SupportersService {
               status: aggregate[0].paddleCustomer?.subscription?.status,
             }
           : undefined,
+      maxPatreonPledge: benefits.maxPatreonPledge,
     };
   }
 
@@ -579,6 +593,7 @@ export class SupportersService {
       maxGuilds: patronMaxGuilds,
       refreshRateSeconds: patronRefreshRateSeconds,
       allowCustomPlaceholders,
+      maxPatreonPledge,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
     // Refresh rate
@@ -649,6 +664,7 @@ export class SupportersService {
       allowCustomPlaceholders:
         supporter.allowCustomPlaceholders || allowCustomPlaceholders,
       dailyArticleLimit,
+      maxPatreonPledge,
     };
   }
 
