@@ -52,6 +52,7 @@ While email notifications are available so that you may get notified when feeds 
 - `BACKEND_API_SMTP_HOST`
 - `BACKEND_API_SMTP_USERNAME`
 - `BACKEND_API_SMTP_PASSWORD`
+- `BACKEND_API_SMTP_FROM`
 
 Make sure to opt into email notifications in the control panel's user settings page afterwards.
 

@@ -23,6 +23,7 @@ import {
 } from "./entities/notification-delivery-attempt.entity";
 import { NotificationDeliveryAttemptStatus } from "./constants/notification-delivery-attempt-status.constants";
 import { NotificationDeliveryAttemptType } from "./constants/notification-delivery-attempt-type.constants";
+import { ConfigService } from "@nestjs/config";
 
 const disabledFeedHandlebarsText = fs.readFileSync(
   join(__dirname, "handlebars-templates", "disabled-feed.hbs"),
@@ -85,16 +86,23 @@ const USER_FEED_CONNECTION_DISABLED_REASONS: Partial<
 
 @Injectable()
 export class NotificationsService {
+  EMAIL_ALERT_FROM = '"MonitoRSS Alerts" <alerts@monitorss.xyz>';
+
   constructor(
     @Inject(SmtpTransport)
     private readonly smtpTransport: nodemailer.Transporter<SMTPTransport.SentMessageInfo> | null,
     private readonly usersService: UsersService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     @InjectModel(NotificationDeliveryAttempt.name)
-    private readonly notificationDeliveryAttemptModel: NotificationDeliveryAttemptModel
-  ) {}
+    private readonly notificationDeliveryAttemptModel: NotificationDeliveryAttemptModel,
+    private readonly configService: ConfigService
+  ) {
+    const smtpFrom = this.configService.get<string>("BACKEND_API_SMTP_FROM");
 
-  static EMAIL_ALERT_FROM = '"MonitoRSS Alerts" <alerts@monitorss.xyz>';
+    if (smtpFrom) {
+      this.EMAIL_ALERT_FROM = smtpFrom;
+    }
+  }
 
   async sendDisabledFeedsAlert(
     feedIds: Types.ObjectId[],
@@ -179,7 +187,7 @@ export class NotificationsService {
 
           try {
             const results = await this.smtpTransport?.sendMail({
-              from: NotificationsService.EMAIL_ALERT_FROM,
+              from: this.EMAIL_ALERT_FROM,
               to: emails,
               subject: `Feed has been disabled: ${feed.title}`,
               html: disabledFeedTemplate(templateData),
@@ -353,7 +361,7 @@ export class NotificationsService {
 
     try {
       const results = await this.smtpTransport?.sendMail({
-        from: NotificationsService.EMAIL_ALERT_FROM,
+        from: this.EMAIL_ALERT_FROM,
         to: emails,
         subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
         html: disabledFeedTemplate(templateData),
