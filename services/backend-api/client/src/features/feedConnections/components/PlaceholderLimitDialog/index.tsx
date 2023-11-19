@@ -156,6 +156,7 @@ export const PlaceholderLimitDialog = ({
                           isValidCharacter={(char) => /\d+/.test(char)}
                           bg="gray.800"
                           {...field}
+                          borderRadius="md"
                         >
                           <NumberInputField />
                         </NumberInput>
