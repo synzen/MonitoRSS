@@ -7,6 +7,7 @@ Delivers highly-customized news feeds to Discord!
     - [Use Public Instance](#use-public-instance)
     - [Self Host](#self-host)
       - [Customize Site Domain](#customize-site-domain)
+      - [Enable Email Notifications](#enable-email-notifications)
       - [Updating](#updating)
   - [Migrating from v6](#migrating-from-v6)
 
@@ -43,6 +44,14 @@ Docker is required to easily coordinate and run multiple services at once.
 1. Set up your domain to point to the server running the control panel on localhost
 2. Update all references to `http://localhost:8000` in your `.env.prod` to your desired domain. For example, `https://mynewdomain.com`.
 3. Add `{DOMAIN_HERE}/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page, replacing `DOMAIN_HERE` with the value you set in step 1
+
+#### Enable Email Notifications
+
+Email notifications are available to get notified when feeds disabled for various reasons (permission erorrs, request errors, etc). Set the three variables below with your email provider's SMTP settings in your env file
+
+- `BACKEND_API_SMTP_HOST`
+- `BACKEND_API_SMTP_USERNAME`
+- `BACKEND_API_SMTP_PASSWORD`
 
 #### Updating
 
