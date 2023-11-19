@@ -47,11 +47,13 @@ Docker is required to easily coordinate and run multiple services at once.
 
 #### Enable Email Notifications
 
-Email notifications are available to get notified when feeds disabled for various reasons (permission erorrs, request errors, etc). Set the three variables below with your email provider's SMTP settings in your env file
+While email notifications are available to get notified when feeds disabled for various reasons (permission erorrs, request errors, etc), credentials must be set to be able to sen them out. Set the three variables below with your email provider's SMTP settings in your env file:
 
 - `BACKEND_API_SMTP_HOST`
 - `BACKEND_API_SMTP_USERNAME`
 - `BACKEND_API_SMTP_PASSWORD`
+
+Make sure to opt into email notifications in the control panel's user settings page afterwards.
 
 #### Updating
 
