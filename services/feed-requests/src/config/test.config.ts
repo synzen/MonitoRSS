@@ -10,6 +10,7 @@ export function testConfig(): EnvironmentVariables {
     FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: 'test',
     FEED_REQUESTS_REDIS_URI: 'redis://localhost:6379',
     FEED_REQUESTS_MAX_FAIL_ATTEMPTS: 11,
+    FEED_REQUESTS_REQUEST_TIMEOUT_MS: 15000,
   };
 
   validateConfig(vals);
