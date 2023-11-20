@@ -56,7 +56,7 @@ export class FeedFetcherController {
       this.feedFetcherService.getRequests({
         skip,
         limit,
-        url: decodeURIComponent(url),
+        url,
         select: ['id', 'createdAt', 'nextRetryDate', 'status'],
       }),
       this.feedFetcherService.countRequests({

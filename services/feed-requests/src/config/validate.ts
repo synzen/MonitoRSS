@@ -74,6 +74,9 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   FEED_REQUESTS_POSTGRES_REPLICA1_URI?: string;
+
+  @IsNumber()
+  FEED_REQUESTS_REQUEST_TIMEOUT_MS!: number;
 }
 
 export function validateConfig(

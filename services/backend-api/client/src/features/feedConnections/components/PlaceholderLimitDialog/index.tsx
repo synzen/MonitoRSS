@@ -5,7 +5,6 @@ import {
   FormHelperText,
   FormLabel,
   HStack,
-  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -24,6 +23,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, number, object, string } from "yup";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
+import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 
 const formDataSchema = object({
   placeholder: string()
@@ -156,6 +156,7 @@ export const PlaceholderLimitDialog = ({
                           isValidCharacter={(char) => /\d+/.test(char)}
                           bg="gray.800"
                           {...field}
+                          borderRadius="md"
                         >
                           <NumberInputField />
                         </NumberInput>
@@ -184,7 +185,7 @@ export const PlaceholderLimitDialog = ({
                             "features.feedConnections.components.placeholderLimitDialog.appendTextInputLabel"
                           )}
                         </FormLabel>
-                        <Input {...field} bg="gray.800" />
+                        <AutoResizeTextarea {...field} bg="gray.800" />
                         <FormHelperText>
                           {t(
                             "features.feedConnections.components.placeholderLimitDialog.appendTextInputDescription"

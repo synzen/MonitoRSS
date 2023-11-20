@@ -95,6 +95,7 @@ export default function config(options?: {
     BACKEND_API_SMTP_HOST: process.env.BACKEND_API_SMTP_HOST as string,
     BACKEND_API_SMTP_USERNAME: process.env.BACKEND_API_SMTP_USERNAME as string,
     BACKEND_API_SMTP_PASSWORD: process.env.BACKEND_API_SMTP_PASSWORD as string,
+    BACKEND_API_SMTP_FROM: process.env.BACKEND_API_SMTP_FROM as string,
     BACKEND_API_PADDLE_KEY: process.env.BACKEND_API_PADDLE_KEY as string,
     BACKEND_API_PADDLE_URL: process.env.BACKEND_API_PADDLE_URL as string,
     BACKEND_API_PADDLE_WEBHOOK_SECRET: process.env

@@ -12,7 +12,6 @@ import {
   FormHelperText,
   FormLabel,
   HStack,
-  Input,
   Stack,
   StackDivider,
   Switch,
@@ -25,6 +24,7 @@ import { SettingsIcon } from "@chakra-ui/icons";
 import { useCallback, useEffect, useState } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
 import { HelpDialog } from "../../../../components";
+import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 
 export const DiscordMessageContentForm = () => {
   const {
@@ -158,10 +158,11 @@ export const DiscordMessageContentForm = () => {
                       name="splitOptions.splitChar"
                       control={control}
                       render={({ field }) => (
-                        <Input
+                        <AutoResizeTextarea
                           {...field}
                           size="sm"
-                          aria-label="Split character"
+                          rows={1}
+                          aria-label="Split text"
                           spellCheck={false}
                           isDisabled={!splitOptions}
                           value={field.value || ""}
@@ -184,10 +185,11 @@ export const DiscordMessageContentForm = () => {
                       name="splitOptions.appendChar"
                       control={control}
                       render={({ field }) => (
-                        <Input
+                        <AutoResizeTextarea
                           {...field}
                           size="sm"
-                          aria-label="Append character"
+                          rows={1}
+                          aria-label="Append text"
                           spellCheck={false}
                           value={field.value || ""}
                           isDisabled={!splitOptions}
@@ -210,10 +212,11 @@ export const DiscordMessageContentForm = () => {
                       name="splitOptions.prependChar"
                       control={control}
                       render={({ field }) => (
-                        <Input
+                        <AutoResizeTextarea
                           {...field}
                           size="sm"
-                          aria-label="Prepend character"
+                          rows={1}
+                          aria-label="Prepend text"
                           spellCheck={false}
                           value={field.value || ""}
                           isDisabled={!splitOptions}

@@ -148,6 +148,10 @@ export class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  BACKEND_API_SMTP_FROM?: string;
+
+  @IsOptional()
+  @IsString()
   BACKEND_API_PADDLE_KEY?: string;
 
   @IsOptional()

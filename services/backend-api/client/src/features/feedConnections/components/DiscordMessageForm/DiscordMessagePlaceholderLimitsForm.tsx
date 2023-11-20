@@ -105,7 +105,12 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
                       <Td>{field.placeholder}</Td>
                       <Td>{field.characterCount}</Td>
                       <Td>
-                        <Code> {field.appendString || ""}</Code>
+                        {field.appendString === "\n" && (
+                          <Text color="gray.400">
+                            <em>(new line)</em>
+                          </Text>
+                        )}
+                        {field.appendString !== "\n" && <Code>{field.appendString || ""}</Code>}
                       </Td>
                       <Td isNumeric>
                         <Menu>
