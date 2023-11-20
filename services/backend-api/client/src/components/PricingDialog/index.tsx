@@ -266,6 +266,7 @@ export const PricingDialog = ({ trigger }: Props) => {
   const paidSubscriptionExists =
     userData && userData?.result.subscription.product.key !== ProductKey.Free;
   const userBillingInterval = userData?.result.subscription.billingInterval;
+  const billingPeriodEndsAt = userData?.result.subscription.billingPeriod?.end;
 
   const onCheckoutSuccess = () => {
     setCheckForSubscriptionCreated(true);
@@ -381,6 +382,7 @@ export const PricingDialog = ({ trigger }: Props) => {
       <ChangeSubscriptionDialog
         currencyCode={currency.code}
         isDowngrade={changeSubscriptionDetails?.isDowngrade}
+        billingPeriodEndsAt={billingPeriodEndsAt}
         details={
           changeSubscriptionDetails
             ? {
@@ -514,7 +516,9 @@ export const PricingDialog = ({ trigger }: Props) => {
 
                               const isOnThisTier =
                                 userSubscription.product.key === productId &&
-                                userSubscription.billingInterval === interval;
+                                // There is no billing period on free
+                                (userSubscription.billingInterval === interval ||
+                                  !userSubscription.billingInterval);
                               const isAboveUserTier =
                                 userTierIndex < currentTierIndex ||
                                 (userSubscription.product.key === productId &&

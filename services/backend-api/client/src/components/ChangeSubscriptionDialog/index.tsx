@@ -37,6 +37,7 @@ interface Props {
     priceId: string;
   };
   isDowngrade?: boolean;
+  billingPeriodEndsAt?: string;
 }
 
 export const ChangeSubscriptionDialog = ({
@@ -44,6 +45,7 @@ export const ChangeSubscriptionDialog = ({
   details,
   onClose,
   isDowngrade,
+  billingPeriodEndsAt,
 }: Props) => {
   const priceId = details?.priceId;
   const [subscriptionPollDate, setSubscriptionPollDate] = useState<Date>();
@@ -142,7 +144,17 @@ export const ChangeSubscriptionDialog = ({
           {error && <InlineErrorAlert title="Failed to get preview" description={error.message} />}
           {isChangingToFree && (
             <Stack>
-              <Text>Are you sure you want to cancel by downgrading to Free?</Text>
+              <Text>
+                Are you sure you want to cancel by downgrading to Free? You will retain your current
+                plan until{" "}
+                {billingPeriodEndsAt &&
+                  new Date(billingPeriodEndsAt).toLocaleDateString(undefined, {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                .
+              </Text>
             </Stack>
           )}
           {data && !isChangingToFree && (
