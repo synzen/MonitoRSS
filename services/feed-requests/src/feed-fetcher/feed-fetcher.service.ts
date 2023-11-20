@@ -44,6 +44,7 @@ interface FetchOptions {
 @Injectable()
 export class FeedFetcherService {
   defaultUserAgent: string;
+  feedRequestTimeoutMs: number;
 
   constructor(
     @InjectRepository(Request)
@@ -56,6 +57,9 @@ export class FeedFetcherService {
   ) {
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
+    );
+    this.feedRequestTimeoutMs = this.configService.getOrThrow(
+      'FEED_REQUESTS_REQUEST_TIMEOUT_MS',
     );
   }
 
@@ -330,7 +334,7 @@ export class FeedFetcherService {
     options?: FetchOptions,
   ): Promise<ReturnType<typeof fetch>> {
     const res = await fetch(url, {
-      timeout: 15000,
+      timeout: this.feedRequestTimeoutMs,
       follow: 5,
       headers: {
         ...options?.headers,

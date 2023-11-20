@@ -49,6 +49,9 @@ export default function config(): EnvironmentVariables {
       process.env.FEED_REQUESTS_REDIS_DISABLE_CLUSTER === 'true',
     FEED_REQUESTS_POSTGRES_REPLICA1_URI: process.env
       .FEED_REQUESTS_POSTGRES_REPLICA1_URI as string,
+    FEED_REQUESTS_REQUEST_TIMEOUT_MS: Number(
+      process.env.FEED_REQUESTS_REQUEST_TIMEOUT_MS || '15000',
+    ),
   };
 
   validateConfig(values);
