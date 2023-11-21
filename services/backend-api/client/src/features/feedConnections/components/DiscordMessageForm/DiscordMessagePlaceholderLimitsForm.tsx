@@ -38,8 +38,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
     name: "placeholderLimits",
   });
 
-  const currentPlaceholders = fields.map((f) => f.placeholder);
-
   const onSubmitNewLimit = (limit: {
     characterCount: number;
     placeholder: string;
@@ -63,7 +61,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
         {fields.length && (
           <PlaceholderLimitDialog
             feedId={feedId}
-            excludePlaceholders={currentPlaceholders}
             trigger={
               <Button leftIcon={<AddIcon fontSize="xs" />} size="sm">
                 {t("common.buttons.add")}
@@ -122,7 +119,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
                           />
                           <MenuList>
                             <PlaceholderLimitDialog
-                              excludePlaceholders={currentPlaceholders}
                               mode="update"
                               trigger={<MenuItem>{t("common.buttons.edit")}</MenuItem>}
                               onSubmit={(limit) => {
@@ -153,7 +149,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
         <Flex>
           <PlaceholderLimitDialog
             feedId={feedId}
-            excludePlaceholders={currentPlaceholders}
             trigger={
               <Button leftIcon={<AddIcon fontSize="sm" />} variant="ghost">
                 {t("common.buttons.add")}
