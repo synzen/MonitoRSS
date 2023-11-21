@@ -152,7 +152,6 @@ export const PlaceholderLimitDialog = ({
                           inputMode="numeric"
                           isInvalid={!!errors.characterCount}
                           min={1}
-                          max={2000}
                           isValidCharacter={(char) => /\d+/.test(char)}
                           bg="gray.800"
                           {...field}
