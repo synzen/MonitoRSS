@@ -36,7 +36,7 @@ import {
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, ArrowLeftIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
   CloneUserFeedDialog,
@@ -96,6 +96,7 @@ export const UserFeed: React.FC = () => {
   const { feed, status, error } = useUserFeed({
     feedId,
   });
+  const feedTitle = feed?.title;
   const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
@@ -109,6 +110,12 @@ export const UserFeed: React.FC = () => {
     setAddConnectionType({ type, isChannelThread });
     onOpen();
   };
+
+  useEffect(() => {
+    if (feedTitle) {
+      document.title = `${feedTitle} | MonitoRSS`;
+    }
+  }, [feedTitle]);
 
   const isAtLimit = dailyLimit ? dailyLimit.current >= dailyLimit.max : false;
 
