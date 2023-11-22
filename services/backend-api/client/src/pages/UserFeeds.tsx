@@ -51,8 +51,13 @@ export const UserFeeds: React.FC = () => {
   });
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
 
-  const onSelectedFeed = (feedId: string) => {
-    navigate(pages.userFeed(feedId));
+  const onSelectedFeed = (feedId: string, newTab?: boolean) => {
+    if (!newTab) {
+      navigate(pages.userFeed(feedId));
+    } else {
+      const w = window.open(pages.userFeed(feedId), "_blank");
+      w?.focus();
+    }
   };
 
   const onApplyRequiresAttentionFilters = useCallback(() => {

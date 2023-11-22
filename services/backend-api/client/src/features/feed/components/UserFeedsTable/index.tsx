@@ -30,6 +30,7 @@ import {
   Text,
   MenuOptionGroup,
   MenuItemOption,
+  IconButton,
 } from "@chakra-ui/react";
 import React, { CSSProperties, useContext, useMemo, useState } from "react";
 import {
@@ -46,6 +47,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   DeleteIcon,
+  ExternalLinkIcon,
   SearchIcon,
 } from "@chakra-ui/icons";
 import { debounce } from "lodash";
@@ -58,12 +60,12 @@ import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedSummary } from ".
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { DATE_FORMAT } from "../../../../constants";
+import { DATE_FORMAT, pages } from "../../../../constants";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 import { UserFeedStatusFilterContext } from "../../../../contexts";
 
 interface Props {
-  onSelectedFeedId?: (feedId: string) => void;
+  onSelectedFeedId?: (feedId: string, openNewTab?: boolean) => void;
 }
 
 const DEFAULT_MAX_PER_PAGE = 20;
@@ -249,6 +251,21 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
           return isOwnedByCurrentUser ? null : <CheckIcon />;
         },
+      }),
+      columnHelper.display({
+        id: "navigate",
+        cell: ({ row }) => (
+          // open new tab, external link icon
+          <IconButton
+            aria-label="Open feed in new tab"
+            icon={<ExternalLinkIcon />}
+            as="a"
+            size="sm"
+            target="_blank"
+            href={pages.userFeed(row.original.id)}
+            variant="ghost"
+          />
+        ),
       }),
     ],
     [search]
@@ -570,6 +587,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
                 return (
                   <Tr
+                    role="button"
                     key={row.id}
                     tabIndex={0}
                     _hover={{
