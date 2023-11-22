@@ -19,20 +19,19 @@ import {
   MenuList,
   MenuItem,
   MenuButton,
-  Wrap,
   HStack,
   Highlight,
   InputGroup,
   InputLeftElement,
   Input,
-  InputRightElement,
   MenuDivider,
   Text,
+  IconButton,
   MenuOptionGroup,
   MenuItemOption,
-  IconButton,
+  InputRightElement,
 } from "@chakra-ui/react";
-import React, { CSSProperties, useContext, useMemo, useState } from "react";
+import React, { CSSProperties, useContext, useEffect, useMemo, useState } from "react";
 import {
   RowSelectionState,
   SortingState,
@@ -46,14 +45,15 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CloseIcon,
   DeleteIcon,
   ExternalLinkIcon,
   SearchIcon,
 } from "@chakra-ui/icons";
-import { debounce } from "lodash";
 import dayjs from "dayjs";
 import { useInView } from "react-intersection-observer";
 import { FaPause, FaPlay } from "react-icons/fa6";
+import { useSearchParams } from "react-router-dom";
 import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
 import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedSummary } from "../../types";
@@ -102,6 +102,9 @@ const STATUS_FILTERS = [
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
   const { ref: scrollRef, inView } = useInView();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsSearch = searchParams.get("search") || "";
+  const [searchInput, setSearchInput] = useState(searchParamsSearch);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
@@ -293,9 +296,19 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     onSelectedFeedId?.(feedId);
   };
 
-  const onSearchChange = debounce((value: string) => {
-    setSearch(value);
-  }, 500);
+  const onSearchChange = (val: string) => {
+    setSearchInput(val);
+  };
+
+  const onSearchClear = () => {
+    setSearchInput("");
+    onSearchSubmit("");
+  };
+
+  const onSearchSubmit = (val?: string) => {
+    const useVal = val ?? searchInput;
+    setSearchParams({ ...searchParams, search: useVal });
+  };
 
   const deleteUserFeedsHandler = async () => {
     const feedIds = selectedRows.map((row) => row.original.id);
@@ -353,6 +366,10 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     setStatusFilters(statuses as UserFeedComputedStatus[]);
   };
 
+  useEffect(() => {
+    setSearch(searchParamsSearch);
+  }, [searchParamsSearch, setSearch]);
+
   if (status === "loading") {
     return (
       <Center width="100%" height="100%">
@@ -372,46 +389,53 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
   return (
     <Stack spacing={4} height="100%">
-      <Wrap>
-        <InputGroup width="min-content" flex={1}>
-          <InputLeftElement pointerEvents="none">
-            <SearchIcon color="gray.400" />
-          </InputLeftElement>
-          <Input
-            onChange={({ target: { value } }) => {
-              onSearchChange(value);
-            }}
-            minWidth="325px"
-            placeholder={t("pages.feeds.tableSearch")}
-          />
-          <InputRightElement>{search && isFetching && <Spinner size="sm" />}</InputRightElement>
-        </InputGroup>
-        <Menu closeOnSelect={false}>
-          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
-            <Text overflow="hidden" textAlign="left" textOverflow="ellipsis" whiteSpace="nowrap">
-              {statusFilters?.length
-                ? `Status: ${statusFilters.length} selected`
-                : "Filter by Status"}
-            </Text>
-          </MenuButton>
-          <MenuList minWidth="240px">
-            <MenuOptionGroup
-              type="checkbox"
-              onChange={(s) => onStatusSelect(s)}
-              value={statusFilters}
-            >
-              {STATUS_FILTERS.map((val) => (
-                <MenuItemOption key={val.value} value={val.value}>
-                  {val.label}
-                </MenuItemOption>
-              ))}
-            </MenuOptionGroup>
-          </MenuList>
-        </Menu>
-      </Wrap>
+      <form
+        id="user-feed-search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSearchSubmit();
+        }}
+      >
+        <HStack width="100%">
+          <InputGroup width="min-content" flex={1}>
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.400" />
+            </InputLeftElement>
+            <Input
+              onChange={({ target: { value } }) => {
+                onSearchChange(value);
+              }}
+              value={searchInput || ""}
+              minWidth="250px"
+              placeholder={t("pages.feeds.tableSearch")}
+            />
+            {search && !isFetching && (
+              <InputRightElement>
+                <IconButton
+                  aria-label="Clear search"
+                  icon={<CloseIcon color="gray.400" />}
+                  size="sm"
+                  variant="link"
+                  onClick={() => {
+                    onSearchClear();
+                  }}
+                />
+              </InputRightElement>
+            )}
+            {search && isFetching && (
+              <InputRightElement>
+                <Spinner size="sm" />
+              </InputRightElement>
+            )}
+          </InputGroup>
+          <Button leftIcon={<SearchIcon />} type="submit">
+            Search
+          </Button>
+        </HStack>
+      </form>
       <Stack>
         <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
-          <Wrap>
+          <HStack justifyContent="space-between" flexWrap="wrap" flex={1}>
             <Menu>
               <MenuButton
                 as={Button}
@@ -470,7 +494,34 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 />
               </MenuList>
             </Menu>
-          </Wrap>
+            <Menu closeOnSelect={false}>
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
+                <Text
+                  overflow="hidden"
+                  textAlign="left"
+                  textOverflow="ellipsis"
+                  whiteSpace="nowrap"
+                >
+                  {statusFilters?.length
+                    ? `Status: ${statusFilters.length} selected`
+                    : "Filter by Status"}
+                </Text>
+              </MenuButton>
+              <MenuList minWidth="240px">
+                <MenuOptionGroup
+                  type="checkbox"
+                  onChange={(s) => onStatusSelect(s)}
+                  value={statusFilters}
+                >
+                  {STATUS_FILTERS.map((val) => (
+                    <MenuItemOption key={val.value} value={val.value}>
+                      {val.label}
+                    </MenuItemOption>
+                  ))}
+                </MenuOptionGroup>
+              </MenuList>
+            </Menu>
+          </HStack>
         </Flex>
         {/* <Stack maxWidth="200px" width="100%">
           <Heading size="sm">Filters</Heading>
