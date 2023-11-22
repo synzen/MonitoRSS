@@ -30,6 +30,7 @@ import {
   MenuOptionGroup,
   MenuItemOption,
   InputRightElement,
+  Link,
 } from "@chakra-ui/react";
 import React, { CSSProperties, useContext, useEffect, useMemo, useState } from "react";
 import {
@@ -47,13 +48,12 @@ import {
   ChevronUpIcon,
   CloseIcon,
   DeleteIcon,
-  ExternalLinkIcon,
   SearchIcon,
 } from "@chakra-ui/icons";
 import dayjs from "dayjs";
 import { useInView } from "react-intersection-observer";
 import { FaPause, FaPlay } from "react-icons/fa6";
-import { useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
 import { ConfirmModal, Loading } from "@/components";
 import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedSummary } from "../../types";
@@ -206,13 +206,31 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           const value = info.getValue();
 
           if (!search) {
-            return value;
+            return (
+              <Link
+                as={RouterLink}
+                to={pages.userFeed(info.row.original.id)}
+                _hover={{
+                  textDecoration: "underline",
+                }}
+              >
+                {value}
+              </Link>
+            );
           }
 
           return (
-            <Highlight query={search} styles={{ bg: "orange.100" }}>
-              {value}
-            </Highlight>
+            <Link
+              as={RouterLink}
+              to={pages.userFeed(info.row.original.id)}
+              _hover={{
+                textDecoration: "underline",
+              }}
+            >
+              <Highlight query={search} styles={{ bg: "orange.100" }}>
+                {value}
+              </Highlight>
+            </Link>
           );
         },
       }),
@@ -223,13 +241,33 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           const value = info.getValue();
 
           if (!search) {
-            return value;
+            return (
+              <Link
+                as="a"
+                target="_blank"
+                href={value}
+                _hover={{
+                  textDecoration: "underline",
+                }}
+              >
+                {value}
+              </Link>
+            );
           }
 
           return (
-            <Highlight query={search} styles={{ bg: "orange.100" }}>
-              {value}
-            </Highlight>
+            <Link
+              as="a"
+              target="_blank"
+              href={value}
+              _hover={{
+                textDecoration: "underline",
+              }}
+            >
+              <Highlight query={search} styles={{ bg: "orange.100" }}>
+                {value}
+              </Highlight>
+            </Link>
           );
         },
       }),
@@ -254,21 +292,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
           return isOwnedByCurrentUser ? null : <CheckIcon />;
         },
-      }),
-      columnHelper.display({
-        id: "navigate",
-        cell: ({ row }) => (
-          // open new tab, external link icon
-          <IconButton
-            aria-label="Open feed in new tab"
-            icon={<ExternalLinkIcon />}
-            as="a"
-            size="sm"
-            target="_blank"
-            href={pages.userFeed(row.original.id)}
-            variant="ghost"
-          />
-        ),
       }),
     ],
     [search]
@@ -640,7 +663,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                   <Tr
                     role="button"
                     key={row.id}
-                    tabIndex={0}
                     _hover={{
                       bg: "gray.700",
                       cursor: "pointer",
