@@ -23,6 +23,7 @@ async function bootstrap() {
     StaticAppModule,
     new FastifyAdapter({
       logger: true,
+      trustProxy: true,
     }),
     {
       cors: true,

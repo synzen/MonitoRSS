@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
   UnauthorizedException,
   UseGuards,
   UseInterceptors,
@@ -29,6 +30,7 @@ import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import logger from "../../utils/logger";
+import { FastifyRequest } from "fastify";
 
 type ProductId = string;
 
@@ -158,7 +160,10 @@ export class SupporterSubscriptionsController {
   @Get()
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(60 * 5)
-  async getProducts(@Query("currency") currency?: string): Promise<{
+  async getProducts(
+    @Req() request: FastifyRequest,
+    @Query("currency") currency?: string
+  ): Promise<{
     data: {
       products: Array<{
         id: ProductId;
@@ -175,6 +180,11 @@ export class SupporterSubscriptionsController {
       }>;
     };
   }> {
+    logger.info("getProducts", {
+      ip: request.ip,
+      headers: request.headers,
+    });
+
     if (!ACCEPTED_CURRENCY_CODES.includes(currency || "USD")) {
       throw new BadRequestException(
         `Invalid currency code ${currency}. Must be one of ${ACCEPTED_CURRENCY_CODES.join(
