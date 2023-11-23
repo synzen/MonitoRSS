@@ -556,7 +556,7 @@ export const UserFeed: React.FC = () => {
                   </Stack>
                   {feed && !feed.connections.length && (
                     <Stack>
-                      <Alert status="warning">
+                      <Alert status="warning" rounded="md">
                         <AlertIcon />
                         <Box>
                           <AlertTitle>You have no connections set up!</AlertTitle>
