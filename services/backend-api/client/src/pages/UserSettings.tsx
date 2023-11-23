@@ -348,33 +348,6 @@ export const UserSettings = () => {
                                           </Text>
                                         </AccordionPanel>
                                       </AccordionItem>
-                                      <AccordionItem
-                                        border="none"
-                                        borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                                      >
-                                        <AccordionButton border="none">
-                                          <Flex
-                                            flex="1"
-                                            gap={4}
-                                            fontSize={13}
-                                            color="blue.200"
-                                            alignItems="center"
-                                            textAlign="left"
-                                          >
-                                            Are the prices different?
-                                            <AccordionIcon />
-                                          </Flex>
-                                        </AccordionButton>
-                                        <AccordionPanel>
-                                          <Text fontSize={13}>
-                                            Yes. Even though pricing has stayed the same since
-                                            MonitoRSS started over 7 years ago, costs have increased
-                                            over time with both usage and inflation. As a result, to
-                                            keep up with costs and to maintain the public hosting of
-                                            MonitoRSS, the prices had to have been adjusted.
-                                          </Text>
-                                        </AccordionPanel>
-                                      </AccordionItem>
                                     </Accordion>
                                   </Stack>
                                 </AlertDescription>
@@ -403,25 +376,24 @@ export const UserSettings = () => {
                             </Text>
                             <Stack spacing={3}>
                               {subscriptionText}
-                              {subscriptionPendingCancellation && (
-                                <Box>
-                                  <ConfirmModal
-                                    trigger={
-                                      <Button size="sm" variant="solid" colorScheme="blue">
-                                        Resume subscription
-                                      </Button>
-                                    }
-                                    onConfirm={onClickResumeSubscription}
-                                    okText="Resume subscription"
-                                    colorScheme="blue"
-                                    description="Are you sure you want to resume your subscription?"
-                                    title="Resume subscription"
-                                  />
-                                </Box>
-                              )}
-                              {/* <Button onClick={() => refetch()}>Refetch</Button> */}
-                              {!subscriptionPendingCancellation && (
-                                <HStack>
+                              <HStack>
+                                {subscriptionPendingCancellation && (
+                                  <Box>
+                                    <ConfirmModal
+                                      trigger={
+                                        <Button size="sm" variant="solid" colorScheme="blue">
+                                          Resume subscription
+                                        </Button>
+                                      }
+                                      onConfirm={onClickResumeSubscription}
+                                      okText="Resume subscription"
+                                      colorScheme="blue"
+                                      description="Are you sure you want to resume your subscription?"
+                                      title="Resume subscription"
+                                    />
+                                  </Box>
+                                )}
+                                {!subscriptionPendingCancellation && (
                                   <PricingDialog
                                     trigger={
                                       <Button size="sm" variant="outline">
@@ -429,9 +401,11 @@ export const UserSettings = () => {
                                       </Button>
                                     }
                                   />
+                                )}
+                                {!subscriptionPendingCancellation && (
                                   <ChangePaymentMethodUrlButton />
-                                </HStack>
-                              )}
+                                )}
+                              </HStack>
                             </Stack>
                           </Stack>
                         </Stack>

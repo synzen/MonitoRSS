@@ -97,6 +97,7 @@ export const ChangeSubscriptionDialog = ({
         });
       }
 
+      console.log("setting sub poll date");
       setSubscriptionPollDate(start);
     } catch (e) {
       notifyError(t("common.errors.somethingWentWrong"), (e as Error).message);
@@ -113,6 +114,7 @@ export const ChangeSubscriptionDialog = ({
     const subscriptionUpdatedTime = new Date(subscriptionUpdatedDate).getTime();
 
     if (subscriptionUpdatedTime > subscriptionPollDate.getTime()) {
+      console.log("updated");
       onClose();
       notifySuccess("Successfully updated!");
       setSubscriptionPollDate(undefined);

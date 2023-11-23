@@ -60,37 +60,37 @@ const tiers: Array<{
   highlighted?: boolean;
   features: Array<{ name: string; description: string; enabled?: boolean }>;
 }> = [
-  {
-    name: "FREE",
-    productId: ProductKey.Free,
-    priceFormatted: "$0",
-    disableSubscribe: true,
-    description: "For basic news delivery",
-    features: [
-      {
-        name: Feature.Feeds,
-        description: "Track 5 news feeds",
-        enabled: true,
-      },
-      {
-        name: Feature.ArticleLimit,
-        description: "Limit of 50 articles daily",
-        enabled: true,
-      },
-      {
-        name: Feature.Webhooks,
-        description: "Custom name/avatar with webhooks",
-      },
-      {
-        name: Feature.CustomPlaceholders,
-        description: "Custom placeholders",
-      },
-      {
-        name: Feature.RefreshRate,
-        description: "10 minute refresh rate",
-      },
-    ],
-  },
+  // {
+  //   name: "FREE",
+  //   productId: ProductKey.Free,
+  //   priceFormatted: "$0",
+  //   disableSubscribe: true,
+  //   description: "For basic news delivery",
+  //   features: [
+  //     {
+  //       name: Feature.Feeds,
+  //       description: "Track 5 news feeds",
+  //       enabled: true,
+  //     },
+  //     {
+  //       name: Feature.ArticleLimit,
+  //       description: "Limit of 50 articles daily",
+  //       enabled: true,
+  //     },
+  //     {
+  //       name: Feature.Webhooks,
+  //       description: "Custom name/avatar with webhooks",
+  //     },
+  //     {
+  //       name: Feature.CustomPlaceholders,
+  //       description: "Custom placeholders",
+  //     },
+  //     {
+  //       name: Feature.RefreshRate,
+  //       description: "10 minute refresh rate",
+  //     },
+  //   ],
+  // },
   {
     name: "TIER 1",
     productId: ProductKey.Tier1,
@@ -99,7 +99,7 @@ const tiers: Array<{
     features: [
       {
         name: Feature.Feeds,
-        description: "Track 15 news feeds",
+        description: "Track 35 news feeds",
         enabled: true,
       },
       {
@@ -119,7 +119,8 @@ const tiers: Array<{
       },
       {
         name: Feature.RefreshRate,
-        description: "10 minute refresh rate",
+        description: "2 minute refresh rate",
+        enabled: true,
       },
     ],
   },
@@ -132,7 +133,7 @@ const tiers: Array<{
     features: [
       {
         name: Feature.Feeds,
-        description: "Track 40 news feeds",
+        description: "Track 70 news feeds",
         enabled: true,
       },
       {
@@ -165,7 +166,7 @@ const tiers: Array<{
     features: [
       {
         name: Feature.Feeds,
-        description: "Track 100 news feeds",
+        description: "Track 105 news feeds",
         enabled: true,
       },
       {
@@ -405,19 +406,19 @@ export const PricingDialog = ({ trigger }: Props) => {
         onClose={onClose}
         isOpen={isOpen}
         isCentered
-        size="full"
+        size="6xl"
         initialFocusRef={initialFocusRef}
         motionPreset="slideInBottom"
-        scrollBehavior="outside"
+        scrollBehavior="inside"
       >
         <ModalOverlay backdropFilter="blur(3px)" />
-        <ModalContent bg="blackAlpha.700" shadow="none" maxHeight="100vh" overflowY="scroll">
+        <ModalContent bg="none" shadow="none" maxHeight="100vh">
           <ModalCloseButton />
           <ModalBody bg="transparent" shadow="none">
             <Box>
               <Stack>
                 <Flex alignItems="center" justifyContent="center">
-                  <Stack width="100%" alignItems="center" spacing={12}>
+                  <Stack width="100%" alignItems="center" spacing={12} justifyContent="center">
                     <Stack justifyContent="center" textAlign="center">
                       <Heading>Pricing</Heading>
                       <Text color="whiteAlpha.800" fontSize="lg" fontWeight="light">
@@ -473,159 +474,162 @@ export const PricingDialog = ({ trigger }: Props) => {
                             </MenuList>
                           </Menu>
                         )}
-                        <SimpleGrid
-                          justifyContent="center"
-                          gridTemplateColumns={[
-                            "350px",
-                            "450px",
-                            "350px 350px",
-                            "350px 350px",
-                            "350px 350px 350px",
-                            "350px 350px 350px 350px",
-                          ]}
-                          spacing={4}
-                          width="100%"
-                        >
-                          {tiers.map(
-                            (
-                              {
-                                name,
-                                description,
-                                priceFormatted,
-                                highlighted,
-                                features,
-                                productId,
-                              },
-                              currentTierIndex
-                            ) => {
-                              const associatedProduct = products?.find((p) => p.id === productId);
+                        <Flex overflow="auto" width="100%" margin="auto">
+                          <SimpleGrid
+                            margin="auto"
+                            // justifyContent="center"
+                            gridTemplateColumns={[
+                              "325px",
+                              "450px",
+                              "325px 325px",
+                              "325px 325px",
+                              "325px 325px 325px",
+                              "325px 325px 325px",
+                            ]}
+                            spacing={4}
+                          >
+                            {tiers.map(
+                              (
+                                {
+                                  name,
+                                  description,
+                                  priceFormatted,
+                                  highlighted,
+                                  features,
+                                  productId,
+                                },
+                                currentTierIndex
+                              ) => {
+                                const associatedProduct = products?.find((p) => p.id === productId);
 
-                              const associatedPrice = associatedProduct?.prices.find(
-                                (p) => p.interval === interval
-                              );
+                                const associatedPrice = associatedProduct?.prices.find(
+                                  (p) => p.interval === interval
+                                );
 
-                              const shorterProductPrice = associatedPrice?.formattedPrice.endsWith(
-                                ".00"
-                              ) ? (
-                                <Text fontSize={priceTextSize} fontWeight="bold">
-                                  {associatedPrice?.formattedPrice.slice(0, -3)}
-                                </Text>
-                              ) : (
-                                associatedPrice?.formattedPrice
-                              );
+                                const shorterProductPrice =
+                                  associatedPrice?.formattedPrice.endsWith(".00") ? (
+                                    <Text fontSize={priceTextSize} fontWeight="bold">
+                                      {associatedPrice?.formattedPrice.slice(0, -3)}
+                                    </Text>
+                                  ) : (
+                                    associatedPrice?.formattedPrice
+                                  );
 
-                              const isOnThisTier =
-                                userSubscription.product.key === productId &&
-                                // There is no billing period on free
-                                (userSubscription.billingInterval === interval ||
-                                  !userSubscription.billingInterval);
-                              const isAboveUserTier =
-                                userTierIndex < currentTierIndex ||
-                                (userSubscription.product.key === productId &&
-                                  userSubscription.billingInterval !== interval &&
-                                  userSubscription.billingInterval === "month");
-                              const isBelowUserTier =
-                                userTierIndex > currentTierIndex ||
-                                (userSubscription.product.key === productId &&
-                                  userSubscription.billingInterval !== interval &&
-                                  userSubscription.billingInterval === "year");
+                                const isOnThisTier =
+                                  userSubscription.product.key === productId &&
+                                  // There is no billing period on free
+                                  (userSubscription.billingInterval === interval ||
+                                    !userSubscription.billingInterval);
+                                const isAboveUserTier =
+                                  userTierIndex < currentTierIndex ||
+                                  (userSubscription.product.key === productId &&
+                                    userSubscription.billingInterval !== interval &&
+                                    userSubscription.billingInterval === "month");
+                                const isBelowUserTier =
+                                  userTierIndex > currentTierIndex ||
+                                  (userSubscription.product.key === productId &&
+                                    userSubscription.billingInterval !== interval &&
+                                    userSubscription.billingInterval === "year");
 
-                              return (
-                                <Card size="lg" shadow="lg" key={name}>
-                                  <CardHeader pb={0}>
-                                    <Stack>
-                                      <HStack justifyContent="flex-start">
-                                        <Heading size="md" fontWeight="semibold">
-                                          {name}
-                                        </Heading>
-                                        {highlighted && (
-                                          <Tag size="sm" colorScheme="blue" fontWeight="bold">
-                                            Most Popular
-                                          </Tag>
-                                        )}
-                                      </HStack>
-                                      <Text color="whiteAlpha.600" fontSize="lg">
-                                        {description}
-                                      </Text>
-                                    </Stack>
-                                  </CardHeader>
-                                  <CardBody>
-                                    <Stack spacing="12">
-                                      <Box>
-                                        <Text fontSize={priceTextSize} fontWeight="bold">
-                                          {fetchStatus === "fetching" && (
-                                            <Spinner
-                                              colorScheme="blue"
-                                              color="blue.300"
-                                              size="lg"
-                                            />
-                                          )}
-                                          {fetchStatus !== "fetching" &&
-                                            (shorterProductPrice || "N/A")}
-                                        </Text>
-                                        <Text fontSize="lg" color="whiteAlpha.600">
-                                          {interval === "month" && "per month"}
-                                          {interval === "year" && "per year"}
-                                        </Text>
-                                      </Box>
+                                return (
+                                  <Card size="lg" shadow="lg" key={name}>
+                                    <CardHeader pb={0}>
                                       <Stack>
-                                        {features.map((f) => {
-                                          return (
-                                            <HStack key={f.name}>
-                                              {f.enabled ? (
-                                                <Flex bg="blue.500" rounded="full" p={1}>
-                                                  <CheckIcon fontSize="md" width={3} height={3} />
-                                                </Flex>
-                                              ) : (
-                                                // </Box>
-                                                <Flex bg="whiteAlpha.600" rounded="full" p={1.5}>
-                                                  <CloseIcon width={2} height={2} fontSize="sm" />
-                                                </Flex>
-                                              )}
-                                              <Text fontSize="lg">{f.description}</Text>
-                                            </HStack>
-                                          );
-                                        })}
+                                        <HStack justifyContent="flex-start">
+                                          <Heading size="md" fontWeight="semibold">
+                                            {name}
+                                          </Heading>
+                                          {highlighted && (
+                                            <Tag size="sm" colorScheme="blue" fontWeight="bold">
+                                              Most Popular
+                                            </Tag>
+                                          )}
+                                        </HStack>
+                                        <Text color="whiteAlpha.600" fontSize="lg">
+                                          {description}
+                                        </Text>
                                       </Stack>
-                                    </Stack>
-                                  </CardBody>
-                                  <CardFooter justifyContent="center">
-                                    <Button
-                                      isDisabled={isOnThisTier}
-                                      width="100%"
-                                      onClick={() =>
-                                        onClickPrice(
-                                          associatedPrice?.id,
-                                          currency.code,
-                                          productId,
-                                          isBelowUserTier
-                                        )
-                                      }
-                                      variant={
-                                        isOnThisTier
-                                          ? "outline"
-                                          : isAboveUserTier
-                                          ? "solid"
-                                          : "outline"
-                                      }
-                                      colorScheme={
-                                        isAboveUserTier
-                                          ? "blue"
-                                          : isBelowUserTier
-                                          ? "red"
-                                          : undefined
-                                      }
-                                    >
-                                      {isOnThisTier && "Current Plan"}
-                                      {isBelowUserTier && "Downgrade"}
-                                      {isAboveUserTier && "Upgrade"}
-                                    </Button>
-                                  </CardFooter>
-                                </Card>
-                              );
-                            }
-                          )}
-                        </SimpleGrid>
+                                    </CardHeader>
+                                    <CardBody>
+                                      <Stack spacing="12">
+                                        <Box>
+                                          <Text fontSize={priceTextSize} fontWeight="bold">
+                                            {fetchStatus === "fetching" && (
+                                              <Spinner
+                                                colorScheme="blue"
+                                                color="blue.300"
+                                                size="lg"
+                                              />
+                                            )}
+                                            {fetchStatus !== "fetching" &&
+                                              (shorterProductPrice || "N/A")}
+                                          </Text>
+                                          <Text fontSize="lg" color="whiteAlpha.600">
+                                            {interval === "month" && "per month"}
+                                            {interval === "year" && "per year"}
+                                          </Text>
+                                        </Box>
+                                        <Stack>
+                                          {features.map((f) => {
+                                            return (
+                                              <HStack key={f.name}>
+                                                {f.enabled ? (
+                                                  <Flex bg="blue.500" rounded="full" p={1}>
+                                                    <CheckIcon fontSize="md" width={3} height={3} />
+                                                  </Flex>
+                                                ) : (
+                                                  // </Box>
+                                                  <Flex bg="whiteAlpha.600" rounded="full" p={1.5}>
+                                                    <CloseIcon width={2} height={2} fontSize="sm" />
+                                                  </Flex>
+                                                )}
+                                                <Text fontSize="lg">{f.description}</Text>
+                                              </HStack>
+                                            );
+                                          })}
+                                        </Stack>
+                                      </Stack>
+                                    </CardBody>
+                                    <CardFooter justifyContent="center">
+                                      <Stack width="100%" spacing={0}>
+                                        <Button
+                                          isDisabled={isOnThisTier}
+                                          width="100%"
+                                          onClick={() =>
+                                            onClickPrice(
+                                              associatedPrice?.id,
+                                              currency.code,
+                                              productId,
+                                              isBelowUserTier
+                                            )
+                                          }
+                                          variant={
+                                            isOnThisTier
+                                              ? "outline"
+                                              : isAboveUserTier
+                                              ? "solid"
+                                              : "outline"
+                                          }
+                                          colorScheme={
+                                            isAboveUserTier
+                                              ? "blue"
+                                              : isBelowUserTier
+                                              ? "red"
+                                              : undefined
+                                          }
+                                        >
+                                          {isOnThisTier && "Current Plan"}
+                                          {isBelowUserTier && "Downgrade"}
+                                          {isAboveUserTier && "Upgrade"}
+                                        </Button>
+                                      </Stack>
+                                    </CardFooter>
+                                  </Card>
+                                );
+                              }
+                            )}
+                          </SimpleGrid>
+                        </Flex>
                       </>
                     )}
                   </Stack>
@@ -721,9 +725,25 @@ export const PricingDialog = ({ trigger }: Props) => {
                   />
                 </Stack>
               </Stack>
+              {userSubscription?.product.key !== ProductKey.Free && (
+                <Stack margin="auto" justifyContent="center" mt={8} textAlign="center" spacing={4}>
+                  <Text>If you&apos;d like to cancel your subscription, you may do so below.</Text>
+                  <Flex justifyContent="center">
+                    <Button
+                      colorScheme="red"
+                      variant="outline"
+                      onClick={() =>
+                        onClickPrice("free-monthly", currency.code, ProductKey.Free, true)
+                      }
+                    >
+                      Cancel Subscription
+                    </Button>
+                  </Flex>
+                </Stack>
+              )}
             </Box>
           </ModalBody>
-          <ModalFooter justifyContent="center" mb={24} mt={6}>
+          <ModalFooter justifyContent="center" mt={6}>
             <Button onClick={onClose} width="lg" variant="outline">
               Close
             </Button>

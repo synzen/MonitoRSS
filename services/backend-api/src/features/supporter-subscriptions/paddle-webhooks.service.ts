@@ -31,19 +31,19 @@ const BENEFITS_BY_TIER: Partial<
   [SubscriptionProductKey.Tier1]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
-    maxUserFeeds: 15,
-    refreshRateSeconds: 600,
+    maxUserFeeds: 35,
+    refreshRateSeconds: 120,
   },
   [SubscriptionProductKey.Tier2]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
-    maxUserFeeds: 40,
+    maxUserFeeds: 70,
     refreshRateSeconds: 120,
   },
   [SubscriptionProductKey.Tier3]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
-    maxUserFeeds: 100,
+    maxUserFeeds: 105,
     refreshRateSeconds: 120,
   },
   [LegacySubscriptionProductKey.Tier1Legacy]: {
