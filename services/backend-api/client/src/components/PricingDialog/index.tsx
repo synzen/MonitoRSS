@@ -709,6 +709,16 @@ export const PricingDialog = ({ trigger }: Props) => {
                           </Text>
                         ),
                       },
+                      {
+                        q: "Who/what is Paddle?",
+                        a: (
+                          <Text>
+                            Paddle (paddle.com) is our reseller and Merchant of Record. They handle
+                            the checkout and billing process. All emails related to billing will be
+                            sent from Paddle.
+                          </Text>
+                        ),
+                      },
                     ]}
                   />
                 </Stack>

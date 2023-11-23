@@ -298,10 +298,7 @@ export const UserSettings = () => {
                                     <ListItem>
                                       Optionally pay upfront for a year at a discount
                                     </ListItem>
-                                    <ListItem>
-                                      Receive feature updates that may not be available on legacy
-                                      Patreon plans going forward
-                                    </ListItem>
+                                    <ListItem>Get localized pricing in your currency</ListItem>
                                   </OrderedList>
                                   <br />
                                   <Text>
@@ -340,11 +337,12 @@ export const UserSettings = () => {
                                         </AccordionButton>
                                         <AccordionPanel>
                                           <Text fontSize={13}>
-                                            Patreon has very high fees and its API has had
-                                            limitations that both disallowed yearly plans and
-                                            prevented subscriptions from starting on any day of the
-                                            month. While it has worked well enough in the past, it
-                                            is not viable long-term.
+                                            Patreon has very high fees, its API has had limitations
+                                            that both disallowed yearly plans, prevented
+                                            subscriptions from starting on any day of the month, and
+                                            made tax compliance difficult. While it has worked well
+                                            enough in the past, it is not viable for sustaining the
+                                            public service that MonitoRSS provides in the long run.
                                           </Text>
                                         </AccordionPanel>
                                       </AccordionItem>

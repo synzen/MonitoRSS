@@ -180,6 +180,7 @@ export class UsersService {
         updatedAt: subscription.updatedAt,
         updatePaymentMethodUrl,
       },
+      isOnPatreon,
     };
   }
 
