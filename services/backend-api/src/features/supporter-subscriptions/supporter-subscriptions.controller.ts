@@ -180,11 +180,6 @@ export class SupporterSubscriptionsController {
       }>;
     };
   }> {
-    logger.info("getProducts", {
-      ip: request.ip,
-      headers: request.headers,
-    });
-
     if (!ACCEPTED_CURRENCY_CODES.includes(currency || "USD")) {
       throw new BadRequestException(
         `Invalid currency code ${currency}. Must be one of ${ACCEPTED_CURRENCY_CODES.join(
@@ -197,7 +192,10 @@ export class SupporterSubscriptionsController {
 
     const { products } =
       await this.supporterSubscriptionsService.getProductCurrencies(
-        useCurrency
+        useCurrency,
+        {
+          ipAddress: request.ip,
+        }
       );
 
     return {

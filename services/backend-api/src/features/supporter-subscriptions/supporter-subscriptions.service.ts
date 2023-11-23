@@ -103,7 +103,7 @@ export class SupporterSubscriptionsService {
     };
   }
 
-  async getProductCurrencies(currency: string) {
+  async getProductCurrencies(currency: string, data: { ipAddress?: string }) {
     const { products } = await this.getProducts();
 
     const priceIds = products
@@ -126,6 +126,7 @@ export class SupporterSubscriptionsService {
         quantity: 1,
       })),
       currency_code: currency,
+      customer_ip_address: data.ipAddress || "",
     };
 
     const previewData = await this.executeApiCall<PaddlePricingPreviewResponse>(
