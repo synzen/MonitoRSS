@@ -113,47 +113,46 @@ export class SupporterSubscriptionsController {
     @Body() requestBody: Record<string, any>,
     @Headers("Paddle-Signature") signature?: string
   ) {
-    console.log(
-      "🚀 ~ file: supporter-subscriptions.controller.ts:96 ~ SupporterSubscriptionsController ~ handlePaddleWebhook ~ requestBody:",
-      JSON.stringify(requestBody, null, 2)
-    );
+    try {
+      if (
+        !this.paddleWebhooksService.isVerifiedWebhookEvent({
+          signature,
+          requestBody: JSON.stringify(requestBody),
+        })
+      ) {
+        logger.warn("Invalid signature received for paddle webhook event", {
+          requestBody,
+          signature,
+        });
 
-    if (
-      !this.paddleWebhooksService.isVerifiedWebhookEvent({
-        signature,
-        requestBody: JSON.stringify(requestBody),
-      })
-    ) {
-      logger.warn("Invalid signature received for paddle webhook event", {
+        throw new UnauthorizedException();
+      }
+
+      if (requestBody.event_type === "subscription.canceled") {
+        await this.paddleWebhooksService.handleSubscriptionCancelledEvent(
+          requestBody as PaddleEventSubscriptionCanceled
+        );
+      } else if (requestBody.event_type === "subscription.updated") {
+        await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
+          requestBody as PaddleEventSubscriptionUpdated
+        );
+      } else if (requestBody.event_type === "subscription.activated") {
+        await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
+          requestBody as PaddleEventSubscriptionActivated
+        );
+      }
+
+      return {
+        ok: 1,
+      };
+    } catch (err) {
+      logger.error("Error while handling paddle webhook event", {
         requestBody,
         signature,
       });
 
-      throw new UnauthorizedException();
+      throw err;
     }
-
-    if (
-      requestBody.event_type === "subscription.canceled" ||
-      (requestBody.event_type === "subscription.updated" &&
-        requestBody.status === "canceled" &&
-        !requestBody.items[0].current_billing_period)
-    ) {
-      await this.paddleWebhooksService.handleSubscriptionCancelledEvent(
-        requestBody as PaddleEventSubscriptionCanceled
-      );
-    } else if (requestBody.event_type === "subscription.updated") {
-      await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
-        requestBody as PaddleEventSubscriptionUpdated
-      );
-    } else if (requestBody.event_type === "subscription.activated") {
-      await this.paddleWebhooksService.handleSubscriptionUpdatedEvent(
-        requestBody as PaddleEventSubscriptionActivated
-      );
-    }
-
-    return {
-      ok: 1,
-    };
   }
 
   @Get()

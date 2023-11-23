@@ -158,6 +158,12 @@ export class PaddleWebhooksService {
   async handleSubscriptionUpdatedEvent(
     event: PaddleEventSubscriptionUpdated | PaddleEventSubscriptionActivated
   ) {
+    if (event.data.status === "canceled") {
+      // subscription updated event also gets emitted alongside canceled event
+      // no need to handle again
+      return;
+    }
+
     const { id: productKey } =
       await this.supporterSubscriptionsService.getProduct(
         event.data.items[0].price.product_id
