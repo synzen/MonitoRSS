@@ -18,7 +18,6 @@ import {
   SimpleGrid,
   Stack,
   Switch,
-  Tag,
   Text,
   useDisclosure,
   chakra,
@@ -56,7 +55,6 @@ const tiers: Array<{
   productId: string;
   disableSubscribe?: boolean;
   priceFormatted: string;
-  description: string;
   highlighted?: boolean;
   features: Array<{ name: string; description: string; enabled?: boolean }>;
 }> = [
@@ -95,7 +93,6 @@ const tiers: Array<{
     name: "TIER 1",
     productId: ProductKey.Tier1,
     priceFormatted: "$5",
-    description: "For customized deliveries",
     features: [
       {
         name: Feature.Feeds,
@@ -128,7 +125,6 @@ const tiers: Array<{
     name: "TIER 2",
     productId: ProductKey.Tier2,
     priceFormatted: "$10",
-    description: "For time-sensitive deliveries",
     highlighted: true,
     features: [
       {
@@ -162,7 +158,6 @@ const tiers: Array<{
     name: "TIER 3",
     productId: ProductKey.Tier3,
     priceFormatted: "$20",
-    description: "For power users",
     features: [
       {
         name: Feature.Feeds,
@@ -490,14 +485,7 @@ export const PricingDialog = ({ trigger }: Props) => {
                           >
                             {tiers.map(
                               (
-                                {
-                                  name,
-                                  description,
-                                  priceFormatted,
-                                  highlighted,
-                                  features,
-                                  productId,
-                                },
+                                { name, priceFormatted, highlighted, features, productId },
                                 currentTierIndex
                               ) => {
                                 const associatedProduct = products?.find((p) => p.id === productId);
@@ -539,18 +527,18 @@ export const PricingDialog = ({ trigger }: Props) => {
                                           <Heading size="md" fontWeight="semibold">
                                             {name}
                                           </Heading>
-                                          {highlighted && (
+                                          {/* {highlighted && (
                                             <Tag size="sm" colorScheme="blue" fontWeight="bold">
                                               Most Popular
                                             </Tag>
-                                          )}
+                                          )} */}
                                         </HStack>
-                                        <Text color="whiteAlpha.600" fontSize="lg">
+                                        {/* <Text color="whiteAlpha.600" fontSize="lg">
                                           {description}
-                                        </Text>
+                                        </Text> */}
                                       </Stack>
                                     </CardHeader>
-                                    <CardBody>
+                                    <CardBody pt={1}>
                                       <Stack spacing="12">
                                         <Box>
                                           <Text fontSize={priceTextSize} fontWeight="bold">
