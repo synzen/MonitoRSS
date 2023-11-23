@@ -63,8 +63,17 @@ export const DiscordChannelName: React.FC<Props> = ({
   const useName = parenthesis ? `(#${channelName})` : `#${channelName}`;
 
   return (
-    <chakra.span display="inline" {...textProps}>
-      {useName}
-    </chakra.span>
+    <chakra.a
+      _hover={{
+        textDecoration: "underline",
+      }}
+      href={`https://discord.com/channels/${serverId}/${channelId}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      <chakra.span display="inline" {...textProps}>
+        {useName}
+      </chakra.span>
+    </chakra.a>
   );
 };
