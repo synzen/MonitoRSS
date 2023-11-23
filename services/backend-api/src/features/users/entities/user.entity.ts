@@ -36,6 +36,11 @@ export class User {
   })
   preferences?: UserPreferences;
 
+  @Prop({
+    required: false,
+  })
+  enableBilling?: boolean;
+
   createdAt: Date;
 
   updatedAt: Date;

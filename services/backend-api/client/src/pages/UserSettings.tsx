@@ -19,6 +19,7 @@ import {
   Link,
   ListItem,
   OrderedList,
+  Spinner,
   Stack,
   Switch,
   Text,
@@ -202,6 +203,23 @@ export const UserSettings = () => {
 
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
+      {checkForSubscriptionUpdateAfter && (
+        <Stack
+          backdropFilter="blur(3px)"
+          alignItems="center"
+          justifyContent="center"
+          height="100vh"
+          position="absolute"
+          background="blackAlpha.700"
+          top={0}
+          left={0}
+          width="100vw"
+          zIndex={10}
+        >
+          <Spinner />
+          <Text>Applying changes...</Text>
+        </Stack>
+      )}
       <BoxConstrained.Wrapper>
         <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={32}>
           <Stack spacing={8}>
@@ -231,186 +249,198 @@ export const UserSettings = () => {
                 </Flex>
               </Stack>
             </Stack>
-            <Divider />
-            <Stack spacing={8}>
-              <Stack>
-                <Heading size="md">Billing</Heading>
-              </Stack>
-              {!hasEmailAvailable && (
-                <Alert status="warning" borderRadius="md">
+            {data?.result.enableBilling && (
+              <>
+                <Divider />
+                <Stack spacing={8}>
                   <Stack>
-                    <AlertTitle>
-                      To enable billing for subscriptions, your email is required
-                    </AlertTitle>
-                    <AlertDescription>
-                      <Button variant="solid" colorScheme="blue" onClick={onClickGrantEmailAccess}>
-                        Grant email access
-                      </Button>
-                    </AlertDescription>
+                    <Heading size="md">Billing</Heading>
                   </Stack>
-                </Alert>
-              )}
-              {hasEmailAvailable && (
-                <Stack>
-                  {data && (
-                    <Stack spacing={8}>
-                      {data.result.isOnPatreon && (
-                        <Alert status="info" borderRadius="md">
-                          <Stack width="100%">
-                            <AlertTitle>
-                              You are currently still on a legacy Patreon plan!
-                            </AlertTitle>
-                            <AlertDescription>
-                              <Text>
-                                Subscriptions have moved off of Patreon. You are advised to move
-                                your pledge off of Patreon so that you may:
-                              </Text>
-                              <br />
-                              <OrderedList>
-                                <ListItem>Manage your subscription on this site</ListItem>
-                                <ListItem>Start your subscription on any day of the month</ListItem>
-                                <ListItem>Optionally pay upfront for a year at a discount</ListItem>
-                                <ListItem>
-                                  Receive feature updates that may not be available on legacy
-                                  Patreon plans going forward
-                                </ListItem>
-                              </OrderedList>
-                              <br />
-                              <Text>
-                                Be sure to manually cancel your Patreon pledge to avoid double
-                                charges. To cancel your pledge, visit{" "}
-                                <Link
-                                  href="https://www.patreon.com/monitorss"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  color="blue.300"
-                                >
-                                  Patreon
-                                </Link>
-                                .
-                              </Text>
-                              <Divider mt={4} mb={4} />
-                              <Stack spacing={4}>
-                                <Text fontWeight={600}>Frequently Asked Questions</Text>
-                                <Accordion allowToggle>
-                                  <AccordionItem
-                                    border="none"
-                                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                                  >
-                                    <AccordionButton border="none">
-                                      <Flex
-                                        flex="1"
-                                        gap={4}
-                                        fontSize={13}
-                                        color="blue.200"
-                                        alignItems="center"
-                                        textAlign="left"
-                                      >
-                                        Why are subscriptions moving off of Patreon?
-                                        <AccordionIcon />
-                                      </Flex>
-                                    </AccordionButton>
-                                    <AccordionPanel>
-                                      <Text fontSize={13}>
-                                        Patreon has very high fees and its API has had limitations
-                                        that both disallowed yearly plans and prevented
-                                        subscriptions from starting on any day of the month. While
-                                        it has worked well enough in the past, it is not viable
-                                        long-term.
-                                      </Text>
-                                    </AccordionPanel>
-                                  </AccordionItem>
-                                  <AccordionItem
-                                    border="none"
-                                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                                  >
-                                    <AccordionButton border="none">
-                                      <Flex
-                                        flex="1"
-                                        gap={4}
-                                        fontSize={13}
-                                        color="blue.200"
-                                        alignItems="center"
-                                        textAlign="left"
-                                      >
-                                        Are the prices different?
-                                        <AccordionIcon />
-                                      </Flex>
-                                    </AccordionButton>
-                                    <AccordionPanel>
-                                      <Text fontSize={13}>
-                                        Yes. Even though pricing has stayed the same since MonitoRSS
-                                        started over 7 years ago, costs have increased over time
-                                        with both usage and inflation. As a result, to keep up with
-                                        costs and to maintain the public hosting of MonitoRSS, the
-                                        prices had to have been adjusted.
-                                      </Text>
-                                    </AccordionPanel>
-                                  </AccordionItem>
-                                </Accordion>
-                              </Stack>
-                            </AlertDescription>
-                          </Stack>
-                        </Alert>
-                      )}
-                      {data.result.subscription.product.key !== ProductKey.Free && (
-                        <Stack>
-                          <Text fontWeight={600} color="whiteAlpha.700">
-                            Credit Balance
-                          </Text>
-                          <Text>
-                            Credit is provided as pro-rata refunds when changing plans. It is
-                            automatically applied on future transactions.
-                          </Text>
-                          <Stack spacing={3}>
-                            <Text fontSize="xl" fontWeight="semibold">
-                              {data.result.creditBalance.availableFormatted}
-                            </Text>
-                          </Stack>
-                        </Stack>
-                      )}
+                  {!hasEmailAvailable && (
+                    <Alert status="warning" borderRadius="md">
                       <Stack>
-                        <Text fontWeight={600} color="whiteAlpha.700">
-                          Current Subscription Tier
-                        </Text>
-                        <Stack spacing={3}>
-                          {subscriptionText}
-                          {subscriptionPendingCancellation && (
-                            <Box>
-                              <ConfirmModal
-                                trigger={
-                                  <Button size="sm" variant="solid" colorScheme="blue">
-                                    Resume subscription
-                                  </Button>
-                                }
-                                onConfirm={onClickResumeSubscription}
-                                okText="Resume subscription"
-                                colorScheme="blue"
-                                description="Are you sure you want to resume your subscription?"
-                                title="Resume subscription"
-                              />
-                            </Box>
-                          )}
-                          {/* <Button onClick={() => refetch()}>Refetch</Button> */}
-                          {!subscriptionPendingCancellation && (
-                            <HStack>
-                              <PricingDialog
-                                trigger={
-                                  <Button size="sm" variant="outline">
-                                    Manage Subscription
-                                  </Button>
-                                }
-                              />
-                              <ChangePaymentMethodUrlButton />
-                            </HStack>
-                          )}
-                        </Stack>
+                        <AlertTitle>
+                          To enable billing for subscriptions, your email is required
+                        </AlertTitle>
+                        <AlertDescription>
+                          <Button
+                            variant="solid"
+                            colorScheme="blue"
+                            onClick={onClickGrantEmailAccess}
+                          >
+                            Grant email access
+                          </Button>
+                        </AlertDescription>
                       </Stack>
+                    </Alert>
+                  )}
+                  {hasEmailAvailable && (
+                    <Stack>
+                      {data && (
+                        <Stack spacing={8}>
+                          {data.result.isOnPatreon && (
+                            <Alert status="info" borderRadius="md">
+                              <Stack width="100%">
+                                <AlertTitle>
+                                  You are currently still on a legacy Patreon plan!
+                                </AlertTitle>
+                                <AlertDescription>
+                                  <Text>
+                                    Subscriptions have moved off of Patreon. You are advised to move
+                                    your pledge off of Patreon so that you may:
+                                  </Text>
+                                  <br />
+                                  <OrderedList>
+                                    <ListItem>Manage your subscription on this site</ListItem>
+                                    <ListItem>
+                                      Start your subscription on any day of the month
+                                    </ListItem>
+                                    <ListItem>
+                                      Optionally pay upfront for a year at a discount
+                                    </ListItem>
+                                    <ListItem>
+                                      Receive feature updates that may not be available on legacy
+                                      Patreon plans going forward
+                                    </ListItem>
+                                  </OrderedList>
+                                  <br />
+                                  <Text>
+                                    Be sure to manually cancel your Patreon pledge to avoid double
+                                    charges. To cancel your pledge, visit{" "}
+                                    <Link
+                                      href="https://www.patreon.com/monitorss"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      color="blue.300"
+                                    >
+                                      Patreon
+                                    </Link>
+                                    .
+                                  </Text>
+                                  <Divider mt={4} mb={4} />
+                                  <Stack spacing={4}>
+                                    <Text fontWeight={600}>Frequently Asked Questions</Text>
+                                    <Accordion allowToggle>
+                                      <AccordionItem
+                                        border="none"
+                                        borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                                      >
+                                        <AccordionButton border="none">
+                                          <Flex
+                                            flex="1"
+                                            gap={4}
+                                            fontSize={13}
+                                            color="blue.200"
+                                            alignItems="center"
+                                            textAlign="left"
+                                          >
+                                            Why are subscriptions moving off of Patreon?
+                                            <AccordionIcon />
+                                          </Flex>
+                                        </AccordionButton>
+                                        <AccordionPanel>
+                                          <Text fontSize={13}>
+                                            Patreon has very high fees and its API has had
+                                            limitations that both disallowed yearly plans and
+                                            prevented subscriptions from starting on any day of the
+                                            month. While it has worked well enough in the past, it
+                                            is not viable long-term.
+                                          </Text>
+                                        </AccordionPanel>
+                                      </AccordionItem>
+                                      <AccordionItem
+                                        border="none"
+                                        borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                                      >
+                                        <AccordionButton border="none">
+                                          <Flex
+                                            flex="1"
+                                            gap={4}
+                                            fontSize={13}
+                                            color="blue.200"
+                                            alignItems="center"
+                                            textAlign="left"
+                                          >
+                                            Are the prices different?
+                                            <AccordionIcon />
+                                          </Flex>
+                                        </AccordionButton>
+                                        <AccordionPanel>
+                                          <Text fontSize={13}>
+                                            Yes. Even though pricing has stayed the same since
+                                            MonitoRSS started over 7 years ago, costs have increased
+                                            over time with both usage and inflation. As a result, to
+                                            keep up with costs and to maintain the public hosting of
+                                            MonitoRSS, the prices had to have been adjusted.
+                                          </Text>
+                                        </AccordionPanel>
+                                      </AccordionItem>
+                                    </Accordion>
+                                  </Stack>
+                                </AlertDescription>
+                              </Stack>
+                            </Alert>
+                          )}
+                          {data.result.subscription.product.key !== ProductKey.Free && (
+                            <Stack>
+                              <Text fontWeight={600} color="whiteAlpha.700">
+                                Credit Balance
+                              </Text>
+                              <Text>
+                                Credit is provided as pro-rata refunds when changing plans. It is
+                                automatically applied on future transactions.
+                              </Text>
+                              <Stack spacing={3}>
+                                <Text fontSize="xl" fontWeight="semibold">
+                                  {data.result.creditBalance.availableFormatted}
+                                </Text>
+                              </Stack>
+                            </Stack>
+                          )}
+                          <Stack>
+                            <Text fontWeight={600} color="whiteAlpha.700">
+                              Current Tier
+                            </Text>
+                            <Stack spacing={3}>
+                              {subscriptionText}
+                              {subscriptionPendingCancellation && (
+                                <Box>
+                                  <ConfirmModal
+                                    trigger={
+                                      <Button size="sm" variant="solid" colorScheme="blue">
+                                        Resume subscription
+                                      </Button>
+                                    }
+                                    onConfirm={onClickResumeSubscription}
+                                    okText="Resume subscription"
+                                    colorScheme="blue"
+                                    description="Are you sure you want to resume your subscription?"
+                                    title="Resume subscription"
+                                  />
+                                </Box>
+                              )}
+                              {/* <Button onClick={() => refetch()}>Refetch</Button> */}
+                              {!subscriptionPendingCancellation && (
+                                <HStack>
+                                  <PricingDialog
+                                    trigger={
+                                      <Button size="sm" variant="outline">
+                                        Manage Subscription
+                                      </Button>
+                                    }
+                                  />
+                                  <ChangePaymentMethodUrlButton />
+                                </HStack>
+                              )}
+                            </Stack>
+                          </Stack>
+                        </Stack>
+                      )}
                     </Stack>
                   )}
                 </Stack>
-              )}
-            </Stack>
+              </>
+            )}
             <Divider />
             <Stack spacing={8}>
               <Stack>

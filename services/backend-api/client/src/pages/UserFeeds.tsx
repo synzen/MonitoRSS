@@ -27,7 +27,7 @@ import {
   useUserFeeds,
 } from "../features/feed";
 import { pages } from "../constants";
-import { BoxConstrained } from "../components";
+import { BoxConstrained, PricingDialog } from "../components";
 import { UserFeedStatusFilterContext } from "../contexts";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyInfo } from "../utils/notifyInfo";
@@ -157,18 +157,34 @@ export const UserFeeds: React.FC = () => {
                   )}
                 </HStack>
               )}
-              <IconButton
-                as="a"
-                href="https://www.patreon.com/monitorss"
-                target="_blank"
-                rel="noreferrer noopener"
-                marginLeft="4"
-                aria-label="Increase feed limit"
-                variant="outline"
-                icon={<ArrowLeftIcon />}
-                size="sm"
-                transform="rotate(90deg)"
-              />
+              {!userMeData?.result.enableBilling && (
+                <IconButton
+                  as="a"
+                  href="https://www.patreon.com/monitorss"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  marginLeft="4"
+                  aria-label="Increase feed limit"
+                  variant="outline"
+                  icon={<ArrowLeftIcon />}
+                  size="sm"
+                  transform="rotate(90deg)"
+                />
+              )}
+              {userMeData?.result.enableBilling && (
+                <PricingDialog
+                  trigger={
+                    <IconButton
+                      aria-label="Increase article daily limit"
+                      variant="outline"
+                      icon={<ArrowLeftIcon />}
+                      size="sm"
+                      transform="rotate(90deg)"
+                      marginLeft="4"
+                    />
+                  }
+                />
+              )}
             </Flex>
           </Flex>
           <Stack spacing={6}>

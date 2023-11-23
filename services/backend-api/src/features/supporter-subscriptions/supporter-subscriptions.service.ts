@@ -36,8 +36,6 @@ const PRODUCT_KEYS_BY_PLEDGE: Record<string, string> = {
   "2000": "tier6-legacy",
 };
 
-const LEGACY_PRODUCT_KEYS = Object.values(PRODUCT_KEYS_BY_PLEDGE);
-
 @Injectable()
 export class SupporterSubscriptionsService {
   PADDLE_URL?: string;

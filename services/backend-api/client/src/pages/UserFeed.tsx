@@ -37,7 +37,7 @@ import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-r
 import { useTranslation } from "react-i18next";
 import { AddIcon, ArrowLeftIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
-import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
+import { BoxConstrained, CategoryText, ConfirmModal, PricingDialog } from "@/components";
 import {
   CloneUserFeedDialog,
   EditUserFeedDialog,
@@ -64,6 +64,7 @@ import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
+import { useUserMe } from "../features/discordUser";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -96,6 +97,7 @@ export const UserFeed: React.FC = () => {
   const { feed, status, error } = useUserFeed({
     feedId,
   });
+  const { data: userMe } = useUserMe();
   const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
@@ -437,7 +439,7 @@ export const UserFeed: React.FC = () => {
                     <Text color={isAtLimit ? "red.300" : ""} display="block">
                       {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
                     </Text>
-                    {dailyLimit && (
+                    {dailyLimit && !userMe?.result.enableBilling && (
                       <IconButton
                         as="a"
                         href="https://www.patreon.com/monitorss"
@@ -448,6 +450,19 @@ export const UserFeed: React.FC = () => {
                         icon={<ArrowLeftIcon />}
                         size="xs"
                         transform="rotate(90deg)"
+                      />
+                    )}
+                    {dailyLimit && userMe?.result.enableBilling && (
+                      <PricingDialog
+                        trigger={
+                          <IconButton
+                            aria-label="Increase article daily limit"
+                            variant="ghost"
+                            icon={<ArrowLeftIcon />}
+                            size="xs"
+                            transform="rotate(90deg)"
+                          />
+                        }
                       />
                     )}
                     {!dailyLimit && <Spinner display="block" size="sm" />}

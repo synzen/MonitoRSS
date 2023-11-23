@@ -26,6 +26,7 @@ export const UserMeSchema = object({
     availableFormatted: string().required(),
   }).required(),
   isOnPatreon: bool(),
+  enableBilling: bool(),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;

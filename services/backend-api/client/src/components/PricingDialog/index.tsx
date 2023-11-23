@@ -104,7 +104,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ArticleLimit,
-        description: "Limit of 200 articles daily",
+        description: "Limit of 1000 articles daily",
         enabled: true,
       },
       {
@@ -137,7 +137,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ArticleLimit,
-        description: "Limit of 500 articles daily",
+        description: "Limit of 1000 articles daily",
         enabled: true,
       },
       {

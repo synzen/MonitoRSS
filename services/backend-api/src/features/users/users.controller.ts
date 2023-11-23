@@ -77,6 +77,7 @@ export class UsersController {
         subscription,
         creditBalance,
         isOnPatreon,
+        enableBilling: user.enableBilling,
       },
     };
   }

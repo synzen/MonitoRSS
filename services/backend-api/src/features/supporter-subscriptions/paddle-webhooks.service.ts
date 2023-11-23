@@ -30,13 +30,13 @@ const BENEFITS_BY_TIER: Partial<
 > = {
   [SubscriptionProductKey.Tier1]: {
     allowWebhooks: true,
-    dailyArticleLimit: 200,
+    dailyArticleLimit: 1000,
     maxUserFeeds: 15,
     refreshRateSeconds: 600,
   },
   [SubscriptionProductKey.Tier2]: {
     allowWebhooks: true,
-    dailyArticleLimit: 500,
+    dailyArticleLimit: 1000,
     maxUserFeeds: 40,
     refreshRateSeconds: 120,
   },
