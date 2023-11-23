@@ -42,7 +42,6 @@ interface Props {
   onSubmit: (data: FormData) => void;
   mode: "add" | "update";
   feedId: string;
-  excludePlaceholders?: string[];
 }
 
 export const PlaceholderLimitDialog = ({
@@ -51,7 +50,6 @@ export const PlaceholderLimitDialog = ({
   mode,
   onSubmit: parentOnSubmit,
   feedId,
-  excludePlaceholders,
 }: Props) => {
   const {
     handleSubmit,
@@ -121,7 +119,6 @@ export const PlaceholderLimitDialog = ({
                           feedId={feedId}
                           selectProps={{ ...field, bg: "gray.800" }}
                           selectRef={initialRef}
-                          excludeProperties={excludePlaceholders}
                         />
                         {!errors.placeholder && (
                           <FormHelperText>
@@ -152,7 +149,6 @@ export const PlaceholderLimitDialog = ({
                           inputMode="numeric"
                           isInvalid={!!errors.characterCount}
                           min={1}
-                          max={2000}
                           isValidCharacter={(char) => /\d+/.test(char)}
                           bg="gray.800"
                           {...field}

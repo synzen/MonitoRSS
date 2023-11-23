@@ -17,7 +17,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeftIcon } from "@chakra-ui/icons";
-import { useCallback, useContext } from "react";
+import { useCallback, useContext, useEffect } from "react";
 import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import {
@@ -51,8 +51,13 @@ export const UserFeeds: React.FC = () => {
   });
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
 
-  const onSelectedFeed = (feedId: string) => {
-    navigate(pages.userFeed(feedId));
+  const onSelectedFeed = (feedId: string, newTab?: boolean) => {
+    if (!newTab) {
+      navigate(pages.userFeed(feedId));
+    } else {
+      const w = window.open(pages.userFeed(feedId), "_blank");
+      w?.focus();
+    }
   };
 
   const onApplyRequiresAttentionFilters = useCallback(() => {
@@ -69,6 +74,10 @@ export const UserFeeds: React.FC = () => {
 
   const hasFailedFeedAlertsDisabled =
     userMeData && !userMeData.result?.preferences?.alertOnDisabledFeeds;
+
+  useEffect(() => {
+    document.title = "Feeds | MonitoRSS";
+  }, []);
 
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
