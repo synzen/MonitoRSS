@@ -39,7 +39,6 @@ const Pages: React.FC = () => (
       }
     />
     <Route path="/" element={<Home />} />
-    <Route path="/pricing" element={<Pricing />} />
     <Route
       path="/servers"
       element={
