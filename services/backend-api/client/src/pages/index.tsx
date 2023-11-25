@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
 import FeedMessage from "./FeedMessage";
@@ -24,12 +24,12 @@ import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { AlertSettings } from "./AlertSettings";
-import { Pricing } from "./Pricing";
+import { NotFound } from "./NotFound";
 
 const Pages: React.FC = () => (
   <Routes>
+    <Route path={pages.notFound()} element={<NotFound />} />
     <Route path="/" element={<Home />} />
-    <Route path="/pricing" element={<Pricing />} />
     <Route
       path="/servers"
       element={
@@ -217,6 +217,7 @@ const Pages: React.FC = () => (
         </RequireAuth>
       }
     />
+    <Route path="*" element={<Navigate to="/not-found" />} />
   </Routes>
 );
 
