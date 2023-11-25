@@ -31,7 +31,7 @@
     "@aws-sdk/client-s3": "^3.387.0",
     "@fastify/compress": "^6.4.0",
     "@golevelup/nestjs-rabbitmq": "^4.0.0",
-    "@grpc/grpc-js": "^1.9.0",
+    "@grpc/grpc-js": "^1.9.11",
     "@grpc/proto-loader": "^0.7.8",
     "@mikro-orm/core": "^5.7.5",
     "@mikro-orm/nestjs": "^5.1.8",
