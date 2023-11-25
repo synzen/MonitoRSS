@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useUserMe } from "../features/discordUser";
 
 const paddleSellerId = Number(import.meta.env.VITE_PADDLE_SELLER_ID);
+const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 
 interface Props {
   onCheckoutSuccess: () => void;
@@ -22,6 +23,10 @@ export function usePaddleCheckout({ onCheckoutSuccess }: Props) {
     initializePaddle({
       environment: import.meta.env.PROD ? "production" : "sandbox",
       seller: paddleSellerId,
+      pwAuth,
+      pwCustomer: {
+        email: user?.result.email,
+      },
       eventCallback(event) {
         if (event.name === "checkout.completed") {
           onCheckoutSuccess();
