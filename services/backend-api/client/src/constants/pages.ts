@@ -13,6 +13,7 @@ export const pages = {
   alerting: () => "/alerting",
   userSettings: () => "/settings",
   userFeeds: () => "/feeds",
+  notFound: () => "/not-found",
   userFeed: (feedId: string) => `/feeds/${feedId}`,
   userFeedConnection: (data: {
     feedId: string;

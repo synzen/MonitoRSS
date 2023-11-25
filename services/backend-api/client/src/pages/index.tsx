@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
 import FeedMessage from "./FeedMessage";
@@ -23,21 +23,12 @@ import { FeedConnectionType } from "../types";
 import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
+import { NotFound } from "./NotFound";
 import { UserSettings } from "./UserSettings";
-import { Pricing } from "./Pricing";
 
 const Pages: React.FC = () => (
   <Routes>
-    <Route
-      path={pages.alerting()}
-      element={
-        <RequireAuth>
-          <PageContentV2 invertBackground>
-            <UserSettings />
-          </PageContentV2>
-        </RequireAuth>
-      }
-    />
+    <Route path={pages.notFound()} element={<NotFound />} />
     <Route path="/" element={<Home />} />
     <Route
       path="/servers"
@@ -226,6 +217,7 @@ const Pages: React.FC = () => (
         </RequireAuth>
       }
     />
+    <Route path="*" element={<Navigate to="/not-found" />} />
   </Routes>
 );
 
