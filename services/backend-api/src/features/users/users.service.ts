@@ -74,12 +74,7 @@ export class UsersService {
     }
   }
 
-  async getByDiscordId(
-    discordUserId: string,
-    options?: {
-      includeSubscriptionManagementUrls?: boolean;
-    }
-  ): Promise<{
+  async getByDiscordId(discordUserId: string): Promise<{
     user: User;
     creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
@@ -147,18 +142,6 @@ export class UsersService {
       };
     }
 
-    let updatePaymentMethodUrl = "";
-
-    if (options?.includeSubscriptionManagementUrls) {
-      const paddleSub =
-        await this.supporterSubscriptionsService.getSubscription(
-          subscription.id
-        );
-
-      updatePaymentMethodUrl =
-        paddleSub.data.management_urls.update_payment_method || "";
-    }
-
     return {
       user,
       creditBalance: {
@@ -178,7 +161,6 @@ export class UsersService {
           end: subscription.billingPeriod.end,
         },
         updatedAt: subscription.updatedAt,
-        updatePaymentMethodUrl,
       },
       isOnPatreon,
     };

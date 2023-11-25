@@ -19,6 +19,7 @@ import {
 } from "./types/paddle-products-response.type";
 import { PaddleSubscriptionPreviewResponse } from "./types/paddle-subscription-preview-response.type";
 import { PaddleSubscriptionResponse } from "./types/paddle-subscription-response.type";
+import { PaddleSubscriptionUpdatePaymentMethodResponse } from "./types/paddle-subscription-update-payment-transaction.type";
 
 const PRODUCT_NAMES: Record<SubscriptionProductKey, string> = {
   [SubscriptionProductKey.Free]: "Free",
@@ -424,6 +425,28 @@ export class SupporterSubscriptionsService {
         body: JSON.stringify(body),
       }
     );
+  }
+
+  async getUpdatePaymentMethodTransaction({ email }: { email: string }) {
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription(email);
+
+    const existingSubscriptionId = subscription?.id;
+
+    if (!existingSubscriptionId) {
+      throw new Error(
+        "No existing subscription for user found while getting update payment method transaction"
+      );
+    }
+
+    const response =
+      await this.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
+        `/subscriptions/${existingSubscriptionId}/update-payment-method-transaction`
+      );
+
+    return {
+      id: response.data.id,
+    };
   }
 
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {

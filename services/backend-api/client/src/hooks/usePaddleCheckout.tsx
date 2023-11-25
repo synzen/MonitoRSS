@@ -6,10 +6,10 @@ const paddleSellerId = Number(import.meta.env.VITE_PADDLE_SELLER_ID);
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 
 interface Props {
-  onCheckoutSuccess: () => void;
+  onCheckoutSuccess?: () => void;
 }
 
-export function usePaddleCheckout({ onCheckoutSuccess }: Props) {
+export function usePaddleCheckout(props?: Props) {
   // Create a local state to store Paddle instance
   const [paddle, setPaddle] = useState<Paddle>();
   const { data: user } = useUserMe();
@@ -29,7 +29,7 @@ export function usePaddleCheckout({ onCheckoutSuccess }: Props) {
       },
       eventCallback(event) {
         if (event.name === "checkout.completed") {
-          onCheckoutSuccess();
+          props?.onCheckoutSuccess?.();
         }
       },
     }).then((paddleInstance: Paddle | undefined) => {
@@ -61,7 +61,20 @@ export function usePaddleCheckout({ onCheckoutSuccess }: Props) {
     });
   };
 
+  const updatePaymentMethod = (transactionId: string) => {
+    paddle?.Checkout.open({
+      transactionId,
+      settings: {
+        allowLogout: false,
+        theme: "dark",
+        displayMode: "overlay",
+      },
+    });
+  };
+
   return {
+    isLoaded: !!paddle,
     openCheckout,
+    updatePaymentMethod,
   };
 }

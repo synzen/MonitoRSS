@@ -215,6 +215,36 @@ export class SupporterSubscriptionsController {
     };
   }
 
+  @Get("/change-payment-method")
+  async changePaymentMethodTransaction(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ): Promise<{
+    data: {
+      paddleTransactionId: string;
+    };
+  }> {
+    const email =
+      await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
+        discordUserId
+      );
+
+    if (!email) {
+      throw new BadRequestException("No email found");
+    }
+
+    const { id } =
+      await this.supporterSubscriptionsService.getUpdatePaymentMethodTransaction(
+        { email }
+      );
+
+    return {
+      data: {
+        paddleTransactionId: id,
+      },
+    };
+  }
+
   @UseGuards(DiscordOAuth2Guard)
   @Get("update-preview")
   async previewChange(

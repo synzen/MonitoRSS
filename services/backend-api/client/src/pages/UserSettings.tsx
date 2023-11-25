@@ -31,14 +31,16 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
 import { BoxConstrained, ConfirmModal, DashboardContentV2, PricingDialog } from "../components";
-import { useLogin } from "../hooks";
+import { useLogin, usePaddleCheckout } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
 import { ProductKey } from "../constants";
 import getChakraColor from "../utils/getChakraColor";
+import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -53,30 +55,59 @@ const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData =>
 };
 
 const ChangePaymentMethodUrlButton = () => {
-  const { status, data } = useUserMe({
-    input: {
-      data: {
-        includeManageSubUrls: true,
-      },
-    },
+  const [searchParams, setSearchParams] = useSearchParams();
+  const transactionIdFromQuery = searchParams.get("_ptxn");
+  const { updatePaymentMethod, isLoaded } = usePaddleCheckout();
+  const { data } = useUserMe();
+  const enabled = data && data?.result.subscription.product.key !== ProductKey.Free;
+  const { error, refetch, fetchStatus } = useGetUpdatePaymentMethodTransaction({
+    enabled: enabled && !transactionIdFromQuery,
   });
 
-  if (!data || data.result.subscription.product.key === ProductKey.Free) {
+  useEffect(() => {
+    if (!transactionIdFromQuery || !isLoaded) {
+      return;
+    }
+
+    updatePaymentMethod(transactionIdFromQuery);
+
+    setSearchParams(new URLSearchParams());
+  }, [transactionIdFromQuery, isLoaded]);
+
+  if (!enabled) {
     return null;
   }
 
+  const onClick = async () => {
+    try {
+      const result = await refetch();
+      const transactionId = result.data?.data.paddleTransactionId;
+
+      if (!transactionId) {
+        return;
+      }
+
+      updatePaymentMethod(transactionId);
+    } catch (err) {
+      notifyError("Failed to load update payment method form", err as Error);
+    }
+  };
+
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      as="a"
-      href={data?.result.subscription.updatePaymentMethodUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      isLoading={status === "loading"}
-    >
-      Change Payment Method
-    </Button>
+    <Box>
+      <Button onClick={() => setSearchParams(new URLSearchParams())}>cLEAR</Button>
+      <Button
+        size="sm"
+        variant="outline"
+        isLoading={fetchStatus === "fetching"}
+        onClick={onClick}
+        isDisabled={!!error}
+        colorScheme={error ? "red" : undefined}
+      >
+        {!error && "Change Payment Method"}
+        {error && "Failed to load change payment method button"}
+      </Button>
+    </Box>
   );
 };
 
@@ -89,6 +120,7 @@ export const UserSettings = () => {
   const { mutateAsync } = useUpdateUserMe();
   const { redirectToLogin } = useLogin();
   const { mutateAsync: resumeSubscription } = useCreateSubscriptionResume();
+  const subscription = data?.result.subscription;
   const {
     handleSubmit,
     control,
@@ -151,7 +183,6 @@ export const UserSettings = () => {
     }
   }, [subscriptionLastUpdated, checkForSubscriptionUpdateAfter]);
 
-  const subscription = data?.result.subscription;
   const subscriptionPendingCancellation = subscription && subscription?.cancellationDate;
 
   let subscriptionText: React.ReactNode;
