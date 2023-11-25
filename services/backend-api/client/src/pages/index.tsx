@@ -25,9 +25,11 @@ import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { NotFound } from "./NotFound";
 import { UserSettings } from "./UserSettings";
+import { TestPaddle } from "./TestPaddle";
 
 const Pages: React.FC = () => (
   <Routes>
+    <Route path={pages.testPaddle()} element={<TestPaddle />} />
     <Route path={pages.notFound()} element={<NotFound />} />
     <Route path="/" element={<Home />} />
     <Route

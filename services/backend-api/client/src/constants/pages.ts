@@ -14,6 +14,7 @@ export const pages = {
   userSettings: () => "/settings",
   userFeeds: () => "/feeds",
   notFound: () => "/not-found",
+  testPaddle: () => "/test-paddle",
   userFeed: (feedId: string) => `/feeds/${feedId}`,
   userFeedConnection: (data: {
     feedId: string;

@@ -1,7 +1,11 @@
-import { WarningTwoIcon } from "@chakra-ui/icons";
-import { Button, Heading, Stack, Text } from "@chakra-ui/react";
+import { Button, Heading, Stack } from "@chakra-ui/react";
+import { usePaddleCheckout } from "../hooks";
 
-export const NotFound = () => {
+export const TestPaddle = () => {
+  usePaddleCheckout({
+    onCheckoutSuccess: () => {},
+  });
+
   return (
     <Stack
       display="flex"
@@ -15,9 +19,7 @@ export const NotFound = () => {
       spacing="6"
     >
       <Stack display="flex" justifyContent="center" alignItems="center">
-        <WarningTwoIcon fontSize="8rem" color="yellow.500" />
-        <Heading>This page doesn&apos;t exist!</Heading>
-        <Text fontSize="lg">Looks like you took a wrong turn.</Text>
+        <Heading>This page is just to test Paddle</Heading>
         <Button as="a" href="/" mt={4}>
           Go Home
         </Button>
