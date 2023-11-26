@@ -379,6 +379,19 @@ export class SupporterSubscriptionsService {
         body: JSON.stringify(postBody),
       }
     );
+
+    const currentUpdatedAt = subscription.updatedAt.getTime();
+
+    await this.pollForSubscriptionChange({
+      email,
+      check: (sub) => {
+        const latestUpdatedAt = sub.subscription?.updatedAt;
+
+        return (
+          !!latestUpdatedAt && latestUpdatedAt.getTime() > currentUpdatedAt
+        );
+      },
+    });
   }
 
   async cancelSubscription({ email }: { email: string }) {
@@ -402,6 +415,15 @@ export class SupporterSubscriptionsService {
         body: JSON.stringify(postBody),
       }
     );
+
+    await this.pollForSubscriptionChange({
+      email,
+      check: (sub) => {
+        const cancellationDate = sub.subscription?.cancellationDate;
+
+        return !!cancellationDate;
+      },
+    });
   }
 
   async resumeSubscription({ email }: { email: string }) {
@@ -425,6 +447,15 @@ export class SupporterSubscriptionsService {
         body: JSON.stringify(body),
       }
     );
+
+    await this.pollForSubscriptionChange({
+      email,
+      check: (sub) => {
+        const cancellationDate = sub.subscription?.cancellationDate;
+
+        return !cancellationDate;
+      },
+    });
   }
 
   async getUpdatePaymentMethodTransaction({ email }: { email: string }) {
@@ -447,6 +478,37 @@ export class SupporterSubscriptionsService {
     return {
       id: response.data.id,
     };
+  }
+
+  async pollForSubscriptionChange({
+    email,
+    check,
+  }: {
+    email: string;
+    check: (
+      sub: Awaited<ReturnType<SupportersService["getSupporterSubscription"]>>
+    ) => boolean;
+  }) {
+    let tries = 0;
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+
+    while (true) {
+      const subscription =
+        await this.supportersService.getSupporterSubscription(email);
+
+      if (check(subscription)) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+
+      tries++;
+
+      if (tries > 10) {
+        throw new Error("Failed to poll for subscription after 10 tries");
+      }
+    }
   }
 
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {

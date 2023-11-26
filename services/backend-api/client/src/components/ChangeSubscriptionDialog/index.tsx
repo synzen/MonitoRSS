@@ -16,7 +16,7 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useCreateSubscriptionCancel,
@@ -47,10 +47,7 @@ export const ChangeSubscriptionDialog = ({
   billingPeriodEndsAt,
 }: Props) => {
   const priceId = details?.priceId;
-  const [subscriptionPollDate, setSubscriptionPollDate] = useState<Date>();
-  const { data: userMeData } = useUserMe({
-    checkForSubscriptionUpdateAfter: subscriptionPollDate,
-  });
+  const { refetch, fetchStatus } = useUserMe();
   const { data: productsData } = useSubscriptionProducts({
     currency: currencyCode,
   });
@@ -67,7 +64,7 @@ export const ChangeSubscriptionDialog = ({
   const { t } = useTranslation();
 
   const isOpen = !!(priceId && currencyCode);
-  const { data, status, error } = useSubscriptionChangePreview({
+  const { data, error } = useSubscriptionChangePreview({
     data:
       currencyCode && priceId && !isChangingToFree
         ? {
@@ -96,27 +93,13 @@ export const ChangeSubscriptionDialog = ({
         });
       }
 
-      setSubscriptionPollDate(start);
+      await refetch();
+      notifySuccess(t("common.success.savedChanges"));
+      // setSubscriptionPollDate(start);
     } catch (e) {
       notifyError(t("common.errors.somethingWentWrong"), (e as Error).message);
     }
   };
-
-  const subscriptionUpdatedDate = userMeData?.result.subscription.updatedAt;
-
-  useEffect(() => {
-    if (!subscriptionUpdatedDate || !subscriptionPollDate) {
-      return;
-    }
-
-    const subscriptionUpdatedTime = new Date(subscriptionUpdatedDate).getTime();
-
-    if (subscriptionUpdatedTime > subscriptionPollDate.getTime()) {
-      onClose();
-      notifySuccess("Successfully updated!");
-      setSubscriptionPollDate(undefined);
-    }
-  }, [subscriptionUpdatedDate, subscriptionPollDate]);
 
   return (
     <Modal
@@ -272,13 +255,13 @@ export const ChangeSubscriptionDialog = ({
               (!isChangingToFree && !data) ||
               createStatus === "loading" ||
               cancelStatus === "loading" ||
-              !!subscriptionPollDate
+              fetchStatus === "fetching"
             }
             isDisabled={
               !isChangingToFree &&
               (createStatus === "loading" ||
                 cancelStatus === "loading" ||
-                !!subscriptionPollDate ||
+                fetchStatus === "fetching" ||
                 !data)
             }
           >

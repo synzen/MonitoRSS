@@ -19,7 +19,6 @@ import {
   Link,
   ListItem,
   OrderedList,
-  Spinner,
   Stack,
   Switch,
   Text,
@@ -30,7 +29,7 @@ import { InferType, bool, object } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
 import { BoxConstrained, ConfirmModal, DashboardContentV2, PricingDialog } from "../components";
@@ -111,10 +110,7 @@ const ChangePaymentMethodUrlButton = () => {
 };
 
 export const UserSettings = () => {
-  const [checkForSubscriptionUpdateAfter, setCheckForSubscriptionUpdateAfter] = useState<Date>();
-  const { status, error, data } = useUserMe({
-    checkForSubscriptionUpdateAfter,
-  });
+  const { status, error, data, refetch } = useUserMe();
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
   const { redirectToLogin } = useLogin();
@@ -161,26 +157,13 @@ export const UserSettings = () => {
 
   const onClickResumeSubscription = async () => {
     try {
-      const beforeUpdateDate = new Date();
       await resumeSubscription();
-      setCheckForSubscriptionUpdateAfter(beforeUpdateDate);
+      await refetch();
+      notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), (err as Error).message);
     }
   };
-
-  // Handle polling result after clicking resume subscription
-  const subscriptionLastUpdated = data?.result.subscription.updatedAt;
-  useEffect(() => {
-    if (!subscriptionLastUpdated || !checkForSubscriptionUpdateAfter) {
-      return;
-    }
-
-    if (new Date(subscriptionLastUpdated).getTime() > checkForSubscriptionUpdateAfter.getTime()) {
-      setCheckForSubscriptionUpdateAfter(undefined);
-      notifySuccess(t("common.success.savedChanges"));
-    }
-  }, [subscriptionLastUpdated, checkForSubscriptionUpdateAfter]);
 
   const subscriptionPendingCancellation = subscription && subscription?.cancellationDate;
 
@@ -233,23 +216,6 @@ export const UserSettings = () => {
 
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
-      {checkForSubscriptionUpdateAfter && (
-        <Stack
-          backdropFilter="blur(3px)"
-          alignItems="center"
-          justifyContent="center"
-          height="100vh"
-          position="absolute"
-          background="blackAlpha.700"
-          top={0}
-          left={0}
-          width="100vw"
-          zIndex={10}
-        >
-          <Spinner />
-          <Text>Applying changes...</Text>
-        </Stack>
-      )}
       <BoxConstrained.Wrapper>
         <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={32}>
           <Stack spacing={8}>
