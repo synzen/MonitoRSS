@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Center,
   Divider,
   HStack,
   Heading,
@@ -13,7 +12,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Spinner,
+  Skeleton,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -97,7 +96,6 @@ export const ChangeSubscriptionDialog = ({
         });
       }
 
-      console.log("setting sub poll date");
       setSubscriptionPollDate(start);
     } catch (e) {
       notifyError(t("common.errors.somethingWentWrong"), (e as Error).message);
@@ -114,7 +112,6 @@ export const ChangeSubscriptionDialog = ({
     const subscriptionUpdatedTime = new Date(subscriptionUpdatedDate).getTime();
 
     if (subscriptionUpdatedTime > subscriptionPollDate.getTime()) {
-      console.log("updated");
       onClose();
       notifySuccess("Successfully updated!");
       setSubscriptionPollDate(undefined);
@@ -138,11 +135,11 @@ export const ChangeSubscriptionDialog = ({
         <ModalHeader>Confirm Subscription Changes</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {!isChangingToFree && status === "loading" && (
+          {/* {!isChangingToFree && status === "loading" && (
             <Center>
               <Spinner />
             </Center>
-          )}
+          )} */}
           {error && <InlineErrorAlert title="Failed to get preview" description={error.message} />}
           {isChangingToFree && (
             <Stack>
@@ -159,32 +156,38 @@ export const ChangeSubscriptionDialog = ({
               </Text>
             </Stack>
           )}
-          {data && !isChangingToFree && (
+          {!isChangingToFree && (
             <Stack spacing={8}>
               <Stack spacing={8}>
                 <Stack>
                   <Box>
                     <Text>{product?.name}</Text>
-                    <Heading size="lg">
-                      {price?.formattedPrice}/{price?.interval}
-                    </Heading>
-                    <Text color="whiteAlpha.700">
-                      {new Date(
-                        data.data.immediateTransaction.billingPeriod.startsAt
-                      ).toLocaleDateString(undefined, {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                      {" - "}
-                      {new Date(
-                        data.data.immediateTransaction.billingPeriod.endsAt
-                      ).toLocaleDateString(undefined, {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </Text>
+                    {!data && <Skeleton width={64} height={12} mt={2} />}
+                    {data && price && (
+                      <Heading size="lg">
+                        {price?.formattedPrice}/{price?.interval}
+                      </Heading>
+                    )}
+                    {!data && <Skeleton width={64} height={6} mt={2} />}
+                    {data && (
+                      <Text color="whiteAlpha.700">
+                        {new Date(
+                          data.data.immediateTransaction.billingPeriod.startsAt
+                        ).toLocaleDateString(undefined, {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                        {" - "}
+                        {new Date(
+                          data.data.immediateTransaction.billingPeriod.endsAt
+                        ).toLocaleDateString(undefined, {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </Text>
+                    )}
                   </Box>
                 </Stack>
                 <Divider />
@@ -196,7 +199,8 @@ export const ChangeSubscriptionDialog = ({
                         for remaining time on new plan
                       </Text>
                     </Box>
-                    <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>
+                    {!data && <Skeleton width={16} height={6} />}
+                    {data && <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>}
                   </HStack>
                   <HStack justifyContent="space-between">
                     <Box>
@@ -205,15 +209,17 @@ export const ChangeSubscriptionDialog = ({
                         Included in plan price
                       </Text>
                     </Box>
-                    <Text>{data.data.immediateTransaction.taxFormatted}</Text>
+                    {!data && <Skeleton width={16} height={6} />}
+                    {data && <Text>{data.data.immediateTransaction.taxFormatted}</Text>}
                   </HStack>
                   <HStack justifyContent="space-between">
                     <Box>
                       <Text>Total</Text>
                     </Box>
-                    <Text>{data.data.immediateTransaction.totalFormatted}</Text>
+                    {!data && <Skeleton width={16} height={6} />}
+                    {data && <Text>{data.data.immediateTransaction.totalFormatted}</Text>}
                   </HStack>
-                  {data.data.immediateTransaction.credit !== "0" && (
+                  {data && data.data.immediateTransaction.credit !== "0" && (
                     <HStack justifyContent="space-between">
                       <Box>
                         <Text>Credit</Text>
@@ -221,17 +227,23 @@ export const ChangeSubscriptionDialog = ({
                           Includes refund for time remaining on current plan
                         </Text>
                       </Box>
-                      <Text color="green.200">
-                        -{data.data.immediateTransaction.creditFormatted}
-                      </Text>
+                      {!data && <Skeleton width={16} height={6} />}
+                      {data && (
+                        <Text color="green.200">
+                          -{data.data.immediateTransaction.creditFormatted}
+                        </Text>
+                      )}
                     </HStack>
                   )}
                   <Divider my={4} />
                   <HStack justifyContent="space-between">
                     <Text fontWeight="semibold">Due Today</Text>
-                    <Text fontWeight="bold">
-                      {data.data.immediateTransaction.grandTotalFormatted}
-                    </Text>
+                    {!data && <Skeleton width={16} height={6} />}
+                    {data && (
+                      <Text fontWeight="bold">
+                        {data.data.immediateTransaction.grandTotalFormatted}
+                      </Text>
+                    )}
                   </HStack>
                 </Stack>
               </Stack>
@@ -257,7 +269,10 @@ export const ChangeSubscriptionDialog = ({
             colorScheme={!isDowngrade ? "blue" : "red"}
             onClick={onConfirm}
             isLoading={
-              createStatus === "loading" || cancelStatus === "loading" || !!subscriptionPollDate
+              !data ||
+              createStatus === "loading" ||
+              cancelStatus === "loading" ||
+              !!subscriptionPollDate
             }
             isDisabled={
               !isChangingToFree &&
