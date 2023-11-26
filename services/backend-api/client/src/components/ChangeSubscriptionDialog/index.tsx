@@ -269,7 +269,7 @@ export const ChangeSubscriptionDialog = ({
             colorScheme={!isDowngrade ? "blue" : "red"}
             onClick={onConfirm}
             isLoading={
-              !data ||
+              (!isChangingToFree && !data) ||
               createStatus === "loading" ||
               cancelStatus === "loading" ||
               !!subscriptionPollDate
