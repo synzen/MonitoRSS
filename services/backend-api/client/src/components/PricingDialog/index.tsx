@@ -668,6 +668,16 @@ export const PricingDialog = ({ trigger }: Props) => {
                         ),
                       },
                       {
+                        q: "What payment methods are accepted?",
+                        a: (
+                          <Text>
+                            Cards (Mastercard, Visa, Maestro, American Express, Discover, Diners
+                            Club, JCB, UnionPay, and Mada), PayPal, Google Pay (only on Google
+                            Chrome), and Apple Pay (only on Safari).
+                          </Text>
+                        ),
+                      },
+                      {
                         q: "Can I get a refund?",
                         a: (
                           <Text>
