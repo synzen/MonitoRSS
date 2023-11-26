@@ -80,8 +80,6 @@ export const ChangeSubscriptionDialog = ({
     }
 
     try {
-      const start = new Date();
-
       if (isChangingToFree) {
         await cancelSubscription();
       } else {
@@ -95,7 +93,7 @@ export const ChangeSubscriptionDialog = ({
 
       await refetch();
       notifySuccess(t("common.success.savedChanges"));
-      // setSubscriptionPollDate(start);
+      onClose();
     } catch (e) {
       notifyError(t("common.errors.somethingWentWrong"), (e as Error).message);
     }
