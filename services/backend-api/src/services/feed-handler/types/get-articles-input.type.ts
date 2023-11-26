@@ -1,3 +1,4 @@
+import { CustomPlaceholderDto } from "../../../common";
 import { GetFeedArticlesFilterReturnType } from "../../../features/user-feeds/constants";
 
 export interface GetArticlesInput {
@@ -19,5 +20,6 @@ export interface GetArticlesInput {
       dateTimezone: string | undefined;
       disableImageLinkPreviews: boolean;
     };
+    customPlaceholders?: CustomPlaceholderDto[] | null;
   };
 }

@@ -168,6 +168,7 @@ export const FiltersForm = ({
               prefix="expression."
               data={data}
               containerProps={formContainerProps}
+              articleFormatter={data.articleFormatter}
             />
             <HStack justifyContent="flex-end">
               {isDirty && (

@@ -42,7 +42,12 @@ export const ArticleFilterResults = ({
 }: Props) => {
   const [selectedArticleProperty, setSelectedArticleProperty] = useState("title");
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
-    useUserFeedArticleProperties({ feedId });
+    useUserFeedArticleProperties({
+      feedId,
+      data: {
+        customPlaceholders: articleFormatter.customPlaceholders,
+      },
+    });
 
   const debouncedFilters = useDebounce(filters, 500);
 

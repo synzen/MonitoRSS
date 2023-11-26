@@ -25,12 +25,14 @@ import { AddIcon } from "@chakra-ui/icons";
 import { FaEllipsisVertical } from "react-icons/fa6";
 import { DiscordMessageFormData } from "@/types/discord";
 import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   feedId: string;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
+export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
   const { fields, append, update, remove } = useFieldArray({
@@ -68,6 +70,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId }: Props) => {
             }
             onSubmit={onSubmitNewLimit}
             mode="add"
+            articleFormatter={articleFormatter}
           />
         )}
       </HStack>

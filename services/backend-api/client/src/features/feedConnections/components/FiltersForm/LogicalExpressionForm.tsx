@@ -26,6 +26,7 @@ import {
 } from "../../types";
 import { AnyAllSelector } from "./AnyAllSelector";
 import { Condition } from "./Condition";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   onDeleted: () => void;
@@ -34,9 +35,16 @@ interface Props {
     feedId?: string;
   };
   containerProps?: BoxProps;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const LogicalExpressionForm = ({ onDeleted, prefix = "", data, containerProps }: Props) => {
+export const LogicalExpressionForm = ({
+  onDeleted,
+  prefix = "",
+  data,
+  containerProps,
+  articleFormatter,
+}: Props) => {
   const { control, setValue } = useFormContext();
   const { fields, append, remove, insert } = useFieldArray({
     control,
@@ -156,6 +164,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", data, containerP
                     onDeleted={() => onChildDeleted(childIndex)}
                     prefix={`${prefix}children.${childIndex}.`}
                     data={data}
+                    articleFormatter={articleFormatter}
                   />
                 );
               }
@@ -168,6 +177,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", data, containerP
                     onDelete={() => onChildDeleted(childIndex)}
                     prefix={`${prefix}children.${childIndex}.`}
                     deletable={numberOfRelational > 1}
+                    articleFormatter={articleFormatter}
                   />
                 );
               }

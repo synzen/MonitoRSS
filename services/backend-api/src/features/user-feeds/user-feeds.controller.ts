@@ -38,6 +38,7 @@ import {
 import {
   CreateUserFeedCloneInput,
   CreateUserFeedInputDto,
+  GetUserFeedArticlePropertiesInputDto,
   GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
   GetUserFeedDailyLimitOutputDto,
@@ -184,13 +185,16 @@ export class UserFeedsController {
     return requests;
   }
 
-  @Get("/:feedId/article-properties")
+  @Post("/:feedId/get-article-properties")
   @UseFilters(GetUserFeedArticlesExceptionFilter)
   async getArticleProperties(
-    @Param("feedId", GetUserFeedPipe()) feed: UserFeed
+    @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
+    @Body(TransformValidationPipe)
+    { customPlaceholders }: GetUserFeedArticlePropertiesInputDto
   ): Promise<GetUserFeedArticlePropertiesOutputDto> {
     const input: GetFeedArticlePropertiesInput = {
       url: feed.url,
+      customPlaceholders,
     };
 
     const { properties, requestStatus } =

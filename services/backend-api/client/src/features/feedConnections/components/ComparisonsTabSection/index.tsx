@@ -85,6 +85,10 @@ export const ComparisonsTabSection = ({
 
   const { data, error, status, fetchStatus } = useUserFeedArticleProperties({
     feedId,
+    data: {
+      // Must be empty because this is at the feed level
+      customPlaceholders: [],
+    },
   });
 
   const onSelectedArticle = async (articleId: string) => {

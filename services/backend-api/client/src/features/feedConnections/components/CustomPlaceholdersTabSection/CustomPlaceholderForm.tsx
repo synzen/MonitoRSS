@@ -346,7 +346,11 @@ export const CustomPlaceholderForm = ({
           control={control}
           defaultValue=""
           render={({ field }) => (
-            <ArticlePropertySelect feedId={feedId} selectProps={{ ...field, bg: "gray.800" }} />
+            <ArticlePropertySelect
+              feedId={feedId}
+              selectProps={{ ...field, bg: "gray.800" }}
+              articleFormatter={articleFormat}
+            />
           )}
         />
         {!sourcePlaceholderError && (

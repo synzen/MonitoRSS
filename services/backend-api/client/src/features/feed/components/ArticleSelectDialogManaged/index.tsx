@@ -57,7 +57,12 @@ export const ArticleSelectDialog = ({
   );
   const [search, setSearch] = useState("");
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
-    useUserFeedArticleProperties({ feedId });
+    useUserFeedArticleProperties({
+      feedId,
+      data: {
+        customPlaceholders: articleFormatter.customPlaceholders,
+      },
+    });
   const debouncedSearch = useDebounce(search, 500);
   const {
     data: userFeedArticlesResults,

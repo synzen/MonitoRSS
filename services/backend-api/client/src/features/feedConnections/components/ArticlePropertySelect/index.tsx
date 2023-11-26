@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import { LegacyRef } from "react";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
 import { InlineErrorAlert } from "../../../../components";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   feedId: string;
   selectProps?: SelectProps;
   excludeProperties?: string[];
   selectRef?: LegacyRef<HTMLSelectElement> | null;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 export const ArticlePropertySelect = ({
@@ -16,9 +18,13 @@ export const ArticlePropertySelect = ({
   selectProps,
   excludeProperties,
   selectRef,
+  articleFormatter,
 }: Props) => {
   const { data, error, fetchStatus } = useUserFeedArticleProperties({
     feedId,
+    data: {
+      customPlaceholders: articleFormatter.customPlaceholders,
+    },
   });
   const { t } = useTranslation();
 
