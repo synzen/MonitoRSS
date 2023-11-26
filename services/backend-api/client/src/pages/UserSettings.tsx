@@ -95,7 +95,6 @@ const ChangePaymentMethodUrlButton = () => {
 
   return (
     <Box>
-      <Button onClick={() => setSearchParams(new URLSearchParams())}>cLEAR</Button>
       <Button
         size="sm"
         variant="outline"
