@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { InferType, number, object, string } from "yup";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 const formDataSchema = object({
   placeholder: string()
@@ -42,6 +43,7 @@ interface Props {
   onSubmit: (data: FormData) => void;
   mode: "add" | "update";
   feedId: string;
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 export const PlaceholderLimitDialog = ({
@@ -49,6 +51,7 @@ export const PlaceholderLimitDialog = ({
   defaultValues,
   mode,
   onSubmit: parentOnSubmit,
+  articleFormatter,
   feedId,
 }: Props) => {
   const {
@@ -119,6 +122,7 @@ export const PlaceholderLimitDialog = ({
                           feedId={feedId}
                           selectProps={{ ...field, bg: "gray.800" }}
                           selectRef={initialRef}
+                          articleFormatter={articleFormatter}
                         />
                         {!errors.placeholder && (
                           <FormHelperText>

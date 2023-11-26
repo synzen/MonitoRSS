@@ -8,6 +8,7 @@ import {
 } from "../../types";
 import { ArticlePropertySelect } from "./ArticlePropertySelect";
 import { ConditionInput } from "./ConditionInput";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 const { Equals, Contains, Matches } = RelationalExpressionOperator;
 
@@ -18,9 +19,10 @@ interface Props {
   data: {
     feedId?: string;
   };
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const Condition = ({ onDelete, prefix = "", deletable, data }: Props) => {
+export const Condition = ({ onDelete, prefix = "", deletable, data, articleFormatter }: Props) => {
   const { control, watch } = useFormContext();
 
   const { t } = useTranslation();
@@ -43,6 +45,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, data }: Props) => 
         placeholder={t(
           "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty"
         )}
+        articleFormatter={articleFormatter}
       />
     );
   }

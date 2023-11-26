@@ -362,7 +362,10 @@ export const DiscordMessageForm = ({
           </Stack>
           <Stack>
             <Heading size="md">Placeholder Limits</Heading>
-            <DiscordMessagePlaceholderLimitsForm feedId={feedId} />
+            <DiscordMessagePlaceholderLimitsForm
+              feedId={feedId}
+              articleFormatter={articleFormatOptions}
+            />
           </Stack>
           <AnimatedComponent>
             {isDirty && (

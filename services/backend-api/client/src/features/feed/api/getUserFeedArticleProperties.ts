@@ -1,9 +1,13 @@
 import { array, InferType, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedArticleRequestStatus } from "../types";
+import { CustomPlaceholder } from "../../../types";
 
 export interface GetUserFeedArticlePropertiesInput {
   feedId: string;
+  data: {
+    customPlaceholders?: CustomPlaceholder[] | null;
+  };
 }
 
 const GetUserFeedArticlePropertiesOutputSchema = object({
@@ -22,9 +26,10 @@ export type GetUserFeedArticlePropertiesOutput = InferType<
 export const getUserFeedArticleProperties = async (
   options: GetUserFeedArticlePropertiesInput
 ): Promise<GetUserFeedArticlePropertiesOutput> => {
-  const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/article-properties`, {
+  const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/get-article-properties`, {
     requestOptions: {
-      method: "GET",
+      method: "POST",
+      body: JSON.stringify(options.data),
     },
     validateSchema: GetUserFeedArticlePropertiesOutputSchema,
   });

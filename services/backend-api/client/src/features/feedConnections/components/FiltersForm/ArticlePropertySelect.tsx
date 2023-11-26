@@ -3,6 +3,7 @@ import { Controller, FieldError, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { getNestedField } from "../../../../utils/getNestedField";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
+import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   controllerName: string;
@@ -10,9 +11,15 @@ interface Props {
   data: {
     feedId?: string;
   };
+  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const ArticlePropertySelect = ({ controllerName, placeholder, data }: Props) => {
+export const ArticlePropertySelect = ({
+  controllerName,
+  placeholder,
+  data,
+  articleFormatter,
+}: Props) => {
   const { t } = useTranslation();
   const {
     control,
@@ -20,6 +27,9 @@ export const ArticlePropertySelect = ({ controllerName, placeholder, data }: Pro
   } = useFormContext();
   const { data: propertiesData, status } = useUserFeedArticleProperties({
     feedId: data.feedId,
+    data: {
+      customPlaceholders: articleFormatter.customPlaceholders,
+    },
   });
 
   // Using bracket notation on the errors object will not work since the prefix is a string
