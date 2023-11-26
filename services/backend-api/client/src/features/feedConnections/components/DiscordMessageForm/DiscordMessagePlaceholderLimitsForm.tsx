@@ -123,6 +123,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
                           <MenuList>
                             <PlaceholderLimitDialog
                               mode="update"
+                              articleFormatter={articleFormatter}
                               trigger={<MenuItem>{t("common.buttons.edit")}</MenuItem>}
                               onSubmit={(limit) => {
                                 update(index, limit);
@@ -152,6 +153,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
         <Flex>
           <PlaceholderLimitDialog
             feedId={feedId}
+            articleFormatter={articleFormatter}
             trigger={
               <Button leftIcon={<AddIcon fontSize="sm" />} variant="ghost">
                 {t("common.buttons.add")}
