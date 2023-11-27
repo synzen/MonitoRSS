@@ -683,7 +683,11 @@ export class SupportersService {
       return false;
     }
 
-    const { expireAt, patrons } = supporter;
+    const { expireAt, patrons, paddleCustomer } = supporter;
+
+    if (paddleCustomer?.subscription?.status === SubscriptionStatus.Active) {
+      return true;
+    }
 
     if (expireAt) {
       return dayjs(expireAt).isAfter(dayjs());
@@ -693,13 +697,6 @@ export class SupportersService {
       return patrons.some((patron) =>
         this.patronsService.isValidPatron(patron)
       );
-    }
-
-    if (
-      supporter.paddleCustomer?.subscription?.status ===
-      SubscriptionStatus.Active
-    ) {
-      return true;
     }
 
     return false;
