@@ -344,6 +344,7 @@ export class FeedEventHandlerService {
             dateTimezone: event.data.feed.formatOptions?.dateTimezone,
             disableImageLinkPreviews:
               event.data.feed.formatOptions?.disableImageLinkPreviews,
+            dateLocale: event.data.feed.formatOptions?.dateLocale,
           },
           dateChecks: event.data.feed.dateChecks,
           debug: event.debug,

@@ -45,7 +45,6 @@ import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
 import {
   CreateFeedFilterValidationInputDto,
   CreateFeedFilterValidationOutputDto,
-  CreateFeedInputDto,
   CreatePreviewOutputDto,
   CreateTestArticleOutputDto,
   GetUserFeedArticlesInputDto,
@@ -103,6 +102,7 @@ export class FeedsController {
           dateFormat: formatter.options.dateFormat,
           dateTimezone: formatter.options.dateTimezone,
           disableImageLinkPreviews: formatter.options.disableImageLinkPreviews,
+          dateLocale: formatter.options.dateLocale,
         },
       });
 
@@ -276,6 +276,7 @@ export class FeedsController {
           dateTimezone: withType.feed.formatOptions?.dateTimezone,
           disableImageLinkPreviews:
             mediumDetails.formatter.disableImageLinkPreviews,
+          dateLocale: withType.feed.formatOptions?.dateLocale,
         };
 
         if (!withType.article) {
@@ -394,6 +395,7 @@ export class FeedsController {
                 .shape({
                   dateFormat: string().optional().default(undefined),
                   dateTimezone: string().optional().default(undefined),
+                  dateLocale: string().optional().default(undefined),
                 })
                 .optional()
                 .default(undefined),
@@ -422,6 +424,7 @@ export class FeedsController {
           dateTimezone: withType.feed.formatOptions?.dateTimezone,
           disableImageLinkPreviews:
             mediumDetails.formatter.disableImageLinkPreviews,
+          dateLocale: withType.feed.formatOptions?.dateLocale,
         };
 
         const article = await this.feedFetcherService.fetchFeedArticle(
