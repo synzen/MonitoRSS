@@ -269,11 +269,9 @@ export class SupporterSubscriptionsService {
   async previewSubscriptionChange({
     email,
     items,
-    currencyCode,
   }: {
     email: string;
     items: Array<{ priceId: string; quantity: number }>;
-    currencyCode: string;
   }) {
     const { subscription } =
       await this.supportersService.getSupporterSubscription(email);
@@ -289,7 +287,7 @@ export class SupporterSubscriptionsService {
         price_id: i.priceId,
         quantity: i.quantity,
       })),
-      currency_code: currencyCode,
+      currency_code: subscription.currencyCode,
       proration_billing_mode: "prorated_immediately",
     };
 
@@ -348,11 +346,9 @@ export class SupporterSubscriptionsService {
   async changeSubscription({
     email,
     items,
-    currencyCode,
   }: {
     email: string;
     items: Array<{ priceId: string; quantity: number }>;
-    currencyCode: string;
   }) {
     const { subscription } =
       await this.supportersService.getSupporterSubscription(email);
@@ -368,7 +364,7 @@ export class SupporterSubscriptionsService {
         price_id: i.priceId,
         quantity: i.quantity,
       })),
-      currency_code: currencyCode,
+      currency_code: subscription.currencyCode,
       proration_billing_mode: "prorated_immediately",
     };
 

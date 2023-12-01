@@ -251,7 +251,7 @@ export class SupporterSubscriptionsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @NestedQuery(ValidationPipe)
-    { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
+    { priceId }: CreateSubscriptionPreviewInputDto
   ) {
     const email =
       await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
@@ -271,7 +271,6 @@ export class SupporterSubscriptionsController {
             quantity: 1,
           },
         ],
-        currencyCode,
       });
 
     return {
@@ -286,7 +285,7 @@ export class SupporterSubscriptionsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @Body(ValidationPipe)
-    { currencyCode, priceId }: CreateSubscriptionPreviewInputDto
+    { priceId }: CreateSubscriptionPreviewInputDto
   ) {
     const email =
       await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
@@ -305,7 +304,6 @@ export class SupporterSubscriptionsController {
           quantity: 1,
         },
       ],
-      currencyCode,
     });
   }
 

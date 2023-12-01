@@ -10,16 +10,16 @@ COPY . ./
 # Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
 FROM node:18-slim  AS prod
 
-ARG VITE_PADDLE_SELLER_ID
 ARG VITE_FRESHDESK_WIDGET_ID
 ARG VITE_PADDLE_PW_AUTH
+ARG VITE_PADDLE_CLIENT_TOKEN
 
 RUN apt install curl
 RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 
-ENV VITE_PADDLE_SELLER_ID=$VITE_PADDLE_SELLER_ID
 ENV VITE_FRESHDESK_WIDGET_ID=$VITE_FRESHDESK_WIDGET_ID
 ENV VITE_PADDLE_PW_AUTH=$VITE_PADDLE_PW_AUTH
+ENV VITE_PADDLE_CLIENT_TOKEN=$VITE_PADDLE_CLIENT_TOKEN
 
 RUN npm run build
 

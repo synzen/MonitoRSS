@@ -3,7 +3,6 @@ import fetchRest from "../../../utils/fetchRest";
 export interface CreateSubscriptionChangeInput {
   data: {
     priceId: string;
-    currencyCode: string;
   };
 }
 

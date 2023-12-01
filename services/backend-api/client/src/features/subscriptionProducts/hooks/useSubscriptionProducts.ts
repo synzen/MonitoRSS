@@ -6,7 +6,7 @@ import {
   getSubscriptionProducts,
 } from "../api";
 
-export const useSubscriptionProducts = (input: GetSubscriptionProductsInput) => {
+export const useSubscriptionProducts = (input?: GetSubscriptionProductsInput) => {
   const { data, status, error, fetchStatus } = useQuery<
     GetSubscriptionProductsOutput,
     ApiAdapterError
@@ -17,7 +17,7 @@ export const useSubscriptionProducts = (input: GetSubscriptionProductsInput) => 
         input,
       },
     ],
-    async () => getSubscriptionProducts(input),
+    async () => getSubscriptionProducts(input || {}),
     {
       keepPreviousData: true,
     }

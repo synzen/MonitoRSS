@@ -4,7 +4,6 @@ import fetchRest from "../../../utils/fetchRest";
 export interface GetSubscriptionChangePreviewInput {
   data: {
     priceId: string;
-    currencyCode: string;
   };
 }
 
@@ -35,7 +34,6 @@ export const getSubscriptionChangePreview = async ({
   const searchParams = new URLSearchParams();
 
   searchParams.set("priceId", data.priceId);
-  searchParams.set("currencyCode", data.currencyCode);
 
   const res = await fetchRest(
     `/api/v1/subscription-products/update-preview?${searchParams.toString()}`,

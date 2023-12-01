@@ -31,7 +31,6 @@ import { useUserMe } from "../../features/discordUser";
 
 interface Props {
   onClose: (reopenPricing?: boolean) => void;
-  currencyCode: string;
   details?: {
     priceId: string;
   };
@@ -40,7 +39,6 @@ interface Props {
 }
 
 export const ChangeSubscriptionDialog = ({
-  currencyCode,
   details,
   onClose,
   isDowngrade,
@@ -48,9 +46,7 @@ export const ChangeSubscriptionDialog = ({
 }: Props) => {
   const priceId = details?.priceId;
   const { refetch, fetchStatus } = useUserMe();
-  const { data: productsData } = useSubscriptionProducts({
-    currency: currencyCode,
-  });
+  const { data: productsData } = useSubscriptionProducts();
   const product = priceId
     ? productsData?.data.products.find((p) => p.prices.find((pr) => pr.id === priceId))
     : undefined;
@@ -63,12 +59,11 @@ export const ChangeSubscriptionDialog = ({
   const initialRef = useRef<HTMLButtonElement>(null);
   const { t } = useTranslation();
 
-  const isOpen = !!(priceId && currencyCode);
+  const isOpen = !!priceId;
   const { data, error } = useSubscriptionChangePreview({
     data:
-      currencyCode && priceId && !isChangingToFree
+      priceId && !isChangingToFree
         ? {
-            currencyCode,
             priceId,
           }
         : undefined,
@@ -86,7 +81,6 @@ export const ChangeSubscriptionDialog = ({
         await mutateAsync({
           data: {
             priceId,
-            currencyCode,
           },
         });
       }

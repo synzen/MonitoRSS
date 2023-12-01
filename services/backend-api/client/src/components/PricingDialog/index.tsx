@@ -1,5 +1,5 @@
 /* eslint-disable no-nested-ternary */
-import { CheckIcon, ChevronDownIcon, CloseIcon } from "@chakra-ui/icons";
+import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
@@ -21,22 +21,18 @@ import {
   Text,
   useDisclosure,
   chakra,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
   Spinner,
   Link,
   ModalCloseButton,
 } from "@chakra-ui/react";
 import { ChangeEvent, cloneElement, useEffect, useRef, useState } from "react";
-import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { usePaddleCheckout } from "../../hooks";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { ProductKey } from "../../constants";
+import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 
 interface Props {
   trigger: React.ReactElement;
@@ -58,37 +54,6 @@ const tiers: Array<{
   highlighted?: boolean;
   features: Array<{ name: string; description: string; enabled?: boolean }>;
 }> = [
-  // {
-  //   name: "FREE",
-  //   productId: ProductKey.Free,
-  //   priceFormatted: "$0",
-  //   disableSubscribe: true,
-  //   description: "For basic news delivery",
-  //   features: [
-  //     {
-  //       name: Feature.Feeds,
-  //       description: "Track 5 news feeds",
-  //       enabled: true,
-  //     },
-  //     {
-  //       name: Feature.ArticleLimit,
-  //       description: "Limit of 50 articles daily",
-  //       enabled: true,
-  //     },
-  //     {
-  //       name: Feature.Webhooks,
-  //       description: "Custom name/avatar with webhooks",
-  //     },
-  //     {
-  //       name: Feature.CustomPlaceholders,
-  //       description: "Custom placeholders",
-  //     },
-  //     {
-  //       name: Feature.RefreshRate,
-  //       description: "10 minute refresh rate",
-  //     },
-  //   ],
-  // },
   {
     name: "TIER 1",
     productId: ProductKey.Tier1,
@@ -228,8 +193,6 @@ const CurrencyDisplay = ({
   );
 };
 
-const initialCurrencyCode = localStorage.getItem("currency") || "USD";
-const initialCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
 const initialInterval =
   (localStorage.getItem("preferredPricingInterval") as "month" | "year") || "month";
 
@@ -250,13 +213,7 @@ export const PricingDialog = ({ trigger }: Props) => {
   });
   const { onOpen, onClose, isOpen } = useDisclosure();
   const [interval, setInterval] = useState<"month" | "year">(initialInterval);
-  const [currency, setCurrency] = useState({
-    code: initialCurrencyCode,
-    symbol: initialCurrencySymbol,
-  });
-  const { data, fetchStatus, status, error } = useSubscriptionProducts({
-    currency: currency.code,
-  });
+  const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
   const paidSubscriptionExists =
@@ -268,8 +225,14 @@ export const PricingDialog = ({ trigger }: Props) => {
     setCheckForSubscriptionCreated(true);
   };
 
-  const { openCheckout } = usePaddleCheckout({
+  const {
+    openCheckout,
+    pricePreview: products,
+    isLoadingPricePreview,
+    pricePreviewErrored,
+  } = usePaddleCheckout({
     onCheckoutSuccess,
+    priceIds: subProducts?.data.products.flatMap((p) => p.prices.map((pr) => pr.id)),
   });
   const initialFocusRef = useRef<HTMLInputElement>(null);
 
@@ -283,25 +246,8 @@ export const PricingDialog = ({ trigger }: Props) => {
     }
   };
 
-  const onChangeCurrency = (c: { code: string; symbol: string }) => {
-    setCurrency(c);
-    localStorage.setItem("currency", c.code);
-    localStorage.setItem("currencySymbol", c.symbol);
-  };
-
-  const currencyElements = data?.data.currencies.map((c) => (
-    <MenuItem key={c.code} onClick={() => onChangeCurrency(c)}>
-      <CurrencyDisplay code={c.code} symbol={c.symbol} />
-    </MenuItem>
-  ));
-
-  const onClickPrice = (
-    priceId?: string,
-    currencyCode?: string,
-    productId?: string,
-    isDowngrade?: boolean
-  ) => {
-    if (!priceId || !currencyCode || !productId || !userData) {
+  const onClickPrice = (priceId?: string, productId?: string, isDowngrade?: boolean) => {
+    if (!priceId || !productId || !userData) {
       return;
     }
 
@@ -321,10 +267,10 @@ export const PricingDialog = ({ trigger }: Props) => {
   };
 
   useEffect(() => {
-    if (status === "success") {
+    if (!isLoadingPricePreview) {
       initialFocusRef.current?.focus();
     }
-  }, [status, initialFocusRef.current]);
+  }, [isLoadingPricePreview, initialFocusRef.current]);
 
   useEffect(() => {
     if (checkForSubscriptionCreated && paidSubscriptionExists) {
@@ -338,9 +284,7 @@ export const PricingDialog = ({ trigger }: Props) => {
     }
   }, [userBillingInterval]);
 
-  const products = data?.data.products;
-
-  const biggestPriceLength = data
+  const biggestPriceLength = products
     ? Math.max(
         ...(products?.flatMap((pr) =>
           pr.prices.filter((p) => p.interval === interval).map((p) => p.formattedPrice.length)
@@ -376,7 +320,6 @@ export const PricingDialog = ({ trigger }: Props) => {
   return (
     <Box>
       <ChangeSubscriptionDialog
-        currencyCode={currency.code}
         isDowngrade={changeSubscriptionDetails?.isDowngrade}
         billingPeriodEndsAt={billingPeriodEndsAt}
         details={
@@ -421,16 +364,16 @@ export const PricingDialog = ({ trigger }: Props) => {
                         exchange for some upgrades!
                       </Text>
                     </Stack>
-                    {(status === "loading" || userStatus === "loading") && <Spinner mb={8} />}
-                    {(error || userError) && (
+                    {(isLoadingPricePreview || userStatus === "loading") && <Spinner mb={8} />}
+                    {(pricePreviewErrored || subProductsError || userError) && (
                       <Stack mb={4}>
                         <InlineErrorAlert
-                          title="Sorry, something went werong"
-                          description={(error || userError)?.message}
+                          title="Sorry, something went wrong while loading prices"
+                          description="This issue has been automatically sent for diagnostics. Please try again later, or contact us at support@monitorss.xyz"
                         />
                       </Stack>
                     )}
-                    {!error && !userError && data && userSubscription && (
+                    {!subProductsError && !userError && products && userSubscription && (
                       <>
                         <Stack>
                           <HStack alignItems="center" spacing={4}>
@@ -450,25 +393,6 @@ export const PricingDialog = ({ trigger }: Props) => {
                           </HStack>
                           <Text color="green.300">Save 10% with a yearly plan!</Text>
                         </Stack>
-                        {userData.result.subscription.product.key === ProductKey.Free && (
-                          <Menu>
-                            <MenuButton
-                              as={Button}
-                              width={[200]}
-                              rightIcon={<ChevronDownIcon />}
-                              textAlign="left"
-                            >
-                              <CurrencyDisplay
-                                minimizeGap
-                                code={currency.code}
-                                symbol={currency.symbol}
-                              />
-                            </MenuButton>
-                            <MenuList maxHeight="300px" overflow="auto">
-                              {currencyElements}
-                            </MenuList>
-                          </Menu>
-                        )}
                         <Flex overflow="auto" width="100%" margin="auto">
                           <SimpleGrid
                             margin="auto"
@@ -542,14 +466,14 @@ export const PricingDialog = ({ trigger }: Props) => {
                                       <Stack spacing="12">
                                         <Box>
                                           <Text fontSize={priceTextSize} fontWeight="bold">
-                                            {fetchStatus === "fetching" && (
+                                            {isLoadingPricePreview && (
                                               <Spinner
                                                 colorScheme="blue"
                                                 color="blue.300"
                                                 size="lg"
                                               />
                                             )}
-                                            {fetchStatus !== "fetching" &&
+                                            {!isLoadingPricePreview &&
                                               (shorterProductPrice || "N/A")}
                                           </Text>
                                           <Text fontSize="lg" color="whiteAlpha.600">
@@ -586,7 +510,6 @@ export const PricingDialog = ({ trigger }: Props) => {
                                           onClick={() =>
                                             onClickPrice(
                                               associatedPrice?.id,
-                                              currency.code,
                                               productId,
                                               isBelowUserTier
                                             )
@@ -640,6 +563,28 @@ export const PricingDialog = ({ trigger }: Props) => {
                   Paddle.com, who also handles subscription-related inquiries. Prices will be
                   localized your location.
                 </Text>
+                {userSubscription?.product.key !== ProductKey.Free && (
+                  <Stack
+                    margin="auto"
+                    justifyContent="center"
+                    mt={8}
+                    textAlign="center"
+                    spacing={4}
+                  >
+                    <Text>
+                      If you&apos;d like to cancel your subscription, you may do so below.
+                    </Text>
+                    <Flex justifyContent="center">
+                      <Button
+                        colorScheme="red"
+                        variant="outline"
+                        onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
+                      >
+                        Cancel Subscription
+                      </Button>
+                    </Flex>
+                  </Stack>
+                )}
               </Stack>
               <Stack justifyContent="center" width="100%" alignItems="center">
                 <Stack mt={16} maxW={1400} width="100%">
@@ -733,22 +678,6 @@ export const PricingDialog = ({ trigger }: Props) => {
                   />
                 </Stack>
               </Stack>
-              {userSubscription?.product.key !== ProductKey.Free && (
-                <Stack margin="auto" justifyContent="center" mt={8} textAlign="center" spacing={4}>
-                  <Text>If you&apos;d like to cancel your subscription, you may do so below.</Text>
-                  <Flex justifyContent="center">
-                    <Button
-                      colorScheme="red"
-                      variant="outline"
-                      onClick={() =>
-                        onClickPrice("free-monthly", currency.code, ProductKey.Free, true)
-                      }
-                    >
-                      Cancel Subscription
-                    </Button>
-                  </Flex>
-                </Stack>
-              )}
             </Box>
           </ModalBody>
           <ModalFooter justifyContent="center" mt={6}>
