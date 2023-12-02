@@ -52,6 +52,7 @@ import {
   UpdateUserFeedsInput,
   UpdateUserFeedsOp,
 } from "./dto";
+import { CreateUserFeedDatePreviewInput } from "./dto/create-user-feed-date-preview-input.dto";
 import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-output.dto";
 import { UserFeed } from "./entities";
 import { UnsupportedBulkOpException } from "./exceptions";
@@ -166,6 +167,26 @@ export class UserFeedsController {
     return {
       result: {
         id,
+      },
+    };
+  }
+
+  @Post("/:feedId/date-preview")
+  @UseFilters(FeedExceptionFilter)
+  async createDatePreview(
+    @Body(ValidationPipe)
+    { dateFormat, dateLocale, dateTimezone }: CreateUserFeedDatePreviewInput
+  ) {
+    const result = await this.userFeedsService.getDatePreview({
+      dateFormat,
+      dateLocale,
+      dateTimezone,
+    });
+
+    return {
+      result: {
+        valid: result.valid,
+        output: result.output,
       },
     };
   }

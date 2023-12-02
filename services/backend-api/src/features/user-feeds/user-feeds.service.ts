@@ -45,6 +45,7 @@ import {
 } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
+import dayjs from "dayjs";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -128,6 +129,30 @@ export class UserFeedsService {
     await this.legacyFeedConversionJobModel.deleteOne({
       legacyFeedId: userFeed.legacyFeedId,
     });
+  }
+
+  getDatePreview({
+    dateFormat,
+    dateLocale,
+    dateTimezone,
+  }: {
+    dateFormat?: string;
+    dateTimezone?: string;
+    dateLocale?: string;
+  }) {
+    try {
+      return {
+        output: dayjs()
+          .tz(dateTimezone)
+          .locale(dateLocale || "en")
+          .format(dateFormat || undefined),
+        valid: true,
+      };
+    } catch (err) {
+      return {
+        valid: false,
+      };
+    }
   }
 
   async addFeed(

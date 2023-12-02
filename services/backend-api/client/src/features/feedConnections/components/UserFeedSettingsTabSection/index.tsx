@@ -24,6 +24,8 @@ import {
   NumberInputStepper,
   Radio,
   RadioGroup,
+  Select,
+  Skeleton,
   Stack,
   StackDivider,
   Table,
@@ -58,6 +60,9 @@ import { DiscordUsername, useDiscordUserMe } from "../../../discordUser";
 import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../../constants";
 import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
 import { SelectUserDialog } from "./SelectUserDialog";
+import DATE_LOCALES from "../../../../constants/dateLocales";
+import { useUserFeedDatePreview } from "../../../feed/hooks/useUserFeedDatePreview";
+import { useDebounce } from "../../../../hooks";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -86,6 +91,7 @@ const FormSchema = object({
       throw err;
     }
   }),
+  dateLocale: string().optional(),
   oldArticleDateDiffMsThreshold: number().optional(),
   shareManageOptions: object({
     invites: array(
@@ -124,13 +130,36 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     defaultValues: {
       dateFormat: feed?.formatOptions?.dateFormat || "",
       dateTimezone: feed?.formatOptions?.dateTimezone || "",
+      dateLocale: feed?.formatOptions?.dateLocale || "",
       oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
       shareManageOptions: feed?.shareManageOptions || null,
       userRefreshRateSeconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
     },
   });
 
-  const [dateFormat, dateTimezone] = watch(["dateFormat", "dateTimezone", "shareManageOptions"]);
+  const [dateFormat, dateTimezone, dateLocale] = watch([
+    "dateFormat",
+    "dateTimezone",
+    "dateLocale",
+  ]);
+
+  const debouncedPreviewInput = useDebounce(
+    {
+      dateFormat,
+      dateTimezone,
+      dateLocale,
+    },
+    400
+  );
+
+  const {
+    data: datePreviewData,
+    fetchStatus: datePreviewFetchStatus,
+    error: datePreviewError,
+  } = useUserFeedDatePreview({
+    feedId,
+    data: debouncedPreviewInput,
+  });
 
   const { mutateAsync } = useUpdateUserFeed();
   const { mutateAsync: createUserFeedManagementInvite, status: creatingInvitesStatus } =
@@ -147,6 +176,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
           formatOptions: {
             dateFormat: values.dateFormat?.trim() || undefined,
             dateTimezone: values.dateTimezone?.trim() || undefined,
+            dateLocale: values.dateLocale?.trim() || undefined,
           },
           dateCheckOptions:
             values.oldArticleDateDiffMsThreshold !== undefined
@@ -161,6 +191,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
       reset({
         dateFormat: updatedFeed.result.formatOptions?.dateFormat || "",
         dateTimezone: updatedFeed.result.formatOptions?.dateTimezone || "",
+        dateLocale: updatedFeed.result.formatOptions?.dateLocale || "",
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
@@ -196,24 +227,6 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
   };
-
-  let datePreview: React.ReactNode;
-
-  try {
-    const previewDayjs = dayjs().tz(dateTimezone || "utc");
-
-    datePreview = (
-      <Text fontSize="xl" color="gray.400">
-        {previewDayjs.format(dateFormat)}
-      </Text>
-    );
-  } catch (err) {
-    datePreview = (
-      <Text fontSize="xl" color="red.400">
-        {t("features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone")}
-      </Text>
-    );
-  }
 
   if (feedStatus === "loading") {
     return (
@@ -470,40 +483,27 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
                 )}
               </FormLabel>
-              {datePreview}
-            </FormControl>
-            <Controller
-              name="dateFormat"
-              control={control}
-              render={({ field }) => (
-                <FormControl isInvalid={!!formErrors.dateFormat}>
-                  <FormLabel>
-                    {t(
-                      "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
-                    )}
-                  </FormLabel>
-                  <Input spellCheck={false} autoComplete="" {...field} />
-                  {!formErrors.dateFormat && (
-                    <FormHelperText>
-                      This will dictate how the placeholders with dates (such as{" "}
-                      <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
-                      formatting, see{" "}
-                      <Link
-                        color="blue.300"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        href="https://day.js.org/docs/en/display/format"
-                      >
-                        https://day.js.org/docs/en/display/format
-                      </Link>
-                    </FormHelperText>
-                  )}
-                  {formErrors.dateFormat && (
-                    <FormErrorMessage>{formErrors.dateFormat.message}</FormErrorMessage>
-                  )}
-                </FormControl>
+              {!datePreviewError && (
+                <Skeleton isLoaded={!!datePreviewData}>
+                  <Text
+                    fontSize="xl"
+                    color={datePreviewData?.result.valid ? "gray.400" : "red.400"}
+                  >
+                    {datePreviewData?.result.valid && datePreviewData?.result.output}
+                    {!datePreviewData?.result.valid &&
+                      t(
+                        "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone"
+                      )}
+                  </Text>
+                </Skeleton>
               )}
-            />
+              {datePreviewError && (
+                <InlineErrorAlert
+                  title="Failed to load date preview"
+                  description={datePreviewError.message}
+                />
+              )}
+            </FormControl>
             <Controller
               name="dateTimezone"
               control={control}
@@ -546,6 +546,63 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       />
                       )
                     </FormErrorMessage>
+                  )}
+                </FormControl>
+              )}
+            />
+            <Controller
+              name="dateFormat"
+              control={control}
+              render={({ field }) => (
+                <FormControl isInvalid={!!formErrors.dateFormat}>
+                  <FormLabel>
+                    {t(
+                      "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
+                    )}
+                  </FormLabel>
+                  <Input spellCheck={false} autoComplete="" {...field} />
+                  {!formErrors.dateFormat && (
+                    <FormHelperText>
+                      This will dictate how the placeholders with dates (such as{" "}
+                      <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
+                      formatting, see{" "}
+                      <Link
+                        color="blue.300"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://day.js.org/docs/en/display/format"
+                      >
+                        https://day.js.org/docs/en/display/format
+                      </Link>
+                    </FormHelperText>
+                  )}
+                  {formErrors.dateFormat && (
+                    <FormErrorMessage>{formErrors.dateFormat.message}</FormErrorMessage>
+                  )}
+                </FormControl>
+              )}
+            />
+            <Controller
+              name="dateLocale"
+              control={control}
+              render={({ field }) => (
+                <FormControl isInvalid={!!formErrors.dateLocale}>
+                  <FormLabel>Date Format Locale</FormLabel>
+                  <Select placeholder="Select option" {...field}>
+                    {DATE_LOCALES.map(({ key, name }) => (
+                      <option key={key} value={key}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
+                  {!formErrors.dateLocale && (
+                    <FormHelperText>
+                      The locale to use for formatting dates. Leave blank to use the default (
+                      <Code>English</Code>).
+                    </FormHelperText>
+                  )}
+                  {formErrors.dateLocale?.message && (
+                    <FormErrorMessage>{formErrors.dateLocale.message}</FormErrorMessage>
                   )}
                 </FormControl>
               )}

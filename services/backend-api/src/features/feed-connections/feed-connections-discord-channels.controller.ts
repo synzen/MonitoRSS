@@ -237,7 +237,7 @@ export class FeedConnectionsDiscordChannelsController {
     const result = await this.service.createPreview({
       connection,
       userFeed: feed,
-      feedFormatOptions: userFeedFormatOptions,
+      feedFormatOptions: { ...feed.formatOptions, ...userFeedFormatOptions },
       connectionFormatOptions,
       articleId: article?.id,
       content,

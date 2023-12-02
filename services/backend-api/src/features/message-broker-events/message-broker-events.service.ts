@@ -461,6 +461,7 @@ export class MessageBrokerEventsService {
         formatOptions: {
           dateFormat: userFeed.formatOptions?.dateFormat,
           dateTimezone: userFeed.formatOptions?.dateTimezone,
+          dateLocale: userFeed.formatOptions?.dateLocale,
         },
         dateChecks: userFeed.dateCheckOptions,
       },

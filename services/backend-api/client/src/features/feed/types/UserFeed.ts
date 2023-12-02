@@ -26,6 +26,7 @@ export const UserFeedSchema = object({
   formatOptions: object({
     dateFormat: string().optional().default(undefined),
     dateTimezone: string().optional().default(undefined),
+    dateLocale: string().optional().default(undefined),
   })
     .optional()
     .notRequired()

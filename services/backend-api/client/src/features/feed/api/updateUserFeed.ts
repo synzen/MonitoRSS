@@ -13,6 +13,7 @@ export interface UpdateUserFeedInput {
     formatOptions?: {
       dateFormat?: string;
       dateTimezone?: string;
+      dateLocale?: string;
     };
     dateCheckOptions?: {
       oldArticleDateDiffMsThreshold?: number;
