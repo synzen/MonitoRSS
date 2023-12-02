@@ -333,14 +333,21 @@ export class FeedFetcherService {
     url: string,
     options?: FetchOptions,
   ): Promise<ReturnType<typeof fetch>> {
-    const res = await fetch(url, {
+    const useOptions = {
       timeout: this.feedRequestTimeoutMs,
       follow: 5,
       headers: {
         ...options?.headers,
         'user-agent': options?.userAgent || this.defaultUserAgent,
+        /**
+         * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
+         * Appears to be temporary error given that the page says they're working on fixing it
+         */
+        'Sec-Fetch-Mode': 'navigate',
       },
-    });
+    };
+
+    const res = await fetch(url, useOptions);
 
     return res;
   }

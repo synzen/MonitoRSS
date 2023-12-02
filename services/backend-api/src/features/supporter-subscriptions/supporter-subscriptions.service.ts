@@ -317,27 +317,27 @@ export class SupporterSubscriptionsService {
         subtotal: immediateTransaction.details.totals.subtotal,
         subtotalFormatted: formatCurrency(
           immediateTransaction.details.totals.subtotal,
-          currencyCode
+          subscription.currencyCode
         ),
         tax: immediateTransaction.details.totals.tax,
         taxFormatted: formatCurrency(
           immediateTransaction.details.totals.tax,
-          currencyCode
+          subscription.currencyCode
         ),
         credit: immediateTransaction.details.totals.credit,
         creditFormatted: formatCurrency(
           immediateTransaction.details.totals.credit,
-          currencyCode
+          subscription.currencyCode
         ),
         total: immediateTransaction.details.totals.total,
         totalFormatted: formatCurrency(
           immediateTransaction.details.totals.total,
-          currencyCode
+          subscription.currencyCode
         ),
         grandTotal: immediateTransaction.details.totals.grand_total,
         grandTotalFormatted: formatCurrency(
           immediateTransaction.details.totals.grand_total,
-          currencyCode
+          subscription.currencyCode
         ),
       },
     };
