@@ -1,6 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import fetch, { FetchError, HeadersInit } from 'node-fetch';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
@@ -311,9 +310,11 @@ export class FeedFetcherService {
         stack: (err as Error).stack,
       });
 
-      if (err instanceof FetchError && err.type === 'request-timeout') {
+      if ((err as Error).name === 'AbortError') {
         request.status = RequestStatus.FETCH_TIMEOUT;
-        request.errorMessage = err.message;
+        request.errorMessage =
+          `Request took longer than` +
+          ` ${this.feedRequestTimeoutMs}ms to complete`;
       } else {
         request.status = RequestStatus.FETCH_ERROR;
         request.errorMessage = (err as Error).message;
@@ -333,9 +334,13 @@ export class FeedFetcherService {
     url: string,
     options?: FetchOptions,
   ): Promise<ReturnType<typeof fetch>> {
-    const useOptions = {
-      timeout: this.feedRequestTimeoutMs,
-      follow: 5,
+    const controller = new AbortController();
+
+    setTimeout(() => {
+      controller.abort();
+    }, this.feedRequestTimeoutMs);
+
+    const useOptions: RequestInit = {
       headers: {
         ...options?.headers,
         'user-agent': options?.userAgent || this.defaultUserAgent,
@@ -345,6 +350,8 @@ export class FeedFetcherService {
          */
         'Sec-Fetch-Mode': 'navigate',
       },
+      redirect: 'follow',
+      signal: controller.signal,
     };
 
     const res = await fetch(url, useOptions);
