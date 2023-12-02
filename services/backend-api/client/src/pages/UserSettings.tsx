@@ -29,10 +29,10 @@ import { InferType, bool, object } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
-import { BoxConstrained, ConfirmModal, DashboardContentV2, PricingDialog } from "../components";
+import { BoxConstrained, ConfirmModal, DashboardContentV2 } from "../components";
 import { useLogin, usePaddleCheckout } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
@@ -40,6 +40,7 @@ import { useCreateSubscriptionResume } from "../features/subscriptionProducts/ho
 import { ProductKey } from "../constants";
 import getChakraColor from "../utils/getChakraColor";
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
+import { PricingDialogContext } from "../contexts";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -113,6 +114,7 @@ export const UserSettings = () => {
   const { status, error, data, refetch } = useUserMe();
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { redirectToLogin } = useLogin();
   const { mutateAsync: resumeSubscription } = useCreateSubscriptionResume();
   const subscription = data?.result.subscription;
@@ -388,13 +390,9 @@ export const UserSettings = () => {
                                   </Box>
                                 )}
                                 {!subscriptionPendingCancellation && (
-                                  <PricingDialog
-                                    trigger={
-                                      <Button size="sm" variant="outline">
-                                        Manage Subscription
-                                      </Button>
-                                    }
-                                  />
+                                  <Button size="sm" variant="outline" onClick={onOpenPricingDialog}>
+                                    Manage Subscription
+                                  </Button>
                                 )}
                                 {!subscriptionPendingCancellation && (
                                   <ChangePaymentMethodUrlButton />

@@ -65,7 +65,7 @@ export function usePaddleCheckout(props?: Props) {
   }, []);
 
   const getPricePreview = async (priceIdsToGet: string[]) => {
-    if (!paddle || !priceIdsToGet) {
+    if (!paddle || !priceIdsToGet || !!pricePreview) {
       return;
     }
 

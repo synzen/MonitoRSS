@@ -27,8 +27,8 @@ import {
   useUserFeeds,
 } from "../features/feed";
 import { pages } from "../constants";
-import { BoxConstrained, PricingDialog } from "../components";
-import { UserFeedStatusFilterContext } from "../contexts";
+import { BoxConstrained } from "../components";
+import { PricingDialogContext, UserFeedStatusFilterContext } from "../contexts";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyInfo } from "../utils/notifyInfo";
 
@@ -37,6 +37,7 @@ export const UserFeeds: React.FC = () => {
   const navigate = useNavigate();
   const { data: discordUserMe } = useDiscordUserMe();
   const { data: userMeData } = useUserMe();
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
     offset: 0,
@@ -181,17 +182,14 @@ export const UserFeeds: React.FC = () => {
                 />
               )}
               {userMeData?.result.enableBilling && (
-                <PricingDialog
-                  trigger={
-                    <IconButton
-                      aria-label="Increase article daily limit"
-                      variant="outline"
-                      icon={<ArrowLeftIcon />}
-                      size="sm"
-                      transform="rotate(90deg)"
-                      marginLeft="4"
-                    />
-                  }
+                <IconButton
+                  aria-label="Increase article daily limit"
+                  variant="outline"
+                  icon={<ArrowLeftIcon />}
+                  size="sm"
+                  transform="rotate(90deg)"
+                  marginLeft="4"
+                  onClick={onOpenPricingDialog}
                 />
               )}
             </Flex>

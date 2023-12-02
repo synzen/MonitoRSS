@@ -11,6 +11,7 @@ import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
 import App from "./App";
+import { PricingDialogProvider } from "./contexts";
 
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
@@ -66,7 +67,9 @@ prepare().then(() => {
         <QueryClientProvider client={queryClient}>
           <ForceDarkMode>
             <GenericErrorBoundary>
-              <App />
+              <PricingDialogProvider>
+                <App />
+              </PricingDialogProvider>
             </GenericErrorBoundary>
           </ForceDarkMode>
         </QueryClientProvider>

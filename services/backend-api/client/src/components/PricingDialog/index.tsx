@@ -19,13 +19,11 @@ import {
   Stack,
   Switch,
   Text,
-  useDisclosure,
-  chakra,
   Spinner,
   Link,
   ModalCloseButton,
 } from "@chakra-ui/react";
-import { ChangeEvent, cloneElement, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
@@ -35,7 +33,9 @@ import { ProductKey } from "../../constants";
 import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 
 interface Props {
-  trigger: React.ReactElement;
+  isOpen: boolean;
+  onClose: () => void;
+  onOpen: () => void;
 }
 
 enum Feature {
@@ -165,34 +165,6 @@ const getIdealPriceTextSize = (length: number) => {
   return "4xl";
 };
 
-const CurrencyDisplay = ({
-  code,
-  symbol,
-  minimizeGap,
-}: {
-  code: string;
-  symbol: string;
-  minimizeGap?: boolean;
-}) => {
-  return (
-    <span>
-      <chakra.span
-        fontSize="lg"
-        fontWeight="bold"
-        width={minimizeGap ? undefined : "3rem"}
-        display="inline-block"
-        mr={minimizeGap ? 4 : 2}
-        whiteSpace="nowrap"
-      >
-        {symbol}
-      </chakra.span>
-      <chakra.span fontSize="lg" fontWeight="semibold">
-        {code}
-      </chakra.span>
-    </span>
-  );
-};
-
 const initialInterval =
   (localStorage.getItem("preferredPricingInterval") as "month" | "year") || "month";
 
@@ -202,7 +174,7 @@ interface ChangeSubscriptionDetails {
   isDowngrade?: boolean;
 }
 
-export const PricingDialog = ({ trigger }: Props) => {
+export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
   const {
     status: userStatus,
@@ -211,7 +183,6 @@ export const PricingDialog = ({ trigger }: Props) => {
   } = useUserMe({
     checkForSubscriptionCreated,
   });
-  const { onOpen, onClose, isOpen } = useDisclosure();
   const [interval, setInterval] = useState<"month" | "year">(initialInterval);
   const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
@@ -232,7 +203,9 @@ export const PricingDialog = ({ trigger }: Props) => {
     pricePreviewErrored,
   } = usePaddleCheckout({
     onCheckoutSuccess,
-    priceIds: subProducts?.data.products.flatMap((p) => p.prices.map((pr) => pr.id)),
+    priceIds: !isOpen
+      ? undefined
+      : subProducts?.data.products.flatMap((p) => p.prices.map((pr) => pr.id)),
   });
   const initialFocusRef = useRef<HTMLInputElement>(null);
 
@@ -337,9 +310,6 @@ export const PricingDialog = ({ trigger }: Props) => {
           }
         }}
       />
-      {cloneElement(trigger, {
-        onClick: () => onOpen(),
-      })}
       <Modal
         onClose={onClose}
         isOpen={isOpen}
@@ -571,9 +541,6 @@ export const PricingDialog = ({ trigger }: Props) => {
                     textAlign="center"
                     spacing={4}
                   >
-                    <Text>
-                      If you&apos;d like to cancel your subscription, you may do so below.
-                    </Text>
                     <Flex justifyContent="center">
                       <Button
                         colorScheme="red"

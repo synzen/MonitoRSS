@@ -36,8 +36,8 @@ import {
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, ArrowLeftIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import { useEffect, useRef, useState } from "react";
-import { BoxConstrained, CategoryText, ConfirmModal, PricingDialog } from "@/components";
+import { useContext, useEffect, useRef, useState } from "react";
+import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
   CloneUserFeedDialog,
   EditUserFeedDialog,
@@ -65,6 +65,7 @@ import { notifyError } from "../utils/notifyError";
 import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
 import { useUserMe } from "../features/discordUser";
+import { PricingDialogContext } from "../contexts";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -83,6 +84,7 @@ const tabIndexBySearchParam = new Map<string, number>([
 export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
@@ -460,16 +462,13 @@ export const UserFeed: React.FC = () => {
                       />
                     )}
                     {dailyLimit && userMe?.result.enableBilling && (
-                      <PricingDialog
-                        trigger={
-                          <IconButton
-                            aria-label="Increase article daily limit"
-                            variant="ghost"
-                            icon={<ArrowLeftIcon />}
-                            size="xs"
-                            transform="rotate(90deg)"
-                          />
-                        }
+                      <IconButton
+                        aria-label="Increase article daily limit"
+                        variant="ghost"
+                        icon={<ArrowLeftIcon />}
+                        size="xs"
+                        transform="rotate(90deg)"
+                        onClick={onOpenPricingDialog}
                       />
                     )}
                     {!dailyLimit && <Spinner display="block" size="sm" />}
