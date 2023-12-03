@@ -371,14 +371,8 @@ export const UserSettings = () => {
                                             continue to be hosted for free.
                                             <br />
                                             <br /> On the upside, yearly plans are now available at
-                                            a 15% discount, and there are now 27 currencies
-                                            supported with localized pricing (instead of 16 on
-                                            Patreon). This means that if you were paying in USD and
-                                            you live in a country whose purchasing power is lower
-                                            than that of the United States, the pricing should
-                                            reflect that if your country&apos;s currency is
-                                            supported. If your currency is missing, feel free to
-                                            contact us and we&apos;ll look into adding it.
+                                            a 15% discount, and there are a total of 30 currencies
+                                            that are now supported (instead of just 16 on Patreon).
                                           </Text>
                                         </AccordionPanel>
                                       </AccordionItem>

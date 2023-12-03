@@ -604,6 +604,15 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         ),
                       },
                       {
+                        q: "What currencies are supported?",
+                        a: (
+                          <Text>
+                            The supported currencies are USD, EUR, GBP, ARS, AUD, BRL, CAD, CHF,
+                            COP, CNY, CZK, DKK, HKD, HUF, INR, ILS, JPY, KRW, MXN, NOK, NZD, PLN.
+                          </Text>
+                        ),
+                      },
+                      {
                         q: "Can I get a refund?",
                         a: (
                           <Text>
