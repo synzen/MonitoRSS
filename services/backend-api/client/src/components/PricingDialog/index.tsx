@@ -22,6 +22,7 @@ import {
   Spinner,
   Link,
   ModalCloseButton,
+  Badge,
 } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { InlineErrorAlert } from "../InlineErrorAlert";
@@ -323,7 +324,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
         <ModalContent bg="none" shadow="none" maxHeight="100vh">
           <ModalCloseButton />
           <ModalBody bg="transparent" shadow="none">
-            <Box>
+            <Box mt={12}>
               <Stack>
                 <Flex alignItems="center" justifyContent="center">
                   <Stack width="100%" alignItems="center" spacing={12} justifyContent="center">
@@ -345,7 +346,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     )}
                     {!subProductsError && !userError && products && userSubscription && (
                       <>
-                        <Stack>
+                        <Stack alignItems="center" spacing={4}>
                           <HStack alignItems="center" spacing={4}>
                             <Text fontSize="lg" fontWeight="semibold">
                               Monthly
@@ -361,7 +362,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                               Yearly
                             </Text>
                           </HStack>
-                          <Text color="green.300">Save 10% with a yearly plan!</Text>
+                          <Badge fontSize="1rem" colorScheme="green" borderRadius="md" px={4}>
+                            Save 15% with a yearly plan!
+                          </Badge>
                         </Stack>
                         <Flex overflow="auto" width="100%" margin="auto">
                           <SimpleGrid
@@ -515,6 +518,17 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     )}
                   </Stack>
                 </Flex>
+                <Box textAlign="center" pb={3} fontSize="lg">
+                  <Text>
+                    Don&apos;t see what you&apos;re looking for?{" "}
+                    <Link
+                      color="blue.300"
+                      href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
+                    >
+                      Let&apos;s chat!
+                    </Link>
+                  </Text>
+                </Box>
                 <Text textAlign="center" color="whiteAlpha.600">
                   By proceeding to payment, you are agreeing to our{" "}
                   <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
