@@ -344,6 +344,44 @@ export const UserSettings = () => {
                                           </Text>
                                         </AccordionPanel>
                                       </AccordionItem>
+                                      <AccordionItem
+                                        border="none"
+                                        borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                                      >
+                                        <AccordionButton border="none">
+                                          <Flex
+                                            flex="1"
+                                            gap={4}
+                                            fontSize={13}
+                                            color="blue.200"
+                                            alignItems="center"
+                                            textAlign="left"
+                                          >
+                                            Has pricing changed?
+                                            <AccordionIcon />
+                                          </Flex>
+                                        </AccordionButton>
+                                        <AccordionPanel>
+                                          <Text fontSize={13}>
+                                            In a way, yes. Unfortunately, the original Patreon tiers
+                                            1 and 2 are no longer available due to the
+                                            disproportionate load they place on the bot when
+                                            compared to the revenue they generate. As a result, they
+                                            have been discontinued to ensure that MonitoRSS can
+                                            continue to be hosted for free.
+                                            <br />
+                                            <br /> On the upside, yearly plans are now available at
+                                            a 15% discount, and there are now 27 currencies
+                                            supported with localized pricing (instead of 16 on
+                                            Patreon). This means that if you were paying in USD and
+                                            you live in a country whose purchasing power is lower
+                                            than that of the United States, the pricing should
+                                            reflect that if your country&apos;s currency is
+                                            supported. If your currency is missing, feel free to
+                                            contact us and we&apos;ll look into adding it.
+                                          </Text>
+                                        </AccordionPanel>
+                                      </AccordionItem>
                                     </Accordion>
                                   </Stack>
                                 </AlertDescription>
