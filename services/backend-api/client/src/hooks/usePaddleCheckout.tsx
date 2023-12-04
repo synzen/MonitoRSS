@@ -30,6 +30,7 @@ export function usePaddleCheckout(props?: Props) {
   const [pricePreview, setPricePreview] = useState<
     Array<{
       id: ProductKey;
+      name: string;
       prices: Array<{
         id: string;
         interval: "month" | "year";

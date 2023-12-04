@@ -294,6 +294,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   return (
     <Box>
       <ChangeSubscriptionDialog
+        products={products}
         isDowngrade={changeSubscriptionDetails?.isDowngrade}
         billingPeriodEndsAt={billingPeriodEndsAt}
         details={
@@ -417,12 +418,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                     userSubscription.billingInterval === "year");
 
                                 return (
-                                  <Card size="lg" shadow="lg" key={name}>
+                                  <Card size="lg" shadow="lg" key={associatedProduct?.name}>
                                     <CardHeader pb={0}>
                                       <Stack>
                                         <HStack justifyContent="flex-start">
                                           <Heading size="md" fontWeight="semibold">
-                                            {name}
+                                            {associatedProduct?.name}
                                           </Heading>
                                           {/* {highlighted && (
                                             <Tag size="sm" colorScheme="blue" fontWeight="bold">
