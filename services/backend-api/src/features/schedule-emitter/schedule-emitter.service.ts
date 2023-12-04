@@ -1,7 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { InjectModel } from "@nestjs/mongoose";
 import logger from "../../utils/logger";
 import { SupportersService } from "../supporters/supporters.service";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 
 @Injectable()
 export class ScheduleEmitterService {
@@ -9,49 +11,23 @@ export class ScheduleEmitterService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly supportersService: SupportersService
+    private readonly supportersService: SupportersService,
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
   ) {}
 
   async syncTimerStates(
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
-    const supporterRefreshRates = await this.getSupporterRefreshRates();
-    logger.debug(`Supporter refresh rates: [${supporterRefreshRates}]`);
-
-    const defaultRefreshRate = await this.getDefaultRefreshRate();
-    logger.debug(`Default refresh rate: [${defaultRefreshRate}]`);
+    const allRefreshRatesSeconds: number[] = await this.userFeedModel
+      .distinct("refreshRateSeconds")
+      .exec();
 
     const setOfRefreshRatesMs = new Set([
-      ...supporterRefreshRates,
-      defaultRefreshRate,
+      ...allRefreshRatesSeconds.map((seconds) => seconds * 1000),
     ]);
 
     this.cleanupTimers(this.timers, setOfRefreshRatesMs);
     this.setNewTimers(this.timers, setOfRefreshRatesMs, onTimerTrigger);
-  }
-
-  async getSupporterRefreshRates() {
-    const allBenefits =
-      await this.supportersService.getBenefitsOfAllDiscordUsers();
-    const supporterRefreshRates = new Set(
-      allBenefits.map((benefit) => benefit.refreshRateSeconds * 1000)
-    );
-
-    return [...supporterRefreshRates];
-  }
-
-  getDefaultRefreshRate() {
-    const refreshRateMinutes = this.configService.get<number>(
-      "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES"
-    );
-
-    if (refreshRateMinutes === undefined) {
-      throw new Error(
-        "BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES is not defined in the config"
-      );
-    }
-
-    return refreshRateMinutes * 60 * 1000;
   }
 
   cleanupTimers(
