@@ -22,12 +22,12 @@ import {
   useCreateSubscriptionCancel,
   useCreateSubscriptionChange,
   useSubscriptionChangePreview,
-  useSubscriptionProducts,
 } from "../../features/subscriptionProducts";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { notifyError } from "../../utils/notifyError";
 import { notifySuccess } from "../../utils/notifySuccess";
 import { useUserMe } from "../../features/discordUser";
+import { ProductKey } from "../../constants";
 
 interface Props {
   onClose: (reopenPricing?: boolean) => void;
@@ -36,6 +36,16 @@ interface Props {
   };
   isDowngrade?: boolean;
   billingPeriodEndsAt?: string;
+  products?: {
+    id: ProductKey;
+    name: string;
+    prices: {
+      id: string;
+      interval: "month" | "year";
+      formattedPrice: string;
+      currencyCode: string;
+    }[];
+  }[];
 }
 
 export const ChangeSubscriptionDialog = ({
@@ -43,13 +53,14 @@ export const ChangeSubscriptionDialog = ({
   onClose,
   isDowngrade,
   billingPeriodEndsAt,
+  products,
 }: Props) => {
   const priceId = details?.priceId;
   const { refetch, fetchStatus } = useUserMe();
-  const { data: productsData } = useSubscriptionProducts();
-  const product = priceId
-    ? productsData?.data.products.find((p) => p.prices.find((pr) => pr.id === priceId))
-    : undefined;
+  const product =
+    priceId && products
+      ? products.find((p) => p.prices.find((pr) => pr.id === priceId))
+      : undefined;
 
   const price = product?.prices.find((p) => p.id === priceId);
 

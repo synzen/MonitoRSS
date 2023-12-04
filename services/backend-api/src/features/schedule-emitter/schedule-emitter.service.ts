@@ -31,7 +31,8 @@ export class ScheduleEmitterService {
   }
 
   async getSupporterRefreshRates() {
-    const allBenefits = await this.supportersService.getBenefitsOfAllServers();
+    const allBenefits =
+      await this.supportersService.getBenefitsOfAllDiscordUsers();
     const supporterRefreshRates = new Set(
       allBenefits.map((benefit) => benefit.refreshRateSeconds * 1000)
     );
