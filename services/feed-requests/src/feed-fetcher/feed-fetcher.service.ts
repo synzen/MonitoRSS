@@ -349,6 +349,7 @@ export class FeedFetcherService {
          * Appears to be temporary error given that the page says they're working on fixing it
          */
         'Sec-Fetch-Mode': 'navigate',
+        'sec-fetch-site': 'none',
       },
       redirect: 'follow',
       signal: controller.signal,
