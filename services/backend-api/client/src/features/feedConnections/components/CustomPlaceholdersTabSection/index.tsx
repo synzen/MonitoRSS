@@ -28,16 +28,13 @@ import {
 } from "./constants/CustomPlaceholderFormSchema";
 import { CustomPlaceholderForm } from "./CustomPlaceholderForm";
 import { useConnection, useUpdateConnection } from "../../hooks";
-import {
-  InlineErrorAlert,
-  InsufficientSupporterTier,
-  SavedUnsavedChangesPopupBar,
-} from "@/components";
+import { InlineErrorAlert, SavedUnsavedChangesPopupBar } from "@/components";
 import { FeedConnectionType } from "@/types";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { useIsFeatureAllowed } from "@/hooks";
 import { BlockableFeature, SupporterTier } from "@/constants";
+import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 
 interface Props {
   feedId: string;
@@ -172,7 +169,13 @@ export const CustomPlaceholdersTabSection = ({
           the content you&apos;re interested in.
         </Text>
       </Stack>
-      {!allowed && <InsufficientSupporterTier tier={SupporterTier.T3} />}
+      {!allowed && (
+        <SubscriberBlockText
+          tier={SupporterTier.T3}
+          alternateText={`While you can use this feature, you must be a supporter at a sufficient tier ({tier}) to
+          have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
+        />
+      )}
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={4}>

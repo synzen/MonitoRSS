@@ -14,7 +14,7 @@ export * from "./HelpDialog";
 export * from "./AnimatedComponent";
 export * from "./UserFeedStatusSelectDropdown";
 export * from "./NewHeader";
-export * from "./InsufficientSupporterTierAlert";
 export * from "./SaveUnsavedChangesPopupBar";
 export * from "./PricingDialog";
 export * from "./FAQ";
+export * from "./SubscriberBlockText";

@@ -36,6 +36,8 @@ import { useCreateDiscordChannelConnection } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { DiscordActiveThreadDropdown, DiscordServerSearchSelectv2 } from "../../../discordServers";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { SubscriberBlockText } from "@/components/SubscriberBlockText";
+import { SupporterTier } from "../../../../constants";
 
 const formSchema = object({
   name: string().required(),
@@ -137,7 +139,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                 Discord channel.
               </Text>
               {webhooksDisabled && (
-                <Text color="orange.500">{t("common.errors.supporterRequiredAccessV2")}</Text>
+                <SubscriberBlockText tier={SupporterTier.T1} onClick={onClose} />
               )}
               {!webhooksDisabled && (
                 <Stack spacing={4}>

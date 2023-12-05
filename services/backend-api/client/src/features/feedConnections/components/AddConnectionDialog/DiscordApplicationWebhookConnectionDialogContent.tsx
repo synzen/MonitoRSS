@@ -34,6 +34,8 @@ import {
 } from "../../../discordServers";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { useDiscordUserMe } from "../../../discordUser";
+import { SubscriberBlockText } from "@/components/SubscriberBlockText";
+import { SupporterTier } from "../../../../constants";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -125,9 +127,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
               Send articles authored by a webhook with a custom name and icon as a message to a
               Discord channel or thread.
             </Text>
-            {webhooksDisabled && (
-              <Text color="orange.500">{t("common.errors.supporterRequiredAccessV2")}</Text>
-            )}
+            {webhooksDisabled && <SubscriberBlockText tier={SupporterTier.T1} onClick={onClose} />}
             {!webhooksDisabled && (
               <form id="addconnection" onSubmit={handleSubmit(onSubmit)}>
                 <Stack spacing={4}>
