@@ -289,14 +289,23 @@ export const UserSettings = () => {
                                   </Text>
                                   <br />
                                   <OrderedList>
-                                    <ListItem>Manage your subscription on this site</ListItem>
+                                    <ListItem>
+                                      Optionally pay upfront for a year at a 15% discount
+                                    </ListItem>
                                     <ListItem>
                                       Start your subscription on any day of the month
                                     </ListItem>
                                     <ListItem>
-                                      Optionally pay upfront for a year at a discount
+                                      Get localized pricing in your currency (there are now 14 more
+                                      currencies available)
                                     </ListItem>
-                                    <ListItem>Get localized pricing in your currency</ListItem>
+                                    <ListItem>
+                                      Get credit that can be rolled over when changing plans,
+                                      minimizing your costs
+                                    </ListItem>
+                                    <ListItem>
+                                      Manage your subscription on this control panel
+                                    </ListItem>
                                   </OrderedList>
                                   <br />
                                   <Text>

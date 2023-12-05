@@ -219,7 +219,7 @@ export const AddUserFeedDialog = () => {
                       <Text fontSize={13}>
                         With RSS, article delivery is not instant. Instead, we check for new
                         articles on a regular interval (every 10 minutes by default for free). Once
-                        new articles are found, they are delivered.
+                        new articles are found, they are automatically delivered.
                       </Text>
                     </AccordionPanel>
                   </AccordionItem>

@@ -332,8 +332,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     <Stack justifyContent="center" textAlign="center">
                       <Heading>Pricing</Heading>
                       <Text color="whiteAlpha.800" fontSize="lg" fontWeight="light">
-                        Support MonitoRSS&apos;s open-source development and public hosting in
-                        exchange for some upgrades!
+                        MonitoRSS is able to stay open-source and free thanks to its supporters.
+                        <br />
+                        Add in your support in exchange for some upgrades!
                       </Text>
                     </Stack>
                     {(isLoadingPricePreview || userStatus === "loading") && <Spinner mb={8} />}
