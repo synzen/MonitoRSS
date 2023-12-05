@@ -54,6 +54,7 @@ interface ServerBenefits {
 }
 
 interface SupportPatronAggregateResult {
+  patron?: boolean;
   maxFeeds?: number;
   maxUserFeeds?: number;
   maxGuilds?: number;
@@ -225,6 +226,11 @@ export class SupportersService {
   async getBenefitsOfDiscordUser(
     discordId: string
   ): Promise<SupporterBenefits> {
+    console.log(
+      "🚀 ~ file: supporters.service.ts:229 ~ SupportersService ~ this.enableSupporters:",
+      this.enableSupporters
+    );
+
     if (!this.enableSupporters) {
       return {
         isSupporter: true,
@@ -285,6 +291,10 @@ export class SupportersService {
     }
 
     const benefits = await this.getBenefitsFromSupporter(aggregate[0]);
+    console.log(
+      "🚀 ~ file: supporters.service.ts:293 ~ SupportersService ~ benefits:",
+      benefits
+    );
 
     return {
       isSupporter: benefits.isSupporter,
@@ -585,6 +595,10 @@ export class SupportersService {
     }
 
     const isFromPatrons = supporter.patrons.length > 0;
+    console.log(
+      "🚀 ~ file: supporters.service.ts:598 ~ SupportersService ~ getBenefitsFromSupporter ~ isFromPatrons:",
+      isFromPatrons
+    );
 
     const {
       existsAndIsValid: patronExistsAndIsValid,
@@ -647,7 +661,9 @@ export class SupportersService {
         : patronExistsAndIsValid
         ? SupporterSource.Patron
         : SupporterSource.Manual,
-      isSupporter: isFromPatrons ? patronExistsAndIsValid : true,
+      isSupporter: isFromPatrons
+        ? supporter.patron === true && patronExistsAndIsValid
+        : true,
       maxFeeds: Math.max(
         supporter.maxFeeds ?? this.defaultMaxFeeds,
         patronMaxFeeds
