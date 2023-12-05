@@ -226,11 +226,6 @@ export class SupportersService {
   async getBenefitsOfDiscordUser(
     discordId: string
   ): Promise<SupporterBenefits> {
-    console.log(
-      "🚀 ~ file: supporters.service.ts:229 ~ SupportersService ~ this.enableSupporters:",
-      this.enableSupporters
-    );
-
     if (!this.enableSupporters) {
       return {
         isSupporter: true,
@@ -291,10 +286,6 @@ export class SupportersService {
     }
 
     const benefits = await this.getBenefitsFromSupporter(aggregate[0]);
-    console.log(
-      "🚀 ~ file: supporters.service.ts:293 ~ SupportersService ~ benefits:",
-      benefits
-    );
 
     return {
       isSupporter: benefits.isSupporter,
@@ -595,10 +586,6 @@ export class SupportersService {
     }
 
     const isFromPatrons = supporter.patrons.length > 0;
-    console.log(
-      "🚀 ~ file: supporters.service.ts:598 ~ SupportersService ~ getBenefitsFromSupporter ~ isFromPatrons:",
-      isFromPatrons
-    );
 
     const {
       existsAndIsValid: patronExistsAndIsValid,
