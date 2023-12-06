@@ -26,7 +26,6 @@ import {
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { notifyError } from "../../utils/notifyError";
 import { notifySuccess } from "../../utils/notifySuccess";
-import { useUserMe } from "../../features/discordUser";
 import { ProductKey } from "../../constants";
 
 interface Props {
@@ -56,7 +55,6 @@ export const ChangeSubscriptionDialog = ({
   products,
 }: Props) => {
   const priceId = details?.priceId;
-  const { refetch, fetchStatus } = useUserMe();
   const product =
     priceId && products
       ? products.find((p) => p.prices.find((pr) => pr.id === priceId))
@@ -96,7 +94,6 @@ export const ChangeSubscriptionDialog = ({
         });
       }
 
-      await refetch();
       notifySuccess(t("common.success.savedChanges"));
       onClose();
     } catch (e) {
@@ -257,15 +254,11 @@ export const ChangeSubscriptionDialog = ({
             isLoading={
               (!isChangingToFree && !data) ||
               createStatus === "loading" ||
-              cancelStatus === "loading" ||
-              fetchStatus === "fetching"
+              cancelStatus === "loading"
             }
             isDisabled={
               !isChangingToFree &&
-              (createStatus === "loading" ||
-                cancelStatus === "loading" ||
-                fetchStatus === "fetching" ||
-                !data)
+              (createStatus === "loading" || cancelStatus === "loading" || !data)
             }
           >
             {!isDowngrade && "Confirm Payment"}
