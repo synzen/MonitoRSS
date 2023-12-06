@@ -62,7 +62,7 @@ export const ChangeSubscriptionDialog = ({
 
   const price = product?.prices.find((p) => p.id === priceId);
 
-  const isChangingToFree = product?.id === "free";
+  const isChangingToFree = priceId?.startsWith("free");
   const { mutateAsync, status: createStatus } = useCreateSubscriptionChange();
   const { mutateAsync: cancelSubscription, status: cancelStatus } = useCreateSubscriptionCancel();
   const initialRef = useRef<HTMLButtonElement>(null);
