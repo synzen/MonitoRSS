@@ -5,5 +5,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule.forRoot());
   app.enableShutdownHooks();
   await app.init();
+  console.log('Running');
 }
 bootstrap();
