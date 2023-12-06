@@ -642,6 +642,17 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         ),
                       },
                       {
+                        q: "Can I apply my benefits to someone else?",
+                        a: (
+                          <Text>
+                            While you can&apos;t transfer or apply your benefits to someone
+                            else&apos; feeds, you can share your feeds for them to co-manage it with
+                            you. They will have full access to manage the feeds that you share with
+                            them.
+                          </Text>
+                        ),
+                      },
+                      {
                         q: "What if I have more requirements?",
                         a: (
                           <Text>
