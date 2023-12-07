@@ -4,13 +4,14 @@ import { Client, GatewayIntentBits, GatewayOpcodes } from '@discordjs/core';
 import { AppConfigService } from '../app-config/app-config.service';
 
 import { REST } from '@discordjs/rest';
-import { WebSocketManager } from '@discordjs/ws';
+import { WebSocketManager, CompressionMethod } from '@discordjs/ws';
 import { DiscordClientService } from './discord-client.service';
 import { DISCORD_PRESENCE_ACTIVITY_TYPE_IDS } from '../constants/discord-presence-activity-type.constants';
 import {
   DISCORD_PRESENCE_STATUS_TO_API_VALUE,
   DiscordPresenceStatus,
 } from '../constants/discord-presence-status.constants';
+import { MessageBrokerModule } from '../message-broker/message-broker.module';
 
 @Module({})
 export class DiscordClientModule {
@@ -28,9 +29,9 @@ export class DiscordClientModule {
 
             const gateway = new WebSocketManager({
               token,
-              intents:
-                GatewayIntentBits.Guilds | GatewayIntentBits.GuildWebhooks,
+              intents: GatewayIntentBits.GuildMembers,
               rest,
+              compression: CompressionMethod.ZlibStream,
             });
 
             const client = new Client({ rest, gateway });
@@ -84,7 +85,7 @@ export class DiscordClientModule {
         },
         DiscordClientService,
       ],
-      imports: [AppConfigModule.forRoot()],
+      imports: [AppConfigModule.forRoot(), MessageBrokerModule.forRoot()],
       exports: [DiscordClientService],
     };
   }

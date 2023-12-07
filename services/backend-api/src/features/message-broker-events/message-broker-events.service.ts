@@ -48,6 +48,19 @@ export class MessageBrokerEventsService {
 
   @RabbitSubscribe({
     exchange: "",
+    queue: MessageBrokerQueue.SupportServerMemberJoined,
+    createQueueIfNotExists: true,
+  })
+  async handleSupportServerMemberJoined({
+    data: { userId },
+  }: {
+    data: { userId: string };
+  }) {
+    logger.info(`User ${userId} has joined support server`);
+  }
+
+  @RabbitSubscribe({
+    exchange: "",
     queue: MessageBrokerQueue.UrlFetchCompleted,
     createQueueIfNotExists: true,
   })

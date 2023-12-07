@@ -13,6 +13,10 @@ export class AppConfigService {
     );
   }
 
+  getSupporterGuildId() {
+    return this.configService.getOrThrow('BOT_PRESENCE_SUPPORTER_GUILD_ID');
+  }
+
   getPresenceStatus() {
     const status = this.configService.get<DiscordPresenceStatus | undefined>(
       'BOT_PRESENCE_STATUS',

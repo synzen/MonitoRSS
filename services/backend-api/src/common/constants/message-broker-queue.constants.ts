@@ -8,4 +8,5 @@ export enum MessageBrokerQueue {
   FeedDeliverArticles = "feed.deliver-articles",
   FeedDeleted = "feed.deleted",
   FeedRejectedDisableFeed = "feed.rejected.disable-feed",
+  SupportServerMemberJoined = "support-server-member-joined",
 }

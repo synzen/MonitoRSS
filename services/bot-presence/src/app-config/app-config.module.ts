@@ -36,6 +36,10 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   BOT_PRESENCE_ACTIVITY_STREAM_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  BOT_PRESENCE_SUPPORTER_GUILD_ID?: string;
 }
 
 function validate(config: Record<string, unknown>) {

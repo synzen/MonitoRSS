@@ -1,13 +1,39 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Client } from '@discordjs/core';
+import { Client, GatewayDispatchEvents } from '@discordjs/core';
+import { MessageBrokerService } from '../message-broker/message-broker.service';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({})
 export class DiscordClientService implements OnModuleInit {
-  constructor(private readonly client: Client) {}
+  constructor(
+    private readonly client: Client,
+    private readonly brokerService: MessageBrokerService,
+    private readonly configService: AppConfigService,
+  ) {}
 
   async onModuleInit() {
-    // this.client.on(GatewayDispatchEvents.WebhooksUpdate, ({ data }) => {
-    //   this.onWebhooksUpdate(data.guild_id, data.channel_id);
-    // });
+    await this.listenToSupporterGuildMemberJoined();
+  }
+
+  async listenToSupporterGuildMemberJoined() {
+    const supporterGuildId = this.configService.getSupporterGuildId();
+
+    if (!supporterGuildId) {
+      return;
+    }
+
+    this.client.on(GatewayDispatchEvents.GuildMemberAdd, ({ data }) => {
+      if (!data.user) {
+        return;
+      }
+
+      if (data.guild_id !== supporterGuildId) {
+        return;
+      }
+
+      this.brokerService.publishSupporterServerMemberJoined({
+        userId: data.user.id,
+      });
+    });
   }
 }

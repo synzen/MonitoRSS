@@ -143,7 +143,9 @@ export class UsersService {
     }
 
     return {
-      user,
+      user: {
+        ...user,
+      },
       creditBalance: {
         availableFormatted: creditAvailableBalanceFormatted,
       },
