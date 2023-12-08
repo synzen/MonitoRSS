@@ -43,7 +43,6 @@ const formSchema = object({
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
-  feedId?: string;
   defaultValues?: Required<FormData>;
   onUpdate: (data: FormData) => Promise<void>;
   isOpen: boolean;
@@ -54,7 +53,6 @@ interface Props {
 }
 
 export const EditConnectionWebhookDialog: React.FC<Props> = ({
-  feedId,
   defaultValues,
   onUpdate,
   isOpen,

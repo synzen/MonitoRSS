@@ -37,15 +37,10 @@ export const EditDiscordChannelWebhookConnectionButton = ({ feedId, connection }
     <>
       {connection?.details.webhook && (
         <EditConnectionWebhookDialog
-          feedId={feedId}
           onCloseRef={actionsButtonRef}
           isOpen={editIsOpen}
           onClose={editOnClose}
-          onUpdate={({ applicationWebhook }) =>
-            onUpdate({
-              applicationWebhook,
-            })
-          }
+          onUpdate={onUpdate}
           defaultValues={{
             name: connection.name,
             serverId: connection.details.webhook.guildId,

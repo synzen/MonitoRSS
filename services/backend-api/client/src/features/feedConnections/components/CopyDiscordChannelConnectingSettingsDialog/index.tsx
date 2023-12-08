@@ -26,6 +26,7 @@ import { CopyableConnectionDiscordChannelSettings } from "../../constants";
 import { useConnection, useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { getPrettyConnectionDetail } from "../../../../utils/getPrettyConnectionDetail";
 
 enum CopyCategory {
   Message = "Message",
@@ -205,6 +206,8 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
       });
       onClose();
       notifySuccess(t("common.success.savedChanges"));
+      setCheckedConnections([]);
+      setCheckedSettings([]);
     } catch (err) {
       notifyError(t("common.errors.somethingWentWrong"), err as Error);
     }
@@ -298,6 +301,8 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     }
   );
 
+  const connectionDetail = getPrettyConnectionDetail(connection as never);
+
   return (
     <Modal size="xl" isOpen={isOpen} onClose={onClose} finalFocusRef={onCloseRef}>
       <ModalOverlay />
@@ -312,10 +317,11 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
               </Badge>
               <Divider />
               <Box>
-                <Text fontSize={14} color="whiteAlpha.500">
+                <Text fontSize="sm" color="gray.500">
                   {getPrettyConnectionName(connection as never)}
                 </Text>
-                <Heading size="sm">{connection?.name}</Heading>
+                {connectionDetail ? <Box>{connectionDetail}</Box> : null}
+                <chakra.span fontWeight={600}>{connection?.name}</chakra.span>
               </Box>
             </Stack>
             <Text>
@@ -377,19 +383,32 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                   .filter((c) => c.key === FeedConnectionType.DiscordChannel)
                   .map((c) => {
                     return (
-                      <Checkbox
+                      <Box
                         bg="blackAlpha.300"
-                        px={4}
-                        py={3}
-                        onChange={(e) => onCheckConnectionChange(c.id, e.target.checked)}
-                        isChecked={checkedConnections.includes(c.id)}
+                        borderWidth="2px"
+                        borderColor={checkedConnections.includes(c.id) ? "blue.400" : "transparent"}
+                        rounded="md"
                       >
-                        <chakra.span color="whiteAlpha.500" fontSize={14}>
-                          {getPrettyConnectionName(c as never)}
-                        </chakra.span>
-                        <br />
-                        {c.name}
-                      </Checkbox>
+                        <Checkbox
+                          px={4}
+                          py={3}
+                          onChange={(e) => onCheckConnectionChange(c.id, e.target.checked)}
+                          isChecked={checkedConnections.includes(c.id)}
+                          width="100%"
+                        >
+                          <chakra.span ml={4} display="inline-block">
+                            <chakra.span color="gray.500" fontSize="sm">
+                              {getPrettyConnectionName(c as never)}
+                            </chakra.span>
+                            {connectionDetail ? (
+                              <chakra.span display="block">{connectionDetail}</chakra.span>
+                            ) : (
+                              <br />
+                            )}
+                            <chakra.span fontWeight={600}>{c.name}</chakra.span>
+                          </chakra.span>
+                        </Checkbox>
+                      </Box>
                     );
                   })}
               </Stack>

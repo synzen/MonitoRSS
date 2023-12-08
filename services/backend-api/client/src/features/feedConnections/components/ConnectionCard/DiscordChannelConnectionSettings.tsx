@@ -97,15 +97,10 @@ export const DiscordChannelConnectionSettings = ({
       )}
       {connection?.details.webhook && (
         <EditConnectionWebhookDialog
-          feedId={feedId}
           onCloseRef={actionsButtonRef}
           isOpen={editIsOpen}
           onClose={editOnClose}
-          onUpdate={({ applicationWebhook }) =>
-            onUpdate({
-              applicationWebhook,
-            })
-          }
+          onUpdate={onUpdate}
           defaultValues={{
             name: connection.name,
             serverId: connection.details.webhook.guildId,
@@ -122,15 +117,10 @@ export const DiscordChannelConnectionSettings = ({
       <EditConnectionWebhookDialog
         excludeName
         title="Convert to Discord Webhook"
-        feedId={feedId}
         isOpen={isConvertToWebhookIsOpen}
         onClose={isConvertToWebhookOnClose}
         onCloseRef={actionsButtonRef}
-        onUpdate={({ applicationWebhook }) =>
-          onUpdate({
-            applicationWebhook,
-          })
-        }
+        onUpdate={onUpdate}
       />
       <Menu>
         {trigger ? (

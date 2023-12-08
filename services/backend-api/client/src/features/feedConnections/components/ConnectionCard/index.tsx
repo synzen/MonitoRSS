@@ -5,7 +5,6 @@ import {
   CardHeader,
   Badge,
   Box,
-  Flex,
   HStack,
   Stack,
   Text,
@@ -18,99 +17,16 @@ import {
   FeedConnectionType,
   FeedDiscordChannelConnection,
 } from "../../../../types";
-import { DiscordChannelName, DiscordServerName } from "../../../discordServers";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { pages } from "../../../../constants";
 import { DiscordChannelConnectionSettings } from "./DiscordChannelConnectionSettings";
+import { getPrettyConnectionName } from "../../../../utils/getPrettyConnectionName";
+import { getPrettyConnectionDetail } from "../../../../utils/getPrettyConnectionDetail";
 
 interface Props {
   feedId: string;
   connection: UserFeed["connections"][number];
 }
-
-function getPrettyConnectionName(connection: FeedDiscordChannelConnection) {
-  const { key } = connection;
-
-  if (key === FeedConnectionType.DiscordChannel) {
-    const casted = connection as FeedDiscordChannelConnection;
-
-    if (casted.details.channel) {
-      if (casted.details.channel.type === "thread") {
-        return "Discord Thread";
-      }
-
-      if (casted.details.channel.type === "forum") {
-        return "Discord Forum";
-      }
-
-      return "Discord Channel";
-    }
-
-    if (casted.details.webhook) {
-      if (casted.details.webhook.type === "forum") {
-        return "Discord Forum Webhook";
-      }
-
-      if (casted.details.webhook.type === "thread") {
-        return "Discord Thread Webhook";
-      }
-
-      return "Discord Channel Webhook";
-    }
-  }
-
-  return "Unknown";
-}
-
-const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => {
-  const { key } = connection;
-
-  if (key === FeedConnectionType.DiscordChannel) {
-    const casted = connection as FeedDiscordChannelConnection;
-
-    const useServerId = casted.details.channel?.guildId || casted.details.webhook?.guildId;
-    const useChannelId = casted.details.channel?.id || casted.details.webhook?.channelId;
-
-    if ((casted.details.channel && casted.details.channel.type === "thread") || !useChannelId) {
-      return (
-        <DiscordServerName
-          serverId={useServerId}
-          textStyle={{
-            fontSize: 14,
-            color: getChakraColor("whiteAlpha.800"),
-          }}
-        />
-      );
-    }
-
-    return (
-      <Flex alignItems="center" fontSize={14} gap={1} color="whiteAlpha.800">
-        <DiscordServerName
-          serverId={useServerId}
-          textStyle={{
-            fontSize: 14,
-            color: getChakraColor("whiteAlpha.800"),
-          }}
-        />{" "}
-        <span>
-          (
-          <DiscordChannelName
-            channelId={useChannelId}
-            serverId={useServerId}
-            spinnerSize="xs"
-            textProps={{
-              fontSize: 14,
-              color: getChakraColor("whiteAlpha.800"),
-            }}
-          />
-          )
-        </span>
-      </Flex>
-    );
-  }
-
-  return null;
-};
 
 const DISABLED_CODES_FOR_ERROR = [
   FeedConnectionDisabledCode.MissingMedium,
