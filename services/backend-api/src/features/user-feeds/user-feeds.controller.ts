@@ -25,6 +25,7 @@ import {
   CreateDiscordChannelConnectionOutputDto,
   CreateDiscordWebhookConnectionOutputDto,
 } from "../feed-connections/dto";
+import { AddDiscordChannelConnectionFilter } from "../feed-connections/filters";
 import { FeedConnectionType } from "../feeds/constants";
 import {
   FeedExceptionFilter,
@@ -148,7 +149,7 @@ export class UserFeedsController {
   }
 
   @Post("/:feedId/clone")
-  @UseFilters(FeedExceptionFilter)
+  @UseFilters(FeedExceptionFilter, AddDiscordChannelConnectionFilter)
   async createFeedClone(
     @Param("feedId", GetUserFeedPipe()) feed: UserFeed,
     @DiscordAccessToken()
