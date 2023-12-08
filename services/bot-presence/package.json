@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@discordjs/core": "^1.0.1",
+    "@discordjs/rest": "^2.2.0",
+    "@discordjs/ws": "^1.0.2",
     "@golevelup/nestjs-rabbitmq": "^4.0.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.1.1",
