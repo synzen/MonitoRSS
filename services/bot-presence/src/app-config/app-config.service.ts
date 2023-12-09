@@ -14,7 +14,7 @@ export class AppConfigService {
   }
 
   getSupporterGuildId() {
-    return this.configService.getOrThrow('BOT_PRESENCE_SUPPORTER_GUILD_ID');
+    return this.configService.get('BOT_PRESENCE_SUPPORTER_GUILD_ID');
   }
 
   getPresenceStatus() {
