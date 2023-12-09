@@ -6,6 +6,7 @@ import {
   RabbitMQModule,
 } from "@golevelup/nestjs-rabbitmq";
 import logger from "../../utils/logger";
+import { MessageBrokerService } from "./message-broker.service";
 
 @Module({
   providers: [],
@@ -17,6 +18,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
 
     return {
       module: MessageBrokerModule,
+      providers: [MessageBrokerService],
       imports: [
         RabbitMQModule.forRoot(RabbitMQModule, {
           uri: configValues.BACKEND_API_RABBITMQ_BROKER_URL,
@@ -30,7 +32,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
           },
         }),
       ],
-      exports: [RabbitMQModule],
+      exports: [RabbitMQModule, MessageBrokerService],
     };
   }
 

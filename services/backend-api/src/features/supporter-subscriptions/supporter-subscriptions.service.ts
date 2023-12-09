@@ -5,6 +5,7 @@ import fetch, { RequestInit } from "node-fetch";
 import { URLSearchParams } from "url";
 import { formatCurrency } from "../../utils/format-currency";
 import { SupportersService } from "../supporters/supporters.service";
+import { MessageBrokerService } from "../message-broker/message-broker.service";
 import { User, UserModel } from "../users/entities/user.entity";
 import {
   SubscriptionProductKey,
@@ -46,7 +47,8 @@ export class SupporterSubscriptionsService {
   constructor(
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
-    @InjectModel(User.name) private readonly userModel: UserModel
+    @InjectModel(User.name) private readonly userModel: UserModel,
+    private readonly messageBrokerService: MessageBrokerService
   ) {
     this.PADDLE_URL = configService.get("BACKEND_API_PADDLE_URL");
     this.PADDLE_KEY = configService.get("BACKEND_API_PADDLE_KEY");
@@ -390,7 +392,9 @@ export class SupporterSubscriptionsService {
     });
 
     if (discordUserId) {
-      await this.supportersService.syncDiscordSupporterRoles(discordUserId);
+      this.messageBrokerService.publishSyncSupporterDiscordRoles({
+        userId: discordUserId,
+      });
     }
   }
 
@@ -505,7 +509,7 @@ export class SupporterSubscriptionsService {
 
       tries++;
 
-      if (tries > 10) {
+      if (tries > 50) {
         throw new Error("Failed to poll for subscription after 10 tries");
       }
     }

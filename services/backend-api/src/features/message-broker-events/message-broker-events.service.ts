@@ -48,10 +48,10 @@ export class MessageBrokerEventsService {
 
   @RabbitSubscribe({
     exchange: "",
-    queue: MessageBrokerQueue.SupportServerMemberJoined,
+    queue: MessageBrokerQueue.SyncSupporterDiscordRoles,
     createQueueIfNotExists: true,
   })
-  async handleSupportServerMemberJoined({
+  async handleSyncSupporterDiscordRoles({
     data: { userId },
   }: {
     data: { userId: string };

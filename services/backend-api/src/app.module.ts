@@ -34,7 +34,6 @@ import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions
     SupportersModule,
     LegacyFeedConversionModule,
     ScheduleEmitterModule,
-    SupporterSubscriptionsModule,
     UserFeedManagementInvitesModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
@@ -53,6 +52,7 @@ export class AppModule {
         MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI),
         FeedConnectionsDiscordWebhooksModule.forRoot(),
         FeedConnectionsDiscordChannelsModule.forRoot(),
+        SupporterSubscriptionsModule.forRoot(),
         ConfigModule.forRoot({
           isGlobal: true,
           cache: true,

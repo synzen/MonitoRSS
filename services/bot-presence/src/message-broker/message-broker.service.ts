@@ -2,7 +2,7 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { Injectable } from '@nestjs/common';
 
 export enum MessageBrokerQueue {
-  SupportServerMemberJoined = 'support-server-member-joined',
+  SyncSupporterDiscordRoles = 'sync-supporter-discord-roles',
 }
 
 @Injectable()
@@ -12,7 +12,7 @@ export class MessageBrokerService {
   publishSupporterServerMemberJoined(data: { userId: string }) {
     this.amqpConnection.publish(
       '',
-      MessageBrokerQueue.SupportServerMemberJoined,
+      MessageBrokerQueue.SyncSupporterDiscordRoles,
       {
         data: data,
       },

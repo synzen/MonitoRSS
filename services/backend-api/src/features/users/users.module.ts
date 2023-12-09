@@ -10,16 +10,13 @@ import { UsersService } from "./users.service";
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService, MongooseModule.forFeature([UserFeature])],
-  imports: [
-    MongooseModule.forFeature([UserFeature]),
-    SupportersModule,
-    SupporterSubscriptionsModule,
-  ],
+  imports: [MongooseModule.forFeature([UserFeature]), SupportersModule],
 })
 export class UsersModule {
   static forRoot(): DynamicModule {
     return {
       module: UsersModule,
+      imports: [SupporterSubscriptionsModule.forRoot()],
     };
   }
 }
