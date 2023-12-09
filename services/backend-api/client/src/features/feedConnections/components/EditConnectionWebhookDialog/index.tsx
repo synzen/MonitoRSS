@@ -68,16 +68,11 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     reset,
     formState: { isDirty, isSubmitting, errors },
     watch,
-    setValue,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues,
   });
-  const [serverId, channelId, threadId] = watch([
-    "serverId",
-    "applicationWebhook.channelId",
-    "applicationWebhook.threadId",
-  ]);
+  const [serverId, channelId] = watch(["serverId", "applicationWebhook.channelId"]);
   const { data: discordUser, status: discordUserStatus } = useDiscordUserMe();
   const initialRef = useRef<HTMLInputElement>(null);
 
@@ -194,21 +189,8 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     render={({ field }) => (
                       <DiscordChannelDropdown
                         value={field.value || ""}
-                        onChange={(value, name) => {
+                        onChange={(value) => {
                           field.onChange(value);
-
-                          if (name && !threadId) {
-                            setValue("name", name, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true,
-                            });
-                            setValue("applicationWebhook.name", name, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true,
-                            });
-                          }
                         }}
                         include={[GetDiscordChannelType.Forum]}
                         onBlur={field.onBlur}
@@ -231,21 +213,8 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     render={({ field }) => (
                       <DiscordActiveThreadDropdown
                         value={field.value || ""}
-                        onChange={(value, name) => {
+                        onChange={(value) => {
                           field.onChange(value);
-
-                          if (name) {
-                            setValue("name", name, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true,
-                            });
-                            setValue("applicationWebhook.name", name, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true,
-                            });
-                          }
                         }}
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
