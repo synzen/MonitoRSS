@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
@@ -21,11 +22,11 @@ class EnvironmentVariables {
   @IsNotEmpty()
   BOT_PRESENCE_RABBITMQ_URL: string;
 
-  @IsIn(Object.values(DiscordPresenceStatus))
+  @IsIn([...Object.values(DiscordPresenceStatus), ''])
   @IsOptional()
   BOT_PRESENCE_STATUS?: DiscordPresenceStatus;
 
-  @IsIn(Object.values(DiscordPresenceActivityType))
+  @IsIn([...Object.values(DiscordPresenceActivityType), ''])
   @IsOptional()
   BOT_PRESENCE_ACTIVITY_TYPE?: DiscordPresenceActivityType;
 
@@ -48,10 +49,15 @@ function validate(config: Record<string, unknown>) {
   });
   const errors = validateSync(validatedConfig, {
     skipMissingProperties: false,
+    stopAtFirstError: false,
   });
 
   if (errors.length > 0) {
-    throw new Error(errors.toString());
+    const prettyErrors = errors.map(
+      (e) => `${Object.values(e.constraints || {})}`,
+    );
+
+    throw new Error(`Config validation failed\n${prettyErrors.join('\n')}`);
   }
   return validatedConfig;
 }
