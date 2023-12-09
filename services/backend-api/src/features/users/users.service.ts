@@ -111,7 +111,9 @@ export class UsersService {
     }
 
     const { subscription, customer } =
-      await this.supportersService.getSupporterSubscription(user.email);
+      await this.supportersService.getSupporterSubscription({
+        email: user.email,
+      });
 
     let creditAvailableBalanceFormatted = "0";
 

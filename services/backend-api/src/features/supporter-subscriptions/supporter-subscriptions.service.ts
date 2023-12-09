@@ -274,7 +274,7 @@ export class SupporterSubscriptionsService {
     items: Array<{ priceId: string; quantity: number }>;
   }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription(email);
+      await this.supportersService.getSupporterSubscription({ email });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -350,8 +350,8 @@ export class SupporterSubscriptionsService {
     email: string;
     items: Array<{ priceId: string; quantity: number }>;
   }) {
-    const { subscription } =
-      await this.supportersService.getSupporterSubscription(email);
+    const { subscription, discordUserId } =
+      await this.supportersService.getSupporterSubscription({ email });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -388,11 +388,15 @@ export class SupporterSubscriptionsService {
         );
       },
     });
+
+    if (discordUserId) {
+      await this.supportersService.syncDiscordSupporterRoles(discordUserId);
+    }
   }
 
   async cancelSubscription({ email }: { email: string }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription(email);
+      await this.supportersService.getSupporterSubscription({ email });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -424,7 +428,7 @@ export class SupporterSubscriptionsService {
 
   async resumeSubscription({ email }: { email: string }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription(email);
+      await this.supportersService.getSupporterSubscription({ email });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -456,7 +460,7 @@ export class SupporterSubscriptionsService {
 
   async getUpdatePaymentMethodTransaction({ email }: { email: string }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription(email);
+      await this.supportersService.getSupporterSubscription({ email });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -491,10 +495,10 @@ export class SupporterSubscriptionsService {
 
     while (true) {
       const subscription =
-        await this.supportersService.getSupporterSubscription(email);
+        await this.supportersService.getSupporterSubscription({ email });
 
       if (check(subscription)) {
-        return;
+        break;
       }
 
       await new Promise<void>((resolve) => setTimeout(resolve, 1000));

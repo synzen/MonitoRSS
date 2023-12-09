@@ -102,6 +102,10 @@ export default function config(options?: {
       .BACKEND_API_PADDLE_WEBHOOK_SECRET as string,
     BACKEND_API_ALLOW_LEGACY_REVERSION:
       process.env.BACKEND_API_ALLOW_LEGACY_REVERSION === "true" || false,
+    BACKEND_API_SUPPORTER_GUILD_ID: process.env.BACKEND_API_SUPPORTER_GUILD_ID,
+    BACKEND_API_SUPPORTER_ROLE_ID: process.env.BACKEND_API_SUPPORTER_ROLE_ID,
+    BACKEND_API_SUPPORTER_SUBROLE_IDS:
+      process.env.BACKEND_API_SUPPORTER_SUBROLE_IDS,
   } as const;
 
   if (!options?.skipValidation) {

@@ -14,6 +14,9 @@ import {
 } from "./entities/user-feed-limit-overrides.entity";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
 import { SupporterSource } from "./constants/supporter-source.constants";
+import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
+import logger from "../../utils/logger";
+import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
 
 interface ArticleRateLimit {
   max: number;
@@ -82,6 +85,9 @@ export class SupportersService {
   defaultRateLimits: Array<ArticleRateLimit>;
   supporterRateLimits: Array<ArticleRateLimit>;
   enableSupporters?: boolean;
+  supporterGuildId?: string;
+  supporterRoleId?: string;
+  supporterSubroleIds: string[];
 
   constructor(
     @InjectModel(Supporter.name)
@@ -90,7 +96,8 @@ export class SupportersService {
     private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
     private readonly configService: ConfigService,
     private readonly patronsService: PatronsService,
-    private readonly guildSubscriptionsService: GuildSubscriptionsService
+    private readonly guildSubscriptionsService: GuildSubscriptionsService,
+    private readonly discordApiService: DiscordAPIService
   ) {
     // Conversions should be done at the config level, but this is just a hack for now
     this.defaultMaxFeeds = Number(
@@ -126,6 +133,19 @@ export class SupportersService {
       "BACKEND_API_ENABLE_SUPPORTERS"
     );
 
+    this.supporterGuildId = this.configService.get<string | undefined>(
+      "BACKEND_API_SUPPORTER_GUILD_ID"
+    );
+
+    this.supporterRoleId = this.configService.get<string | undefined>(
+      "BACKEND_API_SUPPORTER_ROLE_ID"
+    );
+
+    this.supporterSubroleIds =
+      this.configService
+        .get<string | undefined>("BACKEND_API_SUPPORTER_SUBROLE_IDS")
+        ?.split(",") || [];
+
     this.defaultRateLimits = [
       {
         max: this.maxDailyArticlesDefault,
@@ -160,19 +180,152 @@ export class SupportersService {
     },
   ];
 
+  async syncDiscordSupporterRoles(discordUserId: string) {
+    const { supporterGuildId, supporterRoleId, supporterSubroleIds } = this;
+
+    if (!supporterGuildId || !supporterRoleId || !supporterSubroleIds.length) {
+      return;
+    }
+
+    const { subscription } = await this.getSupporterSubscription({
+      discordUserId,
+    });
+
+    const member = await this.discordApiService.getGuildMember(
+      supporterGuildId,
+      discordUserId
+    );
+
+    if (!subscription) {
+      const allRelevantRoles = [supporterRoleId, ...supporterSubroleIds];
+
+      await Promise.all(
+        allRelevantRoles.map(async (roleId) => {
+          if (!member.roles.includes(roleId)) {
+            return;
+          }
+
+          try {
+            await this.discordApiService.removeGuildMemberRole({
+              guildId: supporterGuildId,
+              userId: discordUserId,
+              roleId,
+            });
+          } catch (err) {
+            logger.error(
+              `Supporter roles: Failed to remove role ${roleId} from user ${discordUserId} in guild ${supporterGuildId}`,
+              {
+                stack: (err as Error).stack,
+              }
+            );
+          }
+        })
+      );
+
+      return;
+    }
+
+    if (!member.roles.includes(supporterRoleId)) {
+      try {
+        await this.discordApiService.addGuildMemberRole({
+          guildId: supporterGuildId,
+          userId: discordUserId,
+          roleId: supporterRoleId,
+        });
+      } catch (err) {
+        logger.error(
+          `Supporter roles: Failed to add role ${supporterRoleId} to user ${discordUserId} in guild ${supporterGuildId}`,
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
+    }
+
+    let useRoleId: string | undefined = undefined;
+
+    if (subscription.product.key === SubscriptionProductKey.Tier1) {
+      useRoleId = supporterSubroleIds[0];
+    } else if (subscription.product.key === SubscriptionProductKey.Tier2) {
+      useRoleId = supporterSubroleIds[1];
+    } else if (subscription.product.key === SubscriptionProductKey.Tier3) {
+      useRoleId = supporterSubroleIds[2];
+    }
+
+    const removeRoleIds = supporterSubroleIds.filter(
+      (roleId) => roleId !== useRoleId
+    );
+
+    await Promise.all(
+      removeRoleIds.map(async (roleId) => {
+        if (!member.roles.includes(roleId)) {
+          return;
+        }
+
+        try {
+          await this.discordApiService.removeGuildMemberRole({
+            guildId: supporterGuildId,
+            userId: discordUserId,
+            roleId,
+          });
+        } catch (err) {
+          logger.error(
+            `Supporter roles: Failed to remove role ${roleId} from user ${discordUserId} in guild ${supporterGuildId}`,
+            {
+              stack: (err as Error).stack,
+            }
+          );
+        }
+      })
+    );
+
+    if (useRoleId && !member.roles.includes(useRoleId)) {
+      try {
+        await this.discordApiService.addGuildMemberRole({
+          guildId: supporterGuildId,
+          userId: discordUserId,
+          roleId: useRoleId,
+        });
+      } catch (err) {
+        logger.error(
+          `Supporter roles: Failed to add role ${useRoleId} to user ${discordUserId} in guild ${supporterGuildId}`,
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
+    }
+  }
+
   async areSupportersEnabled() {
     return this.enableSupporters;
   }
 
-  async getSupporterSubscription(email: string) {
-    const supporter = await this.supporterModel
-      .findOne({
-        "paddleCustomer.email": email,
-      })
-      .lean();
+  async getSupporterSubscription({
+    email,
+    discordUserId,
+  }:
+    | { email: string; discordUserId?: string }
+    | { discordUserId: string; email?: string }) {
+    let supporter: Supporter | null = null;
+
+    if (email) {
+      supporter = await this.supporterModel
+        .findOne({
+          "paddleCustomer.email": email,
+        })
+        .lean();
+    } else {
+      supporter = await this.supporterModel
+        .findOne({
+          _id: discordUserId,
+        })
+        .lean();
+    }
 
     if (!supporter?.paddleCustomer) {
       return {
+        discordUserId: supporter?._id,
         customer: null,
         subscription: null,
       };
@@ -180,6 +333,7 @@ export class SupportersService {
 
     if (!supporter.paddleCustomer.subscription) {
       return {
+        discordUserId: supporter._id,
         customer: {
           id: supporter.paddleCustomer.customerId,
           currencyCode: supporter.paddleCustomer.lastCurrencyCodeUsed,
@@ -189,6 +343,7 @@ export class SupportersService {
     }
 
     return {
+      discordUserId: supporter._id,
       customer: {
         id: supporter.paddleCustomer.customerId,
         currencyCode: supporter.paddleCustomer.lastCurrencyCodeUsed,

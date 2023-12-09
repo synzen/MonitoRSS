@@ -169,6 +169,18 @@ export class EnvironmentVariables {
   @IsBoolean()
   @IsOptional()
   BACKEND_API_ENABLE_SUPPORTERS?: boolean;
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_SUPPORTER_GUILD_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_SUPPORTER_ROLE_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_SUPPORTER_SUBROLE_IDS?: string;
 }
 
 export function validateConfig(

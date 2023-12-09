@@ -57,6 +57,7 @@ export class MessageBrokerEventsService {
     data: { userId: string };
   }) {
     logger.info(`User ${userId} has joined support server`);
+    await this.supportersService.syncDiscordSupporterRoles(userId);
   }
 
   @RabbitSubscribe({

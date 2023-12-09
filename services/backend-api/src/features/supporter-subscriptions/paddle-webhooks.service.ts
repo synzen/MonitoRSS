@@ -19,6 +19,7 @@ import { SubscriptionStatus } from "../../common/constants/subscription-status.c
 import { PaddleSubscriptionStatus } from "./constants/paddle-subscription-status.constants";
 import { ConfigService } from "@nestjs/config";
 import { createHmac } from "crypto";
+import { SupportersService } from "../supporters/supporters.service";
 const BENEFITS_BY_TIER: Partial<
   Record<
     SubscriptionProductKey | LegacySubscriptionProductKey,
@@ -103,7 +104,8 @@ export class PaddleWebhooksService {
     private readonly supporterModel: SupporterModel,
     @InjectModel(User.name)
     private readonly userModel: UserModel,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly supportersService: SupportersService
   ) {
     this.paddleWebhookSecret = this.configService.get<string>(
       "BACKEND_API_PADDLE_WEBHOOK_SECRET"
@@ -245,6 +247,10 @@ export class PaddleWebhooksService {
         upsert: true,
       }
     );
+
+    await this.supportersService.syncDiscordSupporterRoles(
+      foundUser.discordUserId
+    );
   }
 
   async handleSubscriptionCancelledEvent(
@@ -254,7 +260,7 @@ export class PaddleWebhooksService {
       data: { id: subscriptionId },
     } = event;
 
-    await this.supporterModel.findOneAndUpdate(
+    const supporter = await this.supporterModel.findOneAndUpdate(
       {
         "paddleCustomer.subscription.id": subscriptionId,
       },
@@ -264,6 +270,10 @@ export class PaddleWebhooksService {
         },
       }
     );
+
+    if (supporter?._id) {
+      await this.supportersService.syncDiscordSupporterRoles(supporter._id);
+    }
   }
 
   private convertPaddleStatusToSubscriptionStatus({

@@ -142,4 +142,34 @@ export class DiscordAPIService {
       );
     }
   }
+
+  async addGuildMemberRole(data: {
+    guildId: string;
+    userId: string;
+    roleId: string;
+  }): Promise<void> {
+    const { guildId, userId, roleId } = data;
+
+    await this.executeBotRequest(
+      `/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+      {
+        method: "PUT",
+      }
+    );
+  }
+
+  async removeGuildMemberRole(data: {
+    guildId: string;
+    userId: string;
+    roleId: string;
+  }): Promise<void> {
+    const { guildId, userId, roleId } = data;
+
+    await this.executeBotRequest(
+      `/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
 }
