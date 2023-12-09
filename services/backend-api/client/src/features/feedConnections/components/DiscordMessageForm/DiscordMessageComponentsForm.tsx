@@ -17,7 +17,7 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { Controller, useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext } from "react-hook-form";
 import { AddIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
 import { v4 } from "uuid";
@@ -33,85 +33,30 @@ import { AnimatedComponent } from "../../../../components";
 import { useConnection } from "../../hooks";
 import { EditDiscordChannelWebhookConnectionButton } from "../EditDiscordChannelWebhookConnectionButton";
 
-const caclulateRowAfterDeleteRow = (
-  rows: DiscordMessageFormData["componentRows"],
-  index: number
-) => {
-  const newRows = [...(rows || [])];
-  newRows.splice(index, 1);
-
-  return newRows;
-};
-
-const calculateRowsAfterDeleteComponent = (
-  rows: DiscordMessageFormData["componentRows"],
-  rowIndex: number,
-  componentIndex: number
-) => {
-  const newRows = [...(rows || [])];
-  const newComponents = [...newRows[rowIndex].components];
-  newComponents.splice(componentIndex, 1);
-  const newRow = {
-    ...newRows[rowIndex],
-    components: newComponents,
-  };
-  newRows[rowIndex] = newRow;
-
-  return newRows;
-};
-
-const calculateRowsAfterAddRow = (rows: DiscordMessageFormData["componentRows"]) => {
-  const newRows = [...(rows || [])];
-  newRows.push({
-    id: v4(),
-    components: [
-      {
-        id: v4(),
-        type: DiscordComponentType.Button,
-        style: DiscordComponentButtonStyle.Link,
-        label: "",
-        url: "",
-      },
-    ],
-  });
-
-  return newRows;
-};
-
-const calculateRowsAfterAddComponent = (
-  rows: DiscordMessageFormData["componentRows"],
-  rowIndex: number
-) => {
-  const newRows = [...(rows || [])];
-  const newComponents = [...newRows[rowIndex].components];
-  newComponents.push({
-    id: v4(),
-    type: DiscordComponentType.Button,
-    style: DiscordComponentButtonStyle.Link,
-    label: "",
-    url: "",
-  });
-  newRows[rowIndex].components = newComponents;
-
-  return newRows;
-};
-
 const DiscordMessageComponentRow = ({
-  rows,
   rowIndex,
+  onClickDeleteRow,
 }: {
-  rows: DiscordMessageFormData["componentRows"];
   rowIndex: number;
+  onClickDeleteRow: () => void;
 }) => {
   const {
     control,
-    setValue,
     formState: { errors },
-    clearErrors,
+    register,
   } = useFormContext<DiscordMessageFormData>();
-  const row = rows?.[rowIndex];
-  const components = row?.components;
+  const {
+    fields: components,
+    append: appendButton,
+    remove: removeButton,
+  } = useFieldArray({
+    control,
+    name: `componentRows.${rowIndex}.components`,
+    keyName: "hookKey",
+  });
   const scrollContainer = useRef<HTMLDivElement>(null);
+
+  const rowErrors = errors.componentRows?.[rowIndex];
 
   return (
     <Stack border="solid 1px" borderColor="gray.700" p={4} rounded="md" bg="gray.900">
@@ -124,15 +69,7 @@ const DiscordMessageComponentRow = ({
           variant="ghost"
           colorScheme="red"
           onClick={() => {
-            const newRows = caclulateRowAfterDeleteRow(rows, rowIndex);
-
-            clearErrors(`componentRows.${rowIndex}`);
-
-            setValue("componentRows", newRows, {
-              shouldDirty: true,
-              shouldTouch: true,
-              shouldValidate: true,
-            });
+            onClickDeleteRow();
           }}
         >
           Delete
@@ -148,10 +85,13 @@ const DiscordMessageComponentRow = ({
                 c.style === DiscordComponentButtonStyle.Link
             )
             ?.map((c, componentIndex) => {
+              const labelError = rowErrors?.components?.[componentIndex]?.label?.message;
+              const urlError = rowErrors?.components?.[componentIndex]?.url?.message;
+
               return (
                 <HStack
                   as={motion.div}
-                  key={c.id}
+                  key={c.hookKey}
                   alignItems="center"
                   overflow="hidden"
                   minW={400}
@@ -191,115 +131,74 @@ const DiscordMessageComponentRow = ({
                         colorScheme="red"
                         size="xs"
                         onClick={() => {
-                          const newRows = calculateRowsAfterDeleteComponent(
-                            rows,
-                            rowIndex,
-                            componentIndex
-                          );
-
-                          clearErrors(`componentRows.${rowIndex}.components.${componentIndex}`);
-
-                          if (newRows[rowIndex].components.length === 0) {
-                            newRows.splice(rowIndex, 1);
-
-                            clearErrors(`componentRows.${rowIndex}`);
-                          }
-
-                          setValue(`componentRows`, newRows, {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                            shouldValidate: true,
-                          });
+                          removeButton(componentIndex);
                         }}
                       >
                         Delete
                       </Button>
                     </HStack>
                     <Divider />
-                    <Controller
-                      control={control}
-                      name={`componentRows.${rowIndex}.components.${componentIndex}.label`}
-                      render={({ field }) => {
-                        const error =
-                          errors.componentRows?.[rowIndex]?.components?.[componentIndex]?.label
-                            ?.message;
-
-                        return (
-                          <FormControl isInvalid={!!error}>
-                            <FormLabel fontSize={12}>Label</FormLabel>
-                            <Input
-                              autoCapitalize="off"
-                              autoComplete="off"
-                              autoCorrect="off"
-                              bg="gray.800"
-                              size="sm"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                            {!error && (
-                              <FormHelperText
-                                fontSize={11}
-                                as={motion.div}
-                                exit={{ whiteSpace: "nowrap" }}
-                              >
-                                The text that will be displayed on the button.
-                              </FormHelperText>
-                            )}
-                            {error && (
-                              <FormErrorMessage
-                                as={motion.div}
-                                exit={{ whiteSpace: "nowrap" }}
-                                fontSize={11}
-                              >
-                                {error}
-                              </FormErrorMessage>
-                            )}
-                          </FormControl>
-                        );
-                      }}
-                    />
-                    <Controller
-                      control={control}
-                      name={`componentRows.${rowIndex}.components.${componentIndex}.url`}
-                      render={({ field }) => {
-                        const error =
-                          errors.componentRows?.[rowIndex]?.components?.[componentIndex]?.url
-                            ?.message;
-
-                        return (
-                          <FormControl isInvalid={!!error}>
-                            <FormLabel fontSize={12}>URL</FormLabel>
-                            <Input
-                              autoCapitalize="off"
-                              autoComplete="off"
-                              autoCorrect="off"
-                              bg="gray.800"
-                              size="sm"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                            {!error && (
-                              <FormHelperText
-                                as={motion.div}
-                                exit={{ whiteSpace: "nowrap" }}
-                                fontSize={11}
-                              >
-                                The external URL that the button will link to.
-                              </FormHelperText>
-                            )}
-                            {error && (
-                              <FormErrorMessage
-                                as={motion.div}
-                                exit={{ whiteSpace: "nowrap" }}
-                                fontSize={11}
-                              >
-                                {error}
-                              </FormErrorMessage>
-                            )}
-                          </FormControl>
-                        );
-                      }}
-                    />
+                    <FormControl isInvalid={!!labelError}>
+                      <FormLabel fontSize={12}>Label</FormLabel>
+                      <Input
+                        autoCapitalize="off"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        bg="gray.800"
+                        size="sm"
+                        // value={field.value || ""}
+                        {...register(
+                          `componentRows.${rowIndex}.components.${componentIndex}.label`
+                        )}
+                      />
+                      {!labelError && (
+                        <FormHelperText
+                          fontSize={11}
+                          as={motion.div}
+                          exit={{ whiteSpace: "nowrap" }}
+                        >
+                          The text that will be displayed on the button.
+                        </FormHelperText>
+                      )}
+                      {labelError && (
+                        <FormErrorMessage
+                          as={motion.div}
+                          exit={{ whiteSpace: "nowrap" }}
+                          fontSize={11}
+                        >
+                          {labelError}
+                        </FormErrorMessage>
+                      )}
+                    </FormControl>
+                    <FormControl isInvalid={!!urlError}>
+                      <FormLabel fontSize={12}>URL</FormLabel>
+                      <Input
+                        autoCapitalize="off"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        bg="gray.800"
+                        size="sm"
+                        {...register(`componentRows.${rowIndex}.components.${componentIndex}.url`)}
+                      />
+                      {!urlError && (
+                        <FormHelperText
+                          as={motion.div}
+                          exit={{ whiteSpace: "nowrap" }}
+                          fontSize={11}
+                        >
+                          The external URL that the button will link to.
+                        </FormHelperText>
+                      )}
+                      {urlError && (
+                        <FormErrorMessage
+                          as={motion.div}
+                          exit={{ whiteSpace: "nowrap" }}
+                          fontSize={11}
+                        >
+                          {urlError}
+                        </FormErrorMessage>
+                      )}
+                    </FormControl>
                   </Stack>
                 </HStack>
               );
@@ -310,13 +209,20 @@ const DiscordMessageComponentRow = ({
               aria-label="Add button"
               size="sm"
               onClick={() => {
-                const newRows = calculateRowsAfterAddComponent(rows, rowIndex);
-
-                setValue(`componentRows.${rowIndex}.components`, newRows[rowIndex].components, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
+                // const newRows = calculateRowsAfterAddComponent(fields, rowIndex);
+                appendButton({
+                  id: v4(),
+                  type: DiscordComponentType.Button,
+                  style: DiscordComponentButtonStyle.Link,
+                  label: "",
+                  url: "",
                 });
+
+                // setValue(`componentRows.${rowIndex}.components`, newRows[rowIndex].components, {
+                //   shouldDirty: true,
+                //   shouldTouch: true,
+                //   shouldValidate: true,
+                // });
 
                 setTimeout(() => {
                   scrollContainer.current?.scrollTo({
@@ -345,8 +251,17 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
     feedId,
     connectionId,
   });
-  const { watch, setValue } = useFormContext<DiscordMessageFormData>();
-  const [rows] = watch(["componentRows"]);
+  const { control } = useFormContext<DiscordMessageFormData>();
+  const {
+    fields: rows,
+    append,
+    remove,
+  } = useFieldArray({
+    control,
+    name: "componentRows",
+    keyName: "hookKey",
+  });
+  // const [rows] = watch(["componentRows"]);
 
   return (
     <Stack spacing={4}>
@@ -385,7 +300,13 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
         )}
       <Stack spacing={4}>
         {rows?.map((row, rowIndex) => {
-          return <DiscordMessageComponentRow key={row.id} rows={rows} rowIndex={rowIndex} />;
+          return (
+            <DiscordMessageComponentRow
+              key={row.hookKey}
+              rowIndex={rowIndex}
+              onClickDeleteRow={() => remove(rowIndex)}
+            />
+          );
         })}
         <Box>
           <Button
@@ -393,12 +314,17 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
             variant="ghost"
             isDisabled={rows ? rows.length >= 5 : false}
             onClick={() => {
-              const newRows = calculateRowsAfterAddRow(rows);
-
-              setValue("componentRows", newRows, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
+              append({
+                id: v4(),
+                components: [
+                  {
+                    id: v4(),
+                    type: DiscordComponentType.Button,
+                    style: DiscordComponentButtonStyle.Link,
+                    label: "",
+                    url: "",
+                  },
+                ],
               });
             }}
           >
