@@ -55,11 +55,13 @@ export class UsersController {
     subscription,
     creditBalance,
     isOnPatreon,
+    migratedToPersonalFeeds,
   }: {
     user: User;
     creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
     isOnPatreon?: boolean;
+    migratedToPersonalFeeds: boolean;
   }) {
     return {
       result: {
@@ -71,6 +73,7 @@ export class UsersController {
         creditBalance,
         isOnPatreon,
         enableBilling: user.enableBilling,
+        migratedToPersonalFeeds,
       },
     };
   }

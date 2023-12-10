@@ -5,6 +5,7 @@ import { ProductKey } from "../../../constants";
 
 interface Props {
   checkForSubscriptionCreated?: boolean;
+  enabled?: boolean;
 }
 
 export const useUserMe = (props?: Props) => {
@@ -26,6 +27,7 @@ export const useUserMe = (props?: Props) => {
 
         return false;
       },
+      enabled: props?.enabled,
     }
   );
 

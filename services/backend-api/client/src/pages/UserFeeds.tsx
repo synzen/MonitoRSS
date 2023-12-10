@@ -85,9 +85,11 @@ export const UserFeeds: React.FC = () => {
       <BoxConstrained.Container paddingTop={6} spacing={6} height="100%">
         <Stack spacing={4}>
           <Box>
-            <Button marginTop={2} variant="outline" onClick={() => navigate("/")} size="sm">
-              Back to legacy feeds
-            </Button>
+            {!userMeData?.result.migratedToPersonalFeeds && (
+              <Button marginTop={2} variant="outline" onClick={() => navigate("/")} size="sm">
+                Back to legacy feeds
+              </Button>
+            )}
           </Box>
           {userFeedsRequireAttentionResults?.total !== undefined &&
             userFeedsRequireAttentionResults.total > 0 && (

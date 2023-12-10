@@ -31,7 +31,14 @@ const Pages: React.FC = () => (
   <Routes>
     <Route path={pages.testPaddle()} element={<TestPaddle />} />
     <Route path={pages.notFound()} element={<NotFound />} />
-    <Route path="/" element={<Home />} />
+    <Route
+      path="/"
+      element={
+        <RequireAuth waitForUserFetch>
+          <Home />
+        </RequireAuth>
+      }
+    />
     <Route
       path="/servers"
       element={

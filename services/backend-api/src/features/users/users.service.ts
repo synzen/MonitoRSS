@@ -6,9 +6,11 @@ import { SubscriptionStatus } from "../../common/constants/subscription-status.c
 import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
 import { formatCurrency } from "../../utils/format-currency";
+import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
 import { SupporterSubscriptionsService } from "../supporter-subscriptions/supporter-subscriptions.service";
 import { SupportersService } from "../supporters/supporters.service";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {
   User,
   UserDocument,
@@ -41,7 +43,9 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: UserModel,
     private readonly supportersService: SupportersService,
-    private readonly supporterSubscriptionsService: SupporterSubscriptionsService
+    private readonly supporterSubscriptionsService: SupporterSubscriptionsService,
+    @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    @InjectModel(Feed.name) private readonly feedModel: FeedModel
   ) {}
 
   async initDiscordUser(
@@ -79,11 +83,14 @@ export class UsersService {
     creditBalance: CreditBalanceDetails;
     subscription: SubscriptionDetails;
     isOnPatreon?: boolean;
+    migratedToPersonalFeeds: boolean;
   } | null> {
     const user = await this.userModel.findOne({ discordUserId }).lean();
 
     if (!user) {
-      return null;
+      await this.initDiscordUser(discordUserId);
+
+      return this.getByDiscordId(discordUserId);
     }
 
     const freeSubscription: SubscriptionDetails = {
@@ -95,10 +102,16 @@ export class UsersService {
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
 
-    const legacyPatreonDetails =
-      await this.supportersService.getLegacyPatreonDetails(discordUserId);
+    const [legacyPatreonDetails, userFeed] = await Promise.all([
+      this.supportersService.getLegacyPatreonDetails(discordUserId),
+      this.userFeedModel
+        .findOne({ "user.discordUserId": discordUserId })
+        .select("_id")
+        .lean(),
+    ]);
 
     const isOnPatreon = !!legacyPatreonDetails.maxPatreonPledge;
+    const migratedToPersonalFeeds = !!userFeed;
 
     if (!user.email) {
       return {
@@ -110,6 +123,7 @@ export class UsersService {
           availableFormatted: "0",
         },
         subscription: freeSubscription,
+        migratedToPersonalFeeds,
       };
     }
 
@@ -147,6 +161,7 @@ export class UsersService {
         },
         subscription: freeSubscription,
         isOnPatreon,
+        migratedToPersonalFeeds,
       };
     }
 
@@ -174,6 +189,7 @@ export class UsersService {
         updatedAt: subscription.updatedAt,
       },
       isOnPatreon,
+      migratedToPersonalFeeds,
     };
   }
 
