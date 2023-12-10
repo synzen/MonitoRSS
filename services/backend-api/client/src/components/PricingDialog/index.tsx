@@ -37,6 +37,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
+  openWithPriceId?: string | null;
 }
 
 enum Feature {
@@ -175,7 +176,7 @@ interface ChangeSubscriptionDetails {
   isDowngrade?: boolean;
 }
 
-export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
+export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Props) => {
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
   const {
     status: userStatus,
@@ -239,6 +240,18 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       });
     }
   };
+
+  useEffect(() => {
+    if (
+      openWithPriceId &&
+      userData &&
+      userData.result.subscription.product.key === ProductKey.Free
+    ) {
+      openCheckout({
+        priceId: openWithPriceId,
+      });
+    }
+  }, [openWithPriceId, !!userData, openCheckout]);
 
   useEffect(() => {
     if (!isLoadingPricePreview) {

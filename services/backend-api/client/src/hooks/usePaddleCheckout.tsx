@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-continue */
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useUserMe } from "../features/discordUser";
 import { ProductKey } from "../constants";
 
@@ -170,26 +170,29 @@ export function usePaddleCheckout(props?: Props) {
   }, [JSON.stringify(priceIds)]);
 
   // Callback to open a checkout
-  const openCheckout = ({ priceId }: { priceId: string }) => {
-    if (!user?.result.email) {
-      return;
-    }
+  const openCheckout = useCallback(
+    ({ priceId }: { priceId: string }) => {
+      if (!user?.result.email) {
+        return;
+      }
 
-    paddle?.Checkout.open({
-      items: [{ priceId }],
-      customer: {
-        email: user.result.email,
-      },
-      settings: {
-        theme: "dark",
-        displayMode: "overlay",
-        allowLogout: false,
-      },
-      customData: {
-        userId: user.result.id,
-      },
-    });
-  };
+      paddle?.Checkout.open({
+        items: [{ priceId }],
+        customer: {
+          email: user.result.email,
+        },
+        settings: {
+          theme: "dark",
+          displayMode: "overlay",
+          allowLogout: false,
+        },
+        customData: {
+          userId: user.result.id,
+        },
+      });
+    },
+    [user?.result.email, user?.result.id]
+  );
 
   const updatePaymentMethod = (transactionId: string) => {
     paddle?.Checkout.open({
