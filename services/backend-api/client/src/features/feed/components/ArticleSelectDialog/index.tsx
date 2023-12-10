@@ -190,6 +190,7 @@ export const ArticleSelectDialog = ({
                             <Input
                               onChange={(e) => setSearch(e.target.value)}
                               placeholder="Search..."
+                              bg="gray.800"
                             />
                           </InputGroup>
                           <Button

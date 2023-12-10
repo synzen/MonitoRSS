@@ -23,8 +23,19 @@ export const useUpdateConnection = ({ type }: Props) => {
     ApiAdapterError,
     UpdateDiscordChannelConnectionInput
   >((details) => updateDiscordChannelConnection(details), {
-    onSuccess: (data, inputData) =>
-      Promise.all([
+    onSuccess: async (data, inputData) => {
+      if (inputData.details.customPlaceholders) {
+        await queryClient.invalidateQueries({
+          predicate: (query) => {
+            return (
+              query.queryKey[0] === "user-feed-article-properties" &&
+              (query.queryKey[1] as Record<string, unknown>)?.feedId === inputData.feedId
+            );
+          },
+        });
+      }
+
+      await Promise.all([
         queryClient.invalidateQueries({
           queryKey: [
             "user-feed",
@@ -47,7 +58,8 @@ export const useUpdateConnection = ({ type }: Props) => {
           ],
           refetchType: "active",
         }),
-      ]),
+      ]);
+    },
   });
 
   if (type === FeedConnectionType.DiscordChannel) {

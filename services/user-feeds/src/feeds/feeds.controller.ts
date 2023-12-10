@@ -140,6 +140,7 @@ export class FeedsController {
         selectProperties,
         filters,
         random,
+        customPlaceholders: formatter.customPlaceholders,
       });
 
       const formattedArticles = (

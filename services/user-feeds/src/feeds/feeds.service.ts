@@ -36,10 +36,13 @@ export class FeedsService {
     random,
     selectProperties,
     filters,
+    customPlaceholders,
   }: QueryForArticlesInput): Promise<QueryForArticlesOutput> {
+    const placeholdersFromCustomPlaceholders =
+      customPlaceholders?.map((c) => c.sourcePlaceholder) || [];
     const properties = this.queryForArticleProperties(
       articles,
-      selectProperties
+      selectProperties?.concat(placeholdersFromCustomPlaceholders)
     );
 
     if (articles.length === 0) {
