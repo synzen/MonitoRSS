@@ -129,8 +129,8 @@ export class SupportersService {
       "BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT"
     );
 
-    this.enableSupporters = this.configService.get<boolean>(
-      "BACKEND_API_ENABLE_SUPPORTERS"
+    this.enableSupporters = Boolean(
+      this.configService.get<boolean>("BACKEND_API_ENABLE_SUPPORTERS")
     );
 
     this.supporterGuildId = this.configService.get<string | undefined>(

@@ -102,7 +102,10 @@ export class UsersService {
 
     if (!user.email) {
       return {
-        user,
+        user: {
+          ...user,
+          enableBilling: !!this.supportersService.enableSupporters,
+        },
         creditBalance: {
           availableFormatted: "0",
         },
@@ -135,7 +138,10 @@ export class UsersService {
 
     if (!subscription || subscription.status === SubscriptionStatus.Cancelled) {
       return {
-        user,
+        user: {
+          ...user,
+          enableBilling: !!this.supportersService.enableSupporters,
+        },
         creditBalance: {
           availableFormatted: creditAvailableBalanceFormatted,
         },
@@ -147,6 +153,7 @@ export class UsersService {
     return {
       user: {
         ...user,
+        enableBilling: !!this.supportersService.enableSupporters,
       },
       creditBalance: {
         availableFormatted: creditAvailableBalanceFormatted,
