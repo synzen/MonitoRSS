@@ -180,6 +180,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                               dateFormat: feed?.formatOptions?.dateFormat,
                               dateTimezone: feed?.formatOptions?.dateTimezone,
                             },
+                            customPlaceholders: connection.customPlaceholders,
                           }}
                         />
                         <DiscordChannelConnectionSettings
