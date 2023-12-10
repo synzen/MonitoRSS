@@ -172,7 +172,7 @@ export const CustomPlaceholdersTabSection = ({
       {!allowed && (
         <SubscriberBlockText
           tier={SupporterTier.T3}
-          alternateText={`While you can use this feature, you must be a supporter at a sufficient tier (${SupporterTier.T3}) to
+          alternateText={`While you can use this feature, you must be a supporter at a sufficient tier to
           have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
         />
       )}
