@@ -394,7 +394,7 @@ export class SupportersService {
           base: this.defaultMaxUserFeeds,
           legacy: 0,
         },
-        allowCustomPlaceholders: false,
+        allowCustomPlaceholders: true,
         articleRateLimits: this.defaultRateLimits,
         subscription: undefined,
       };
