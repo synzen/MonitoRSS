@@ -7,13 +7,6 @@ import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
 import { GetUserFeedArticlesFilterReturnType } from "./constants";
 import { QueryForArticlesInput, QueryForArticlesOutput } from "./types";
 
-interface InitializeFeedInputDto {
-  rateLimit: {
-    timeWindowSec: number;
-    limit: number;
-  };
-}
-
 @Injectable()
 export class FeedsService {
   constructor(
@@ -54,7 +47,22 @@ export class FeedsService {
       };
     }
 
-    let matchedArticles: Article[] = articles;
+    let matchedArticles: Article[] = [...articles].sort(
+      ({ raw: rawA }, { raw: rawB }) => {
+        // sort by date, latest first, if it exists
+        const dateA = rawA["date"];
+
+        if (dateA) {
+          const dateB = rawB["date"];
+
+          if (dateB) {
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+          }
+        }
+
+        return 0;
+      }
+    );
     let totalMatchedArticles = articles.length;
 
     if (filters?.articleId) {

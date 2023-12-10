@@ -86,7 +86,6 @@ export const MessageTabSection = ({
     feedId,
     data: {
       limit: 1,
-      random: true,
       skip: 0,
       selectProperties: ["*"],
       formatter: articleFormatter,
