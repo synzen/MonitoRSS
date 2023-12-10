@@ -741,6 +741,7 @@ export class SupportersService {
     }
 
     const isFromPatrons = supporter.patrons.length > 0;
+    let useAllowCustomPlaceholders = false;
 
     const {
       existsAndIsValid: patronExistsAndIsValid,
@@ -748,7 +749,7 @@ export class SupportersService {
       maxUserFeeds: patronMaxUserFeeds,
       maxGuilds: patronMaxGuilds,
       refreshRateSeconds: patronRefreshRateSeconds,
-      allowCustomPlaceholders,
+      allowCustomPlaceholders: patronAllowCustomPlaceholders,
       maxPatreonPledge,
     } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
@@ -758,12 +759,16 @@ export class SupportersService {
     if (supporter.paddleCustomer?.subscription) {
       refreshRateSeconds =
         supporter.paddleCustomer.subscription.benefits.refreshRateSeconds;
+
+      useAllowCustomPlaceholders = true;
     } else if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
     } else if (isFromPatrons) {
       if (patronExistsAndIsValid) {
         refreshRateSeconds =
           patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
+
+        useAllowCustomPlaceholders = patronAllowCustomPlaceholders;
       }
     } else {
       refreshRateSeconds = this.defaultSupporterRefreshRateSeconds;
@@ -820,7 +825,7 @@ export class SupportersService {
       webhooks:
         supporter.paddleCustomer?.subscription?.benefits.allowWebhooks ?? true,
       allowCustomPlaceholders:
-        supporter.allowCustomPlaceholders || allowCustomPlaceholders,
+        supporter.allowCustomPlaceholders || useAllowCustomPlaceholders,
       dailyArticleLimit,
       maxPatreonPledge,
     };

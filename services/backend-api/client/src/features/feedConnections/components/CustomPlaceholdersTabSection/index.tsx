@@ -35,6 +35,7 @@ import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { useIsFeatureAllowed } from "@/hooks";
 import { BlockableFeature, SupporterTier } from "@/constants";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
+import { useUserMe } from "../../../discordUser";
 
 interface Props {
   feedId: string;
@@ -56,6 +57,7 @@ export const CustomPlaceholdersTabSection = ({
     connectionId,
     feedId,
   });
+  const { data: userMeData } = useUserMe();
   const { mutateAsync } = useUpdateConnection({ type: connectionType });
   const formMethods = useForm<CustomPlaceholdersFormData>({
     resolver: yupResolver(CustomPlaceholdersFormSchema),
@@ -171,7 +173,7 @@ export const CustomPlaceholdersTabSection = ({
       </Stack>
       {!allowed && (
         <SubscriberBlockText
-          tier={SupporterTier.T3}
+          tier={userMeData?.result.isOnPatreon ? SupporterTier.T3 : SupporterTier.T1}
           alternateText={`While you can use this feature, you must be a supporter at a sufficient tier to
           have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
         />
