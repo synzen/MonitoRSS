@@ -109,7 +109,7 @@ export const UserFeeds: React.FC = () => {
                       <>
                         {" "}
                         You can also{" "}
-                        <ChakraLink as={Link} to={pages.alerting()} color="blue.300">
+                        <ChakraLink as={Link} to={pages.userSettings()} color="blue.300">
                           get notified when failures occur
                         </ChakraLink>
                         .
