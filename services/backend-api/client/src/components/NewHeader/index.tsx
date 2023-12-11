@@ -19,7 +19,7 @@ import { SettingsIcon, InfoIcon } from "@chakra-ui/icons";
 import { pages } from "../../constants";
 import { LogoutButton } from "../../features/auth";
 
-import { useDiscordBot, useDiscordUserMe } from "../../features/discordUser";
+import { useDiscordBot, useDiscordUserMe, useUserMe } from "../../features/discordUser";
 import { Loading } from "../Loading";
 import { AddUserFeedDialog } from "../../features/feed";
 
@@ -29,7 +29,8 @@ interface Props {
 
 export const NewHeader = ({ invertBackground }: Props) => {
   const { data: discordBotData, status, error } = useDiscordBot();
-  const { data: userMe } = useDiscordUserMe();
+  const { data: discordUserMe } = useDiscordUserMe();
+  const { data: userMe } = useUserMe();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -87,13 +88,15 @@ export const NewHeader = ({ invertBackground }: Props) => {
             >
               Home
             </Button>
-            <Button
-              variant="ghost"
-              colorScheme={pathname === pages.userFeedsFaq() ? "blue" : undefined}
-              onClick={() => navigate(pages.userFeedsFaq())}
-            >
-              FAQ
-            </Button>
+            {userMe && !userMe?.result.migratedToPersonalFeeds && (
+              <Button
+                variant="ghost"
+                colorScheme={pathname === pages.userFeedsFaq() ? "blue" : undefined}
+                onClick={() => navigate(pages.userFeedsFaq())}
+              >
+                FAQ
+              </Button>
+            )}
             <AddUserFeedDialog />
           </HStack>
         </HStack>
@@ -101,11 +104,11 @@ export const NewHeader = ({ invertBackground }: Props) => {
           <Menu placement="bottom-end">
             <MenuButton as={Button} size="sm" variant="link">
               <Avatar
-                src={userMe?.iconUrl}
+                src={discordUserMe?.iconUrl}
                 size="sm"
-                name={userMe?.username}
+                name={discordUserMe?.username}
                 backgroundColor="transparent"
-                title={userMe?.username}
+                title={discordUserMe?.username}
               />
             </MenuButton>
             <MenuList>
