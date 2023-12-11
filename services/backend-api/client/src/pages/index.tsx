@@ -98,7 +98,7 @@ const Pages: React.FC = () => (
     <Route
       path={pages.userFeeds()}
       element={
-        <RequireAuth>
+        <RequireAuth waitForUserFetch>
           {/* <PageContentV2 invertBackground> */}
           <NewHeader invertBackground />
           <UserFeedStatusFilterProvider>

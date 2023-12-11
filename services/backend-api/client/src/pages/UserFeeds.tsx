@@ -197,15 +197,23 @@ export const UserFeeds: React.FC = () => {
             </Flex>
           </Flex>
           <Stack spacing={6}>
-            <Text>
-              Personal feeds are a new type of feed that will replace current (now considered
-              &quot;legacy&quot;) feeds. They contain new features that have never been seen before,
-              and are more reliable than legacy feeds. For more information, see the{" "}
-              <ChakraLink as={Link} color="blue.300" to={pages.userFeedsFaq()}>
-                Frequently Asked Questions
-              </ChakraLink>{" "}
-              page.
-            </Text>
+            {!userMeData?.result.migratedToPersonalFeeds && (
+              <Text>
+                Personal feeds are a new type of feed that will replace current (now considered
+                &quot;legacy&quot;) feeds. They contain new features that have never been seen
+                before, and are more reliable than legacy feeds. For more information, see the{" "}
+                <ChakraLink as={Link} color="blue.300" to={pages.userFeedsFaq()}>
+                  Frequently Asked Questions
+                </ChakraLink>{" "}
+                page.
+              </Text>
+            )}
+            {userMeData?.result.migratedToPersonalFeeds && (
+              <Text>
+                Every feed represents a news source that you can subscribe to. After adding a feed,
+                you may then specify where you want articles for that feed to be sent to.
+              </Text>
+            )}
           </Stack>
         </Stack>
         <UserFeedsTable onSelectedFeedId={onSelectedFeed} />
