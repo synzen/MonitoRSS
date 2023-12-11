@@ -740,7 +740,6 @@ export class SupportersService {
       };
     }
 
-    const isFromPatrons = supporter.patrons.length > 0;
     let useAllowCustomPlaceholders = false;
 
     const {
@@ -755,12 +754,15 @@ export class SupportersService {
 
     // Refresh rate
     let refreshRateSeconds = this.defaultRefreshRateSeconds;
+    let isFromPatrons =
+      supporter.patron === true && supporter.patrons.length > 0;
 
     if (supporter.paddleCustomer?.subscription) {
       refreshRateSeconds =
         supporter.paddleCustomer.subscription.benefits.refreshRateSeconds;
 
       useAllowCustomPlaceholders = true;
+      isFromPatrons = false;
     } else if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
     } else if (isFromPatrons) {
@@ -808,9 +810,7 @@ export class SupportersService {
         : patronExistsAndIsValid
         ? SupporterSource.Patron
         : SupporterSource.Manual,
-      isSupporter: isFromPatrons
-        ? supporter.patron === true && patronExistsAndIsValid
-        : true,
+      isSupporter: isFromPatrons ? patronExistsAndIsValid : true,
       maxFeeds: Math.max(
         supporter.maxFeeds ?? this.defaultMaxFeeds,
         patronMaxFeeds
