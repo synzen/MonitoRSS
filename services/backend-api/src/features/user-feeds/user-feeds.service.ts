@@ -143,7 +143,7 @@ export class UserFeedsService {
     try {
       return {
         output: dayjs()
-          .tz(dateTimezone)
+          .tz(dateTimezone || "UTC")
           .locale(dateLocale || "en")
           .format(dateFormat || undefined),
         valid: true,
