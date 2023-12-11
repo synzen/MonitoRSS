@@ -550,6 +550,9 @@ export class LegacyFeedConversionService {
       disabledCode = UserFeedDisabledCode.FailedRequests;
     }
 
+    const { refreshRateSeconds } =
+      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+
     const converted: UserFeed = {
       _id: new Types.ObjectId(),
       legacyFeedId: feed._id,
@@ -572,6 +575,7 @@ export class LegacyFeedConversionService {
         dateFormat: (profile ? profile.dateFormat : undefined) || undefined,
         dateTimezone: (profile ? profile.timezone : undefined) || undefined,
       },
+      refreshRateSeconds: refreshRateSeconds,
     };
 
     if (feed.checkTitles && !converted.blockingComparisons?.includes("title")) {

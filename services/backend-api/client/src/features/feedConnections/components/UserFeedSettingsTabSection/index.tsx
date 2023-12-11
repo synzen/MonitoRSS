@@ -152,11 +152,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     400
   );
 
-  const {
-    data: datePreviewData,
-    fetchStatus: datePreviewFetchStatus,
-    error: datePreviewError,
-  } = useUserFeedDatePreview({
+  const { data: datePreviewData, error: datePreviewError } = useUserFeedDatePreview({
     feedId,
     data: debouncedPreviewInput,
   });
