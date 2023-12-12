@@ -7,6 +7,7 @@ import {
 } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
+import { WebhookMissingPermissionsException } from "../../discord-webhooks/exceptions";
 import {
   MissingChannelPermissionsException,
   UserMissingManageGuildException,
@@ -50,6 +51,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [InsufficientSupporterLevelException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
+    },
+    [WebhookMissingPermissionsException.name]: {
+      status: HttpStatus.FORBIDDEN,
+      code: ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
     },
   };
 

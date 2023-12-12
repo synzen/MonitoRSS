@@ -53,6 +53,7 @@ import { DiscordAPIService } from "../../services/apis/discord/discord-api.servi
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { castDiscordComponentRowsForMedium } from "../../common/utils";
 import logger from "../../utils/logger";
+import { WebhookMissingPermissionsException } from "../discord-webhooks/exceptions";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -1007,35 +1008,52 @@ export class FeedConnectionsDiscordChannelsService {
     id: string,
     accessToken: string
   ): Promise<{ webhook: DiscordWebhook; channel: DiscordGuildChannel }> {
-    const webhook = await this.discordWebhooksService.getWebhook(id);
+    try {
+      const webhook = await this.discordWebhooksService.getWebhook(id);
 
-    if (!webhook) {
-      throw new DiscordWebhookNonexistentException(
-        `Discord webohok ${id} does not exist`
+      if (!webhook) {
+        throw new DiscordWebhookNonexistentException(
+          `Discord webohok ${id} does not exist`
+        );
+      }
+
+      if (!this.discordWebhooksService.canBeUsedByBot(webhook)) {
+        throw new DiscordWebhookInvalidTypeException(
+          `Discord webhook ${id} is a different type and is not operable by bot to send messages`
+        );
+      }
+
+      if (
+        !webhook.guild_id ||
+        !(await this.discordAuthService.userManagesGuild(
+          accessToken,
+          webhook.guild_id
+        ))
+      ) {
+        throw new DiscordWebhookMissingUserPermException(
+          `User does not manage guild of webhook webhook ${id}`
+        );
+      }
+
+      const channel = await this.discordApiService.getChannel(
+        webhook.channel_id
       );
+
+      return { webhook, channel };
+    } catch (err) {
+      console.log("check err", err);
+
+      if (
+        err instanceof DiscordAPIError &&
+        err.statusCode === HttpStatus.FORBIDDEN
+      ) {
+        throw new WebhookMissingPermissionsException(
+          `Bot is missing permissions to retrieve webhook ${id} (likely manage webhooks permission)`
+        );
+      }
+
+      throw err;
     }
-
-    if (!this.discordWebhooksService.canBeUsedByBot(webhook)) {
-      throw new DiscordWebhookInvalidTypeException(
-        `Discord webhook ${id} is a different type and is not operable by bot to send messages`
-      );
-    }
-
-    if (
-      !webhook.guild_id ||
-      !(await this.discordAuthService.userManagesGuild(
-        accessToken,
-        webhook.guild_id
-      ))
-    ) {
-      throw new DiscordWebhookMissingUserPermException(
-        `User does not manage guild of webhook webhook ${id}`
-      );
-    }
-
-    const channel = await this.discordApiService.getChannel(webhook.channel_id);
-
-    return { webhook, channel };
   }
 
   private async getOrCreateApplicationWebhook({
@@ -1047,19 +1065,34 @@ export class FeedConnectionsDiscordChannelsService {
       name: string;
     };
   }) {
-    const channelWebhooks =
-      await this.discordWebhooksService.getWebhooksOfChannel(channelId, {
-        onlyApplicationOwned: true,
-      });
+    try {
+      const channelWebhooks =
+        await this.discordWebhooksService.getWebhooksOfChannel(channelId, {
+          onlyApplicationOwned: true,
+        });
 
-    if (channelWebhooks[0]) {
-      // Use an existing application-owned webhook if it exists
-      return channelWebhooks[0];
-    } else {
-      // Otherwise create a new one
-      return this.discordWebhooksService.createWebhook(channelId, {
-        name,
-      });
+      if (channelWebhooks[0]) {
+        // Use an existing application-owned webhook if it exists
+        return channelWebhooks[0];
+      } else {
+        // Otherwise create a new one
+        return await this.discordWebhooksService.createWebhook(channelId, {
+          name,
+        });
+      }
+    } catch (err) {
+      console.log("crreate err", err);
+
+      if (
+        err instanceof DiscordAPIError &&
+        err.statusCode === HttpStatus.FORBIDDEN
+      ) {
+        throw new WebhookMissingPermissionsException(
+          `Bot is missing permissions to create webhook on channel ${channelId} (likely manage webhooks permission)`
+        );
+      }
+
+      throw err;
     }
   }
 

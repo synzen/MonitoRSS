@@ -50,7 +50,7 @@
       "feedLimitReached": "You have reached your feed limit",
       "feedMissingChannel": "The channel does not exist",
       "feedUserMissingManageGuild": "You are missing the Manage Server permission",
-      "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server.",
+      "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server or channel.",
       "webhookInvalid": "Webhook is invalid. Webhooks must be integration that are not owned by other bots.",
       "feedNotFailed": "Unable to retry feed. The feed is still active, and there is no need to retry unless the feed has failed.",
       "feedNotFound": "Feed does not exist",
