@@ -206,9 +206,13 @@ export class FeedConnectionsDiscordChannelsService {
           userAccessToken
         ));
       } else if (applicationWebhook) {
-        channel = await this.discordApiService.getChannel(
-          applicationWebhook.channelId
-        );
+        const { channel: fetchedChannel } =
+          await this.assertDiscordChannelCanBeUsed(
+            userAccessToken,
+            applicationWebhook.channelId
+          );
+
+        channel = fetchedChannel;
         webhook = await this.getOrCreateApplicationWebhook({
           channelId: channel.id,
           webhook: {
@@ -584,9 +588,12 @@ export class FeedConnectionsDiscordChannelsService {
         ));
       } else if (updates.details.applicationWebhook) {
         // When converting a regular webhook to application webhook
-        channel = await this.discordApiService.getChannel(
-          updates.details.applicationWebhook.channelId
-        );
+        const { channel: fetchedChannel } =
+          await this.assertDiscordChannelCanBeUsed(
+            accessToken,
+            updates.details.applicationWebhook.channelId
+          );
+        channel = fetchedChannel;
 
         webhook = await this.getOrCreateApplicationWebhook({
           channelId: channel.id,

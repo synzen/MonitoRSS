@@ -46,7 +46,7 @@
       "feedRequestTooManyRequests": "Failed to get feed articles - requests to the feed has been rate limited. Please try again later.",
       "feedRequestUnauthorized": "Failed to get feed articles - the feed host is requesting authorization. Please check if the feed is publicly accessible, or ensure that some authorization key is included in the feed URL if it is required.",
       "bannedFeed": "This feed is banned",
-      "feedMissingChannelPermission": "The bot does not have permission to send messages in the channel",
+      "feedMissingChannelPermission": "The bot does not have permission to send or view messages in the channel",
       "feedLimitReached": "You have reached your feed limit",
       "feedMissingChannel": "The channel does not exist",
       "feedUserMissingManageGuild": "You are missing the Manage Server permission",
