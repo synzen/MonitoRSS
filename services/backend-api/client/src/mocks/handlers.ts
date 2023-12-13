@@ -700,6 +700,18 @@ const handlers = [
     );
   }),
 
+  rest.post("/api/v1/user-feeds/:feedId/get-article-properties", async (req, res, ctx) => {
+    return res(
+      ctx.delay(500),
+      ctx.json<GetUserFeedArticlePropertiesOutput>({
+        result: {
+          requestStatus: UserFeedArticleRequestStatus.Success,
+          properties: ["id", "title"],
+        },
+      })
+    );
+  }),
+
   rest.get("/api/v1/user-feeds/:feedId/requests", async (req, res, ctx) =>
     res(
       ctx.delay(500),
