@@ -284,8 +284,9 @@ export const UserSettings = () => {
                                 </AlertTitle>
                                 <AlertDescription>
                                   <Text>
-                                    Subscriptions have moved off of Patreon. You are advised to move
-                                    your pledge off of Patreon so that you may:
+                                    Subscriptions have moved off of Patreon. You are advised (but
+                                    not required) to move your pledge off of Patreon so that you
+                                    may:
                                   </Text>
                                   <br />
                                   <OrderedList>
@@ -382,6 +383,34 @@ export const UserSettings = () => {
                                             <br /> On the upside, yearly plans are now available at
                                             a 15% discount, and there are a total of 30 currencies
                                             that are now supported (instead of just 16 on Patreon).
+                                          </Text>
+                                        </AccordionPanel>
+                                      </AccordionItem>
+                                      <AccordionItem
+                                        border="none"
+                                        borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                                      >
+                                        <AccordionButton border="none">
+                                          <Flex
+                                            flex="1"
+                                            gap={4}
+                                            fontSize={13}
+                                            color="blue.200"
+                                            alignItems="center"
+                                            textAlign="left"
+                                          >
+                                            Why does it say I&apos;m on the free plan if I&apos;m on
+                                            Patreon?
+                                            <AccordionIcon />
+                                          </Flex>
+                                        </AccordionButton>
+                                        <AccordionPanel>
+                                          <Text fontSize={13}>
+                                            If you are still on Patreon, you are technically not on
+                                            the new billing model and thus is a free user. You can
+                                            continue referencing Patreon for your pledge status, but
+                                            you will not be able to manage or view your pledge on
+                                            this control panel.
                                           </Text>
                                         </AccordionPanel>
                                       </AccordionItem>

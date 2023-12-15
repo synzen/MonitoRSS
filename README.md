@@ -33,10 +33,12 @@ Docker is required to easily coordinate and run multiple services at once.
    1. If you have your own MongoDB instance, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
    2. Replace all instances of "BOT_TOKEN_HERE" with your Discord bot application token
    3. Replace all instances of "BOT_CLIENT_ID_HERE" with your Discord bot application ID
-   4. Set `BACKEND_API_SESSION_SECRET` to a random 64-character string
-   5.  Set `BACKEND_API_SESSION_SALT` to a random 16-character string
-   6.  Add `http://localhost:8000/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page
+   4. Replace all instances of "BOT_CLIENT_SECRET_HERE" with your Discord bot application secret
+   5. Set `BACKEND_API_SESSION_SECRET` to a random 64-character string
+   6.  Set `BACKEND_API_SESSION_SALT` to a random 16-character string
+   7.  Add `http://localhost:8000/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page
 7.  Run `docker-compose up -d`
+    -  If you run into issues with network timeouts, you may try disabling parallel builds by running `DOCKER_BUILDKIT=0 docker-compose up -d` if [Docker BuildKit](https://docs.docker.com/build/buildkit/) is enabled.
 8.  Access the control panel via http://localhost:8000
 
 #### Customize Site Domain
