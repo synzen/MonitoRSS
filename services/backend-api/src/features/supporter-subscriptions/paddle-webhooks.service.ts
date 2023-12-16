@@ -20,6 +20,7 @@ import { PaddleSubscriptionStatus } from "./constants/paddle-subscription-status
 import { ConfigService } from "@nestjs/config";
 import { createHmac } from "crypto";
 import { SupportersService } from "../supporters/supporters.service";
+import logger from "../../utils/logger";
 const BENEFITS_BY_TIER: Partial<
   Record<
     SubscriptionProductKey | LegacySubscriptionProductKey,
@@ -248,9 +249,19 @@ export class PaddleWebhooksService {
       }
     );
 
-    await this.supportersService.syncDiscordSupporterRoles(
-      foundUser.discordUserId
-    );
+    try {
+      await this.supportersService.syncDiscordSupporterRoles(
+        foundUser.discordUserId
+      );
+    } catch (err) {
+      logger.error(
+        "Error while syncing discord supporter roles after handling subscription updated event",
+        {
+          stack: (err as Error).stack,
+          supporterId: foundUser.discordUserId,
+        }
+      );
+    }
   }
 
   async handleSubscriptionCancelledEvent(

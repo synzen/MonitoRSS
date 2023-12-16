@@ -151,6 +151,7 @@ export class SupporterSubscriptionsController {
       logger.error("Error while handling paddle webhook event", {
         requestBody,
         signature,
+        stack: (err as Error).stack,
       });
 
       throw err;

@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 const formattersByCurrency: Record<string, (input: string) => string> = {
   AUD: (input) => `$${input}`,
   BRL: (input) => `R$${input}`,
@@ -8,6 +10,7 @@ const formattersByCurrency: Record<string, (input: string) => string> = {
   EUR: (input) => `€${input}`,
   HKD: (input) => `HK$${input}`,
   HUF: (input) => `${input} Ft`,
+  KRW: (input) => `₩${input}`,
   MXN: (input) => `$${input}`,
   NZD: (input) => `NZ$${input}`,
   NOK: (input) => `${input} kr`,
@@ -31,7 +34,9 @@ export const formatCurrency = (input: string, currencyCode: string) => {
   const formatter = formattersByCurrency[currencyCode];
 
   if (!formatter) {
-    throw new Error(`No formatter for currency code ${currencyCode}`);
+    logger.error(`No formatter for currency code ${currencyCode}`);
+
+    return input;
   }
 
   if (ZERO_DECIMAL_CURRENCIES.includes(currencyCode)) {
