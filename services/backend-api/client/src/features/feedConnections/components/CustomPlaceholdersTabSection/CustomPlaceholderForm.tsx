@@ -35,6 +35,7 @@ import { ArticleSelectDialog } from "../../../feed/components";
 import { useUserFeedArticles } from "../../../feed/hooks";
 import { notifyError } from "../../../../utils/notifyError";
 import { useGetUserFeedArticlesError } from "../../hooks";
+import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 
 interface Props {
   feedId: string;
@@ -161,7 +162,7 @@ const CustomPlaceholderStep = ({
                 control={control}
                 render={({ field }) => {
                   return (
-                    <Input
+                    <AutoResizeTextarea
                       fontFamily="mono"
                       size="sm"
                       bg="gray.800"
