@@ -119,15 +119,6 @@ export const FiltersForm = ({
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit}>
           <Stack spacing={8}>
-            <ArticleFilterResults
-              articleFormatter={data.articleFormatter}
-              feedId={data.feedId}
-              filters={watchedExpression}
-              title={previewTitle}
-              tableContainer={{
-                theadProps: previewContainerProps?.thead,
-              }}
-            />
             <Stack>
               <Button onClick={addInitialExpression}>
                 {t("features.feedConnections.components.filtersForm.addNewFiltersButtonText")}
@@ -143,6 +134,15 @@ export const FiltersForm = ({
                 </Button>
               </HStack>
             </Stack>
+            <ArticleFilterResults
+              articleFormatter={data.articleFormatter}
+              feedId={data.feedId}
+              filters={watchedExpression}
+              title={previewTitle}
+              tableContainer={{
+                theadProps: previewContainerProps?.thead,
+              }}
+            />
           </Stack>
         </form>
       </FormProvider>
