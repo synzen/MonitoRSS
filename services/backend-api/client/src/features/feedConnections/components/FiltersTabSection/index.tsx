@@ -21,10 +21,10 @@ export const FiltersTabSection = ({
   const { t } = useTranslation();
 
   return (
-    <Stack spacing={12} paddingBottom={6}>
+    <Stack spacing={12} mb={24}>
       <Stack spacing={4}>
         <Heading as="h2" size="md">
-          {t("features.feedConnections.components.filtersTabSection.headingSettings")}
+          Filters
         </Heading>
         <FiltersForm
           onSave={onFiltersUpdated}

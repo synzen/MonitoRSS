@@ -50,6 +50,7 @@ export const REACT_SELECT_STYLES: SelectStyles = {
   input: (provided) => ({
     ...provided,
     color: getChakraColor("gray.50"),
+    minWidth: "200px",
   }),
   singleValue: (provided, state) => ({
     ...provided,

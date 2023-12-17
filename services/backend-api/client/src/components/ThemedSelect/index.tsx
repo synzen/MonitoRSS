@@ -62,6 +62,7 @@ export const ThemedSelect = <T,>({
       placeholder={placeholder}
       isClearable={isClearable}
       ref={inputRef}
+      menuPosition="fixed"
       // @ts-ignore
       styles={styles}
       value={selectedOption || ""}

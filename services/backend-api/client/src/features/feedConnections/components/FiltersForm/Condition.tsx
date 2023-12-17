@@ -1,4 +1,12 @@
-import { Button, ButtonGroup, CloseButton, FormControl, HStack, Select } from "@chakra-ui/react";
+import {
+  Button,
+  ButtonGroup,
+  CloseButton,
+  Flex,
+  FormControl,
+  HStack,
+  Select,
+} from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import {
@@ -52,7 +60,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, data, articleForma
 
   return (
     <HStack width="100%" alignItems="flex-start">
-      <HStack width="100%" spacing={8} alignItems="flex-start">
+      <HStack width="100%" spacing={8} alignItems="flex-start" overflow="auto" pb={2}>
         {leftOperandElement}
         <FormControl width="min-content">
           <Controller
@@ -106,7 +114,11 @@ export const Condition = ({ onDelete, prefix = "", deletable, data, articleForma
           placeholder={t("features.feedConnections.components.filtersForm.placeholderArticleValue")}
         />
       </HStack>
-      {deletable && <CloseButton aria-label="Delete condition" size="sm" onClick={onDelete} />}
+      {deletable && (
+        <Flex>
+          <CloseButton aria-label="Delete condition" size="sm" onClick={onDelete} />
+        </Flex>
+      )}
     </HStack>
   );
 };

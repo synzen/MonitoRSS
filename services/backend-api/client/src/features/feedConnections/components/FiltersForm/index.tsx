@@ -152,16 +152,7 @@ export const FiltersForm = ({
   return (
     <FormProvider {...formMethods}>
       <form onSubmit={onSubmit}>
-        <Stack spacing={4}>
-          <ArticleFilterResults
-            articleFormatter={data.articleFormatter}
-            feedId={data.feedId}
-            filters={watchedExpression}
-            title={previewTitle}
-            tableContainer={{
-              theadProps: previewContainerProps?.thead,
-            }}
-          />
+        <Stack spacing={12}>
           <Stack>
             <LogicalExpressionForm
               onDeleted={onDeletedExpression}
@@ -186,6 +177,15 @@ export const FiltersForm = ({
               </Button>
             </HStack>
           </Stack>
+          <ArticleFilterResults
+            articleFormatter={data.articleFormatter}
+            feedId={data.feedId}
+            filters={watchedExpression}
+            title={previewTitle}
+            tableContainer={{
+              theadProps: previewContainerProps?.thead,
+            }}
+          />
         </Stack>
       </form>
     </FormProvider>
