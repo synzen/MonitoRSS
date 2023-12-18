@@ -590,7 +590,13 @@ export const UserFeed: React.FC = () => {
                   {feed?.connections.length && (
                     <SimpleGrid spacing={4} templateColumns="repeat(auto-fill, minmax(320px, 1fr))">
                       {feed?.connections?.map((connection) => {
-                        return <ConnectionCard connection={connection} feedId={feedId as string} />;
+                        return (
+                          <ConnectionCard
+                            key={connection.id}
+                            connection={connection}
+                            feedId={feedId as string}
+                          />
+                        );
                       })}
                     </SimpleGrid>
                   )}

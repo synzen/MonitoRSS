@@ -245,7 +245,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     });
 
     return (
-      <Stack>
+      <Stack key={category}>
         <Checkbox
           isChecked={allCategorySettingsAreChecked}
           isIndeterminate={!allCategorySettingsAreChecked && !noCategorySettingsAreChecked}
@@ -275,6 +275,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
 
             return (
               <Checkbox
+                key={setting}
                 pl={6}
                 onChange={(e) =>
                   onCheckSettingChange(
