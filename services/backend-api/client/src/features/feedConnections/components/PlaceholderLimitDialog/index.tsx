@@ -22,6 +22,7 @@ import { cloneElement, useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, number, object, string } from "yup";
+import Select from "react-select/dist/declarations/src/Select";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
@@ -83,7 +84,7 @@ export const PlaceholderLimitDialog = ({
     useTitle = t("features.feedConnections.components.placeholderLimitDialog.addTitle");
   }
 
-  const initialRef = useRef<HTMLSelectElement>(null);
+  const initialRef = useRef<React.ComponentProps<typeof Select>["ref"]>(null);
 
   return (
     <>
@@ -120,9 +121,13 @@ export const PlaceholderLimitDialog = ({
                         </FormLabel>
                         <ArticlePropertySelect
                           feedId={feedId}
-                          selectProps={{ ...field, bg: "gray.800" }}
-                          selectRef={initialRef}
+                          // selectProps={{ ...field, bg: "gray.800" }}
+                          onChange={(val) => {
+                            field.onChange(val);
+                          }}
                           articleFormatter={articleFormatter}
+                          value={field.value}
+                          selectRef={initialRef}
                         />
                         {!errors.placeholder && (
                           <FormHelperText>

@@ -4,19 +4,22 @@ import {
   CloseButton,
   Flex,
   FormControl,
+  FormErrorMessage,
   HStack,
   Select,
 } from "@chakra-ui/react";
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, FieldError, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import {
   RelationalExpressionLeftOperandType,
   RelationalExpressionOperator,
   RelationalExpressionRightOperandType,
 } from "../../types";
-import { ArticlePropertySelect } from "./ArticlePropertySelect";
+// import { ArticlePropertySelect } from "./ArticlePropertySelect";
 import { ConditionInput } from "./ConditionInput";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
+import { ArticlePropertySelect } from "../ArticlePropertySelect";
+import { getNestedField } from "../../../../utils/getNestedField";
 
 const { Equals, Contains, Matches } = RelationalExpressionOperator;
 
@@ -31,7 +34,11 @@ interface Props {
 }
 
 export const Condition = ({ onDelete, prefix = "", deletable, data, articleFormatter }: Props) => {
-  const { control, watch } = useFormContext();
+  const {
+    control,
+    watch,
+    formState: { errors },
+  } = useFormContext();
 
   const { t } = useTranslation();
   const leftOperandType = watch(`${prefix}left.type`) as
@@ -46,14 +53,32 @@ export const Condition = ({ onDelete, prefix = "", deletable, data, articleForma
   );
 
   if (leftOperandType === RelationalExpressionLeftOperandType.Article) {
+    const controllerName = `${prefix}left.value`;
+    const error = getNestedField<FieldError>(errors, controllerName);
+
     leftOperandElement = (
-      <ArticlePropertySelect
-        controllerName={`${prefix}left.value`}
-        data={data}
-        placeholder={t(
-          "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty"
+      <Controller
+        name={controllerName}
+        control={control}
+        rules={{ required: true }}
+        render={({ field }) => (
+          <>
+            <ArticlePropertySelect
+              feedId={data.feedId}
+              articleFormatter={articleFormatter}
+              value={field.value}
+              onChange={field.onChange}
+              placeholder={t(
+                "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty"
+              )}
+            />
+            {error?.type === "required" && (
+              <FormErrorMessage>
+                {t("features.feedConnections.components.filtersForm.valueIsRequired")}
+              </FormErrorMessage>
+            )}
+          </>
         )}
-        articleFormatter={articleFormatter}
       />
     );
   }

@@ -1,24 +1,26 @@
-import { Select, SelectProps, Stack, chakra } from "@chakra-ui/react";
+import { Stack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { LegacyRef } from "react";
+import Select from "react-select";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorAlert, ThemedSelect } from "../../../../components";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
-  feedId: string;
-  selectProps?: SelectProps;
-  excludeProperties?: string[];
-  selectRef?: LegacyRef<HTMLSelectElement> | null;
+  feedId?: string;
+  selectRef?: React.ComponentProps<typeof Select>["ref"] | null;
   articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
+  onChange: (value: string) => void;
+  value?: string;
+  placeholder?: string;
 }
 
 export const ArticlePropertySelect = ({
   feedId,
-  selectProps,
-  excludeProperties,
   selectRef,
   articleFormatter,
+  value,
+  onChange,
+  placeholder,
 }: Props) => {
   const { data, error, fetchStatus } = useUserFeedArticleProperties({
     feedId,
@@ -28,17 +30,23 @@ export const ArticlePropertySelect = ({
   });
   const { t } = useTranslation();
 
-  const options = data?.result.properties
-    .filter((property) => !excludeProperties?.includes(property))
-    ?.map((prop) => (
-      <chakra.option key={prop} value={prop}>
-        {prop}
-      </chakra.option>
-    ));
-
   return (
     <Stack>
-      <Select
+      <ThemedSelect
+        isDisabled={fetchStatus === "fetching" || !!error}
+        options={
+          data?.result.properties.map((o) => ({
+            label: o,
+            value: o,
+            data: o,
+          })) || []
+        }
+        inputRef={selectRef}
+        onChange={onChange}
+        value={value}
+        placeholder={placeholder}
+      />
+      {/* <Select
         isDisabled={fetchStatus === "fetching" || !!error}
         borderColor="gray.600"
         placeholder={t("features.feedConnections.components.articlePropertySelect.placeholder")}
@@ -46,7 +54,7 @@ export const ArticlePropertySelect = ({
         ref={selectRef}
       >
         {options}
-      </Select>
+      </Select> */}
       {error && (
         <InlineErrorAlert
           title={t("common.errors.somethingWentWrong")}

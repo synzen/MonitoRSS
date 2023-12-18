@@ -349,7 +349,11 @@ export const CustomPlaceholderForm = ({
           render={({ field }) => (
             <ArticlePropertySelect
               feedId={feedId}
-              selectProps={{ ...field, bg: "gray.800" }}
+              // selectProps={{ ...field, bg: "gray.800" }}
+              value={field.value || ""}
+              onChange={(val) => {
+                field.onChange(val);
+              }}
               articleFormatter={articleFormat}
             />
           )}
