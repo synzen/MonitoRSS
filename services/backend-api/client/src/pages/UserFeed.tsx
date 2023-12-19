@@ -66,6 +66,7 @@ import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
 import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
+import { FeedConnectionDisabledCode } from "../types";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -219,6 +220,10 @@ export const UserFeed: React.FC = () => {
         Add Discord webhook
       </Button>
     </Flex>
+  );
+
+  const disabledConnections = feed?.connections.filter(
+    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual
   );
 
   return (
@@ -589,17 +594,40 @@ export const UserFeed: React.FC = () => {
                   )}
                   {feed?.connections.length && (
                     <SimpleGrid spacing={4} templateColumns="repeat(auto-fill, minmax(320px, 1fr))">
-                      {feed?.connections?.map((connection) => {
-                        return (
-                          <ConnectionCard
-                            key={connection.id}
-                            connection={connection}
-                            feedId={feedId as string}
-                          />
-                        );
-                      })}
+                      {feed?.connections
+                        ?.filter((c) => c.disabledCode !== FeedConnectionDisabledCode.Manual)
+                        ?.map((connection) => {
+                          return (
+                            <ConnectionCard
+                              key={connection.id}
+                              connection={connection}
+                              feedId={feedId as string}
+                            />
+                          );
+                        })}
                     </SimpleGrid>
                   )}
+                  {disabledConnections?.length ? (
+                    <Stack spacing={4} mt={2}>
+                      <Heading size="xs" as="h3" fontWeight={600} color="whiteAlpha.800">
+                        Disabled Conections
+                      </Heading>
+                      <SimpleGrid
+                        spacing={4}
+                        templateColumns="repeat(auto-fill, minmax(320px, 1fr))"
+                      >
+                        {disabledConnections?.map((connection) => {
+                          return (
+                            <ConnectionCard
+                              key={connection.id}
+                              connection={connection}
+                              feedId={feedId as string}
+                            />
+                          );
+                        })}
+                      </SimpleGrid>
+                    </Stack>
+                  ) : null}
                   {feed?.connections.length && addConnectionButtons}
                 </Stack>
               </BoxConstrained.Container>
