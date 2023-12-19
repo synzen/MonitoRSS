@@ -62,7 +62,9 @@ export function replaceTemplateString(
       if (limit) {
         value = options.split.func(value, {
           limit: limit.characterCount,
-          appendString: limit.appendString,
+          appendString: replaceTemplateString(object, limit.appendString, {
+            supportFallbacks: true,
+          }),
         });
       }
     }
