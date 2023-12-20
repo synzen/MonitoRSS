@@ -27,9 +27,15 @@ export class DiscordClientModule {
 
             const rest = new REST({ version: '10' }).setToken(token);
 
+            let intents: GatewayIntentBits | undefined = undefined;
+
+            if (appConfigService.getSupporterGuildId()) {
+              intents = GatewayIntentBits.GuildMembers;
+            }
+
             const gateway = new WebSocketManager({
               token,
-              intents: GatewayIntentBits.GuildMembers,
+              intents,
               rest,
               compression: CompressionMethod.ZlibStream,
             });
