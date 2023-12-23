@@ -42,7 +42,9 @@ export class DiscordClientModule {
 
             const client = new Client({ rest, gateway });
 
-            await gateway.connect();
+            if (intents) {
+              await gateway.connect();
+            }
 
             if (presenceStatus) {
               const shards = await gateway.getShardIds();
