@@ -79,6 +79,7 @@ export const discordMediumPayloadDetailsSchema = object().shape(
         steps: array(
           object({
             regexSearch: string().required(),
+            regexSearchFlags: string().nullable().default(undefined),
             replacementString: string().nullable(),
           })
         ).required(),

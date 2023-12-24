@@ -16,6 +16,11 @@ import {
   HStack,
   Input,
   Link,
+  Menu,
+  MenuButton,
+  MenuItemOption,
+  MenuList,
+  MenuOptionGroup,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -81,12 +86,15 @@ const CustomPlaceholderStep = ({
     errors?.customPlaceholders?.[customPlaceholderIndex]?.steps?.[stepIndex]?.regexSearch;
   const replacementStringError =
     errors?.customPlaceholders?.[customPlaceholderIndex]?.steps?.[stepIndex]?.replacementString;
+  const regexFlagsError =
+    errors?.customPlaceholders?.[customPlaceholderIndex]?.steps?.[stepIndex]?.regexSearchFlags;
 
   const customPlaceholderPreviewInput = {
     ...customPlaceholder,
     steps: customPlaceholder.steps.slice(0, stepIndex + 1).map((s) => ({
       ...s,
       regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
+      regexSearchFlags: s.regexSearchFlags,
     })),
   };
 
@@ -115,45 +123,100 @@ const CustomPlaceholderStep = ({
           alignItems="flex-start"
         >
           <Stack flex={1} spacing={4}>
-            <FormControl isInvalid={!!regexSearchError}>
-              <FormLabel variant="inline">Regex Search</FormLabel>
-              <Controller
-                key={step.id}
-                name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
-                control={control}
-                render={({ field }) => {
-                  return (
-                    <Input
-                      bg="gray.800"
-                      size="sm"
-                      fontFamily="mono"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                      spellCheck="false"
-                      autoComplete="off"
-                      {...field}
-                      value={field.value.replaceAll("\n", "\\n") || ""}
-                    />
-                  );
-                }}
-              />
-              {!regexSearchError && (
-                <FormHelperText>
-                  The regular expression to find the text of interest. For more information on your
-                  regular expressions, you may visit{" "}
-                  <Link
-                    color="blue.300"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    href="https://regex101.com/"
-                  >
-                    https://regex101.com/
-                  </Link>{" "}
-                  (be sure to select the JavaScript flavor).
-                </FormHelperText>
-              )}
-              {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
-            </FormControl>
+            <HStack alignItems="flex-start">
+              <FormControl isInvalid={!!regexSearchError} flexGrow={1}>
+                <FormLabel variant="inline">Regex Search</FormLabel>
+                <Controller
+                  key={step.id}
+                  name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
+                  control={control}
+                  render={({ field }) => {
+                    return (
+                      <Input
+                        bg="gray.800"
+                        size="sm"
+                        fontFamily="mono"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
+                        autoComplete="off"
+                        {...field}
+                        value={field.value.replaceAll("\n", "\\n") || ""}
+                      />
+                    );
+                  }}
+                />
+                {!regexSearchError && (
+                  <FormHelperText>
+                    The regular expression to find the text of interest. For more information on
+                    your regular expressions, you may visit{" "}
+                    <Link
+                      color="blue.300"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      href="https://regex101.com/"
+                    >
+                      https://regex101.com/
+                    </Link>{" "}
+                    (be sure to select the JavaScript flavor).
+                  </FormHelperText>
+                )}
+                {regexSearchError && (
+                  <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>
+                )}
+              </FormControl>
+              <FormControl flex={0}>
+                <FormLabel variant="inline">Flags</FormLabel>
+                <Controller
+                  key={step.id}
+                  name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearchFlags`}
+                  control={control}
+                  render={({ field }) => {
+                    return (
+                      <Menu closeOnSelect={false}>
+                        <MenuButton
+                          as={Button}
+                          size="sm"
+                          bg="gray.800"
+                          rightIcon={<ChevronDownIcon />}
+                        >
+                          {field.value || "/"}
+                        </MenuButton>
+                        <MenuList minWidth="240px">
+                          <MenuOptionGroup
+                            type="checkbox"
+                            onChange={(val) => {
+                              if (val instanceof Array) {
+                                field.onChange(val.join(""));
+                              }
+                            }}
+                            value={field.value?.split("")}
+                          >
+                            <MenuItemOption value="g">
+                              <Box>
+                                <Text>global</Text>
+                                <Text color="whiteAlpha.600">
+                                  Don&apos;t return after the first match
+                                </Text>
+                              </Box>
+                            </MenuItemOption>
+                            <MenuItemOption value="i">
+                              <Text>case insensitive</Text>
+                              <Text color="whiteAlpha.600">Case insensitive match</Text>
+                            </MenuItemOption>
+                            <MenuItemOption value="m">
+                              <Text>multiline</Text>
+                              <Text color="whiteAlpha.600">^ and $ match start/end of line</Text>
+                            </MenuItemOption>
+                          </MenuOptionGroup>
+                        </MenuList>
+                      </Menu>
+                    );
+                  }}
+                />
+                {regexFlagsError && <FormErrorMessage>{regexFlagsError.message}</FormErrorMessage>}
+              </FormControl>
+            </HStack>
             <FormControl isInvalid={!!replacementStringError}>
               <FormLabel variant="inline">Replacement String</FormLabel>
               <Controller
@@ -453,6 +516,7 @@ export const CustomPlaceholderForm = ({
                       id: uuidv4(),
                       regexSearch: "",
                       replacementString: "",
+                      regexSearchFlags: "gi",
                     },
                   ];
 

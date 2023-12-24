@@ -22,6 +22,7 @@ export const CustomPlaceholderSchema = object({
             });
           }
         }),
+      regexSearchFlags: string().nullable(),
       replacementString: string()
         .nullable()
         .default("")

@@ -117,6 +117,7 @@ export const CustomPlaceholdersTabSection = ({
             id: uuidv4(),
             regexSearch: "",
             replacementString: "",
+            regexSearchFlags: "gi",
           },
         ],
         referenceName: "",

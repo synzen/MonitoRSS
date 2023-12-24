@@ -47,6 +47,11 @@ class CustomPlaceholderStep {
 
   @IsString()
   @IsOptional()
+  @ValidateIf((v) => v.regexSearchFlags !== null)
+  regexSearchFlags?: string | null;
+
+  @IsString()
+  @IsOptional()
   @ValidateIf((v) => v.replacementString !== null)
   replacementString?: string | null;
 }

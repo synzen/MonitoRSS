@@ -22,6 +22,12 @@ export class CustomPlaceholderStep {
     required: false,
     type: String,
   })
+  regexSearchFlags?: string | null;
+
+  @Prop({
+    required: false,
+    type: String,
+  })
   replacementString?: string | null;
 }
 

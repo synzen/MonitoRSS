@@ -39,17 +39,18 @@ export class ArticleFormatterService {
         let lastOutput = sourceValue;
 
         for (let i = 0; i < steps.length; ++i) {
-          const { regexSearch, replacementString } = steps[i];
+          const { regexSearch, replacementString, regexSearchFlags } = steps[i];
 
           const context = {
             reference: lastOutput,
             replacementString,
             inputRegex: regexSearch,
+            inputRegexFlags: regexSearchFlags || "gmi",
             finalVal: lastOutput,
           };
 
           const script = new vm.Script(`
-            const regex = new RegExp(inputRegex, 'gmi');
+            const regex = new RegExp(inputRegex, inputRegexFlags);
             finalVal = reference.replace(regex, replacementString || '');
         `);
 
@@ -61,7 +62,8 @@ export class ArticleFormatterService {
             lastOutput = context.finalVal;
           } catch (err) {
             throw new RegexEvalException(
-              `Custom placeholder with regex "${regexSearch}" evaluation` +
+              `Custom placeholder with regex "${regexSearch}" with flags ` +
+                `"${regexSearchFlags}" evaluation` +
                 ` on string "${lastOutput}"` +
                 ` with replacement string "${replacementString}" errored: ` +
                 `${(err as Error).message}`,

@@ -440,7 +440,13 @@ export class UserFeedsController {
         disabledCode: con.disabledCode,
         splitOptions: con.splitOptions,
         mentions: con.mentions,
-        customPlaceholders: con.customPlaceholders,
+        customPlaceholders: con.customPlaceholders?.map((c) => ({
+          ...c,
+          steps: c.steps.map((s) => ({
+            ...s,
+            regexSearchFlags: s.regexSearchFlags || "gmi", // default is set in user-feeds-service
+          })),
+        })),
       }));
 
     const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
