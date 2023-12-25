@@ -68,6 +68,13 @@ export class DeliveryRecord {
   })
   article_id?: string | null;
 
+  @Property({
+    nullable: true,
+    default: null,
+    type: "text",
+  })
+  article_id_hash?: string | null;
+
   constructor(
     data: Omit<DeliveryRecord, "created_at">,
     overrides?: {
@@ -83,7 +90,7 @@ export class DeliveryRecord {
     this.parent = data.parent;
     this.content_type = data.content_type;
     this.external_detail = data.external_detail;
-    this.article_id = data.article_id;
+    this.article_id_hash = data.article_id_hash;
 
     if (overrides?.created_at) {
       this.created_at = overrides.created_at;

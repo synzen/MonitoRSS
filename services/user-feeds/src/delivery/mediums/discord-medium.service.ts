@@ -333,6 +333,7 @@ export class DiscordMediumService implements DeliveryMedium {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "No channel or webhook specified",
+          articleIdHash: article.flattened.idHash,
         },
       ];
     }
@@ -385,6 +386,7 @@ export class DiscordMediumService implements DeliveryMedium {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: (err as Error).message,
+          articleIdHash: article.flattened.idHash,
         },
       ];
     }
@@ -520,6 +522,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mediumId: details.mediumId,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: details.deliveryId,
+          articleIdHash: article.flattened.idHash,
         };
       })
     );
@@ -530,6 +533,7 @@ export class DiscordMediumService implements DeliveryMedium {
         status: ArticleDeliveryStatus.Sent,
         mediumId: details.mediumId,
         contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+        articleIdHash: article.flattened.idHash,
       },
       ...additionalDeliveryStates,
     ];
@@ -635,6 +639,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mediumId: details.mediumId,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: details.deliveryId,
+          articleIdHash: article.flattened.idHash,
         };
       })
     );
@@ -645,6 +650,7 @@ export class DiscordMediumService implements DeliveryMedium {
         status: ArticleDeliveryStatus.Sent,
         mediumId: details.mediumId,
         contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+        articleIdHash: article.flattened.idHash,
       },
       ...additionalDeliveryStates,
     ];
@@ -704,6 +710,7 @@ export class DiscordMediumService implements DeliveryMedium {
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
       contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+      articleIdHash: article.flattened.idHash,
     };
   }
 
@@ -798,6 +805,7 @@ export class DiscordMediumService implements DeliveryMedium {
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
       contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+      articleIdHash: article.flattened.idHash,
     };
   }
 

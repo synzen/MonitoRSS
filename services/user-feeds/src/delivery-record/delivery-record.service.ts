@@ -33,6 +33,7 @@ export class DeliveryRecordService {
           status: articleStatus,
           medium_id: articleState.mediumId,
           content_type: articleState.contentType,
+          article_id_hash: articleState.articleIdHash,
           parent: articleState.parent
             ? ({ id: articleState.parent } as never)
             : null,
@@ -45,6 +46,7 @@ export class DeliveryRecordService {
           error_code: articleState.errorCode,
           internal_message: articleState.internalMessage,
           medium_id: articleState.mediumId,
+          article_id_hash: articleState.articleIdHash,
         });
       } else if (articleStatus === PendingDelivery) {
         record = new DeliveryRecord({
@@ -58,6 +60,7 @@ export class DeliveryRecordService {
               } as never)
             : null,
           content_type: articleState.contentType,
+          article_id_hash: articleState.articleIdHash,
         });
       } else {
         record = new DeliveryRecord({
@@ -65,6 +68,7 @@ export class DeliveryRecordService {
           feed_id: feedId,
           status: articleStatus,
           medium_id: articleState.mediumId,
+          article_id_hash: articleState.articleIdHash,
         });
       }
 
@@ -88,8 +92,7 @@ export class DeliveryRecordService {
       articleId?: string;
     }
   ) {
-    const { status, errorCode, internalMessage, externalDetail, articleId } =
-      details;
+    const { status, errorCode, internalMessage, externalDetail } = details;
 
     const record = await this.recordRepo.findOneOrFail(id);
 
@@ -97,7 +100,6 @@ export class DeliveryRecordService {
     record.error_code = errorCode;
     record.internal_message = internalMessage;
     record.external_detail = externalDetail;
-    record.article_id = articleId;
 
     await this.recordRepo.persistAndFlush(record);
 

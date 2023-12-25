@@ -121,6 +121,7 @@ export class DeliveryService {
             id: deliveryId,
             mediumId: medium.id,
             status: ArticleDeliveryStatus.RateLimited,
+            articleIdHash: article.flattened.idHash,
           },
         ];
       }
@@ -149,6 +150,7 @@ export class DeliveryService {
             id: deliveryId,
             mediumId: medium.id,
             status: ArticleDeliveryStatus.FilteredOut,
+            articleIdHash: article.flattened.idHash,
           },
         ];
       }
@@ -181,6 +183,7 @@ export class DeliveryService {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: (err as Error).message,
+          articleIdHash: article.flattened.idHash,
         },
       ];
     }

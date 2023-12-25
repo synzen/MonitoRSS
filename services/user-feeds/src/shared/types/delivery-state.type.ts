@@ -18,39 +18,37 @@ export enum ArticleDeliveryStatus {
   RateLimited = "rate-limited",
 }
 
-interface ArticleDeliveryPendingDeliveryState {
+interface BaseArticleDeliveryState {
   id: string;
-  contentType: ArticleDeliveryContentType;
   mediumId: string;
+  articleIdHash: string | undefined;
+}
+
+interface ArticleDeliveryPendingDeliveryState extends BaseArticleDeliveryState {
+  contentType: ArticleDeliveryContentType;
   status: ArticleDeliveryStatus.PendingDelivery;
   parent?: string;
 }
 
-interface ArticleDeliverySentState {
-  id: string;
-  mediumId: string;
+interface ArticleDeliverySentState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.Sent;
-  parent?: string;
   contentType?: ArticleDeliveryContentType;
+  parent?: string;
 }
 
-interface ArticleDeliveryRateLimitState {
+interface ArticleDeliveryRateLimitState extends BaseArticleDeliveryState {
   id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.RateLimited;
 }
 
-interface ArticleDeliveryRejectedState {
-  id: string;
-  mediumId: string;
+interface ArticleDeliveryRejectedState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.Rejected;
   errorCode: ArticleDeliveryRejectedCode;
   internalMessage: string;
 }
 
-interface ArticleDeliveryFailureState {
-  id: string;
-  mediumId: string;
+interface ArticleDeliveryFailureState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.Failed;
   /**
    * User-facing error code.
@@ -62,9 +60,7 @@ interface ArticleDeliveryFailureState {
   internalMessage: string;
 }
 
-interface ArticleDeliveryFilteredOutState {
-  id: string;
-  mediumId: string;
+interface ArticleDeliveryFilteredOutState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.FilteredOut;
 }
 
