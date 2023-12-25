@@ -106,18 +106,35 @@ export class DeliveryRecordService {
     return record;
   }
 
-  countDeliveriesInPastTimeframe(
+  async countDeliveriesInPastTimeframe(
     { feedId }: { feedId: string },
     secondsInPast: number
   ) {
-    return this.recordRepo.count({
-      feed_id: feedId,
-      status: {
-        $in: [Sent, Rejected],
-      },
-      created_at: {
-        $gte: dayjs().subtract(secondsInPast, "second").toDate(),
-      },
-    });
+    // Convert initial counts to the same query below
+    const subquery = this.recordRepo
+      .createQueryBuilder()
+      .count()
+      .where({
+        feed_id: feedId,
+      })
+      .andWhere({
+        status: {
+          $in: [Sent, Rejected],
+        },
+      })
+      .andWhere({
+        created_at: {
+          $gte: dayjs().subtract(secondsInPast, "second").toDate(),
+        },
+      })
+      .groupBy("article_id_hash");
+
+    const query = await this.recordRepo
+      .createQueryBuilder()
+      .count()
+      .from(subquery, "subquery")
+      .execute("get");
+
+    return query.count;
   }
 }

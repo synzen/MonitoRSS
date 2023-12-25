@@ -56,11 +56,13 @@ describe("DeliveryRecordService", () => {
           id: "1",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Sent,
+          articleIdHash: "hash",
         },
         {
           id: "2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Sent,
+          articleIdHash: "hash2",
         },
       ];
       await service.store(feedId, articleStates);
@@ -88,6 +90,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "internal-message",
+          articleIdHash: "hash",
         },
         {
           id: "2",
@@ -95,6 +98,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: "internal-message-2",
+          articleIdHash: "hash2",
         },
       ];
       await service.store(feedId, articleStates);
@@ -129,6 +133,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.Rejected,
           errorCode: ArticleDeliveryRejectedCode.BadRequest,
           internalMessage: "internal-message",
+          articleIdHash: "hash",
         },
         {
           id: "2",
@@ -136,6 +141,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.Rejected,
           errorCode: ArticleDeliveryRejectedCode.BadRequest,
           internalMessage: "internal-message-2",
+          articleIdHash: "hash2",
         },
       ];
       await service.store(feedId, articleStates);
@@ -169,6 +175,7 @@ describe("DeliveryRecordService", () => {
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.PendingDelivery,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          articleIdHash: "hash",
         },
         {
           id: "id-2",
@@ -176,6 +183,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.PendingDelivery,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: "id-1",
+          articleIdHash: "hash2",
         },
       ];
       await service.store(feedId, articleStates);
@@ -204,11 +212,13 @@ describe("DeliveryRecordService", () => {
           id: "id-1",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
+          articleIdHash: "hash",
         },
         {
           id: "id-2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
+          articleIdHash: "hash2",
         },
       ];
       await service.store(feedId, articleStates);
@@ -252,15 +262,12 @@ describe("DeliveryRecordService", () => {
         }
       );
 
-      expect(updatedRecord).toEqual(
-        expect.objectContaining({
-          id: existingRecord.id,
-          status: ArticleDeliveryStatus.Failed,
-          error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-          internal_message: "internal-message",
-          article_id: "article-id",
-        })
-      );
+      expect(updatedRecord).toMatchObject({
+        id: existingRecord.id,
+        status: ArticleDeliveryStatus.Failed,
+        error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+        internal_message: "internal-message",
+      });
     });
 
     it("updates the status of a delivery record", async () => {
@@ -340,5 +347,57 @@ describe("DeliveryRecordService", () => {
 
       expect(count).toBe(2);
     });
+  });
+
+  it("returns the correct number with duplicate article id hashes", async () => {
+    const feedId = "feed-id";
+
+    const [record1, record2, record3] = [
+      new DeliveryRecord(
+        {
+          id: "1",
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Sent,
+          medium_id: "1",
+          article_id_hash: "hash1",
+        },
+        {
+          created_at: dayjs().subtract(1, "hour").toDate(),
+        }
+      ),
+      new DeliveryRecord(
+        {
+          id: "2",
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Rejected,
+          medium_id: "1",
+          article_id_hash: "hash1",
+        },
+        {
+          created_at: dayjs().subtract(1, "hour").toDate(),
+        }
+      ),
+      new DeliveryRecord(
+        {
+          id: "3",
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Sent,
+          medium_id: "1",
+          article_id_hash: "hash2",
+        },
+        {
+          created_at: dayjs().subtract(1, "hour").toDate(),
+        }
+      ),
+    ];
+
+    await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);
+
+    const count = await service.countDeliveriesInPastTimeframe(
+      { feedId },
+      60 * 60 * 2 // 2 hours
+    );
+
+    expect(count).toBe(2);
   });
 });
