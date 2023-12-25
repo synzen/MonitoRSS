@@ -14,6 +14,10 @@ import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-
   properties: ["feed_id", "status", "created_at"],
   name: "delivery_timeframe_count_index",
 })
+@Index({
+  properties: ["article_id_hash"],
+  name: "article_id_hash_index",
+})
 export class DeliveryRecord {
   @PrimaryKey()
   id: string;
