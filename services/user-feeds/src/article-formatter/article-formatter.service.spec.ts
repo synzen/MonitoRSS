@@ -20,6 +20,18 @@ describe("ArticleFormatterService", () => {
       });
     });
 
+    describe("a (anchors)", () => {
+      it("returns the text with the link", async () => {
+        const value = 'Say <a href="https://example.com">Hello World</a> to me';
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual(
+          "Say [Hello World](https://example.com) to me"
+        );
+      });
+    });
+
     describe("custom placeholders", () => {
       it("adds the custom placeholder if the source key exists", async () => {
         const article = {
