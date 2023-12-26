@@ -33,6 +33,10 @@ export class DiscordClientModule {
               intents = GatewayIntentBits.GuildMembers;
             }
 
+            if (!intents) {
+              return undefined;
+            }
+
             const gateway = new WebSocketManager({
               token,
               intents,
