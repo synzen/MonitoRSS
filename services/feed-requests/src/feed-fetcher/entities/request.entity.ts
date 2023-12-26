@@ -33,6 +33,12 @@ export class Request {
   url!: string;
 
   @Property({
+    type: 'text',
+    nullable: true,
+  })
+  lookupKey!: string | null;
+
+  @Property({
     type: 'timestamp with time zone',
   })
   createdAt: Date = new Date();

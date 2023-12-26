@@ -32,6 +32,10 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
     }
   }
 
+  if (newObj.authorization) {
+    newObj.authorization = 'SECRET';
+  }
+
   return newObj;
 };
 
@@ -180,6 +184,7 @@ export class FeedFetcherService {
       headers: options?.headers,
     };
     const request = new Request();
+    request.lookupKey = url;
     request.url = url;
     request.fetchOptions = {
       ...fetchOptions,
