@@ -235,11 +235,6 @@ export class FeedFetcherService {
           const deflated = await deflatePromise(text);
           const compressedText = deflated.toString('base64');
 
-          logger.datadog('saving response', {
-            url,
-            byteSize: Buffer.byteLength(compressedText),
-          });
-
           if (options?.saveResponseToObjectStorage) {
             response.s3ObjectKey = randomUUID();
 
