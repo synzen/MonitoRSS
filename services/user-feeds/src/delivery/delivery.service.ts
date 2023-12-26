@@ -38,7 +38,7 @@ export class DeliveryService {
     let articleStates: ArticleDeliveryState[] = [];
     const underLimitInfo =
       await this.articleRateLimitService.getUnderLimitCheckFromInputLimits(
-        event.data.feed.id,
+        { feedId: event.data.feed.id },
         [
           {
             limit: event.data.articleDayLimit,
@@ -62,7 +62,7 @@ export class DeliveryService {
 
       const underLimitInfoOfMedium =
         await this.articleRateLimitService.getUnderLimitCheckFromInputLimits(
-          event.data.feed.id,
+          { mediumId: medium.id },
           medium.rateLimits || []
         );
 

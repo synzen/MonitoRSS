@@ -15,6 +15,10 @@ import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-
   name: "delivery_timeframe_count_index",
 })
 @Index({
+  properties: ["medium_id", "status", "created_at"],
+  name: "delivery_timeframe_medium_count_index",
+})
+@Index({
   properties: ["article_id_hash"],
   name: "article_id_hash_index",
 })

@@ -309,6 +309,7 @@ describe("DeliveryRecordService", () => {
             feed_id: feedId,
             status: ArticleDeliveryStatus.Sent,
             medium_id: "1",
+            article_id_hash: "hash1",
           },
           {
             created_at: dayjs().subtract(1, "hour").toDate(),
@@ -320,6 +321,7 @@ describe("DeliveryRecordService", () => {
             feed_id: feedId,
             status: ArticleDeliveryStatus.Rejected,
             medium_id: "1",
+            article_id_hash: "hash2",
           },
           {
             created_at: dayjs().subtract(1, "hour").toDate(),
@@ -331,6 +333,7 @@ describe("DeliveryRecordService", () => {
             feed_id: feedId,
             status: ArticleDeliveryStatus.Sent,
             medium_id: "1",
+            article_id_hash: "hash3",
           },
           {
             created_at: dayjs().subtract(1, "day").toDate(),
@@ -395,6 +398,58 @@ describe("DeliveryRecordService", () => {
 
     const count = await service.countDeliveriesInPastTimeframe(
       { feedId },
+      60 * 60 * 2 // 2 hours
+    );
+
+    expect(count).toBe(2);
+  });
+
+  it("returns the correct number with duplicate article id hashes with medium id", async () => {
+    const feedId = "feed-id";
+
+    const [record1, record2, record3] = [
+      new DeliveryRecord(
+        {
+          id: "1",
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Sent,
+          medium_id: "1",
+          article_id_hash: "hash1",
+        },
+        {
+          created_at: dayjs().subtract(1, "hour").toDate(),
+        }
+      ),
+      new DeliveryRecord(
+        {
+          id: "2",
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Rejected,
+          medium_id: "1",
+          article_id_hash: "hash1",
+        },
+        {
+          created_at: dayjs().subtract(1, "hour").toDate(),
+        }
+      ),
+      new DeliveryRecord(
+        {
+          id: "3",
+          feed_id: feedId,
+          status: ArticleDeliveryStatus.Sent,
+          medium_id: "1",
+          article_id_hash: "hash2",
+        },
+        {
+          created_at: dayjs().subtract(1, "hour").toDate(),
+        }
+      ),
+    ];
+
+    await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);
+
+    const count = await service.countDeliveriesInPastTimeframe(
+      { mediumId: "1" },
       60 * 60 * 2 // 2 hours
     );
 

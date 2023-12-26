@@ -107,7 +107,7 @@ export class DeliveryRecordService {
   }
 
   async countDeliveriesInPastTimeframe(
-    { feedId }: { feedId: string },
+    { mediumId, feedId }: { mediumId?: string; feedId?: string },
     secondsInPast: number
   ) {
     // Convert initial counts to the same query below
@@ -115,7 +115,16 @@ export class DeliveryRecordService {
       .createQueryBuilder()
       .count()
       .where({
-        feed_id: feedId,
+        ...(mediumId
+          ? {
+              medium_id: mediumId,
+            }
+          : {}),
+        ...(feedId
+          ? {
+              feed_id: feedId,
+            }
+          : {}),
       })
       .andWhere({
         status: {
@@ -135,6 +144,6 @@ export class DeliveryRecordService {
       .from(subquery, "subquery")
       .execute("get");
 
-    return query.count;
+    return Number(query.count);
   }
 }

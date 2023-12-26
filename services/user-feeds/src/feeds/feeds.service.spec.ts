@@ -40,22 +40,6 @@ describe("FeedsService", () => {
     expect(service).toBeDefined();
   });
 
-  describe("getRateLimitInformation", () => {
-    it("returns the limits", async () => {
-      const returnedInfo = [
-        {
-          remaining: 1,
-        },
-      ];
-      articleRateLimitService.getFeedLimitInformation.mockResolvedValue(
-        returnedInfo
-      );
-
-      const result = await service.getRateLimitInformation("feed-id");
-      expect(result).toEqual(returnedInfo);
-    });
-  });
-
   describe("getFilterExpressionErrors", () => {
     it("returns errors", async () => {
       const errors = ["error"];
@@ -102,6 +86,7 @@ describe("FeedsService", () => {
       random: false,
       skip: 0,
       selectProperties: ["id"],
+      customPlaceholders: [],
     };
 
     it("returns properly when there are 0 articles", async () => {
