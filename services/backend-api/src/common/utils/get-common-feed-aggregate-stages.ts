@@ -4,9 +4,11 @@ import { UserFeedDocument } from "../../features/user-feeds/entities";
 export function getCommonFeedAggregateStages({
   refreshRateSeconds,
   url,
+  withLookupKeys,
 }: {
   refreshRateSeconds: number;
   url?: string;
+  withLookupKeys?: boolean;
 }) {
   const query: FilterQuery<UserFeedDocument> = {
     ...(url ? { url } : {}),
@@ -55,6 +57,9 @@ export function getCommonFeedAggregateStages({
     {
       $match: {
         useRefreshRate: refreshRateSeconds,
+        feedRequestLookupKey: {
+          $exists: withLookupKeys || false,
+        },
       },
     },
   ];

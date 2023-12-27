@@ -123,6 +123,11 @@ export class UserFeed {
   })
   debug?: boolean;
 
+  @Prop({
+    required: false,
+  })
+  feedRequestLookupKey?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
