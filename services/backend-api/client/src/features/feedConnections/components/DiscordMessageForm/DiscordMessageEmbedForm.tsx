@@ -71,9 +71,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
   } = useFormContext<DiscordMessageFormData>();
   const {
     append: addField,
-    swap: swapField,
     remove: removeField,
-    update: updateField,
     fields: embedFields,
     move: moveField,
   } = useFieldArray({
