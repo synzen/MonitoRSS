@@ -51,7 +51,7 @@ export class ArticleFormatterService {
 
           const script = new vm.Script(`
             const regex = new RegExp(inputRegex, inputRegexFlags);
-            finalVal = reference.replace(regex, replacementString || '');
+            finalVal = reference.replace(regex, replacementString || '').trim();
         `);
 
           try {
