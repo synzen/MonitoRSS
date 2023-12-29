@@ -125,6 +125,7 @@ export class UserFeed {
 
   @Prop({
     required: false,
+    unique: true,
   })
   feedRequestLookupKey?: string;
 

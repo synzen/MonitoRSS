@@ -77,7 +77,7 @@ export class ScheduleHandlerService {
     let urlBatch: {
       url: string;
       saveToObjectStorage?: boolean;
-      lookupKey: string;
+      lookupKey?: string;
       requestOptions?: {
         headers?: Record<string, string>;
       };
@@ -92,7 +92,6 @@ export class ScheduleHandlerService {
       urlBatch.push({
         url,
         saveToObjectStorage: urlsToDebug.has(url),
-        lookupKey: url,
       });
 
       if (urlBatch.length === 25) {
