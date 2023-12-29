@@ -11,6 +11,10 @@ import {
 
 @Entity()
 @Index({ properties: ['url', 'createdAt'], name: 'url_created_at_index' })
+@Index({
+  properties: ['lookupKey', 'createdAt'],
+  name: 'lookupkey_created_at_index',
+})
 export class Request {
   @PrimaryKey({
     autoincrement: true,
