@@ -23,6 +23,7 @@ import { UserFeedManagementInvitesModule } from "./features/user-feed-management
 import { ErrorReportsController } from "./error-reports.controller";
 import { MessageBrokerEventsModule } from "./features/message-broker-events/message-broker-events.module";
 import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions/supporter-subscriptions.module";
+import { MongoMigrationsModule } from "./features/mongo-migrations/mongo-migrations.module";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions
     LegacyFeedConversionModule,
     ScheduleEmitterModule,
     UserFeedManagementInvitesModule.forRoot(),
+    MongoMigrationsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
     }),
