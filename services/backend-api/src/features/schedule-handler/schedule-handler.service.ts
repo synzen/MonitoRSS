@@ -28,19 +28,6 @@ export class ScheduleHandlerService {
       ) as number) * 60;
   }
 
-  async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
-    this.amqpConnection.publish<{ data: { url: string; rateSeconds: number } }>(
-      "",
-      MessageBrokerQueue.UrlFetch,
-      { data },
-      {
-        expiration: data.rateSeconds * 1000,
-      }
-    );
-
-    logger.debug("successfully emitted url request event");
-  }
-
   async emitUrlRequestBatchEvent(data: {
     rateSeconds: number;
     data: Array<{ url: string }>;

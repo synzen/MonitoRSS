@@ -66,15 +66,23 @@ export class MessageBrokerEventsService {
     createQueueIfNotExists: true,
   })
   async handleUrlFetchCompletedEvent({
-    data: { url, rateSeconds },
+    data: { url, lookupKey, rateSeconds },
   }: {
-    data: { url: string; rateSeconds: number };
+    data: { url: string; lookupKey?: string; rateSeconds: number };
   }) {
-    const feedCursor: Cursor<UserFeedDocument> =
-      this.getFeedsQueryMatchingRefreshRate({
+    let feedCursor: Cursor<UserFeedDocument>;
+
+    if (lookupKey) {
+      feedCursor = this.getFeedsQueryWithLookupKeysMatchingRefreshRate({
+        feedRequestLookupKey: lookupKey,
+        refreshRateSeconds: rateSeconds,
+      }).cursor();
+    } else {
+      feedCursor = this.getFeedsQueryMatchingRefreshRate({
         url,
         refreshRateSeconds: rateSeconds,
       }).cursor();
+    }
 
     for await (const feed of feedCursor) {
       try {
@@ -163,15 +171,15 @@ export class MessageBrokerEventsService {
     queue: MessageBrokerQueue.UrlFailedDisableFeeds,
   })
   async handleUrlRequestFailureEvent({
-    data: { url },
+    data: { url, lookupKey },
   }: {
-    data: { url: string };
+    data: { url: string; lookupKey?: string };
   }) {
     logger.debug(`handling url request failure event for url ${url}`);
 
     const relevantFeeds = await this.userFeedModel
       .find({
-        url,
+        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
         disabledCode: {
           $exists: false,
         },
@@ -508,6 +516,13 @@ export class MessageBrokerEventsService {
   getFeedsQueryMatchingRefreshRate(data: {
     refreshRateSeconds: number;
     url: string;
+  }): Aggregate<UserFeedDocument[]> {
+    return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
+  }
+
+  getFeedsQueryWithLookupKeysMatchingRefreshRate(data: {
+    refreshRateSeconds: number;
+    feedRequestLookupKey: string;
   }): Aggregate<UserFeedDocument[]> {
     return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
   }
