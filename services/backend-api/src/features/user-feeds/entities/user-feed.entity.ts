@@ -21,6 +21,7 @@ import { UserFeedUser, UserFeedUserSchema } from "./user-feed-user.entity";
 
 @Schema({
   timestamps: true,
+  autoIndex: true,
 })
 export class UserFeed {
   _id: Types.ObjectId;
@@ -125,7 +126,6 @@ export class UserFeed {
 
   @Prop({
     required: false,
-    unique: true,
   })
   feedRequestLookupKey?: string;
 
@@ -135,7 +135,19 @@ export class UserFeed {
 
 export type UserFeedDocument = UserFeed & Document;
 export type UserFeedModel = Model<UserFeedDocument>;
+
 export const UserFeedSchema = SchemaFactory.createForClass(UserFeed);
+
+UserFeedSchema.index(
+  {
+    feedRequestLookupKey: 1,
+  },
+  {
+    unique: true,
+    sparse: true,
+  }
+);
+
 export const UserFeedFeature: ModelDefinition = {
   name: UserFeed.name,
   schema: UserFeedSchema,
