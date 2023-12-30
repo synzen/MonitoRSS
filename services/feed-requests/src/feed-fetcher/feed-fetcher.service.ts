@@ -113,13 +113,19 @@ export class FeedFetcherService {
   //   return request.response?.headers || {};
   // }
 
-  async getLatestRequest(url: string): Promise<{
+  async getLatestRequest({
+    url,
+    lookupKey,
+  }: {
+    url: string;
+    lookupKey: string | undefined;
+  }): Promise<{
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
     const request = await this.requestRepo.findOne(
       {
-        url,
+        lookupKey: lookupKey || url,
       },
       {
         orderBy: {
@@ -171,6 +177,7 @@ export class FeedFetcherService {
   async fetchAndSaveResponse(
     url: string,
     options?: {
+      lookupKey: string | undefined;
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string>;
@@ -184,7 +191,7 @@ export class FeedFetcherService {
       headers: options?.headers,
     };
     const request = new Request();
-    request.lookupKey = url;
+    request.lookupKey = options?.lookupKey || url;
     request.url = url;
     request.fetchOptions = {
       ...fetchOptions,

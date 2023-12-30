@@ -120,6 +120,7 @@ export class FeedFetcherController {
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url, {
           saveResponseToObjectStorage: data.debug,
+          lookupKey: data.lookupKey,
         });
       } catch (err) {
         logger.error(`Failed to fetch and save response of feed ${data.url}`, {
@@ -130,9 +131,10 @@ export class FeedFetcherController {
       }
     }
 
-    let latestRequest = await this.feedFetcherService.getLatestRequest(
-      data.url,
-    );
+    let latestRequest = await this.feedFetcherService.getLatestRequest({
+      url: data.url,
+      lookupKey: data.lookupKey,
+    });
 
     // If there's no text, response must be fetched to be cached
     if (
@@ -145,6 +147,8 @@ export class FeedFetcherController {
           data.url,
           {
             flushEntities: true,
+            saveResponseToObjectStorage: data.debug,
+            lookupKey: data.lookupKey,
           },
         );
 

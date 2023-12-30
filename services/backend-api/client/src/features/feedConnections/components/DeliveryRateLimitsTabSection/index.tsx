@@ -19,7 +19,7 @@ import {
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
@@ -27,7 +27,7 @@ import { v4 as uuidv4 } from "uuid";
 import { AddIcon } from "@chakra-ui/icons";
 import { notifyError } from "../../../../utils/notifyError";
 import { useConnection, useUpdateConnection } from "../../hooks";
-import { ConfirmModal, InlineErrorAlert, SavedUnsavedChangesPopupBar } from "@/components";
+import { InlineErrorAlert, SavedUnsavedChangesPopupBar } from "@/components";
 import { FeedConnectionType } from "@/types";
 import { notifySuccess } from "@/utils/notifySuccess";
 import {
@@ -59,10 +59,12 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
     reset,
     control,
     formState: { errors },
-    watch,
-    setValue,
   } = formMethods;
-  const fields = watch("rateLimits");
+  const { append, remove, fields } = useFieldArray({
+    control,
+    name: "rateLimits",
+    keyName: "hookKey",
+  });
   const { t } = useTranslation();
   const currentData = connection?.rateLimits;
 
@@ -90,32 +92,16 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
   };
 
   const onAddRateLimit = () => {
-    const newData = [
-      ...fields,
-      {
-        id: uuidv4(),
-        limit: 1,
-        timeWindowSeconds: 60,
-        isNew: true,
-      },
-    ];
-    setValue("rateLimits", newData, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: false,
+    append({
+      id: uuidv4(),
+      limit: 1,
+      timeWindowSeconds: 60,
+      isNew: true,
     });
   };
 
   const onDelete = async (index: number) => {
-    const newData = [...fields];
-
-    newData.splice(index, 1);
-
-    setValue("rateLimits", newData, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
+    remove(index);
   };
 
   if (error) {
@@ -214,25 +200,12 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
                       </FormErrorMessage>
                     )}
                   </FormControl>
-                  {!item.isNew && (
-                    <ConfirmModal
-                      trigger={<CloseButton alignSelf="flex-start" />}
-                      onConfirm={() => onDelete(index)}
-                      colorScheme="red"
-                      description="Are you sure you want to delete this rate limit?"
-                      title="Delete Rate Limit"
-                      okText="Delete"
-                    />
-                  )}
-                  {item.isNew && (
-                    <CloseButton alignSelf="flex-start" onClick={() => onDelete(index)} />
-                  )}
+                  <CloseButton alignSelf="flex-start" onClick={() => onDelete(index)} />
                 </HStack>
               );
             })}
             <Box>
               <Button
-                colorScheme="blue"
                 leftIcon={<AddIcon fontSize={13} />}
                 onClick={onAddRateLimit}
                 isDisabled={fields.length >= 10}
@@ -241,7 +214,7 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
               </Button>
             </Box>
           </Stack>
-          <SavedUnsavedChangesPopupBar useDirtyFormCheck />
+          <SavedUnsavedChangesPopupBar />
         </form>
       </FormProvider>
     </Stack>

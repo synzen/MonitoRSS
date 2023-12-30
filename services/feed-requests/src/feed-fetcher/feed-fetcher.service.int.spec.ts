@@ -125,7 +125,10 @@ describe('FeedFetcherService (Integration)', () => {
 
       await requestRepo.persistAndFlush([req1]);
 
-      const latestRequest = await service.getLatestRequest(url);
+      const latestRequest = await service.getLatestRequest({
+        url,
+        lookupKey: url,
+      });
 
       expect(latestRequest?.request.id).toEqual(req1.id);
       expect(latestRequest?.request.response).toMatchObject({
