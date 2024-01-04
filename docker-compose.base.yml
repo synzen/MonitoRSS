@@ -15,7 +15,7 @@ services:
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 5s
-      timeout: 1s
+      timeout: 5s
       retries: 20
     networks:
       - monitorss-default
