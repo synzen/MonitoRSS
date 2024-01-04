@@ -45,6 +45,8 @@ import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import duration from "dayjs/plugin/duration";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
@@ -67,6 +69,8 @@ import { useDebounce } from "../../../../hooks";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(advancedFormat);
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
 
 interface Props {
   feedId: string;
@@ -406,9 +410,18 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                           reason = "(only available for higher supporter tiers)";
                         }
 
+                        let displayDuration = `${r.rateSeconds} seconds`;
+
+                        if (r.rateSeconds >= 3600) {
+                          displayDuration = `${r.rateSeconds / 60 / 60} hour(s)`;
+                        } else if (r.rateSeconds >= 60) {
+                          displayDuration = `${r.rateSeconds / 60} minute(s)`;
+                        }
+
                         return (
                           <Radio value={r.rateSeconds.toString()} isDisabled={!!r.disabledCode}>
-                            {r.rateSeconds} seconds{reason ? ` ${reason}` : ""}
+                            {displayDuration}
+                            {reason ? ` ${reason}` : ""}
                           </Radio>
                         );
                       })}

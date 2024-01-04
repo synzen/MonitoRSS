@@ -565,7 +565,8 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds !==
           this.supportersService.defaultRefreshRateSeconds &&
         updates.userRefreshRateSeconds !==
-          this.supportersService.defaultSupporterRefreshRateSeconds
+          this.supportersService.defaultSupporterRefreshRateSeconds &&
+        updates.userRefreshRateSeconds < fastestPossibleRate
       ) {
         throw new Error(
           `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${found.user.discordUserId}`

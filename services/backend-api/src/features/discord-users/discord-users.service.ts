@@ -145,12 +145,15 @@ export class DiscordUsersService {
         {
           rateSeconds: this.supportersService.defaultRefreshRateSeconds,
         },
+        {
+          rateSeconds: this.supportersService.defaultRefreshRateSeconds * 6,
+        },
       ],
       allowCustomPlaceholders: benefits.allowCustomPlaceholders,
     };
 
     if (supportersEnabled) {
-      toReturn.refreshRates.push({
+      toReturn.refreshRates.unshift({
         rateSeconds: this.supportersService.defaultSupporterRefreshRateSeconds,
         disabledCode:
           benefits.refreshRateSeconds >=
