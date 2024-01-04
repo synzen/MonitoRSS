@@ -65,6 +65,7 @@ import { SelectUserDialog } from "./SelectUserDialog";
 import DATE_LOCALES from "../../../../constants/dateLocales";
 import { useUserFeedDatePreview } from "../../../feed/hooks/useUserFeedDatePreview";
 import { useDebounce } from "../../../../hooks";
+import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -410,13 +411,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                           reason = "(only available for higher supporter tiers)";
                         }
 
-                        let displayDuration = `${r.rateSeconds} seconds`;
-
-                        if (r.rateSeconds >= 3600) {
-                          displayDuration = `${r.rateSeconds / 60 / 60} hour(s)`;
-                        } else if (r.rateSeconds >= 60) {
-                          displayDuration = `${r.rateSeconds / 60} minute(s)`;
-                        }
+                        const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
 
                         return (
                           <Radio value={r.rateSeconds.toString()} isDisabled={!!r.disabledCode}>

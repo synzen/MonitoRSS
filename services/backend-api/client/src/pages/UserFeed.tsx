@@ -67,6 +67,7 @@ import { UserFeedRequestsTable } from "../features/feed/components/UserFeedReque
 import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
 import { FeedConnectionDisabledCode } from "../types";
+import { formatRefreshRateSeconds } from "../utils/formatRefreshRateSeconds";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -436,9 +437,9 @@ export const UserFeed: React.FC = () => {
                 rowGap={{ base: "8", lg: "14" }}
               >
                 <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                  {t("pages.feed.refreshRateValue", {
-                    seconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
-                  })}
+                  {feed?.userRefreshRateSeconds
+                    ? formatRefreshRateSeconds(feed.userRefreshRateSeconds)
+                    : null}
                 </CategoryText>
                 <CategoryText title={t("pages.feed.createdAtLabel")}>
                   {feed?.createdAt}
