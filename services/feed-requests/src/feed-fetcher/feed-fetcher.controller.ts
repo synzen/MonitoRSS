@@ -52,15 +52,12 @@ export class FeedFetcherController {
     )
     { skip, limit, url }: GetFeedRequestsInputDto,
   ): Promise<GetFeedRequestsOutputDto> {
-    const [requests, total] = await Promise.all([
+    const [requests] = await Promise.all([
       this.feedFetcherService.getRequests({
         skip,
         limit,
         url,
         select: ['id', 'createdAt', 'nextRetryDate', 'status'],
-      }),
-      this.feedFetcherService.countRequests({
-        url,
       }),
     ]);
 
@@ -76,7 +73,6 @@ export class FeedFetcherController {
             statusCode: r.response?.statusCode,
           },
         })),
-        totalRequests: total,
         // unix timestamp in seconds
         nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
       },

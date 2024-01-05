@@ -98,7 +98,6 @@ describe("FeedFetcherApiService", () => {
         result: {
           nextRetryTimestamp: 123,
           requests: [],
-          totalRequests: 1,
         },
       };
 

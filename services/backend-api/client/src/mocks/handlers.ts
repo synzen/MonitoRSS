@@ -718,7 +718,6 @@ const handlers = [
       ctx.json<GetUserFeedRequestsOutput>({
         result: {
           requests: mockUserFeedRequests,
-          totalRequests: mockUserFeedRequests.length,
           nextRetryTimestamp: Math.floor(new Date(2020).getTime() / 1000),
         },
       })

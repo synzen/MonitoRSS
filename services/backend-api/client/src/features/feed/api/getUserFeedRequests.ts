@@ -15,7 +15,6 @@ const GetUserFeedRequestsOutputSchema = object({
   result: object()
     .shape({
       requests: array(UserFeedRequestSchema).required(),
-      totalRequests: number().required(),
       nextRetryTimestamp: number().nullable().default(null),
     })
     .required(),

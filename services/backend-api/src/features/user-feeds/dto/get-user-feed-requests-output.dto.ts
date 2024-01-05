@@ -12,7 +12,6 @@ interface Request {
 
 interface Result {
   requests: Request[];
-  totalRequests: number;
   // Unix timestamp
   nextRetryTimestamp: number | null;
 }
