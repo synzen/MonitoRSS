@@ -244,6 +244,7 @@ services:
     restart: on-failure:3
     depends_on:
       - mongo
+      - rabbitmq-broker
     environment:
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
       - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
