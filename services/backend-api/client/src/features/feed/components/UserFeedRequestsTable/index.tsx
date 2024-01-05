@@ -136,12 +136,7 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
             </Table>
           </TableContainer>
         </Box>
-        <Flex justifyContent="space-between">
-          {t("common.table.results", {
-            start: skip + 1,
-            end: skip + limit,
-            total,
-          })}
+        <Flex justifyContent="flex-end">
           <HStack>
             <Button
               width="min-content"
