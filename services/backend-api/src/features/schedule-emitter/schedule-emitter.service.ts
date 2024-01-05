@@ -21,9 +21,14 @@ export class ScheduleEmitterService {
     const allRefreshRatesSeconds: number[] = await this.userFeedModel
       .distinct("refreshRateSeconds")
       .exec();
+    const allUserRefreshRateSeconds: number[] = await this.userFeedModel
+      .distinct("userRefreshRateSeconds")
+      .exec();
 
     const setOfRefreshRatesMs = new Set([
-      ...allRefreshRatesSeconds.map((seconds) => seconds * 1000),
+      ...allRefreshRatesSeconds
+        .concat(allUserRefreshRateSeconds)
+        .map((seconds) => seconds * 1000),
     ]);
 
     this.cleanupTimers(this.timers, setOfRefreshRatesMs);
