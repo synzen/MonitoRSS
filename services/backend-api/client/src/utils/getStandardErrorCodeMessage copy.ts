@@ -37,6 +37,7 @@ export enum ApiErrorCode {
   USER_FEED_TRANSFER_REQUEST_EXISTS = "USER_FEED_TRANSFER_REQUEST_EXISTS",
   INSUFFICIENT_SUPPORTER_LEVEL = "INSUFFICIENT_SUPPORTER_LEVEL",
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT = "INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT",
+  INVALID_FILTERS_REGEX = "INVALID_FILTERS_REGEX",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -78,6 +79,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   INSUFFICIENT_SUPPORTER_LEVEL: "Must be a supporter of the proper tier.",
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT:
     "Invalid regex search preview input for custom placeholders",
+  INVALID_FILTERS_REGEX: "Invalid regex for filters",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

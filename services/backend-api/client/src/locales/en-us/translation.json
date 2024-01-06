@@ -19,7 +19,7 @@
       "results": "Showing {{start}}-{{end}} of {{total}} results"
     },
     "errors": {
-      "somethingWentWrong": "Sorry, something went wrong. Please try again later.",
+      "somethingWentWrong": "Sorry, something went wrong.",
       "tryAgainLater": "Please try again later.",
       "detailsTitle": "Details",
       "failedToSave": "Failed to save changes",
