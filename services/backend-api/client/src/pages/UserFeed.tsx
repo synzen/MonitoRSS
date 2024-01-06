@@ -108,6 +108,7 @@ export const UserFeed: React.FC = () => {
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
   const { mutateAsync: updateInvite } = useUpdateAcceptUserFeedManagementInvite();
+  const isSharedWithMe = !!feed?.sharedAccessDetails?.inviteId;
 
   const onAddConnection = (
     type: "discord-channel" | "discord-webhook",
@@ -178,7 +179,7 @@ export const UserFeed: React.FC = () => {
   };
 
   const onRemoveMyAccess = async () => {
-    if (!feed?.sharedAccessDetails?.inviteId) {
+    if (!isSharedWithMe) {
       return;
     }
 
@@ -197,7 +198,7 @@ export const UserFeed: React.FC = () => {
     }
   };
 
-  const addConnectionButtons = (
+  const addConnectionButtons = isSharedWithMe ? null : (
     <Flex gap={4} flexWrap="wrap">
       <Button
         variant="outline"
@@ -538,9 +539,19 @@ export const UserFeed: React.FC = () => {
                         {t("pages.userFeeds.tabConnections")}
                       </Heading>
                       <Menu placement="bottom-end">
-                        <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
-                          {t("pages.feed.addConnectionButtonText")}
-                        </MenuButton>
+                        <Tooltip
+                          label="Only the feed owner can add new connections"
+                          isDisabled={!isSharedWithMe}
+                        >
+                          <MenuButton
+                            colorScheme="blue"
+                            as={Button}
+                            rightIcon={<ChevronDownIcon />}
+                            isDisabled={isSharedWithMe}
+                          >
+                            Add new
+                          </MenuButton>
+                        </Tooltip>
                         <MenuList maxWidth="300px">
                           <MenuItem onClick={() => onAddConnection("discord-channel")}>
                             <Stack spacing={1}>

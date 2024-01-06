@@ -4,6 +4,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -77,13 +78,16 @@ export class FeedConnectionsDiscordChannelsController {
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<CreateDiscordChannelConnectionOutputDto> {
+    if (discordUserId !== feed.user.discordUserId) {
+      throw new NotFoundException();
+    }
+
     const createdConnection = await this.service.createDiscordChannelConnection(
       {
-        feedId: feed._id.toHexString(),
+        feed,
         name,
         channelId,
         userAccessToken: access_token,
-        discordUserId,
         webhook,
         applicationWebhook,
       }

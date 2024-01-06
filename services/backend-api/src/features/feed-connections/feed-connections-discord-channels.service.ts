@@ -144,15 +144,14 @@ export class FeedConnectionsDiscordChannelsService {
   ) {}
 
   async createDiscordChannelConnection({
-    feedId,
+    feed,
     name,
     channelId,
     webhook: inputWebhook,
     applicationWebhook,
     userAccessToken,
-    discordUserId,
   }: {
-    feedId: string;
+    feed: UserFeed;
     name: string;
     channelId?: string;
     webhook?: {
@@ -168,7 +167,6 @@ export class FeedConnectionsDiscordChannelsService {
       threadId?: string;
     };
     userAccessToken: string;
-    discordUserId: string;
   }): Promise<DiscordChannelConnection> {
     const connectionId = new Types.ObjectId();
     let channelToAdd: DiscordChannelConnection["details"]["channel"];
@@ -187,7 +185,7 @@ export class FeedConnectionsDiscordChannelsService {
       };
     } else if (inputWebhook?.id || applicationWebhook?.channelId) {
       const benefits = await this.supportersService.getBenefitsOfDiscordUser(
-        discordUserId
+        feed.user.discordUserId
       );
 
       if (!benefits.isSupporter) {
@@ -216,7 +214,7 @@ export class FeedConnectionsDiscordChannelsService {
         webhook = await this.getOrCreateApplicationWebhook({
           channelId: channel.id,
           webhook: {
-            name: `feed-${feedId}-${connectionId}`,
+            name: `feed-${feed._id}-${connectionId}`,
           },
         });
       } else {
@@ -262,7 +260,7 @@ export class FeedConnectionsDiscordChannelsService {
     try {
       const updated = await this.userFeedModel.findOneAndUpdate(
         {
-          _id: feedId,
+          _id: feed._id,
         },
         {
           $push: {

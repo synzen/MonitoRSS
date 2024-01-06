@@ -35,9 +35,6 @@ const sampleFilters = {
 const mockUserFeeds: UserFeed[] = [
   {
     id: "1",
-    sharedAccessDetails: {
-      inviteId: "1",
-    },
     title: "New York Times",
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
@@ -54,19 +51,19 @@ const mockUserFeeds: UserFeed[] = [
         {
           id: "99",
           createdAt: new Date().toISOString(),
-          discordUserId: "1",
+          discordUserId: "2",
           status: UserFeedManagerStatus.Pending,
         },
         {
           id: "98",
           createdAt: new Date().toISOString(),
-          discordUserId: "1",
+          discordUserId: "3",
           status: UserFeedManagerStatus.Declined,
         },
         {
           id: "97",
           createdAt: new Date().toISOString(),
-          discordUserId: "1",
+          discordUserId: "4",
           status: UserFeedManagerStatus.Accepted,
         },
       ],
