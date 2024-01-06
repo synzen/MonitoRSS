@@ -16,6 +16,8 @@ export enum ArticleDeliveryStatus {
   FilteredOut = "filtered-out",
   // Rate limit enforced by this service
   RateLimited = "rate-limited",
+  // Delivery rate limit per medium specified by user
+  MediumRateLimitedByUser = "medium-rate-limited-by-user",
 }
 
 interface BaseArticleDeliveryState {
@@ -40,6 +42,13 @@ interface ArticleDeliveryRateLimitState extends BaseArticleDeliveryState {
   id: string;
   mediumId: string;
   status: ArticleDeliveryStatus.RateLimited;
+}
+
+interface ArticleDeliveryMediumRateLimitedState
+  extends BaseArticleDeliveryState {
+  id: string;
+  mediumId: string;
+  status: ArticleDeliveryStatus.MediumRateLimitedByUser;
 }
 
 interface ArticleDeliveryRejectedState extends BaseArticleDeliveryState {
@@ -70,4 +79,5 @@ export type ArticleDeliveryState =
   | ArticleDeliveryFailureState
   | ArticleDeliveryFilteredOutState
   | ArticleDeliveryRejectedState
-  | ArticleDeliveryRateLimitState;
+  | ArticleDeliveryRateLimitState
+  | ArticleDeliveryMediumRateLimitedState;

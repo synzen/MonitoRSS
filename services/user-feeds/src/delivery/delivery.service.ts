@@ -120,7 +120,10 @@ export class DeliveryService {
           {
             id: deliveryId,
             mediumId: medium.id,
-            status: ArticleDeliveryStatus.RateLimited,
+            status:
+              limitState.remaining <= 0
+                ? ArticleDeliveryStatus.RateLimited
+                : ArticleDeliveryStatus.MediumRateLimitedByUser,
             articleIdHash: article.flattened.idHash,
           },
         ];
