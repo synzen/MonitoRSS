@@ -82,14 +82,14 @@ export class UserFeedManagementInvitesController {
     {
       discordUserId: targetDiscordUserId,
       type,
-      connectionIds,
+      connections,
     }: CreateUserFeedManagementInviteInputDto
   ) {
     await this.service.createInvite({
       feed,
       targetDiscordUserId,
       type,
-      connectionIds,
+      connections,
     });
 
     return {

@@ -25,12 +25,12 @@ export class UserFeedManagementInvitesService {
     feed,
     targetDiscordUserId,
     type,
-    connectionIds,
+    connections,
   }: {
     feed: UserFeed;
     targetDiscordUserId: string;
     type: UserFeedManagerInviteType;
-    connectionIds?: string[];
+    connections?: Array<{ connectionId: string }>;
   }) {
     if (!feed.shareManageOptions) {
       feed.shareManageOptions = {
@@ -65,19 +65,23 @@ export class UserFeedManagementInvitesService {
       );
     }
 
-    const someConnectionIdIsInvalid = connectionIds?.some((id) => {
-      const allConnections = Object.values(
-        feed.connections
-      ).flat() as UserFeedConnection[];
+    const someConnectionIdIsInvalid = connections?.some(
+      ({ connectionId: id }) => {
+        const allConnections = Object.values(
+          feed.connections
+        ).flat() as UserFeedConnection[];
 
-      return (
-        !isValidObjectId(id) || !allConnections.find((c) => c.id.equals(id))
-      );
-    });
+        return (
+          !isValidObjectId(id) || !allConnections.find((c) => c.id.equals(id))
+        );
+      }
+    );
 
     if (someConnectionIdIsInvalid) {
       throw new Error(
-        `Some connection IDs are invalid while creating user feed management invite: ${connectionIds}`
+        `Some connection IDs are invalid while creating user feed management invite: ${connections?.map(
+          (c) => c.connectionId
+        )}`
       );
     }
 
@@ -88,7 +92,9 @@ export class UserFeedManagementInvitesService {
       status: UserFeedManagerStatus.Pending,
       id: new Types.ObjectId(),
       type,
-      connectionIds: connectionIds?.map((id) => new Types.ObjectId(id)),
+      connections: connections?.map(({ connectionId }) => ({
+        connectionId: new Types.ObjectId(connectionId),
+      })),
     });
 
     await this.userFeedModel.updateOne(

@@ -1,5 +1,19 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  IsArray,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from "class-validator";
 import { UserFeedManagerInviteType } from "../constants";
+
+class CreateUserFeedManagementInviteConnectionsInputDto {
+  @IsString()
+  @IsNotEmpty()
+  connectionId: string;
+}
 
 export class CreateUserFeedManagementInviteInputDto {
   @IsString()
@@ -13,8 +27,9 @@ export class CreateUserFeedManagementInviteInputDto {
   @IsIn(Object.values(UserFeedManagerInviteType))
   type: UserFeedManagerInviteType;
 
-  @IsString({ each: true })
   @IsOptional()
-  @IsNotEmpty({ each: true })
-  connectionIds?: string[];
+  @Type(() => CreateUserFeedManagementInviteConnectionsInputDto)
+  @ValidateNested({ each: true })
+  @IsArray()
+  connections?: CreateUserFeedManagementInviteConnectionsInputDto[];
 }

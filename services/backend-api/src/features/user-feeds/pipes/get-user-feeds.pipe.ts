@@ -88,7 +88,8 @@ const createGetUserFeedsPipe = (
           }
 
           const filteredConnections = found.connections;
-          const sharedManagerConnectionIds = sharedManagerInvite?.connectionIds;
+          const sharedManagerConnectionIds =
+            sharedManagerInvite?.connections?.map((c) => c.connectionId);
 
           if (sharedManagerConnectionIds?.length) {
             const keys = Object.keys(filteredConnections) as Array<
