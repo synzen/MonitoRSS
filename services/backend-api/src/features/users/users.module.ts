@@ -1,7 +1,7 @@
 import { DynamicModule, Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { FeedFeature } from "../feeds/entities/feed.entity";
-import { SupporterSubscriptionsModule } from "../supporter-subscriptions/supporter-subscriptions.module";
+import { PaddleModule } from "../paddle/paddle.module";
 import { SupportersModule } from "../supporters/supporters.module";
 import { UserFeedFeature } from "../user-feeds/entities";
 import { UserFeature } from "./entities/user.entity";
@@ -15,13 +15,14 @@ import { UsersService } from "./users.service";
   imports: [
     MongooseModule.forFeature([UserFeature, UserFeedFeature, FeedFeature]),
     SupportersModule,
+    PaddleModule,
   ],
 })
 export class UsersModule {
   static forRoot(): DynamicModule {
     return {
       module: UsersModule,
-      imports: [SupporterSubscriptionsModule.forRoot()],
+      imports: [],
     };
   }
 }
