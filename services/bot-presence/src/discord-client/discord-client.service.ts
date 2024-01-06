@@ -6,7 +6,7 @@ import { AppConfigService } from '../app-config/app-config.service';
 @Injectable({})
 export class DiscordClientService implements OnModuleInit {
   constructor(
-    private readonly client: Client | undefined,
+    private readonly client: Client,
     private readonly brokerService: MessageBrokerService,
     private readonly configService: AppConfigService,
   ) {}
@@ -22,7 +22,7 @@ export class DiscordClientService implements OnModuleInit {
       return;
     }
 
-    this.client?.on(GatewayDispatchEvents.GuildMemberAdd, ({ data }) => {
+    this.client.on(GatewayDispatchEvents.GuildMemberAdd, ({ data }) => {
       if (!data.user) {
         return;
       }
