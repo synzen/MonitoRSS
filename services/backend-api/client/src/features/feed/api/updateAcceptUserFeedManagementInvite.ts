@@ -14,7 +14,7 @@ export interface UpdateAcceptUserFeedManagementInviteInput {
 export const updateAcceptUserFeedManagementInvite = async (
   options: UpdateAcceptUserFeedManagementInviteInput
 ): Promise<void> => {
-  await fetchRest(`/api/v1/user-feed-management-invites/${options.id}/accept`, {
+  await fetchRest(`/api/v1/user-feed-management-invites/${options.id}/status`, {
     requestOptions: {
       method: "PATCH",
       body: JSON.stringify(options.data),

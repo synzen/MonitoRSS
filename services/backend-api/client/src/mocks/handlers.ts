@@ -476,7 +476,7 @@ const handlers = [
     );
   }),
 
-  rest.patch("/api/v1/user-feed-management-invites/:id/accept", async (req, res, ctx) => {
+  rest.patch("/api/v1/user-feed-management-invites/:id/status", async (req, res, ctx) => {
     const { id } = req.params;
 
     mockUserFeedManagementInvites.splice(

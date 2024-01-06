@@ -99,7 +99,7 @@ export class UserFeedManagementInvitesController {
     };
   }
 
-  @Patch(":id/accept")
+  @Patch(":id/status")
   @UseFilters(FeedExceptionFilter)
   async updateInvite(
     @Param("id") inviteId: string,
