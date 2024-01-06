@@ -1,7 +1,4 @@
-import {
-  ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
-} from "../constants";
+import { ArticleDeliveryErrorCode } from "../constants";
 import { ArticleDeliveryContentType } from "./article-delivery-content-type.type";
 
 export enum ArticleDeliveryStatus {
@@ -53,7 +50,11 @@ interface ArticleDeliveryMediumRateLimitedState
 
 interface ArticleDeliveryRejectedState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.Rejected;
-  errorCode: ArticleDeliveryRejectedCode;
+  errorCode: ArticleDeliveryErrorCode;
+  /**
+   * User-facing detail.
+   */
+  externalDetail: string;
   internalMessage: string;
 }
 

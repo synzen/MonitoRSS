@@ -4,4 +4,5 @@ export enum FeedConnectionDisabledCode {
   MissingPermissions = "MISSING_PERMISSIONS",
   Unknown = "UNKNOWN",
   MissingMedium = "MISSING_MEDIUM",
+  ArticleProcessingError = "ARTICLE_PROCESSING_ERROR",
 }

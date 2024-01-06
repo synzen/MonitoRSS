@@ -3,7 +3,7 @@ import { convert, HtmlToTextOptions, SelectorDefinition } from "html-to-text";
 import { Article, ArticleDiscordFormatted } from "../shared";
 import { FormatOptions } from "./types";
 import vm from "node:vm";
-import { RegexEvalException } from "../article-filters/exceptions";
+import { CustomPlaceholderRegexEvalException } from "../shared/exceptions";
 
 @Injectable()
 export class ArticleFormatterService {
@@ -61,10 +61,10 @@ export class ArticleFormatterService {
 
             lastOutput = context.finalVal;
           } catch (err) {
-            throw new RegexEvalException(
+            throw new CustomPlaceholderRegexEvalException(
               `Custom placeholder with regex "${regexSearch}" with flags ` +
                 `"${regexSearchFlags}" evaluation` +
-                ` on string "${lastOutput}"` +
+                ` on text "${lastOutput}"` +
                 ` with replacement string "${replacementString}" errored: ` +
                 `${(err as Error).message}`,
               {

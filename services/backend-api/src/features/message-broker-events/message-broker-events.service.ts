@@ -339,6 +339,9 @@ export class MessageBrokerEventsService {
             $set: {
               [`connections.${connectionKey}.${conIdx}.disabledCode`]:
                 disableCode,
+
+              [`connections.${connectionKey}.${conIdx}.disabledDetail`]:
+                rejectedMessage,
             },
           }
         );

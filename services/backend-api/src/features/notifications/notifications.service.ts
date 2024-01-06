@@ -354,7 +354,7 @@ export class NotificationsService {
       reason: reason?.reason || disabledCode,
       actionRequired: reason?.action,
       connectionName: connectionName,
-      manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
+      manageNotificationsUrl: "https://my.monitorss.xyz/settings",
       articleId,
       rejectedMessage,
     };

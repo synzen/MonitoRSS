@@ -689,6 +689,7 @@ export class FeedConnectionsDiscordChannelsService {
         }),
         ...(updates.disabledCode === null && {
           [`connections.discordChannels.$.disabledCode`]: "",
+          [`connections.discordChannels.$.disabledDetail`]: "",
         }),
         ...(updates.splitOptions === null && {
           [`connections.discordChannels.$.splitOptions`]: "",

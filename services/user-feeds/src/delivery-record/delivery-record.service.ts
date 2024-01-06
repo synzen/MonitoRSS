@@ -47,6 +47,8 @@ export class DeliveryRecordService {
           internal_message: articleState.internalMessage,
           medium_id: articleState.mediumId,
           article_id_hash: articleState.articleIdHash,
+          external_detail:
+            articleStatus === Rejected ? articleState.externalDetail : null,
         });
       } else if (articleStatus === PendingDelivery) {
         record = new DeliveryRecord({
