@@ -16,23 +16,27 @@ export interface GetFeedDiscordChannelConnectionPipeOutput {
 export class GetFeedDiscordChannelConnectionPipe implements PipeTransform {
   constructor(@Inject(REQUEST) private readonly request: FastifyRequest) {}
 
-  transform(feed: UserFeed): GetFeedDiscordChannelConnectionPipeOutput {
+  transform(
+    feeds: UserFeed[]
+  ): Array<GetFeedDiscordChannelConnectionPipeOutput> {
     const { connectionId } = this.request.params as Record<string, string>;
 
     if (!connectionId) {
       throw new Error("connectionId is missing in request params");
     }
 
-    const connection = feed.connections.discordChannels.find((connection) =>
-      connection.id.equals(connectionId)
-    );
-
-    if (!connection) {
-      throw new FeedConnectionNotFoundException(
-        `Connection ${connectionId} not found`
+    return feeds.map((feed) => {
+      const connection = feed.connections.discordChannels.find((connection) =>
+        connection.id.equals(connectionId)
       );
-    }
 
-    return { feed, connection };
+      if (!connection) {
+        throw new FeedConnectionNotFoundException(
+          `Connection ${connectionId} not found`
+        );
+      }
+
+      return { feed, connection };
+    });
   }
 }

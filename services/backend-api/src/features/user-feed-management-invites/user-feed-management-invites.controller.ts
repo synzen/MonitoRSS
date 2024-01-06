@@ -14,7 +14,7 @@ import {
 } from "@nestjs/common";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { UserFeed } from "../user-feeds/entities";
-import { GetUserFeedPipe } from "../user-feeds/pipes";
+import { GetUserFeedsPipe } from "../user-feeds/pipes";
 import { UserFeedManagerType } from "./constants";
 import {
   GetUserFeedManagementInviteByInviteePipe,
@@ -73,11 +73,11 @@ export class UserFeedManagementInvitesController {
   async createInvite(
     @Body(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [UserFeedManagerType.Creator],
       })
     )
-    feed: UserFeed,
+    [feed]: UserFeed[],
     @Body(ValidationPipe)
     {
       discordUserId: targetDiscordUserId,
