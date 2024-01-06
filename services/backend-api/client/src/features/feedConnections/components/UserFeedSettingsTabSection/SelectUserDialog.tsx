@@ -134,9 +134,7 @@ export const SelectUserDialog = ({ onAdded, trigger, title, description, okButto
                   <FormLabel>Discord Server</FormLabel>
                   <DiscordServerSearchSelectv2 onChange={(id) => setGuildId(id)} value={guildId} />
                   {!isInvalidServer && (
-                    <FormHelperText>
-                      This is just to help pin down where the user is.
-                    </FormHelperText>
+                    <FormHelperText>This is to help narrow down where the user is.</FormHelperText>
                   )}
                   {isInvalidServer && (
                     <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>

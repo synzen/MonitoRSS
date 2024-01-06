@@ -352,9 +352,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   trigger={<MenuItem>Co-manage feed</MenuItem>}
                   description={
                     <Text>
-                      This user will have access to manage all the settings of this feed, but you
-                      still retain ownership of this feed after they accept the invite. They must
-                      accept the invite by logging in.
+                      This user will have access to manage the settings and the existing connections
+                      of this feed. You will retain ownership of this feed after they accept the
+                      invite. They must accept the invite by logging in.
                     </Text>
                   }
                   title="Invite User to Co-manage Feed"

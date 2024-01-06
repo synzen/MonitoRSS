@@ -179,7 +179,7 @@ export const UserFeed: React.FC = () => {
   };
 
   const onRemoveMyAccess = async () => {
-    if (!isSharedWithMe) {
+    if (!feed?.sharedAccessDetails?.inviteId) {
       return;
     }
 
