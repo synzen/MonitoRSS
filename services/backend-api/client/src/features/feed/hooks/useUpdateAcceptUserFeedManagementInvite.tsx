@@ -1,17 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { UpdateUserFeedManagementInviteInput, updateUserFeedManagementInvite } from "../api";
+import {
+  UpdateAcceptUserFeedManagementInviteInput,
+  updateAcceptUserFeedManagementInvite,
+} from "../api/updateAcceptUserFeedManagementInvite";
 
-export const useUpdateUserFeedManagementInvite = () => {
+export const useUpdateAcceptUserFeedManagementInvite = () => {
   const queryClient = useQueryClient();
 
   const { mutateAsync, status, error, reset } = useMutation<
     void,
     ApiAdapterError,
-    UpdateUserFeedManagementInviteInput
+    UpdateAcceptUserFeedManagementInviteInput
   >(
     async (details) => {
-      await updateUserFeedManagementInvite(details);
+      await updateAcceptUserFeedManagementInvite(details);
     },
     {
       onSuccess: () => {

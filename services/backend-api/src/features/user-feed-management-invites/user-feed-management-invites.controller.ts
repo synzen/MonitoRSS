@@ -82,12 +82,14 @@ export class UserFeedManagementInvitesController {
     {
       discordUserId: targetDiscordUserId,
       type,
+      connectionIds,
     }: CreateUserFeedManagementInviteInputDto
   ) {
     await this.service.createInvite({
       feed,
       targetDiscordUserId,
       type,
+      connectionIds,
     });
 
     return {
@@ -97,7 +99,7 @@ export class UserFeedManagementInvitesController {
     };
   }
 
-  @Patch(":id")
+  @Patch(":id/accept")
   @UseFilters(FeedExceptionFilter)
   async updateInvite(
     @Param("id") inviteId: string,

@@ -48,7 +48,7 @@ import {
   UserFeedDisabledAlert,
   UserFeedDisabledCode,
   useUpdateUserFeed,
-  useUpdateUserFeedManagementInvite,
+  useUpdateAcceptUserFeedManagementInvite,
   useUserFeed,
 } from "../features/feed";
 import RouteParams from "../types/RouteParams";
@@ -107,7 +107,7 @@ export const UserFeed: React.FC = () => {
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
-  const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInvite();
+  const { mutateAsync: updateInvite } = useUpdateAcceptUserFeedManagementInvite();
 
   const onAddConnection = (
     type: "discord-channel" | "discord-webhook",

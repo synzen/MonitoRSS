@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Types } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import { FeedLimitReachedException } from "../feeds/exceptions";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
+import { UserFeedConnection } from "../user-feeds/types";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { UserFeedManagerInviteType, UserFeedManagerStatus } from "./constants";
 import {
@@ -24,10 +25,12 @@ export class UserFeedManagementInvitesService {
     feed,
     targetDiscordUserId,
     type,
+    connectionIds,
   }: {
     feed: UserFeed;
     targetDiscordUserId: string;
     type: UserFeedManagerInviteType;
+    connectionIds?: string[];
   }) {
     if (!feed.shareManageOptions) {
       feed.shareManageOptions = {
@@ -62,6 +65,22 @@ export class UserFeedManagementInvitesService {
       );
     }
 
+    const someConnectionIdIsInvalid = connectionIds?.some((id) => {
+      const allConnections = Object.values(
+        feed.connections
+      ).flat() as UserFeedConnection[];
+
+      return (
+        !isValidObjectId(id) || !allConnections.find((c) => c.id.equals(id))
+      );
+    });
+
+    if (someConnectionIdIsInvalid) {
+      throw new Error(
+        `Some connection IDs are invalid while creating user feed management invite: ${connectionIds}`
+      );
+    }
+
     feed.shareManageOptions.invites.push({
       discordUserId: targetDiscordUserId,
       createdAt: new Date(),
@@ -69,6 +88,7 @@ export class UserFeedManagementInvitesService {
       status: UserFeedManagerStatus.Pending,
       id: new Types.ObjectId(),
       type,
+      connectionIds: connectionIds?.map((id) => new Types.ObjectId(id)),
     });
 
     await this.userFeedModel.updateOne(

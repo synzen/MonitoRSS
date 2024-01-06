@@ -1,7 +1,7 @@
 import { UserFeedManagerStatus } from "../../../constants";
 import fetchRest from "../../../utils/fetchRest";
 
-export interface UpdateUserFeedManagementInviteInput {
+export interface UpdateAcceptUserFeedManagementInviteInput {
   id: string;
   data: {
     status: Extract<
@@ -11,10 +11,10 @@ export interface UpdateUserFeedManagementInviteInput {
   };
 }
 
-export const updateUserFeedManagementInvite = async (
-  options: UpdateUserFeedManagementInviteInput
+export const updateAcceptUserFeedManagementInvite = async (
+  options: UpdateAcceptUserFeedManagementInviteInput
 ): Promise<void> => {
-  await fetchRest(`/api/v1/user-feed-management-invites/${options.id}`, {
+  await fetchRest(`/api/v1/user-feed-management-invites/${options.id}/accept`, {
     requestOptions: {
       method: "PATCH",
       body: JSON.stringify(options.data),

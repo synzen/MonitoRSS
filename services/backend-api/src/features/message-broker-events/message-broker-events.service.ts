@@ -33,6 +33,7 @@ import {
   UserFeedModel,
 } from "../user-feeds/entities";
 import {
+  UserFeedConnection,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../user-feeds/types";
@@ -311,10 +312,7 @@ export class MessageBrokerEventsService {
     }
 
     const connectionEntries = Object.entries(foundFeed.connections) as Array<
-      [
-        keyof UserFeed["connections"],
-        UserFeed["connections"][keyof UserFeed["connections"]]
-      ]
+      [keyof UserFeed["connections"], UserFeedConnection[]]
     >;
 
     const disableCode =

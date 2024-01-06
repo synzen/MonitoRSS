@@ -30,7 +30,7 @@ export * from "./useCreateServerLegacyFeedBulkConversion";
 export * from "./useCreateUserFeedLegacyRestore";
 export * from "./useCreateUserFeedManagementInvite";
 export * from "./useDeleteUserFeedManagementInvite";
-export * from "./useUpdateUserFeedManagementInvite";
+export * from "./useUpdateAcceptUserFeedManagementInvite";
 export * from "./useUserFeedManagementInvites";
 export * from "./useUserFeedManagementInvitesCount";
 export * from "./useCreateUserFeedManagementInviteResend";

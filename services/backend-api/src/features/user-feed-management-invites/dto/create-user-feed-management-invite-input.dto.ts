@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsString } from "class-validator";
+import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { UserFeedManagerInviteType } from "../constants";
 
 export class CreateUserFeedManagementInviteInputDto {
@@ -12,4 +12,9 @@ export class CreateUserFeedManagementInviteInputDto {
 
   @IsIn(Object.values(UserFeedManagerInviteType))
   type: UserFeedManagerInviteType;
+
+  @IsString({ each: true })
+  @IsOptional()
+  @IsNotEmpty({ each: true })
+  connectionIds?: string[];
 }

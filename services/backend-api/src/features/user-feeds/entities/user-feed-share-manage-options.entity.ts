@@ -37,6 +37,12 @@ export class UserFeedUserShareManageUser {
   })
   status: UserFeedManagerStatus;
 
+  @Prop({
+    required: false,
+    type: [MongooseSchema.Types.ObjectId],
+  })
+  connectionIds?: Types.ObjectId[];
+
   createdAt: Date;
   updatedAt: Date;
 }
