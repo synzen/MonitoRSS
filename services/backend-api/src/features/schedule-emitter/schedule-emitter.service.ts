@@ -28,6 +28,7 @@ export class ScheduleEmitterService {
     const setOfRefreshRatesMs = new Set([
       ...allRefreshRatesSeconds
         .concat(allUserRefreshRateSeconds)
+        .filter((s) => !!s)
         .map((seconds) => seconds * 1000),
     ]);
 
