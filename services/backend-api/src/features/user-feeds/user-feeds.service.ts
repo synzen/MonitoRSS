@@ -252,13 +252,12 @@ export class UserFeedsService {
     };
   }
 
-  async bulkDelete(feedIds: string[], discordUserId: string) {
+  async bulkDelete(feedIds: string[]) {
     const found = await this.userFeedModel
       .find({
         _id: {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
-        "user.discordUserId": discordUserId,
       })
       .select("_id legacyFeedId connections")
       .lean();
@@ -314,14 +313,13 @@ export class UserFeedsService {
     }));
   }
 
-  async bulkDisable(feedIds: string[], discordUserId: string) {
+  async bulkDisable(feedIds: string[]) {
     const found = await this.userFeedModel
 
       .find({
         _id: {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
-        "user.discordUserId": discordUserId,
         disabledCode: {
           $exists: false,
         },
@@ -352,14 +350,13 @@ export class UserFeedsService {
     }));
   }
 
-  async bulkEnable(feedIds: string[], discordUserId: string) {
+  async bulkEnable(feedIds: string[]) {
     const found = await this.userFeedModel
 
       .find({
         _id: {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
-        "user.discordUserId": discordUserId,
         disabledCode: UserFeedDisabledCode.Manual,
       })
       .select("_id")

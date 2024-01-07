@@ -106,17 +106,12 @@ export class UserFeedsController {
       }),
       GetUserFeedsPipe()
     )
-    feeds: UserFeed[],
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
+    feeds: UserFeed[]
   ) {
     const useFeedIds = feeds.map((f) => f._id.toHexString());
 
     if (input.op === UpdateUserFeedsOp.BulkDelete) {
-      const results = await this.userFeedsService.bulkDelete(
-        useFeedIds,
-        discordUserId
-      );
+      const results = await this.userFeedsService.bulkDelete(useFeedIds);
 
       return {
         results,
@@ -124,10 +119,7 @@ export class UserFeedsController {
     }
 
     if (input.op === UpdateUserFeedsOp.BulkDisable) {
-      const results = await this.userFeedsService.bulkDisable(
-        useFeedIds,
-        discordUserId
-      );
+      const results = await this.userFeedsService.bulkDisable(useFeedIds);
 
       return {
         results,
@@ -135,10 +127,7 @@ export class UserFeedsController {
     }
 
     if (input.op === UpdateUserFeedsOp.BulkEnable) {
-      const results = await this.userFeedsService.bulkEnable(
-        useFeedIds,
-        discordUserId
-      );
+      const results = await this.userFeedsService.bulkEnable(useFeedIds);
 
       return {
         results,
