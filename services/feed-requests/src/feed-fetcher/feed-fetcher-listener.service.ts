@@ -406,7 +406,7 @@ export class FeedFetcherListenerService {
 
     if (latestOkRequest) {
       return this.requestRepo.count({
-        lookupKey,
+        lookupKey: lookupKey || url,
         status: {
           $ne: RequestStatus.OK,
         },
@@ -416,7 +416,7 @@ export class FeedFetcherListenerService {
       });
     } else {
       return this.requestRepo.count({
-        lookupKey,
+        lookupKey: lookupKey || url,
         status: {
           $ne: RequestStatus.OK,
         },

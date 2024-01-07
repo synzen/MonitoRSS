@@ -83,10 +83,6 @@ export class FeedFetcherService {
     );
   }
 
-  async countRequests({ url }: GetFeedRequestsCountInput) {
-    return this.requestRepo.count({ url });
-  }
-
   // async getLatestRequestHeaders({
   //   url,
   // }: {
