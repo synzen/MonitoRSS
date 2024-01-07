@@ -181,6 +181,9 @@ export class UserFeedManagementInvitesService {
     inviteId: string,
     updates: {
       status?: UserFeedManagerStatus;
+      connections?: Array<{
+        connectionId: string;
+      }> | null;
     }
   ) {
     const inviteIndex = userFeed?.shareManageOptions?.invites?.findIndex(
@@ -223,6 +226,17 @@ export class UserFeedManagementInvitesService {
             ...(updates.status && {
               [`shareManageOptions.invites.${inviteIndex}.status`]:
                 updates.status,
+            }),
+            ...(updates.connections && {
+              [`shareManageOptions.invites.${inviteIndex}.connections`]:
+                updates.connections.map(({ connectionId }) => ({
+                  connectionId: new Types.ObjectId(connectionId),
+                })),
+            }),
+          },
+          $unset: {
+            ...(updates.connections === null && {
+              [`shareManageOptions.invites.${inviteIndex}.connections`]: "",
             }),
           },
         }

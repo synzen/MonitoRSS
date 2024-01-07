@@ -7,7 +7,7 @@ import { getPrettyConnectionDetail } from "../../../../utils/getPrettyConnection
 interface Props {
   feed: UserFeed;
   checkedConnectionIds: string[];
-  onCheckConnectionChange: (connectionId: string, checked: boolean) => void;
+  onCheckConnectionChange: (connectionIdsChecked: string[]) => void;
 }
 
 export const ConnectionsCheckboxList = ({
@@ -32,7 +32,13 @@ export const ConnectionsCheckboxList = ({
               <Checkbox
                 px={4}
                 py={3}
-                onChange={(e) => onCheckConnectionChange(c.id, e.target.checked)}
+                onChange={(e) => {
+                  if (e.target.checked && !checkedConnectionIds.includes(c.id)) {
+                    onCheckConnectionChange([...checkedConnectionIds, c.id]);
+                  } else if (!e.target.checked && checkedConnectionIds.includes(c.id)) {
+                    onCheckConnectionChange(checkedConnectionIds.filter((id) => id !== c.id));
+                  }
+                }}
                 isChecked={checkedConnectionIds.includes(c.id)}
                 width="100%"
               >

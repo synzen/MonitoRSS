@@ -48,7 +48,7 @@ import {
   UserFeedDisabledAlert,
   UserFeedDisabledCode,
   useUpdateUserFeed,
-  useUpdateAcceptUserFeedManagementInvite,
+  useUpdateUserFeedManagementInviteStatus,
   useUserFeed,
 } from "../features/feed";
 import RouteParams from "../types/RouteParams";
@@ -107,7 +107,7 @@ export const UserFeed: React.FC = () => {
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
-  const { mutateAsync: updateInvite } = useUpdateAcceptUserFeedManagementInvite();
+  const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInviteStatus();
   const isSharedWithMe = !!feed?.sharedAccessDetails?.inviteId;
 
   const onAddConnection = (

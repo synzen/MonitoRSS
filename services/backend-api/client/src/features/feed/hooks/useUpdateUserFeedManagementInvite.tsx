@@ -1,29 +1,34 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import {
-  UpdateAcceptUserFeedManagementInviteInput,
-  updateAcceptUserFeedManagementInvite,
-} from "../api/updateAcceptUserFeedManagementInvite";
 
-export const useUpdateAcceptUserFeedManagementInvite = () => {
+import { UpdateUserFeedManagementInviteInput, updateUserFeedManagementInvite } from "../api";
+
+interface Props {
+  feedId?: string;
+}
+
+export const useUpdateUserFeedManagementInvite = ({ feedId }: Props) => {
   const queryClient = useQueryClient();
 
   const { mutateAsync, status, error, reset } = useMutation<
     void,
     ApiAdapterError,
-    UpdateAcceptUserFeedManagementInviteInput
+    UpdateUserFeedManagementInviteInput
   >(
     async (details) => {
-      await updateAcceptUserFeedManagementInvite(details);
+      await updateUserFeedManagementInvite(details);
     },
     {
       onSuccess: () => {
+        if (!feedId) {
+          return null;
+        }
+
         return queryClient.invalidateQueries({
           predicate: (query) => {
             return (
-              query.queryKey[0] === "user-feeds" ||
-              query.queryKey[0] === "user-feed-management-invites" ||
-              query.queryKey[0] === "user-feed-management-invites-count"
+              query.queryKey[0] === "user-feed" &&
+              (query.queryKey[1] as Record<string, unknown>)?.feedId === feedId
             );
           },
         });

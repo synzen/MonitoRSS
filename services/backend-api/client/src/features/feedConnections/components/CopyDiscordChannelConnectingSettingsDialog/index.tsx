@@ -164,14 +164,6 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     }
   };
 
-  const onCheckConnectionChange = (inputConnectionId: string, checked: boolean) => {
-    if (checked && !checkedConnections.includes(inputConnectionId)) {
-      setCheckedConnections([...checkedConnections, inputConnectionId]);
-    } else if (!checked && checkedConnections.includes(inputConnectionId)) {
-      setCheckedConnections(checkedConnections.filter((c) => c !== inputConnectionId));
-    }
-  };
-
   const onCheckCategoryChange = (category: CopyCategory, checked: boolean) => {
     const settingsInCategory = Object.entries(CopyableSettingDescriptions)
       .filter(([, { category: settingCategory }]) => settingCategory === category)
@@ -384,7 +376,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
               <Stack>
                 <ConnectionsCheckboxList
                   checkedConnectionIds={checkedConnections}
-                  onCheckConnectionChange={onCheckConnectionChange}
+                  onCheckConnectionChange={setCheckedConnections}
                   feed={feed as UserFeed}
                 />
               </Stack>

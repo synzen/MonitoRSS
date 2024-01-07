@@ -23,6 +23,7 @@ import {
 import {
   CreateUserFeedManagementInviteInputDto,
   UpdateUserFeedManagementInviteInputDto,
+  UpdateUserFeedManagementInviteStatusInputDto,
 } from "./dto";
 import { UserFeedManagementInvitesService } from "./user-feed-management-invites.service";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
@@ -99,12 +100,32 @@ export class UserFeedManagementInvitesController {
     };
   }
 
-  @Patch(":id/status")
+  @Patch(":id")
   @UseFilters(FeedExceptionFilter)
   async updateInvite(
     @Param("id") inviteId: string,
+    @Param("id", GetUserFeedManagementInviteByOwnerPipe()) userFeed: UserFeed,
+    @Body(ValidationPipe)
+    { connections }: UpdateUserFeedManagementInviteInputDto
+  ) {
+    await this.service.updateInvite(userFeed, inviteId, {
+      connections,
+    });
+
+    return {
+      result: {
+        status: "SUCCESS",
+      },
+    };
+  }
+
+  @Patch(":id/status")
+  @UseFilters(FeedExceptionFilter)
+  async updateInviteStatus(
+    @Param("id") inviteId: string,
     @Param("id", GetUserFeedManagementInviteByInviteePipe()) userFeed: UserFeed,
-    @Body(ValidationPipe) { status }: UpdateUserFeedManagementInviteInputDto
+    @Body(ValidationPipe)
+    { status }: UpdateUserFeedManagementInviteStatusInputDto
   ) {
     await this.service.updateInvite(userFeed, inviteId, {
       status,
