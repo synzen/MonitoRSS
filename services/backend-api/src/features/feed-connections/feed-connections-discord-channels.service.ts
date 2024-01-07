@@ -54,6 +54,7 @@ import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { castDiscordComponentRowsForMedium } from "../../common/utils";
 import logger from "../../utils/logger";
 import { WebhookMissingPermissionsException } from "../discord-webhooks/exceptions";
+import { UserFeedConnectionEventsService } from "../user-feed-connection-events/user-feed-connection-events.service";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -140,7 +141,8 @@ export class FeedConnectionsDiscordChannelsService {
     private readonly supportersService: SupportersService,
     private readonly discordWebhooksService: DiscordWebhooksService,
     private readonly discordApiService: DiscordAPIService,
-    private readonly discordAuthService: DiscordAuthService
+    private readonly discordAuthService: DiscordAuthService,
+    private readonly connectionEventsService: UserFeedConnectionEventsService
   ) {}
 
   async createDiscordChannelConnection({
@@ -150,6 +152,7 @@ export class FeedConnectionsDiscordChannelsService {
     webhook: inputWebhook,
     applicationWebhook,
     userAccessToken,
+    userDiscordUserId,
   }: {
     feed: UserFeed;
     name: string;
@@ -167,6 +170,7 @@ export class FeedConnectionsDiscordChannelsService {
       threadId?: string;
     };
     userAccessToken: string;
+    userDiscordUserId: string;
   }): Promise<DiscordChannelConnection> {
     const connectionId = new Types.ObjectId();
     let channelToAdd: DiscordChannelConnection["details"]["channel"];
@@ -291,6 +295,14 @@ export class FeedConnectionsDiscordChannelsService {
         );
       }
 
+      await this.connectionEventsService.handleCreatedEvent({
+        feed,
+        connectionId: createdConnection.id,
+        creator: {
+          discordUserId: userDiscordUserId,
+        },
+      });
+
       return createdConnection;
     } catch (err) {
       if (webhookToAdd?.isApplicationOwned) {
@@ -308,7 +320,8 @@ export class FeedConnectionsDiscordChannelsService {
       name,
       channelId: newChannelId,
     }: CreateDiscordChannelConnectionCloneInputDto,
-    userAccessToken: string
+    userAccessToken: string,
+    userDiscordUserId: string
   ) {
     const newId = new Types.ObjectId();
     let channelDetailsToUse: DiscordChannelConnection["details"]["channel"] =
@@ -369,6 +382,14 @@ export class FeedConnectionsDiscordChannelsService {
           },
         }
       );
+
+      await this.connectionEventsService.handleCreatedEvent({
+        feed: userFeed,
+        connectionId: newId,
+        creator: {
+          discordUserId: userDiscordUserId,
+        },
+      });
     } catch (err) {
       if (newWebhookId) {
         await this.cleanupWebhook(newWebhookId);
@@ -756,7 +777,7 @@ export class FeedConnectionsDiscordChannelsService {
       );
     }
 
-    await this.userFeedModel.updateOne(
+    const updated = await this.userFeedModel.findOneAndUpdate(
       {
         _id: feedId,
       },
@@ -768,6 +789,17 @@ export class FeedConnectionsDiscordChannelsService {
         },
       }
     );
+
+    if (!updated) {
+      throw new Error(
+        `Connection ${connectionId} on feed ${feedId} does not exist to be deleted`
+      );
+    }
+
+    await this.connectionEventsService.handleDeletedEvent({
+      feed: updated,
+      deletedConnectionIds: [new Types.ObjectId(connectionId)],
+    });
 
     try {
       if (connectionToDelete.details.webhook?.isApplicationOwned) {

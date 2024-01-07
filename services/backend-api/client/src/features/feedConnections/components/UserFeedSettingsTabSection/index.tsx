@@ -298,8 +298,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   </Thead>
                   <Tbody>
                     {feed.shareManageOptions.invites.map((u) => {
-                      const connectionIds =
-                        new Set(u.connections?.map((c) => c.connectionId)) || [];
+                      const connectionIds = new Set(
+                        u.connections?.map((c) => c.connectionId) || []
+                      );
                       const connectionNames = Object.values(feed.connections)
                         .filter((c) => connectionIds.has(c.id))
                         .map((c) => c.name);
@@ -336,7 +337,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                           </Td>
                           <Td>
                             <Stack>
-                              {connectionIds.size === 0 && "All"}
+                              {!connectionNames.length && <Text>All</Text>}
                               {connectionNames.map((n) => (
                                 <Text display="block">{n}</Text>
                               ))}

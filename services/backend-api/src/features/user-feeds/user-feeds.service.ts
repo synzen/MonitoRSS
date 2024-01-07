@@ -242,7 +242,8 @@ export class UserFeedsService {
         {
           name: c.name,
         },
-        userAccessToken
+        userAccessToken,
+        found.user.discordUserId
       );
     }
 

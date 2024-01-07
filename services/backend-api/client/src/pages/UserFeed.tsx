@@ -539,19 +539,9 @@ export const UserFeed: React.FC = () => {
                         {t("pages.userFeeds.tabConnections")}
                       </Heading>
                       <Menu placement="bottom-end">
-                        <Tooltip
-                          label="Only the feed owner can add new connections"
-                          isDisabled={!isSharedWithMe}
-                        >
-                          <MenuButton
-                            colorScheme="blue"
-                            as={Button}
-                            rightIcon={<ChevronDownIcon />}
-                            isDisabled={isSharedWithMe}
-                          >
-                            Add new
-                          </MenuButton>
-                        </Tooltip>
+                        <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
+                          Add new
+                        </MenuButton>
                         <MenuList maxWidth="300px">
                           <MenuItem onClick={() => onAddConnection("discord-channel")}>
                             <Stack spacing={1}>
@@ -585,7 +575,7 @@ export const UserFeed: React.FC = () => {
                     </Flex>
                     <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                   </Stack>
-                  {feed && !feed.connections.length && (
+                  {feed && !feed.connections.length && !isSharedWithMe && (
                     <Stack>
                       <Alert status="warning" rounded="md">
                         <AlertIcon />

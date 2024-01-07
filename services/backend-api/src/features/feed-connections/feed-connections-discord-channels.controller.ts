@@ -4,7 +4,6 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -78,10 +77,6 @@ export class FeedConnectionsDiscordChannelsController {
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<CreateDiscordChannelConnectionOutputDto> {
-    if (discordUserId !== feed.user.discordUserId) {
-      throw new NotFoundException();
-    }
-
     const createdConnection = await this.service.createDiscordChannelConnection(
       {
         feed,
@@ -90,6 +85,7 @@ export class FeedConnectionsDiscordChannelsController {
         userAccessToken: access_token,
         webhook,
         applicationWebhook,
+        userDiscordUserId: discordUserId,
       }
     );
 
@@ -195,13 +191,15 @@ export class FeedConnectionsDiscordChannelsController {
     [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     data: CreateDiscordChannelConnectionCloneInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken
+    @DiscordAccessToken()
+    { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ) {
     const result = await this.service.cloneConnection(
       feed,
       connection,
       data,
-      access_token
+      access_token,
+      discordUserId
     );
 
     return {
