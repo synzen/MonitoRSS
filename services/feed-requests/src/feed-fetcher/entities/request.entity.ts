@@ -11,8 +11,8 @@ import {
 
 @Entity()
 @Index({
-  properties: ['lookupKey', 'createdAt'],
-  name: 'lookupkey_created_at_index',
+  properties: ['lookupKey', 'createdAt', 'status'],
+  name: 'lookupkey_created_at_status_index',
 })
 export class Request {
   @PrimaryKey({
