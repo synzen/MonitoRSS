@@ -202,7 +202,7 @@ export class FeedFetcherListenerService {
 
     const { skip, nextRetryDate, failedAttemptsCount } =
       await this.shouldSkipAfterPreviousFailedAttempt({
-        lookupKey: lookupKey,
+        lookupKey: lookupKey || url,
         url,
       });
 
@@ -251,7 +251,7 @@ export class FeedFetcherListenerService {
     nextRetryDate?: Date | null;
   }> {
     const failedAttempts = await this.countFailedRequests({
-      lookupKey,
+      lookupKey: lookupKey || url,
       url,
     });
 
@@ -273,7 +273,7 @@ export class FeedFetcherListenerService {
 
     const latestNextRetryDate = await this.requestRepo.findOne(
       {
-        lookupKey,
+        lookupKey: lookupKey || url,
         nextRetryDate: {
           $ne: null,
         },

@@ -5,7 +5,7 @@ import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
+import { GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
@@ -69,7 +69,7 @@ export class FeedFetcherService {
   async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
     return this.requestRepo.find(
       {
-        url,
+        lookupKey: url,
       },
       {
         limit,
