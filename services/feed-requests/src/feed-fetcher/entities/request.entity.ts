@@ -10,7 +10,6 @@ import {
 } from '@mikro-orm/core';
 
 @Entity()
-@Index({ properties: ['url', 'createdAt'], name: 'url_created_at_index' })
 @Index({
   properties: ['lookupKey', 'createdAt'],
   name: 'lookupkey_created_at_index',
