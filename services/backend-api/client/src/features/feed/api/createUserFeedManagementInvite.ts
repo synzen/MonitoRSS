@@ -7,6 +7,7 @@ export interface CreateUserFeedManagementInviteInput {
     feedId: string;
     discordUserId: string;
     type: UserFeedManagerInviteType;
+    connections: Array<{ connectionId: string }>;
   };
 }
 

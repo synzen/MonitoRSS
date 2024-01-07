@@ -68,6 +68,7 @@ import { useUserFeedDatePreview } from "../../../feed/hooks/useUserFeedDatePrevi
 import { useDebounce } from "../../../../hooks";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 import { ManageUserFeedManagementInviteSettingsDialog } from "./ManageUserFeedManagementInviteSettingsDialog";
+import { AddFeedComanagerDialog } from "./AddFeedComanagerDialog";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -214,13 +215,22 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     }
   };
 
-  const onAddUser = async ({ id, type }: { id: string; type: UserFeedManagerInviteType }) => {
+  const onAddUser = async ({
+    id,
+    type,
+    connections,
+  }: {
+    id: string;
+    type: UserFeedManagerInviteType;
+    connections: Array<{ connectionId: string }>;
+  }) => {
     try {
       await createUserFeedManagementInvite({
         data: {
           feedId,
           discordUserId: id,
           type,
+          connections,
         },
       });
       notifySuccess("Successfully sent invite");
@@ -392,7 +402,8 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                 Invite user to...
               </MenuButton>
               <MenuList>
-                <SelectUserDialog
+                <AddFeedComanagerDialog
+                  feedId={feedId}
                   trigger={<MenuItem>Co-manage feed</MenuItem>}
                   description={
                     <Text>
@@ -403,7 +414,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   }
                   title="Invite User to Co-manage Feed"
                   okButtonText="Invite"
-                  onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.CoManage })}
+                  onAdded={({ id, connections }) =>
+                    onAddUser({ id, type: UserFeedManagerInviteType.CoManage, connections })
+                  }
                 />
                 <SelectUserDialog
                   trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
@@ -415,7 +428,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   }
                   title="Invite User to Transfer Ownership"
                   okButtonText="Invite"
-                  onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.Transfer })}
+                  onAdded={({ id }) =>
+                    onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
+                  }
                 />
               </MenuList>
             </Menu>

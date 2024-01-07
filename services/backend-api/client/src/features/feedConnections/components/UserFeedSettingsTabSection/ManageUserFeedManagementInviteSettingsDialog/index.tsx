@@ -11,8 +11,6 @@ import {
   Stack,
   Heading,
   Text,
-  FormControl,
-  FormErrorMessage,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
@@ -125,18 +123,11 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
                   Select None
                 </Button>
               </HStack>
-              <FormControl isInvalid={checkedConnections.length === 0}>
-                <Stack>
-                  <FormErrorMessage>
-                    You must select at least one connection to share.
-                  </FormErrorMessage>
-                  <ConnectionsCheckboxList
-                    checkedConnectionIds={checkedConnections}
-                    onCheckConnectionChange={setCheckedConnections}
-                    feed={feed as UserFeed}
-                  />
-                </Stack>
-              </FormControl>
+              <ConnectionsCheckboxList
+                checkedConnectionIds={checkedConnections}
+                onCheckConnectionChange={setCheckedConnections}
+                feed={feed as UserFeed}
+              />
             </Stack>
           </Stack>
         </ModalBody>
