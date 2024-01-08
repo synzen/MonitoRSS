@@ -210,12 +210,19 @@ export class ArticleFormatterService {
         anchors: (elem, walk, builder, htmlToTextOptions) => {
           const anchorsFormatter = builder.options.formatters.anchor;
 
-          if (anchorsFormatter) {
-            anchorsFormatter(elem, walk, builder, htmlToTextOptions);
+          if (!anchorsFormatter) {
+            return;
+          }
 
-            if (elem.attribs.href) {
-              anchors.push(elem.attribs.href);
-            }
+          if (elem.attribs.href) {
+            anchors.push(elem.attribs.href);
+
+            builder.addInline("[");
+            walk(elem.children, builder);
+            builder.addInline("]");
+            builder.addInline(`(${elem.attribs.href})`);
+          } else {
+            anchorsFormatter(elem, walk, builder, htmlToTextOptions);
           }
         },
         inlineCode: (elem, walk, builder, options) => {
