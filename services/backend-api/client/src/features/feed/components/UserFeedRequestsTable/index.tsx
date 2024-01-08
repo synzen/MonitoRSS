@@ -63,7 +63,7 @@ const createStatusLabel = (
 };
 
 export const UserFeedRequestsTable = ({ feedId }: Props) => {
-  const { data, status, error, skip, limit, nextPage, prevPage, fetchStatus } =
+  const { data, status, error, skip, nextPage, prevPage, fetchStatus } =
     useUserFeedRequestsWithPagination({
       feedId,
       data: {},
@@ -87,10 +87,7 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
     );
   }
 
-  const total = data?.result.totalRequests || 0;
-
   const onFirstPage = skip === 0;
-  const onLastPage = skip + limit >= total;
   const nextRetryTimestamp = data?.result.nextRetryTimestamp;
 
   return (
@@ -136,12 +133,7 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
             </Table>
           </TableContainer>
         </Box>
-        <Flex justifyContent="space-between">
-          {t("common.table.results", {
-            start: skip + 1,
-            end: skip + limit,
-            total,
-          })}
+        <Flex justifyContent="flex-end">
           <HStack>
             <Button
               width="min-content"
@@ -153,7 +145,7 @@ export const UserFeedRequestsTable = ({ feedId }: Props) => {
             <Button
               width="min-content"
               onClick={nextPage}
-              isDisabled={onLastPage || fetchStatus === "fetching"}
+              isDisabled={fetchStatus === "fetching" || data?.result.requests.length === 0}
             >
               {t("features.feedConnections.components.filtersTabSection.nextPage")}
             </Button>

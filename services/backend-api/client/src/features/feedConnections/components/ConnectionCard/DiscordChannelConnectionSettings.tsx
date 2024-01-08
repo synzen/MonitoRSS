@@ -83,7 +83,7 @@ export const DiscordChannelConnectionSettings = ({
           defaultValues={{
             channelId: connection.details.channel.id,
             name: connection.name,
-            serverId: connection.details.channel.id,
+            serverId: connection.details.channel.guildId,
           }}
           onUpdate={({ channelId: updatedChannelId, name }) =>
             onUpdate({

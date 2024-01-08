@@ -8,6 +8,7 @@ import logger from "../../utils/logger";
 import {
   FeedArticleNotFoundException,
   FeedFetcherStatusException,
+  InvalidFiltersRegexException,
   InvalidPreviewCustomPlaceholdersRegexException,
 } from "../feed-fetcher/exceptions";
 import {
@@ -205,18 +206,6 @@ export class FeedHandlerService {
       throw new FeedArticleNotFoundException("Feed article not found");
     }
 
-    if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
-      const json = await res.json();
-
-      const errors = json.errors;
-      throw new InvalidPreviewCustomPlaceholdersRegexException(
-        "Invalid preview input",
-        {
-          subErrors: errors,
-        }
-      );
-    }
-
     await this.validateResponseStatus(res, "Failed to create preview", {
       requestBody: details,
     });
@@ -255,18 +244,6 @@ export class FeedHandlerService {
         "api-key": this.apiKey,
       },
     });
-
-    if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
-      const json = await res.json();
-
-      const errors = json.errors;
-      throw new InvalidPreviewCustomPlaceholdersRegexException(
-        "Invalid preview input",
-        {
-          subErrors: errors,
-        }
-      );
-    }
 
     await this.validateResponseStatus(res, "Failed to get articles", {
       requestBody: body,
@@ -324,6 +301,30 @@ export class FeedHandlerService {
           res.status
         }) from User feeds api. Meta: ${JSON.stringify(meta)}`
       );
+    }
+
+    if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
+      const json = await res.json();
+      const code = json.code;
+
+      if (code === "CUSTOM_PLACEHOLDER_REGEX_EVAL") {
+        throw new InvalidPreviewCustomPlaceholdersRegexException(
+          "Invalid preview input",
+          {
+            subErrors: json.errors,
+          }
+        );
+      } else if (code === "FILTERS_REGEX_EVAL") {
+        throw new InvalidFiltersRegexException("Invalid preview input", {
+          subErrors: json.errors,
+        });
+      } else {
+        throw new Error(
+          `${contextMessage}: Unprocessable entity status code from User feeds api. Meta: ${JSON.stringify(
+            meta
+          )}`
+        );
+      }
     }
 
     if (!res.ok) {

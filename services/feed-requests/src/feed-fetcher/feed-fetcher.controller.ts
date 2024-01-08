@@ -52,15 +52,12 @@ export class FeedFetcherController {
     )
     { skip, limit, url }: GetFeedRequestsInputDto,
   ): Promise<GetFeedRequestsOutputDto> {
-    const [requests, total] = await Promise.all([
+    const [requests] = await Promise.all([
       this.feedFetcherService.getRequests({
         skip,
         limit,
         url,
         select: ['id', 'createdAt', 'nextRetryDate', 'status'],
-      }),
-      this.feedFetcherService.countRequests({
-        url,
       }),
     ]);
 
@@ -76,7 +73,6 @@ export class FeedFetcherController {
             statusCode: r.response?.statusCode,
           },
         })),
-        totalRequests: total,
         // unix timestamp in seconds
         nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
       },
@@ -120,6 +116,7 @@ export class FeedFetcherController {
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url, {
           saveResponseToObjectStorage: data.debug,
+          lookupKey: data.lookupKey,
         });
       } catch (err) {
         logger.error(`Failed to fetch and save response of feed ${data.url}`, {
@@ -130,9 +127,10 @@ export class FeedFetcherController {
       }
     }
 
-    let latestRequest = await this.feedFetcherService.getLatestRequest(
-      data.url,
-    );
+    let latestRequest = await this.feedFetcherService.getLatestRequest({
+      url: data.url,
+      lookupKey: data.lookupKey,
+    });
 
     // If there's no text, response must be fetched to be cached
     if (
@@ -145,6 +143,8 @@ export class FeedFetcherController {
           data.url,
           {
             flushEntities: true,
+            saveResponseToObjectStorage: data.debug,
+            lookupKey: data.lookupKey,
           },
         );
 

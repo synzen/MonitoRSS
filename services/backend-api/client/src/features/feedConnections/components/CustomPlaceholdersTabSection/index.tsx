@@ -244,11 +244,7 @@ export const CustomPlaceholdersTabSection = ({
               </Accordion>
             )}
             <Box>
-              <Button
-                onClick={onAddCustomPlaceholder}
-                leftIcon={<AddIcon fontSize={13} />}
-                colorScheme="blue"
-              >
+              <Button onClick={onAddCustomPlaceholder} leftIcon={<AddIcon fontSize={13} />}>
                 Add Custom Placeholder
               </Button>
             </Box>

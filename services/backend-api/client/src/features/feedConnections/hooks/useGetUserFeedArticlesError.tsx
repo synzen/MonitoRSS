@@ -29,6 +29,9 @@ export const useGetUserFeedArticlesError = ({
     ) {
       description =
         "Invalid regex search for custom placeholders found. Please update or remove custom placeholders in this connection to resolve.";
+    } else if (getUserFeedArticlesError.errorCode === ApiErrorCode.INVALID_FILTERS_REGEX) {
+      description =
+        "Invalid regex search for filters found. Please update or remove filters to resolve.";
     }
 
     return {

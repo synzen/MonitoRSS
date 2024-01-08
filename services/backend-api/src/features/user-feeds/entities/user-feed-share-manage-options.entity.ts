@@ -7,6 +7,22 @@ import {
 
 @Schema({
   _id: false,
+  timestamps: false,
+})
+export class UserFeedShareInviteConnection {
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    required: true,
+  })
+  connectionId: Types.ObjectId;
+}
+
+const UserFeedShareInviteConnectionSchema = SchemaFactory.createForClass(
+  UserFeedShareInviteConnection
+);
+
+@Schema({
+  _id: false,
   timestamps: true,
 })
 export class UserFeedUserShareManageUser {
@@ -36,6 +52,12 @@ export class UserFeedUserShareManageUser {
     type: String,
   })
   status: UserFeedManagerStatus;
+
+  @Prop({
+    required: false,
+    type: [UserFeedShareInviteConnectionSchema],
+  })
+  connections?: UserFeedShareInviteConnection[];
 
   createdAt: Date;
   updatedAt: Date;

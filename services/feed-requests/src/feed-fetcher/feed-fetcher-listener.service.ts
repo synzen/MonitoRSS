@@ -12,7 +12,11 @@ import { FeedFetcherService } from './feed-fetcher.service';
 
 interface BatchRequestMessage {
   timestamp: number;
-  data: Array<{ url: string; saveToObjectStorage?: boolean }>;
+  data: Array<{
+    lookupKey?: string;
+    url: string;
+    saveToObjectStorage?: boolean;
+  }>;
   rateSeconds: number;
 }
 
@@ -117,13 +121,18 @@ export class FeedFetcherListenerService {
 
     try {
       const results = await Promise.allSettled(
-        message.data.map(async ({ url, saveToObjectStorage }) => {
+        message.data.map(async ({ url, lookupKey, saveToObjectStorage }) => {
           await this.handleBrokerFetchRequest({
+            lookupKey,
             url,
             rateSeconds,
             saveToObjectStorage,
           });
-          await this.emitFetchCompleted({ url: url, rateSeconds: rateSeconds });
+          await this.emitFetchCompleted({
+            lookupKey,
+            url,
+            rateSeconds: rateSeconds,
+          });
         }),
       );
 
@@ -165,12 +174,14 @@ export class FeedFetcherListenerService {
   }
 
   private async handleBrokerFetchRequest(data: {
+    lookupKey?: string;
     url: string;
     rateSeconds: number;
     saveToObjectStorage?: boolean;
   }): Promise<void> {
-    const url = data?.url;
-    const rateSeconds = data?.rateSeconds;
+    const url = data.url;
+    const rateSeconds = data.rateSeconds;
+    const lookupKey = data.lookupKey;
 
     const dateToCheck = dayjs()
       .subtract(Math.round(rateSeconds * 0.75), 'seconds')
@@ -191,6 +202,7 @@ export class FeedFetcherListenerService {
 
     const { skip, nextRetryDate, failedAttemptsCount } =
       await this.shouldSkipAfterPreviousFailedAttempt({
+        lookupKey: lookupKey || url,
         url,
       });
 
@@ -204,7 +216,7 @@ export class FeedFetcherListenerService {
         url,
         {
           saveResponseToObjectStorage: data.saveToObjectStorage,
-          headers: {},
+          lookupKey,
         },
       );
 
@@ -228,15 +240,20 @@ export class FeedFetcherListenerService {
   }
 
   async shouldSkipAfterPreviousFailedAttempt({
+    lookupKey,
     url,
   }: {
+    lookupKey?: string;
     url: string;
   }): Promise<{
     skip: boolean;
     failedAttemptsCount: number;
     nextRetryDate?: Date | null;
   }> {
-    const failedAttempts = await this.countFailedRequests({ url });
+    const failedAttempts = await this.countFailedRequests({
+      lookupKey: lookupKey || url,
+      url,
+    });
 
     if (failedAttempts === 0) {
       return {
@@ -246,7 +263,7 @@ export class FeedFetcherListenerService {
     }
 
     if (failedAttempts >= FeedFetcherListenerService.MAX_FAILED_ATTEMPTS) {
-      this.emitFailedUrl({ url });
+      this.emitFailedUrl({ lookupKey, url });
 
       return {
         skip: true,
@@ -256,7 +273,7 @@ export class FeedFetcherListenerService {
 
     const latestNextRetryDate = await this.requestRepo.findOne(
       {
-        url,
+        lookupKey: lookupKey || url,
         nextRetryDate: {
           $ne: null,
         },
@@ -271,7 +288,7 @@ export class FeedFetcherListenerService {
 
     if (!latestNextRetryDate) {
       logger.error(
-        `Request for ${url} has previously failed, but there is no` +
+        `Request for ${lookupKey} has previously failed, but there is no` +
           ` nextRetryDate set. All failed requests handled via broker events` +
           ` should have retry dates. Continuing with request as fallback behavior.`,
       );
@@ -318,60 +335,65 @@ export class FeedFetcherListenerService {
     }
   }
 
-  emitFailedUrl({ url }: { url: string }) {
+  emitFailedUrl({ lookupKey, url }: { lookupKey?: string; url: string }) {
     try {
       logger.info(
-        `Disabling feeds with url "${url}" due to failure threshold `,
-        {
-          url,
-        },
+        `Disabling feeds with lookup key "${lookupKey}" due to failure threshold `,
       );
 
-      this.amqpConnection.publish<{ data: { url: string } }>(
-        '',
-        'url.failed.disable-feeds',
-        {
-          data: {
-            url,
-          },
+      this.amqpConnection.publish<{
+        data: { lookupKey?: string; url: string };
+      }>('', 'url.failed.disable-feeds', {
+        data: {
+          lookupKey,
+          url,
         },
-      );
+      });
     } catch (err) {
-      logger.error(`Failed to publish failed url event: ${url}`, {
+      logger.error(`Failed to publish failed url event: ${lookupKey}`, {
         stack: (err as Error).stack,
-        url,
+        lookupKey,
       });
     }
   }
 
   emitFetchCompleted({
+    lookupKey,
     url,
     rateSeconds,
   }: {
+    lookupKey?: string;
     url: string;
     rateSeconds: number;
   }) {
     try {
       this.amqpConnection.publish<{
-        data: { url: string; rateSeconds: number };
+        data: { lookupKey?: string; url: string; rateSeconds: number };
       }>('', 'url.fetch.completed', {
         data: {
+          lookupKey,
           url,
           rateSeconds,
         },
       });
     } catch (err) {
-      logger.error(`Failed to publish fetch completed event: ${url}`, {
+      logger.error(`Failed to publish fetch completed event: ${lookupKey}`, {
         stack: (err as Error).stack,
-        url,
+        lookupKey,
       });
     }
   }
 
-  async countFailedRequests({ url }: { url: string }): Promise<number> {
+  async countFailedRequests({
+    lookupKey,
+    url,
+  }: {
+    lookupKey?: string;
+    url: string;
+  }): Promise<number> {
     const latestOkRequest = await this.requestRepo.findOne(
       {
-        url,
+        lookupKey: lookupKey || url,
         status: RequestStatus.OK,
       },
       {
@@ -384,7 +406,7 @@ export class FeedFetcherListenerService {
 
     if (latestOkRequest) {
       return this.requestRepo.count({
-        url,
+        lookupKey: lookupKey || url,
         status: {
           $ne: RequestStatus.OK,
         },
@@ -394,7 +416,7 @@ export class FeedFetcherListenerService {
       });
     } else {
       return this.requestRepo.count({
-        url,
+        lookupKey: lookupKey || url,
         status: {
           $ne: RequestStatus.OK,
         },
@@ -412,13 +434,14 @@ export class FeedFetcherListenerService {
 
   async requestExistsAfterTime(
     requestQuery: {
+      lookupKey?: string;
       url: string;
     },
     time: Date,
   ) {
     const found = await this.requestRepo.findOne(
       {
-        url: requestQuery.url,
+        lookupKey: requestQuery.lookupKey || requestQuery.url,
         createdAt: {
           $gt: time,
         },

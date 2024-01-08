@@ -3,8 +3,8 @@ import { CustomPlaceholderSchema } from "../CustomPlaceholder";
 import { DiscordComponentButtonStyle, DiscordComponentType } from "../FeedConnection";
 
 export const discordMessageEmbedFieldFormSchema = object({
-  name: string().max(256).required(),
-  value: string().max(1024).required(),
+  name: string().required(),
+  value: string().required(),
   inline: boolean().default(false).required(),
   id: string().required(),
 });
@@ -19,7 +19,7 @@ export const discordMessageEmbedFormSchema = object({
     )
     .optional(),
   author: object({
-    name: string().nullable().max(256),
+    name: string().nullable(),
     url: string()
       .nullable()
       .when("name", ([name], schema) => {
@@ -42,7 +42,7 @@ export const discordMessageEmbedFormSchema = object({
   })
     .optional()
     .nullable(),
-  title: string().nullable().max(256),
+  title: string().nullable(),
   url: string()
     .nullable()
     .when("title", ([title], schema) => {
@@ -52,7 +52,7 @@ export const discordMessageEmbedFormSchema = object({
 
       return schema;
     }),
-  description: string().nullable().max(4096),
+  description: string().nullable(),
   thumbnail: object({
     url: string().nullable(),
   })
@@ -64,7 +64,7 @@ export const discordMessageEmbedFormSchema = object({
     .optional()
     .nullable(),
   footer: object({
-    text: string().nullable().max(2048),
+    text: string().nullable(),
     iconUrl: string()
       .nullable()
       .when("text", ([text], schema) => {
@@ -84,7 +84,7 @@ export const discordMessageEmbedFormSchema = object({
 const DiscordButtonSchema = object({
   id: string().required(),
   type: number().oneOf([DiscordComponentType.Button]).required(),
-  label: string().max(80, "Must be at most 80 characters").required("This is a required field"),
+  label: string().required("This is a required field"),
   style: number()
     .oneOf(Object.values(DiscordComponentButtonStyle) as DiscordComponentButtonStyle[])
     .required(),
@@ -92,7 +92,7 @@ const DiscordButtonSchema = object({
 });
 
 export const discordMessageFormSchema = object({
-  content: string().max(2000),
+  content: string(),
   embeds: array().of(discordMessageEmbedFormSchema).max(10),
   componentRows: array(
     object({
@@ -102,7 +102,7 @@ export const discordMessageFormSchema = object({
   )
     .max(5)
     .nullable(),
-  forumThreadTitle: string().optional().max(100),
+  forumThreadTitle: string().optional(),
   forumThreadTags: array(
     object({
       id: string().required(),

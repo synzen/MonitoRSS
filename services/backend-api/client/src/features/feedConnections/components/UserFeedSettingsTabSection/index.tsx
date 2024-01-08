@@ -45,8 +45,11 @@ import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
+import duration from "dayjs/plugin/duration";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { ChevronDownIcon, DeleteIcon, SettingsIcon } from "@chakra-ui/icons";
 import advancedFormat from "dayjs/plugin/advancedFormat";
+import { useState } from "react";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -63,10 +66,15 @@ import { SelectUserDialog } from "./SelectUserDialog";
 import DATE_LOCALES from "../../../../constants/dateLocales";
 import { useUserFeedDatePreview } from "../../../feed/hooks/useUserFeedDatePreview";
 import { useDebounce } from "../../../../hooks";
+import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
+import { ManageUserFeedManagementInviteSettingsDialog } from "./ManageUserFeedManagementInviteSettingsDialog";
+import { AddFeedComanagerDialog } from "./AddFeedComanagerDialog";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(advancedFormat);
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
 
 interface Props {
   feedId: string;
@@ -118,6 +126,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     feedId,
   });
   const { data: user } = useDiscordUserMe();
+  const [manageInviteDialogState, setManageInviteDialogState] = useState<{
+    isOpen: boolean;
+    inviteId: string;
+  }>({
+    isOpen: false,
+    inviteId: "",
+  });
 
   const {
     handleSubmit,
@@ -200,13 +215,22 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     }
   };
 
-  const onAddUser = async ({ id, type }: { id: string; type: UserFeedManagerInviteType }) => {
+  const onAddUser = async ({
+    id,
+    type,
+    connections,
+  }: {
+    id: string;
+    type: UserFeedManagerInviteType;
+    connections: Array<{ connectionId: string }>;
+  }) => {
     try {
       await createUserFeedManagementInvite({
         data: {
           feedId,
           discordUserId: id,
           type,
+          connections,
         },
       });
       notifySuccess("Successfully sent invite");
@@ -243,6 +267,12 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
 
   return (
     <form onSubmit={handleSubmit(onUpdatedFeed)} id="user-management">
+      <ManageUserFeedManagementInviteSettingsDialog
+        feedId={feedId}
+        inviteId={manageInviteDialogState.inviteId}
+        isOpen={manageInviteDialogState.isOpen}
+        onClose={() => setManageInviteDialogState({ isOpen: false, inviteId: "" })}
+      />
       <Stack spacing={12} marginBottom={8} divider={<StackDivider />}>
         <Stack spacing={4}>
           <Stack>
@@ -271,62 +301,91 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       <Th>Name</Th>
                       <Th>Type</Th>
                       <Th>Status</Th>
+                      <Th>Connections</Th>
                       <Th>Added On</Th>
                       <Th />
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {feed.shareManageOptions.invites.map((u) => (
-                      <Tr key={u.id}>
-                        <Td>
-                          <DiscordUsername userId={u.discordUserId} />
-                        </Td>
-                        <Td>
-                          {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
-                            <Text>Co-manage</Text>
-                          )}
-                          {u.type === UserFeedManagerInviteType.Transfer && (
-                            <Text>Ownership transfer</Text>
-                          )}
-                        </Td>
-                        <Td>
-                          {u.status === UserFeedManagerStatus.Accepted && (
-                            <Tag colorScheme="green">Accepted</Tag>
-                          )}
-                          {u.status === UserFeedManagerStatus.Pending && (
-                            <Tag colorScheme="yellow">Pending</Tag>
-                          )}
-                          {u.status === UserFeedManagerStatus.Declined && (
+                    {feed.shareManageOptions.invites.map((u) => {
+                      const connectionIds = new Set(
+                        u.connections?.map((c) => c.connectionId) || []
+                      );
+                      const connectionNames = Object.values(feed.connections)
+                        .filter((c) => connectionIds.has(c.id))
+                        .map((c) => c.name);
+
+                      return (
+                        <Tr key={u.id}>
+                          <Td>
+                            <DiscordUsername userId={u.discordUserId} />
+                          </Td>
+                          <Td>
+                            {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
+                              <Text>Co-manage</Text>
+                            )}
+                            {u.type === UserFeedManagerInviteType.Transfer && (
+                              <Text>Ownership transfer</Text>
+                            )}
+                          </Td>
+                          <Td>
+                            {u.status === UserFeedManagerStatus.Accepted && (
+                              <Tag colorScheme="green">Accepted</Tag>
+                            )}
+                            {u.status === UserFeedManagerStatus.Pending && (
+                              <Tag colorScheme="yellow">Pending</Tag>
+                            )}
+                            {u.status === UserFeedManagerStatus.Declined && (
+                              <HStack>
+                                <Tag colorScheme="red">Declined</Tag>
+                                <ResendUserFeedManagementInviteButton
+                                  feedId={feedId}
+                                  inviteId={u.id}
+                                />
+                              </HStack>
+                            )}
+                          </Td>
+                          <Td>
+                            <Stack>
+                              {!connectionNames.length && <Text>All</Text>}
+                              {connectionNames.map((n) => (
+                                <Text display="block">{n}</Text>
+                              ))}
+                            </Stack>
+                          </Td>
+                          <Td>{u.createdAt}</Td>
+                          <Td isNumeric>
                             <HStack>
-                              <Tag colorScheme="red">Declined</Tag>
-                              <ResendUserFeedManagementInviteButton
-                                feedId={feedId}
-                                inviteId={u.id}
+                              <IconButton
+                                aria-label="Manage invite settings"
+                                icon={<SettingsIcon />}
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setManageInviteDialogState({ isOpen: true, inviteId: u.id })
+                                }
+                              />
+                              <ConfirmModal
+                                trigger={
+                                  <IconButton
+                                    size="sm"
+                                    aria-label="Delete user"
+                                    icon={<DeleteIcon />}
+                                    variant="ghost"
+                                    isDisabled={deletingInviteStatus === "loading"}
+                                  />
+                                }
+                                okText="Delete"
+                                title="Delete User"
+                                description="Are you sure you want to remove this user? They will lose access to this feed."
+                                colorScheme="red"
+                                onConfirm={() => removeInvite(u.id)}
                               />
                             </HStack>
-                          )}
-                        </Td>
-                        <Td>{u.createdAt}</Td>
-                        <Td isNumeric>
-                          <ConfirmModal
-                            trigger={
-                              <IconButton
-                                size="sm"
-                                aria-label="Delete user"
-                                icon={<DeleteIcon />}
-                                variant="ghost"
-                                isDisabled={deletingInviteStatus === "loading"}
-                              />
-                            }
-                            okText="Delete"
-                            title="Delete User"
-                            description="Are you sure you want to remove this user? They will lose access to this feed."
-                            colorScheme="red"
-                            onConfirm={() => removeInvite(u.id)}
-                          />
-                        </Td>
-                      </Tr>
-                    ))}
+                          </Td>
+                        </Tr>
+                      );
+                    })}
                   </Tbody>
                 </Table>
               </TableContainer>
@@ -343,18 +402,21 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                 Invite user to...
               </MenuButton>
               <MenuList>
-                <SelectUserDialog
+                <AddFeedComanagerDialog
+                  feedId={feedId}
                   trigger={<MenuItem>Co-manage feed</MenuItem>}
                   description={
                     <Text>
-                      This user will have access to manage all the settings of this feed, but you
-                      still retain ownership of this feed after they accept the invite. They must
-                      accept the invite by logging in.
+                      This user will have access to manage the settings and the existing connections
+                      of this feed. You will retain ownership of this feed after they accept the
+                      invite. They must accept the invite by logging in.
                     </Text>
                   }
                   title="Invite User to Co-manage Feed"
                   okButtonText="Invite"
-                  onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.CoManage })}
+                  onAdded={({ id, connections }) =>
+                    onAddUser({ id, type: UserFeedManagerInviteType.CoManage, connections })
+                  }
                 />
                 <SelectUserDialog
                   trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
@@ -366,7 +428,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   }
                   title="Invite User to Transfer Ownership"
                   okButtonText="Invite"
-                  onAdded={({ id }) => onAddUser({ id, type: UserFeedManagerInviteType.Transfer })}
+                  onAdded={({ id }) =>
+                    onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
+                  }
                 />
               </MenuList>
             </Menu>
@@ -406,9 +470,12 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                           reason = "(only available for higher supporter tiers)";
                         }
 
+                        const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
+
                         return (
                           <Radio value={r.rateSeconds.toString()} isDisabled={!!r.disabledCode}>
-                            {r.rateSeconds} seconds{reason ? ` ${reason}` : ""}
+                            {displayDuration}
+                            {reason ? ` ${reason}` : ""}
                           </Radio>
                         );
                       })}

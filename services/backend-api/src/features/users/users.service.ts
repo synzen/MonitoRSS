@@ -7,6 +7,7 @@ import { CreditBalanceDetails } from "../../common/types/credit-balance-details.
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
 import { formatCurrency } from "../../utils/format-currency";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { PaddleService } from "../paddle/paddle.service";
 import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
 import { SupporterSubscriptionsService } from "../supporter-subscriptions/supporter-subscriptions.service";
 import { SupportersService } from "../supporters/supporters.service";
@@ -43,9 +44,9 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: UserModel,
     private readonly supportersService: SupportersService,
-    private readonly supporterSubscriptionsService: SupporterSubscriptionsService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel
+    @InjectModel(Feed.name) private readonly feedModel: FeedModel,
+    private readonly paddleService: PaddleService
   ) {}
 
   async initDiscordUser(
@@ -136,9 +137,7 @@ export class UsersService {
 
     if (customer) {
       const { data: creditBalances } =
-        await this.supporterSubscriptionsService.getCustomerCreditBalanace(
-          customer.id
-        );
+        await this.paddleService.getCustomerCreditBalanace(customer.id);
 
       const creditBalanceInCurrency = creditBalances.find(
         (d) => d.currency_code === customer.currencyCode

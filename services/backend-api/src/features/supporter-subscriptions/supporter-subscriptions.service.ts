@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
-import fetch, { RequestInit } from "node-fetch";
-import { URLSearchParams } from "url";
 import { formatCurrency } from "../../utils/format-currency";
 import { SupportersService } from "../supporters/supporters.service";
 import { MessageBrokerService } from "../message-broker/message-broker.service";
@@ -11,16 +9,11 @@ import {
   SubscriptionProductKey,
   SUBSCRIPTION_PRODUCT_KEYS,
 } from "./constants/subscription-product-key.constants";
-import { PaddleCustomerCreditBalanceResponse } from "./types/paddle-customer-credit-balance-response.type";
-import { PaddleCustomerResponse } from "./types/paddle-customer-response.type";
 import { PaddlePricingPreviewResponse } from "./types/paddle-pricing-preview-response.type";
-import {
-  PaddleProductResponse,
-  PaddleProductsResponse,
-} from "./types/paddle-products-response.type";
+
 import { PaddleSubscriptionPreviewResponse } from "./types/paddle-subscription-preview-response.type";
-import { PaddleSubscriptionResponse } from "./types/paddle-subscription-response.type";
 import { PaddleSubscriptionUpdatePaymentMethodResponse } from "./types/paddle-subscription-update-payment-transaction.type";
+import { PaddleService } from "../paddle/paddle.service";
 
 const PRODUCT_NAMES: Record<SubscriptionProductKey, string> = {
   [SubscriptionProductKey.Free]: "Free",
@@ -40,33 +33,20 @@ const PRODUCT_KEYS_BY_PLEDGE: Record<string, string> = {
 
 @Injectable()
 export class SupporterSubscriptionsService {
-  PADDLE_URL?: string;
-  PADDLE_KEY?: string;
   PRODUCT_IDS: Array<{ id: string; name: string }> = [];
 
   constructor(
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
     @InjectModel(User.name) private readonly userModel: UserModel,
-    private readonly messageBrokerService: MessageBrokerService
-  ) {
-    this.PADDLE_URL = configService.get("BACKEND_API_PADDLE_URL");
-    this.PADDLE_KEY = configService.get("BACKEND_API_PADDLE_KEY");
-  }
+    private readonly messageBrokerService: MessageBrokerService,
+    private readonly paddleService: PaddleService
+  ) {}
 
   async getEmailFromDiscordUserId(discordUserId: string) {
     const user = await this.userModel.findOne({ discordUserId }).lean();
 
     return user?.email || null;
-  }
-
-  async getCustomerCreditBalanace(customerId: string) {
-    const response =
-      await this.executeApiCall<PaddleCustomerCreditBalanceResponse>(
-        `/customers/${customerId}/credit-balances`
-      );
-
-    return response;
   }
 
   async getConversionPriceIdsFromPatreon({ pledge }: { pledge: number }) {
@@ -76,7 +56,7 @@ export class SupporterSubscriptionsService {
       throw new Error(`No price key found for pledge amount ${pledge}`);
     }
 
-    const products = await this.getProducts();
+    const products = await this.paddleService.getProducts();
 
     const relevantProduct = products.products.filter(
       (p) => p.customData?.key === productKey
@@ -107,7 +87,7 @@ export class SupporterSubscriptionsService {
   }
 
   async getProductCurrencies(currency: string, data: { ipAddress?: string }) {
-    const { products } = await this.getProducts();
+    const { products } = await this.paddleService.getProducts();
 
     const priceIds = products
       .filter(
@@ -132,13 +112,14 @@ export class SupporterSubscriptionsService {
       customer_ip_address: data.ipAddress || "",
     };
 
-    const previewData = await this.executeApiCall<PaddlePricingPreviewResponse>(
-      `/pricing-preview`,
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }
-    );
+    const previewData =
+      await this.paddleService.executeApiCall<PaddlePricingPreviewResponse>(
+        `/pricing-preview`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
 
     const pricesByProduct: Partial<
       Record<
@@ -208,66 +189,6 @@ export class SupporterSubscriptionsService {
     };
   }
 
-  async getProducts() {
-    const searchParams = new URLSearchParams({
-      status: "active",
-      include: "prices",
-    });
-
-    const response = await this.executeApiCall<PaddleProductsResponse>(
-      `/products?${searchParams.toString()}`
-    );
-
-    return {
-      products: response.data
-        .filter((p) => !!p.custom_data?.key)
-        .map((p) => ({
-          id: p.custom_data?.key as string,
-          name: p.name,
-          prices: p.prices
-            .filter((s) => s.status === "active")
-            .map((p) => ({
-              id: p.id,
-              customData: p.custom_data,
-              billingCycle: p.billing_cycle,
-            })),
-          customData: p.custom_data,
-        })),
-    };
-  }
-
-  async getProduct(productId: string) {
-    const response = await this.executeApiCall<PaddleProductResponse>(
-      `/products/${productId}`
-    );
-
-    if (!response.data.custom_data?.key) {
-      throw new Error(
-        `Paddle Product ${productId} does not have a custom_data.key set`
-      );
-    }
-
-    return {
-      id: response.data.custom_data?.key as SubscriptionProductKey | undefined,
-    };
-  }
-
-  async getCustomer(id: string) {
-    const response = await this.executeApiCall<PaddleCustomerResponse>(
-      `/customers/${id}`
-    );
-
-    return {
-      email: response.data.email,
-    };
-  }
-
-  async getSubscription(subscriptionId: string) {
-    return this.executeApiCall<PaddleSubscriptionResponse>(
-      `/subscriptions/${subscriptionId}`
-    );
-  }
-
   async previewSubscriptionChange({
     email,
     items,
@@ -294,7 +215,7 @@ export class SupporterSubscriptionsService {
     };
 
     const response =
-      await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+      await this.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
         `/subscriptions/${existingSubscriptionId}/preview`,
         {
           method: "PATCH",
@@ -370,7 +291,7 @@ export class SupporterSubscriptionsService {
       proration_billing_mode: "prorated_immediately",
     };
 
-    await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+    await this.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
       `/subscriptions/${existingSubscriptionId}`,
       {
         method: "PATCH",
@@ -412,7 +333,7 @@ export class SupporterSubscriptionsService {
       effective_from: "next_billing_period",
     };
 
-    await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+    await this.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
       `/subscriptions/${existingSubscriptionId}/cancel`,
       {
         method: "POST",
@@ -444,7 +365,7 @@ export class SupporterSubscriptionsService {
       scheduled_change: null,
     };
 
-    await this.executeApiCall<PaddleSubscriptionPreviewResponse>(
+    await this.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
       `/subscriptions/${existingSubscriptionId}`,
       {
         method: "PATCH",
@@ -475,7 +396,7 @@ export class SupporterSubscriptionsService {
     }
 
     const response =
-      await this.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
+      await this.paddleService.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
         `/subscriptions/${existingSubscriptionId}/update-payment-method-transaction`
       );
 
@@ -513,37 +434,5 @@ export class SupporterSubscriptionsService {
         throw new Error("Failed to poll for subscription after 10 tries");
       }
     }
-  }
-
-  async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {
-    if (!this.PADDLE_KEY || !this.PADDLE_URL) {
-      throw new Error(
-        "Paddle key or paddle URL not set when executing api request to paddle products"
-      );
-    }
-
-    const url = `${this.PADDLE_URL}${endpoint}`;
-
-    const res = await fetch(url, {
-      ...data,
-      headers: {
-        ...data?.headers,
-        Authorization: `Bearer ${this.PADDLE_KEY}`,
-      },
-    });
-
-    if (!res.ok) {
-      let responseJson = null;
-
-      try {
-        responseJson = JSON.stringify(await res.json());
-      } catch (err) {}
-
-      throw new Error(
-        `Failed to make Paddle request (${url}) due to bad status code: ${res.status}. Response: ${responseJson}`
-      );
-    }
-
-    return res.json();
   }
 }

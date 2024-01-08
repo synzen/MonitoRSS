@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Article } from "../shared";
-import { InvalidExpressionException, RegexEvalException } from "./exceptions";
+import { InvalidExpressionException } from "./exceptions";
 import {
   FilterExpressionReference,
   ExpressionType,
@@ -13,6 +13,7 @@ import {
 } from "./types";
 import vm from "node:vm";
 import { validateLogicalExpression } from "./utils";
+import { FiltersRegexEvalException } from "../shared/exceptions";
 
 const REGEX_TIMEOUT_MS = 5000;
 
@@ -193,8 +194,8 @@ export class ArticleFiltersService {
 
       return contex.matches;
     } catch (err) {
-      throw new RegexEvalException(
-        `Regex "${inputRegex}" evaluation of string "${reference}" errored: ` +
+      throw new FiltersRegexEvalException(
+        `Filter regex "${inputRegex}" evaluation on text "${reference}" errored: ` +
           `${(err as Error).message}`
       );
     }

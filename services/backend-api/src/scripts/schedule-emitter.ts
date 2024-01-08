@@ -1,6 +1,7 @@
 import { INestApplicationContext } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "../app.module";
+import applyMongoMigrations from "../apply-mongo-migrations";
 import { ScheduleEmitterService } from "../features/schedule-emitter/schedule-emitter.service";
 import { ScheduleHandlerService } from "../features/schedule-handler/schedule-handler.service";
 import logger from "../utils/logger";
@@ -14,6 +15,8 @@ async function bootstrap() {
       AppModule.forScheduleEmitter()
     );
     await app.init();
+    logger.info(`Applying migrations...`);
+    await applyMongoMigrations(app);
 
     setInterval(() => {
       runTimerSync(app);

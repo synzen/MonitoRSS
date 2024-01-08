@@ -14,7 +14,7 @@ import {
 } from "@nestjs/common";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { UserFeed } from "../user-feeds/entities";
-import { GetUserFeedPipe } from "../user-feeds/pipes";
+import { GetUserFeedsPipe } from "../user-feeds/pipes";
 import { UserFeedManagerType } from "./constants";
 import {
   GetUserFeedManagementInviteByInviteePipe,
@@ -23,6 +23,7 @@ import {
 import {
   CreateUserFeedManagementInviteInputDto,
   UpdateUserFeedManagementInviteInputDto,
+  UpdateUserFeedManagementInviteStatusInputDto,
 } from "./dto";
 import { UserFeedManagementInvitesService } from "./user-feed-management-invites.service";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
@@ -73,21 +74,23 @@ export class UserFeedManagementInvitesController {
   async createInvite(
     @Body(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [UserFeedManagerType.Creator],
       })
     )
-    feed: UserFeed,
+    [feed]: UserFeed[],
     @Body(ValidationPipe)
     {
       discordUserId: targetDiscordUserId,
       type,
+      connections,
     }: CreateUserFeedManagementInviteInputDto
   ) {
     await this.service.createInvite({
       feed,
       targetDiscordUserId,
       type,
+      connections,
     });
 
     return {
@@ -101,8 +104,28 @@ export class UserFeedManagementInvitesController {
   @UseFilters(FeedExceptionFilter)
   async updateInvite(
     @Param("id") inviteId: string,
+    @Param("id", GetUserFeedManagementInviteByOwnerPipe()) userFeed: UserFeed,
+    @Body(ValidationPipe)
+    { connections }: UpdateUserFeedManagementInviteInputDto
+  ) {
+    await this.service.updateInvite(userFeed, inviteId, {
+      connections,
+    });
+
+    return {
+      result: {
+        status: "SUCCESS",
+      },
+    };
+  }
+
+  @Patch(":id/status")
+  @UseFilters(FeedExceptionFilter)
+  async updateInviteStatus(
+    @Param("id") inviteId: string,
     @Param("id", GetUserFeedManagementInviteByInviteePipe()) userFeed: UserFeed,
-    @Body(ValidationPipe) { status }: UpdateUserFeedManagementInviteInputDto
+    @Body(ValidationPipe)
+    { status }: UpdateUserFeedManagementInviteStatusInputDto
   ) {
     await this.service.updateInvite(userFeed, inviteId, {
       status,

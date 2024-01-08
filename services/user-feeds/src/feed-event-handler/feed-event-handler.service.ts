@@ -140,14 +140,10 @@ export class FeedEventHandlerService {
         deliveryRecordId,
         {
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.BadRequest,
-          internalMessage:
-            `Discord rejected the request with status code` +
-            ` ${
-              result.status
-            } Body: ${responseBody}, Request Body: ${JSON.stringify(
-              job.options.body
-            )}`,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
+          internalMessage: `Body: ${responseBody}, Request Body: ${JSON.stringify(
+            job.options.body
+          )}`,
           externalDetail: responseBody,
           articleId,
         }
@@ -174,9 +170,7 @@ export class FeedEventHandlerService {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
         errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
-        internalMessage: `Discord rejected the request with status code ${
-          result.status
-        } Body: ${JSON.stringify(result.body)}`,
+        internalMessage: `Body: ${JSON.stringify(result.body)}`,
         articleId,
       });
     } else if (result.status === 403) {
@@ -184,10 +178,8 @@ export class FeedEventHandlerService {
         deliveryRecordId,
         {
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.Forbidden,
-          internalMessage: `Discord rejected the request with status code ${
-            result.status
-          } Body: ${JSON.stringify(result.body)}`,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
+          internalMessage: `Body: ${JSON.stringify(result.body)}`,
           articleId,
         }
       );
@@ -212,10 +204,8 @@ export class FeedEventHandlerService {
         deliveryRecordId,
         {
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.MediumNotFound,
-          internalMessage: `Discord rejected the request with status code ${
-            result.status
-          } Body: ${JSON.stringify(result.body)}`,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyNotFound,
+          internalMessage: `Body: ${JSON.stringify(result.body)}`,
           articleId,
         }
       );

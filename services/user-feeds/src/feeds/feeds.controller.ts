@@ -40,6 +40,10 @@ import {
   TransformValidationPipe,
   UserFeedFormatOptions,
 } from "../shared";
+import {
+  CustomPlaceholderRegexEvalException,
+  FiltersRegexEvalException,
+} from "../shared/exceptions";
 import { ApiGuard } from "../shared/guards";
 import { TestDeliveryMedium, TestDeliveryStatus } from "./constants";
 import {
@@ -217,10 +221,17 @@ export class FeedsController {
         };
       }
 
-      if (err instanceof RegexEvalException) {
+      if (err instanceof CustomPlaceholderRegexEvalException) {
         throw new UnprocessableEntityException({
           statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-          code: "REGEX_EVAL",
+          code: "CUSTOM_PLACEHOLDER_REGEX_EVAL",
+          message: err.message,
+          errors: err.regexErrors,
+        });
+      } else if (err instanceof FiltersRegexEvalException) {
+        throw new UnprocessableEntityException({
+          statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: "FILTERS_REGEX_EVAL",
           message: err.message,
           errors: err.regexErrors,
         });
@@ -497,10 +508,17 @@ export class FeedsController {
         throw new BadRequestException(err.errors);
       }
 
-      if (err instanceof RegexEvalException) {
+      if (err instanceof CustomPlaceholderRegexEvalException) {
         throw new UnprocessableEntityException({
           statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-          code: "REGEX_EVAL",
+          code: "CUSTOM_PLACEHOLDER_REGEX_EVAL",
+          message: err.message,
+          errors: err.regexErrors,
+        });
+      } else if (err instanceof FiltersRegexEvalException) {
+        throw new UnprocessableEntityException({
+          statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: "FILTERS_REGEX_EVAL",
           message: err.message,
           errors: err.regexErrors,
         });

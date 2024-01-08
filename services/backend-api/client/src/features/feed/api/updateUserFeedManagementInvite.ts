@@ -1,13 +1,11 @@
-import { UserFeedManagerStatus } from "../../../constants";
 import fetchRest from "../../../utils/fetchRest";
 
 export interface UpdateUserFeedManagementInviteInput {
   id: string;
   data: {
-    status: Extract<
-      UserFeedManagerStatus,
-      UserFeedManagerStatus.Accepted | UserFeedManagerStatus.Declined
-    >;
+    connections?: Array<{
+      connectionId: string;
+    }> | null;
   };
 }
 

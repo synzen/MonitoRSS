@@ -258,6 +258,12 @@ export class DiscordChannelConnection {
   disabledCode?: FeedConnectionDisabledCode;
 
   @Prop({
+    required: false,
+    type: String,
+  })
+  disabledDetail?: string;
+
+  @Prop({
     type: FiltersSchema,
     required: false,
   })

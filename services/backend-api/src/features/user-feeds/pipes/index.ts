@@ -1,1 +1,1 @@
-export * from "./get-user-feed.pipe";
+export * from "./get-user-feeds.pipe";

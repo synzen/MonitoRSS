@@ -8,7 +8,6 @@ interface Request {
 
 interface Result {
   requests: Request[];
-  totalRequests: number;
   nextRetryTimestamp: number | null;
 }
 

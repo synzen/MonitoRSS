@@ -9,6 +9,7 @@ import {
   MediumKey,
   MediumPayload,
 } from "../shared";
+import { RegexEvalException } from "../shared/exceptions";
 import logger from "../shared/utils/logger";
 import { DeliveryMedium } from "./mediums/delivery-medium.interface";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
@@ -38,7 +39,7 @@ export class DeliveryService {
     let articleStates: ArticleDeliveryState[] = [];
     const underLimitInfo =
       await this.articleRateLimitService.getUnderLimitCheckFromInputLimits(
-        event.data.feed.id,
+        { feedId: event.data.feed.id },
         [
           {
             limit: event.data.articleDayLimit,
@@ -62,7 +63,7 @@ export class DeliveryService {
 
       const underLimitInfoOfMedium =
         await this.articleRateLimitService.getUnderLimitCheckFromInputLimits(
-          event.data.feed.id,
+          { mediumId: medium.id },
           medium.rateLimits || []
         );
 
@@ -120,7 +121,10 @@ export class DeliveryService {
           {
             id: deliveryId,
             mediumId: medium.id,
-            status: ArticleDeliveryStatus.RateLimited,
+            status:
+              limitState.remaining <= 0
+                ? ArticleDeliveryStatus.RateLimited
+                : ArticleDeliveryStatus.MediumRateLimitedByUser,
             articleIdHash: article.flattened.idHash,
           },
         ];
@@ -171,6 +175,20 @@ export class DeliveryService {
 
       return articleStates;
     } catch (err) {
+      if (err instanceof RegexEvalException) {
+        return [
+          {
+            id: deliveryId,
+            mediumId: medium.id,
+            status: ArticleDeliveryStatus.Rejected,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.ArticleProcessingError,
+            internalMessage: (err as Error).message,
+            externalDetail: (err as Error).message,
+          },
+        ];
+      }
+
       logger.error(`Failed to deliver article to medium ${medium.key}`, {
         event,
         error: (err as Error).stack,

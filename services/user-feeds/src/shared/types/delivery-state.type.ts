@@ -1,7 +1,4 @@
-import {
-  ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
-} from "../constants";
+import { ArticleDeliveryErrorCode } from "../constants";
 import { ArticleDeliveryContentType } from "./article-delivery-content-type.type";
 
 export enum ArticleDeliveryStatus {
@@ -16,6 +13,8 @@ export enum ArticleDeliveryStatus {
   FilteredOut = "filtered-out",
   // Rate limit enforced by this service
   RateLimited = "rate-limited",
+  // Delivery rate limit per medium specified by user
+  MediumRateLimitedByUser = "medium-rate-limited-by-user",
 }
 
 interface BaseArticleDeliveryState {
@@ -42,9 +41,20 @@ interface ArticleDeliveryRateLimitState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.RateLimited;
 }
 
+interface ArticleDeliveryMediumRateLimitedState
+  extends BaseArticleDeliveryState {
+  id: string;
+  mediumId: string;
+  status: ArticleDeliveryStatus.MediumRateLimitedByUser;
+}
+
 interface ArticleDeliveryRejectedState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.Rejected;
-  errorCode: ArticleDeliveryRejectedCode;
+  errorCode: ArticleDeliveryErrorCode;
+  /**
+   * User-facing detail.
+   */
+  externalDetail: string;
   internalMessage: string;
 }
 
@@ -70,4 +80,5 @@ export type ArticleDeliveryState =
   | ArticleDeliveryFailureState
   | ArticleDeliveryFilteredOutState
   | ArticleDeliveryRejectedState
-  | ArticleDeliveryRateLimitState;
+  | ArticleDeliveryRateLimitState
+  | ArticleDeliveryMediumRateLimitedState;

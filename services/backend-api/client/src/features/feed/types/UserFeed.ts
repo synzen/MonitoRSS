@@ -45,6 +45,11 @@ export const UserFeedSchema = object({
         createdAt: string()
           .transform((value) => (value ? new Date(value).toISOString() : value))
           .required(),
+        connections: array(
+          object({
+            connectionId: string().required(),
+          }).required()
+        ).nullable(),
       }).required()
     ).required(),
   })

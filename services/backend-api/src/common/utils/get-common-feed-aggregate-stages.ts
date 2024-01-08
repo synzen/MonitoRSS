@@ -4,14 +4,26 @@ import { UserFeedDocument } from "../../features/user-feeds/entities";
 export function getCommonFeedAggregateStages({
   refreshRateSeconds,
   url,
+  feedRequestLookupKey,
+  withLookupKeys,
 }: {
   refreshRateSeconds: number;
   url?: string;
+  feedRequestLookupKey?: string;
+  withLookupKeys?: boolean;
 }) {
   const query: FilterQuery<UserFeedDocument> = {
     ...(url ? { url } : {}),
     disabledCode: {
       $exists: false,
+    },
+    ...(feedRequestLookupKey
+      ? {
+          feedRequestLookupKey,
+        }
+      : {}),
+    feedRequestLookupKey: {
+      $exists: withLookupKeys || false,
     },
     $or: [
       {

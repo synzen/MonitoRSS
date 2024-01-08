@@ -48,7 +48,7 @@ import {
   UserFeedDisabledAlert,
   UserFeedDisabledCode,
   useUpdateUserFeed,
-  useUpdateUserFeedManagementInvite,
+  useUpdateUserFeedManagementInviteStatus,
   useUserFeed,
 } from "../features/feed";
 import RouteParams from "../types/RouteParams";
@@ -67,6 +67,7 @@ import { UserFeedRequestsTable } from "../features/feed/components/UserFeedReque
 import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
 import { FeedConnectionDisabledCode } from "../types";
+import { formatRefreshRateSeconds } from "../utils/formatRefreshRateSeconds";
 
 enum TabSearchParam {
   Connections = "?view=connections",
@@ -106,7 +107,8 @@ export const UserFeed: React.FC = () => {
 
   const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
-  const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInvite();
+  const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInviteStatus();
+  const isSharedWithMe = !!feed?.sharedAccessDetails?.inviteId;
 
   const onAddConnection = (
     type: "discord-channel" | "discord-webhook",
@@ -196,7 +198,7 @@ export const UserFeed: React.FC = () => {
     }
   };
 
-  const addConnectionButtons = (
+  const addConnectionButtons = isSharedWithMe ? null : (
     <Flex gap={4} flexWrap="wrap">
       <Button
         variant="outline"
@@ -436,9 +438,9 @@ export const UserFeed: React.FC = () => {
                 rowGap={{ base: "8", lg: "14" }}
               >
                 <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                  {t("pages.feed.refreshRateValue", {
-                    seconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
-                  })}
+                  {feed?.userRefreshRateSeconds
+                    ? formatRefreshRateSeconds(feed.userRefreshRateSeconds)
+                    : null}
                 </CategoryText>
                 <CategoryText title={t("pages.feed.createdAtLabel")}>
                   {feed?.createdAt}
@@ -538,7 +540,7 @@ export const UserFeed: React.FC = () => {
                       </Heading>
                       <Menu placement="bottom-end">
                         <MenuButton colorScheme="blue" as={Button} rightIcon={<ChevronDownIcon />}>
-                          {t("pages.feed.addConnectionButtonText")}
+                          Add new
                         </MenuButton>
                         <MenuList maxWidth="300px">
                           <MenuItem onClick={() => onAddConnection("discord-channel")}>
@@ -573,7 +575,7 @@ export const UserFeed: React.FC = () => {
                     </Flex>
                     <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                   </Stack>
-                  {feed && !feed.connections.length && (
+                  {feed && !feed.connections.length && !isSharedWithMe && (
                     <Stack>
                       <Alert status="warning" rounded="md">
                         <AlertIcon />

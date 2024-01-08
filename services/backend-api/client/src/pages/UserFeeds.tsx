@@ -13,16 +13,18 @@ import {
   AlertTitle,
   AlertDescription,
   Tooltip,
+  Center,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeftIcon } from "@chakra-ui/icons";
+import { AddIcon, ArrowLeftIcon } from "@chakra-ui/icons";
 import { useCallback, useContext, useEffect } from "react";
-import { UserFeedsTable } from "../features/feed/components/UserFeedsTable";
+import { FaRegNewspaper } from "react-icons/fa6";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import {
   FeedManagementInvitesDialog,
   UserFeedComputedStatus,
+  UserFeedsTable,
   useUserFeedManagementInvitesCount,
   useUserFeeds,
 } from "../features/feed";
@@ -216,7 +218,26 @@ export const UserFeeds: React.FC = () => {
             )}
           </Stack>
         </Stack>
-        <UserFeedsTable onSelectedFeedId={onSelectedFeed} />
+        {userFeedsResults?.total === 0 && (
+          <Center>
+            <Stack spacing={6}>
+              <Stack alignItems="center">
+                <Box p={12} rounded="full" bg="gray.700" opacity={0.3}>
+                  <FaRegNewspaper fontSize={128} />
+                </Box>
+                <Text fontSize={24} fontWeight="semibold">
+                  You don&apos;t have any feeds yet
+                </Text>
+              </Stack>
+              <Button colorScheme="blue" leftIcon={<AddIcon fontSize={12} />}>
+                Add a new feed
+              </Button>
+            </Stack>
+          </Center>
+        )}
+        {userFeedsResults && userFeedsResults.total > 0 ? (
+          <UserFeedsTable onSelectedFeedId={onSelectedFeed} />
+        ) : null}
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
   );

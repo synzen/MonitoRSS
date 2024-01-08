@@ -47,6 +47,8 @@ export class DeliveryRecordService {
           internal_message: articleState.internalMessage,
           medium_id: articleState.mediumId,
           article_id_hash: articleState.articleIdHash,
+          external_detail:
+            articleStatus === Rejected ? articleState.externalDetail : null,
         });
       } else if (articleStatus === PendingDelivery) {
         record = new DeliveryRecord({
@@ -107,7 +109,7 @@ export class DeliveryRecordService {
   }
 
   async countDeliveriesInPastTimeframe(
-    { feedId }: { feedId: string },
+    { mediumId, feedId }: { mediumId?: string; feedId?: string },
     secondsInPast: number
   ) {
     // Convert initial counts to the same query below
@@ -115,7 +117,16 @@ export class DeliveryRecordService {
       .createQueryBuilder()
       .count()
       .where({
-        feed_id: feedId,
+        ...(mediumId
+          ? {
+              medium_id: mediumId,
+            }
+          : {}),
+        ...(feedId
+          ? {
+              feed_id: feedId,
+            }
+          : {}),
       })
       .andWhere({
         status: {
@@ -135,6 +146,6 @@ export class DeliveryRecordService {
       .from(subquery, "subquery")
       .execute("get");
 
-    return query.count;
+    return Number(query.count);
   }
 }

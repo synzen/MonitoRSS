@@ -22,7 +22,7 @@ import {
 } from "../feeds/constants";
 import { UserFeedManagerType } from "../user-feed-management-invites/constants";
 import { UserFeed } from "../user-feeds/entities";
-import { GetUserFeedPipe } from "../user-feeds/pipes";
+import { GetUserFeedsPipe } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionCloneInputDto,
   CreateDiscordChannelConnectionCopyConnectionSettingsInputDto,
@@ -59,14 +59,14 @@ export class FeedConnectionsDiscordChannelsController {
   async createDiscordChannelConnection(
     @Param(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [
           UserFeedManagerType.Creator,
           UserFeedManagerType.SharedManager,
         ],
       })
     )
-    feed: UserFeed,
+    [feed]: UserFeed[],
     @Body(ValidationPipe)
     {
       channelId,
@@ -79,13 +79,13 @@ export class FeedConnectionsDiscordChannelsController {
   ): Promise<CreateDiscordChannelConnectionOutputDto> {
     const createdConnection = await this.service.createDiscordChannelConnection(
       {
-        feedId: feed._id.toHexString(),
+        feed,
         name,
         channelId,
         userAccessToken: access_token,
-        discordUserId,
         webhook,
         applicationWebhook,
+        userDiscordUserId: discordUserId,
       }
     );
 
@@ -119,7 +119,7 @@ export class FeedConnectionsDiscordChannelsController {
   async sendTestArticle(
     @Param(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [
           UserFeedManagerType.Creator,
           UserFeedManagerType.SharedManager,
@@ -127,7 +127,7 @@ export class FeedConnectionsDiscordChannelsController {
       }),
       GetFeedDiscordChannelConnectionPipe
     )
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     data: CreateDiscordChannelConnectionTestArticleInputDto
   ): Promise<CreateDiscordChannelConnectionTestArticleOutputDto> {
@@ -155,7 +155,7 @@ export class FeedConnectionsDiscordChannelsController {
   async copyConnectionSettings(
     @Param(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [
           UserFeedManagerType.Creator,
           UserFeedManagerType.SharedManager,
@@ -163,7 +163,7 @@ export class FeedConnectionsDiscordChannelsController {
       }),
       GetFeedDiscordChannelConnectionPipe
     )
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     {
       properties,
@@ -180,7 +180,7 @@ export class FeedConnectionsDiscordChannelsController {
   async clone(
     @Param(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [
           UserFeedManagerType.Creator,
           UserFeedManagerType.SharedManager,
@@ -188,16 +188,18 @@ export class FeedConnectionsDiscordChannelsController {
       }),
       GetFeedDiscordChannelConnectionPipe
     )
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     data: CreateDiscordChannelConnectionCloneInputDto,
-    @DiscordAccessToken() { access_token }: SessionAccessToken
+    @DiscordAccessToken()
+    { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ) {
     const result = await this.service.cloneConnection(
       feed,
       connection,
       data,
-      access_token
+      access_token,
+      discordUserId
     );
 
     return {
@@ -210,7 +212,7 @@ export class FeedConnectionsDiscordChannelsController {
   async createPreview(
     @Param(
       "feedId",
-      GetUserFeedPipe({
+      GetUserFeedsPipe({
         userTypes: [
           UserFeedManagerType.Creator,
           UserFeedManagerType.SharedManager,
@@ -218,7 +220,7 @@ export class FeedConnectionsDiscordChannelsController {
       }),
       GetFeedDiscordChannelConnectionPipe
     )
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     {
       article,
@@ -261,8 +263,8 @@ export class FeedConnectionsDiscordChannelsController {
   @Patch("/discord-channels/:connectionId")
   @UseFilters(UpdateDiscordChannelConnectionFilter)
   async updateDiscordChannelConnection(
-    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordChannelConnectionPipe)
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput,
+    @Param("feedId", GetUserFeedsPipe(), GetFeedDiscordChannelConnectionPipe)
+    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     {
       channelId,
@@ -386,8 +388,8 @@ export class FeedConnectionsDiscordChannelsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseFilters(DeleteDiscordChannelConnectionFilter)
   async deleteDiscordChannelConnection(
-    @Param("feedId", GetUserFeedPipe(), GetFeedDiscordChannelConnectionPipe)
-    { feed, connection }: GetFeedDiscordChannelConnectionPipeOutput
+    @Param("feedId", GetUserFeedsPipe(), GetFeedDiscordChannelConnectionPipe)
+    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[]
   ): Promise<void> {
     await this.service.deleteConnection(
       feed._id.toHexString(),

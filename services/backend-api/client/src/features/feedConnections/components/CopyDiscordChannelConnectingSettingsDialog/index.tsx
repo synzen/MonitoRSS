@@ -20,13 +20,15 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserFeed } from "../../../feed/hooks";
-import { FeedConnectionType, FeedDiscordChannelConnection } from "../../../../types";
+import { FeedDiscordChannelConnection } from "../../../../types";
 import { getPrettyConnectionName } from "../../../../utils/getPrettyConnectionName";
 import { CopyableConnectionDiscordChannelSettings } from "../../constants";
 import { useConnection, useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
 import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { getPrettyConnectionDetail } from "../../../../utils/getPrettyConnectionDetail";
+import { ConnectionsCheckboxList } from "../ConnectionsCheckboxList";
+import { UserFeed } from "../../../feed/types";
 
 enum CopyCategory {
   Message = "Message",
@@ -159,14 +161,6 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
       setCheckedSettings([...checkedSettings, setting]);
     } else if (!checked && checkedSettings.includes(setting)) {
       setCheckedSettings(checkedSettings.filter((s) => s !== setting));
-    }
-  };
-
-  const onCheckConnectionChange = (inputConnectionId: string, checked: boolean) => {
-    if (checked && !checkedConnections.includes(inputConnectionId)) {
-      setCheckedConnections([...checkedConnections, inputConnectionId]);
-    } else if (!checked && checkedConnections.includes(inputConnectionId)) {
-      setCheckedConnections(checkedConnections.filter((c) => c !== inputConnectionId));
     }
   };
 
@@ -380,38 +374,11 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 </Button>
               </HStack>
               <Stack>
-                {feed?.connections
-                  .filter((c) => c.key === FeedConnectionType.DiscordChannel)
-                  .map((c) => {
-                    return (
-                      <Box
-                        bg="blackAlpha.300"
-                        borderWidth="2px"
-                        borderColor={checkedConnections.includes(c.id) ? "blue.400" : "transparent"}
-                        rounded="md"
-                      >
-                        <Checkbox
-                          px={4}
-                          py={3}
-                          onChange={(e) => onCheckConnectionChange(c.id, e.target.checked)}
-                          isChecked={checkedConnections.includes(c.id)}
-                          width="100%"
-                        >
-                          <chakra.span ml={4} display="inline-block">
-                            <chakra.span color="gray.500" fontSize="sm">
-                              {getPrettyConnectionName(c as never)}
-                            </chakra.span>
-                            {connectionDetail ? (
-                              <chakra.span display="block">{connectionDetail}</chakra.span>
-                            ) : (
-                              <br />
-                            )}
-                            <chakra.span fontWeight={600}>{c.name}</chakra.span>
-                          </chakra.span>
-                        </Checkbox>
-                      </Box>
-                    );
-                  })}
+                <ConnectionsCheckboxList
+                  checkedConnectionIds={checkedConnections}
+                  onCheckConnectionChange={setCheckedConnections}
+                  feed={feed as UserFeed}
+                />
               </Stack>
             </Stack>
           </Stack>

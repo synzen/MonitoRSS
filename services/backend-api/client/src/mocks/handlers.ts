@@ -476,7 +476,7 @@ const handlers = [
     );
   }),
 
-  rest.patch("/api/v1/user-feed-management-invites/:id", async (req, res, ctx) => {
+  rest.patch("/api/v1/user-feed-management-invites/:id/status", async (req, res, ctx) => {
     const { id } = req.params;
 
     mockUserFeedManagementInvites.splice(
@@ -718,7 +718,6 @@ const handlers = [
       ctx.json<GetUserFeedRequestsOutput>({
         result: {
           requests: mockUserFeedRequests,
-          totalRequests: mockUserFeedRequests.length,
           nextRetryTimestamp: Math.floor(new Date(2020).getTime() / 1000),
         },
       })

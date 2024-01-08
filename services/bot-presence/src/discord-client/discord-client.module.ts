@@ -27,10 +27,15 @@ export class DiscordClientModule {
 
             const rest = new REST({ version: '10' }).setToken(token);
 
-            let intents: GatewayIntentBits | undefined = undefined;
+            let intents: GatewayIntentBits = undefined;
 
             if (appConfigService.getSupporterGuildId()) {
               intents = GatewayIntentBits.GuildMembers;
+            }
+
+            if (!intents) {
+              // Force the bot to be online anyways
+              intents = GatewayIntentBits.Guilds;
             }
 
             const gateway = new WebSocketManager({
@@ -42,9 +47,7 @@ export class DiscordClientModule {
 
             const client = new Client({ rest, gateway });
 
-            if (intents) {
-              await gateway.connect();
-            }
+            await gateway.connect();
 
             if (presenceStatus) {
               const shards = await gateway.getShardIds();

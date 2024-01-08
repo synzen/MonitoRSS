@@ -14,10 +14,6 @@ export class FeedsService {
     private readonly articleFiltersService: ArticleFiltersService
   ) {}
 
-  getRateLimitInformation(feedId: string) {
-    return this.articleRateLimitsService.getFeedLimitInformation(feedId);
-  }
-
   getFilterExpressionErrors(expression: Record<string, unknown>) {
     return this.articleFiltersService.getFilterExpressionErrors(expression);
   }

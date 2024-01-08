@@ -1,5 +1,4 @@
 export enum MessageBrokerQueue {
-  UrlFetch = "url.fetch",
   UrlFetchCompleted = "url.fetch.completed",
   UrlFetchBatch = "url.fetch-batch",
   UrlFailedDisableFeeds = "url.failed.disable-feeds",

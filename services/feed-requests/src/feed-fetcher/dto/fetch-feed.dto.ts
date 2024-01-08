@@ -30,6 +30,10 @@ export class FetchFeedDto {
   @Validate(HttpValidator)
   url!: string;
 
+  @IsString()
+  @IsOptional()
+  lookupKey?: string;
+
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)

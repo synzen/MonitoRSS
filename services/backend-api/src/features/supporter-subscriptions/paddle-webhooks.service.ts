@@ -8,7 +8,6 @@ import {
   LegacySubscriptionProductKey,
   SubscriptionProductKey,
 } from "./constants/subscription-product-key.constants";
-import { SupporterSubscriptionsService } from "./supporter-subscriptions.service";
 import {
   PaddleEventSubscriptionActivated,
   PaddleEventSubscriptionCanceled,
@@ -21,6 +20,8 @@ import { ConfigService } from "@nestjs/config";
 import { createHmac } from "crypto";
 import { SupportersService } from "../supporters/supporters.service";
 import logger from "../../utils/logger";
+import { UserFeedsService } from "../user-feeds/user-feeds.service";
+import { PaddleService } from "../paddle/paddle.service";
 const BENEFITS_BY_TIER: Partial<
   Record<
     SubscriptionProductKey | LegacySubscriptionProductKey,
@@ -100,13 +101,14 @@ const SUBSCRIPTION_STATUS_MAPPING: Record<
 export class PaddleWebhooksService {
   paddleWebhookSecret?: string;
   constructor(
-    private readonly supporterSubscriptionsService: SupporterSubscriptionsService,
     @InjectModel(Supporter.name)
     private readonly supporterModel: SupporterModel,
     @InjectModel(User.name)
     private readonly userModel: UserModel,
     private readonly configService: ConfigService,
-    private readonly supportersService: SupportersService
+    private readonly supportersService: SupportersService,
+    private readonly userFeedsService: UserFeedsService,
+    private readonly paddleService: PaddleService
   ) {
     this.paddleWebhookSecret = this.configService.get<string>(
       "BACKEND_API_PADDLE_WEBHOOK_SECRET"
@@ -167,10 +169,9 @@ export class PaddleWebhooksService {
       return;
     }
 
-    const { id: productKey } =
-      await this.supporterSubscriptionsService.getProduct(
-        event.data.items[0].price.product_id
-      );
+    const { id: productKey } = await this.paddleService.getProduct(
+      event.data.items[0].price.product_id
+    );
 
     if (!productKey) {
       throw new Error(
@@ -187,7 +188,7 @@ export class PaddleWebhooksService {
       );
     }
 
-    const { email } = await this.supporterSubscriptionsService.getCustomer(
+    const { email } = await this.paddleService.getCustomer(
       event.data.customer_id
     );
 
@@ -249,12 +250,16 @@ export class PaddleWebhooksService {
       }
     );
 
+    await this.enforceFeedLimit({
+      discordUserId: foundUser.discordUserId,
+    });
+
     try {
       await this.supportersService.syncDiscordSupporterRoles(
         foundUser.discordUserId
       );
     } catch (err) {
-      logger.error(
+      logger.info(
         "Error while syncing discord supporter roles after handling subscription updated event",
         {
           stack: (err as Error).stack,
@@ -283,7 +288,21 @@ export class PaddleWebhooksService {
     );
 
     if (supporter?._id) {
-      await this.supportersService.syncDiscordSupporterRoles(supporter._id);
+      await this.enforceFeedLimit({
+        discordUserId: supporter._id,
+      });
+
+      try {
+        await this.supportersService.syncDiscordSupporterRoles(supporter._id);
+      } catch (err) {
+        logger.info(
+          "Error while syncing discord supporter roles after handling subscription canceled event",
+          {
+            stack: (err as Error).stack,
+            supporterId: supporter._id,
+          }
+        );
+      }
     }
   }
 
@@ -301,5 +320,26 @@ export class PaddleWebhooksService {
     }
 
     return mapped;
+  }
+
+  private async enforceFeedLimit({ discordUserId }: { discordUserId: string }) {
+    try {
+      const { maxUserFeeds } =
+        await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+
+      await this.userFeedsService.enforceUserFeedLimits([
+        {
+          discordUserId,
+          maxUserFeeds,
+        },
+      ]);
+    } catch (err) {
+      logger.error(
+        `Error while enforcing feed limit for discord user ${discordUserId}`,
+        {
+          stack: (err as Error).stack,
+        }
+      );
+    }
   }
 }

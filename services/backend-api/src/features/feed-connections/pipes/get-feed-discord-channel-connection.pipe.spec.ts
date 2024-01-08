@@ -18,7 +18,7 @@ describe("GetFeedDiscordChannelConnection", () => {
 
   it("throws an error if connection id does not exist in params", () => {
     request.params = {};
-    expect(() => pipe.transform({} as never)).toThrowError(Error);
+    expect(() => pipe.transform([{} as never])).toThrowError(Error);
   });
 
   it("throws not found if connection is not found", () => {
@@ -27,7 +27,7 @@ describe("GetFeedDiscordChannelConnection", () => {
         discordChannels: [],
       },
     };
-    expect(() => pipe.transform(feed as never)).toThrowError(
+    expect(() => pipe.transform([feed as never])).toThrowError(
       FeedConnectionNotFoundException
     );
   });
@@ -45,6 +45,6 @@ describe("GetFeedDiscordChannelConnection", () => {
         discordChannels: [connection],
       },
     };
-    expect(pipe.transform(feed as never)).toEqual({ feed, connection });
+    expect(pipe.transform([feed as never])).toEqual([{ feed, connection }]);
   });
 });

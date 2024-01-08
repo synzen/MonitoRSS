@@ -4,6 +4,7 @@ import { StandardException } from "../../../common/exceptions/standard-exception
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import {
   FeedArticleNotFoundException,
+  InvalidFiltersRegexException,
   InvalidPreviewCustomPlaceholdersRegexException,
 } from "../../../services/feed-fetcher/exceptions";
 import { FeedConnectionNotFoundException } from "../exceptions";
@@ -21,6 +22,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [InvalidPreviewCustomPlaceholdersRegexException.name]: {
       status: HttpStatus.UNPROCESSABLE_ENTITY,
       code: ApiErrorCode.INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT,
+    },
+    [InvalidFiltersRegexException.name]: {
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      code: ApiErrorCode.INVALID_FILTERS_REGEX,
     },
   };
 

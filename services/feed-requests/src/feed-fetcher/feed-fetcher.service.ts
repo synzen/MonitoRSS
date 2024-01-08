@@ -5,7 +5,7 @@ import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { GetFeedRequestsCountInput, GetFeedRequestsInput } from './types';
+import { GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
@@ -30,6 +30,10 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
     if (obj[key]) {
       newObj[key] = obj[key];
     }
+  }
+
+  if (newObj.authorization) {
+    newObj.authorization = 'SECRET';
   }
 
   return newObj;
@@ -65,7 +69,7 @@ export class FeedFetcherService {
   async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
     return this.requestRepo.find(
       {
-        url,
+        lookupKey: url,
       },
       {
         limit,
@@ -77,10 +81,6 @@ export class FeedFetcherService {
         populate: ['response'],
       },
     );
-  }
-
-  async countRequests({ url }: GetFeedRequestsCountInput) {
-    return this.requestRepo.count({ url });
   }
 
   // async getLatestRequestHeaders({
@@ -109,13 +109,19 @@ export class FeedFetcherService {
   //   return request.response?.headers || {};
   // }
 
-  async getLatestRequest(url: string): Promise<{
+  async getLatestRequest({
+    url,
+    lookupKey,
+  }: {
+    url: string;
+    lookupKey: string | undefined;
+  }): Promise<{
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
     const request = await this.requestRepo.findOne(
       {
-        url,
+        lookupKey: lookupKey || url,
       },
       {
         orderBy: {
@@ -167,6 +173,7 @@ export class FeedFetcherService {
   async fetchAndSaveResponse(
     url: string,
     options?: {
+      lookupKey: string | undefined;
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string>;
@@ -180,6 +187,7 @@ export class FeedFetcherService {
       headers: options?.headers,
     };
     const request = new Request();
+    request.lookupKey = options?.lookupKey || url;
     request.url = url;
     request.fetchOptions = {
       ...fetchOptions,

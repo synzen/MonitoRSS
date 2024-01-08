@@ -28,19 +28,6 @@ export class ScheduleHandlerService {
       ) as number) * 60;
   }
 
-  async emitUrlRequestEvent(data: { url: string; rateSeconds: number }) {
-    this.amqpConnection.publish<{ data: { url: string; rateSeconds: number } }>(
-      "",
-      MessageBrokerQueue.UrlFetch,
-      { data },
-      {
-        expiration: data.rateSeconds * 1000,
-      }
-    );
-
-    logger.debug("successfully emitted url request event");
-  }
-
   async emitUrlRequestBatchEvent(data: {
     rateSeconds: number;
     data: Array<{ url: string }>;
@@ -87,7 +74,14 @@ export class ScheduleHandlerService {
     const urlsCursor =
       this.getUrlsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
 
-    let urlBatch: { url: string; saveToObjectStorage?: boolean }[] = [];
+    let urlBatch: {
+      url: string;
+      saveToObjectStorage?: boolean;
+      lookupKey?: string;
+      requestOptions?: {
+        headers?: Record<string, string>;
+      };
+    }[] = [];
 
     for await (const { _id: url } of urlsCursor) {
       if (!url) {
@@ -95,7 +89,38 @@ export class ScheduleHandlerService {
         continue;
       }
 
-      urlBatch.push({ url, saveToObjectStorage: urlsToDebug.has(url) });
+      urlBatch.push({
+        url,
+        saveToObjectStorage: urlsToDebug.has(url),
+      });
+
+      if (urlBatch.length === 25) {
+        await urlsHandler(urlBatch);
+        urlBatch = [];
+      }
+    }
+
+    const unbatchedUrlsCursor =
+      this.getUnbatchedUrlsQueryMatchingRefreshRate(
+        refreshRateSeconds
+      ).cursor();
+
+    for await (const {
+      _id,
+      url,
+      feedRequestLookupKey,
+    } of unbatchedUrlsCursor) {
+      if (!url || !feedRequestLookupKey) {
+        throw new Error(
+          `Missing url or feedRequestLookupKey for document ${_id}`
+        );
+      }
+
+      urlBatch.push({
+        url,
+        saveToObjectStorage: urlsToDebug.has(url),
+        lookupKey: feedRequestLookupKey,
+      });
 
       if (urlBatch.length === 25) {
         await urlsHandler(urlBatch);
@@ -120,6 +145,21 @@ export class ScheduleHandlerService {
     return this.userFeedModel.aggregate(pipeline);
   }
 
+  getUnbatchedUrlsQueryMatchingRefreshRate(refreshRateSeconds: number) {
+    const pipeline = getCommonFeedAggregateStages({
+      refreshRateSeconds,
+      withLookupKeys: true,
+    });
+
+    pipeline.push({
+      $project: {
+        url: 1,
+        feedRequestLookupKey: 1,
+      },
+    });
+
+    return this.userFeedModel.aggregate(pipeline);
+  }
   async getValidDiscordUserSupporters() {
     const allBenefits =
       await this.supportersService.getBenefitsOfAllDiscordUsers();

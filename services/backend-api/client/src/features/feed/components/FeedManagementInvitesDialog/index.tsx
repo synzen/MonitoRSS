@@ -27,7 +27,7 @@ import {
 import { cloneElement, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
-import { useUpdateUserFeedManagementInvite, useUserFeedManagementInvites } from "../../hooks";
+import { useUpdateUserFeedManagementInviteStatus, useUserFeedManagementInvites } from "../../hooks";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { DiscordUsername } from "../../../discordUser";
 import { UserFeedManagementInvite } from "../../types";
@@ -52,7 +52,7 @@ const FeedManagementInviteRow = ({
   onClose: () => void;
   invite: UserFeedManagementInvite;
 }) => {
-  const { mutateAsync, status } = useUpdateUserFeedManagementInvite();
+  const { mutateAsync, status } = useUpdateUserFeedManagementInviteStatus();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
   const { t } = useTranslation();

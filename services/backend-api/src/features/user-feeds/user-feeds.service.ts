@@ -242,7 +242,8 @@ export class UserFeedsService {
         {
           name: c.name,
         },
-        userAccessToken
+        userAccessToken,
+        found.user.discordUserId
       );
     }
 
@@ -251,13 +252,12 @@ export class UserFeedsService {
     };
   }
 
-  async bulkDelete(feedIds: string[], discordUserId: string) {
+  async bulkDelete(feedIds: string[]) {
     const found = await this.userFeedModel
       .find({
         _id: {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
-        "user.discordUserId": discordUserId,
       })
       .select("_id legacyFeedId connections")
       .lean();
@@ -313,14 +313,13 @@ export class UserFeedsService {
     }));
   }
 
-  async bulkDisable(feedIds: string[], discordUserId: string) {
+  async bulkDisable(feedIds: string[]) {
     const found = await this.userFeedModel
 
       .find({
         _id: {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
-        "user.discordUserId": discordUserId,
         disabledCode: {
           $exists: false,
         },
@@ -351,14 +350,13 @@ export class UserFeedsService {
     }));
   }
 
-  async bulkEnable(feedIds: string[], discordUserId: string) {
+  async bulkEnable(feedIds: string[]) {
     const found = await this.userFeedModel
 
       .find({
         _id: {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
-        "user.discordUserId": discordUserId,
         disabledCode: UserFeedDisabledCode.Manual,
       })
       .select("_id")
@@ -565,7 +563,8 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds !==
           this.supportersService.defaultRefreshRateSeconds &&
         updates.userRefreshRateSeconds !==
-          this.supportersService.defaultSupporterRefreshRateSeconds
+          this.supportersService.defaultSupporterRefreshRateSeconds &&
+        updates.userRefreshRateSeconds < fastestPossibleRate
       ) {
         throw new Error(
           `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${found.user.discordUserId}`
