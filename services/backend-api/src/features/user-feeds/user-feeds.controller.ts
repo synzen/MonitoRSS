@@ -63,7 +63,7 @@ import {
   RetryUserFeedFilter,
 } from "./filters";
 import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
-import { GetUserFeedsPipe } from "./pipes";
+import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 
@@ -106,9 +106,9 @@ export class UserFeedsController {
       }),
       GetUserFeedsPipe()
     )
-    feeds: UserFeed[]
+    feeds: GetUserFeedsPipeOutput
   ) {
-    const useFeedIds = feeds.map((f) => f._id.toHexString());
+    const useFeedIds = feeds.map(({ feed }) => feed._id.toHexString());
 
     if (input.op === UpdateUserFeedsOp.BulkDelete) {
       const results = await this.userFeedsService.bulkDelete(useFeedIds);
@@ -141,7 +141,8 @@ export class UserFeedsController {
 
   @Get("/:feedId")
   async getFeed(
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[],
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
@@ -151,7 +152,8 @@ export class UserFeedsController {
   @Post("/:feedId/clone")
   @UseFilters(FeedExceptionFilter, AddDiscordChannelConnectionFilter)
   async createFeedClone(
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[],
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
     @DiscordAccessToken()
     { access_token }: SessionAccessToken,
     @Body(ValidationPipe) { title, url }: CreateUserFeedCloneInput
@@ -194,7 +196,8 @@ export class UserFeedsController {
 
   @Get("/:feed/requests")
   async getFeedRequests(
-    @Param("feed", GetUserFeedsPipe()) [feed]: UserFeed[],
+    @Param("feed", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
     @NestedQuery(TransformValidationPipe)
     { limit, skip }: GetUserFeedRequestsInputDto
   ): Promise<GetUserFeedRequestsOutputDto> {
@@ -210,7 +213,8 @@ export class UserFeedsController {
   @Post("/:feedId/get-article-properties")
   @UseFilters(GetUserFeedArticlesExceptionFilter)
   async getArticleProperties(
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[],
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
     @Body(TransformValidationPipe)
     { customPlaceholders }: GetUserFeedArticlePropertiesInputDto
   ): Promise<GetUserFeedArticlePropertiesOutputDto> {
@@ -243,7 +247,8 @@ export class UserFeedsController {
       skip,
       formatter,
     }: GetUserFeedArticlesInputDto,
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[]
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput
   ): Promise<GetUserFeedArticlesOutputDto> {
     const input: GetFeedArticlesInput = {
       limit,
@@ -288,7 +293,8 @@ export class UserFeedsController {
   async retryFailedFeed(
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[]
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput
   ): Promise<GetUserFeedOutputDto> {
     const updatedFeed = (await this.userFeedsService.retryFailedFeed(
       feed._id.toHexString()
@@ -299,7 +305,8 @@ export class UserFeedsController {
 
   @Get("/:feedId/daily-limit")
   async getDailyLimit(
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[]
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput
   ): Promise<GetUserFeedDailyLimitOutputDto> {
     const limit = await this.userFeedsService.getFeedDailyLimit(feed);
 
@@ -314,7 +321,8 @@ export class UserFeedsController {
   @Patch("/:feedId")
   @UseFilters(FeedExceptionFilter)
   async updateFeed(
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[],
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
     @Body(ValidationPipe)
     {
       title,
@@ -355,7 +363,8 @@ export class UserFeedsController {
   @Post("/:feedId/restore-to-legacy")
   @UseFilters(RestoreLegacyUserFeedExceptionFilter)
   async restoreToLegacy(
-    @Param("feedId", GetUserFeedsPipe()) [feed]: UserFeed[]
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput
   ) {
     if (!feed.legacyFeedId) {
       throw new BadRequestException("Feed is not related to a legacy feed");
@@ -407,7 +416,7 @@ export class UserFeedsController {
         userTypes: [UserFeedManagerType.Creator],
       })
     )
-    [feed]: UserFeed[]
+    [{ feed }]: GetUserFeedsPipeOutput
   ) {
     await this.userFeedsService.deleteFeedById(feed._id.toHexString());
   }

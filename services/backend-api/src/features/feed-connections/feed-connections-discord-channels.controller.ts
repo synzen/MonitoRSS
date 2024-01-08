@@ -21,8 +21,7 @@ import {
   FeedConnectionType,
 } from "../feeds/constants";
 import { UserFeedManagerType } from "../user-feed-management-invites/constants";
-import { UserFeed } from "../user-feeds/entities";
-import { GetUserFeedsPipe } from "../user-feeds/pipes";
+import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "../user-feeds/pipes";
 import {
   CreateDiscordChannelConnectionCloneInputDto,
   CreateDiscordChannelConnectionCopyConnectionSettingsInputDto,
@@ -66,7 +65,7 @@ export class FeedConnectionsDiscordChannelsController {
         ],
       })
     )
-    [feed]: UserFeed[],
+    [{ feed }]: GetUserFeedsPipeOutput,
     @Body(ValidationPipe)
     {
       channelId,

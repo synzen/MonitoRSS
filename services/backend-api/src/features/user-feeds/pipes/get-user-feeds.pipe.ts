@@ -21,13 +21,18 @@ import { InjectModel } from "@nestjs/mongoose";
 import { UserFeed, UserFeedModel } from "../entities";
 import { ConfigService } from "@nestjs/config";
 import { UserFeedConnection } from "../types";
+import { SupportersService } from "../../supporters/supporters.service";
 
 interface PipeOptions {
   userTypes: UserFeedManagerType[];
 }
 
+export type GetUserFeedsPipeOutput = Array<{
+  feed: UserFeed;
+}>;
+
 const createGetUserFeedsPipe = (
-  data: PipeOptions = {
+  { userTypes }: PipeOptions = {
     userTypes: [UserFeedManagerType.Creator, UserFeedManagerType.SharedManager],
   }
 ): Type<PipeTransform> => {
@@ -37,10 +42,13 @@ const createGetUserFeedsPipe = (
       private readonly userFeedModel: UserFeedModel,
       @Inject(forwardRef(() => REQUEST))
       private readonly request: FastifyRequest,
-      private readonly configService: ConfigService
+      private readonly configService: ConfigService,
+      private readonly supportersService: SupportersService
     ) {}
 
-    async transform(inputFeedIds: string[] | string): Promise<UserFeed[]> {
+    async transform(
+      inputFeedIds: string[] | string
+    ): Promise<GetUserFeedsPipeOutput> {
       const feedIds = Array.isArray(inputFeedIds)
         ? inputFeedIds
         : [inputFeedIds];
@@ -63,65 +71,71 @@ const createGetUserFeedsPipe = (
         })
         .lean();
 
-      const filtered = allFound
-        .map((found) => {
-          const allowOwner =
-            data.userTypes.includes(UserFeedManagerType.Creator) &&
-            found?.user.discordUserId === accessToken.discord.id;
+      const filtered = (
+        await Promise.all(
+          allFound.map(async (found) => {
+            const allowOwner =
+              userTypes.includes(UserFeedManagerType.Creator) &&
+              found?.user.discordUserId === accessToken.discord.id;
 
-          const sharedManagerInvite = found?.shareManageOptions?.invites?.find(
-            (u) =>
-              u.discordUserId === accessToken.discord.id &&
-              u.status === UserFeedManagerStatus.Accepted
-          );
+            const sharedManagerInvite =
+              found?.shareManageOptions?.invites?.find(
+                (u) =>
+                  u.discordUserId === accessToken.discord.id &&
+                  u.status === UserFeedManagerStatus.Accepted
+              );
 
-          const allowSharedManager =
-            data.userTypes.includes(UserFeedManagerType.SharedManager) &&
-            !!sharedManagerInvite;
+            const allowSharedManager =
+              userTypes.includes(UserFeedManagerType.SharedManager) &&
+              !!sharedManagerInvite;
 
-          if (sharedManagerInvite && !allowSharedManager) {
-            throw new NoPermissionException();
-          }
+            if (sharedManagerInvite && !allowSharedManager) {
+              throw new NoPermissionException();
+            }
 
-          if (!found || (!allowOwner && !allowSharedManager)) {
-            return null;
-          }
+            if (!found || (!allowOwner && !allowSharedManager)) {
+              return null;
+            }
 
-          const filteredConnections = found.connections;
-          const sharedManagerConnectionIds =
-            sharedManagerInvite?.connections?.map((c) => c.connectionId);
+            const filteredConnections = found.connections;
+            const sharedManagerConnectionIds =
+              sharedManagerInvite?.connections?.map((c) => c.connectionId);
 
-          if (sharedManagerConnectionIds?.length) {
-            const keys = Object.keys(filteredConnections) as Array<
-              keyof UserFeed["connections"]
-            >;
-            keys.forEach((connectionKey) => {
-              if (Array.isArray(filteredConnections[connectionKey])) {
-                filteredConnections[connectionKey] = (
-                  filteredConnections[connectionKey] as UserFeedConnection[]
-                ).filter((c) => {
-                  return sharedManagerConnectionIds.find((id) =>
-                    id.equals(c.id)
-                  );
-                }) as never;
-              }
-            });
-          }
+            if (sharedManagerConnectionIds?.length) {
+              const keys = Object.keys(filteredConnections) as Array<
+                keyof UserFeed["connections"]
+              >;
+              keys.forEach((connectionKey) => {
+                if (Array.isArray(filteredConnections[connectionKey])) {
+                  filteredConnections[connectionKey] = (
+                    filteredConnections[connectionKey] as UserFeedConnection[]
+                  ).filter((c) => {
+                    return sharedManagerConnectionIds.find((id) =>
+                      id.equals(c.id)
+                    );
+                  }) as never;
+                }
+              });
+            }
 
-          return {
-            ...found,
-            allowLegacyReversion:
-              !!this.configService.get("BACKEND_API_ALLOW_LEGACY_REVERSION") ||
-              found.allowLegacyReversion,
-          };
-        })
-        .filter((f) => !!f);
+            return {
+              ...found,
+              allowLegacyReversion:
+                !!this.configService.get(
+                  "BACKEND_API_ALLOW_LEGACY_REVERSION"
+                ) || found.allowLegacyReversion,
+            };
+          })
+        )
+      ).filter((f) => !!f) as UserFeed[];
 
       if (filtered.length !== feedIds.length) {
         throw new NotFoundException(`Some or all feeds do not exist`);
       }
 
-      return filtered as UserFeed[];
+      return filtered.map((feed) => ({
+        feed,
+      }));
     }
   }
 
