@@ -438,8 +438,10 @@ export const UserFeed: React.FC = () => {
                 rowGap={{ base: "8", lg: "14" }}
               >
                 <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                  {feed?.userRefreshRateSeconds
-                    ? formatRefreshRateSeconds(feed.userRefreshRateSeconds)
+                  {feed
+                    ? formatRefreshRateSeconds(
+                        feed.userRefreshRateSeconds || feed.refreshRateSeconds
+                      )
                     : null}
                 </CategoryText>
                 <CategoryText title={t("pages.feed.createdAtLabel")}>

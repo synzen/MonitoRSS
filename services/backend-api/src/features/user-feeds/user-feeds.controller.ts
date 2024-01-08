@@ -477,10 +477,6 @@ export class UserFeedsController {
         customPlaceholders: con.customPlaceholders,
       }));
 
-    const benefits = await this.supportersService.getBenefitsOfDiscordUser(
-      discordUserId
-    );
-
     const isOwner = feed.user.discordUserId === discordUserId;
 
     const userInviteId = feed.shareManageOptions?.invites?.find(
@@ -514,7 +510,12 @@ export class UserFeedsController {
         formatOptions: feed.formatOptions,
         dateCheckOptions: feed.dateCheckOptions,
         refreshRateSeconds:
-          feed.refreshRateSeconds || benefits.refreshRateSeconds,
+          feed.refreshRateSeconds ||
+          (
+            await this.supportersService.getBenefitsOfDiscordUser(
+              feed.user.discordUserId
+            )
+          ).refreshRateSeconds,
         userRefreshRateSeconds: feed.userRefreshRateSeconds,
         shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
       },
