@@ -122,17 +122,33 @@ export class FeedFetcherListenerService {
     try {
       const results = await Promise.allSettled(
         message.data.map(async ({ url, lookupKey, saveToObjectStorage }) => {
-          await this.handleBrokerFetchRequest({
-            lookupKey,
-            url,
-            rateSeconds,
-            saveToObjectStorage,
-          });
-          await this.emitFetchCompleted({
-            lookupKey,
-            url,
-            rateSeconds: rateSeconds,
-          });
+          try {
+            await this.handleBrokerFetchRequest({
+              lookupKey,
+              url,
+              rateSeconds,
+              saveToObjectStorage,
+            });
+            await this.emitFetchCompleted({
+              lookupKey,
+              url,
+              rateSeconds: rateSeconds,
+            });
+          } finally {
+            if (message.timestamp) {
+              const nowTs = Date.now();
+              const finishedTs = nowTs - message.timestamp;
+
+              logger.datadog(
+                `Finished handling feed requests batch event URL in ${finishedTs}s`,
+                {
+                  duration: finishedTs,
+                  url,
+                  lookupKey,
+                },
+              );
+            }
+          }
         }),
       );
 
@@ -158,18 +174,6 @@ export class FeedFetcherListenerService {
         event: message,
         err: (err as Error).stack,
       });
-    } finally {
-      if (message.timestamp) {
-        const nowTs = Date.now();
-        const finishedTs = nowTs - message.timestamp;
-
-        logger.datadog(
-          `Finished handling feed requests batch event in ${finishedTs}s`,
-          {
-            duration: finishedTs,
-          },
-        );
-      }
     }
   }
 
