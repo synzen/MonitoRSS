@@ -666,6 +666,16 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                         ),
                       },
                       {
+                        q: "Do my benefits applied to feeds that I co-manage but do not own?",
+                        a: (
+                          <Text>
+                            Unfortunately, no. Your benefits only apply to feeds that you own.
+                            Consider asking the feed owner to transfer ownership to you if you have
+                            the desired benefits.
+                          </Text>
+                        ),
+                      },
+                      {
                         q: "What if I have more requirements?",
                         a: (
                           <Text>
