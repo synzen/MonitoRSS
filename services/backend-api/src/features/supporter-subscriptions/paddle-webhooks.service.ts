@@ -250,9 +250,9 @@ export class PaddleWebhooksService {
       }
     );
 
-    await this.enforceFeedLimit({
-      discordUserId: foundUser.discordUserId,
-    });
+    // await this.enforceFeedLimit({
+    //   discordUserId: foundUser.discordUserId,
+    // });
 
     try {
       await this.supportersService.syncDiscordSupporterRoles(
@@ -288,9 +288,9 @@ export class PaddleWebhooksService {
     );
 
     if (supporter?._id) {
-      await this.enforceFeedLimit({
-        discordUserId: supporter._id,
-      });
+      // await this.enforceFeedLimit({
+      //   discordUserId: supporter._id,
+      // });
 
       try {
         await this.supportersService.syncDiscordSupporterRoles(supporter._id);
