@@ -27,7 +27,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { notifyError } from "@/utils/notifyError";
@@ -46,7 +46,11 @@ const formSchema = object({
 
 type FormData = InferType<typeof formSchema>;
 
-export const AddUserFeedDialog = () => {
+interface Props {
+  trigger?: React.ReactElement;
+}
+
+export const AddUserFeedDialog = ({ trigger }: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
   const {
@@ -103,15 +107,23 @@ export const AddUserFeedDialog = () => {
         label={t("features.userFeeds.components.addUserFeedDialog.overLimitHint")}
         hidden={isUnderLimit === true}
       >
-        <Button
-          colorScheme="blue"
-          onClick={onOpen}
-          isDisabled={!isUnderLimit}
-          isLoading={isLoading}
-          variant="solid"
-        >
-          {t("features.userFeeds.components.addUserFeedDialog.addButton")}
-        </Button>
+        {trigger ? (
+          React.cloneElement(trigger, {
+            onClick: onOpen,
+            isDisabled: !isUnderLimit,
+            isLoading,
+          })
+        ) : (
+          <Button
+            colorScheme="blue"
+            onClick={onOpen}
+            isDisabled={!isUnderLimit}
+            isLoading={isLoading}
+            variant="solid"
+          >
+            {t("features.userFeeds.components.addUserFeedDialog.addButton")}
+          </Button>
+        )}
       </Tooltip>
       <Modal isOpen={isOpen} onClose={onClose} size="xl" initialFocusRef={initialFocusRef}>
         <ModalOverlay />

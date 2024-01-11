@@ -22,6 +22,7 @@ import { useCallback, useContext, useEffect } from "react";
 import { FaRegNewspaper } from "react-icons/fa6";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import {
+  AddUserFeedDialog,
   FeedManagementInvitesDialog,
   UserFeedComputedStatus,
   UserFeedsTable,
@@ -229,9 +230,13 @@ export const UserFeeds: React.FC = () => {
                   You don&apos;t have any feeds yet
                 </Text>
               </Stack>
-              <Button colorScheme="blue" leftIcon={<AddIcon fontSize={12} />}>
-                Add a new feed
-              </Button>
+              <AddUserFeedDialog
+                trigger={
+                  <Button colorScheme="blue" leftIcon={<AddIcon fontSize={12} />}>
+                    Add a new feed
+                  </Button>
+                }
+              />
             </Stack>
           </Center>
         )}
