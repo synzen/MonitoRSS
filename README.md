@@ -38,7 +38,7 @@ Docker is required to easily coordinate and run multiple services at once.
    6.  Set `BACKEND_API_SESSION_SALT` to a random 16-character string
    7.  Add `http://localhost:8000/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page
 7.  Run `docker-compose up -d`
-    -  If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker-compose --parallel 1 up -d
+    -  If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker-compose --parallel 1 up -d`
 8.  Access the control panel via http://localhost:8000
 
 #### Customize Site Domain
@@ -72,6 +72,7 @@ It's recommended that you don't delete your v6 files until you've confirmed that
 
 1. Follow the instructions above to self host. Be sure to clone this repo - the [clone repo](https://github.com/synzen/MonitoRSS-Clone) is no longer used or maintained.
 2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
-3. Run `docker-compose up -d --build`
-4. Access the control panel via http://localhost:8000 and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
-5. After verifying that all is working as expected, you may delete your v6 files.
+3. Run `docker-compose --parallel 1 up -d --build`
+    - If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker-compose --parallel 1 up -d`
+5. Access the control panel via http://localhost:8000 and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
+6. After verifying that all is working as expected, you may delete your v6 files.
