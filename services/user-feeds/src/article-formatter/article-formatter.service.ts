@@ -233,15 +233,27 @@ export class ArticleFormatterService {
             return;
           }
 
-          if (elem.attribs.href) {
-            anchors.push(elem.attribs.href);
+          const href = elem.attribs.href;
 
+          if (!href) {
+            anchorsFormatter(elem, walk, builder, htmlToTextOptions);
+
+            return;
+          }
+
+          anchors.push(href);
+
+          if (
+            elem.children.length === 1 &&
+            elem.children[0].type === "text" &&
+            elem.children[0].data === href
+          ) {
+            builder.addInline(href);
+          } else {
             builder.addInline("[");
             walk(elem.children, builder);
             builder.addInline("]");
-            builder.addInline(`(${elem.attribs.href})`);
-          } else {
-            anchorsFormatter(elem, walk, builder, htmlToTextOptions);
+            builder.addInline(`(${href})`);
           }
         },
         inlineCode: (elem, walk, builder, options) => {

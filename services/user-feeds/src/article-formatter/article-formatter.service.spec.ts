@@ -30,16 +30,24 @@ describe("ArticleFormatterService", () => {
           "Say [Hello World](https://example.com) to me"
         );
       });
+
+      it("does not return an anchor if the href is the same as the text", async () => {
+        const value =
+          'Say <a href="https://example.com">https://example.com</a> to me';
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("Say https://example.com to me");
+      });
+
+      it("works with nested inline elements", async () => {
+        const value = `<a href="https://example.com"><strong>Hello World</strong></a>`;
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("[**Hello World**](https://example.com)");
+      });
     });
-
-    // it("does not return an anchor if the href is the same as the text", async () => {
-    //   const value =
-    //     'Say <a href="https://example.com">https://example.com</a> to me';
-
-    //   const result = service.formatValueForDiscord(value);
-
-    //   expect(result.value).toEqual("Say https://example.com to me");
-    // });
 
     describe("custom placeholders", () => {
       it("adds the custom placeholder if the source key exists", async () => {
