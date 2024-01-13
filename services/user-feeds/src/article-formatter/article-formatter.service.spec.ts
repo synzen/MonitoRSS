@@ -378,6 +378,15 @@ describe("ArticleFormatterService", () => {
 
         expect(result.value).toEqual("`hello world`");
       });
+
+      it("does not add new line before starting tag", async () => {
+        const value = `<p>First <code>Before</code>:</p>`;
+        service = new ArticleFormatterService();
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("First `Before`:");
+      });
     });
 
     describe("pre", () => {

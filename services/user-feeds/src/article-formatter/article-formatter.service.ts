@@ -256,12 +256,10 @@ export class ArticleFormatterService {
             builder.addInline(`(${href})`);
           }
         },
-        inlineCode: (elem, walk, builder, options) => {
-          builder.openBlock(options);
-          builder.addInline("`");
+        inlineCode: (elem, walk, builder) => {
+          builder.addLiteral("`");
           walk(elem.children, builder);
-          builder.addInline("`");
-          builder.closeBlock(options);
+          builder.addLiteral("`");
         },
         blockCode: (elem, walk, builder, options) => {
           builder.openBlock(options);
