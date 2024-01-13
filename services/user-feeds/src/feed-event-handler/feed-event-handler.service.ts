@@ -447,7 +447,7 @@ export class FeedEventHandlerService {
         );
 
         // Rudimentary retry to alleviate some pressure
-        if (retryRecord?.attempts_so_far && retryRecord.attempts_so_far >= 4) {
+        if (retryRecord?.attempts_so_far && retryRecord.attempts_so_far >= 8) {
           this.debugLog(
             `Debug ${event.data.feed.id}: Exceeded retry limit for invalid feed` +
               `, sending disable event`,
