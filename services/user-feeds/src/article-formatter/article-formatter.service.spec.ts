@@ -500,8 +500,8 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
       );
     });
 
-    describe("nested paragraphs", () => {
-      it("works", () => {
+    describe("paragraphs", () => {
+      it("works with nested paragraphs", () => {
         const val = `
         <p>hello <strong>world 😀</strong> <p>another example</p></p>
         `;
@@ -509,6 +509,16 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         const result = service.formatValueForDiscord(val);
 
         expect(result.value).toEqual("hello **world 😀** \n\nanother example");
+      });
+
+      it("does not add extra newlines for empty paragraphs", () => {
+        const val = `
+        <p>hello world <p></p>Hello world</p>
+        `;
+
+        const result = service.formatValueForDiscord(val);
+
+        expect(result.value).toEqual("hello world \n\nHello world");
       });
     });
   });

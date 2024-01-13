@@ -169,6 +169,10 @@ export class ArticleFormatterService {
           builder.closeBlock(options);
         },
         paragraph: (elem, walk, builder, options) => {
+          if (elem.children.length === 0) {
+            return;
+          }
+
           builder.openBlock(options);
 
           for (const child of elem.children) {
