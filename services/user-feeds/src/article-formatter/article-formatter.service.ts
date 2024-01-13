@@ -114,6 +114,7 @@ export class ArticleFormatterService {
       format: "heading",
       options: {
         trailingLineBreaks: 0,
+        leadingLineBreaks: 0,
       },
     };
 
@@ -152,14 +153,32 @@ export class ArticleFormatterService {
       format: "blockCode",
     };
 
+    const pSelector: SelectorDefinition = {
+      selector: "p",
+      format: "paragraph",
+    };
+
     const htmlToTextOptions: HtmlToTextOptions = {
       wordwrap: false,
       formatters: {
         heading: (elem, walk, builder, options) => {
           builder.openBlock(options);
-          builder.addInline("**");
+          builder.addLiteral("**");
           walk(elem.children, builder);
-          builder.addInline("**");
+          builder.addLiteral("**");
+          builder.closeBlock(options);
+        },
+        paragraph: (elem, walk, builder, options) => {
+          builder.openBlock(options);
+
+          for (const child of elem.children) {
+            if (child.type === "text") {
+              builder.addLiteral(child.data || "");
+            } else {
+              walk([child], builder);
+            }
+          }
+
           builder.closeBlock(options);
         },
         italicize: (elem, walk, builder, options) => {
@@ -249,6 +268,7 @@ export class ArticleFormatterService {
         unorderedListSelector,
         codeSelector,
         preSelector,
+        pSelector,
       ],
     };
 

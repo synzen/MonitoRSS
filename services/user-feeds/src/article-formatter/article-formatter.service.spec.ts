@@ -32,6 +32,15 @@ describe("ArticleFormatterService", () => {
       });
     });
 
+    // it("does not return an anchor if the href is the same as the text", async () => {
+    //   const value =
+    //     'Say <a href="https://example.com">https://example.com</a> to me';
+
+    //   const result = service.formatValueForDiscord(value);
+
+    //   expect(result.value).toEqual("Say https://example.com to me");
+    // });
+
     describe("custom placeholders", () => {
       it("adds the custom placeholder if the source key exists", async () => {
         const article = {
@@ -129,7 +138,7 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual(" World");
+        expect(result.flattened["custom::test"]).toEqual("World");
       });
 
       it("replaces matches globally", async () => {
@@ -344,12 +353,12 @@ describe("ArticleFormatterService", () => {
       });
 
       it("does not add new newlines", () => {
-        const value = `<strong>Before</strong>:`;
+        const value = `<p>First <strong>Before</strong>:</p>`;
         service = new ArticleFormatterService();
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("**Before**:");
+        expect(result.value).toEqual("First **Before**:");
       });
     });
 
@@ -468,10 +477,22 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       expect(result.value).toEqual(
         `
-https://image.com submitted by /u/FortniteStatusBot to r/FORTnITE
-[link] [comments]
+[ https://image.com ](https://www.reddit.com/r/FORTnITE/comments/10i5m9z/mission_alerts_1200am_utc_22jan2023/) submitted by [ /u/FortniteStatusBot ](https://www.reddit.com/user/FortniteStatusBot) to [ r/FORTnITE ](https://www.reddit.com/r/FORTnITE/)
+[[link]](https://seebot.dev/images/archive/missions/22_Jan_2023.png?300) [[comments]](https://www.reddit.com/r/FORTnITE/comments/10i5m9z/mission_alerts_1200am_utc_22jan2023/)
 `.trim()
       );
+    });
+
+    describe("nested paragraphs", () => {
+      it("works", () => {
+        const val = `
+        <p>hello <strong>world 😀</strong> <p>another example</p></p>
+        `;
+
+        const result = service.formatValueForDiscord(val);
+
+        expect(result.value).toEqual("hello **world 😀** \n\nanother example");
+      });
     });
   });
 
