@@ -230,7 +230,7 @@ export class ArticleFormatterService {
             images.push(elem.attribs.src);
           }
         },
-        anchors: (elem, walk, builder, htmlToTextOptions) => {
+        anchors: (elem, walk, builder, options) => {
           const anchorsFormatter = builder.options.formatters.anchor;
 
           if (!anchorsFormatter) {
@@ -240,7 +240,7 @@ export class ArticleFormatterService {
           const href = elem.attribs.href;
 
           if (!href) {
-            anchorsFormatter(elem, walk, builder, htmlToTextOptions);
+            anchorsFormatter(elem, walk, builder, options);
 
             return;
           }
@@ -253,11 +253,17 @@ export class ArticleFormatterService {
             elem.children[0].data === href
           ) {
             builder.addInline(href);
-          } else {
+          } else if (
+            elem.children.length === 1 &&
+            elem.children[0].name !== "img"
+            // For anchors with images, we might end up with "[](image-link-here)"
+          ) {
             builder.addInline("[");
             walk(elem.children, builder);
             builder.addInline("]");
             builder.addInline(`(${href})`);
+          } else {
+            anchorsFormatter(elem, walk, builder, options);
           }
         },
         inlineCode: (elem, walk, builder) => {

@@ -9,17 +9,6 @@ describe("ArticleFormatterService", () => {
   });
 
   describe("formatValueForDiscord", () => {
-    describe.skip("br", () => {
-      // https://github.com/html-to-text/node-html-to-text/issues/280
-      it("returns a new line", async () => {
-        const value = `Text <br/> <br/> <div class="center-wrap"></div>`;
-
-        const result = service.formatValueForDiscord(value);
-
-        expect(result.value).toEqual("Text\n\n ");
-      });
-    });
-
     describe("a (anchors)", () => {
       it("returns the text with the link", async () => {
         const value = 'Say <a href="https://example.com">Hello World</a> to me';
@@ -494,7 +483,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       expect(result.value).toEqual(
         `
-[ https://image.com ](https://www.reddit.com/r/FORTnITE/comments/10i5m9z/mission_alerts_1200am_utc_22jan2023/) submitted by [ /u/FortniteStatusBot ](https://www.reddit.com/user/FortniteStatusBot) to [ r/FORTnITE ](https://www.reddit.com/r/FORTnITE/)
+        https://image.com submitted by [ /u/FortniteStatusBot ](https://www.reddit.com/user/FortniteStatusBot) to [ r/FORTnITE ](https://www.reddit.com/r/FORTnITE/)
 [[link]](https://seebot.dev/images/archive/missions/22_Jan_2023.png?300) [[comments]](https://www.reddit.com/r/FORTnITE/comments/10i5m9z/mission_alerts_1200am_utc_22jan2023/)
 `.trim()
       );
