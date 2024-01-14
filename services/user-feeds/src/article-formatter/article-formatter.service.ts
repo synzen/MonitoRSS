@@ -158,9 +158,23 @@ export class ArticleFormatterService {
       format: "paragraph",
     };
 
+    const divSelector: SelectorDefinition = {
+      selector: "div",
+      format: "div",
+    };
+
     const htmlToTextOptions: HtmlToTextOptions = {
       wordwrap: false,
       formatters: {
+        div: (elem, walk, builder, options) => {
+          if (elem.children.length === 0) {
+            return;
+          }
+
+          builder.openBlock(options);
+          walk(elem.children, builder);
+          builder.closeBlock(options);
+        },
         heading: (elem, walk, builder, options) => {
           builder.openBlock(options);
           builder.addLiteral("**");
@@ -289,6 +303,7 @@ export class ArticleFormatterService {
         codeSelector,
         preSelector,
         pSelector,
+        divSelector,
       ],
     };
 

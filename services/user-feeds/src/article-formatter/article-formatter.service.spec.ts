@@ -9,6 +9,16 @@ describe("ArticleFormatterService", () => {
   });
 
   describe("formatValueForDiscord", () => {
+    describe("div", () => {
+      it("ignores when there are no children", () => {
+        const value = "<div>hello <div></div></div>";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("hello");
+      });
+    });
+
     describe("a (anchors)", () => {
       it("returns the text with the link", async () => {
         const value = 'Say <a href="https://example.com">Hello World</a> to me';
