@@ -65,6 +65,7 @@ export class Request {
     nullable: true,
     entity: () => Response,
     index: true,
+    onDelete: 'cascade',
   })
   response!: Response | null;
 }
