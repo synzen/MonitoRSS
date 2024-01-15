@@ -244,7 +244,7 @@ const CustomPlaceholderStep = ({
                   The string to replace the matched text with. If empty, the matched content will be
                   removed from the placeholder. If you want to extract content, You may use{" "}
                   <Code>$1</Code>, <Code>$2</Code>, etc. to reference the matched groups indicated
-                  via parenthesis.
+                  via parenthesis in your regex search.
                 </FormHelperText>
               )}
               {replacementStringError && (
