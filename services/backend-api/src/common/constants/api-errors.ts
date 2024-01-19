@@ -1,6 +1,7 @@
 export enum ApiErrorCode {
   INTERNAL_ERROR = "INTERNAL_ERROR",
   FEED_INVALID = "FEED_INVALID",
+  FEED_INVALID_SSL_CERT = "FEED_INVALID_SSL_CERT",
   FEED_PARSE_FAILED = "FEED_PARSE_FAILED",
   FEED_PARSE_TIMEOUT = "FEED_PARSE_TIMEOUT",
   FEED_REQUEST_TIMEOUT = "FEED_REQUEST_TIMEOUT",
@@ -98,4 +99,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT:
     "Invalid preview input in regex search for custom placeholders",
   INVALID_FILTERS_REGEX: "Invalid filters regex",
+  FEED_INVALID_SSL_CERT: "Invalid SSL certificate on feed site",
 };

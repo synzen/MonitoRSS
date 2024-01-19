@@ -13,6 +13,7 @@ import {
   FeedUnauthorizedException,
   InvalidFeedException,
   FeedFetchTimeoutException,
+  FeedInvalidSslCertException,
 } from "../../../services/feed-fetcher/exceptions";
 import { FeedTooLargeException } from "../../../services/feed-fetcher/exceptions/FeedTooLargeException";
 import { FeedLimitReachedException } from "../exceptions";
@@ -34,6 +35,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [FeedParseTimeoutException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_PARSE_TIMEOUT,
+    },
+    [FeedInvalidSslCertException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_INVALID_SSL_CERT,
     },
     [RequestTimeoutException.name]: {
       status: HttpStatus.BAD_REQUEST,

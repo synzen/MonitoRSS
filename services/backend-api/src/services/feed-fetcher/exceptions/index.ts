@@ -13,3 +13,4 @@ export * from "./FeedArticleNotFoundException";
 export * from "./FeedFetchTimeoutException";
 export * from "./InvalidPreviewCustomPlaceholdersRegexException";
 export * from "./InvalidFiltersRegexException";
+export * from "./FeedInvalidSslCertException";

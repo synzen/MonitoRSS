@@ -7,6 +7,7 @@ export enum FeedFetcherFetchStatus {
   BadStatusCode = "BAD_STATUS_CODE",
   Pending = "PENDING",
   RefusedLargeFeed = "REFUSED_LARGE_FEED",
+  InvalidSslCertificate = "INVALID_SSL_CERTIFICATE",
 }
 
 interface FetchFeedResponseSuccess {
@@ -43,10 +44,15 @@ interface FeedFetchResponseFetchTimeout {
   requestStatus: FeedFetcherFetchStatus.FetchTimeout;
 }
 
+interface FeedFetchResponseInvalidSslCertificate {
+  requestStatus: FeedFetcherFetchStatus.InvalidSslCertificate;
+}
+
 export type FeedFetcherFetchFeedResponse =
   | FetchFeedResponseSuccess
   | FetchFeedResponseBadStatus
   | FetchFeedResponsePending
   | FeedFetchResponseParseError
   | FeedFetchResponseFetchTimeout
-  | FetchFeedResponseTooLarge;
+  | FetchFeedResponseTooLarge
+  | FeedFetchResponseInvalidSslCertificate;

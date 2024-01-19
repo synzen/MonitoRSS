@@ -38,6 +38,7 @@ export enum ApiErrorCode {
   INSUFFICIENT_SUPPORTER_LEVEL = "INSUFFICIENT_SUPPORTER_LEVEL",
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT = "INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT",
   INVALID_FILTERS_REGEX = "INVALID_FILTERS_REGEX",
+  FEED_INVALID_SSL_CERT = "FEED_INVALID_SSL_CERT",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -80,6 +81,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT:
     "Invalid regex search preview input for custom placeholders",
   INVALID_FILTERS_REGEX: "Invalid regex for filters",
+  FEED_INVALID_SSL_CERT:
+    "Feed host has invalid SSL certificate. Please contact the feed site for them to correct their certificate.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

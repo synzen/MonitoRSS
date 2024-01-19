@@ -313,7 +313,13 @@ export class FeedFetcherService {
         stack: (err as Error).stack,
       });
 
-      if ((err as Error).name === 'AbortError') {
+      if (
+        err instanceof TypeError &&
+        err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+      ) {
+        request.status = RequestStatus.INVALID_SSL_CERTIFICATE;
+        request.errorMessage = err['cause']?.['message'];
+      } else if ((err as Error).name === 'AbortError') {
         request.status = RequestStatus.FETCH_TIMEOUT;
         request.errorMessage =
           `Request took longer than` +

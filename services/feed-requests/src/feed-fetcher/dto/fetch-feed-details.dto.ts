@@ -8,7 +8,8 @@ export interface FetchFeedDetailsDto {
     | 'PARSE_ERROR'
     | 'FETCH_TIMEOUT'
     | 'REFUSED_LARGE_FEED'
-    | 'MATCHED_HASH';
+    | 'MATCHED_HASH'
+    | 'INVALID_SSL_CERTIFICATE';
   response?: {
     hash?: string | null;
     statusCode: number;

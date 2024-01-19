@@ -162,12 +162,23 @@ export class FeedFetcherController {
     const latestRequestStatus = latestRequest.request.status;
     const latestRequestResponse = latestRequest.request.response;
 
+    console.log(
+      '🚀 ~ FeedFetcherController ~ latestRequestStatus:',
+      latestRequestStatus,
+    );
+
     if (
       data.hashToCompare &&
       data.hashToCompare === latestRequest.request.response?.textHash
     ) {
       return {
         requestStatus: 'MATCHED_HASH' as const,
+      };
+    }
+
+    if (latestRequestStatus === RequestStatus.INVALID_SSL_CERTIFICATE) {
+      return {
+        requestStatus: 'INVALID_SSL_CERTIFICATE' as const,
       };
     }
 

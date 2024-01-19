@@ -18,6 +18,7 @@ import {
   FeedInternalErrorException,
   FeedNotFoundException,
   FeedFetchTimeoutException,
+  FeedInvalidSslCertException,
 } from "./exceptions";
 import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import { Readable } from "stream";
@@ -119,6 +120,12 @@ export class FeedFetcherService {
 
     if (result.requestStatus === FeedFetcherFetchStatus.RefusedLargeFeed) {
       throw new FeedTooLargeException(`Feed is too large to be processed`);
+    }
+
+    if (result.requestStatus === FeedFetcherFetchStatus.InvalidSslCertificate) {
+      throw new FeedInvalidSslCertException(
+        `Feed host has an invalid SSL certificate`
+      );
     }
 
     if (result.requestStatus === FeedFetcherFetchStatus.Success) {
