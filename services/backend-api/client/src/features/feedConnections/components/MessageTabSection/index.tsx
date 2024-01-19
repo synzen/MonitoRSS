@@ -92,6 +92,7 @@ export const MessageTabSection = ({
       filters: {
         articleId: selectedArticleId,
       },
+      random: !selectedArticleId,
     },
   });
 
