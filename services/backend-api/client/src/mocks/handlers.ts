@@ -27,6 +27,7 @@ import {
   GetServerLegacyFeedBulkConversionOutput,
   GetUserFeedArticlePropertiesOutput,
   GetUserFeedArticlesOutput,
+  GetUserFeedDeliveryLogsOutput,
   GetUserFeedManagementInvitesCountOutput,
   GetUserFeedManagementInvitesOutput,
   GetUserFeedOutput,
@@ -83,6 +84,7 @@ import {
   GetSubscriptionChangePreviewOutput,
   GetSubscriptionProductsOutput,
 } from "../features/subscriptionProducts";
+import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
 
 const handlers = [
   rest.get("/api/v1/subscription-products/update-preview", (req, res, ctx) => {
@@ -719,6 +721,17 @@ const handlers = [
         result: {
           requests: mockUserFeedRequests,
           nextRetryTimestamp: Math.floor(new Date(2020).getTime() / 1000),
+        },
+      })
+    )
+  ),
+
+  rest.get("/api/v1/user-feeds/:feedId/delivery-logs", async (req, res, ctx) =>
+    res(
+      ctx.delay(500),
+      ctx.json<GetUserFeedDeliveryLogsOutput>({
+        result: {
+          logs: mockUserFeedDeliveryLogs,
         },
       })
     )

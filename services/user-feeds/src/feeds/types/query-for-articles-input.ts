@@ -13,6 +13,7 @@ export interface QueryForArticlesInput {
     expression?: Record<string, unknown>;
     returnType: GetUserFeedArticlesFilterReturnType;
     articleId?: string;
+    articleIdHashes?: string[];
     search?: string;
   };
 }

@@ -184,7 +184,9 @@ export class DeliveryService {
             articleIdHash: article.flattened.idHash,
             errorCode: ArticleDeliveryErrorCode.ArticleProcessingError,
             internalMessage: (err as Error).message,
-            externalDetail: (err as Error).message,
+            externalDetail: JSON.stringify({
+              message: (err as Error).message,
+            }),
           },
         ];
       }

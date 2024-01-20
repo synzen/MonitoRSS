@@ -1,10 +1,16 @@
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
-import { ArticleDeliveryState, ArticleDeliveryStatus } from "../shared";
+import {
+  ArticleDeliveryErrorCode,
+  ArticleDeliveryState,
+  ArticleDeliveryStatus,
+} from "../shared";
 import { DeliveryRecord } from "./entities";
 import dayjs from "dayjs";
 import { MikroORM } from "@mikro-orm/core";
+import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
+import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
 
 const { Failed, Rejected, Sent, PendingDelivery } = ArticleDeliveryStatus;
 
@@ -147,5 +153,139 @@ export class DeliveryRecordService {
       .execute("get");
 
     return Number(query.count);
+  }
+
+  async getDeliveryLogs({
+    limit,
+    feedId,
+    skip,
+  }: {
+    limit: number;
+    skip: number;
+    feedId: string;
+  }): Promise<GetUserFeedDeliveryRecordsOutputDto["result"]["logs"]> {
+    const selectFields: Array<keyof DeliveryRecord> = [
+      "id",
+      "status",
+      "error_code",
+      "medium_id",
+      "content_type",
+      "external_detail",
+      "article_id_hash",
+      "created_at",
+    ];
+    const records = await this.recordRepo.find(
+      {
+        feed_id: feedId,
+        parent: null,
+      },
+      {
+        limit,
+        orderBy: {
+          created_at: "DESC",
+        },
+        fields: selectFields,
+        offset: skip,
+      }
+    );
+
+    const childRecords = await this.recordRepo.find(
+      {
+        feed_id: feedId,
+        parent: {
+          $in: records.map((record) => record.id),
+        },
+      },
+      {
+        fields: selectFields,
+      }
+    );
+
+    return records.map((record) => {
+      const children = childRecords.filter(
+        (childRecord) => childRecord.parent?.id === record.id
+      );
+
+      let status: DeliveryLogStatus;
+      const details: { message?: string; data?: Record<string, unknown> } = {
+        message: undefined,
+        data: undefined,
+      };
+
+      if (record.status === ArticleDeliveryStatus.Sent) {
+        if (children.some((c) => c.status !== ArticleDeliveryStatus.Sent)) {
+          status = DeliveryLogStatus.PARTIALLY_DELIVERED;
+        } else {
+          status = DeliveryLogStatus.DELIVERED;
+        }
+      } else if (record.status === ArticleDeliveryStatus.Rejected) {
+        status = DeliveryLogStatus.REJECTED;
+
+        try {
+          if (record.external_detail) {
+            details.data = JSON.parse(record.external_detail)?.data;
+          }
+        } catch (err) {}
+
+        if (
+          record.error_code === ArticleDeliveryErrorCode.NoChannelOrWebhook ||
+          record.error_code === ArticleDeliveryErrorCode.ThirdPartyNotFound
+        ) {
+          details.message = "Connection destination does not exist";
+        } else if (
+          record.error_code === ArticleDeliveryErrorCode.ThirdPartyBadRequest
+        ) {
+          details.message = "Invalid message format";
+        } else if (
+          record.error_code === ArticleDeliveryErrorCode.ThirdPartyForbidden
+        ) {
+          details.message =
+            "Missing permissions to send to connection destination";
+        } else if (
+          record.error_code === ArticleDeliveryErrorCode.ThirdPartyInternal
+        ) {
+          details.message =
+            "Connection target service was experiencing internal errors";
+        } else if (record.error_code === ArticleDeliveryErrorCode.Internal) {
+          details.message = "Internal error";
+        } else if (
+          record.error_code === ArticleDeliveryErrorCode.ArticleProcessingError
+        ) {
+          details.message =
+            "Failed to parse article content with current configuration";
+
+          try {
+            if (record.external_detail) {
+              details.data = JSON.parse(record.external_detail)?.message;
+            }
+          } catch (err) {}
+        }
+      } else if (record.status === ArticleDeliveryStatus.Failed) {
+        status = DeliveryLogStatus.FAILED;
+      } else if (record.status === ArticleDeliveryStatus.PendingDelivery) {
+        status = DeliveryLogStatus.PENDING_DELIVERY;
+      } else if (record.status === ArticleDeliveryStatus.RateLimited) {
+        status = DeliveryLogStatus.ARTICLE_RATE_LIMITED;
+      } else if (
+        record.status === ArticleDeliveryStatus.MediumRateLimitedByUser
+      ) {
+        status = DeliveryLogStatus.MEDIUM_RATE_LIMITED;
+      } else if (record.status === ArticleDeliveryStatus.FilteredOut) {
+        status = DeliveryLogStatus.FILTERED_OUT;
+      } else {
+        throw new Error(
+          `Unhandled article delivery status: ${record.status} for record: ${record.id}`
+        );
+      }
+
+      return {
+        id: record.id,
+        mediumId: record.medium_id,
+        createdAt: record.created_at.toISOString(),
+        details,
+        articleIdHash: record.article_id_hash,
+        status,
+      };
+    });
   }
 }

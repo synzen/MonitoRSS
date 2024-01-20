@@ -36,3 +36,4 @@ export * from "./useUserFeedManagementInvitesCount";
 export * from "./useCreateUserFeedManagementInviteResend";
 export * from "./useCreateUserFeedClone";
 export * from "./useUpdateUserFeedManagementInvite";
+export * from "./useUserFeedDeliveryLogsWithPagination";

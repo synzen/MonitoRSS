@@ -22,6 +22,10 @@ import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-
   properties: ["article_id_hash"],
   name: "article_id_hash_index",
 })
+@Index({
+  properties: ["feed_id", "parent", "created_at"],
+  name: "feed_parent_created_at_index",
+})
 export class DeliveryRecord {
   @PrimaryKey()
   id: string;

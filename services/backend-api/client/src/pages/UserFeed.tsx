@@ -63,7 +63,7 @@ import {
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyError } from "../utils/notifyError";
 import { UserFeedManagerStatus, pages } from "../constants";
-import { UserFeedRequestsTable } from "../features/feed/components/UserFeedRequestsTable";
+import { UserFeedLogs } from "../features/feed/components/UserFeedLogs";
 import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
 import { FeedConnectionDisabledCode } from "../types";
@@ -664,7 +664,7 @@ export const UserFeed: React.FC = () => {
           <TabPanel width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
-                <UserFeedRequestsTable feedId={feedId} />
+                <UserFeedLogs feedId={feedId} />
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>

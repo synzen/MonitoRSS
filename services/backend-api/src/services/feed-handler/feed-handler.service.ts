@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import fetch, { Response } from "node-fetch";
+import { URLSearchParams } from "url";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import {
@@ -286,6 +287,38 @@ export class FeedHandlerService {
     return {
       errors: result.result.errors,
     };
+  }
+
+  async getDeliveryLogs(
+    feedId: string,
+    { limit, skip }: { limit: number; skip: number }
+  ) {
+    const urlParams = new URLSearchParams({
+      limit: limit.toString(),
+      skip: skip.toString(),
+    });
+
+    const response = await fetch(
+      `${
+        this.host
+      }/v1/user-feeds/${feedId}/delivery-logs?${urlParams.toString()}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+      }
+    );
+
+    await this.validateResponseStatus(response, "Failed to get delivery logs", {
+      requestBody: {
+        feedId,
+        limit,
+        skip,
+      },
+    });
+
+    return response.json();
   }
 
   private async validateResponseStatus(

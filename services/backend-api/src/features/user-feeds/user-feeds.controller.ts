@@ -44,6 +44,7 @@ import {
   GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
   GetUserFeedDailyLimitOutputDto,
+  GetUserFeedDeliveryLogsInputDto,
   GetUserFeedOutputDto,
   GetUserFeedRequestsInputDto,
   GetUserFeedRequestsOutputDto,
@@ -208,6 +209,24 @@ export class UserFeedsController {
     });
 
     return requests;
+  }
+
+  @Get("/:feed/delivery-logs")
+  async getFeedDeliveryLogs(
+    @Param("feed", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @NestedQuery(TransformValidationPipe)
+    { limit, skip }: GetUserFeedDeliveryLogsInputDto
+  ) {
+    const result = await this.userFeedsService.getDeliveryLogs(
+      feed._id.toHexString(),
+      {
+        limit,
+        skip,
+      }
+    );
+
+    return result;
   }
 
   @Post("/:feedId/get-article-properties")

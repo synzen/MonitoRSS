@@ -15,6 +15,7 @@ export interface GetUserFeedArticlesInput {
       expression?: Record<string, any>;
       returnType?: GetArticlesFilterReturnType;
       articleId?: string;
+      articleIdHashes?: string[];
       search?: string;
     };
     formatter: {
@@ -40,6 +41,7 @@ const GetUserFeedArticlesOutputSchema = object({
       articles: array(
         object({
           id: string().required(),
+          idHash: string().required(),
         })
       ).required(),
       totalArticles: number().required(),

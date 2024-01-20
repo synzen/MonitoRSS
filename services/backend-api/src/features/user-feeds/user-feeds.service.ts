@@ -496,6 +496,19 @@ export class UserFeedsService {
     });
   }
 
+  async getDeliveryLogs(
+    feedId: string,
+    {
+      limit,
+      skip,
+    }: {
+      limit: number;
+      skip: number;
+    }
+  ) {
+    return this.feedHandlerService.getDeliveryLogs(feedId, { limit, skip });
+  }
+
   async updateFeedById(id: string, updates: UpdateFeedInput) {
     const useUpdateObject: UpdateQuery<UserFeedDocument> = {
       $set: {},

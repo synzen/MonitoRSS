@@ -141,10 +141,14 @@ export class FeedEventHandlerService {
         {
           status: ArticleDeliveryStatus.Rejected,
           errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
-          internalMessage: `Body: ${responseBody}, Request Body: ${JSON.stringify(
-            job.options.body
-          )}`,
-          externalDetail: responseBody,
+          internalMessage: `Body: ${responseBody}, Request Body: ${job.options.body}`,
+          externalDetail: JSON.stringify({
+            type: "DISCORD_RESPONSE",
+            data: {
+              responseBody: result.body,
+              requestBody: JSON.parse(job.options.body),
+            },
+          }),
           articleId,
         }
       );

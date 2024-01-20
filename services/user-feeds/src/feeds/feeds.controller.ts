@@ -16,7 +16,6 @@ import {
 } from "@nestjs/common";
 import { object, string, ValidationError } from "yup";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
-import { RegexEvalException } from "../article-filters/exceptions";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { InvalidFeedException } from "../articles/exceptions";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
@@ -53,6 +52,7 @@ import {
   CreateTestArticleOutputDto,
   GetUserFeedArticlesInputDto,
   GetUserFeedArticlesOutputDto,
+  GetUserFeedDeliveryRecordsOutputDto,
 } from "./dto";
 import { FeedsService } from "./feeds.service";
 
@@ -548,6 +548,25 @@ export class FeedsController {
     return {
       result: {
         count,
+      },
+    };
+  }
+
+  @Get("/:feedId/delivery-logs")
+  async getDeliveryLogs(
+    @Param("feedId") feedId: string,
+    @Query("skip", ParseIntPipe) skip: number,
+    @Query("limit") limit?: number
+  ): Promise<GetUserFeedDeliveryRecordsOutputDto> {
+    const logs = await this.deliveryRecordService.getDeliveryLogs({
+      feedId,
+      limit: limit || 25,
+      skip,
+    });
+
+    return {
+      result: {
+        logs,
       },
     };
   }

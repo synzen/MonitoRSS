@@ -55,6 +55,11 @@ class FiltersDto {
   @IsOptional()
   articleId?: string;
 
+  @IsString({ each: true })
+  @IsArray()
+  @IsOptional()
+  articleIdHashes?: string[];
+
   @IsString()
   @IsOptional()
   search?: string;
