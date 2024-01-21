@@ -10,6 +10,7 @@ import {
   Flex,
   HStack,
   Heading,
+  Skeleton,
   Spinner,
   Stack,
   Table,
@@ -118,11 +119,17 @@ export const RequestHistory = ({ feedId }: Props) => {
                 <Tbody>
                   {data?.result.requests.map((req) => (
                     <Tr key={req.id}>
-                      <Td>{dayjs.unix(req.createdAt).format("DD MMM YYYY, HH:mm:ss")}</Td>
                       <Td>
-                        {createStatusLabel(req.status, {
-                          statusCode: req.response.statusCode,
-                        })}
+                        <Skeleton isLoaded={fetchStatus === "idle"}>
+                          {dayjs.unix(req.createdAt).format("DD MMM YYYY, HH:mm:ss")}
+                        </Skeleton>
+                      </Td>
+                      <Td>
+                        <Skeleton isLoaded={fetchStatus === "idle"}>
+                          {createStatusLabel(req.status, {
+                            statusCode: req.response.statusCode,
+                          })}
+                        </Skeleton>
                       </Td>
                     </Tr>
                   ))}

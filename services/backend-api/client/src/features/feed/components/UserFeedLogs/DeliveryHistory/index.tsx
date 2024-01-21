@@ -112,7 +112,11 @@ export const DeliveryHistory = ({ feedId }: Props) => {
       feedId,
       data: {},
     });
-  const { data: articles, error: articlesError } = useUserFeedArticles({
+  const {
+    data: articles,
+    error: articlesError,
+    fetchStatus: articlesFetchStatus,
+  } = useUserFeedArticles({
     feedId,
     disabled: !data?.result.logs.length,
     data: {
@@ -197,9 +201,13 @@ export const DeliveryHistory = ({ feedId }: Props) => {
 
                     return (
                       <Tr key={item.id}>
-                        <Td>{dayjs(item.createdAt).format("DD MMM YYYY, HH:mm:ss")}</Td>
                         <Td>
-                          <Skeleton isLoaded={!!(feed || feedError)}>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            {dayjs(item.createdAt).format("DD MMM YYYY, HH:mm:ss")}
+                          </Skeleton>
+                        </Td>
+                        <Td>
+                          <Skeleton isLoaded={!!(feed || feedError) && fetchStatus === "idle"}>
                             {!connection && (
                               <Text color="whiteAlpha.700" fontStyle="italic">
                                 (deleted connection)
@@ -226,7 +234,12 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                             overflow="hidden"
                             textOverflow="ellipsis"
                             isLoaded={
-                              !!(matchedArticle || articlesError || (articles && !matchedArticle))
+                              fetchStatus === "idle" &&
+                              !!(
+                                matchedArticle ||
+                                articlesError ||
+                                (articlesFetchStatus === "idle" && !matchedArticle)
+                              )
                             }
                           >
                             {!matchedArticle && (
@@ -249,21 +262,27 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                             )}
                           </Skeleton>
                         </Td>
-                        <Td>{createStatusLabel({ status: item.status })}</Td>
                         <Td>
-                          {item.details?.message}
-                          {item.details?.data && (
-                            <IconButton
-                              aria-label="View details"
-                              ml={1}
-                              icon={<Search2Icon />}
-                              size="xs"
-                              variant="link"
-                              onClick={() =>
-                                setDetailsData(JSON.stringify(item.details?.data, null, 2))
-                              }
-                            />
-                          )}
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            {createStatusLabel({ status: item.status })}
+                          </Skeleton>
+                        </Td>
+                        <Td>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            {item.details?.message}
+                            {item.details?.data && (
+                              <IconButton
+                                aria-label="View details"
+                                ml={1}
+                                icon={<Search2Icon />}
+                                size="xs"
+                                variant="link"
+                                onClick={() =>
+                                  setDetailsData(JSON.stringify(item.details?.data, null, 2))
+                                }
+                              />
+                            )}
+                          </Skeleton>
                         </Td>
                       </Tr>
                     );
