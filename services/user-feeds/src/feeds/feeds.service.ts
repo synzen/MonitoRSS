@@ -61,10 +61,11 @@ export class FeedsService {
     );
     let totalMatchedArticles = articles.length;
 
-    if (filters?.articleId || filters?.articleIdHashes) {
-      const targetIds =
-        new Set(filters.articleIdHashes) ||
-        new Set([filters.articleId as string]);
+    if (filters?.articleId || filters?.articleIdHashes?.length) {
+      const targetIds = filters.articleId
+        ? new Set([filters.articleId as string])
+        : new Set(filters.articleIdHashes);
+
       matchedArticles = articles.filter(
         (article) =>
           targetIds.has(article.flattened.id) ||
