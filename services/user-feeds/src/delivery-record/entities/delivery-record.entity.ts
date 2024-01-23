@@ -5,6 +5,7 @@ import {
   Enum,
   Index,
   OneToOne,
+  Unique,
 } from "@mikro-orm/core";
 import { ArticleDeliveryStatus } from "../../shared";
 import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-content-type.type";
@@ -23,8 +24,13 @@ import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-
   name: "article_id_hash_index",
 })
 @Index({
+  // Used for querying delivery records for user views
   properties: ["feed_id", "parent", "created_at"],
   name: "feed_parent_created_at_index",
+})
+@Unique({
+  properties: ["medium_id", "article_id_hash"],
+  name: "delivery_record_medium_id_article_id_hash_unique",
 })
 export class DeliveryRecord {
   @PrimaryKey()

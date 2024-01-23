@@ -404,22 +404,11 @@ export class FeedEventHandlerService {
         event.debug
       );
 
-      try {
-        await this.deliveryRecordService.store(
-          event.data.feed.id,
-          deliveryStates,
-          false
-        );
-      } catch (err) {
-        logger.error(
-          `Failed to store delivery states while handling feed event`,
-          {
-            event,
-            deliveryStates,
-            error: (err as Error).stack,
-          }
-        );
-      }
+      await this.deliveryRecordService.store(
+        event.data.feed.id,
+        deliveryStates,
+        false
+      );
 
       try {
         await this.orm.em.flush();
