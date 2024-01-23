@@ -20,7 +20,7 @@ export enum ArticleDeliveryStatus {
 interface BaseArticleDeliveryState {
   id: string;
   mediumId: string;
-  articleIdHash: string | undefined;
+  articleIdHash: string;
 }
 
 interface ArticleDeliveryPendingDeliveryState extends BaseArticleDeliveryState {

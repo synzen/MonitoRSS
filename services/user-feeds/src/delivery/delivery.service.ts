@@ -99,7 +99,7 @@ export class DeliveryService {
         article,
         medium,
         limitState,
-        randomUUID()
+        `${medium.id}-${article.flattened.idHash}`
       );
 
       results.push(...articleStates);

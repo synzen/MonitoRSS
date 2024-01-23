@@ -491,6 +491,12 @@ export class ArticlesService {
         clearTimeout(timeout);
         const idType = idResolver.getIDType();
 
+        if (!idType) {
+          return reject(
+            new Error("No ID type found when parsing articles for feed")
+          );
+        }
+
         const mappedArticles: Article[] = rawArticles.map((rawArticle) => {
           const { flattened } = this.articleParserService.flatten(
             rawArticle as never,
@@ -514,6 +520,10 @@ export class ArticlesService {
             raw: rawArticle,
           };
         });
+
+        if (mappedArticles.some((a) => !a.flattened.idHash)) {
+          return reject(new Error("Some articles are missing id hash"));
+        }
 
         resolve({
           articles: mappedArticles,
