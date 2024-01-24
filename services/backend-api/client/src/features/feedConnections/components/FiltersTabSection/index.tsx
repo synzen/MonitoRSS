@@ -34,7 +34,7 @@ export const FiltersTabSection = ({
           >
             https://regex101.com/
           </Link>{" "}
-          to test your regex on sample content.
+          (with JavaScript flavor) to test your regex on sample content.
         </Text>
       </Stack>
       <FiltersForm
