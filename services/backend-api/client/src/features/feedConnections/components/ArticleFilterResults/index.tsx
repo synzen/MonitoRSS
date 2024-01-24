@@ -9,7 +9,7 @@ import {
   TableHeadProps,
   Text,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArticleFilterResultsView } from "./ArticleFilterResultsView";
 import {
@@ -90,6 +90,15 @@ export const ArticleFilterResults = ({
   const onChangeFeedArticleProperty = (value: string) => {
     setSelectedArticleProperty(value);
   };
+
+  useEffect(() => {
+    if (
+      feedArticlePropertiesResult?.result.properties &&
+      !feedArticlePropertiesResult.result.properties.includes(selectedArticleProperty)
+    ) {
+      setSelectedArticleProperty(feedArticlePropertiesResult.result.properties[0]);
+    }
+  }, [feedArticlePropertiesResult?.result.properties]);
 
   return (
     <Stack spacing={4}>

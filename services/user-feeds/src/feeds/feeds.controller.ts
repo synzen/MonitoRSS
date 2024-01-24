@@ -138,7 +138,14 @@ export class FeedsController {
         filterEvalResults,
         totalArticles,
       } = await this.feedsService.queryForArticles({
-        articles: fetchResult.articles,
+        articles: await Promise.all(
+          fetchResult.articles.map(async (article) => {
+            return this.discordMediumService.formatArticle(article, {
+              ...formatter.options,
+              customPlaceholders: formatter.customPlaceholders,
+            });
+          })
+        ),
         limit,
         skip,
         selectProperties,
@@ -147,24 +154,10 @@ export class FeedsController {
         customPlaceholders: formatter.customPlaceholders,
       });
 
-      const formattedArticles = (
-        await Promise.all(
-          matchedArticles.map(async (article) => {
-            return this.articleFormatterService.formatArticleForDiscord(
-              article,
-              {
-                ...formatter.options,
-                customPlaceholders: formatter.customPlaceholders,
-              }
-            );
-          })
-        )
-      ).map(({ flattened }) => flattened);
-
       return {
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
-          articles: formattedArticles,
+          articles: matchedArticles.map((a) => a.flattened),
           totalArticles,
           filterStatuses: filterEvalResults,
           selectedProperties: properties,

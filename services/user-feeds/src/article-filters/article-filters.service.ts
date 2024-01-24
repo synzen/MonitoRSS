@@ -234,7 +234,7 @@ export class ArticleFiltersService {
   }
 
   private testRegex(inputRegex: string, reference: string) {
-    const contex = {
+    const context = {
       reference,
       inputRegex,
       matches: false,
@@ -246,11 +246,11 @@ export class ArticleFiltersService {
     `);
 
     try {
-      script.runInNewContext(contex, {
+      script.runInNewContext(context, {
         timeout: REGEX_TIMEOUT_MS,
       });
 
-      return contex.matches;
+      return context.matches;
     } catch (err) {
       throw new FiltersRegexEvalException(
         `Filter regex "${inputRegex}" evaluation on text "${reference}" errored: ` +

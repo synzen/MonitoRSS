@@ -162,11 +162,6 @@ export class FeedFetcherController {
     const latestRequestStatus = latestRequest.request.status;
     const latestRequestResponse = latestRequest.request.response;
 
-    console.log(
-      '🚀 ~ FeedFetcherController ~ latestRequestStatus:',
-      latestRequestStatus,
-    );
-
     if (
       data.hashToCompare &&
       data.hashToCompare === latestRequest.request.response?.textHash
