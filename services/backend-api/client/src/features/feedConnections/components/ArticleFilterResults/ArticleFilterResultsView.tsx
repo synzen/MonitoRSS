@@ -1,8 +1,7 @@
 import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
 import {
   Box,
-  Flex,
-  Spinner,
+  Skeleton,
   Table,
   TableContainer,
   TableHeadProps,
@@ -35,22 +34,6 @@ export const ArticleFilterResultsView = ({
 
   return (
     <Box position="relative" rounded="md">
-      {isLoading && (
-        <Flex
-          position="absolute"
-          top="0"
-          left="0"
-          width="100%"
-          height="100%"
-          bg="blackAlpha.700"
-          alignItems="center"
-          justifyContent="center"
-          zIndex={10}
-          borderRadius="md"
-        >
-          <Spinner />
-        </Flex>
-      )}
       <Box position="relative" border="solid 1px" borderColor="gray.600" rounded="md">
         <Box maxHeight="sm" overflow="auto" rounded="md">
           <TableContainer rounded="md">
@@ -70,7 +53,9 @@ export const ArticleFilterResultsView = ({
                 {articles.map(({ passedFilters, propertyValue, id }) => {
                   let valueColor: string | undefined;
 
-                  if (passedFilters === true) {
+                  if (isLoading) {
+                    valueColor = undefined;
+                  } else if (passedFilters === true) {
                     valueColor = "rgba(23, 99, 27, 0.5)";
                   } else if (passedFilters === false) {
                     valueColor = "rgba(99, 23, 27, 0.5)";
@@ -79,15 +64,21 @@ export const ArticleFilterResultsView = ({
                   return (
                     <Tr key={id} bg={valueColor}>
                       <Td>
-                        {passedFilters === true && (
-                          <CheckIcon aria-label="passed" color="green.500" />
-                        )}
-                        {passedFilters === false && (
-                          <CloseIcon aria-label="blocked" color="red.500" />
-                        )}
-                        {passedFilters === undefined && <span>?</span>}
+                        <Skeleton isLoaded={!isLoading}>
+                          {passedFilters === true && (
+                            <CheckIcon aria-label="passed" color="green.500" />
+                          )}
+                          {passedFilters === false && (
+                            <CloseIcon aria-label="blocked" color="red.500" />
+                          )}
+                          {passedFilters === undefined && <span>?</span>}
+                        </Skeleton>
                       </Td>
-                      <Td>{propertyValue}</Td>
+                      <Td>
+                        <Skeleton isLoaded={!isLoading}>
+                          {isLoading ? "loading..." : propertyValue}
+                        </Skeleton>
+                      </Td>
                     </Tr>
                   );
                 })}
