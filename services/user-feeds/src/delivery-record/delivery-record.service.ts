@@ -12,7 +12,8 @@ import { MikroORM } from "@mikro-orm/core";
 import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
 
-const { Failed, Rejected, Sent, PendingDelivery } = ArticleDeliveryStatus;
+const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
+  ArticleDeliveryStatus;
 
 @Injectable()
 export class DeliveryRecordService {
@@ -69,6 +70,15 @@ export class DeliveryRecordService {
             : null,
           content_type: articleState.contentType,
           article_id_hash: articleState.articleIdHash,
+        });
+      } else if (articleStatus === FilteredOut) {
+        record = new DeliveryRecord({
+          id: articleState.id,
+          feed_id: feedId,
+          status: articleStatus,
+          medium_id: articleState.mediumId,
+          article_id_hash: articleState.articleIdHash,
+          external_detail: articleState.externalDetail,
         });
       } else {
         record = new DeliveryRecord({
@@ -272,6 +282,12 @@ export class DeliveryRecordService {
         status = DeliveryLogStatus.MEDIUM_RATE_LIMITED;
       } else if (record.status === ArticleDeliveryStatus.FilteredOut) {
         status = DeliveryLogStatus.FILTERED_OUT;
+
+        try {
+          if (record.external_detail) {
+            details.data = JSON.parse(record.external_detail);
+          }
+        } catch (err) {}
       } else {
         throw new Error(
           `Unhandled article delivery status: ${record.status} for record: ${record.id}`

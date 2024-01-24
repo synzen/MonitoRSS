@@ -17,12 +17,21 @@ import { FiltersRegexEvalException } from "../shared/exceptions";
 
 const REGEX_TIMEOUT_MS = 5000;
 
+interface FilterResult {
+  result: boolean;
+  explainBlocked: Array<{
+    message: string;
+    referenceValue: string | null;
+    filterInput: string;
+  }>;
+}
+
 @Injectable()
 export class ArticleFiltersService {
   getArticleFilterResults(
     expression: LogicalExpression,
     references: FilterExpressionReference
-  ) {
+  ): { result: boolean } {
     const errors = this.getFilterExpressionErrors(expression as never);
 
     if (errors.length > 0) {
@@ -41,9 +50,9 @@ export class ArticleFiltersService {
   evaluateExpression(
     expression: LogicalExpression | RelationalExpression,
     references: FilterExpressionReference
-  ): boolean {
+  ): FilterResult {
     if (!expression) {
-      return true;
+      return { result: true, explainBlocked: [] };
     }
 
     switch (expression.type) {
@@ -62,42 +71,54 @@ export class ArticleFiltersService {
   private evaluateLogicalExpression(
     expression: LogicalExpression,
     references: FilterExpressionReference
-  ): boolean {
+  ): FilterResult {
     const children = expression.children;
 
     switch (expression.op) {
       case LogicalExpressionOperator.And: {
         if (!children.length) {
-          return true;
+          return { result: true, explainBlocked: [] };
         }
 
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
-          const result = this.evaluateExpression(child, references);
+          const { result, explainBlocked } = this.evaluateExpression(
+            child,
+            references
+          );
 
           if (!result) {
-            return false;
+            return { result: false, explainBlocked };
           }
         }
 
-        return true;
+        return { result: true, explainBlocked: [] };
       }
 
       case LogicalExpressionOperator.Or: {
         if (!children.length) {
-          return true;
+          return { result: true, explainBlocked: [] };
         }
+
+        const allExplainBlocked: FilterResult["explainBlocked"] = [];
 
         for (let i = 0; i < children.length; ++i) {
           const child = children[i];
-          const result = this.evaluateExpression(child, references);
+          const { result, explainBlocked } = this.evaluateExpression(
+            child,
+            references
+          );
+
+          if (!result) {
+            allExplainBlocked.push(...explainBlocked);
+          }
 
           if (result) {
-            return true;
+            return { result: true, explainBlocked: [] };
           }
         }
 
-        return false;
+        return { result: false, explainBlocked: allExplainBlocked };
       }
 
       default:
@@ -112,17 +133,27 @@ export class ArticleFiltersService {
   private evaluateRelationalExpression(
     expression: RelationalExpression,
     references: FilterExpressionReference
-  ): boolean {
+  ): FilterResult {
     const { left, right } = expression;
     const referenceObject = references[left.type];
 
     if (!referenceObject) {
-      return false;
+      return {
+        result: false,
+        explainBlocked: [
+          {
+            message: "Reference value does not exist",
+            referenceValue: null,
+            filterInput: right.value,
+          },
+        ],
+      };
     }
 
-    let valueToCompareAgainst = references.ARTICLE.flattened[left.value];
+    const explainBlocked: FilterResult["explainBlocked"] = [];
+    let valueToCompareAgainst = referenceObject.flattened[left.value];
 
-    if (!Object.keys(references.ARTICLE.flattened).includes(left.value)) {
+    if (!Object.keys(referenceObject.flattened).includes(left.value)) {
       valueToCompareAgainst = "";
     }
 
@@ -133,6 +164,14 @@ export class ArticleFiltersService {
         case RelationalExpressionOperator.Eq: {
           val = valueToCompareAgainst === right.value;
 
+          if (!val) {
+            explainBlocked.push({
+              message: "Reference value does not match filter input",
+              referenceValue: valueToCompareAgainst,
+              filterInput: right.value,
+            });
+          }
+
           break;
         }
 
@@ -141,11 +180,27 @@ export class ArticleFiltersService {
             .toLowerCase()
             .includes(right.value.toLowerCase());
 
+          if (!val) {
+            explainBlocked.push({
+              message: "Reference value does not contain filter input",
+              referenceValue: valueToCompareAgainst,
+              filterInput: right.value,
+            });
+          }
+
           break;
         }
 
         case RelationalExpressionOperator.Matches: {
           val = this.testRegex(right.value, valueToCompareAgainst);
+
+          if (!val) {
+            explainBlocked.push({
+              message: "Reference value does not match regex",
+              referenceValue: valueToCompareAgainst,
+              filterInput: right.value,
+            });
+          }
 
           break;
         }
@@ -162,10 +217,13 @@ export class ArticleFiltersService {
       }
 
       if (expression.not) {
-        return !val;
+        return {
+          result: !val,
+          explainBlocked,
+        };
       }
 
-      return val;
+      return { result: val, explainBlocked };
     } else {
       throw new InvalidExpressionException(
         `Unknown right type ${

@@ -72,6 +72,7 @@ interface ArticleDeliveryFailureState extends BaseArticleDeliveryState {
 
 interface ArticleDeliveryFilteredOutState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.FilteredOut;
+  externalDetail: string | null;
 }
 
 export type ArticleDeliveryState =

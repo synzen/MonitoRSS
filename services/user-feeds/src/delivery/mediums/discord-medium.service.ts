@@ -822,7 +822,7 @@ export class DiscordMediumService implements DeliveryMedium {
         return id;
       }
 
-      const result = this.articleFiltersService.getArticleFilterResults(
+      const { result } = this.articleFiltersService.getArticleFilterResults(
         filters.expression as LogicalExpression,
         filterReferences
       );
@@ -1123,10 +1123,11 @@ export class DiscordMediumService implements DeliveryMedium {
         inputMentions.targets
           ?.map((mention) => {
             if (mention.filters?.expression) {
-              const result = this.articleFiltersService.getArticleFilterResults(
-                mention.filters.expression as unknown as LogicalExpression,
-                filterReferences
-              );
+              const { result } =
+                this.articleFiltersService.getArticleFilterResults(
+                  mention.filters.expression as unknown as LogicalExpression,
+                  filterReferences
+                );
 
               if (!result) {
                 return null;

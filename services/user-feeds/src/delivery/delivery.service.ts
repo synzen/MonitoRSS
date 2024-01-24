@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { randomUUID } from "crypto";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import {
@@ -141,22 +140,28 @@ export class DeliveryService {
         article: formattedArticle,
       });
 
-      const passesFilters = !medium.filters?.expression
-        ? true
-        : await this.articleFiltersService.getArticleFilterResults(
+      if (medium.filters?.expression) {
+        const { result, explainBlocked } =
+          await this.articleFiltersService.evaluateExpression(
             medium.filters.expression,
             filterReferences
           );
 
-      if (!passesFilters) {
-        return [
-          {
-            id: deliveryId,
-            mediumId: medium.id,
-            status: ArticleDeliveryStatus.FilteredOut,
-            articleIdHash: article.flattened.idHash,
-          },
-        ];
+        if (!result) {
+          return [
+            {
+              id: deliveryId,
+              mediumId: medium.id,
+              status: ArticleDeliveryStatus.FilteredOut,
+              articleIdHash: article.flattened.idHash,
+              externalDetail: explainBlocked.length
+                ? JSON.stringify({
+                    explainBlocked,
+                  })
+                : null,
+            },
+          ];
+        }
       }
 
       const articleStates = await mediumService.deliverArticle(

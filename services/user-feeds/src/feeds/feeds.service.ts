@@ -127,14 +127,19 @@ export class FeedsService {
     ) {
       if (filters.expression) {
         filterEvalResults = await Promise.all(
-          matchedArticles.map(async (article) => ({
-            passed: await this.articleFiltersService.evaluateExpression(
-              filters.expression as unknown as LogicalExpression,
-              this.articleFiltersService.buildReferences({
-                article,
-              })
-            ),
-          }))
+          matchedArticles.map(async (article) => {
+            const { result: passed } =
+              await this.articleFiltersService.evaluateExpression(
+                filters.expression as unknown as LogicalExpression,
+                this.articleFiltersService.buildReferences({
+                  article,
+                })
+              );
+
+            return {
+              passed,
+            };
+          })
         );
       } else {
         filterEvalResults = matchedArticles.map(() => ({ passed: true }));
