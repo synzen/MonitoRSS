@@ -70,7 +70,6 @@ export const DiscordMentionSettingsDialog = ({
                   }
                   expression={filters?.expression || null}
                   onSave={async (expression) => {
-                    console.log("🚀 ~ file: DiscordMentionSettingsDialog.tsx:73 ~ onSave={ ~ expression:", expression)
                     onFiltersUpdated(expression ? { expression } : null);
                     onClose();
                   }}

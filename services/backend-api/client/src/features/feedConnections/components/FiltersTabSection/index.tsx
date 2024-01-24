@@ -1,5 +1,4 @@
-import { Heading, Stack } from "@chakra-ui/react";
-import { useTranslation } from "react-i18next";
+import { Heading, Link, Stack, Text } from "@chakra-ui/react";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 import { LogicalFilterExpression } from "../../types";
@@ -18,23 +17,34 @@ export const FiltersTabSection = ({
   onFiltersUpdated,
   articleFormatter,
 }: Props) => {
-  const { t } = useTranslation();
-
   return (
-    <Stack spacing={12} mb={24}>
-      <Stack spacing={4}>
+    <Stack spacing={8} mb={24}>
+      <Stack>
         <Heading as="h2" size="md">
           Filters
         </Heading>
-        <FiltersForm
-          onSave={onFiltersUpdated}
-          expression={filters}
-          data={{
-            feedId,
-            articleFormatter,
-          }}
-        />
+        <Text>
+          Block articles based on placeholder content so only relevant articles are delivered. If
+          you&apos;re using regex matches, you may use{" "}
+          <Link
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://regex101.com/"
+            color="blue.400"
+          >
+            https://regex101.com/
+          </Link>{" "}
+          to test your regex on sample content.
+        </Text>
       </Stack>
+      <FiltersForm
+        onSave={onFiltersUpdated}
+        expression={filters}
+        data={{
+          feedId,
+          articleFormatter,
+        }}
+      />
     </Stack>
   );
 };
