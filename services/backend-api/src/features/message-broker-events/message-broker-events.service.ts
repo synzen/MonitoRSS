@@ -507,7 +507,7 @@ export class MessageBrokerEventsService {
         source: "backend-api::message-broker-events",
       },
       {
-        expiration: 1000 * 60 * 60, // 1 hour
+        expiration: 1000 * 60 * 10, // 10 minutes
       }
     );
 
