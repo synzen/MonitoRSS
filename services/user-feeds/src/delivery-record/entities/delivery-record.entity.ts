@@ -28,10 +28,6 @@ import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-
   properties: ["feed_id", "parent", "created_at"],
   name: "feed_parent_created_at_index",
 })
-@Unique({
-  properties: ["medium_id", "article_id_hash"],
-  name: "delivery_record_medium_id_article_id_hash_unique",
-})
 export class DeliveryRecord {
   @PrimaryKey()
   id: string;
