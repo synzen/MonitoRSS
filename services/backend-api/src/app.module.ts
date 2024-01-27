@@ -51,7 +51,9 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [
-        MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI),
+        MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI, {
+          autoIndex: true,
+        }),
         FeedConnectionsDiscordWebhooksModule.forRoot(),
         FeedConnectionsDiscordChannelsModule.forRoot(),
         SupporterSubscriptionsModule.forRoot(),

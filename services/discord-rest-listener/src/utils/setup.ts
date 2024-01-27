@@ -14,7 +14,7 @@ async function setup () {
     entities: [DeliveryRecord, GeneralStat, Feed, Profile],
     type: 'mongo',
     clientUrl: config.databaseURI,
-    ensureIndexes: true
+    ensureIndexes: true,
   })
   log.info('Connected to Mongo')
 
