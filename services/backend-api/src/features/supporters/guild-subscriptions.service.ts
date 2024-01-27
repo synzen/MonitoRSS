@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import fetch from "node-fetch";
 import { GuildSubscription } from "./types/guild-subscription.type";
 import logger from "../../utils/logger";
 import qs from "qs";
@@ -67,7 +66,7 @@ export class GuildSubscriptionsService {
       });
 
       if (res.status === 200) {
-        const json: GuildSubscription = await res.json();
+        const json = (await res.json()) as GuildSubscription;
 
         return this.mapApiResponse(json);
       }
@@ -115,7 +114,7 @@ export class GuildSubscriptionsService {
       });
 
       if (res.status === 200) {
-        const data: GuildSubscription[] = await res.json();
+        const data = (await res.json()) as GuildSubscription[];
 
         return data.map((sub) => this.mapApiResponse(sub));
       }

@@ -235,9 +235,9 @@ export class FeedFetcherService {
 
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
-        // if (sizeOfTextInMb > 3) {
-        //   throw new FeedTooLargeException(`Response body is too large`);
-        // }
+        if (sizeOfTextInMb > 5) {
+          throw new FeedTooLargeException(`Response body is too large`);
+        }
 
         try {
           const deflated = await deflatePromise(text);
@@ -326,7 +326,9 @@ export class FeedFetcherService {
           ` ${this.feedRequestTimeoutMs}ms to complete`;
       } else {
         request.status = RequestStatus.FETCH_ERROR;
-        request.errorMessage = (err as Error).message;
+        request.errorMessage = `${(err as Error).message} | cause: ${
+          (err as Error)['cause']?.['message']
+        }`;
       }
 
       await this.requestRepo.persist(request);

@@ -1,7 +1,6 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import FeedParser from "feedparser";
-import fetch from "node-fetch";
 import { FeedData } from "./types/FeedData.type";
 // @ts-ignore
 import ArticleIDResolver from "./utils/ArticleIDResolver";
@@ -55,7 +54,7 @@ export class FeedFetcherService {
     let inputStream: NodeJS.ReadableStream;
 
     if (!options.fetchOptions.useServiceApi) {
-      inputStream = await this.fetchFeedStream(url);
+      throw new Error("Non-service api fetches are not supported");
     } else {
       inputStream = await this.fetchFeedStreamFromApiService(url, {
         getCachedResponse: options.fetchOptions.useServiceApiCache,
@@ -77,18 +76,29 @@ export class FeedFetcherService {
     const userAgent = this.configService.get<string>(
       "BACKEND_API_FEED_USER_AGENT"
     );
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 15000);
 
     const res = await fetch(url, {
-      timeout: 15000,
-      follow: 5,
+      signal,
       headers: {
         "user-agent": userAgent || "",
       },
     });
 
+    clearTimeout(timeout);
+
     this.handleStatusCode(res.status);
 
-    return res.body;
+    if (!res.body) {
+      throw new Error(`Non-200 status code (${res.status})`);
+    }
+
+    return res.body as never;
   }
 
   async fetchFeedStreamFromApiService(

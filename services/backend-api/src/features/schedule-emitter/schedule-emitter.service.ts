@@ -7,7 +7,7 @@ import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 
 @Injectable()
 export class ScheduleEmitterService {
-  timers = new Map<number, NodeJS.Timer>();
+  timers = new Map<number, NodeJS.Timeout>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -37,7 +37,7 @@ export class ScheduleEmitterService {
   }
 
   cleanupTimers(
-    inputTimers: Map<number, NodeJS.Timer>,
+    inputTimers: Map<number, NodeJS.Timeout>,
     refreshRates: Set<number>
   ) {
     const timersRemoved: number[] = [];
@@ -59,7 +59,7 @@ export class ScheduleEmitterService {
   }
 
   setNewTimers(
-    inputTimers: Map<number, NodeJS.Timer>,
+    inputTimers: Map<number, NodeJS.Timeout>,
     refreshRates: Set<number>,
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {

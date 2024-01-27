@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import fetch, { RequestInit } from "node-fetch";
 import { URLSearchParams } from "url";
 import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
 import { PaddleCustomerCreditBalanceResponse } from "../supporter-subscriptions/types/paddle-customer-credit-balance-response.type";
@@ -120,6 +119,6 @@ export class PaddleService {
       );
     }
 
-    return res.json();
+    return (await res.json()) as T;
   }
 }

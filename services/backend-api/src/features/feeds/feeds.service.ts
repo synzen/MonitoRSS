@@ -424,9 +424,13 @@ export class FeedsService {
       throw new Error(`Feed ${feedId} does not exist`);
     }
 
+    if (!feed.isFeedv2) {
+      throw new Error(`Feed ${feedId} must be converted to a personal feed`);
+    }
+
     await this.feedFetcherSevice.fetchFeed(feed.url, {
       fetchOptions: {
-        useServiceApi: feed.isFeedv2 || false,
+        useServiceApi: true,
         useServiceApiCache: false,
       },
     });

@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
-import fetch, { Response } from "node-fetch";
 import { URLSearchParams } from "url";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
@@ -69,7 +68,7 @@ export class FeedFetcherApiService {
         );
       }
 
-      return responseBody;
+      return responseBody as FeedFetcherFetchFeedResponse;
     } catch (error) {
       logger.error(
         `Failed to execute fetch with feed fetcher api (${error.message})`,
@@ -105,7 +104,7 @@ export class FeedFetcherApiService {
 
     const body = await this.validateResponseJson(
       FeedFetcherGetRequestsResponse,
-      responseBody
+      responseBody as Record<string, unknown>
     );
 
     return body;
@@ -120,7 +119,7 @@ export class FeedFetcherApiService {
       let body: Record<string, unknown> | null = null;
 
       try {
-        body = await res.json();
+        body = (await res.json()) as Record<string, unknown>;
       } catch (err) {}
 
       throw new Error(

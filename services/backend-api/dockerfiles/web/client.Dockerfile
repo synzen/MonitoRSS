@@ -1,4 +1,4 @@
-FROM node:18 AS build
+FROM node:21 AS build
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -8,7 +8,7 @@ RUN npm install
 COPY . ./
 
 # Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
-FROM node:18-slim  AS prod
+FROM node:21-slim  AS prod
 
 ARG VITE_FRESHDESK_WIDGET_ID
 ARG VITE_PADDLE_PW_AUTH

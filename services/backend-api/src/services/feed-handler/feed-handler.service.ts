@@ -2,9 +2,11 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
-import fetch, { Response } from "node-fetch";
 import { URLSearchParams } from "url";
-import { UnexpectedApiResponseException } from "../../common/exceptions";
+import {
+  StandardException,
+  UnexpectedApiResponseException,
+} from "../../common/exceptions";
 import logger from "../../utils/logger";
 import {
   FeedArticleNotFoundException,
@@ -80,7 +82,7 @@ export class FeedHandlerService {
         );
       }
 
-      return responseBody;
+      return responseBody as FeedHandlerRateLimitsResponse;
     } catch (error) {
       logger.error(
         `Failed to execute fetch with User feeds api (${error.message})`,
@@ -120,7 +122,7 @@ export class FeedHandlerService {
 
       const result = await this.validateResponseJson(
         GetDeliveryCountResult,
-        json
+        json as Record<string, unknown>
       );
 
       return result;
@@ -174,7 +176,10 @@ export class FeedHandlerService {
 
     const json = await res.json();
 
-    const result = await this.validateResponseJson(SendTestArticleResult, json);
+    const result = await this.validateResponseJson(
+      SendTestArticleResult,
+      json as Record<string, unknown>
+    );
 
     return result;
   }
@@ -213,7 +218,10 @@ export class FeedHandlerService {
 
     const json = await res.json();
 
-    const result = await this.validateResponseJson(CreatePreviewOutput, json);
+    const result = await this.validateResponseJson(
+      CreatePreviewOutput,
+      json as Record<string, unknown>
+    );
 
     return result;
   }
@@ -252,7 +260,10 @@ export class FeedHandlerService {
 
     const json = await res.json();
 
-    const result = await this.validateResponseJson(GetArticlesResponse, json);
+    const result = await this.validateResponseJson(
+      GetArticlesResponse,
+      json as Record<string, unknown>
+    );
 
     return result.result;
   }
@@ -281,7 +292,7 @@ export class FeedHandlerService {
 
     const result = await this.validateResponseJson(
       CreateFilterValidationResponse,
-      json
+      json as Record<string, unknown>
     );
 
     return {
@@ -337,7 +348,10 @@ export class FeedHandlerService {
     }
 
     if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
-      const json = await res.json();
+      const json = (await res.json()) as {
+        code: string;
+        errors: StandardException[];
+      };
       const code = json.code;
 
       if (code === "CUSTOM_PLACEHOLDER_REGEX_EVAL") {
@@ -364,7 +378,7 @@ export class FeedHandlerService {
       let body: Record<string, unknown> | null = null;
 
       try {
-        body = await res.json();
+        body = (await res.json()) as Record<string, unknown>;
       } catch (err) {}
 
       throw new FeedFetcherStatusException(
