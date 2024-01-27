@@ -14,10 +14,6 @@ import { ObjectId } from '@mikro-orm/mongodb'
   }
 })
 @Index({
-  properties: ['comment'],
-  type: 'text'
-})
-@Index({
   properties: ['deliveryId'],
 })
 class DeliveryRecord {
