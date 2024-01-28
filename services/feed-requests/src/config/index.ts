@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { testConfig } from './test.config';
 import { Environment, EnvironmentVariables, validateConfig } from './validate';
+import { setGlobalDispatcher, Agent } from 'undici';
 
 const envFiles: Record<string, string> = {
   development: '.env.development',
@@ -53,6 +54,12 @@ export default function config(): EnvironmentVariables {
       process.env.FEED_REQUESTS_REQUEST_TIMEOUT_MS || '15000',
     ),
   };
+
+  setGlobalDispatcher(
+    new Agent({
+      connect: { timeout: values.FEED_REQUESTS_REQUEST_TIMEOUT_MS },
+    }),
+  );
 
   validateConfig(values);
 
