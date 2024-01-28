@@ -122,13 +122,20 @@ export class FeedFetcherListenerService {
     try {
       const results = await Promise.allSettled(
         message.data.map(async ({ url, lookupKey, saveToObjectStorage }) => {
+          let request: Request | undefined = undefined;
+
           try {
-            await this.handleBrokerFetchRequest({
+            const result = await this.handleBrokerFetchRequest({
               lookupKey,
               url,
               rateSeconds,
               saveToObjectStorage,
             });
+
+            if (result) {
+              request = result.request;
+            }
+
             await this.emitFetchCompleted({
               lookupKey,
               url,
@@ -145,6 +152,8 @@ export class FeedFetcherListenerService {
                   duration: finishedTs,
                   url,
                   lookupKey,
+                  requestStatus: request?.status,
+                  errorMessage: request?.errorMessage,
                 },
               );
             }
@@ -182,7 +191,7 @@ export class FeedFetcherListenerService {
     url: string;
     rateSeconds: number;
     saveToObjectStorage?: boolean;
-  }): Promise<void> {
+  }): Promise<undefined | { request: Request }> {
     const url = data.url;
     const rateSeconds = data.rateSeconds;
     const lookupKey = data.lookupKey;
@@ -238,9 +247,11 @@ export class FeedFetcherListenerService {
 
         request.nextRetryDate = nextRetryDate;
       }
+
+      return { request };
     }
 
-    await this.deleteStaleRequests(url);
+    // await this.deleteStaleRequests(url);
   }
 
   async shouldSkipAfterPreviousFailedAttempt({
