@@ -235,7 +235,7 @@ export class FeedFetcherService {
 
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
-        if (sizeOfTextInMb > 5) {
+        if (sizeOfTextInMb > 7) {
           throw new FeedTooLargeException(`Response body is too large`);
         }
 
@@ -347,7 +347,7 @@ export class FeedFetcherService {
   ): Promise<ReturnType<typeof fetch>> {
     const controller = new AbortController();
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       controller.abort();
     }, this.feedRequestTimeoutMs);
 
@@ -368,6 +368,8 @@ export class FeedFetcherService {
     };
 
     const res = await fetch(url, useOptions);
+
+    clearTimeout(timer);
 
     return res;
   }
