@@ -60,7 +60,7 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "undici": "^5.22.0",
-    "yup": "^1.0.0-beta.7"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@mikro-orm/cli": "^5.7.12",

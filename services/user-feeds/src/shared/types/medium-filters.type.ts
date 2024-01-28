@@ -1,8 +1,8 @@
-import { object } from "yup";
 import { LogicalExpression } from "../../article-filters/types";
+import { z } from "zod";
 
-export const mediumFiltersSchema = object({
-  expression: object().required(),
+export const mediumFiltersSchema = z.object({
+  expression: z.object({}).passthrough(),
 });
 
 export type MediumFilters = {

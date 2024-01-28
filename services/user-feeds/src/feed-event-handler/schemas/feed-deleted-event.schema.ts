@@ -1,11 +1,9 @@
-import { object, string } from "yup";
+import { z } from "zod";
 
-export const feedDeletedEventSchema = object().shape({
-  data: object()
-    .shape({
-      feed: object({
-        id: string().required(),
-      }),
-    })
-    .required(),
+export const feedDeletedEventSchema = z.object({
+  data: z.object({
+    feed: z.object({
+      id: z.string(),
+    }),
+  }),
 });

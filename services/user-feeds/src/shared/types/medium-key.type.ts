@@ -1,9 +1,7 @@
-import { string } from "yup";
+import { z } from "zod";
 
 export enum MediumKey {
   Discord = "discord",
 }
 
-export const mediumKeySchema = string()
-  .oneOf(Object.values(MediumKey))
-  .required();
+export const mediumKeySchema = z.nativeEnum(MediumKey);

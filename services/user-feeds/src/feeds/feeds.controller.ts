@@ -14,7 +14,7 @@ import {
   ParseIntPipe,
   Param,
 } from "@nestjs/common";
-import { object, string, ValidationError } from "yup";
+import { z } from "zod";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { InvalidFeedException } from "../articles/exceptions";
@@ -240,39 +240,38 @@ export class FeedsController {
     @Body() payload: Record<string, unknown>
   ): Promise<CreateTestArticleOutputDto> {
     try {
-      const withType = await object()
-        .shape({
-          type: string().oneOf(Object.values(TestDeliveryMedium)).required(),
-          feed: object()
-            .shape({
-              url: string().required(),
-              formatOptions: feedV2EventSchemaFormatOptions
-                .optional()
-                .default(undefined),
-              dateChecks: feedV2EventSchemaDateChecks
-                .optional()
-                .default(undefined),
+      const withType = await z
+        .object({
+          type: z.nativeEnum(TestDeliveryMedium),
+          feed: z.object({
+            url: z.string(),
+            formatOptions: feedV2EventSchemaFormatOptions
+              .optional()
+              .nullable()
+              .default(null),
+            dateChecks: feedV2EventSchemaDateChecks
+              .optional()
+              .nullable()
+              .default(null),
+          }),
+          article: z
+            .object({
+              id: z.string(),
             })
-            .required(),
-          article: object()
-            .shape({
-              id: string().required(),
-            })
+            .nullable()
             .optional()
-            .default(undefined),
+            .default(null),
         })
-        .required()
-        .validate(payload);
+        .parse(payload);
 
       const type = withType.type;
 
       if (type === TestDeliveryMedium.Discord) {
-        const { mediumDetails } = await object()
-          .shape({
-            mediumDetails: discordMediumTestPayloadDetailsSchema.required(),
+        const { mediumDetails } = await z
+          .object({
+            mediumDetails: discordMediumTestPayloadDetailsSchema,
           })
-          .required()
-          .validate(payload);
+          .parse(payload);
 
         let article: Article | null = null;
 
@@ -372,7 +371,7 @@ export class FeedsController {
         throw new Error(`Unhandled medium type: ${type}`);
       }
     } catch (err) {
-      if (err instanceof ValidationError) {
+      if (err instanceof z.ZodError) {
         throw new BadRequestException(err.errors);
       }
 
@@ -390,39 +389,35 @@ export class FeedsController {
     @Body() payload: Record<string, unknown>
   ): Promise<CreatePreviewOutputDto> {
     try {
-      const withType = await object()
-        .shape({
-          type: string().oneOf(Object.values(TestDeliveryMedium)).required(),
-          feed: object()
-            .shape({
-              url: string().required(),
-              formatOptions: object()
-                .shape({
-                  dateFormat: string().optional().default(undefined),
-                  dateTimezone: string().optional().default(undefined),
-                  dateLocale: string().optional().default(undefined),
-                })
-                .optional()
-                .default(undefined),
-            })
-            .required(),
-          article: object()
-            .shape({
-              id: string().required(),
-            })
-            .required(),
+      const withType = await z
+        .object({
+          type: z.nativeEnum(TestDeliveryMedium),
+          feed: z.object({
+            url: z.string(),
+            formatOptions: z
+              .object({
+                dateFormat: z.string().optional(),
+                dateTimezone: z.string().optional(),
+                dateLocale: z.string().optional(),
+              })
+              .optional()
+              .nullable()
+              .default(null),
+          }),
+          article: z.object({
+            id: z.string(),
+          }),
         })
-        .required()
-        .validate(payload);
+        .parse(payload);
 
       const type = withType.type;
 
       if (type === TestDeliveryMedium.Discord) {
-        const { mediumDetails } = await object({
-          mediumDetails: discordMediumPayloadDetailsSchema.required(),
-        })
-          .required()
-          .validate(payload);
+        const { mediumDetails } = await z
+          .object({
+            mediumDetails: discordMediumPayloadDetailsSchema,
+          })
+          .parse(payload);
 
         const formatOptions: UserFeedFormatOptions = {
           dateFormat: withType.feed.formatOptions?.dateFormat,
@@ -497,7 +492,7 @@ export class FeedsController {
         throw new Error(`Unhandled medium type: ${type}`);
       }
     } catch (err) {
-      if (err instanceof ValidationError) {
+      if (err instanceof z.ZodError) {
         throw new BadRequestException(err.errors);
       }
 

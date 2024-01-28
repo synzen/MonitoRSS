@@ -1,183 +1,189 @@
-import { string, object, InferType, array, number, boolean } from "yup";
+import { z } from "zod";
 
-const buttonSchema = object({
-  type: number().required().min(2).max(2),
-  style: number().required().min(1).max(5),
-  label: string().max(80).required(),
-  emoji: object({
-    id: string().required(),
-    name: string().nullable(),
-    animated: boolean().nullable(),
-  })
-    .nullable()
-    .default(undefined),
-  url: string().nullable(),
+const buttonSchema = z.object({
+  type: z.number().min(2).max(2),
+  style: z.number().min(1).max(5),
+  label: z.string().max(80),
+  emoji: z
+    .object({
+      id: z.string(),
+      name: z.string().nullable(),
+      animated: z.boolean().nullable(),
+    })
+    .optional()
+    .nullable(),
+  url: z.string().nullable(),
 });
 
-const actionRowSchema = object({
-  type: number().oneOf([1]).required(),
-  components: array(buttonSchema.required()).required(),
+const actionRowSchema = z.object({
+  type: z.literal(1),
+  components: z.array(buttonSchema),
 });
 
-/**
- * .default(undefined) is NECESSARY when using .optional(), otherwise optional objects with
- * required fields will throw, saying the nested field is required
- */
-export const discordMediumPayloadDetailsSchema = object().shape(
-  {
-    guildId: string().required(),
-    components: array(actionRowSchema.required()).nullable(),
-    channel: object({
-      id: string().required(),
-      type: string()
+export const discordMediumPayloadDetailsSchema = z.object({
+  guildId: z.string(),
+  components: z.array(actionRowSchema).nullable(),
+  channel: z
+    .object({
+      id: z.string(),
+      type: z
+        .union([z.literal("forum"), z.literal("thread")])
         .optional()
-        .oneOf(["forum", "thread"])
-        .default(undefined)
         .nullable(),
     })
-      .nullable()
-      .default(null)
-      .when("webhook", {
-        is: (val: unknown) => val === null,
-        then: (schema) => schema.required(),
-        otherwise: (schema) => schema.optional(),
-      }),
-    webhook: object({
-      id: string().required(),
-      token: string().required(),
-      name: string().optional(),
-      iconUrl: string().optional(),
-      type: string().oneOf(["forum", "thread"]).nullable().default(undefined),
-      threadId: string().optional().nullable().default(undefined),
+    .optional()
+    .nullable()
+    .default(null),
+  webhook: z
+    .object({
+      id: z.string(),
+      token: z.string(),
+      name: z.string().optional(),
+      iconUrl: z.string().optional(),
+      type: z
+        .union([z.literal("forum"), z.literal("thread")])
+        .optional()
+        .nullable()
+        .default(null),
+      threadId: z.string().optional().nullable(),
     })
-      .nullable()
-      .default(null)
-      .when("channel", {
-        is: (val: unknown) => val === null,
-        then: (schema) => schema.required(),
-        otherwise: (schema) => schema.optional(),
-      }),
-    forumThreadTitle: string().nullable().default(undefined),
-    forumThreadTags: array(
-      object({
-        id: string().required(),
-        filters: object({
-          expression: object(),
-        })
+    .optional()
+    .nullable()
+    .default(null),
+  forumThreadTitle: z.string().optional().nullable(),
+  forumThreadTags: z
+    .array(
+      z.object({
+        id: z.string(),
+        filters: z
+          .object({
+            expression: z.object({}).passthrough(),
+          })
           .optional()
           .nullable()
           .default(null),
-      }).required()
+      })
     )
-      .nullable()
-      .default(undefined),
-    customPlaceholders: array(
-      object({
-        id: string().required(),
-        referenceName: string().required(),
-        sourcePlaceholder: string().required(),
-        steps: array(
-          object({
-            regexSearch: string().required(),
-            regexSearchFlags: string().nullable().default(undefined),
-            replacementString: string().nullable(),
+    .optional()
+    .nullable()
+    .default(null),
+  customPlaceholders: z
+    .array(
+      z.object({
+        id: z.string(),
+        referenceName: z.string(),
+        sourcePlaceholder: z.string(),
+        steps: z.array(
+          z.object({
+            regexSearch: z.string(),
+            regexSearchFlags: z.string().optional().nullable(),
+            replacementString: z.string().optional().nullable(),
           })
-        ).required(),
-      }).required()
+        ),
+      })
     )
-      .nullable()
-      .default([]),
-    mentions: object({
-      targets: array(
-        object({
-          id: string().required(),
-          type: string().required().oneOf(["user", "role"]),
-          filters: object({
-            expression: object(),
-          })
+    .optional()
+    .nullable()
+    .default([]),
+  mentions: z
+    .object({
+      targets: z.array(
+        z.object({
+          id: z.string(),
+          type: z.union([z.literal("user"), z.literal("role")]),
+          filters: z
+            .object({
+              expression: z.object({}).passthrough(),
+            })
             .optional()
             .nullable()
             .default(null),
-        }).required()
+        })
       ),
     })
-      .nullable()
-      .default(undefined),
-    content: string(),
-    embeds: array(
-      object({
-        title: string().nullable().optional(),
-        description: string().nullable().optional(),
-        url: string().nullable().optional(),
-        color: number().optional(),
-        footer: object({
-          text: string().required(),
-          iconUrl: string().optional().nullable().default(undefined),
+    .optional()
+    .nullable()
+    .default(null),
+  content: z.string(),
+  embeds: z.array(
+    z.object({
+      title: z.string().nullable().optional(),
+      description: z.string().nullable().optional(),
+      url: z.string().nullable().optional(),
+      color: z.number().optional(),
+      footer: z
+        .object({
+          text: z.string(),
+          iconUrl: z.string().optional().nullable().default(null),
         })
-          .optional()
-          .nullable()
-          .default(undefined),
-        image: object({
-          url: string().required(),
+        .optional()
+        .nullable()
+        .default(null),
+      image: z
+        .object({
+          url: z.string(),
         })
-          .optional()
-          .nullable()
-          .default(undefined),
-        thumbnail: object({
-          url: string().required(),
+        .optional()
+        .nullable()
+        .default(null),
+      thumbnail: z
+        .object({
+          url: z.string(),
         })
-          .optional()
-          .nullable()
-          .default(undefined),
-        author: object({
-          name: string().required(),
-          url: string().optional().nullable(),
-          iconUrl: string().optional().nullable(),
+        .optional()
+        .nullable()
+        .default(null),
+      author: z
+        .object({
+          name: z.string(),
+          url: z.string().optional().nullable(),
+          iconUrl: z.string().optional().nullable(),
         })
-          .optional()
-          .nullable()
-          .default(undefined),
-        fields: array(
-          object({
-            name: string().required(),
-            value: string().required(),
-            inline: boolean().optional(),
-          }).required()
-        ).optional(),
-        timestamp: string()
-          .oneOf(["now", "article", ""])
-          .optional()
-          .nullable()
-          .default(undefined),
-      }).required()
-    ),
-    formatter: object({
-      stripImages: boolean().optional().default(false),
-      formatTables: boolean().optional().default(false),
-      disableImageLinkPreviews: boolean().optional().default(false),
-    }).required(),
-    splitOptions: object({
-      splitChar: string().optional().nullable(),
-      appendChar: string().optional().nullable(),
-      prependChar: string().optional().nullable(),
+        .optional()
+        .nullable()
+        .default(null),
+      fields: z
+        .array(
+          z.object({
+            name: z.string(),
+            value: z.string(),
+            inline: z.boolean().optional(),
+          })
+        )
+        .optional(),
+      timestamp: z
+        .union([z.literal("now"), z.literal("article"), z.literal("")])
+        .optional()
+        .nullable()
+        .default(null),
     })
-      .optional()
-      .default(undefined),
-    placeholderLimits: array(
-      object({
-        placeholder: string().required(),
-        characterCount: number().required(),
-        appendString: string().optional().nullable().default(undefined),
-      }).required()
+  ),
+  formatter: z.object({
+    stripImages: z.boolean().optional().default(false),
+    formatTables: z.boolean().optional().default(false),
+    disableImageLinkPreviews: z.boolean().optional().default(false),
+  }),
+  splitOptions: z
+    .object({
+      splitChar: z.string().optional().nullable(),
+      appendChar: z.string().optional().nullable(),
+      prependChar: z.string().optional().nullable(),
+    })
+    .optional(),
+  placeholderLimits: z
+    .array(
+      z.object({
+        placeholder: z.string(),
+        characterCount: z.number(),
+        appendString: z.string().optional().nullable().default(null),
+      })
     )
-      .optional()
-      .nullable()
-      .default(undefined),
-    enablePlaceholderFallback: boolean().optional().default(false),
-  },
-  [["channel", "webhook"]]
-);
+    .optional()
+    .nullable()
+    .default(null),
+  enablePlaceholderFallback: z.boolean().optional().default(false),
+});
 
-export type DiscordMediumPayloadDetails = InferType<
+export type DiscordMediumPayloadDetails = z.infer<
   typeof discordMediumPayloadDetailsSchema
 >;

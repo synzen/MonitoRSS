@@ -823,7 +823,7 @@ export class DiscordMediumService implements DeliveryMedium {
       }
 
       const { result } = this.articleFiltersService.getArticleFilterResults(
-        filters.expression as LogicalExpression,
+        filters.expression as never,
         filterReferences
       );
 

@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { ValidationError } from "yup";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { ArticlesService } from "../articles/articles.service";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
@@ -35,7 +34,7 @@ import { getParserRules } from "./utils";
 import { FeedRetryRecord } from "./entities";
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
-
+import { z } from "zod";
 @Injectable()
 export class FeedEventHandlerService {
   constructor(
@@ -57,18 +56,19 @@ export class FeedEventHandlerService {
   })
   async handleV2Event(event: FeedV2Event): Promise<void> {
     try {
-      await feedV2EventSchema.validate(event, {
-        abortEarly: false,
-      });
+      feedV2EventSchema.parse(event);
     } catch (err) {
-      const validationErr = err as ValidationError;
-
-      logger.error(
-        `Validation failed on incoming Feed V2 event. ${validationErr.errors}`,
-        {
+      if (err instanceof z.ZodError) {
+        logger.error(`Validation failed on incoming Feed V2 event`, {
           feedId: event.data.feed.id,
-        }
-      );
+          errors: err.errors,
+        });
+      } else {
+        logger.error(`Failed to parse Feed V2 event`, {
+          feedId: event.data.feed.id,
+          error: (err as Error).stack,
+        });
+      }
     }
 
     try {
@@ -117,13 +117,13 @@ export class FeedEventHandlerService {
     logger.debug(`Received feed deleted event`, { event });
 
     try {
-      const data = await feedDeletedEventSchema.validate(event);
+      const data = await feedDeletedEventSchema.parse(event);
 
       await this.handleFeedDeletedEvent(data);
     } catch (err) {
       logger.error(`Failed to handle feed deleted event`, {
-        err: (err as Error).stack,
         event,
+        detail: err instanceof z.ZodError ? err.issues : (err as Error).stack,
       });
     }
   }

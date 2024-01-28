@@ -1,9 +1,9 @@
-import { object, InferType } from "yup";
 import { mediumKeySchema } from "./medium-key.type";
+import { z } from "zod";
 
-export const baseMediumpayloadSchema = object({
+export const baseMediumpayloadSchema = z.object({
   key: mediumKeySchema,
-  details: object().required(),
+  details: z.object({}).passthrough(),
 });
 
-export type BaseMediumPayload = InferType<typeof baseMediumpayloadSchema>;
+export type BaseMediumPayload = z.infer<typeof baseMediumpayloadSchema>;
