@@ -1,9 +1,19 @@
 import { Injectable } from "@nestjs/common";
 import { convert, HtmlToTextOptions, SelectorDefinition } from "html-to-text";
-import { Article, ArticleDiscordFormatted } from "../shared";
-import { FormatOptions } from "./types";
+import {
+  Article,
+  ArticleDiscordFormatted,
+  CustomPlaceholderStepType,
+} from "../shared";
+import {
+  CustomPlaceholderDateFormatStep,
+  CustomPlaceholderRegexStep,
+  FormatOptions,
+} from "./types";
 import vm from "node:vm";
 import { CustomPlaceholderRegexEvalException } from "../shared/exceptions";
+import dayjs from "dayjs";
+import logger from "../shared/utils/logger";
 
 @Injectable()
 export class ArticleFormatterService {
@@ -39,38 +49,83 @@ export class ArticleFormatterService {
         let lastOutput = sourceValue;
 
         for (let i = 0; i < steps.length; ++i) {
-          const { regexSearch, replacementString, regexSearchFlags } = steps[i];
+          const { type } = steps[i];
 
-          const context = {
-            reference: lastOutput,
-            replacementString,
-            inputRegex: regexSearch,
-            inputRegexFlags: regexSearchFlags || "gmi",
-            finalVal: lastOutput,
-          };
+          if (!type || type === CustomPlaceholderStepType.Regex) {
+            const step = steps[i] as CustomPlaceholderRegexStep;
+            const { regexSearch, replacementString, regexSearchFlags } = step;
 
-          const script = new vm.Script(`
+            const context = {
+              reference: lastOutput,
+              replacementString,
+              inputRegex: regexSearch,
+              inputRegexFlags: regexSearchFlags || "gmi",
+              finalVal: lastOutput,
+            };
+
+            const script = new vm.Script(`
             const regex = new RegExp(inputRegex, inputRegexFlags);
             finalVal = reference.replace(regex, replacementString || '').trim();
         `);
 
-          try {
-            script.runInNewContext(context, {
-              timeout: 5000,
-            });
+            try {
+              script.runInNewContext(context, {
+                timeout: 5000,
+              });
 
-            lastOutput = context.finalVal;
-          } catch (err) {
-            throw new CustomPlaceholderRegexEvalException(
-              `Custom placeholder with regex "${regexSearch}" with flags ` +
-                `"${regexSearchFlags}" evaluation` +
-                ` on text "${lastOutput}"` +
-                ` with replacement string "${replacementString}" errored: ` +
-                `${(err as Error).message}`,
-              {
-                regexErrors: [err as Error],
+              lastOutput = context.finalVal;
+            } catch (err) {
+              throw new CustomPlaceholderRegexEvalException(
+                `Custom placeholder with regex "${regexSearch}" with flags ` +
+                  `"${regexSearchFlags}" evaluation` +
+                  ` on text "${lastOutput}"` +
+                  ` with replacement string "${replacementString}" errored: ` +
+                  `${(err as Error).message}`,
+                {
+                  regexErrors: [err as Error],
+                }
+              );
+            }
+          } else if (type === CustomPlaceholderStepType.UrlEncode) {
+            lastOutput = encodeURIComponent(lastOutput);
+          } else if (type === CustomPlaceholderStepType.DateFormat) {
+            const step = steps[i] as CustomPlaceholderDateFormatStep;
+            const { format, timezone, locale } = step;
+
+            let date = dayjs(lastOutput);
+
+            if (!date.isValid()) {
+              logger.error(
+                `Invalid date provided for custom placeholder with ` +
+                  `format "${format}" and value "${lastOutput}"`
+              );
+
+              lastOutput = "";
+
+              continue;
+            }
+
+            if (timezone) {
+              // check if valid tz first
+              try {
+                date = date.tz(timezone);
+              } catch (err) {
+                logger.error(
+                  `Invalid timezone "${timezone}" provided for custom placeholder with ` +
+                    `format "${format}" and value "${lastOutput}"`
+                );
+
+                lastOutput = "";
               }
-            );
+            }
+
+            if (locale) {
+              date = date.locale(locale);
+            }
+
+            lastOutput = date.format(format);
+          } else {
+            throw new Error(`Custom placeholder has unknown type "${type}"`);
           }
         }
 

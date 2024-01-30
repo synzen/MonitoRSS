@@ -9,7 +9,7 @@ import {
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
-import { UserFeedManagerStatus } from "../../constants";
+import { CustomPlaceholderStepType, UserFeedManagerStatus } from "../../constants";
 
 const sampleFilters = {
   expression: {
@@ -184,6 +184,7 @@ const mockUserFeeds: UserFeed[] = [
             steps: [
               {
                 id: "1",
+                type: CustomPlaceholderStepType.Regex,
                 regexSearch: "^(.*)$",
                 replacementString: "xx",
               },

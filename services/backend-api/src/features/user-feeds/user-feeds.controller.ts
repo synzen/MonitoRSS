@@ -14,6 +14,7 @@ import {
   UseGuards,
   ValidationPipe,
 } from "@nestjs/common";
+import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { NestedFieldPipe } from "../../common/pipes/nested-field.pipe";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
@@ -79,7 +80,8 @@ export class UserFeedsController {
   @Post()
   @UseFilters(FeedExceptionFilter)
   async createFeed(
-    @Body(ValidationPipe) { title, url }: CreateUserFeedInputDto,
+    @Body(ValidationPipe)
+    { title, url }: CreateUserFeedInputDto,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
@@ -157,7 +159,8 @@ export class UserFeedsController {
     [{ feed }]: GetUserFeedsPipeOutput,
     @DiscordAccessToken()
     { access_token }: SessionAccessToken,
-    @Body(ValidationPipe) { title, url }: CreateUserFeedCloneInput
+    @Body(ValidationPipe)
+    { title, url }: CreateUserFeedCloneInput
   ) {
     const { id } = await this.userFeedsService.clone(
       feed._id.toHexString(),
@@ -472,10 +475,16 @@ export class UserFeedsController {
         mentions: con.mentions,
         customPlaceholders: con.customPlaceholders?.map((c) => ({
           ...c,
-          steps: c.steps.map((s) => ({
-            ...s,
-            regexSearchFlags: s.regexSearchFlags || "gmi", // default is set in user-feeds-service
-          })),
+          steps: c.steps.map((s) => {
+            if (s.type === CustomPlaceholderStepType.Regex) {
+              return {
+                ...s,
+                regexSearchFlags: s.regexSearchFlags || "gmi", // default is set in user-feeds-service
+              };
+            } else {
+              return s;
+            }
+          }),
         })),
       }));
 

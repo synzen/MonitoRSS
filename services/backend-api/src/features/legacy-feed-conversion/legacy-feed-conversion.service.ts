@@ -48,6 +48,7 @@ import { randomUUID } from "crypto";
 import { escapeRegExp } from "lodash";
 import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
 import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
+import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 
 enum ConversionDisabledCode {
   ConvertSuccess = "CONVERTED_USER_FEED",
@@ -508,6 +509,7 @@ export class LegacyFeedConversionService {
               referenceName: name,
               sourcePlaceholder: key,
               steps: nameOps.map((op) => ({
+                type: CustomPlaceholderStepType.Regex,
                 id: randomUUID(),
                 regexSearch: op.search.regex,
                 replacementString: op.replacementDirect || op.replacement || "",

@@ -15,6 +15,7 @@ import { useCreateConnectionPreview } from "../../hooks";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { InlineErrorAlert } from "../../../../components";
 import { useDebounce } from "../../../../hooks";
+import { CustomPlaceholderStepType } from "../../../../constants";
 
 interface Props {
   customPlaceholder: CustomPlaceholder;
@@ -39,7 +40,13 @@ export const CustomPlaceholderPreview = ({
   const customPlaceholder = customPlaceholders[0];
 
   const { t } = useTranslation();
-  const allStepsAreComplete = customPlaceholder.steps.every((s) => s.regexSearch);
+  const allStepsAreComplete = customPlaceholder.steps.every((s) => {
+    if (!s.type || s.type === CustomPlaceholderStepType.Regex) {
+      return !!s.regexSearch;
+    }
+
+    return true;
+  });
   const placeholderIsComplete = !!(
     customPlaceholder.referenceName &&
     customPlaceholder.sourcePlaceholder &&

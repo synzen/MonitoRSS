@@ -2,6 +2,7 @@ import { Type } from "class-transformer";
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -11,6 +12,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
+import { CustomPlaceholderStepType } from "../../shared";
 
 class SplitOptions {
   @IsString()
@@ -40,7 +42,18 @@ class SplitOptions {
   isEnabled?: boolean;
 }
 
-class CustomPlaceholderStep {
+class CustomPlaceholderBaseStep {
+  @IsIn([Object.values(CustomPlaceholderStepType)])
+  @IsOptional()
+  type: CustomPlaceholderStepType = CustomPlaceholderStepType.Regex;
+}
+
+export class CustomPlaceholderRegexStep extends CustomPlaceholderBaseStep {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([CustomPlaceholderStepType.Regex])
+  type: CustomPlaceholderStepType.Regex = CustomPlaceholderStepType.Regex;
+
   @IsString()
   @IsNotEmpty()
   regexSearch: string;
@@ -55,6 +68,39 @@ class CustomPlaceholderStep {
   @ValidateIf((v) => v.replacementString !== null)
   replacementString?: string | null;
 }
+
+export class CustomPlaceholderUrlEncodeStep extends CustomPlaceholderBaseStep {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([CustomPlaceholderStepType.UrlEncode])
+  type: CustomPlaceholderStepType.UrlEncode;
+}
+
+export class CustomPlaceholderDateFormatStep extends CustomPlaceholderBaseStep {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([CustomPlaceholderStepType.DateFormat])
+  type: CustomPlaceholderStepType.DateFormat;
+
+  @IsString()
+  @IsNotEmpty()
+  format: string;
+
+  @IsString()
+  @IsOptional()
+  @ValidateIf((v) => v.timezone !== null)
+  timezone?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @ValidateIf((v) => v.locale !== null)
+  locale?: string | null;
+}
+
+type CustomPlaceholderStep =
+  | CustomPlaceholderRegexStep
+  | CustomPlaceholderUrlEncodeStep
+  | CustomPlaceholderDateFormatStep;
 
 export class CustomPlaceholder {
   @IsString()
@@ -71,7 +117,26 @@ export class CustomPlaceholder {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CustomPlaceholderStep)
+  @Type(() => CustomPlaceholderBaseStep, {
+    keepDiscriminatorProperty: true,
+    discriminator: {
+      property: "type",
+      subTypes: [
+        {
+          value: CustomPlaceholderRegexStep,
+          name: CustomPlaceholderStepType.Regex,
+        },
+        {
+          value: CustomPlaceholderUrlEncodeStep,
+          name: CustomPlaceholderStepType.UrlEncode,
+        },
+        {
+          value: CustomPlaceholderDateFormatStep,
+          name: CustomPlaceholderStepType.DateFormat,
+        },
+      ],
+    },
+  })
   steps: CustomPlaceholderStep[];
 }
 

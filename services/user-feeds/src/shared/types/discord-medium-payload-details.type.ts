@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CustomPlaceholderStepType } from "../constants";
 
 const buttonSchema = z.object({
   type: z.number().min(2).max(2),
@@ -74,11 +75,25 @@ export const discordMediumPayloadDetailsSchema = z.object({
         referenceName: z.string(),
         sourcePlaceholder: z.string(),
         steps: z.array(
-          z.object({
-            regexSearch: z.string(),
-            regexSearchFlags: z.string().optional().nullable(),
-            replacementString: z.string().optional().nullable(),
-          })
+          z.union([
+            z.object({
+              type: z
+                .literal(CustomPlaceholderStepType.Regex)
+                .default(CustomPlaceholderStepType.Regex),
+              regexSearch: z.string(),
+              regexSearchFlags: z.string().optional().nullable(),
+              replacementString: z.string().optional().nullable(),
+            }),
+            z.object({
+              type: z.literal(CustomPlaceholderStepType.UrlEncode),
+            }),
+            z.object({
+              type: z.literal(CustomPlaceholderStepType.DateFormat),
+              format: z.string(),
+              timezone: z.string().optional().nullable(),
+              locale: z.string().optional().nullable(),
+            }),
+          ])
         ),
       })
     )

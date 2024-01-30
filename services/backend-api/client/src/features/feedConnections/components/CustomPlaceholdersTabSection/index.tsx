@@ -15,7 +15,7 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
@@ -33,7 +33,7 @@ import { FeedConnectionType } from "@/types";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { useIsFeatureAllowed } from "@/hooks";
-import { BlockableFeature, SupporterTier } from "@/constants";
+import { BlockableFeature, CustomPlaceholderStepType, SupporterTier } from "@/constants";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { useUserMe } from "../../../discordUser";
 
@@ -67,15 +67,18 @@ export const CustomPlaceholdersTabSection = ({
     },
   });
   const {
+    control,
     handleSubmit,
     reset,
     formState: { dirtyFields },
-    watch,
-    setValue,
   } = formMethods;
-  const fields = watch("customPlaceholders");
   const { t } = useTranslation();
   const currentCustomPlaceholders = connection?.customPlaceholders;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "customPlaceholders",
+    keyName: "hookKey",
+  });
   const [activeIndex, setActiveIndex] = useState<number | number[] | undefined>();
 
   useEffect(() => {
@@ -94,10 +97,16 @@ export const CustomPlaceholdersTabSection = ({
         details: {
           customPlaceholders: customPlaceholders.map((v) => ({
             ...v,
-            steps: v.steps.map((s) => ({
-              ...s,
-              regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
-            })),
+            steps: v.steps.map((s) => {
+              if (!s.type || s.type === CustomPlaceholderStepType.Regex) {
+                return {
+                  ...s,
+                  regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
+                };
+              }
+
+              return s;
+            }),
           })),
         },
       });
@@ -108,42 +117,26 @@ export const CustomPlaceholdersTabSection = ({
   };
 
   const onAddCustomPlaceholder = () => {
-    const newPlaceholders = [
-      ...fields,
-      {
-        id: uuidv4(),
-        steps: [
-          {
-            id: uuidv4(),
-            regexSearch: "",
-            replacementString: "",
-            regexSearchFlags: "gi",
-          },
-        ],
-        referenceName: "",
-        sourcePlaceholder: "",
-        isNew: true,
-      },
-    ];
-    setValue("customPlaceholders", newPlaceholders, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: false,
+    append({
+      id: uuidv4(),
+      steps: [
+        {
+          id: uuidv4(),
+          type: CustomPlaceholderStepType.Regex,
+          regexSearch: "",
+          replacementString: "",
+          regexSearchFlags: "gi",
+        },
+      ],
+      referenceName: "",
+      sourcePlaceholder: "",
+      isNew: true,
     });
     setActiveIndex(fields.length);
   };
 
   const onDeleteCustomPlaceholder = async (index: number) => {
-    const newPlaceholders = [...fields];
-
-    newPlaceholders.splice(index, 1);
-
-    setValue("customPlaceholders", newPlaceholders, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-
+    remove(index);
     setActiveIndex(-1);
   };
 
@@ -168,8 +161,8 @@ export const CustomPlaceholdersTabSection = ({
           Custom Placeholders
         </Heading>
         <Text>
-          Create custom placeholders by editing the content of existing placeholders to only include
-          the content you&apos;re interested in.
+          Create custom placeholders by transforming the content of existing placeholders through a
+          series of steps to only include the content you&apos;re interested in.
         </Text>
       </Stack>
       {!allowed && (
@@ -230,10 +223,10 @@ export const CustomPlaceholdersTabSection = ({
                           <CustomPlaceholderForm
                             articleFormat={articleFormat}
                             isExpanded={activeIndex === index}
+                            onDelete={() => onDeleteCustomPlaceholder(index)}
                             feedId={feedId}
                             connectionId={connectionId}
                             index={index}
-                            onDelete={onDeleteCustomPlaceholder}
                             connectionType={connectionType}
                           />
                         </Stack>
