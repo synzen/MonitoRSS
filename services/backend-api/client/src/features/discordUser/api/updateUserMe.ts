@@ -6,6 +6,9 @@ export interface UpdateUserMeInput {
   details: {
     preferences?: {
       alertOnDisabledFeeds?: boolean;
+      dateFormat?: string;
+      dateTimezone?: string;
+      dateLocale?: string;
     };
   };
 }

@@ -7,6 +7,7 @@ export interface GetFeedArticlesInput {
   random?: boolean;
   selectProperties?: string[];
   skip?: number;
+  discordUserId: string;
   filters?: {
     returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
     expression?: Record<string, unknown>;
@@ -19,6 +20,7 @@ export interface GetFeedArticlesInput {
       formatTables: boolean;
       dateFormat: string | undefined;
       dateTimezone: string | undefined;
+      dateLocale: string | undefined;
       disableImageLinkPreviews: boolean;
     };
   };

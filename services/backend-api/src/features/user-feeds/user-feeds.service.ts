@@ -46,6 +46,7 @@ import {
 import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import dayjs from "dayjs";
+import { User, UserModel } from "../users/entities/user.entity";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -78,6 +79,7 @@ export class UserFeedsService {
     private readonly limitOverrideModel: UserFeedLimitOverrideModel,
     @InjectModel(LegacyFeedConversionJob.name)
     private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
+    @InjectModel(User.name) private readonly userModel: UserModel,
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
@@ -189,6 +191,7 @@ export class UserFeedsService {
         discordUserId,
       },
       refreshRateSeconds,
+      maxDailyArticles,
     });
 
     return created;
@@ -701,7 +704,17 @@ export class UserFeedsService {
     selectProperties,
     skip,
     formatter,
+    discordUserId,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
+    const user = await this.userModel.findOne(
+      {
+        discordUserId,
+      },
+      {
+        preferences: 1,
+      }
+    );
+
     return this.feedHandlerService.getArticles({
       url,
       limit,
@@ -709,7 +722,18 @@ export class UserFeedsService {
       filters,
       skip: skip || 0,
       selectProperties,
-      formatter,
+      formatter: {
+        ...formatter,
+        options: {
+          ...formatter?.options,
+          dateFormat:
+            formatter.options.dateFormat || user?.preferences?.dateFormat,
+          dateTimezone:
+            formatter.options.dateTimezone || user?.preferences?.dateTimezone,
+          dateLocale:
+            formatter.options.dateLocale || user?.preferences?.dateLocale,
+        },
+      },
     });
   }
 
@@ -730,6 +754,7 @@ export class UserFeedsService {
           dateFormat: undefined,
           dateTimezone: undefined,
           disableImageLinkPreviews: false,
+          dateLocale: undefined,
         },
         customPlaceholders,
       },

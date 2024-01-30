@@ -17,6 +17,7 @@ import { FeedFeature } from "../feeds/entities/feed.entity";
 import { UserFeedLimitOverrideFeature } from "../supporters/entities/user-feed-limit-overrides.entity";
 import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import { FeedConnectionsDiscordChannelsModule } from "../feed-connections/feed-connections-discord-channels.module";
+import { UserFeature } from "../users/entities/user.entity";
 
 @Module({
   controllers: [UserFeedsController],
@@ -28,6 +29,7 @@ import { FeedConnectionsDiscordChannelsModule } from "../feed-connections/feed-c
       FeedFeature,
       UserFeedLimitOverrideFeature,
       LegacyFeedConversionJobFeature,
+      UserFeature,
     ]),
     FeedFetcherModule,
     SupportersModule,

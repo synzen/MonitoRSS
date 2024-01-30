@@ -8,6 +8,8 @@ export interface CreateDiscordChannelPreviewInput {
       url: string;
       formatOptions: {
         dateFormat?: string | undefined;
+        dateTimezone?: string | undefined;
+        dateLocale?: string | undefined;
       };
     };
     article?: {

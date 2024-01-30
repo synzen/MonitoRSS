@@ -277,6 +277,7 @@ export class UserFeedsController {
       url: feed.url,
       random,
       filters,
+      discordUserId: feed.user.discordUserId,
       selectProperties,
       skip,
       formatter: {
@@ -285,6 +286,7 @@ export class UserFeedsController {
           ...formatter.options,
           dateFormat: feed.formatOptions?.dateFormat,
           dateTimezone: feed.formatOptions?.dateTimezone,
+          dateLocale: feed.formatOptions?.dateLocale,
         },
       },
     };

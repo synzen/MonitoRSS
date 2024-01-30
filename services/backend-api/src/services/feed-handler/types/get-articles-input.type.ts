@@ -18,6 +18,7 @@ export interface GetArticlesInput {
       formatTables: boolean;
       dateFormat: string | undefined;
       dateTimezone: string | undefined;
+      dateLocale: string | undefined;
       disableImageLinkPreviews: boolean;
     };
     customPlaceholders?: CustomPlaceholderDto[] | null;

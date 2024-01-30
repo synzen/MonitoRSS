@@ -55,6 +55,7 @@ import { castDiscordComponentRowsForMedium } from "../../common/utils";
 import logger from "../../utils/logger";
 import { WebhookMissingPermissionsException } from "../discord-webhooks/exceptions";
 import { UserFeedConnectionEventsService } from "../user-feed-connection-events/user-feed-connection-events.service";
+import { User, UserModel } from "../users/entities/user.entity";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -137,6 +138,7 @@ export class FeedConnectionsDiscordChannelsService {
   constructor(
     private readonly feedsService: FeedsService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    @InjectModel(User.name) private readonly userModel: UserModel,
     private readonly feedHandlerService: FeedHandlerService,
     private readonly supportersService: SupportersService,
     private readonly discordWebhooksService: DiscordWebhooksService,
@@ -861,6 +863,17 @@ export class FeedConnectionsDiscordChannelsService {
         }))
       : undefined;
 
+    const user = await this.userModel
+      .findOne(
+        {
+          discordUserId: userFeed.user.discordUserId,
+        },
+        {
+          preferences: 1,
+        }
+      )
+      .lean();
+
     const payload: SendTestDiscordChannelArticleInput["details"] = {
       type: "discord",
       feed: {
@@ -868,6 +881,18 @@ export class FeedConnectionsDiscordChannelsService {
         formatOptions: {
           ...userFeed.formatOptions,
           ...previewInput?.feedFormatOptions,
+          dateFormat:
+            previewInput?.feedFormatOptions?.dateFormat ||
+            userFeed.formatOptions?.dateFormat ||
+            user?.preferences?.dateFormat,
+          dateTimezone:
+            previewInput?.feedFormatOptions?.dateTimezone ||
+            userFeed.formatOptions?.dateTimezone ||
+            user?.preferences?.dateTimezone,
+          dateLocale:
+            previewInput?.feedFormatOptions?.dateLocale ||
+            userFeed.formatOptions?.dateLocale ||
+            user?.preferences?.dateLocale,
         },
       },
       article: details?.article ? details.article : undefined,
@@ -939,12 +964,29 @@ export class FeedConnectionsDiscordChannelsService {
     customPlaceholders,
     componentRows,
   }: CreatePreviewInput) {
+    const user = await this.userModel
+      .findOne(
+        {
+          discordUserId: userFeed.user.discordUserId,
+        },
+        {
+          preferences: 1,
+        }
+      )
+      .lean();
+
     const payload: CreateDiscordChannelPreviewInput["details"] = {
       type: "discord",
       feed: {
         url: userFeed.url,
         formatOptions: {
           ...feedFormatOptions,
+          dateFormat:
+            feedFormatOptions?.dateFormat || user?.preferences?.dateFormat,
+          dateTimezone:
+            feedFormatOptions?.dateTimezone || user?.preferences?.dateTimezone,
+          dateLocale:
+            feedFormatOptions?.dateLocale || user?.preferences?.dateLocale,
         },
       },
       article: articleId ? { id: articleId } : undefined,

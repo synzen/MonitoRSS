@@ -38,17 +38,13 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
+import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
-import duration from "dayjs/plugin/duration";
-import relativeTime from "dayjs/plugin/relativeTime";
 import { ChevronDownIcon, DeleteIcon, SettingsIcon } from "@chakra-ui/icons";
-import advancedFormat from "dayjs/plugin/advancedFormat";
 import { useState } from "react";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
 import { notifyError } from "../../../../utils/notifyError";
@@ -60,7 +56,7 @@ import {
   useUserFeed,
 } from "../../../feed/hooks";
 import { DiscordUsername, useDiscordUserMe } from "../../../discordUser";
-import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../../constants";
+import { pages, UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../../constants";
 import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
 import { SelectUserDialog } from "./SelectUserDialog";
 import DATE_LOCALES from "../../../../constants/dateLocales";
@@ -69,12 +65,6 @@ import { useDebounce } from "../../../../hooks";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 import { ManageUserFeedManagementInviteSettingsDialog } from "./ManageUserFeedManagementInviteSettingsDialog";
 import { AddFeedComanagerDialog } from "./AddFeedComanagerDialog";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(advancedFormat);
-dayjs.extend(duration);
-dayjs.extend(relativeTime);
 
 interface Props {
   feedId: string;
@@ -536,9 +526,20 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
           />
         </Stack>
         <Stack spacing={4}>
-          <Heading size="md" as="h3">
-            {t("features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle")}
-          </Heading>
+          <Stack>
+            <Heading size="md" as="h3">
+              {t(
+                "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle"
+              )}
+            </Heading>
+            <Text>
+              If you&apos;ve configured date settings in your{" "}
+              <Link as={RouterLink} to={pages.userSettings()} color="blue.300">
+                Account Settings
+              </Link>
+              , they will be overridden by the settings here.
+            </Text>
+          </Stack>
           <Stack spacing={4}>
             <FormControl>
               <FormLabel marginBottom={0}>

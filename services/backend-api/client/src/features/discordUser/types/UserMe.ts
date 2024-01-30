@@ -5,6 +5,9 @@ export const UserMeSchema = object({
   email: string(),
   preferences: object({
     alertOnDisabledFeeds: bool().default(false),
+    dateFormat: string().nullable(),
+    dateLocale: string().nullable(),
+    dateTimezone: string().nullable(),
   }).default({}),
   subscription: object({
     product: object({

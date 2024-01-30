@@ -37,6 +37,7 @@ import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../user-feeds/types";
+import { User, UserDocument } from "../users/entities/user.entity";
 
 @Injectable()
 export class MessageBrokerEventsService {
@@ -71,7 +72,7 @@ export class MessageBrokerEventsService {
   }: {
     data: { url: string; lookupKey?: string; rateSeconds: number };
   }) {
-    let feedCursor: Cursor<UserFeedDocument>;
+    let feedCursor: Cursor<UserFeedDocument & { users: UserDocument[] }>;
 
     if (lookupKey) {
       feedCursor = this.getFeedsQueryWithLookupKeysMatchingRefreshRate({
@@ -116,6 +117,7 @@ export class MessageBrokerEventsService {
           userFeed: feed,
           maxDailyArticles: feed.maxDailyArticles as number,
           parseCustomPlaceholders: allowCustomPlaceholders,
+          user: feed.users[0],
         });
       } catch (err) {
         logger.error(
@@ -375,10 +377,12 @@ export class MessageBrokerEventsService {
     userFeed,
     maxDailyArticles,
     parseCustomPlaceholders,
+    user,
   }: {
     userFeed: UserFeed;
     maxDailyArticles: number;
     parseCustomPlaceholders: boolean;
+    user?: User;
   }) {
     const discordChannelMediums = userFeed.connections.discordChannels
       .filter((c) => !c.disabledCode)
@@ -482,9 +486,13 @@ export class MessageBrokerEventsService {
         passingComparisons: userFeed.passingComparisons || [],
         blockingComparisons: userFeed.blockingComparisons || [],
         formatOptions: {
-          dateFormat: userFeed.formatOptions?.dateFormat,
-          dateTimezone: userFeed.formatOptions?.dateTimezone,
-          dateLocale: userFeed.formatOptions?.dateLocale,
+          dateFormat:
+            userFeed.formatOptions?.dateFormat || user?.preferences?.dateFormat,
+          dateTimezone:
+            userFeed.formatOptions?.dateTimezone ||
+            user?.preferences?.dateTimezone,
+          dateLocale:
+            userFeed.formatOptions?.dateLocale || user?.preferences?.dateLocale,
         },
         dateChecks: userFeed.dateCheckOptions,
       },
@@ -517,14 +525,14 @@ export class MessageBrokerEventsService {
   getFeedsQueryMatchingRefreshRate(data: {
     refreshRateSeconds: number;
     url: string;
-  }): Aggregate<UserFeedDocument[]> {
+  }): Aggregate<(UserFeedDocument & { users: UserDocument[] })[]> {
     return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
   }
 
   getFeedsQueryWithLookupKeysMatchingRefreshRate(data: {
     refreshRateSeconds: number;
     feedRequestLookupKey: string;
-  }): Aggregate<UserFeedDocument[]> {
+  }): Aggregate<(UserFeedDocument & { users: UserDocument[] })[]> {
     return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
   }
 }

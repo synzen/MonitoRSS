@@ -13,6 +13,7 @@ export interface SendTestDiscordChannelArticleInput {
       formatOptions: {
         dateFormat?: string | undefined;
         dateTimezone?: string | undefined;
+        dateLocale?: string;
       };
     };
     article?: {

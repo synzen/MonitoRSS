@@ -8,6 +8,15 @@ import { Document, Model, Types } from "mongoose";
 export class UserPreferences {
   @Prop()
   alertOnDisabledFeeds?: boolean;
+
+  @Prop()
+  dateFormat?: string;
+
+  @Prop()
+  dateTimezone?: string;
+
+  @Prop()
+  dateLocale?: string;
 }
 
 export const UserPreferencesSchema =

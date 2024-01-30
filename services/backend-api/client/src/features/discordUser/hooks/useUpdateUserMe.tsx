@@ -10,12 +10,6 @@ export const useUpdateUserMe = () => {
     UpdateUserMeInput
   >((details) => updateUserMe(details), {
     onSuccess: (response) => {
-      // queryClient.invalidateQueries<UpdateUserMeOutput>({
-      //   predicate: (query) => {
-      //     return query.queryKey[0] === "user-me";
-      //   },
-      // });
-
       return queryClient.setQueryData<GetUserMeOutput>(["user-me"], response);
     },
   });

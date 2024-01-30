@@ -11,6 +11,7 @@ import { DiscordApiModule } from "../../services/apis/discord/discord-api.module
 import { UserFeedFeature } from "../user-feeds/entities";
 import { MongooseModule } from "@nestjs/mongoose";
 import { UserFeedConnectionEventsModule } from "../user-feed-connection-events/user-feed-connection-events.module";
+import { UserFeature } from "../users/entities/user.entity";
 
 @Module({
   controllers: [FeedConnectionsDiscordChannelsController],
@@ -22,7 +23,7 @@ import { UserFeedConnectionEventsModule } from "../user-feed-connection-events/u
     SupportersModule,
     DiscordWebhooksModule,
     DiscordApiModule,
-    MongooseModule.forFeature([UserFeedFeature]),
+    MongooseModule.forFeature([UserFeedFeature, UserFeature]),
     UserFeedConnectionEventsModule,
   ],
   exports: [FeedConnectionsDiscordChannelsService],

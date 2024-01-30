@@ -9,7 +9,6 @@ import { formatCurrency } from "../../utils/format-currency";
 import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { PaddleService } from "../paddle/paddle.service";
 import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
-import { SupporterSubscriptionsService } from "../supporter-subscriptions/supporter-subscriptions.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {

@@ -69,6 +69,14 @@ export function getCommonFeedAggregateStages({
         useRefreshRate: refreshRateSeconds,
       },
     },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user.discordUserId",
+        foreignField: "discordUserId",
+        as: "users",
+      },
+    },
   ];
 
   return pipelineStages;

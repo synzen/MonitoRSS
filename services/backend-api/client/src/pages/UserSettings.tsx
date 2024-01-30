@@ -25,14 +25,20 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
-import { InferType, bool, object } from "yup";
+import { InferType, bool, object, string } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useContext, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import dayjs from "dayjs";
 import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
-import { BoxConstrained, ConfirmModal, DashboardContentV2 } from "../components";
+import {
+  BoxConstrained,
+  ConfirmModal,
+  DashboardContentV2,
+  SavedUnsavedChangesPopupBar,
+} from "../components";
 import { useLogin, usePaddleCheckout } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
@@ -41,9 +47,31 @@ import { ProductKey } from "../constants";
 import getChakraColor from "../utils/getChakraColor";
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 import { PricingDialogContext } from "../contexts";
+import { DatePreferencesForm } from "../components/DatePreferencesForm";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
+  dates: object({
+    format: string(),
+    timezone: string().test("is-timezone", "Must be a valid timezone", (val) => {
+      if (!val) {
+        return true;
+      }
+
+      try {
+        dayjs().tz(val);
+
+        return true;
+      } catch (err) {
+        if (err instanceof RangeError) {
+          return false;
+        }
+
+        throw err;
+      }
+    }),
+    locale: string(),
+  }),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -51,6 +79,11 @@ type FormData = InferType<typeof formSchema>;
 const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData => {
   return {
     alertOnDisabledFeeds: !!getUserMeOutput?.result?.preferences?.alertOnDisabledFeeds,
+    dates: {
+      format: getUserMeOutput?.result?.preferences?.dateFormat || undefined,
+      timezone: getUserMeOutput?.result?.preferences?.dateTimezone || undefined,
+      locale: getUserMeOutput?.result?.preferences?.dateLocale || undefined,
+    },
   };
 };
 
@@ -118,15 +151,16 @@ export const UserSettings = () => {
   const { redirectToLogin } = useLogin();
   const { mutateAsync: resumeSubscription } = useCreateSubscriptionResume();
   const subscription = data?.result.subscription;
-  const {
-    handleSubmit,
-    control,
-    formState: { isSubmitting, isDirty },
-    reset,
-  } = useForm<FormData>({
+  const formMethods = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
   });
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting, errors },
+    reset,
+  } = formMethods;
   const hasLoaded = status !== "loading";
 
   useEffect(() => {
@@ -141,12 +175,18 @@ export const UserSettings = () => {
     });
   };
 
-  const onSubmit = async ({ alertOnDisabledFeeds }: FormData) => {
+  const onSubmit = async ({
+    alertOnDisabledFeeds,
+    dates: { format: dateFormat, locale: dateLocale, timezone: dateTimezone },
+  }: FormData) => {
     try {
       const response = await mutateAsync({
         details: {
           preferences: {
             alertOnDisabledFeeds,
+            dateFormat,
+            dateLocale,
+            dateTimezone,
           },
         },
       });
@@ -222,10 +262,10 @@ export const UserSettings = () => {
         <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={32}>
           <Stack spacing={8}>
             <Stack justifyContent="flex-start" width="100%">
-              <Heading>Settings</Heading>
+              <Heading>Account Settings</Heading>
             </Stack>
             <Stack spacing={8}>
-              <Heading size="md">Account</Heading>
+              {/* <Heading size="md">Account</Heading> */}
               <Stack>
                 <Text fontWeight={600} color="whiteAlpha.700">
                   Email
@@ -478,64 +518,90 @@ export const UserSettings = () => {
               </>
             )}
             <Divider />
-            <Stack spacing={8}>
-              <Stack>
-                <Heading size="md">Notifications</Heading>
-                <Text>Get emailed when events happen that may affect article delivery.</Text>
-              </Stack>
-              {!hasEmailAvailable && (
-                <Alert status="warning" borderRadius="md">
-                  <Stack>
-                    <AlertTitle>To enable notifications, your email is required</AlertTitle>
-                    <AlertDescription>
-                      <Button variant="solid" colorScheme="blue" onClick={onClickGrantEmailAccess}>
-                        Grant email access
-                      </Button>
-                    </AlertDescription>
-                  </Stack>
-                </Alert>
-              )}
+            <FormProvider {...formMethods}>
               <form onSubmit={handleSubmit(onSubmit)}>
-                <Stack spacing={4}>
-                  <FormControl as={Flex} justifyContent="space-between" flexWrap="wrap" gap={4}>
-                    <Box>
-                      <FormLabel htmlFor="email-alerts">
-                        Disabled feed or feed connections
-                      </FormLabel>
-                      <FormHelperText>
-                        Whenever feed or feed connections automatically get disabled due to issues
-                        while processing.
-                      </FormHelperText>
-                    </Box>
+                <Stack spacing={12}>
+                  <Stack spacing={8}>
+                    <Heading size="md">Preferences</Heading>
+                  </Stack>
+                  <Stack spacing={4}>
+                    <Heading size="sm">Notifications</Heading>
+                    {!hasEmailAvailable && (
+                      <Alert status="warning" borderRadius="md">
+                        <Stack>
+                          <AlertTitle>To enable notifications, your email is required</AlertTitle>
+                          <AlertDescription>
+                            <Button
+                              variant="solid"
+                              colorScheme="blue"
+                              onClick={onClickGrantEmailAccess}
+                            >
+                              Grant email access
+                            </Button>
+                          </AlertDescription>
+                        </Stack>
+                      </Alert>
+                    )}
+                    <Stack spacing={4}>
+                      <FormControl as={Flex} justifyContent="space-between" flexWrap="wrap" gap={4}>
+                        <Box>
+                          <FormLabel htmlFor="email-alerts">
+                            Disabled feed or feed connections
+                          </FormLabel>
+                          <FormHelperText>
+                            Whenever feed or feed connections automatically get disabled due to
+                            issues while processing.
+                          </FormHelperText>
+                        </Box>
+                        <Controller
+                          name="alertOnDisabledFeeds"
+                          control={control}
+                          render={({ field }) => {
+                            return (
+                              <Switch
+                                size="lg"
+                                isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
+                                isChecked={!!field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                              />
+                            );
+                          }}
+                        />
+                      </FormControl>
+                    </Stack>
+                    <SavedUnsavedChangesPopupBar />
+                  </Stack>
+                  <Stack spacing={4}>
+                    <Heading size="sm">Date Placeholders</Heading>
                     <Controller
-                      name="alertOnDisabledFeeds"
+                      name="dates"
                       control={control}
                       render={({ field }) => {
                         return (
-                          <Switch
-                            size="lg"
-                            isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
-                            isChecked={!!field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
+                          <DatePreferencesForm
+                            errors={{
+                              timezone: errors.dates?.timezone?.message,
+                            }}
+                            onChange={(values) => {
+                              field.onChange({
+                                format: values.format,
+                                locale: values.locale,
+                                timezone: values.timezone,
+                              });
+                            }}
+                            values={{
+                              format: field.value?.format,
+                              locale: field.value?.locale,
+                              timezone: field.value?.timezone,
+                            }}
                           />
                         );
                       }}
                     />
-                  </FormControl>
-                  <Flex justifyContent="flex-end">
-                    <Button
-                      colorScheme="blue"
-                      type="submit"
-                      isLoading={isSubmitting}
-                      isDisabled={!isDirty || isSubmitting}
-                      width="min-content"
-                    >
-                      {t("common.buttons.save")}
-                    </Button>
-                  </Flex>
+                  </Stack>
                 </Stack>
               </form>
-            </Stack>
+            </FormProvider>
           </Stack>
         </BoxConstrained.Container>
       </BoxConstrained.Wrapper>
