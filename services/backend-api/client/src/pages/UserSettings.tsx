@@ -520,84 +520,95 @@ export const UserSettings = () => {
             <Divider />
             <FormProvider {...formMethods}>
               <form onSubmit={handleSubmit(onSubmit)}>
-                <Stack spacing={12}>
-                  <Stack spacing={8}>
-                    <Heading size="md">Preferences</Heading>
-                  </Stack>
-                  <Stack spacing={4}>
-                    <Heading size="sm">Notifications</Heading>
-                    {!hasEmailAvailable && (
-                      <Alert status="warning" borderRadius="md">
-                        <Stack>
-                          <AlertTitle>To enable notifications, your email is required</AlertTitle>
-                          <AlertDescription>
-                            <Button
-                              variant="solid"
-                              colorScheme="blue"
-                              onClick={onClickGrantEmailAccess}
-                            >
-                              Grant email access
-                            </Button>
-                          </AlertDescription>
-                        </Stack>
-                      </Alert>
-                    )}
+                <Stack spacing={6}>
+                  <Heading size="md">Preferences</Heading>
+                  <Stack spacing={12}>
                     <Stack spacing={4}>
-                      <FormControl as={Flex} justifyContent="space-between" flexWrap="wrap" gap={4}>
-                        <Box>
-                          <FormLabel htmlFor="email-alerts">
-                            Disabled feed or feed connections
-                          </FormLabel>
-                          <FormHelperText>
-                            Whenever feed or feed connections automatically get disabled due to
-                            issues while processing.
-                          </FormHelperText>
-                        </Box>
-                        <Controller
-                          name="alertOnDisabledFeeds"
-                          control={control}
-                          render={({ field }) => {
-                            return (
-                              <Switch
-                                size="lg"
-                                isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
-                                isChecked={!!field.value}
-                                onChange={(e) => field.onChange(e.target.checked)}
-                              />
-                            );
-                          }}
-                        />
-                      </FormControl>
-                    </Stack>
-                    <SavedUnsavedChangesPopupBar />
-                  </Stack>
-                  <Stack spacing={4}>
-                    <Heading size="sm">Date Placeholders</Heading>
-                    <Controller
-                      name="dates"
-                      control={control}
-                      render={({ field }) => {
-                        return (
-                          <DatePreferencesForm
-                            errors={{
-                              timezone: errors.dates?.timezone?.message,
-                            }}
-                            onChange={(values) => {
-                              field.onChange({
-                                format: values.format,
-                                locale: values.locale,
-                                timezone: values.timezone,
-                              });
-                            }}
-                            values={{
-                              format: field.value?.format,
-                              locale: field.value?.locale,
-                              timezone: field.value?.timezone,
+                      <Heading size="sm">Notifications</Heading>
+                      {!hasEmailAvailable && (
+                        <Alert status="warning" borderRadius="md">
+                          <Stack>
+                            <AlertTitle>To enable notifications, your email is required</AlertTitle>
+                            <AlertDescription>
+                              <Button
+                                variant="solid"
+                                colorScheme="blue"
+                                onClick={onClickGrantEmailAccess}
+                              >
+                                Grant email access
+                              </Button>
+                            </AlertDescription>
+                          </Stack>
+                        </Alert>
+                      )}
+                      <Stack spacing={4}>
+                        <FormControl
+                          as={Flex}
+                          justifyContent="space-between"
+                          flexWrap="wrap"
+                          gap={4}
+                        >
+                          <Box>
+                            <FormLabel htmlFor="email-alerts">
+                              Disabled feed or feed connections
+                            </FormLabel>
+                            <FormHelperText>
+                              Whenever feed or feed connections automatically get disabled due to
+                              issues while processing.
+                            </FormHelperText>
+                          </Box>
+                          <Controller
+                            name="alertOnDisabledFeeds"
+                            control={control}
+                            render={({ field }) => {
+                              return (
+                                <Switch
+                                  size="lg"
+                                  isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
+                                  isChecked={!!field.value}
+                                  onChange={(e) => field.onChange(e.target.checked)}
+                                />
+                              );
                             }}
                           />
-                        );
-                      }}
-                    />
+                        </FormControl>
+                      </Stack>
+                      <SavedUnsavedChangesPopupBar />
+                    </Stack>
+                    <Stack spacing={4}>
+                      <Stack mb={2}>
+                        <Heading size="sm">Date Placeholders</Heading>
+                        <Text>
+                          Customize the format, locale, and timezone used for date placeholders
+                          across all feeds.
+                        </Text>
+                      </Stack>
+                      <Controller
+                        name="dates"
+                        control={control}
+                        render={({ field }) => {
+                          return (
+                            <DatePreferencesForm
+                              errors={{
+                                timezone: errors.dates?.timezone?.message,
+                              }}
+                              onChange={(values) => {
+                                field.onChange({
+                                  format: values.format,
+                                  locale: values.locale,
+                                  timezone: values.timezone,
+                                });
+                              }}
+                              values={{
+                                format: field.value?.format,
+                                locale: field.value?.locale,
+                                timezone: field.value?.timezone,
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </Stack>
                   </Stack>
                 </Stack>
               </form>
