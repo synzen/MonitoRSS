@@ -582,7 +582,7 @@
           "dateFormatInputLabel": "Format",
           "dateFormatInputDescription": "This will dictate how date placeholders will be formatted.",
           "dateTimezoneInputLabel": "Timezone",
-          "dateTimezoneInputDescription": "This will dictate what timezone date placeholders will use. For a list of valid timezones, <0>click here and see the \"TZ identifier\" column</0>.",
+          "dateTimezoneInputDescription": "This will dictate what timezone date placeholders will use. Default is UTC. For a list of valid timezones, <0>click here and see the \"TZ identifier\" column</0>.",
           "invalidTimezone": "Invalid timezone",
           "dateSettingsPreviewTitle": "Preview"
         }

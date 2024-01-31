@@ -45,6 +45,10 @@ export const CustomPlaceholderPreview = ({
       return !!s.regexSearch;
     }
 
+    if (s.type === CustomPlaceholderStepType.DateFormat) {
+      return !!s.format;
+    }
+
     return true;
   });
   const placeholderIsComplete = !!(
@@ -83,11 +87,13 @@ export const CustomPlaceholderPreview = ({
   let errorComponent = null;
 
   if (error?.statusCode === 422) {
-    errorComponent = (
-      <Text fontSize={13} color="red.300" fontWeight={600}>
-        Invalid regex search in current or previous steps
-      </Text>
-    );
+    if (error.errorCode === "INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT") {
+      errorComponent = (
+        <Text fontSize={13} color="red.300" fontWeight={600}>
+          Invalid regex search in current or previous steps
+        </Text>
+      );
+    }
   } else if (error) {
     errorComponent = (
       <InlineErrorAlert description={error.message} title={t("common.errors.somethingWentWrong")} />

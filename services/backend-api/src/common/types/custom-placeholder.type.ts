@@ -72,12 +72,10 @@ export class CustomPlaceholderDateFormatStep extends CustomPlaceholderBaseStep {
 
   @IsString()
   @IsOptional()
-  @ValidateIf((v) => v.timezone !== null)
   timezone?: string | null;
 
   @IsString()
   @IsOptional()
-  @ValidateIf((v) => v.locale !== null)
   locale?: string | null;
 }
 

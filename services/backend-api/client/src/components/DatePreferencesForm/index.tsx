@@ -25,14 +25,21 @@ interface Props {
   };
   errors: {
     timezone?: string;
+    format?: string;
   };
   onChange: (values: { format?: string; timezone?: string; locale?: string }) => void;
+  disablePreview?: boolean;
+  size?: "sm" | "md" | "lg";
+  requiredFields?: Array<keyof Props["values"]>;
 }
 
 export const DatePreferencesForm = ({
   values: { format, locale, timezone },
   onChange,
   errors,
+  disablePreview,
+  size,
+  requiredFields,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -48,6 +55,7 @@ export const DatePreferencesForm = ({
   const { data: datePreviewData, error: datePreviewError } = useUserFeedDatePreview({
     feedId: "feedId", // value doesn't matter here
     data: debouncedPreviewInput,
+    disabled: disablePreview,
   });
 
   const onChangeFormat = ({ target: { value } }: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,27 +84,59 @@ export const DatePreferencesForm = ({
 
   return (
     <Stack spacing={4}>
-      <FormControl>
-        <FormLabel marginBottom={0}>
-          {t(
-            "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
+      {!disablePreview && (
+        <FormControl>
+          <FormLabel marginBottom={0}>
+            {t(
+              "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
+            )}
+          </FormLabel>
+          {!datePreviewError && (
+            <Skeleton isLoaded={!!datePreviewData}>
+              <Text fontSize="xl" color={datePreviewData?.result.valid ? "gray.400" : "red.400"}>
+                {datePreviewData?.result.valid && datePreviewData?.result.output}
+                {!datePreviewData?.result.valid &&
+                  t(
+                    "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone"
+                  )}
+              </Text>
+            </Skeleton>
           )}
+          {datePreviewError && (
+            <InlineErrorAlert
+              title="Failed to load date preview"
+              description={datePreviewError.message}
+            />
+          )}
+        </FormControl>
+      )}
+      <FormControl isRequired={requiredFields?.includes("format")}>
+        <FormLabel>
+          {t("features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel")}
         </FormLabel>
-        {!datePreviewError && (
-          <Skeleton isLoaded={!!datePreviewData}>
-            <Text fontSize="xl" color={datePreviewData?.result.valid ? "gray.400" : "red.400"}>
-              {datePreviewData?.result.valid && datePreviewData?.result.output}
-              {!datePreviewData?.result.valid &&
-                t("features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone")}
-            </Text>
-          </Skeleton>
+        <Input
+          bg="gray.800"
+          size={size}
+          spellCheck={false}
+          autoComplete=""
+          value={format || ""}
+          onChange={onChangeFormat}
+        />
+        {!errors.format && (
+          <FormHelperText>
+            This will dictate how the placeholders with dates will be formatted. For more
+            information on formatting, see{" "}
+            <Link
+              color="blue.300"
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://day.js.org/docs/en/display/format"
+            >
+              https://day.js.org/docs/en/display/format
+            </Link>
+          </FormHelperText>
         )}
-        {datePreviewError && (
-          <InlineErrorAlert
-            title="Failed to load date preview"
-            description={datePreviewError.message}
-          />
-        )}
+        {errors.format && <FormErrorMessage>{errors.format}</FormErrorMessage>}
       </FormControl>
       <FormControl isInvalid={!!errors.timezone}>
         <FormLabel>
@@ -104,7 +144,13 @@ export const DatePreferencesForm = ({
             "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
           )}
         </FormLabel>
-        <Input spellCheck={false} value={timezone || ""} onChange={onChangeTimezone} />
+        <Input
+          bg="gray.800"
+          size={size}
+          spellCheck={false}
+          value={timezone || ""}
+          onChange={onChangeTimezone}
+        />
         {!errors.timezone && (
           <FormHelperText>
             <Trans
@@ -139,26 +185,14 @@ export const DatePreferencesForm = ({
         )}
       </FormControl>
       <FormControl>
-        <FormLabel>
-          {t("features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel")}
-        </FormLabel>
-        <Input spellCheck={false} autoComplete="" value={format || ""} onChange={onChangeFormat} />
-        <FormHelperText>
-          This will dictate how the placeholders with dates will be formatted. For more information
-          on formatting, see{" "}
-          <Link
-            color="blue.300"
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://day.js.org/docs/en/display/format"
-          >
-            https://day.js.org/docs/en/display/format
-          </Link>
-        </FormHelperText>
-      </FormControl>
-      <FormControl>
         <FormLabel>Date Format Locale</FormLabel>
-        <Select placeholder="Select option" value={locale || ""} onChange={onChangeLocale}>
+        <Select
+          bg="gray.800"
+          size={size}
+          placeholder="Select option"
+          value={locale || ""}
+          onChange={onChangeLocale}
+        >
           {DATE_LOCALES.map(({ key, name }) => (
             <option key={key} value={key}>
               {name}

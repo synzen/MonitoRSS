@@ -9,9 +9,10 @@ import {
 interface Props {
   feedId?: string;
   data: CreateUserFeedDatePreviewInput["data"];
+  disabled?: boolean;
 }
 
-export const useUserFeedDatePreview = ({ feedId, data: inputData }: Props) => {
+export const useUserFeedDatePreview = ({ feedId, data: inputData, disabled }: Props) => {
   const queryKey = [
     "user-feed-date-preview",
     {
@@ -36,7 +37,7 @@ export const useUserFeedDatePreview = ({ feedId, data: inputData }: Props) => {
       });
     },
     {
-      enabled: !!feedId,
+      enabled: !!feedId || disabled,
     }
   );
 

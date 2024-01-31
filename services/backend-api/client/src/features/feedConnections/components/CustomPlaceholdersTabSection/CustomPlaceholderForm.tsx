@@ -31,18 +31,20 @@ import { motion } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import { FiMousePointer } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
+import dayjs from "dayjs";
 import { CustomPlaceholdersFormData } from "./constants/CustomPlaceholderFormSchema";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AnimatedComponent, ConfirmModal } from "../../../../components";
 import { CustomPlaceholderPreview } from "./CustomPlaceholderPreview";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
-import { FeedConnectionType } from "../../../../types";
+import { CustomPlaceholderDateFormatStep, FeedConnectionType } from "../../../../types";
 import { ArticleSelectDialog } from "../../../feed/components";
 import { useUserFeedArticles } from "../../../feed/hooks";
 import { notifyError } from "../../../../utils/notifyError";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 import { CustomPlaceholderStepType } from "../../../../constants";
+import { DatePreferencesForm } from "../../../../components/DatePreferencesForm";
 
 interface Props {
   feedId: string;
@@ -209,6 +211,68 @@ const UrlEncodeStep = (_: StepProps) => {
   return (
     <Stack flex={1} spacing={4}>
       <Text color="whiteAlpha.700">No options are available for this type of step</Text>
+    </Stack>
+  );
+};
+
+const DateFormatStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<CustomPlaceholdersFormData>();
+
+  const timezoneError = (
+    errors?.customPlaceholders?.[customPlaceholderIndex]?.steps?.[stepIndex] as {
+      timezone?: { message?: string };
+    }
+  )?.timezone;
+  const formatError = (
+    errors?.customPlaceholders?.[customPlaceholderIndex]?.steps?.[stepIndex] as {
+      format?: { message?: string };
+    }
+  )?.format;
+
+  return (
+    <Stack flex={1} spacing={4} width="100%">
+      <Controller
+        name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}`}
+        control={control}
+        render={({ field }) => {
+          const dateFormatStep = field.value as CustomPlaceholderDateFormatStep;
+          let isInvalidTimezone = false;
+
+          try {
+            dayjs().tz(dateFormatStep.timezone);
+          } catch (err) {
+            isInvalidTimezone = true;
+          }
+
+          return (
+            <DatePreferencesForm
+              size="sm"
+              disablePreview
+              requiredFields={["format"]}
+              errors={{
+                timezone: isInvalidTimezone ? "Invalid timezone" : timezoneError?.message,
+                format: formatError?.message,
+              }}
+              values={{
+                format: dateFormatStep.format,
+                locale: dateFormatStep.locale,
+                timezone: dateFormatStep.timezone,
+              }}
+              onChange={(values) => {
+                field.onChange({
+                  ...field.value,
+                  format: values.format,
+                  locale: values.locale,
+                  timezone: values.timezone,
+                });
+              }}
+            />
+          );
+        }}
+      />
     </Stack>
   );
 };
@@ -451,11 +515,23 @@ export const CustomPlaceholderForm = ({
                           alignItems="flex-start"
                         >
                           <HStack justifyContent="space-between" width="100%">
-                            <Text fontWeight={600}>
-                              {!step.type ||
-                                (step.type === CustomPlaceholderStepType.Regex && "Regex Replace")}
-                              {step.type === CustomPlaceholderStepType.UrlEncode && "URL Encode"}
-                            </Text>
+                            <Box>
+                              <Text fontWeight={600}>
+                                {!step.type ||
+                                  (step.type === CustomPlaceholderStepType.Regex &&
+                                    "Regex Replace")}
+                                {step.type === CustomPlaceholderStepType.UrlEncode && "URL Encode"}
+                                {step.type === CustomPlaceholderStepType.DateFormat &&
+                                  "Date Format"}
+                              </Text>
+                              {step.type === CustomPlaceholderStepType.DateFormat && (
+                                <Text fontSize={12} color="whiteAlpha.700">
+                                  If the input date is not in a readable format for a particular
+                                  article, or an invalid timezone is specified, there will be an
+                                  empty output.
+                                </Text>
+                              )}
+                            </Box>
                             <CloseButton
                               size="sm"
                               isDisabled={steps.length === 1}
@@ -479,6 +555,9 @@ export const CustomPlaceholderForm = ({
                             ))}
                           {step.type === CustomPlaceholderStepType.UrlEncode && (
                             <UrlEncodeStep key={step.id} {...props} />
+                          )}
+                          {step.type === CustomPlaceholderStepType.DateFormat && (
+                            <DateFormatStep key={step.id} {...props} />
                           )}
                         </Stack>
                         <Flex justifyContent="center" py={2}>
@@ -548,7 +627,7 @@ export const CustomPlaceholderForm = ({
                     <Box>
                       <Text display="block">Regex Replace</Text>
                       <Text color="whiteAlpha.600" display="block" fontSize="sm">
-                        Replace or extract text using regular expressions
+                        Replace or extract text using regular expressions.
                       </Text>
                     </Box>
                   </MenuItem>
@@ -566,7 +645,26 @@ export const CustomPlaceholderForm = ({
                     <Box>
                       <Text display="block">URL Encode</Text>
                       <Text color="whiteAlpha.600" display="block" fontSize="sm">
-                        URL-encode the input
+                        URL-encode the input.
+                      </Text>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setValue(
+                        `customPlaceholders.${index}.steps`,
+                        steps.concat({
+                          id: uuidv4(),
+                          type: CustomPlaceholderStepType.DateFormat,
+                          format: "YYYY-MM-DDTHH:mm:ssZ",
+                        })
+                      );
+                    }}
+                  >
+                    <Box>
+                      <Text display="block">Date Format</Text>
+                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                        Format text as a date. Input must be in a valid date form.
                       </Text>
                     </Box>
                   </MenuItem>
