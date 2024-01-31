@@ -102,19 +102,21 @@ export const discordMediumPayloadDetailsSchema = z.object({
     .default([]),
   mentions: z
     .object({
-      targets: z.array(
-        z.object({
-          id: z.string(),
-          type: z.union([z.literal("user"), z.literal("role")]),
-          filters: z
-            .object({
-              expression: z.object({}).passthrough(),
-            })
-            .optional()
-            .nullable()
-            .default(null),
-        })
-      ),
+      targets: z
+        .array(
+          z.object({
+            id: z.string(),
+            type: z.union([z.literal("user"), z.literal("role")]),
+            filters: z
+              .object({
+                expression: z.object({}).passthrough(),
+              })
+              .optional()
+              .nullable()
+              .default(null),
+          })
+        )
+        .optional(),
     })
     .optional()
     .nullable()
