@@ -71,7 +71,7 @@ export const CustomPlaceholderSchema = object({
     >()
       .test(
         "shape",
-        "invalid",
+        "invalid step shape",
         (data) =>
           RegexStep.isValidSync(data) ||
           UrlEncodeStep.isValidSync(data) ||

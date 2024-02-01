@@ -195,7 +195,11 @@ export class FeedFetcherService {
     };
 
     try {
-      const res = await this.fetchFeedResponse(url, fetchOptions);
+      const res = await this.fetchFeedResponse(
+        url,
+        fetchOptions,
+        options?.saveResponseToObjectStorage,
+      );
 
       if (res.ok || res.status === HttpStatus.NOT_MODIFIED) {
         request.status = RequestStatus.OK;
@@ -344,6 +348,7 @@ export class FeedFetcherService {
   async fetchFeedResponse(
     url: string,
     options?: FetchOptions,
+    log?: boolean,
   ): Promise<ReturnType<typeof fetch>> {
     const controller = new AbortController();
 
@@ -366,6 +371,13 @@ export class FeedFetcherService {
       redirect: 'follow',
       signal: controller.signal,
     };
+
+    if (log) {
+      logger.info(`TESTLOGGER: Fetching ${url}`, {
+        url,
+        options: useOptions,
+      });
+    }
 
     const res = await fetch(url, useOptions);
 

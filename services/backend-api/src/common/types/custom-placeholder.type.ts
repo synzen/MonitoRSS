@@ -16,8 +16,7 @@ class CustomPlaceholderBaseStep {
   id?: string;
 
   @IsIn(Object.values(CustomPlaceholderStepType))
-  @IsOptional()
-  type: CustomPlaceholderStepType = CustomPlaceholderStepType.Regex;
+  type: CustomPlaceholderStepType;
 }
 
 export class CustomPlaceholderRegexStep {

@@ -102,6 +102,7 @@ export const CustomPlaceholdersTabSection = ({
                 return {
                   ...s,
                   regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
+                  type: CustomPlaceholderStepType.Regex,
                 };
               }
 
