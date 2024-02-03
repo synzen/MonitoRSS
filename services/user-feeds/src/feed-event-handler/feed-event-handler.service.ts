@@ -35,6 +35,7 @@ import { FeedRetryRecord } from "./entities";
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { z } from "zod";
+import { CacheStorageService } from "../cache-storage/cache-storage.service";
 @Injectable()
 export class FeedEventHandlerService {
   constructor(
@@ -47,6 +48,7 @@ export class FeedEventHandlerService {
     private readonly responseHashService: ResponseHashService,
     @InjectRepository(FeedRetryRecord)
     private readonly feedRetryRecordRepo: EntityRepository<FeedRetryRecord>,
+    private readonly cacheStorageService: CacheStorageService,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
@@ -72,8 +74,30 @@ export class FeedEventHandlerService {
     }
 
     try {
+      const cacheKey = `processing-${event.data.feed.id}`;
+
+      const oldVal = await this.cacheStorageService.set({
+        key: cacheKey,
+        body: "1",
+        getOldValue: true,
+      });
+
+      if (oldVal === "1") {
+        logger.info(
+          `Feed event for feed ${event.data.feed.id} is already being processed, skipping`,
+          {
+            feedId: event.data.feed.id,
+          }
+        );
+
+        return;
+      }
+
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
       await this.handleV2EventWithDb(event);
+
+      await this.cacheStorageService.del(cacheKey);
+
       this.logEventFinish(event, {
         success: true,
       });

@@ -12,6 +12,8 @@ import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.
 import { FeedsModule } from "./feeds/feeds.module";
 import { MikroORM } from "@mikro-orm/core";
 import logger from "./shared/utils/logger";
+import { CacheStorageService } from "./cache-storage/cache-storage.service";
+import { CacheStorageModule } from "./cache-storage/cache-storage.module";
 
 @Module({
   imports: [
@@ -66,6 +68,7 @@ export class AppModule implements OnApplicationShutdown {
           },
           inject: [ConfigService],
         }),
+        CacheStorageModule,
         ConfigModule.forRoot({
           isGlobal: true,
           ignoreEnvFile: true,
@@ -87,7 +90,10 @@ export class AppModule implements OnApplicationShutdown {
     };
   }
 
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly cacheStorageService: CacheStorageService
+  ) {}
 
   async onApplicationShutdown(signal?: string | undefined) {
     logger.info(`Received ${signal}. Shutting down db connection...`);
@@ -97,6 +103,16 @@ export class AppModule implements OnApplicationShutdown {
       logger.info(`Successfully closed db connection`);
     } catch (err) {
       logger.error("Failed to close database connection", {
+        error: (err as Error).stack,
+      });
+    }
+
+    try {
+      await this.cacheStorageService.closeClient();
+
+      logger.info(`Successfully closed redis client`);
+    } catch (err) {
+      logger.error("Failed to close redis client", {
         error: (err as Error).stack,
       });
     }

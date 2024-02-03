@@ -9,6 +9,7 @@ import { MessageBrokerModule } from "../message-broker/message-broker.module";
 import { ResponseHashModule } from "../response-hash/response-hash.module";
 import { MikroOrmModule } from "@mikro-orm/nestjs";
 import { FeedRetryRecord } from "./entities";
+import { CacheStorageModule } from "../cache-storage/cache-storage.module";
 
 @Module({
   controllers: [],
@@ -36,6 +37,7 @@ export class FeedEventHandlerModule {
         DeliveryModule,
         MessageBrokerModule.forRoot(),
         ResponseHashModule,
+        CacheStorageModule,
       ],
     };
   }

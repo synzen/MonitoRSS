@@ -53,6 +53,9 @@ export function config(options?: {
       .USER_FEEDS_RABBITMQ_BROKER_URL as string,
     USER_FEEDS_POSTGRES_REPLICA1_URI: process.env
       .USER_FEEDS_POSTGRES_REPLICA1_URI as string,
+    USER_FEEDS_REDIS_DISABLE_CLUSTER:
+      process.env.USER_FEEDS_REDIS_DISABLE_CLUSTER === "true",
+    USER_FEEDS_REDIS_URI: process.env.USER_FEEDS_REDIS_URI as string,
   } as const;
 
   if (!options?.skipValidation) {
