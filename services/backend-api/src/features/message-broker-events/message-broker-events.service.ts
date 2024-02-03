@@ -264,7 +264,7 @@ export class MessageBrokerEventsService {
     );
 
     try {
-      logger.debug(
+      logger.info(
         `Preparing to send disabled feeds alert to ${foundFeed._id} for reason ${disabledCode}`
       );
       await this.notificationsService.sendDisabledFeedsAlert([foundFeed._id], {
@@ -347,8 +347,8 @@ export class MessageBrokerEventsService {
         );
 
         try {
-          logger.debug(
-            `Sending disabled feed connection alert email for ${foundFeed._id}, ${connection.id}`
+          logger.info(
+            `Sending disabled feed connection alert notification for ${foundFeed._id}, ${connection.id}`
           );
           await this.notificationsService.sendDisabledFeedConnectionAlert(
             foundFeed,
@@ -361,7 +361,7 @@ export class MessageBrokerEventsService {
           );
         } catch (err) {
           logger.error(
-            "Failed to send disabled feed connection alert email in notifications service",
+            "Failed to send disabled feed connection alert in notifications service",
             {
               stack: (err as Error).stack,
             }
