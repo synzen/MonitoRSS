@@ -34,6 +34,7 @@ export const ArticlePropertySelect = ({
     <Stack>
       <ThemedSelect
         isDisabled={fetchStatus === "fetching" || !!error}
+        loading={fetchStatus === "fetching"}
         options={
           data?.result.properties.map((o) => ({
             label: o,

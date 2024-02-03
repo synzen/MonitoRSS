@@ -442,7 +442,7 @@ export const CustomPlaceholderForm = ({
                       size="sm"
                       width="min-content"
                       leftIcon={<FiMousePointer />}
-                      isLoading={!!selectedArticleId && fetchStatusUserFeedArticles === "fetching"}
+                      isLoading={fetchStatusUserFeedArticles === "fetching"}
                       isDisabled={fetchStatusUserFeedArticles === "fetching" || hasArticlesAlert}
                     >
                       Select preview placeholder content
