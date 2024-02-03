@@ -88,7 +88,7 @@ services:
       - monitorss-default
 
   discord-rest-listener-service:
-    restart: on-failure:3
+    restart: on-failure:10
     build:
       context: services/discord-rest-listener
       dockerfile: Dockerfile
@@ -209,6 +209,8 @@ services:
       - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
       - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - USER_FEEDS_API_KEY=user-feeds-api-key
+      - USER_FEEDS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
     networks:
       - monitorss-default
   
