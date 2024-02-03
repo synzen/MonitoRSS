@@ -678,6 +678,25 @@ export class FeedConnectionsDiscordChannelsService {
       "connections.discordChannels.id": connectionId,
     };
 
+    if (updates.customPlaceholders) {
+      // There is a strange bug there the steps are only being saved with IDs
+      for (let i = 0; i < updates.customPlaceholders.length; ++i) {
+        const steps = updates.customPlaceholders[i].steps;
+
+        for (let j = 0; j < steps.length; ++j) {
+          const step = steps[j];
+
+          if (step.id && Object.keys(step).length === 1) {
+            logger.error(`Custom placeholder only has step ID`, {
+              customPlaceholders: updates.customPlaceholders,
+              findQuery,
+            });
+            throw new Error(`Custom placeholder only has step ID`);
+          }
+        }
+      }
+    }
+
     const updateQuery = {
       $set: {
         ...setRecordDetails,
