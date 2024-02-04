@@ -27,9 +27,9 @@ Docker is required to easily coordinate and run multiple services at once.
 1. Install [Docker Engine](https://docs.docker.com/engine/install/)
 2. Install [Docker Compose](https://docs.docker.com/compose/install/)
 3. Clone this repo's `main` (the default) branch - `git clone https://github.com/synzen/MonitoRSS.git`
-4. Create a copy of the existing `.env.example` file and rename it to `.env.prod`
-5. Create a Discord application through [Discord's developer portal](https://discord.com/developers/applications) if you do not already have one
-6. Replace all relevant values
+4. Create a Discord application through [Discord's developer portal](https://discord.com/developers/applications) if you do not already have one
+5. Create a copy of the existing `.env.example` file and rename it to `.env.prod`
+6. Replace all relevant values in the `.env.prod` file with your own values
    1. If you have your own MongoDB instance, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
    2. Replace all instances of "BOT_TOKEN_HERE" with your Discord bot application token
    3. Replace all instances of "BOT_CLIENT_ID_HERE" with your Discord bot application ID
