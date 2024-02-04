@@ -96,7 +96,7 @@ export const CustomPlaceholderPreview = ({
       },
     },
   };
-  console.log("🚀 ~ input:", input);
+
   const {
     data: dataPreview,
     fetchStatus: fetchStatusPreview,

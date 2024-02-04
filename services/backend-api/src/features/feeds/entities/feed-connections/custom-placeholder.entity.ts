@@ -30,6 +30,7 @@ const CustomPlaceholderBaseStepSchema = SchemaFactory.createForClass(
 @Schema({
   timestamps: false,
   versionKey: false,
+  _id: false,
 })
 export class CustomPlaceholderRegexStep {
   type: CustomPlaceholderStepType.Regex;
@@ -59,6 +60,7 @@ export const CustomPlaceholderRegexStepSchema = SchemaFactory.createForClass(
 @Schema({
   timestamps: false,
   versionKey: false,
+  _id: false,
 })
 export class CustomPlaceholderUrlEncodeStep {
   type: CustomPlaceholderStepType.UrlEncode;
@@ -70,6 +72,7 @@ export const CustomPlaceholderUrlEncodeStepSchema =
 @Schema({
   timestamps: false,
   versionKey: false,
+  _id: false,
 })
 export class CustomPlaceholderDateFormatStep {
   type: CustomPlaceholderStepType.DateFormat;
