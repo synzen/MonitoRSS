@@ -521,8 +521,28 @@ export class ArticlesService {
           };
         });
 
-        if (mappedArticles.some((a) => !a.flattened.idHash)) {
-          return reject(new Error("Some articles are missing id hash"));
+        // check for duplicate id hashes
+        const idHashes = new Set<string>();
+
+        for (const article of mappedArticles) {
+          const idHash = article.flattened.idHash;
+
+          if (!idHash) {
+            return reject(new Error("Some articles are missing id hash"));
+          }
+
+          if (idHashes.has(article.flattened.idHash)) {
+            logger.warn(
+              `Feed has duplicate article id hash: ${article.flattened.idHash}`,
+              {
+                id: article.flattened.id,
+                idHash,
+                // articles: mappedArticles,
+              }
+            );
+          }
+
+          idHashes.add(article.flattened.idHash);
         }
 
         resolve({
