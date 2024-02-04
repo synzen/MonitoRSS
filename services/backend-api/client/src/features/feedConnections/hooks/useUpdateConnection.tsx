@@ -9,9 +9,10 @@ import { FeedConnectionType } from "../../../types";
 
 interface Props {
   type: FeedConnectionType;
+  disablePreviewInvalidation?: boolean;
 }
 
-export const useUpdateConnection = ({ type }: Props) => {
+export const useUpdateConnection = ({ type, disablePreviewInvalidation }: Props) => {
   const queryClient = useQueryClient();
   const {
     mutateAsync: mutateDiscordChannel,
@@ -24,8 +25,10 @@ export const useUpdateConnection = ({ type }: Props) => {
     UpdateDiscordChannelConnectionInput
   >((details) => updateDiscordChannelConnection(details), {
     onSuccess: async (data, inputData) => {
+      const promises: Array<Promise<void>> = [];
+
       if (inputData.details.customPlaceholders) {
-        await queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           predicate: (query) => {
             return (
               query.queryKey[0] === "user-feed-article-properties" &&
@@ -35,7 +38,7 @@ export const useUpdateConnection = ({ type }: Props) => {
         });
       }
 
-      await Promise.all([
+      promises.push(
         queryClient.invalidateQueries({
           queryKey: [
             "user-feed",
@@ -44,21 +47,28 @@ export const useUpdateConnection = ({ type }: Props) => {
             },
           ],
           refetchType: "all",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: [
-            "connection-preview",
-            {
-              inputData: {
-                data: {
-                  connectionId: inputData.connectionId,
+        })
+      );
+
+      if (!disablePreviewInvalidation) {
+        promises.push(
+          queryClient.invalidateQueries({
+            queryKey: [
+              "connection-preview",
+              {
+                inputData: {
+                  data: {
+                    connectionId: inputData.connectionId,
+                  },
                 },
               },
-            },
-          ],
-          refetchType: "active",
-        }),
-      ]);
+            ],
+            refetchType: "active",
+          })
+        );
+      }
+
+      await Promise.all(promises);
     },
   });
 

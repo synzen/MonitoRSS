@@ -22,12 +22,13 @@ export const ArticlePropertySelect = ({
   onChange,
   placeholder,
 }: Props) => {
-  const { data, error, fetchStatus } = useUserFeedArticleProperties({
+  const input = {
     feedId,
     data: {
       customPlaceholders: articleFormatter.customPlaceholders,
     },
-  });
+  };
+  const { data, error, fetchStatus } = useUserFeedArticleProperties(input);
   const { t } = useTranslation();
 
   return (

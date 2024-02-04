@@ -64,7 +64,9 @@ export const ArticleSelectDialog = ({
       data: {
         customPlaceholders: articleFormatter.customPlaceholders,
       },
+      isDisabled: !isOpen,
     });
+
   const debouncedSearch = useDebounce(search, 500);
   const {
     data: userFeedArticlesResults,
@@ -77,6 +79,7 @@ export const ArticleSelectDialog = ({
     limit,
     refetch,
   } = useUserFeedArticlesWithPagination({
+    isDisabled: !isOpen,
     feedId,
     data: {
       selectProperties: selectedArticleProperty

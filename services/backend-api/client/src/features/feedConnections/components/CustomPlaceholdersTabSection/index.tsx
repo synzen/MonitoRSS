@@ -58,7 +58,10 @@ export const CustomPlaceholdersTabSection = ({
     feedId,
   });
   const { data: userMeData } = useUserMe();
-  const { mutateAsync } = useUpdateConnection({ type: connectionType });
+  const { mutateAsync } = useUpdateConnection({
+    type: connectionType,
+    disablePreviewInvalidation: true,
+  });
   const formMethods = useForm<CustomPlaceholdersFormData>({
     resolver: yupResolver(CustomPlaceholdersFormSchema),
     mode: "all",

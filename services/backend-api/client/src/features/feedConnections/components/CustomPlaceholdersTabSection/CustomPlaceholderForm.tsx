@@ -29,22 +29,22 @@ import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
-import { FiMousePointer } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
+import { FiMousePointer } from "react-icons/fi";
 import { CustomPlaceholdersFormData } from "./constants/CustomPlaceholderFormSchema";
-import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AnimatedComponent, ConfirmModal } from "../../../../components";
 import { CustomPlaceholderPreview } from "./CustomPlaceholderPreview";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { CustomPlaceholderDateFormatStep, FeedConnectionType } from "../../../../types";
-import { ArticleSelectDialog } from "../../../feed/components";
-import { useUserFeedArticles } from "../../../feed/hooks";
 import { notifyError } from "../../../../utils/notifyError";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 import { CustomPlaceholderStepType } from "../../../../constants";
 import { DatePreferencesForm } from "../../../../components/DatePreferencesForm";
+import { ArticlePropertySelect } from "../ArticlePropertySelect";
+import { ArticleSelectDialog } from "../../../feed/components";
+import { useUserFeedArticles } from "../../../feed";
 
 interface Props {
   feedId: string;
@@ -311,15 +311,19 @@ export const CustomPlaceholderForm = ({
       skip: 0,
       selectProperties: [customPlaceholder.sourcePlaceholder],
       random: true,
-      formatter: articleFormat,
+      formatter: {
+        ...articleFormat,
+        customPlaceholders: [],
+      },
       filters: {
         articleId: selectedArticleId,
       },
     },
   });
+
   const { hasAlert: hasArticlesAlert, messageRef: userFeedArticlesMessage } =
     useGetUserFeedArticlesError({
-      getUserFeedArticlesOutput: dataUserFeedArticles,
+      getUserFeedArticlesOutput: dataUserFeedArticles as never,
       getUserFeedArticlesStatus: statusUserFeedArticles,
     });
   const firstArticleId = dataUserFeedArticles?.result?.articles?.[0]?.id;
@@ -401,7 +405,11 @@ export const CustomPlaceholderForm = ({
               onChange={(val) => {
                 field.onChange(val);
               }}
-              articleFormatter={articleFormat}
+              articleFormatter={{
+                ...articleFormat,
+                // Don't show custom placeholders in the list of available properties
+                customPlaceholders: [],
+              }}
             />
           )}
         />
@@ -477,7 +485,7 @@ export const CustomPlaceholderForm = ({
                   };
 
                   return (
-                    <Stack>
+                    <Stack key={step.id}>
                       <Box
                         as={motion.div}
                         exit={{

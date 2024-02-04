@@ -37,7 +37,21 @@ export const CustomPlaceholderPreview = ({
   selectedArticleId,
   stepIndex,
 }: Props) => {
-  const previewInputToDebounce = [inputCustomPlaceholder];
+  const previewInputToDebounce: CustomPlaceholder[] = [
+    {
+      ...inputCustomPlaceholder,
+      steps: inputCustomPlaceholder.steps.map((s) => {
+        if (s.type === CustomPlaceholderStepType.Regex) {
+          return {
+            ...s,
+            regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
+          };
+        }
+
+        return s;
+      }),
+    },
+  ];
   const customPlaceholders = useDebounce(previewInputToDebounce, 500);
   const referenceName = customPlaceholders[0]?.referenceName;
   const customPlaceholder = customPlaceholders[0];
@@ -60,11 +74,7 @@ export const CustomPlaceholderPreview = ({
     allStepsAreComplete
   );
 
-  const {
-    data: dataPreview,
-    fetchStatus: fetchStatusPreview,
-    error,
-  } = useCreateConnectionPreview(connectionType, {
+  const input = {
     enabled: placeholderIsComplete && !!selectedArticleId && customPlaceholder.steps.length > 0,
     data: {
       feedId,
@@ -82,11 +92,15 @@ export const CustomPlaceholderPreview = ({
         },
       },
     },
-  });
+  };
+  const {
+    data: dataPreview,
+    fetchStatus: fetchStatusPreview,
+    error,
+  } = useCreateConnectionPreview(connectionType, input);
 
   const isFetchingNewPreview = fetchStatusPreview === "fetching";
 
-  // const messages = dataPreview?.result?.messages;
   const previews = dataPreview?.result.customPlaceholderPreviews;
 
   let errorComponent = null;
@@ -128,8 +142,8 @@ export const CustomPlaceholderPreview = ({
           </Badge>
           <Code fontSize={12} display="inline-block">{`{{custom::${referenceName}}}`}</Code>
         </HStack>
-        <Divider my={1} />
-        {showLoading && <SkeletonText noOfLines={7} mt={3} spacing="2" skeletonHeight="6" />}
+        <Divider mt={1} mb={3} />
+        {showLoading && <SkeletonText noOfLines={7} spacing="2" skeletonHeight="6" />}
         {!selectedArticleId && placeholderIsComplete && !isFetchingNewPreview && (
           <Text color="gray.400">
             <em>No article selected for preview</em>
@@ -151,11 +165,14 @@ export const CustomPlaceholderPreview = ({
               ))}
           </Box>
         )}
-        {!isFetchingNewPreview && placeholderIsComplete && previews && !previews.length && (
-          <Alert status="warning">
-            <AlertDescription>No article found for preview</AlertDescription>
-          </Alert>
-        )}
+        {!isFetchingNewPreview &&
+          placeholderIsComplete &&
+          dataPreview?.result &&
+          !dataPreview?.result.messages.length && (
+            <Alert status="warning">
+              <AlertDescription>No article found for preview</AlertDescription>
+            </Alert>
+          )}
         {errorComponent}
         {!error && !placeholderIsComplete && (
           <Text fontSize={13} color="red.300" fontWeight="600">
