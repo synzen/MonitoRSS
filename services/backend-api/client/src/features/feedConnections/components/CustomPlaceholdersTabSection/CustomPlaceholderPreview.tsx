@@ -45,6 +45,9 @@ export const CustomPlaceholderPreview = ({
           return {
             ...s,
             regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
+            // default flags by the backend. Set this default to minimize re-renders after saving
+            // that causes the backend to automatically append gmi flags
+            regexSearchFlags: s.regexSearchFlags || "gmi",
           };
         }
 
@@ -93,6 +96,7 @@ export const CustomPlaceholderPreview = ({
       },
     },
   };
+  console.log("🚀 ~ input:", input);
   const {
     data: dataPreview,
     fetchStatus: fetchStatusPreview,

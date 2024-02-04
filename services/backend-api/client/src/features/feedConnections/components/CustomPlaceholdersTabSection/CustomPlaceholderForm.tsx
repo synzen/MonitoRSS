@@ -45,6 +45,7 @@ import { DatePreferencesForm } from "../../../../components/DatePreferencesForm"
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { ArticleSelectDialog } from "../../../feed/components";
 import { useUserFeedArticles } from "../../../feed";
+import { useUserMe } from "../../../discordUser";
 
 interface Props {
   feedId: string;
@@ -320,6 +321,12 @@ export const CustomPlaceholderForm = ({
       },
     },
   });
+
+  const { data: userMeData } = useUserMe();
+
+  const preferredFormat = userMeData?.result.preferences.dateFormat;
+  const preferredTimezone = userMeData?.result.preferences.dateTimezone;
+  const preferedLocale = userMeData?.result.preferences.dateLocale;
 
   const { hasAlert: hasArticlesAlert, messageRef: userFeedArticlesMessage } =
     useGetUserFeedArticlesError({
@@ -651,7 +658,9 @@ export const CustomPlaceholderForm = ({
                         steps.concat({
                           id: uuidv4(),
                           type: CustomPlaceholderStepType.DateFormat,
-                          format: "YYYY-MM-DDTHH:mm:ssZ",
+                          format: preferredFormat || "YYYY-MM-DDTHH:mm:ssZ",
+                          locale: preferedLocale || undefined,
+                          timezone: preferredTimezone || undefined,
                         })
                       );
                     }}

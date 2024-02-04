@@ -63,6 +63,7 @@ const fetchRest = async <T>(url: string, fetchOptions?: FetchOptions<T>): Promis
       const validationResult = await fetchOptions.validateSchema.validate(json, {
         strict: true,
         abortEarly: false,
+        stripUnknown: true,
       });
 
       return validationResult;
