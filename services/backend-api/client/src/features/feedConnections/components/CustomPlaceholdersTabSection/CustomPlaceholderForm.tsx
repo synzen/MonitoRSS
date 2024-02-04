@@ -460,8 +460,9 @@ export const CustomPlaceholderForm = ({
                   articleFormat={articleFormat}
                   connectionId={connectionId}
                   connectionType={connectionType}
-                  customPlaceholder={{ ...customPlaceholder, steps: [] }}
+                  customPlaceholder={customPlaceholder}
                   feedId={feedId}
+                  stepIndex={0}
                   selectedArticleId={selectedArticleId}
                 />
               </Stack>
@@ -473,21 +474,6 @@ export const CustomPlaceholderForm = ({
                   const props: StepProps = {
                     customPlaceholderIndex: index,
                     stepIndex,
-                  };
-
-                  const customPlaceholderPreviewInput = {
-                    ...customPlaceholder,
-                    steps: steps.slice(0, stepIndex + 1).map((s) => {
-                      if (!s.type || s.type === CustomPlaceholderStepType.Regex) {
-                        return {
-                          ...s,
-                          regexSearch: s.regexSearch.replaceAll("\\n", "\n"),
-                          regexSearchFlags: s.regexSearchFlags,
-                        };
-                      }
-
-                      return s;
-                    }),
                   };
 
                   return (
@@ -575,8 +561,9 @@ export const CustomPlaceholderForm = ({
                             feedId={feedId}
                             connectionId={connectionId}
                             connectionType={connectionType}
-                            customPlaceholder={customPlaceholderPreviewInput}
+                            customPlaceholder={customPlaceholder}
                             selectedArticleId={selectedArticleId}
+                            stepIndex={stepIndex + 1}
                           />
                         </Stack>
                         <Flex

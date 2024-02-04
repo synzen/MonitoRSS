@@ -306,7 +306,7 @@ export class FeedsController {
           };
         }
 
-        const formattedArticle =
+        const { article: formattedArticle } =
           await this.articleFormatterService.formatArticleForDiscord(article, {
             ...mediumDetails.formatter,
             customPlaceholders: mediumDetails.customPlaceholders,
@@ -407,10 +407,14 @@ export class FeedsController {
           article: z.object({
             id: z.string(),
           }),
+          includeCustomPlaceholderPreviews: z
+            .boolean()
+            .optional()
+            .default(false),
         })
         .parse(payload);
 
-      const type = withType.type;
+      const { type, includeCustomPlaceholderPreviews } = withType;
 
       if (type === TestDeliveryMedium.Discord) {
         const { mediumDetails } = await z
@@ -441,7 +445,7 @@ export class FeedsController {
           };
         }
 
-        const formattedArticle =
+        const { article: formattedArticle, customPlaceholderPreviews } =
           await this.articleFormatterService.formatArticleForDiscord(article, {
             ...mediumDetails.formatter,
             customPlaceholders: mediumDetails.customPlaceholders,
@@ -487,6 +491,9 @@ export class FeedsController {
         return {
           status: TestDeliveryStatus.Success,
           messages: cleanedPayloads,
+          customPlaceholderPreviews: includeCustomPlaceholderPreviews
+            ? customPlaceholderPreviews
+            : undefined,
         };
       } else {
         throw new Error(`Unhandled medium type: ${type}`);

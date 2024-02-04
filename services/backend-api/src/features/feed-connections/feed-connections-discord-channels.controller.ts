@@ -233,6 +233,7 @@ export class FeedConnectionsDiscordChannelsController {
       enablePlaceholderFallback,
       customPlaceholders,
       componentRows,
+      includeCustomPlaceholderPreviews,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -249,12 +250,14 @@ export class FeedConnectionsDiscordChannelsController {
       enablePlaceholderFallback,
       customPlaceholders,
       componentRows,
+      includeCustomPlaceholderPreviews,
     });
 
     return {
       result: {
         status: result.status,
         messages: result.messages,
+        customPlaceholderPreviews: result.customPlaceholderPreviews,
       },
     };
   }

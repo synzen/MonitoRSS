@@ -131,6 +131,7 @@ interface CreatePreviewInput {
   forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
   enablePlaceholderFallback?: boolean;
   componentRows?: DiscordChannelConnection["details"]["componentRows"] | null;
+  includeCustomPlaceholderPreviews?: boolean;
 }
 
 @Injectable()
@@ -982,6 +983,7 @@ export class FeedConnectionsDiscordChannelsService {
     enablePlaceholderFallback,
     customPlaceholders,
     componentRows,
+    includeCustomPlaceholderPreviews,
   }: CreatePreviewInput) {
     const user = await this.userModel
       .findOne(
@@ -996,6 +998,7 @@ export class FeedConnectionsDiscordChannelsService {
 
     const payload: CreateDiscordChannelPreviewInput["details"] = {
       type: "discord",
+      includeCustomPlaceholderPreviews,
       feed: {
         url: userFeed.url,
         formatOptions: {

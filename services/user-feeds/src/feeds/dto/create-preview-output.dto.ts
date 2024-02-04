@@ -4,4 +4,5 @@ import { TestDeliveryStatus } from "../constants";
 export class CreatePreviewOutputDto {
   status: TestDeliveryStatus;
   messages?: DiscordMessageApiPayload[];
+  customPlaceholderPreviews?: string[][];
 }

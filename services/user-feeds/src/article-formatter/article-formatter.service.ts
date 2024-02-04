@@ -20,7 +20,10 @@ export class ArticleFormatterService {
   async formatArticleForDiscord(
     article: Article,
     options: Omit<FormatOptions, "split">
-  ): Promise<ArticleDiscordFormatted> {
+  ): Promise<{
+    article: ArticleDiscordFormatted;
+    customPlaceholderPreviews: Array<Array<string>>;
+  }> {
     const flattened: Article["flattened"] = {
       ...article.flattened,
     };
@@ -30,6 +33,8 @@ export class ArticleFormatterService {
 
       flattened[key] = value;
     });
+
+    const allCustomPlaceholderOutputs: string[][] = [];
 
     if (options.customPlaceholders) {
       for (const {
@@ -47,6 +52,9 @@ export class ArticleFormatterService {
         }
 
         let lastOutput = sourceValue;
+        const allOutputs: string[] = [];
+
+        allOutputs.push(lastOutput);
 
         for (let i = 0; i < steps.length; ++i) {
           const { type } = steps[i];
@@ -95,26 +103,15 @@ export class ArticleFormatterService {
             let date = dayjs(lastOutput);
 
             if (!date.isValid()) {
-              logger.error(
-                `Invalid date provided for custom placeholder with ` +
-                  `format "${format}" and value "${lastOutput}"`
-              );
-
               lastOutput = "";
 
               continue;
             }
 
             if (timezone) {
-              // check if valid tz first
               try {
                 date = date.tz(timezone);
               } catch (err) {
-                logger.error(
-                  `Invalid timezone "${timezone}" provided for custom placeholder with ` +
-                    `format "${format}" and value "${lastOutput}"`
-                );
-
                 lastOutput = "";
               }
             }
@@ -127,17 +124,23 @@ export class ArticleFormatterService {
           } else {
             throw new Error(`Custom placeholder has unknown type "${type}"`);
           }
+
+          allOutputs.push(lastOutput);
         }
 
+        allCustomPlaceholderOutputs.push(allOutputs);
         flattened[placeholderKeyToUse] = lastOutput;
       }
     }
 
     return {
-      flattened,
-      raw: {
-        ...article.raw,
+      article: {
+        flattened,
+        raw: {
+          ...article.raw,
+        },
       },
+      customPlaceholderPreviews: allCustomPlaceholderOutputs,
     };
   }
 

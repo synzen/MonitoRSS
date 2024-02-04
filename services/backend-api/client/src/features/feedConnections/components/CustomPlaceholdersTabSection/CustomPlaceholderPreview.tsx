@@ -4,8 +4,9 @@ import {
   Badge,
   Box,
   Code,
+  Divider,
   HStack,
-  Spinner,
+  SkeletonText,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -24,6 +25,7 @@ interface Props {
   connectionId: string;
   articleFormat: GetUserFeedArticlesInput["data"]["formatter"];
   selectedArticleId?: string;
+  stepIndex: number;
 }
 
 export const CustomPlaceholderPreview = ({
@@ -33,6 +35,7 @@ export const CustomPlaceholderPreview = ({
   articleFormat,
   connectionType,
   selectedArticleId,
+  stepIndex,
 }: Props) => {
   const previewInputToDebounce = [inputCustomPlaceholder];
   const customPlaceholders = useDebounce(previewInputToDebounce, 500);
@@ -62,11 +65,12 @@ export const CustomPlaceholderPreview = ({
     fetchStatus: fetchStatusPreview,
     error,
   } = useCreateConnectionPreview(connectionType, {
-    enabled: placeholderIsComplete && !!selectedArticleId,
+    enabled: placeholderIsComplete && !!selectedArticleId && customPlaceholder.steps.length > 0,
     data: {
       feedId,
       connectionId,
       data: {
+        includeCustomPlaceholderPreviews: true,
         article: {
           id: selectedArticleId as string,
         },
@@ -82,7 +86,8 @@ export const CustomPlaceholderPreview = ({
 
   const isFetchingNewPreview = fetchStatusPreview === "fetching";
 
-  const messages = dataPreview?.result?.messages;
+  // const messages = dataPreview?.result?.messages;
+  const previews = dataPreview?.result.customPlaceholderPreviews;
 
   let errorComponent = null;
 
@@ -100,59 +105,64 @@ export const CustomPlaceholderPreview = ({
     );
   }
 
+  const contentToDisplay = previews?.[0]?.[stepIndex];
+  const showLoading = isFetchingNewPreview && placeholderIsComplete;
+
   return (
     <Stack spacing={4} flex={1}>
-      <Stack>
-        <Box
-          bg="whiteAlpha.200"
-          borderStyle="solid"
-          borderWidth="1px"
-          borderColor="whiteAlpha.300"
-          py={4}
-          px={4}
-          rounded="lg"
-        >
-          <HStack pb={2} flexWrap="wrap">
-            <Badge variant="subtle" size="sm">
-              Preview
-            </Badge>
-            <Code fontSize={12} display="inline-block">{`{{custom::${referenceName}}}`}</Code>
-          </HStack>
-          {isFetchingNewPreview && placeholderIsComplete && <Spinner display="block" size="sm" />}
-          {!selectedArticleId && placeholderIsComplete && !isFetchingNewPreview && (
-            <Text color="gray.400">
-              <em>No article selected for preview</em>
-            </Text>
-          )}
-          {!isFetchingNewPreview && placeholderIsComplete && messages?.[0] && (
-            <Box>
-              {!messages[0].content && (
-                <Text color="gray.400">
-                  <em>(empty)</em>
-                </Text>
-              )}
-              {messages[0].content &&
-                messages[0].content.split("\n")?.map((line, idx) => (
-                  // eslint-disable-next-line react/no-array-index-key
-                  <span key={idx}>
-                    {line} <br />
-                  </span>
-                ))}
-            </Box>
-          )}
-          {!isFetchingNewPreview && placeholderIsComplete && messages && !messages.length && (
-            <Alert status="warning">
-              <AlertDescription>No article found for preview</AlertDescription>
-            </Alert>
-          )}
-          {errorComponent}
-          {!error && !placeholderIsComplete && (
-            <Text fontSize={13} color="red.300" fontWeight="600">
-              Incomplete inputs in current or previous steps
-            </Text>
-          )}
-        </Box>
-      </Stack>
+      <Box
+        bg="whiteAlpha.200"
+        borderStyle="solid"
+        borderWidth="1px"
+        borderColor="whiteAlpha.300"
+        py={4}
+        px={4}
+        rounded="lg"
+        minHeight={250}
+        maxHeight={250}
+        overflow={showLoading ? "hidden" : "auto"}
+      >
+        <HStack pb={2} flexWrap="wrap">
+          <Badge variant="subtle" size="sm">
+            Preview
+          </Badge>
+          <Code fontSize={12} display="inline-block">{`{{custom::${referenceName}}}`}</Code>
+        </HStack>
+        <Divider my={1} />
+        {showLoading && <SkeletonText noOfLines={7} mt={3} spacing="2" skeletonHeight="6" />}
+        {!selectedArticleId && placeholderIsComplete && !isFetchingNewPreview && (
+          <Text color="gray.400">
+            <em>No article selected for preview</em>
+          </Text>
+        )}
+        {!isFetchingNewPreview && placeholderIsComplete && previews && (
+          <Box>
+            {!contentToDisplay && (
+              <Text color="gray.400">
+                <em>(empty)</em>
+              </Text>
+            )}
+            {contentToDisplay &&
+              contentToDisplay.split("\n")?.map((line, idx) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <span key={idx}>
+                  {line} <br />
+                </span>
+              ))}
+          </Box>
+        )}
+        {!isFetchingNewPreview && placeholderIsComplete && previews && !previews.length && (
+          <Alert status="warning">
+            <AlertDescription>No article found for preview</AlertDescription>
+          </Alert>
+        )}
+        {errorComponent}
+        {!error && !placeholderIsComplete && (
+          <Text fontSize={13} color="red.300" fontWeight="600">
+            Incomplete inputs in current or previous steps
+          </Text>
+        )}
+      </Box>
     </Stack>
   );
 };

@@ -106,4 +106,8 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @Type(() => Boolean)
   @IsBoolean()
   enablePlaceholderFallback?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  includeCustomPlaceholderPreviews?: boolean;
 }

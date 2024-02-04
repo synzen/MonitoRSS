@@ -4,6 +4,7 @@ import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-
 export interface CreateDiscordChannelPreviewInput {
   details: {
     type: "discord";
+    includeCustomPlaceholderPreviews?: boolean;
     feed: {
       url: string;
       formatOptions: {

@@ -12,4 +12,8 @@ export class CreatePreviewOutput {
   @ValidateNested()
   @Type(() => DiscordMessageApiPayload)
   messages?: DiscordMessageApiPayload[];
+
+  @IsArray({ each: true })
+  @IsOptional()
+  customPlaceholderPreviews: string[][];
 }

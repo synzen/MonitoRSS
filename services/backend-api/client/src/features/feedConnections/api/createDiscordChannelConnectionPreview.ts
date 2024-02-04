@@ -9,6 +9,7 @@ export interface CreateDiscordChannelConnectionPreviewInput {
     article: {
       id: string;
     };
+    includeCustomPlaceholderPreviews?: boolean;
     content?: string | null;
     embeds?: PreviewEmbedInput[];
     componentRows?: Array<{

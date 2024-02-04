@@ -85,10 +85,13 @@ export class DiscordMediumService implements DeliveryMedium {
     article: Article,
     options: FormatOptions
   ): Promise<ArticleDiscordFormatted> {
-    return this.articleFormatterService.formatArticleForDiscord(
-      article,
-      options
-    );
+    const { article: formatted } =
+      await this.articleFormatterService.formatArticleForDiscord(
+        article,
+        options
+      );
+
+    return formatted;
   }
 
   async deliverTestArticle(
