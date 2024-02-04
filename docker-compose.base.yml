@@ -72,7 +72,7 @@ services:
       - monitorss-default
 
   bot-presence-service:
-    restart: on-failure:3
+    restart: on-failure:5
     build:
       context: services/bot-presence
       dockerfile: Dockerfile
@@ -106,7 +106,7 @@ services:
       - monitorss-default
 
   feed-requests-service:
-    restart: on-failure:3
+    restart: on-failure:5
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
@@ -130,7 +130,7 @@ services:
       - monitorss-default
 
   feed-requests-postgres-migration:
-    restart: on-failure:3
+    restart: on-failure:5
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
@@ -155,7 +155,7 @@ services:
       - monitorss-default
 
   feed-requests-api:
-    restart: on-failure:3
+    restart: on-failure:5
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
@@ -184,7 +184,7 @@ services:
       - monitorss-default
 
   user-feeds-service:
-    restart: on-failure:3
+    restart: on-failure:5
     build:
       context: services/user-feeds
       dockerfile: Dockerfile
@@ -215,7 +215,7 @@ services:
       - monitorss-default
   
   user-feeds-postgres-migration:
-    restart: on-failure:3
+    restart: on-failure:5
     build:
       context: services/user-feeds
       dockerfile: Dockerfile
@@ -243,7 +243,7 @@ services:
       context: services/backend-api
       dockerfile: dockerfiles/web/api.Dockerfile
       target: build
-    restart: on-failure:3
+    restart: on-failure:10
     depends_on:
       - mongo
       - rabbitmq-broker
@@ -267,7 +267,7 @@ services:
       context: services/backend-api
       dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
       target: build
-    restart: on-failure:3
+    restart: on-failure:10
     depends_on:
       - mongo
     environment:
@@ -291,7 +291,7 @@ services:
       context: services/backend-api
       dockerfile: dockerfiles/web/api.Dockerfile
       target: build
-    restart: on-failure:3
+    restart: on-failure:5
     depends_on:
       - mongo
       - user-feeds-service
@@ -317,7 +317,7 @@ services:
       context: services/backend-api/client
       dockerfile: ../dockerfiles/web/client.Dockerfile
       target: build
-    restart: on-failure:3
+    restart: on-failure:5
     ports:
       - "3000:3000"
     expose:
