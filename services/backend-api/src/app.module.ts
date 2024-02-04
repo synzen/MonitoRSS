@@ -53,6 +53,7 @@ export class AppModule {
       imports: [
         MongooseModule.forRoot(configValues.BACKEND_API_MONGODB_URI, {
           autoIndex: true,
+          readPreference: "primary",
         }),
         FeedConnectionsDiscordWebhooksModule.forRoot(),
         FeedConnectionsDiscordChannelsModule.forRoot(),
