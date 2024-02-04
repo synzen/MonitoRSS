@@ -37,8 +37,8 @@ Docker is required to easily coordinate and run multiple services at once.
    5. Set `BACKEND_API_SESSION_SECRET` to a random 64-character string
    6.  Set `BACKEND_API_SESSION_SALT` to a random 16-character string
    7.  Add `http://localhost:8000/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page
-7.  Run `docker-compose up -d`
-    -  If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker-compose --parallel 1 up -d`
+7.  Run `docker compose up -d`
+    -  If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker compose --parallel 1 up -d`
 8.  Access the control panel via http://localhost:8000
 
 #### Customize Site Domain
