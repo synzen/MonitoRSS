@@ -45,7 +45,6 @@ export class FeedFetcherListenerService {
   }
 
   static BASE_FAILED_ATTEMPT_WAIT_MINUTES = 5;
-  static MAX_FAILED_ATTEMPTS = 11; // Fail feeds after 5*(2^11) minutes, or 6.25 days
 
   @RabbitSubscribe({
     exchange: '',
@@ -277,7 +276,7 @@ export class FeedFetcherListenerService {
       };
     }
 
-    if (failedAttempts >= FeedFetcherListenerService.MAX_FAILED_ATTEMPTS) {
+    if (failedAttempts >= this.maxFailAttempts) {
       this.emitFailedUrl({ lookupKey, url });
 
       return {
