@@ -12,7 +12,7 @@ interface Props {
 
 export const RequireAuth = ({ children, waitForUserFetch }: Props) => {
   const { data: authStatusData, status: authStatus, error: authError } = useDiscordAuthStatus();
-  const { status: userMeStatus } = useUserMe({
+  const { status: userMeStatus, error: userMeError } = useUserMe({
     enabled: waitForUserFetch && authStatusData?.authenticated,
   });
   const { t } = useTranslation();
@@ -28,15 +28,11 @@ export const RequireAuth = ({ children, waitForUserFetch }: Props) => {
     );
   }
 
-  if (authStatus === "error") {
-    return (
-      <Center height="100%">
-        <ErrorAlert description={authError?.message} />
-      </Center>
-    );
-  }
-
-  if (authStatus === "success" && !authStatusData?.authenticated) {
+  if (
+    (authStatus === "success" && !authStatusData?.authenticated) ||
+    authError?.statusCode === 401 ||
+    userMeError?.statusCode === 401
+  ) {
     const currentPath = window.location.pathname;
     const jsonState = JSON.stringify({
       path: currentPath,
@@ -45,6 +41,14 @@ export const RequireAuth = ({ children, waitForUserFetch }: Props) => {
     window.location.href = `/api/v1/discord/login-v2?jsonState=${encodeURIComponent(jsonState)}`;
 
     return null;
+  }
+
+  if (authError || userMeError) {
+    return (
+      <Center height="100%">
+        <ErrorAlert description={authError?.message || userMeError?.message} />
+      </Center>
+    );
   }
 
   if (authStatus === "success" && authStatusData?.authenticated) {

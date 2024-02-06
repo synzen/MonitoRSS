@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable react/state-in-constructor */
 import { Box } from "@chakra-ui/react";
 import React, { Component, ErrorInfo, ReactNode } from "react";
@@ -22,8 +23,26 @@ export class GenericErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // eslint-disable-next-line no-console
     console.error("Uncaught error:", error, errorInfo);
+
+    fetch("/api/v1/error-reports", {
+      method: "POST",
+      body: JSON.stringify({
+        message: `Generic error boundary caught an error`,
+        error: {
+          message: error.message,
+          stack: error.stack,
+        },
+        errorInfo: {
+          componentStack: errorInfo.componentStack,
+        },
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).catch((err) => {
+      console.error(`Failed to make error report`, err);
+    });
   }
 
   public render() {

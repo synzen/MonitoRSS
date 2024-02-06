@@ -129,7 +129,11 @@ const handleStatusCode = async (res: Response) => {
   try {
     json = await res.json();
 
-    if (json.isStandardized) {
+    if (res.status === 401) {
+      throw new ApiAdapterError("Unauthorized", {
+        statusCode: res.status,
+      });
+    } else if (json.isStandardized) {
       // console.log("is standard", getStandardErrorCodeMessage(json.code));
       throw new ApiAdapterError(getStandardErrorCodeMessage(json.code), {
         statusCode: res.status,
