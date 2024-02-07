@@ -68,7 +68,7 @@ export class UsersController {
         id: user._id,
         discordUserId: user.discordUserId,
         email: user.email,
-        preferences: user.preferences,
+        preferences: user.preferences || {},
         subscription,
         creditBalance,
         isOnPatreon,

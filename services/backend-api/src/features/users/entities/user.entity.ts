@@ -42,6 +42,7 @@ export class User {
   @Prop({
     required: false,
     type: UserPreferencesSchema,
+    default: {},
   })
   preferences?: UserPreferences;
 
