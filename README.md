@@ -60,9 +60,10 @@ Make sure to opt into email notifications in the control panel's user settings p
 
 #### Updating
 
-1. Pull the latest files from the main branch
-2. Stop containers with `docker compose down`
-3. Rebuild containers with `docker compose up -d --build`
+1. Make a backup of your MongoDB data just in case
+2. Pull the latest files from the main branch
+3. Stop containers with `docker compose down`
+4. Rebuild containers with `docker compose up -d --build`
 
 ## Migrating from v6
 

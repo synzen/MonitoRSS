@@ -1,5 +1,7 @@
 import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { TestingModule } from "@nestjs/testing";
+import { Types } from "mongoose";
+import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
@@ -46,6 +48,7 @@ describe("MongoDB Migrations Service", () => {
   beforeEach(async () => {
     jest.resetAllMocks();
     await userFeedModel.deleteMany();
+    await migrationModel.deleteMany();
   });
 
   afterAll(async () => {
@@ -53,22 +56,57 @@ describe("MongoDB Migrations Service", () => {
     await module?.close();
   });
 
-  describe.skip("applyMigrations", () => {
-    it("should apply feedRequestLookupKeys", async () => {
-      await userFeedModel.create({
+  describe("applyMigrations", () => {
+    it("should apply custom-placeholder-steps", async () => {
+      await userFeedModel.collection.insertOne({
         url: "https://example.com",
         feedRequestLookupKey: "https://example.com",
         title: "title",
         user: {
           discordUserId: "user",
         },
+        connections: {
+          discordChannels: [
+            {
+              id: new Types.ObjectId().toHexString(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              name: "name",
+              details: {
+                embeds: [],
+                formatter: {},
+              },
+              customPlaceholders: [
+                {
+                  id: new Types.ObjectId().toHexString(),
+                  steps: [
+                    {
+                      regexSearch: "search",
+                      regexSearchFlags: "gmi",
+                    },
+                  ],
+                  sourcePlaceholder: "source",
+                  referenceName: "reference",
+                },
+              ],
+            },
+          ],
+        },
       });
 
       await service.applyMigrations();
 
-      const feed = await userFeedModel.findOne({});
+      const feed = await userFeedModel.findOne({}).lean();
 
-      expect(feed?.feedRequestLookupKey).toBe("https://example.com");
+      expect(
+        feed?.connections.discordChannels?.[0]?.customPlaceholders?.[0]
+          ?.steps?.[0]
+      ).toEqual({
+        id: expect.anything(),
+        regexSearch: "search",
+        regexSearchFlags: "gmi",
+        type: CustomPlaceholderStepType.Regex,
+      });
     });
 
     it("should create the migration documents", async () => {
