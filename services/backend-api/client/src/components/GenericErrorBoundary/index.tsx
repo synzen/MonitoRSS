@@ -29,6 +29,7 @@ export class GenericErrorBoundary extends Component<Props, State> {
       method: "POST",
       body: JSON.stringify({
         message: `Generic error boundary caught an error`,
+        url: window.location.href,
         error: {
           message: error.message,
           stack: error.stack,
