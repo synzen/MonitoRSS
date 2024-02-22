@@ -13,7 +13,6 @@ import {
 import vm from "node:vm";
 import { CustomPlaceholderRegexEvalException } from "../shared/exceptions";
 import dayjs from "dayjs";
-import logger from "../shared/utils/logger";
 
 @Injectable()
 export class ArticleFormatterService {
@@ -59,7 +58,7 @@ export class ArticleFormatterService {
         for (let i = 0; i < steps.length; ++i) {
           const { type } = steps[i];
 
-          if (!type || type === CustomPlaceholderStepType.Regex) {
+          if (type === CustomPlaceholderStepType.Regex) {
             const step = steps[i] as CustomPlaceholderRegexStep;
             const { regexSearch, replacementString, regexSearchFlags } = step;
 
@@ -121,6 +120,10 @@ export class ArticleFormatterService {
             }
 
             lastOutput = date.format(format);
+          } else if (type === CustomPlaceholderStepType.Uppercase) {
+            lastOutput = lastOutput.toUpperCase();
+          } else if (type === CustomPlaceholderStepType.Lowercase) {
+            lastOutput = lastOutput.toLowerCase();
           } else {
             throw new Error(`Custom placeholder has unknown type "${type}"`);
           }

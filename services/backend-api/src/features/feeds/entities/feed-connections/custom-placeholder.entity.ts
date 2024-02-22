@@ -74,6 +74,30 @@ export const CustomPlaceholderUrlEncodeStepSchema =
   versionKey: false,
   _id: false,
 })
+export class CustomPlaceholderUppercaseStep {
+  type: CustomPlaceholderStepType.Uppercase;
+}
+
+export const CustomPlaceholderUppercaseStepSchema =
+  SchemaFactory.createForClass(CustomPlaceholderUppercaseStep);
+
+@Schema({
+  timestamps: false,
+  versionKey: false,
+  _id: false,
+})
+export class CustomPlaceholderLowercaseStep {
+  type: CustomPlaceholderStepType.Lowercase;
+}
+
+export const CustomPlaceholderLowercaseStepSchema =
+  SchemaFactory.createForClass(CustomPlaceholderLowercaseStep);
+
+@Schema({
+  timestamps: false,
+  versionKey: false,
+  _id: false,
+})
 export class CustomPlaceholderDateFormatStep {
   type: CustomPlaceholderStepType.DateFormat;
 
@@ -151,4 +175,14 @@ stepsSchema.discriminator(
 stepsSchema.discriminator(
   CustomPlaceholderStepType.DateFormat,
   CustomPlaceholderDateFormatStepSchema
+);
+
+stepsSchema.discriminator(
+  CustomPlaceholderStepType.Uppercase,
+  CustomPlaceholderUppercaseStepSchema
+);
+
+stepsSchema.discriminator(
+  CustomPlaceholderStepType.Lowercase,
+  CustomPlaceholderLowercaseStepSchema
 );

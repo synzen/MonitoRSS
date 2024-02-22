@@ -208,7 +208,7 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
   );
 };
 
-const UrlEncodeStep = (_: StepProps) => {
+const NoOptionsAvailableStep = (_: StepProps) => {
   return (
     <Stack flex={1} spacing={4}>
       <Text color="whiteAlpha.700">No options are available for this type of step</Text>
@@ -475,7 +475,7 @@ export const CustomPlaceholderForm = ({
                   articleFormat={articleFormat}
                   connectionId={connectionId}
                   connectionType={connectionType}
-                  customPlaceholder={customPlaceholder}
+                  customPlaceholder={{ ...customPlaceholder, steps: [] }}
                   feedId={feedId}
                   stepIndex={0}
                   selectedArticleId={selectedArticleId}
@@ -522,6 +522,8 @@ export const CustomPlaceholderForm = ({
                                   (step.type === CustomPlaceholderStepType.Regex &&
                                     "Regex Replace")}
                                 {step.type === CustomPlaceholderStepType.UrlEncode && "URL Encode"}
+                                {step.type === CustomPlaceholderStepType.Uppercase && "Uppercase"}
+                                {step.type === CustomPlaceholderStepType.Lowercase && "Lowercase"}
                                 {step.type === CustomPlaceholderStepType.DateFormat &&
                                   "Date Format"}
                               </Text>
@@ -555,7 +557,13 @@ export const CustomPlaceholderForm = ({
                               <RegexStep key={step.id} {...props} />
                             ))}
                           {step.type === CustomPlaceholderStepType.UrlEncode && (
-                            <UrlEncodeStep key={step.id} {...props} />
+                            <NoOptionsAvailableStep key={step.id} {...props} />
+                          )}
+                          {step.type === CustomPlaceholderStepType.Uppercase && (
+                            <NoOptionsAvailableStep key={step.id} {...props} />
+                          )}
+                          {step.type === CustomPlaceholderStepType.Lowercase && (
+                            <NoOptionsAvailableStep key={step.id} {...props} />
                           )}
                           {step.type === CustomPlaceholderStepType.DateFormat && (
                             <DateFormatStep key={step.id} {...props} />
@@ -639,6 +647,27 @@ export const CustomPlaceholderForm = ({
                         `customPlaceholders.${index}.steps`,
                         steps.concat({
                           id: uuidv4(),
+                          type: CustomPlaceholderStepType.DateFormat,
+                          format: preferredFormat || "YYYY-MM-DDTHH:mm:ssZ",
+                          locale: preferedLocale || undefined,
+                          timezone: preferredTimezone || undefined,
+                        })
+                      );
+                    }}
+                  >
+                    <Box>
+                      <Text display="block">Date Format</Text>
+                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                        Format text as a date. Input must be in a valid date form.
+                      </Text>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setValue(
+                        `customPlaceholders.${index}.steps`,
+                        steps.concat({
+                          id: uuidv4(),
                           type: CustomPlaceholderStepType.UrlEncode,
                         })
                       );
@@ -657,18 +686,33 @@ export const CustomPlaceholderForm = ({
                         `customPlaceholders.${index}.steps`,
                         steps.concat({
                           id: uuidv4(),
-                          type: CustomPlaceholderStepType.DateFormat,
-                          format: preferredFormat || "YYYY-MM-DDTHH:mm:ssZ",
-                          locale: preferedLocale || undefined,
-                          timezone: preferredTimezone || undefined,
+                          type: CustomPlaceholderStepType.Uppercase,
                         })
                       );
                     }}
                   >
                     <Box>
-                      <Text display="block">Date Format</Text>
+                      <Text display="block">Uppercase</Text>
                       <Text color="whiteAlpha.600" display="block" fontSize="sm">
-                        Format text as a date. Input must be in a valid date form.
+                        Convert the input to uppercase.
+                      </Text>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setValue(
+                        `customPlaceholders.${index}.steps`,
+                        steps.concat({
+                          id: uuidv4(),
+                          type: CustomPlaceholderStepType.Lowercase,
+                        })
+                      );
+                    }}
+                  >
+                    <Box>
+                      <Text display="block">Lowercase</Text>
+                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                        Convert the input to lowercase.
                       </Text>
                     </Box>
                   </MenuItem>

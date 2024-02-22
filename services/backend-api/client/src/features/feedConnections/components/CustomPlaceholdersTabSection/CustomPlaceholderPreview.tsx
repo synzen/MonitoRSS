@@ -78,7 +78,7 @@ export const CustomPlaceholderPreview = ({
   );
 
   const input = {
-    enabled: placeholderIsComplete && !!selectedArticleId && customPlaceholder.steps.length > 0,
+    enabled: placeholderIsComplete && !!selectedArticleId,
     data: {
       feedId,
       connectionId,
@@ -180,7 +180,7 @@ export const CustomPlaceholderPreview = ({
         {errorComponent}
         {!error && !placeholderIsComplete && (
           <Text fontSize={13} color="red.300" fontWeight="600">
-            Incomplete inputs in current or previous steps
+            Incomplete inputs in one or more steps
           </Text>
         )}
       </Box>

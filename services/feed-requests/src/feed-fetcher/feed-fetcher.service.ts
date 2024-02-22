@@ -231,6 +231,8 @@ export class FeedFetcherService {
             ? ''
             : await this.maybeDecodeResponse(res);
 
+        console.log('text', text);
+
         if (request.status !== RequestStatus.OK) {
           logger.debug(`Bad status code ${res.status} for url ${url}`, {
             responseText: text,

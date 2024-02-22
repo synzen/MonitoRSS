@@ -76,6 +76,20 @@ export class CustomPlaceholderUrlEncodeStep extends CustomPlaceholderBaseStep {
   type: CustomPlaceholderStepType.UrlEncode;
 }
 
+export class CustomPlaceholderUppercaseStep extends CustomPlaceholderBaseStep {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([CustomPlaceholderStepType.Uppercase])
+  type: CustomPlaceholderStepType.Uppercase;
+}
+
+export class CustomPlaceholderLowercaseStep extends CustomPlaceholderBaseStep {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([CustomPlaceholderStepType.Lowercase])
+  type: CustomPlaceholderStepType.Lowercase;
+}
+
 export class CustomPlaceholderDateFormatStep extends CustomPlaceholderBaseStep {
   @IsString()
   @IsNotEmpty()
@@ -100,7 +114,9 @@ export class CustomPlaceholderDateFormatStep extends CustomPlaceholderBaseStep {
 type CustomPlaceholderStep =
   | CustomPlaceholderRegexStep
   | CustomPlaceholderUrlEncodeStep
-  | CustomPlaceholderDateFormatStep;
+  | CustomPlaceholderDateFormatStep
+  | CustomPlaceholderUppercaseStep
+  | CustomPlaceholderLowercaseStep;
 
 export class CustomPlaceholder {
   @IsString()
@@ -133,6 +149,14 @@ export class CustomPlaceholder {
         {
           value: CustomPlaceholderDateFormatStep,
           name: CustomPlaceholderStepType.DateFormat,
+        },
+        {
+          value: CustomPlaceholderUppercaseStep,
+          name: CustomPlaceholderStepType.Uppercase,
+        },
+        {
+          value: CustomPlaceholderLowercaseStep,
+          name: CustomPlaceholderStepType.Lowercase,
         },
       ],
     },

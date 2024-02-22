@@ -34,6 +34,16 @@ const UrlEncodeStep = object({
   type: string().oneOf([CustomPlaceholderStepType.UrlEncode]).required(),
 }).required();
 
+const UppercaseStep = object({
+  id: string().required(),
+  type: string().oneOf([CustomPlaceholderStepType.Uppercase]).required(),
+}).required();
+
+const LowercaseStep = object({
+  id: string().required(),
+  type: string().oneOf([CustomPlaceholderStepType.Lowercase]).required(),
+}).required();
+
 const DateFormatStep = object({
   id: string().required(),
   type: string().oneOf([CustomPlaceholderStepType.DateFormat]).required(),
@@ -68,6 +78,8 @@ export const CustomPlaceholderSchema = object({
       | InferType<typeof RegexStep>
       | InferType<typeof UrlEncodeStep>
       | InferType<typeof DateFormatStep>
+      | InferType<typeof UppercaseStep>
+      | InferType<typeof LowercaseStep>
     >()
       .test(
         "shape",
@@ -75,7 +87,9 @@ export const CustomPlaceholderSchema = object({
         (data) =>
           RegexStep.isValidSync(data) ||
           UrlEncodeStep.isValidSync(data) ||
-          DateFormatStep.isValidSync(data)
+          DateFormatStep.isValidSync(data) ||
+          UppercaseStep.isValidSync(data) ||
+          LowercaseStep.isValidSync(data)
       )
       .required()
   ).required(),
@@ -85,3 +99,5 @@ export type CustomPlaceholder = InferType<typeof CustomPlaceholderSchema>;
 export type CustomPlaceholderRegexStep = InferType<typeof RegexStep>;
 export type CustomPlaceholderUrlEncodeStep = InferType<typeof UrlEncodeStep>;
 export type CustomPlaceholderDateFormatStep = InferType<typeof DateFormatStep>;
+export type CustomPlaceholderUppercaseStep = InferType<typeof UppercaseStep>;
+export type CustomPlaceholderLowercaseStep = InferType<typeof LowercaseStep>;

@@ -93,6 +93,12 @@ export const discordMediumPayloadDetailsSchema = z.object({
               timezone: z.string().optional().nullable(),
               locale: z.string().optional().nullable(),
             }),
+            z.object({
+              type: z.literal(CustomPlaceholderStepType.Uppercase),
+            }),
+            z.object({
+              type: z.literal(CustomPlaceholderStepType.Lowercase),
+            }),
           ])
         ),
       })
