@@ -429,6 +429,7 @@ export class FeedFetcherListenerService {
         createdAt: {
           $gte: latestOkRequest.createdAt,
         },
+        source: RequestSource.Schedule,
       });
     } else {
       return this.requestRepo.count({
@@ -436,6 +437,7 @@ export class FeedFetcherListenerService {
         status: {
           $ne: RequestStatus.OK,
         },
+        source: RequestSource.Schedule,
       });
     }
   }

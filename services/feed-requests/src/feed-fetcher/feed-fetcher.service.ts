@@ -208,6 +208,7 @@ export class FeedFetcherService {
       headers: options?.headers,
     };
     const request = new Request();
+    request.source = options?.source;
     request.lookupKey = options?.lookupKey || url;
     request.url = url;
     request.fetchOptions = {
