@@ -218,7 +218,7 @@ export class FeedFetcherService {
 
     try {
       const res = await this.fetchFeedResponse(
-        'https://testdeus.blogspot.com/feeds/posts/defaults',
+        url,
         fetchOptions,
         options?.saveResponseToObjectStorage,
       );
