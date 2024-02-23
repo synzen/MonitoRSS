@@ -13,6 +13,7 @@ import { createHash, randomUUID } from 'crypto';
 import { CacheStorageService } from '../cache-storage/cache-storage.service';
 import { FeedTooLargeException } from './exceptions';
 import iconv from 'iconv-lite';
+import { RequestSource } from './constants/request-source.constants';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -81,6 +82,25 @@ export class FeedFetcherService {
         populate: ['response'],
       },
     );
+  }
+
+  async getLatestRetryDate({
+    lookupKey,
+  }: {
+    lookupKey: string;
+  }): Promise<Date | null> {
+    const request = await this.requestRepo.findOne({
+      lookupKey,
+      nextRetryDate: {
+        $ne: null,
+      },
+    });
+
+    if (!request) {
+      return null;
+    }
+
+    return request.nextRetryDate || null;
   }
 
   // async getLatestRequestHeaders({
@@ -177,6 +197,7 @@ export class FeedFetcherService {
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string>;
+      source: RequestSource | undefined;
     },
   ): Promise<{
     request: Request;
@@ -196,7 +217,7 @@ export class FeedFetcherService {
 
     try {
       const res = await this.fetchFeedResponse(
-        url,
+        'https://testdeus.blogspot.com/feeds/posts/defaults',
         fetchOptions,
         options?.saveResponseToObjectStorage,
       );

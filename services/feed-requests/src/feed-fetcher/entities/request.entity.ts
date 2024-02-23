@@ -1,4 +1,5 @@
 import { RequestFetchOptions, RequestStatus } from '../constants';
+import { RequestSource } from '../constants/request-source.constants';
 import { Response } from './response.entity';
 import {
   Entity,
@@ -22,6 +23,9 @@ export class Request {
 
   @Enum(() => RequestStatus)
   status!: RequestStatus;
+
+  @Enum({ items: () => RequestSource, nullable: true, default: null })
+  source?: string | null;
 
   @Property({
     nullable: true,

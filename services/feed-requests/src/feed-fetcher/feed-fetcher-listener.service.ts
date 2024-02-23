@@ -9,6 +9,7 @@ import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { MikroORM, UseRequestContext } from '@mikro-orm/core';
 import { FeedFetcherService } from './feed-fetcher.service';
+import { RequestSource } from './constants/request-source.constants';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -229,6 +230,7 @@ export class FeedFetcherListenerService {
         {
           saveResponseToObjectStorage: data.saveToObjectStorage,
           lookupKey,
+          source: RequestSource.Schedule,
         },
       );
 
@@ -459,6 +461,7 @@ export class FeedFetcherListenerService {
         createdAt: {
           $gt: time,
         },
+        source: RequestSource.Schedule,
       },
       {
         fields: ['id'],

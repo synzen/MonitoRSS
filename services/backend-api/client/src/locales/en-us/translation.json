@@ -460,7 +460,7 @@
           "tableHeaderDate": "Date",
           "tableHeaderStatus": "Status",
           "alertFailingTitle": "Requests are currently failing",
-          "alertFailingDescription": "We've been unable to successfully fetch this feed. Attempts will continue automatically. The next attempt will be at {{nextAttemptDate}}."
+          "alertFailingDescription": "We've been unable to successfully fetch this feed. Attempts will continue automatically. The next automatic attempt will be at {{nextAttemptDate}}. You may also manually attempt a request via the button below."
         },
         "articleSelectPrompt": {
           "title": "Select an article",

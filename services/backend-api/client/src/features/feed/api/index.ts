@@ -39,3 +39,4 @@ export * from "./createUserFeedClone";
 export * from "./createUserFeedDatePreview";
 export * from "./updateUserFeedManagementInvite";
 export * from "./getUserFeedDeliveryLogs";
+export * from "./createUserFeedManualRequest";

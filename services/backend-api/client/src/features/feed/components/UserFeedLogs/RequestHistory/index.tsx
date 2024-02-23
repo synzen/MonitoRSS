@@ -23,9 +23,13 @@ import {
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
-import { useUserFeedRequestsWithPagination } from "../../../hooks";
-import { UserFeedRequestStatus } from "../../../types";
+import { useCreateUserFeedManualRequest, useUserFeedRequestsWithPagination } from "../../../hooks";
+import { UserFeedArticleRequestStatus, UserFeedRequestStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
+import { getErrorMessageForArticleRequestStatus } from "../../../utils";
+import { notifySuccess } from "../../../../../utils/notifySuccess";
+import { notifyError } from "../../../../../utils/notifyError";
+import ApiAdapterError from "../../../../../utils/ApiAdapterError";
 
 interface Props {
   feedId?: string;
@@ -72,9 +76,40 @@ export const RequestHistory = ({ feedId }: Props) => {
       data: {},
     });
   const { t } = useTranslation();
+  const { mutateAsync, status: manualRequestStatus } = useCreateUserFeedManualRequest();
 
   const onFirstPage = skip === 0;
   const nextRetryTimestamp = data?.result.nextRetryTimestamp;
+
+  const handleManualAttempt = async () => {
+    if (!feedId) {
+      return;
+    }
+
+    try {
+      const {
+        result: { requestStatus, requestStatusCode },
+      } = await mutateAsync({
+        feedId,
+      });
+
+      if (requestStatus === UserFeedArticleRequestStatus.Success) {
+        notifySuccess(`Request was successful`);
+      } else {
+        const message = getErrorMessageForArticleRequestStatus(requestStatus, requestStatusCode);
+        notifyError(`Request to feed was not successful`, t(message.ref));
+      }
+    } catch (err) {
+      if (err instanceof ApiAdapterError && err.statusCode === 422) {
+        notifyError(
+          `Failed to make request`,
+          `Please wait ${err.body?.result?.minutesUntilNextRequest} minute(s) before trying again.`
+        );
+      } else {
+        notifyError(`Failed to make request`, (err as Error).message);
+      }
+    }
+  };
 
   return (
     <Stack spacing={4} mb={8}>
@@ -87,9 +122,19 @@ export const RequestHistory = ({ feedId }: Props) => {
               {t("features.userFeeds.components.requestsTable.alertFailingTitle")}
             </AlertTitle>
             <AlertDescription>
-              {t("features.userFeeds.components.requestsTable.alertFailingDescription", {
-                nextAttemptDate: dayjs.unix(nextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss"),
-              })}
+              <Flex flexDirection="column" gap={4}>
+                {t("features.userFeeds.components.requestsTable.alertFailingDescription", {
+                  nextAttemptDate: dayjs.unix(nextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss"),
+                })}
+                <div>
+                  <Button
+                    isLoading={manualRequestStatus === "loading"}
+                    onClick={handleManualAttempt}
+                  >
+                    Attempt request
+                  </Button>
+                </div>
+              </Flex>
             </AlertDescription>
           </Box>
         </Alert>

@@ -147,6 +147,7 @@ const handleStatusCode = async (res: Response) => {
     } else {
       throw new ApiAdapterError(getStatusCodeErrorMessage(res.status), {
         statusCode: res.status,
+        body: json,
       });
     }
   } catch (err) {

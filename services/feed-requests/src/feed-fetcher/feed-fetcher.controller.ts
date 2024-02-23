@@ -61,7 +61,10 @@ export class FeedFetcherController {
       }),
     ]);
 
-    const nextRetryDate = requests[0]?.nextRetryDate || null;
+    const nextRetryDate =
+      requests[0].status !== RequestStatus.OK
+        ? await this.feedFetcherService.getLatestRetryDate({ lookupKey: url })
+        : null;
 
     return {
       result: {
@@ -117,6 +120,7 @@ export class FeedFetcherController {
         await this.feedFetcherService.fetchAndSaveResponse(data.url, {
           saveResponseToObjectStorage: data.debug,
           lookupKey: data.lookupKey,
+          source: undefined,
         });
       } catch (err) {
         logger.error(`Failed to fetch and save response of feed ${data.url}`, {
@@ -145,6 +149,7 @@ export class FeedFetcherController {
             flushEntities: true,
             saveResponseToObjectStorage: data.debug,
             lookupKey: data.lookupKey,
+            source: undefined,
           },
         );
 

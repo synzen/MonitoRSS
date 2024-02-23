@@ -38,7 +38,10 @@ import {
   UserFeedLimitOverride,
   UserFeedLimitOverrideModel,
 } from "../supporters/entities/user-feed-limit-overrides.entity";
-import { IneligibleForRestorationException } from "./exceptions";
+import {
+  IneligibleForRestorationException,
+  ManualRequestTooSoonException,
+} from "./exceptions";
 import {
   LegacyFeedConversionJob,
   LegacyFeedConversionJobModel,
@@ -47,6 +50,7 @@ import { UserFeedManagerStatus } from "../user-feed-management-invites/constants
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import dayjs from "dayjs";
 import { User, UserModel } from "../users/entities/user.entity";
+import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -667,6 +671,48 @@ export class UserFeedsService {
         }
       )
       .lean();
+  }
+
+  async manuallyRequest(feed: UserFeed) {
+    const lastRequestTime = feed.lastManualRequestAt || new Date(0);
+    const waitDurationSeconds =
+      feed.userRefreshRateSeconds || feed.refreshRateSeconds || 10 * 60;
+    const secondsSinceLastRequest = dayjs().diff(
+      dayjs(lastRequestTime),
+      "seconds"
+    );
+
+    if (secondsSinceLastRequest < waitDurationSeconds) {
+      throw new ManualRequestTooSoonException(
+        `Feed ${feed._id} was manually requested too soon after the last request`,
+        {
+          secondsUntilNextRequest:
+            waitDurationSeconds - secondsSinceLastRequest,
+        }
+      );
+    }
+
+    const requestDate = new Date();
+
+    const res = await this.feedFetcherApiService.fetchAndSave(feed.url, {
+      getCachedResponse: false,
+    });
+
+    await this.userFeedModel
+      .findByIdAndUpdate(feed._id, {
+        $set: {
+          lastManualRequestAt: requestDate,
+        },
+      })
+      .lean();
+
+    return {
+      requestStatus: res.requestStatus,
+      requestStatusCode:
+        res.requestStatus === FeedFetcherFetchStatus.BadStatusCode
+          ? res.response?.statusCode
+          : undefined,
+    };
   }
 
   async getFeedDailyLimit(feed: UserFeed) {

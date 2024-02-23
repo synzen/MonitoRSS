@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Res,
   UseFilters,
   UseGuards,
   ValidationPipe,
@@ -21,7 +22,7 @@ import { TransformValidationPipe } from "../../common/pipes/TransformValidationP
 import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
-
+import { FastifyReply } from "fastify";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import {
   CreateDiscordChannelConnectionOutputDto,
@@ -59,7 +60,10 @@ import {
 import { CreateUserFeedDatePreviewInput } from "./dto/create-user-feed-date-preview-input.dto";
 import { GetUserFeedArticlesOutputDto } from "./dto/get-user-feed-articles-output.dto";
 import { UserFeed } from "./entities";
-import { UnsupportedBulkOpException } from "./exceptions";
+import {
+  ManualRequestTooSoonException,
+  UnsupportedBulkOpException,
+} from "./exceptions";
 import {
   GetUserFeedArticlesExceptionFilter,
   RetryUserFeedFilter,
@@ -325,6 +329,38 @@ export class UserFeedsController {
     )) as UserFeed;
 
     return this.formatFeedForResponse(updatedFeed, discordUserId);
+  }
+
+  @Post("/:feedId/manual-request")
+  @UseFilters(RetryUserFeedFilter, FeedExceptionFilter)
+  async createManualRequest(
+    @Res() res: FastifyReply,
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput
+  ) {
+    try {
+      const { requestStatus, requestStatusCode } =
+        await this.userFeedsService.manuallyRequest(feed);
+
+      return res.send({
+        result: {
+          requestStatus,
+          requestStatusCode,
+        },
+      });
+    } catch (err) {
+      if (err instanceof ManualRequestTooSoonException) {
+        return res.code(422).send({
+          result: {
+            minutesUntilNextRequest: Math.ceil(
+              err.secondsUntilNextRequest / 60
+            ),
+          },
+        });
+      }
+
+      throw err;
+    }
   }
 
   @Get("/:feedId/daily-limit")

@@ -129,6 +129,11 @@ export class UserFeed {
   })
   feedRequestLookupKey?: string;
 
+  @Prop({
+    required: false,
+  })
+  lastManualRequestAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
