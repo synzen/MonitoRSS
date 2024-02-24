@@ -382,7 +382,7 @@ export class FeedFetcherService {
       headers: {
         ...options?.headers,
         'user-agent': options?.userAgent || this.defaultUserAgent,
-        accept: 'text/xml,application/xml,application/rss+xml',
+        accept: 'text/html,text/xml,application/xml,application/rss+xml',
         /**
          * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
          * Appears to be temporary error given that the page says they're working on fixing it
