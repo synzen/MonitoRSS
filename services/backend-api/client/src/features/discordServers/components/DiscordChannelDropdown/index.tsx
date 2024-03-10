@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle, Box, Stack } from "@chakra-ui/react";
+import { Box, FormErrorMessage, FormHelperText } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FiHash, FiMessageCircle } from "react-icons/fi";
 import { BsMegaphoneFill } from "react-icons/bs";
@@ -41,7 +41,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
     })) || [];
 
   return (
-    <Stack>
+    <Box>
       <ThemedSelect
         loading={isFetching}
         isDisabled={isDisabled || isFetching || !!error}
@@ -50,16 +50,13 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
         onBlur={onBlur}
         value={value}
       />
-      {serverId && error && (
-        <Alert status="error">
-          <Box>
-            <AlertTitle>
-              {t("features.feed.components.addDiscordChannelConnectionDialog.failedToGetChannels")}
-            </AlertTitle>
-            <AlertDescription>{error?.message}</AlertDescription>
-          </Box>
-        </Alert>
+      {(!serverId || !error) && (
+        <FormHelperText>
+          If you don&apos;t see the channel you want, make sure the bot has the necessary
+          permissions to view the channel.
+        </FormHelperText>
       )}
-    </Stack>
+      {serverId && error && <FormErrorMessage>{error?.message}</FormErrorMessage>}
+    </Box>
   );
 };
