@@ -529,9 +529,19 @@ export const CustomPlaceholderForm = ({
                               </Text>
                               {step.type === CustomPlaceholderStepType.DateFormat && (
                                 <Text fontSize={12} color="whiteAlpha.700">
-                                  If the input date is not in a readable format for a particular
-                                  article, or an invalid timezone is specified, there will be an
-                                  empty output.
+                                  For the most accurate result, ensure the input date complies with
+                                  the{" "}
+                                  <Link
+                                    color="blue.300"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    href="https://simple.wikipedia.org/wiki/ISO_8601"
+                                  >
+                                    ISO 8601
+                                  </Link>{" "}
+                                  standard. If the input date is not in a readable format for a
+                                  particular article, or an invalid timezone is specified, there
+                                  will be an empty output.
                                 </Text>
                               )}
                             </Box>
