@@ -4,6 +4,10 @@ import {
   FeedConnections,
   FeedConnectionSchema,
 } from "../../feeds/entities/feed-connections.entity";
+import {
+  ArticleInjection,
+  ArticleInjectionSchema,
+} from "./article-injection.entity";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 import {
   UserFeedDateCheckOptions,
@@ -53,6 +57,12 @@ export class UserFeed {
     required: false,
   })
   blockingComparisons?: string[];
+
+  @Prop({
+    type: [ArticleInjectionSchema],
+    required: false,
+  })
+  articleInjections?: Array<ArticleInjection>;
 
   @Prop({
     enum: Object.values(UserFeedHealthStatus),

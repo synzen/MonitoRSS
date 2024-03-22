@@ -138,6 +138,7 @@ export class ArticleFormatterService {
 
     return {
       article: {
+        ...article,
         flattened,
         raw: {
           ...article.raw,

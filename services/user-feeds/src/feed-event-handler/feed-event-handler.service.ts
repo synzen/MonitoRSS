@@ -376,6 +376,7 @@ export class FeedEventHandlerService {
           dateChecks: event.data.feed.dateChecks,
           debug: event.debug,
           useParserRules: getParserRules({ url: event.data.feed.url }),
+          articleInjections: event.data.feed.articleInjections,
         }
       );
 

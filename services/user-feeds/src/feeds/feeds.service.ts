@@ -105,6 +105,7 @@ export class FeedsService {
 
     const matchedArticlesWithProperties = matchedArticles.map((article) => {
       const trimmed: Article = {
+        ...article,
         flattened: {
           id: article.flattened.id,
           idHash: article.flattened.idHash,

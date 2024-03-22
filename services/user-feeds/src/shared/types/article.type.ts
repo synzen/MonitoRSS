@@ -4,4 +4,5 @@ import { FlattenedArticle } from "./flattened-article.type";
 export interface Article {
   flattened: FlattenedArticle;
   raw: FeedParser.Item;
+  injectArticleContent: () => Promise<void>;
 }

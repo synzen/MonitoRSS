@@ -2,14 +2,8 @@ import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Dispatcher, request } from "undici";
 import BodyReadable from "undici/types/readable";
-import { ArticlesService } from "../articles/articles.service";
+import { FeedResponseRequestStatus, GrpcError } from "../shared";
 import {
-  FeedResponseRequestStatus,
-  GrpcError,
-  UserFeedFormatOptions,
-} from "../shared";
-import {
-  FeedArticleNotFoundException,
   FeedFetchGrpcException,
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
@@ -25,11 +19,6 @@ import { ClientGrpc } from "@nestjs/microservices/interfaces";
 import { lastValueFrom, Observable } from "rxjs";
 import logger from "../shared/utils/logger";
 import { Metadata } from "@grpc/grpc-js";
-import { getParserRules } from "../feed-event-handler/utils";
-
-interface FetchFeedArticleOptions {
-  formatOptions: UserFeedFormatOptions;
-}
 
 @Injectable()
 export class FeedFetcherService implements OnModuleInit {
@@ -39,7 +28,6 @@ export class FeedFetcherService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly articlesService: ArticlesService,
     @Inject("FEED_FETCHER_PACKAGE") private client: ClientGrpc
   ) {
     this.SERVICE_HOST = configService.getOrThrow(
@@ -136,75 +124,6 @@ export class FeedFetcherService implements OnModuleInit {
 
       throw new FeedFetchGrpcException(typedErr.message);
     }
-  }
-
-  async fetchFeedArticles(
-    url: string,
-    { formatOptions }: FetchFeedArticleOptions
-  ) {
-    const response = await this.fetch(url, {
-      executeFetchIfNotInCache: true,
-    });
-
-    if (!response.body) {
-      return null;
-    }
-
-    return this.articlesService.getArticlesFromXml(response.body, {
-      formatOptions,
-      useParserRules: getParserRules({ url }),
-    });
-  }
-
-  async fetchFeedArticle(
-    url: string,
-    id: string,
-    { formatOptions }: FetchFeedArticleOptions
-  ) {
-    const result = await this.fetchFeedArticles(url, {
-      formatOptions,
-    });
-
-    if (!result) {
-      throw new Error(`Request for ${url} is still pending`);
-    }
-
-    const { articles } = result;
-
-    if (!articles.length) {
-      return null;
-    }
-
-    const article = articles.find((article) => article.flattened.id === id);
-
-    if (!article) {
-      throw new FeedArticleNotFoundException(
-        `Article with id ${id} for url ${url} not found`
-      );
-    }
-
-    return article;
-  }
-
-  async fetchRandomFeedArticle(
-    url: string,
-    { formatOptions }: FetchFeedArticleOptions
-  ) {
-    const result = await this.fetchFeedArticles(url, {
-      formatOptions,
-    });
-
-    if (!result) {
-      throw new Error(`Request for ${url} is still pending`);
-    }
-
-    if (!result.articles.length) {
-      return null;
-    }
-
-    const { articles } = result;
-
-    return articles[Math.floor(Math.random() * articles.length)];
   }
 
   private async handleFetchResponse({

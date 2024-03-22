@@ -18,8 +18,26 @@ import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
 import { PostProcessParserRule } from "../article-parser/constants";
 import { createHash } from "crypto";
+import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
+import { FeedResponseRequestStatus } from "../shared";
+import { parse, valid } from "node-html-parser";
+import { getParserRules } from "../feed-event-handler/utils";
+import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
+import { ArticleInjection } from "../article-parser/constants/article-injection.constants";
 
 const sha1 = createHash("sha1");
+
+interface FetchFeedArticleOptions {
+  formatOptions: UserFeedFormatOptions;
+  articleInjections?: Array<{
+    articleId: string;
+    sourceField: string;
+    fields: Array<{
+      name: string;
+      cssSelector: string; // run it through parsers service, and then discord formatter
+    }>;
+  }>;
+}
 
 @Injectable()
 export class ArticlesService {
@@ -29,8 +47,80 @@ export class ArticlesService {
     @InjectRepository(FeedArticleCustomComparison)
     private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
     private readonly articleParserService: ArticleParserService,
-    private readonly orm: MikroORM
+    private readonly orm: MikroORM,
+    private readonly feedFetcherService: FeedFetcherService
   ) {}
+
+  async fetchFeedArticles(
+    url: string,
+    { formatOptions, articleInjections }: FetchFeedArticleOptions
+  ) {
+    const response = await this.feedFetcherService.fetch(url, {
+      executeFetchIfNotInCache: true,
+    });
+
+    if (!response.body) {
+      return null;
+    }
+
+    return this.getArticlesFromXml(response.body, {
+      formatOptions,
+      useParserRules: getParserRules({ url }),
+      articleInjections,
+    });
+  }
+
+  async fetchFeedArticle(
+    url: string,
+    id: string,
+    { formatOptions, articleInjections }: FetchFeedArticleOptions
+  ) {
+    const result = await this.fetchFeedArticles(url, {
+      formatOptions,
+      articleInjections,
+    });
+
+    if (!result) {
+      throw new Error(`Request for ${url} is still pending`);
+    }
+
+    const { articles } = result;
+
+    if (!articles.length) {
+      return null;
+    }
+
+    const article = articles.find((article) => article.flattened.id === id);
+
+    if (!article) {
+      throw new FeedArticleNotFoundException(
+        `Article with id ${id} for url ${url} not found`
+      );
+    }
+
+    return article;
+  }
+
+  async fetchRandomFeedArticle(
+    url: string,
+    { formatOptions }: FetchFeedArticleOptions
+  ) {
+    const result = await this.fetchFeedArticles(url, {
+      formatOptions,
+    });
+
+    if (!result) {
+      throw new Error(`Request for ${url} is still pending`);
+    }
+
+    if (!result.articles.length) {
+      return null;
+    }
+
+    const { articles } = result;
+
+    return articles[Math.floor(Math.random() * articles.length)];
+  }
 
   /**
    * Given feed XML, get all the new articles from that XML that shoule be delivered.
@@ -45,6 +135,7 @@ export class ArticlesService {
       dateChecks,
       debug,
       useParserRules,
+      articleInjections,
     }: {
       id: string;
       blockingComparisons: string[];
@@ -53,11 +144,13 @@ export class ArticlesService {
       dateChecks?: UserFeedDateCheckOptions;
       debug?: boolean;
       useParserRules: PostProcessParserRule[] | undefined;
+      articleInjections?: ArticleInjection[];
     }
   ) {
     const { articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions,
       useParserRules,
+      articleInjections,
     });
 
     logger.debug(`Found articles:`, {
@@ -158,6 +251,10 @@ export class ArticlesService {
       });
     }
 
+    /**
+     * Reverse since feed XMLs typically store newest articles at the top, so we want to deliver
+     * the oldest articles first (hence putting them in the lowest indices)
+     */
     const articlesPreCheck = [
       ...articlesPastBlocks,
       ...articlesPassedComparisons,
@@ -180,10 +277,12 @@ export class ArticlesService {
       );
     }
 
-    /**
-     * Reverse since feed XMLs typically store newest articles at the top, so we want to deliver
-     * the oldest articles first (hence putting them in the lowest indices)
-     */
+    await Promise.all(
+      articlesPostDateCheck.map(({ injectArticleContent }) =>
+        injectArticleContent()
+      )
+    );
+
     return articlesPostDateCheck;
   }
 
@@ -445,6 +544,7 @@ export class ArticlesService {
       timeout?: number;
       formatOptions: UserFeedFormatOptions;
       useParserRules: PostProcessParserRule[] | undefined;
+      articleInjections?: Array<ArticleInjection>;
     }
   ): Promise<{
     articles: Article[];
@@ -481,7 +581,7 @@ export class ArticlesService {
         } while (item);
       });
 
-      feedparser.on("end", () => {
+      feedparser.on("end", async () => {
         clearTimeout(timeout);
 
         if (rawArticles.length === 0) {
@@ -497,29 +597,31 @@ export class ArticlesService {
           );
         }
 
-        const mappedArticles: Article[] = rawArticles.map((rawArticle) => {
-          const { flattened } = this.articleParserService.flatten(
-            rawArticle as never,
-            {
-              formatOptions: options.formatOptions,
-              useParserRules: options.useParserRules,
-            }
-          );
+        const mappedArticles: Article[] = await Promise.all(
+          rawArticles.map(async (rawArticle) => {
+            const id = ArticleIDResolver.getIDTypeValue(
+              rawArticle as never,
+              idType
+            );
 
-          const id = ArticleIDResolver.getIDTypeValue(
-            rawArticle as never,
-            idType
-          );
+            const { flattened, injectArticleContent } =
+              await this.articleParserService.flatten(rawArticle as never, {
+                formatOptions: options.formatOptions,
+                useParserRules: options.useParserRules,
+                articleInjections: options.articleInjections,
+              });
 
-          return {
-            flattened: {
-              ...flattened,
-              id,
-              idHash: sha1.copy().update(id).digest("hex"),
-            },
-            raw: rawArticle,
-          };
-        });
+            return {
+              flattened: {
+                ...flattened,
+                id,
+                idHash: sha1.copy().update(id).digest("hex"),
+              },
+              raw: rawArticle,
+              injectArticleContent,
+            };
+          })
+        );
 
         // check for duplicate id hashes
         const idHashes = new Set<string>();
@@ -537,7 +639,6 @@ export class ArticlesService {
               {
                 id: article.flattened.id,
                 idHash,
-                // articles: mappedArticles,
               }
             );
           }

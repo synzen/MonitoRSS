@@ -2,7 +2,11 @@ import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 import { flatten } from "flat";
 import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
-import { Article, UserFeedFormatOptions } from "../shared";
+import {
+  Article,
+  FeedResponseRequestStatus,
+  UserFeedFormatOptions,
+} from "../shared";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { parse, valid } from "node-html-parser";
@@ -151,6 +155,9 @@ import "dayjs/locale/zh-tw";
 import "dayjs/locale/zh";
 import "dayjs/locale/rw";
 import "dayjs/locale/ru";
+import { ArticleInjection } from "./constants/article-injection.constants";
+import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
+import logger from "../shared/utils/logger";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
@@ -160,18 +167,23 @@ type FlattenedArticleWithoutId = Omit<Article["flattened"], "id" | "idHash">;
 
 @Injectable()
 export class ArticleParserService {
-  flatten(
+  constructor(private readonly feedFetcherService: FeedFetcherService) {}
+
+  async flatten(
     input: Record<string, unknown>,
     {
       useParserRules,
       formatOptions,
+      articleInjections,
     }: {
       formatOptions?: UserFeedFormatOptions;
       useParserRules: PostProcessParserRule[] | undefined;
+      articleInjections?: ArticleInjection[];
     }
-  ): {
+  ): Promise<{
     flattened: FlattenedArticleWithoutId;
-  } {
+    injectArticleContent: () => Promise<void>;
+  }> {
     const flattened = flatten(input, {
       delimiter: ARTICLE_FIELD_DELIMITER,
     }) as Record<string, unknown>;
@@ -259,8 +271,60 @@ export class ArticleParserService {
       }
     }
 
+    const postProcessed = this.runPostProcessRules(newRecord, useParserRules);
+
     return {
-      flattened: this.runPostProcessRules(newRecord, useParserRules),
+      flattened: postProcessed,
+      injectArticleContent: async () => {
+        if (!articleInjections?.length) {
+          return;
+        }
+
+        await Promise.allSettled(
+          (articleInjections || [])?.map(async ({ fields, sourceField }) => {
+            const sourceFieldValue = postProcessed[sourceField];
+
+            if (!sourceFieldValue) {
+              return;
+            }
+
+            const res = await this.feedFetcherService.fetch(sourceFieldValue, {
+              executeFetchIfNotInCache: true,
+              retries: 3,
+            });
+
+            if (res.requestStatus !== FeedResponseRequestStatus.Success) {
+              logger.error(`Failed to fetch article injection`, {
+                sourceField,
+                sourceFieldValue,
+                res,
+              });
+
+              return;
+            }
+
+            const { body } = res;
+
+            if (!valid(body)) {
+              return;
+            }
+
+            const parsedBody = parse(body);
+
+            fields.forEach((f) => {
+              const outerHtmlOfElement = parsedBody.querySelector(
+                f.cssSelector
+              )?.outerHTML;
+
+              if (!outerHtmlOfElement) {
+                return;
+              }
+
+              postProcessed[`article::${f.name}`] = outerHtmlOfElement;
+            });
+          })
+        );
+      },
     };
   }
 

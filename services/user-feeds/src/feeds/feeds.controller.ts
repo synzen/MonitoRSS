@@ -17,6 +17,7 @@ import {
 import { z } from "zod";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
+import { ArticlesService } from "../articles/articles.service";
 import { InvalidFeedException } from "../articles/exceptions";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
@@ -67,7 +68,8 @@ export class FeedsController {
     private readonly feedFetcherService: FeedFetcherService,
     private readonly articleFormatterService: ArticleFormatterService,
     private readonly articleFiltersService: ArticleFiltersService,
-    private readonly deliveryRecordService: DeliveryRecordService
+    private readonly deliveryRecordService: DeliveryRecordService,
+    private readonly articlesService: ArticlesService
   ) {}
 
   @Post("filter-validation")
@@ -101,7 +103,7 @@ export class FeedsController {
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     try {
-      const fetchResult = await this.feedFetcherService.fetchFeedArticles(url, {
+      const fetchResult = await this.articlesService.fetchFeedArticles(url, {
         formatOptions: {
           dateFormat: formatter.options.dateFormat,
           dateTimezone: formatter.options.dateTimezone,
@@ -284,14 +286,14 @@ export class FeedsController {
         };
 
         if (!withType.article) {
-          article = await this.feedFetcherService.fetchRandomFeedArticle(
+          article = await this.articlesService.fetchRandomFeedArticle(
             withType.feed.url,
             {
               formatOptions,
             }
           );
         } else {
-          article = await this.feedFetcherService.fetchFeedArticle(
+          article = await this.articlesService.fetchFeedArticle(
             withType.feed.url,
             withType.article.id,
             {
@@ -431,7 +433,7 @@ export class FeedsController {
           dateLocale: withType.feed.formatOptions?.dateLocale,
         };
 
-        const article = await this.feedFetcherService.fetchFeedArticle(
+        const article = await this.articlesService.fetchFeedArticle(
           withType.feed.url,
           withType.article.id,
           {

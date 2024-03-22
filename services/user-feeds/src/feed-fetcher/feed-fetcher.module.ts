@@ -4,7 +4,6 @@ import { ConfigService } from "@nestjs/config";
 import { ClientsModule } from "@nestjs/microservices";
 import { Transport } from "@nestjs/microservices/enums";
 import { join } from "path";
-import { ArticlesModule } from "../articles/articles.module";
 import { FeedFetcherService } from "./feed-fetcher.service";
 
 @Module({
@@ -12,7 +11,6 @@ import { FeedFetcherService } from "./feed-fetcher.service";
   providers: [FeedFetcherService],
   exports: [FeedFetcherService],
   imports: [
-    ArticlesModule,
     ClientsModule.registerAsync({
       clients: [
         {

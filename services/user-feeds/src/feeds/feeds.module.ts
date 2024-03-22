@@ -7,6 +7,7 @@ import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { ArticleFiltersModule } from "../article-filters/article-filters.module";
 import { ArticleFormatterModule } from "../article-formatter/article-formatter.module";
 import { DeliveryRecordModule } from "../delivery-record/delivery-record.module";
+import { ArticlesModule } from "../articles/articles.module";
 
 @Module({
   controllers: [FeedsController],
@@ -17,6 +18,7 @@ import { DeliveryRecordModule } from "../delivery-record/delivery-record.module"
     ArticleFiltersModule,
     ArticleFormatterModule,
     DeliveryRecordModule,
+    ArticlesModule,
   ],
 })
 export class FeedsModule {}

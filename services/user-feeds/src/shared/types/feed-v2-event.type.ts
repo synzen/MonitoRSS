@@ -2,6 +2,10 @@ import { MediumPayload, mediumPayloadSchema } from "./medium-payload.type";
 import { UserFeedDateCheckOptions } from "./user-feed-date-check-options.type";
 import { UserFeedFormatOptions } from "./user-feed-format-options.type";
 import { z } from "zod";
+import {
+  ArticleInjection,
+  articleInjectionSchema,
+} from "../../article-parser/constants";
 
 export interface FeedV2Event {
   timestamp: number;
@@ -14,6 +18,7 @@ export interface FeedV2Event {
       blockingComparisons: string[];
       formatOptions?: UserFeedFormatOptions;
       dateChecks?: UserFeedDateCheckOptions;
+      articleInjections?: ArticleInjection[];
     };
     mediums: MediumPayload[];
     articleDayLimit: number;
@@ -39,6 +44,7 @@ export const feedV2EventSchema = z.object({
       blockingComparisons: z.array(z.string()),
       formatOptions: feedV2EventSchemaFormatOptions.optional(),
       dateChecks: feedV2EventSchemaDateChecks.optional(),
+      articleInjections: z.array(articleInjectionSchema).optional(),
     }),
     mediums: z.array(mediumPayloadSchema).min(1),
     articleDayLimit: z.number(),
