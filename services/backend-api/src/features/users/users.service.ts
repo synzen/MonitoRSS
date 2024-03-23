@@ -60,12 +60,12 @@ export class UsersService {
       .lean();
 
     if (!found) {
-      return await this.userModel.create({
+      await this.userModel.create({
         discordUserId,
         email: data?.email,
       });
     } else if (!found.email && data?.email) {
-      return (await this.userModel.findOneAndUpdate(
+      await this.userModel.updateOne(
         {
           _id: found._id,
         },
@@ -74,20 +74,8 @@ export class UsersService {
             email: data.email,
           },
         }
-      )) as User;
-    } else {
-      return found;
+      );
     }
-  }
-
-  async getOrCreateUserByDiscordId(discordUserId: string): Promise<User> {
-    const user = await this.userModel.findOne({ discordUserId }).lean();
-
-    if (!user) {
-      return this.initDiscordUser(discordUserId);
-    }
-
-    return user;
   }
 
   async getByDiscordId(discordUserId: string): Promise<{
@@ -97,7 +85,13 @@ export class UsersService {
     isOnPatreon?: boolean;
     migratedToPersonalFeeds: boolean;
   } | null> {
-    const user = await this.getOrCreateUserByDiscordId(discordUserId);
+    const user = await this.userModel.findOne({ discordUserId }).lean();
+
+    if (!user) {
+      await this.initDiscordUser(discordUserId);
+
+      return this.getByDiscordId(discordUserId);
+    }
 
     const freeSubscription: SubscriptionDetails = {
       product: {
