@@ -72,6 +72,10 @@ import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-u
 import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
+import {
+  GetUserFromAccessTokenOutput,
+  GetUserFromAccessTokenPipe,
+} from "../users/pipes";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -271,10 +275,12 @@ export class UserFeedsController {
       filters,
       selectProperties,
       skip,
-      formatter,
+      formatter: { articleInjections, ...formatter },
     }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedsPipe())
-    [{ feed }]: GetUserFeedsPipeOutput
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @DiscordAccessToken(GetUserFromAccessTokenPipe)
+    { user }: GetUserFromAccessTokenOutput
   ): Promise<GetUserFeedArticlesOutputDto> {
     const input: GetFeedArticlesInput = {
       limit,
@@ -286,6 +292,9 @@ export class UserFeedsController {
       skip,
       formatter: {
         ...formatter,
+        articleInjections: user.featureFlags?.articleInjections
+          ? articleInjections
+          : undefined,
         options: {
           ...formatter.options,
           dateFormat: feed.formatOptions?.dateFormat,

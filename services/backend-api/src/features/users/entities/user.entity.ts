@@ -23,6 +23,18 @@ export const UserPreferencesSchema =
   SchemaFactory.createForClass(UserPreferences);
 
 @Schema({
+  timestamps: false,
+  _id: false,
+})
+export class UserFeatureFlags {
+  @Prop()
+  articleInjections?: boolean;
+}
+
+export const UserFeatureFlagsSchema =
+  SchemaFactory.createForClass(UserFeatureFlags);
+
+@Schema({
   timestamps: true,
 })
 export class User {
@@ -45,6 +57,13 @@ export class User {
     default: {},
   })
   preferences?: UserPreferences;
+
+  @Prop({
+    required: false,
+    type: UserFeatureFlagsSchema,
+    default: {},
+  })
+  featureFlags?: UserFeatureFlags;
 
   @Prop({
     required: false,
