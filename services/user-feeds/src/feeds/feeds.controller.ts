@@ -157,6 +157,7 @@ export class FeedsController {
         customPlaceholders: formatter.customPlaceholders,
       });
 
+      // must be done before discord medium format
       await Promise.all(matchedArticles.map((a) => a.injectArticleContent()));
 
       return {

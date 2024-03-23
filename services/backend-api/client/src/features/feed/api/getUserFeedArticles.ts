@@ -2,7 +2,7 @@ import { array, boolean, InferType, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { GetArticlesFilterReturnType } from "../constants";
 import { UserFeedArticleRequestStatus } from "../types";
-import { CustomPlaceholder } from "../../../types";
+import { ArticleInjection, CustomPlaceholder } from "../../../types";
 
 export interface GetUserFeedArticlesInput {
   feedId: string;
@@ -20,6 +20,7 @@ export interface GetUserFeedArticlesInput {
     };
     formatter: {
       customPlaceholders?: CustomPlaceholder[] | null;
+      articleInjections?: ArticleInjection[] | null;
       options: {
         formatTables: boolean;
         stripImages: boolean;

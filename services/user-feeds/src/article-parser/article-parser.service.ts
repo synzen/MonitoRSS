@@ -5,6 +5,7 @@ import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
 import {
   Article,
   FeedResponseRequestStatus,
+  INJECTED_ARTICLE_PLACEHOLDER_PREFIX,
   UserFeedFormatOptions,
 } from "../shared";
 import timezone from "dayjs/plugin/timezone";
@@ -285,6 +286,8 @@ export class ArticleParserService {
             const sourceFieldValue = postProcessed[sourceField];
 
             if (!sourceFieldValue) {
+              console.log("No source field value found", { sourceField });
+
               return;
             }
 
@@ -306,6 +309,8 @@ export class ArticleParserService {
             const { body } = res;
 
             if (!valid(body)) {
+              console.log("Invalid body", { body });
+
               return;
             }
 
@@ -317,10 +322,20 @@ export class ArticleParserService {
               )?.outerHTML;
 
               if (!outerHtmlOfElement) {
+                console.log("No outerHtmlOfElement found", { f });
+
                 return;
               }
 
-              postProcessed[`article::${f.name}`] = outerHtmlOfElement;
+              postProcessed[`${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${f.name}`] =
+                outerHtmlOfElement;
+
+              console.log("Injected article content", {
+                sourceField,
+                sourceFieldValue,
+                f,
+                outerHtmlOfElement,
+              });
             });
           })
         );

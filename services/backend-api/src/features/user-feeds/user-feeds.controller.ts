@@ -580,6 +580,7 @@ export class UserFeedsController {
         healthStatus: feed.healthStatus,
         passingComparisons: feed.passingComparisons,
         blockingComparisons: feed.blockingComparisons,
+        articleInjections: feed.articleInjections,
         createdAt: feed.createdAt.toISOString(),
         updatedAt: feed.updatedAt.toISOString(),
         formatOptions: feed.formatOptions,

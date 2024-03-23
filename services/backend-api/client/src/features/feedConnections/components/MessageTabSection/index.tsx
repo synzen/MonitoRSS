@@ -40,7 +40,7 @@ import { FaExpandAlt } from "react-icons/fa";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
-import { useUserFeedArticles } from "../../../feed/hooks";
+import { useUserFeed, useUserFeedArticles } from "../../../feed/hooks";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
@@ -73,6 +73,9 @@ export const MessageTabSection = ({
   include,
   guildId,
 }: Props) => {
+  const { feed } = useUserFeed({
+    feedId,
+  });
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
   const [placeholderTableSearch, setPlaceholderTableSearch] = useState<string>("");
@@ -88,13 +91,18 @@ export const MessageTabSection = ({
       limit: 1,
       skip: 0,
       selectProperties: ["*"],
-      formatter: articleFormatter,
+      formatter: {
+        ...articleFormatter,
+        articleInjections: feed?.articleInjections,
+      },
       filters: {
         articleId: selectedArticleId,
       },
       random: !selectedArticleId,
     },
+    disabled: !feed,
   });
+  console.log("🚀 ~ feed?.articleInjections:", feed?.articleInjections);
 
   const firstArticle = userFeedArticles?.result.articles[0];
   const requestStatus = userFeedArticles?.result.requestStatus;
