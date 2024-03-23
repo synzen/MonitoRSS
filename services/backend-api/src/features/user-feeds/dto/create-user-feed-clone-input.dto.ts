@@ -13,6 +13,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { CustomPlaceholderDto } from "../../../common";
+import { ArticleInjectionDto } from "../../../common/types/article-injection.type";
 import { GetFeedArticlesFilterReturnType } from "../types";
 
 class FiltersDto {
@@ -72,6 +73,14 @@ class FormatterDto {
   @Type(() => CustomPlaceholderDto)
   @ValidateIf((v) => v.customPlaceholders !== null)
   customPlaceholders?: CustomPlaceholderDto[] | null;
+
+  @IsArray()
+  @IsObject({ each: true })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ArticleInjectionDto)
+  @ValidateIf((v) => v.articleInjections !== null)
+  articleInjections?: ArticleInjectionDto[] | null;
 }
 
 export class GetUserFeedArticlesInputDto {

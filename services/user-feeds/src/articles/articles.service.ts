@@ -19,8 +19,6 @@ import logger from "../shared/utils/logger";
 import { PostProcessParserRule } from "../article-parser/constants";
 import { createHash } from "crypto";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
-import { FeedResponseRequestStatus } from "../shared";
-import { parse, valid } from "node-html-parser";
 import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
 import { ArticleInjection } from "../article-parser/constants/article-injection.constants";
@@ -30,7 +28,6 @@ const sha1 = createHash("sha1");
 interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
   articleInjections?: Array<{
-    articleId: string;
     sourceField: string;
     fields: Array<{
       name: string;

@@ -21,6 +21,13 @@ export interface GetArticlesInput {
       dateLocale: string | undefined;
       disableImageLinkPreviews: boolean;
     };
+    articleInjections?: Array<{
+      sourceField: string;
+      fields: Array<{
+        name: string;
+        cssSelector: string;
+      }>;
+    }> | null;
     customPlaceholders?: CustomPlaceholderDto[] | null;
   };
 }

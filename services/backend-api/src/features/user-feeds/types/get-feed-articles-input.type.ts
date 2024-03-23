@@ -15,6 +15,13 @@ export interface GetFeedArticlesInput {
   };
   formatter: {
     customPlaceholders?: Array<CustomPlaceholderDto> | null;
+    articleInjections?: Array<{
+      sourceField: string;
+      fields: Array<{
+        name: string;
+        cssSelector: string;
+      }>;
+    }> | null;
     options: {
       stripImages: boolean;
       formatTables: boolean;

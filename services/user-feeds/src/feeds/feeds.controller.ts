@@ -110,6 +110,7 @@ export class FeedsController {
           disableImageLinkPreviews: formatter.options.disableImageLinkPreviews,
           dateLocale: formatter.options.dateLocale,
         },
+        articleInjections: formatter.articleInjections || [],
       });
 
       if (!fetchResult) {
@@ -155,6 +156,8 @@ export class FeedsController {
         random,
         customPlaceholders: formatter.customPlaceholders,
       });
+
+      await Promise.all(matchedArticles.map((a) => a.injectArticleContent()));
 
       return {
         result: {

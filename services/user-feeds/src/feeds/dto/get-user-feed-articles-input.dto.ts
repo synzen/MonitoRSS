@@ -17,6 +17,8 @@ import {
 import { GetUserFeedArticlesFilterReturnType } from "../constants";
 import { GetUserFeedArticlesFormatterDto } from "./shared";
 import { CustomPlaceholder } from "../../article-formatter/types/format-options";
+import { ArticleInjection } from "../../article-parser/constants";
+import { ArticleInjectionDto } from "../../article-formatter/types";
 export class CustomPlaceholderStepDto {
   @IsString()
   @IsNotEmpty()
@@ -41,6 +43,14 @@ class FormatterDto {
   @Type(() => CustomPlaceholder)
   @ValidateIf((v) => v.customPlaceholders !== null)
   customPlaceholders?: CustomPlaceholder[] | null;
+
+  @IsArray()
+  @IsObject({ each: true })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ArticleInjectionDto)
+  @ValidateIf((v) => v.articleInjections !== null)
+  articleInjections?: ArticleInjectionDto[] | null;
 }
 
 class FiltersDto {
