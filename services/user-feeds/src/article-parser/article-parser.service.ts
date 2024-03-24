@@ -323,7 +323,7 @@ export class ArticleParserService {
                 return;
               }
 
-              const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${f.name}`;
+              const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${f.name}`;
 
               targetRecord[key] = outerHtmlOfElement;
 
