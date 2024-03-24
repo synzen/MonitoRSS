@@ -323,8 +323,36 @@ export class ArticleParserService {
                 return;
               }
 
-              targetRecord[`${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${f.name}`] =
-                outerHtmlOfElement;
+              const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${f.name}`;
+
+              targetRecord[key] = outerHtmlOfElement;
+
+              const { images: imageList, anchors: anchorList } =
+                this.extractExtraInfo(outerHtmlOfElement);
+
+              if (imageList.length) {
+                for (let i = 0; i < imageList.length; i++) {
+                  const image = imageList[i];
+
+                  newRecord[
+                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}extracted::${key}::image${
+                      i + 1
+                    }`
+                  ] = image;
+                }
+              }
+
+              if (anchorList.length) {
+                for (let i = 0; i < anchorList.length; i++) {
+                  const anchor = anchorList[i];
+
+                  newRecord[
+                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}extracted::${key}::anchor${
+                      i + 1
+                    }`
+                  ] = anchor;
+                }
+              }
             });
           })
         );
