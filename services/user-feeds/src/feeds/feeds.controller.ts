@@ -135,6 +135,10 @@ export class FeedsController {
         };
       }
 
+      await Promise.all(
+        fetchResult.articles.map((a) => a.injectArticleContent(a.flattened))
+      );
+
       const {
         articles: matchedArticles,
         properties,
@@ -156,9 +160,6 @@ export class FeedsController {
         random,
         customPlaceholders: formatter.customPlaceholders,
       });
-
-      // must be done before discord medium format
-      await Promise.all(matchedArticles.map((a) => a.injectArticleContent()));
 
       return {
         result: {

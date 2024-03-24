@@ -274,11 +274,9 @@ export class ArticlesService {
       );
     }
 
-    await Promise.all(
-      articlesPostDateCheck.map(({ injectArticleContent }) =>
-        injectArticleContent()
-      )
-    );
+    for (const a of articlesPostDateCheck) {
+      await a.injectArticleContent(a.flattened);
+    }
 
     return articlesPostDateCheck;
   }

@@ -183,7 +183,9 @@ export class ArticleParserService {
     }
   ): Promise<{
     flattened: FlattenedArticleWithoutId;
-    injectArticleContent: () => Promise<void>;
+    injectArticleContent: (
+      targetRecord: Record<string, string>
+    ) => Promise<void>;
   }> {
     const flattened = flatten(input, {
       delimiter: ARTICLE_FIELD_DELIMITER,
@@ -276,18 +278,16 @@ export class ArticleParserService {
 
     return {
       flattened: postProcessed,
-      injectArticleContent: async () => {
+      injectArticleContent: async (targetRecord: Record<string, string>) => {
         if (!articleInjections?.length) {
           return;
         }
 
         await Promise.allSettled(
           (articleInjections || [])?.map(async ({ fields, sourceField }) => {
-            const sourceFieldValue = postProcessed[sourceField];
+            const sourceFieldValue = targetRecord[sourceField];
 
             if (!sourceFieldValue) {
-              console.log("No source field value found", { sourceField });
-
               return;
             }
 
@@ -309,8 +309,6 @@ export class ArticleParserService {
             const { body } = res;
 
             if (!valid(body)) {
-              console.log("Invalid body", { body });
-
               return;
             }
 
@@ -322,20 +320,11 @@ export class ArticleParserService {
               )?.outerHTML;
 
               if (!outerHtmlOfElement) {
-                console.log("No outerHtmlOfElement found", { f });
-
                 return;
               }
 
-              postProcessed[`${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${f.name}`] =
+              targetRecord[`${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${f.name}`] =
                 outerHtmlOfElement;
-
-              console.log("Injected article content", {
-                sourceField,
-                sourceFieldValue,
-                f,
-                outerHtmlOfElement,
-              });
             });
           })
         );

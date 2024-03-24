@@ -102,7 +102,6 @@ export const MessageTabSection = ({
     },
     disabled: !feed,
   });
-  console.log("🚀 ~ feed?.articleInjections:", feed?.articleInjections);
 
   const firstArticle = userFeedArticles?.result.articles[0];
   const requestStatus = userFeedArticles?.result.requestStatus;
