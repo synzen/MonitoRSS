@@ -125,6 +125,20 @@ services:
     volumes:
       - ./services/user-feeds:/usr/src/app
       - /usr/src/app/node_modules/
+    command: npm run start:local
+    env_file:
+      - ./.env.local
+    environment:
+      - LOG_LEVEL=debug
+      - USER_FEEDS_START_TARGET=service
+
+  user-feeds-api:
+    extends:
+      file: docker-compose.base.yml
+      service: user-feeds-service
+    volumes:
+      - ./services/user-feeds:/usr/src/app
+      - /usr/src/app/node_modules/
     ports:
       - "5001:5000"
     command: npm run start:local
@@ -132,6 +146,7 @@ services:
       - ./.env.local
     environment:
       - LOG_LEVEL=debug
+      - USER_FEEDS_START_TARGET=api
 
   user-feeds-postgres-migration:
     extends:
@@ -182,6 +197,7 @@ services:
       - ./.env.local
     environment:
       - BACKEND_API_NODE_ENV=local
+      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
     command: npm run start:local
     networks:
       - monitorss-default
