@@ -14,7 +14,7 @@ export const UserFeedSchema = object({
   }).optional(),
   passingComparisons: array(string().required()).optional().default(undefined),
   blockingComparisons: array(string().required()).optional().default(undefined),
-  articleInjections: array(ArticleInjectionSchema).optional().nullable().default([]),
+  articleInjections: array(ArticleInjectionSchema.required()).nullable(),
   createdAt: string()
     .transform((value) => (value ? new Date(value).toISOString() : value))
     .required(),
