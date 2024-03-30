@@ -5,6 +5,7 @@
 /* eslint-disable no-useless-escape */
 import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
+import hljs from "highlight.js";
 import Emoji from "../../../constants/emojis";
 
 // this is mostly translated from discord's client,
