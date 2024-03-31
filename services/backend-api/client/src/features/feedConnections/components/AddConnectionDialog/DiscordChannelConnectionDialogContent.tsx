@@ -128,6 +128,11 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                       />
                     )}
                   />
+                  <FormHelperText>
+                    Only servers where you have server-wide Manage Channels permission will appear.
+                    If you don&apos;t have this permission, you may ask someone who does to add the
+                    feed and share it with you.
+                  </FormHelperText>
                 </FormControl>
                 <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel>

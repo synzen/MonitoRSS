@@ -150,6 +150,11 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                         />
                       )}
                     />
+                    <FormHelperText>
+                      Only servers where you have server-wide Manage Channels permission will
+                      appear. If you don&apos;t have this permission, you may ask someone who does
+                      to add the feed and share it with you.
+                    </FormHelperText>
                   </FormControl>
                   <FormControl isInvalid={!!errors.channelId} isRequired>
                     <FormLabel>Channel</FormLabel>
@@ -223,7 +228,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                     )}
                     {!errors.threadId && (
                       <FormHelperText>
-                        If enabled, all messages will go into a specific thread. Only unlocked
+                        If specified, all messages will go into a specific thread. Only unlocked
                         (unarchived) threads are listed.
                       </FormHelperText>
                     )}

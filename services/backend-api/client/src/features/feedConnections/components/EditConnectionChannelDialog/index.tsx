@@ -91,7 +91,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
         <ModalBody>
           <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
             <Stack spacing={4}>
-              <FormControl isInvalid={!!errors.name}>
+              <FormControl isInvalid={!!errors.name} isRequired>
                 <FormLabel>
                   {t("features.feed.components.addDiscordChannelConnectionDialog.formNameLabel")}
                 </FormLabel>
@@ -108,7 +108,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                   )}
                 </FormHelperText>
               </FormControl>
-              <FormControl isInvalid={!!errors.serverId}>
+              <FormControl isInvalid={!!errors.serverId} isRequired>
                 <FormLabel>
                   {t(
                     "features.feed.components" +
@@ -126,8 +126,13 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                     />
                   )}
                 />
+                <FormHelperText>
+                  Only servers where you have server-wide Manage Channels permission will appear. If
+                  you don&apos;t have this permission, you may ask someone who does to add the feed
+                  and share it with you.
+                </FormHelperText>
               </FormControl>
-              <FormControl isInvalid={!!errors.channelId}>
+              <FormControl isInvalid={!!errors.channelId} isRequired>
                 <FormLabel>
                   {t(
                     "features.feed.components" +

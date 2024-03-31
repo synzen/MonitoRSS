@@ -51,10 +51,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
         value={value}
       />
       {(!serverId || !error) && (
-        <FormHelperText>
-          If you don&apos;t see the channel you want, make sure the bot has the necessary
-          permissions to view the channel.
-        </FormHelperText>
+        <FormHelperText>Only channels that the bot can view will appear.</FormHelperText>
       )}
       {serverId && error && <FormErrorMessage>{error?.message}</FormErrorMessage>}
     </Box>

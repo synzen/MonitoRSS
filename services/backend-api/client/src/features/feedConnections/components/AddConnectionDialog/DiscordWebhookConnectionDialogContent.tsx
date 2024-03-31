@@ -260,7 +260,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                     )}
                     <Stack>
                       <FormHelperText>
-                        If enabled, all messages will go into a specific thread. Only unlocked
+                        If specified, all messages will go into a specific thread. Only unlocked
                         (unarchived) threads are listed.
                       </FormHelperText>
                       {discordWebhooksError && (

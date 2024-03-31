@@ -175,10 +175,9 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     <FormErrorMessage>{errors.serverId.message}</FormErrorMessage>
                   )}
                   <FormHelperText>
-                    {t(
-                      "features.feed.components" +
-                        ".addDiscordWebhookConnectionDialog.formServerDescription"
-                    )}
+                    Only servers where you have server-wide Manage Channels permission will appear.
+                    If you don&apos;t have this permission, you may ask someone who does to add the
+                    feed and share it with you.
                   </FormHelperText>
                 </FormControl>
                 <FormControl isInvalid={!!errors.applicationWebhook?.channelId} isRequired>
@@ -231,7 +230,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   )}
                   {!errors.applicationWebhook?.threadId && (
                     <FormHelperText>
-                      If enabled, all messages will go into a specific thread. Only unlocked
+                      If specified, all messages will go into a specific thread. Only unlocked
                       (unarchived) threads are listed.
                     </FormHelperText>
                   )}
