@@ -104,6 +104,8 @@ export class PaddleService {
       headers: {
         ...data?.headers,
         Authorization: `Bearer ${this.PADDLE_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
     });
 
