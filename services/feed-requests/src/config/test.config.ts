@@ -11,6 +11,7 @@ export function testConfig(): EnvironmentVariables {
     FEED_REQUESTS_REDIS_URI: 'redis://localhost:6379',
     FEED_REQUESTS_MAX_FAIL_ATTEMPTS: 11,
     FEED_REQUESTS_REQUEST_TIMEOUT_MS: 15000,
+    FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: 3,
   };
 
   validateConfig(vals);

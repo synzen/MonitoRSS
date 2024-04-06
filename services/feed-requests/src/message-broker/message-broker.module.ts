@@ -28,7 +28,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
               default: true,
             },
             fetchBatch: {
-              prefetchCount: 3,
+              prefetchCount: configValues.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT,
               default: false,
             },
           },

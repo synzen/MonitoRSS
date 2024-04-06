@@ -77,6 +77,9 @@ export class EnvironmentVariables {
 
   @IsNumber()
   FEED_REQUESTS_REQUEST_TIMEOUT_MS!: number;
+
+  @IsNumber()
+  FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT!: number;
 }
 
 export function validateConfig(

@@ -53,6 +53,9 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_REQUEST_TIMEOUT_MS: Number(
       process.env.FEED_REQUESTS_REQUEST_TIMEOUT_MS || '15000',
     ),
+    FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: Number(
+      process.env.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT || '3',
+    ),
   };
 
   setGlobalDispatcher(
