@@ -1,4 +1,5 @@
 /// <reference types="vitest" />
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig, ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
@@ -27,7 +28,10 @@ const proxyOptionsByEnv: Record<string, Record<string, ProxyOptions>> = {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), sentryVitePlugin({
+    org: "monitorss-t0",
+    project: "javascript-react"
+  })],
   publicDir: "./public",
   resolve: {
     alias: {

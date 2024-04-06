@@ -40,7 +40,7 @@ interface Props {
     name: string;
     prices: {
       id: string;
-      interval: "month" | "year";
+      interval: "month" | "year" | "day" | "week";
       formattedPrice: string;
       currencyCode: string;
     }[];

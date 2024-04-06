@@ -4,8 +4,8 @@ import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
-import { datadogLogs } from "@datadog/browser-logs";
 import { BrowserRouter } from "react-router-dom";
+import * as Sentry from "@sentry/react";
 import theme from "./utils/theme";
 import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
@@ -17,14 +17,20 @@ async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
     await setupMockBrowserWorker().then((worker) => worker.start());
   } else if (import.meta.env.MODE !== "development") {
-    const DD_CLIENT_KEY = process.env.REACT_APP_DD_CLIENT_KEY;
+    const DSN = import.meta.env.VITE_SENTRY_DSN;
 
-    if (DD_CLIENT_KEY) {
-      datadogLogs.init({
-        clientToken: DD_CLIENT_KEY,
-        forwardErrorsToLogs: true,
-        sessionSampleRate: 100,
-        forwardConsoleLogs: ["error"],
+    if (DSN) {
+      Sentry.init({
+        dsn: DSN,
+        integrations: [
+          Sentry.replayIntegration({
+            maskAllText: false,
+            blockAllMedia: false,
+          }),
+        ],
+        // Session Replay
+        replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+        replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
       });
     }
   }

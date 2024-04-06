@@ -33,7 +33,7 @@ export function usePaddleCheckout(props?: Props) {
       name: string;
       prices: Array<{
         id: string;
-        interval: "month" | "year";
+        interval: "month" | "year" | "day" | "week";
         formattedPrice: string;
         currencyCode: string;
       }>;
@@ -77,7 +77,7 @@ export function usePaddleCheckout(props?: Props) {
           name: string;
           prices: Array<{
             id: string;
-            interval: "month" | "year";
+            interval: "month" | "year" | "day" | "week";
             formattedPrice: string;
             currencyCode: string;
           }>;
