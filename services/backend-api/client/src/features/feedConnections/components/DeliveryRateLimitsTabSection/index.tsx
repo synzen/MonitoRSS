@@ -146,6 +146,7 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
                       render={({ field }) => (
                         <NumberInput
                           min={0}
+                          max={10000}
                           {...field}
                           onChange={(str, num) => field.onChange(num)}
                         >
@@ -177,6 +178,7 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
                         return (
                           <NumberInput
                             min={0}
+                            max={2592000}
                             {...field}
                             onChange={(str, num) => field.onChange(num)}
                           >
