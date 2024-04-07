@@ -1074,12 +1074,18 @@ export class UserFeedsService {
   }
 
   async enforceUserFeedLimits(
-    supporterLimits: Array<{ discordUserId: string; maxUserFeeds: number }>
+    supporterLimits: Array<{
+      discordUserId: string;
+      maxUserFeeds: number;
+      refreshRateSeconds: number;
+    }>
   ) {
     const supporterDiscordUserIds = supporterLimits.map(
       ({ discordUserId }) => discordUserId
     );
     const defaultMaxUserFeeds = this.supportersService.defaultMaxUserFeeds;
+
+    await this.enforceRefreshRates(supporterLimits);
 
     // Handle non-supporter feed disabling first
     const usersToDisable = await this.userFeedModel
@@ -1221,16 +1227,6 @@ export class UserFeedsService {
       ])
       .cursor();
 
-    // if (usersToEnable.length > 0) {
-    //   logger.info(
-    //     `Enabling feeds of ${usersToEnable.length} invites` +
-    //       ` (using default limit: ${defaultMaxUserFeeds})`,
-    //     {
-    //       usersToEnable,
-    //     }
-    //   );
-    // }
-
     for await (const { _id: discordUserId, enabledCount } of usersToEnable) {
       const countToEnable = defaultMaxUserFeeds - enabledCount;
 
@@ -1370,6 +1366,37 @@ export class UserFeedsService {
         })
       );
     }
+  }
+
+  private async enforceRefreshRates(
+    supporterLimits: Array<{
+      discordUserId: string;
+      maxUserFeeds: number;
+      refreshRateSeconds: number;
+    }>
+  ) {
+    const supporterRefreshRate =
+      this.supportersService.defaultSupporterRefreshRateSeconds;
+
+    const supporterDiscordUserIds = supporterLimits
+      .filter(
+        ({ refreshRateSeconds }) => refreshRateSeconds === supporterRefreshRate
+      )
+      .map(({ discordUserId }) => discordUserId);
+
+    await this.userFeedModel.updateMany(
+      {
+        userRefreshRateSeconds: supporterRefreshRate,
+        "user.discordUserId": {
+          $nin: supporterDiscordUserIds,
+        },
+      },
+      {
+        $unset: {
+          userRefreshRateSeconds: "",
+        },
+      }
+    );
   }
 
   private async checkUrlIsValid(url: string) {

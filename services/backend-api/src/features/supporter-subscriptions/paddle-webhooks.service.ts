@@ -324,13 +324,14 @@ export class PaddleWebhooksService {
 
   private async enforceFeedLimit({ discordUserId }: { discordUserId: string }) {
     try {
-      const { maxUserFeeds } =
+      const { maxUserFeeds, refreshRateSeconds } =
         await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
       await this.userFeedsService.enforceUserFeedLimits([
         {
           discordUserId,
           maxUserFeeds,
+          refreshRateSeconds,
         },
       ]);
     } catch (err) {
