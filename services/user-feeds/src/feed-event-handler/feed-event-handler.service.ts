@@ -14,7 +14,11 @@ import {
   FeedRejectedDisabledCode,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
-import { MikroORM, UseRequestContext } from "@mikro-orm/core";
+import {
+  MikroORM,
+  UniqueConstraintViolationException,
+  UseRequestContext,
+} from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
@@ -447,10 +451,20 @@ export class FeedEventHandlerService {
       try {
         await this.orm.em.flush();
       } catch (err) {
-        logger.error(`Failed to flush ORM while handling feed event`, {
-          event,
-          error: (err as Error).stack,
-        });
+        if (err instanceof UniqueConstraintViolationException) {
+          logger.warn(
+            `Failed to flush ORM due to unique constraint violation`,
+            {
+              event,
+              error: (err as Error).stack,
+            }
+          );
+        } else {
+          logger.error(`Failed to flush ORM while handling feed event`, {
+            event,
+            error: (err as Error).stack,
+          });
+        }
       }
 
       await this.responseHashService.set({
