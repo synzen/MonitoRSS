@@ -186,6 +186,67 @@ describe("handle-schedule", () => {
       expect(urls).toEqual([{ _id: "new-york-times.com" }]);
     });
 
+    it("returns the feeds with the matching user refresh rate if it exists", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
+          userRefreshRateSeconds: service.defaultRefreshRateSeconds + 1,
+        },
+        {
+          title: "feed-title-2",
+          url: "yahoo-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: sampleConnections,
+          userRefreshRateSeconds: service.defaultRefreshRateSeconds + 2,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
+        },
+      ]);
+
+      const urls = await service.getUrlsQueryMatchingRefreshRate(
+        service.defaultRefreshRateSeconds + 1
+      );
+
+      expect(urls).toEqual([{ _id: "new-york-times.com" }]);
+    });
+
+    it("returns the feeds with the regular refresh rate if user refresh rate does not exists", async () => {
+      await userFeedModel.create([
+        {
+          title: "feed-title",
+          url: "new-york-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
+          userRefreshRateSeconds: service.defaultRefreshRateSeconds + 1,
+        },
+        {
+          title: "feed-title-2",
+          url: "yahoo-times.com",
+          user: {
+            discordUserId: "user-id",
+          },
+          connections: sampleConnections,
+          refreshRateSeconds: service.defaultRefreshRateSeconds,
+        },
+      ]);
+
+      const urls = await service.getUrlsQueryMatchingRefreshRate(
+        service.defaultRefreshRateSeconds
+      );
+
+      expect(urls).toEqual([{ _id: "yahoo-times.com" }]);
+    });
+
     it("works with alternate refresh rate", async () => {
       await userFeedModel.create([
         {

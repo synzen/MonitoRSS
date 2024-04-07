@@ -58,15 +58,16 @@ export function getCommonFeedAggregateStages({
       $match: query,
     },
     {
-      $addFields: {
-        useRefreshRate: {
-          $ifNull: ["$userRefreshRateSeconds", "$refreshRateSeconds"],
-        },
-      },
-    },
-    {
       $match: {
-        useRefreshRate: refreshRateSeconds,
+        $or: [
+          {
+            userRefreshRateSeconds: null,
+            refreshRateSeconds: refreshRateSeconds,
+          },
+          {
+            userRefreshRateSeconds: refreshRateSeconds,
+          },
+        ],
       },
     },
     {

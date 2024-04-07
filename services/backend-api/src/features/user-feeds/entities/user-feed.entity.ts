@@ -163,6 +163,18 @@ UserFeedSchema.index(
   }
 );
 
+UserFeedSchema.index({
+  feedRequestLookupKey: 1,
+  disabledCode: 1,
+  "connections.discordChannels.disabledCode": 1,
+  url: 1,
+});
+
+UserFeedSchema.index({
+  userRefreshRateSeconds: 1,
+  refreshRateSeconds: 1,
+});
+
 export const UserFeedFeature: ModelDefinition = {
   name: UserFeed.name,
   schema: UserFeedSchema,
