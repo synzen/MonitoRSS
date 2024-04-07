@@ -556,10 +556,13 @@ export class ArticlesService {
       }, options?.timeout || 10000);
 
       feedparser.on("error", (err: Error) => {
-        if (err.message === "Not a feed") {
+        if (
+          err.message === "Not a feed" ||
+          err.message.startsWith("Unexpected end")
+        ) {
           reject(new InvalidFeedException("Invalid feed"));
         } else {
-          reject(err.message);
+          reject(err);
         }
       });
 
