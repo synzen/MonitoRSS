@@ -77,9 +77,9 @@ export class FeedEventHandlerService {
       }
     }
 
-    try {
-      const cacheKey = `processing-${event.data.feed.id}`;
+    const cacheKey = `processing-${event.data.feed.id}`;
 
+    try {
       const oldVal = await this.cacheStorageService.set({
         key: cacheKey,
         body: "1",
@@ -100,8 +100,6 @@ export class FeedEventHandlerService {
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
       await this.handleV2EventWithDb(event);
 
-      await this.cacheStorageService.del(cacheKey);
-
       this.logEventFinish(event, {
         success: true,
       });
@@ -109,6 +107,8 @@ export class FeedEventHandlerService {
       this.logEventFinish(event, {
         success: false,
       });
+    } finally {
+      await this.cacheStorageService.del(cacheKey);
     }
   }
 
