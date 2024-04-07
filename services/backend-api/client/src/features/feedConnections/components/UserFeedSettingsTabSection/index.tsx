@@ -451,13 +451,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                     isDisabled={!user}
                   >
                     <Stack>
-                      {user?.refreshRates.map((r) => {
+                      {feed?.refreshRateOptions.map((r) => {
                         const { disabledCode } = r;
 
                         let reason: string = "";
 
                         if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
-                          reason = "(only available for higher supporter tiers)";
+                          reason = "(only available if feed owner has a higher supporter tier)";
                         }
 
                         const displayDuration = formatRefreshRateSeconds(r.rateSeconds);

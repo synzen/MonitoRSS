@@ -15,30 +15,21 @@ import {
   UseGuards,
   ValidationPipe,
 } from "@nestjs/common";
-import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { NestedFieldPipe } from "../../common/pipes/nested-field.pipe";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
-import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { FastifyReply } from "fastify";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
-import {
-  CreateDiscordChannelConnectionOutputDto,
-  CreateDiscordWebhookConnectionOutputDto,
-} from "../feed-connections/dto";
+
 import { AddDiscordChannelConnectionFilter } from "../feed-connections/filters";
-import { FeedConnectionType } from "../feeds/constants";
 import {
   FeedExceptionFilter,
   UpdateUserFeedsExceptionFilter,
 } from "../feeds/filters";
 import { SupportersService } from "../supporters/supporters.service";
-import {
-  UserFeedManagerStatus,
-  UserFeedManagerType,
-} from "../user-feed-management-invites/constants";
+import { UserFeedManagerType } from "../user-feed-management-invites/constants";
 import {
   CreateUserFeedCloneInput,
   CreateUserFeedInputDto,
@@ -103,7 +94,7 @@ export class UserFeedsController {
       }
     );
 
-    return this.formatFeedForResponse(result, discordUserId);
+    return this.userFeedsService.formatForHttpResponse(result, discordUserId);
   }
 
   @Patch()
@@ -157,7 +148,10 @@ export class UserFeedsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
-    return await this.formatFeedForResponse(feed, discordUserId);
+    return await this.userFeedsService.formatForHttpResponse(
+      feed,
+      discordUserId
+    );
   }
 
   @Post("/:feedId/clone")
@@ -337,7 +331,10 @@ export class UserFeedsController {
       feed._id.toHexString()
     )) as UserFeed;
 
-    return this.formatFeedForResponse(updatedFeed, discordUserId);
+    return this.userFeedsService.formatForHttpResponse(
+      updatedFeed,
+      discordUserId
+    );
   }
 
   @Post("/:feedId/manual-request")
@@ -426,7 +423,7 @@ export class UserFeedsController {
       }
     )) as UserFeed;
 
-    return this.formatFeedForResponse(updated, discordUserId);
+    return this.userFeedsService.formatForHttpResponse(updated, discordUserId);
   }
 
   @Post("/:feedId/restore-to-legacy")
@@ -488,113 +485,5 @@ export class UserFeedsController {
     [{ feed }]: GetUserFeedsPipeOutput
   ) {
     await this.userFeedsService.deleteFeedById(feed._id.toHexString());
-  }
-
-  private async formatFeedForResponse(
-    feed: UserFeed,
-    discordUserId: string
-  ): Promise<GetUserFeedOutputDto> {
-    const discordChannelConnections: CreateDiscordChannelConnectionOutputDto[] =
-      feed.connections.discordChannels.map((con) => ({
-        id: con.id.toHexString(),
-        name: con.name,
-        key: FeedConnectionType.DiscordChannel,
-        details: {
-          ...con.details,
-          embeds: convertToNestedDiscordEmbed(con.details.embeds),
-          webhook: con.details.webhook
-            ? {
-                id: con.details.webhook.id,
-                guildId: con.details.webhook.guildId,
-                iconUrl: con.details.webhook.iconUrl,
-                name: con.details.webhook.name,
-                type: con.details.webhook.type,
-                threadId: con.details.webhook.threadId,
-                isApplicationOwned: con.details.webhook.isApplicationOwned,
-                channelId: con.details.webhook.channelId,
-              }
-            : undefined,
-        },
-        filters: con.filters,
-        rateLimits: con.rateLimits,
-        disabledCode: con.disabledCode,
-        splitOptions: con.splitOptions,
-        mentions: con.mentions,
-        customPlaceholders: con.customPlaceholders?.map((c) => ({
-          ...c,
-          steps: c.steps.map((s) => {
-            if (s.type === CustomPlaceholderStepType.Regex) {
-              return {
-                ...s,
-                regexSearchFlags: s.regexSearchFlags || "gmi", // default is set in user-feeds-service
-              };
-            } else {
-              return s;
-            }
-          }),
-        })),
-      }));
-
-    const discordWebhookConnections: CreateDiscordWebhookConnectionOutputDto[] =
-      feed.connections.discordWebhooks.map((con) => ({
-        id: con.id.toHexString(),
-        name: con.name,
-        key: FeedConnectionType.DiscordWebhook,
-        details: {
-          ...con.details,
-          embeds: convertToNestedDiscordEmbed(con.details.embeds),
-        },
-        filters: con.filters,
-        rateLimits: con.rateLimits,
-        disabledCode: con.disabledCode,
-        splitOptions: con.splitOptions,
-        mentions: con.mentions,
-        customPlaceholders: con.customPlaceholders,
-      }));
-
-    const isOwner = feed.user.discordUserId === discordUserId;
-
-    const userInviteId = feed.shareManageOptions?.invites?.find(
-      (u) =>
-        u.discordUserId === discordUserId &&
-        u.status === UserFeedManagerStatus.Accepted
-    )?.id;
-
-    return {
-      result: {
-        id: feed._id.toHexString(),
-        allowLegacyReversion: feed.allowLegacyReversion,
-        sharedAccessDetails: userInviteId
-          ? {
-              inviteId: userInviteId.toHexString(),
-            }
-          : undefined,
-        title: feed.title,
-        url: feed.url,
-        isLegacyFeed: !!feed.legacyFeedId,
-        connections: [
-          ...discordChannelConnections,
-          ...discordWebhookConnections,
-        ],
-        disabledCode: feed.disabledCode,
-        healthStatus: feed.healthStatus,
-        passingComparisons: feed.passingComparisons,
-        blockingComparisons: feed.blockingComparisons,
-        articleInjections: feed.articleInjections,
-        createdAt: feed.createdAt.toISOString(),
-        updatedAt: feed.updatedAt.toISOString(),
-        formatOptions: feed.formatOptions,
-        dateCheckOptions: feed.dateCheckOptions,
-        refreshRateSeconds:
-          feed.refreshRateSeconds ||
-          (
-            await this.supportersService.getBenefitsOfDiscordUser(
-              feed.user.discordUserId
-            )
-          ).refreshRateSeconds,
-        userRefreshRateSeconds: feed.userRefreshRateSeconds,
-        shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
-      },
-    };
   }
 }

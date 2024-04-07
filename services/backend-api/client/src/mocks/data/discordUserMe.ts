@@ -18,15 +18,6 @@ const mockDiscordUserMe: DiscordMeUser = {
     base: 10,
     legacy: 2,
   },
-  refreshRates: [
-    {
-      rateSeconds: 600,
-    },
-    {
-      rateSeconds: 120,
-      disabledCode: "NON_SUPPORTER",
-    },
-  ],
 };
 
 export default mockDiscordUserMe;

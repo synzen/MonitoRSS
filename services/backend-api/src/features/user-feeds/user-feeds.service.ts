@@ -30,6 +30,7 @@ import { FilterQuery, PipelineStage, Types, UpdateQuery } from "mongoose";
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
 import {
   FeedConnectionDisabledCode,
+  FeedConnectionType,
   FeedConnectionTypeEntityKey,
 } from "../feeds/constants";
 import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
@@ -51,6 +52,9 @@ import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-
 import dayjs from "dayjs";
 import { User, UserModel } from "../users/entities/user.entity";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
+import { CreateDiscordChannelConnectionOutputDto } from "../feed-connections/dto";
+import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
+import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -92,6 +96,120 @@ export class UserFeedsService {
     private readonly amqpConnection: AmqpConnection,
     private readonly feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService
   ) {}
+
+  async formatForHttpResponse(feed: UserFeed, discordUserId: string) {
+    const discordChannelConnections: CreateDiscordChannelConnectionOutputDto[] =
+      feed.connections.discordChannels.map((con) => ({
+        id: con.id.toHexString(),
+        name: con.name,
+        key: FeedConnectionType.DiscordChannel,
+        details: {
+          ...con.details,
+          embeds: convertToNestedDiscordEmbed(con.details.embeds),
+          webhook: con.details.webhook
+            ? {
+                id: con.details.webhook.id,
+                guildId: con.details.webhook.guildId,
+                iconUrl: con.details.webhook.iconUrl,
+                name: con.details.webhook.name,
+                type: con.details.webhook.type,
+                threadId: con.details.webhook.threadId,
+                isApplicationOwned: con.details.webhook.isApplicationOwned,
+                channelId: con.details.webhook.channelId,
+              }
+            : undefined,
+        },
+        filters: con.filters,
+        rateLimits: con.rateLimits,
+        disabledCode: con.disabledCode,
+        splitOptions: con.splitOptions,
+        mentions: con.mentions,
+        customPlaceholders: con.customPlaceholders?.map((c) => ({
+          ...c,
+          steps: c.steps.map((s) => {
+            if (s.type === CustomPlaceholderStepType.Regex) {
+              return {
+                ...s,
+                regexSearchFlags: s.regexSearchFlags || "gmi", // default is set in user-feeds-service
+              };
+            } else {
+              return s;
+            }
+          }),
+        })),
+      }));
+
+    const isOwner = feed.user.discordUserId === discordUserId;
+
+    const userInviteId = feed.shareManageOptions?.invites?.find(
+      (u) =>
+        u.discordUserId === discordUserId &&
+        u.status === UserFeedManagerStatus.Accepted
+    )?.id;
+
+    const refreshRateOptions: Array<{
+      rateSeconds: number;
+      disabledCode?: string;
+    }> = [
+      {
+        rateSeconds: this.supportersService.defaultRefreshRateSeconds,
+      },
+      {
+        rateSeconds: this.supportersService.defaultRefreshRateSeconds * 6,
+      },
+    ];
+
+    if (await this.supportersService.areSupportersEnabled()) {
+      const feedOwnerBenefits =
+        await this.supportersService.getBenefitsOfDiscordUser(
+          feed.user.discordUserId
+        );
+
+      refreshRateOptions.unshift({
+        rateSeconds: this.supportersService.defaultSupporterRefreshRateSeconds,
+        disabledCode:
+          feedOwnerBenefits.refreshRateSeconds >=
+          this.supportersService.defaultRefreshRateSeconds
+            ? "INSUFFICIENT_SUPPORTER_TIER"
+            : undefined,
+      });
+    }
+
+    return {
+      result: {
+        id: feed._id.toHexString(),
+        allowLegacyReversion: feed.allowLegacyReversion,
+        sharedAccessDetails: userInviteId
+          ? {
+              inviteId: userInviteId.toHexString(),
+            }
+          : undefined,
+        title: feed.title,
+        url: feed.url,
+        isLegacyFeed: !!feed.legacyFeedId,
+        connections: [...discordChannelConnections],
+        disabledCode: feed.disabledCode,
+        healthStatus: feed.healthStatus,
+        passingComparisons: feed.passingComparisons,
+        blockingComparisons: feed.blockingComparisons,
+        articleInjections: feed.articleInjections,
+        createdAt: feed.createdAt.toISOString(),
+        updatedAt: feed.updatedAt.toISOString(),
+        formatOptions: feed.formatOptions,
+        dateCheckOptions: feed.dateCheckOptions,
+        refreshRateSeconds:
+          feed.refreshRateSeconds ||
+          (
+            await this.supportersService.getBenefitsOfDiscordUser(
+              feed.user.discordUserId
+            )
+          ).refreshRateSeconds,
+        userRefreshRateSeconds: feed.userRefreshRateSeconds,
+        shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
+        refreshRateOptions,
+      },
+    };
+  }
 
   async restoreToLegacyFeed(userFeed: UserFeed) {
     if (!userFeed.legacyFeedId) {

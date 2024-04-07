@@ -120,7 +120,6 @@ export class UserFeed {
 
   @Prop({
     required: false,
-    index: true,
   })
   userRefreshRateSeconds?: number;
 

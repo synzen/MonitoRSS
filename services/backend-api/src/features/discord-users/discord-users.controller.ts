@@ -74,7 +74,6 @@ export class DiscordUsersController {
       maxFeeds: user.maxFeeds,
       maxUserFeeds: user.maxUserFeeds,
       maxUserFeedsComposition: user.maxUserFeedsComposition,
-      refreshRates: user.refreshRates,
       allowCustomPlaceholders: user.allowCustomPlaceholders,
     };
   }

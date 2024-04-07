@@ -23,9 +23,5 @@ export type DiscordUserFormatted = DiscordUser & {
     base: number;
     legacy: number;
   };
-  refreshRates: Array<{
-    rateSeconds: number;
-    disabledCode?: string;
-  }>;
   allowCustomPlaceholders?: boolean;
 };

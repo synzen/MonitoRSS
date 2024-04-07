@@ -39,6 +39,15 @@ const mockUserFeeds: UserFeed[] = [
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    refreshRateOptions: [
+      {
+        rateSeconds: 600,
+      },
+      {
+        rateSeconds: 120,
+        disabledCode: "NON_SUPPORTER",
+      },
+    ],
     blockingComparisons: ["title", "description"],
     passingComparisons: ["author"],
     isLegacyFeed: true,
