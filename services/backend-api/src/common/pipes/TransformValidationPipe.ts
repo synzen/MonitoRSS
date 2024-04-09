@@ -11,6 +11,7 @@ export class TransformValidationPipe implements PipeTransform {
     const originalPipe = new ValidationPipe({
       transform: true,
       validateCustomDecorators: true,
+      whitelist: true,
       forbidNonWhitelisted: true,
     });
 
