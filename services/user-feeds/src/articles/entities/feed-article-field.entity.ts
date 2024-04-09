@@ -2,8 +2,8 @@ import { Entity, Property, PrimaryKey, Index } from "@mikro-orm/core";
 
 @Entity()
 @Index({
-  properties: ["feed_id", "field_name", "field_value"],
-  name: "article_property_index",
+  properties: ["feed_id", "field_name", "field_value", "is_hashed"],
+  name: "article_property_idx",
 })
 export class FeedArticleField {
   @PrimaryKey()
