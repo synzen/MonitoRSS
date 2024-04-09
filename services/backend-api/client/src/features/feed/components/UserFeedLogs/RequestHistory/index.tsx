@@ -64,6 +64,12 @@ const createStatusLabel = (
           {status}
         </Badge>
       );
+    case UserFeedRequestStatus.FETCH_TIMEOUT:
+      return (
+        <Badge fontSize="sm" colorScheme="orange">
+          {status}
+        </Badge>
+      );
     default:
       return "Unknown";
   }
