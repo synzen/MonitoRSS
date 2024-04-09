@@ -233,7 +233,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                       </FormHelperText>
                     )}
                   </FormControl>
-                  <FormControl isInvalid={!!errors.webhook?.name} isRequired>
+                  <FormControl isInvalid={!!errors.webhook?.name}>
                     <FormLabel>
                       {t(
                         "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
