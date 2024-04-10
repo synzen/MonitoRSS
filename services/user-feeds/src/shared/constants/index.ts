@@ -6,3 +6,4 @@ export * from "./feed-rejected-disabled-code.constants";
 export * from "./grpc-error.type";
 export * from "./custom-placeholder-step-type.constants";
 export * from "./injected-article-placeholder-prefix.constants";
+export * from "./max-article-injection-article-count";

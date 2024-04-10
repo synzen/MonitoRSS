@@ -22,6 +22,7 @@ import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
 import { ArticleInjection } from "../article-parser/constants/article-injection.constants";
+import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
 
 const sha1 = createHash("sha1");
 
@@ -274,8 +275,10 @@ export class ArticlesService {
       );
     }
 
-    for (const a of articlesPostDateCheck) {
-      await a.injectArticleContent(a.flattened);
+    if (articlesPostDateCheck.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
+      for (const a of articlesPostDateCheck) {
+        await a.injectArticleContent(a.flattened);
+      }
     }
 
     return articlesPostDateCheck;
