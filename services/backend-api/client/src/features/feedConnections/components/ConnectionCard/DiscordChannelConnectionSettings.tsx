@@ -85,6 +85,7 @@ export const DiscordChannelConnectionSettings = ({
             name: connection.name,
             serverId: connection.details.channel.guildId,
           }}
+          type={connection.details.channel.type}
           onUpdate={({ channelId: updatedChannelId, name }) =>
             onUpdate({
               channelId: updatedChannelId,

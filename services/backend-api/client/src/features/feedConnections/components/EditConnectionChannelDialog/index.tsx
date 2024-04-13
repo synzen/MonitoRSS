@@ -19,11 +19,16 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
-import { DiscordChannelDropdown, DiscordServerSearchSelectv2 } from "@/features/discordServers";
+import {
+  DiscordActiveThreadDropdown,
+  DiscordChannelDropdown,
+  DiscordServerSearchSelectv2,
+  GetDiscordChannelType,
+} from "@/features/discordServers";
 
 const formSchema = object({
-  name: string().optional(),
-  serverId: string().optional(),
+  name: string().required(),
+  serverId: string().required(),
   channelId: string().when("serverId", ([serverId], schema) => {
     if (serverId) {
       return schema.required();
@@ -31,16 +36,18 @@ const formSchema = object({
 
     return schema.optional();
   }),
+  threadId: string(),
 });
 
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
   onUpdate: (data: FormData) => Promise<void>;
-  defaultValues: Required<FormData>;
+  defaultValues: FormData;
   onClose: () => void;
   isOpen: boolean;
   onCloseRef: React.RefObject<HTMLButtonElement>;
+  type?: string | null;
 }
 
 export const EditConnectionChannelDialog: React.FC<Props> = ({
@@ -49,6 +56,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
   onClose,
   isOpen,
   onCloseRef,
+  type,
 }) => {
   const { t } = useTranslation();
   const {
@@ -62,13 +70,23 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
     mode: "all",
     defaultValues,
   });
-  const serverId = watch("serverId");
+  const [serverId, channelId] = watch(["serverId", "channelId"]);
   const initialRef = useRef<HTMLInputElement>(null);
 
-  const onSubmit = async ({ channelId, name }: FormData) => {
-    await onUpdate({ channelId, name });
+  const onSubmit = async ({
+    channelId: inputChannelId,
+    name,
+    threadId,
+    serverId: inputServerId,
+  }: FormData) => {
+    if (type === "thread" && threadId) {
+      await onUpdate({ channelId: threadId, name, serverId: inputServerId });
+    } else {
+      await onUpdate({ channelId: inputChannelId, name, serverId: inputServerId });
+    }
+
     onClose();
-    reset({ channelId, name });
+    reset({ channelId, name, threadId });
   };
 
   useEffect(() => {
@@ -85,7 +103,9 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
-          {t("features.feed.components.updateDiscordChannelConnectionDialog.title")}
+          {type === "thread" && "Edit Discord Thread Connection"}
+          {type === "forum" && "Edit Discord Forum Connection"}
+          {!type && t("features.feed.components.updateDiscordChannelConnectionDialog.title")}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
@@ -149,11 +169,48 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                       onBlur={field.onBlur}
                       isDisabled={isSubmitting}
                       serverId={serverId}
+                      include={
+                        type === "thread" || type === "forum"
+                          ? [GetDiscordChannelType.Forum]
+                          : undefined
+                      }
                     />
                   )}
                 />
                 <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
               </FormControl>
+              {type === "thread" && (
+                <FormControl isInvalid={!!errors.threadId} isRequired>
+                  <FormLabel>
+                    {t(
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"
+                    )}
+                  </FormLabel>
+                  <Controller
+                    name="threadId"
+                    control={control}
+                    render={({ field }) => (
+                      <DiscordActiveThreadDropdown
+                        value={field.value || ""}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
+                        onBlur={field.onBlur}
+                        isDisabled={isSubmitting}
+                        serverId={serverId}
+                        parentChannelId={channelId}
+                      />
+                    )}
+                  />
+                  <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
+                  <FormHelperText>
+                    {t(
+                      "features.feed.components" +
+                        ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
+                    )}
+                  </FormHelperText>
+                </FormControl>
+              )}
             </Stack>
           </form>
         </ModalBody>
