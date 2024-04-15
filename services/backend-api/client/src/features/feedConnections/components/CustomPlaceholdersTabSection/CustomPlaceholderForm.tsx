@@ -24,6 +24,7 @@ import {
   MenuOptionGroup,
   Stack,
   Text,
+  chakra,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
@@ -148,19 +149,53 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
                     >
                       <MenuItemOption value="g">
                         <Box>
-                          <Text>global</Text>
+                          <Text>
+                            <chakra.strong color="blue.300">g</chakra.strong>lobal
+                          </Text>
                           <Text color="whiteAlpha.600">
                             Don&apos;t return after the first match
                           </Text>
                         </Box>
                       </MenuItemOption>
                       <MenuItemOption value="i">
-                        <Text>case insensitive</Text>
+                        <Text>
+                          case <chakra.strong color="blue.300">i</chakra.strong>nsensitive
+                        </Text>
                         <Text color="whiteAlpha.600">Case insensitive match</Text>
                       </MenuItemOption>
                       <MenuItemOption value="m">
-                        <Text>multiline</Text>
+                        <Text>
+                          <chakra.strong color="blue.300">m</chakra.strong>ultiline
+                        </Text>
                         <Text color="whiteAlpha.600">^ and $ match start/end of line</Text>
+                      </MenuItemOption>
+                      <MenuItemOption value="y">
+                        <Text>
+                          stick<chakra.strong color="blue.300">y</chakra.strong>
+                        </Text>
+                        <Text color="whiteAlpha.600">
+                          Anchor to start of pattern, or at the end of the most recent match
+                        </Text>
+                      </MenuItemOption>
+                      <MenuItemOption value="v">
+                        <Text>
+                          <chakra.strong color="blue.300">v</chakra.strong>nicode
+                        </Text>
+                        <Text color="whiteAlpha.600">
+                          Enable all unicode and character set features
+                        </Text>
+                      </MenuItemOption>
+                      <MenuItemOption value="s">
+                        <Text>
+                          <chakra.strong color="blue.300">s</chakra.strong>ingle line
+                        </Text>
+                        <Text color="whiteAlpha.600">Dot matches newline</Text>
+                      </MenuItemOption>
+                      <MenuItemOption value="d">
+                        <Text>
+                          in<chakra.strong color="blue.300">d</chakra.strong>ices
+                        </Text>
+                        <Text color="whiteAlpha.600">The regex engine returns match indices</Text>
                       </MenuItemOption>
                     </MenuOptionGroup>
                   </MenuList>
