@@ -39,6 +39,40 @@ const mockUserFeeds: UserFeed[] = [
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    articleInjections: [
+      {
+        id: "1",
+        sourceField: "url",
+        selectors: [
+          {
+            id: "field-1",
+            label: "field1",
+            cssSelector: "#title",
+          },
+          {
+            id: "field-2",
+            label: "field2",
+            cssSelector: "#description",
+          },
+        ],
+      },
+      {
+        id: "2",
+        sourceField: "image::url",
+        selectors: [
+          {
+            id: "field-1",
+            label: "field1",
+            cssSelector: "#title",
+          },
+          {
+            id: "field-2",
+            label: "field2",
+            cssSelector: "#description",
+          },
+        ],
+      },
+    ],
     refreshRateOptions: [
       {
         rateSeconds: 600,

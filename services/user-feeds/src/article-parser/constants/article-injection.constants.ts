@@ -2,9 +2,9 @@ import { z } from "zod";
 
 export const articleInjectionSchema = z.object({
   sourceField: z.string(),
-  fields: z.array(
+  selectors: z.array(
     z.object({
-      name: z.string(),
+      label: z.string(),
       cssSelector: z.string(),
     })
   ),

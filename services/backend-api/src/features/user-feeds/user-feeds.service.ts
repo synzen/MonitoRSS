@@ -76,6 +76,7 @@ interface UpdateFeedInput {
     invites: Array<{ discordUserId: string }>;
   };
   userRefreshRateSeconds?: number;
+  articleInjections?: UserFeed["articleInjections"];
 }
 
 @Injectable()
@@ -675,6 +676,10 @@ export class UserFeedsService {
 
     if (updates.shareManageOptions) {
       useUpdateObject.$set!.shareManageOptions = updates.shareManageOptions;
+    }
+
+    if (updates.articleInjections) {
+      useUpdateObject.$set!.articleInjections = updates.articleInjections;
     }
 
     if (updates.userRefreshRateSeconds) {

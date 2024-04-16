@@ -284,7 +284,7 @@ export class ArticleParserService {
         }
 
         await Promise.allSettled(
-          (articleInjections || [])?.map(async ({ fields, sourceField }) => {
+          (articleInjections || [])?.map(async ({ selectors, sourceField }) => {
             const sourceFieldValue = targetRecord[sourceField];
 
             if (!sourceFieldValue) {
@@ -314,16 +314,15 @@ export class ArticleParserService {
 
             const parsedBody = parse(body);
 
-            fields.forEach((f) => {
-              const outerHtmlOfElement = parsedBody.querySelector(
-                f.cssSelector
-              )?.outerHTML;
+            selectors.forEach(({ cssSelector, label }) => {
+              const outerHtmlOfElement =
+                parsedBody.querySelector(cssSelector)?.outerHTML;
 
               if (!outerHtmlOfElement) {
                 return;
               }
 
-              const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${f.name}`;
+              const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}`;
 
               targetRecord[key] = outerHtmlOfElement;
 

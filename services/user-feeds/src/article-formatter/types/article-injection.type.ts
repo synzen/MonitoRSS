@@ -3,7 +3,7 @@ import { IsArray, IsObject, IsString, ValidateNested } from "class-validator";
 
 export class ArticleInjectionFieldDto {
   @IsString()
-  name: string;
+  label: string;
 
   @IsString()
   cssSelector: string;
@@ -17,5 +17,5 @@ export class ArticleInjectionDto {
   @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ArticleInjectionFieldDto)
-  fields: ArticleInjectionFieldDto[];
+  selectors: ArticleInjectionFieldDto[];
 }

@@ -23,18 +23,13 @@ import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
 import { ArticleInjection } from "../article-parser/constants/article-injection.constants";
 import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
+import { ArticleInjectionDto } from "../article-formatter/types";
 
 const sha1 = createHash("sha1");
 
 interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
-  articleInjections?: Array<{
-    sourceField: string;
-    fields: Array<{
-      name: string;
-      cssSelector: string; // run it through parsers service, and then discord formatter
-    }>;
-  }>;
+  articleInjections?: ArticleInjectionDto[];
 }
 
 @Injectable()

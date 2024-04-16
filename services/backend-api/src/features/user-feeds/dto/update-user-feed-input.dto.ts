@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -16,6 +17,7 @@ import {
   UserFeedFormatOptions,
   UserFeedShareManageOptions,
 } from "../../../common";
+import { ArticleInjectionDto } from "../../../common/types/article-injection.type";
 import { UserFeedDisabledCode } from "../types";
 
 export class UpdateUserFeedInputDto {
@@ -71,4 +73,10 @@ export class UpdateUserFeedInputDto {
       o.userRefreshRateSeconds !== undefined
   )
   userRefreshRateSeconds?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ArticleInjectionDto)
+  articleInjections?: ArticleInjectionDto[];
 }

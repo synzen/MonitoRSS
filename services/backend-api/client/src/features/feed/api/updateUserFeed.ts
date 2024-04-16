@@ -1,6 +1,7 @@
 import { InferType, object } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedDisabledCode, UserFeedSchema } from "../types";
+import { ArticleInjection } from "../../../types";
 
 export interface UpdateUserFeedInput {
   feedId: string;
@@ -18,6 +19,7 @@ export interface UpdateUserFeedInput {
     dateCheckOptions?: {
       oldArticleDateDiffMsThreshold?: number;
     };
+    articleInjections?: ArticleInjection[];
     shareManageOptions?: {
       invites?: Array<{
         discordUserId: string;

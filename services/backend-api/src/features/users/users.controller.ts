@@ -74,6 +74,7 @@ export class UsersController {
         isOnPatreon,
         enableBilling: user.enableBilling,
         migratedToPersonalFeeds,
+        featureFlags: user.featureFlags || {},
       },
     };
   }

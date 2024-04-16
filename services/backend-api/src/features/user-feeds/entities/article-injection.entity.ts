@@ -6,7 +6,7 @@ import { Types } from "mongoose";
   timestamps: false,
   versionKey: false,
 })
-export class ArticleInjectionField {
+export class ArticleInjectionSelector {
   @Prop({
     required: true,
     default: () => new Types.ObjectId().toHexString(),
@@ -16,7 +16,7 @@ export class ArticleInjectionField {
   @Prop({
     required: true,
   })
-  name: string;
+  label: string;
 
   @Prop({
     required: true,
@@ -25,7 +25,7 @@ export class ArticleInjectionField {
 }
 
 export const ArticleInjectionFieldSchema = SchemaFactory.createForClass(
-  ArticleInjectionField
+  ArticleInjectionSelector
 );
 
 @Schema({
@@ -49,7 +49,7 @@ export class ArticleInjection {
     required: true,
     type: [ArticleInjectionFieldSchema],
   })
-  fields: ArticleInjectionField[];
+  selectors: ArticleInjectionSelector[];
 }
 
 export const ArticleInjectionSchema =

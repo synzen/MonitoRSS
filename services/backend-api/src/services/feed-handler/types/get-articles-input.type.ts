@@ -23,8 +23,8 @@ export interface GetArticlesInput {
     };
     articleInjections?: Array<{
       sourceField: string;
-      fields: Array<{
-        name: string;
+      selectors: Array<{
+        label: string;
         cssSelector: string;
       }>;
     }> | null;

@@ -26,6 +26,9 @@ const mockUserMe: UserMe = {
   },
   enableBilling: true,
   migratedToPersonalFeeds: true,
+  featureFlags: {
+    articleInjections: true,
+  },
 };
 
 export default mockUserMe;

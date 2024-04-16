@@ -400,6 +400,7 @@ export class UserFeedsController {
       dateCheckOptions,
       shareManageOptions,
       userRefreshRateSeconds,
+      articleInjections,
     }: UpdateUserFeedInputDto,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
@@ -420,6 +421,7 @@ export class UserFeedsController {
         dateCheckOptions,
         shareManageOptions,
         userRefreshRateSeconds,
+        articleInjections,
       }
     )) as UserFeed;
 

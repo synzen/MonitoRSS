@@ -30,6 +30,9 @@ export const UserMeSchema = object({
   isOnPatreon: bool(),
   enableBilling: bool(),
   migratedToPersonalFeeds: bool(),
+  featureFlags: object({
+    articleInjections: bool(),
+  }),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;
