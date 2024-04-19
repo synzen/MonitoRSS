@@ -871,6 +871,7 @@ export class UserFeedsService {
     random,
     filters,
     selectProperties,
+    selectPropertyTypes,
     skip,
     formatter,
     discordUserId,
@@ -891,6 +892,7 @@ export class UserFeedsService {
       filters,
       skip: skip || 0,
       selectProperties,
+      selectPropertyTypes,
       formatter: {
         ...formatter,
         options: {

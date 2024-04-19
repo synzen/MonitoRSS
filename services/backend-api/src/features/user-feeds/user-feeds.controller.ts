@@ -268,6 +268,7 @@ export class UserFeedsController {
       random,
       filters,
       selectProperties,
+      selectPropertyTypes,
       skip,
       formatter: { articleInjections, ...formatter },
     }: GetUserFeedArticlesInputDto,
@@ -283,6 +284,7 @@ export class UserFeedsController {
       filters,
       discordUserId: feed.user.discordUserId,
       selectProperties,
+      selectPropertyTypes,
       skip,
       formatter: {
         ...formatter,

@@ -1,6 +1,6 @@
 import { array, boolean, InferType, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
-import { GetArticlesFilterReturnType } from "../constants";
+import { GetArticlesFilterReturnType, SelectArticlePropertyType } from "../constants";
 import { UserFeedArticleRequestStatus } from "../types";
 import { ArticleInjection, CustomPlaceholder } from "../../../types";
 
@@ -11,6 +11,7 @@ export interface GetUserFeedArticlesInput {
     limit: number;
     random?: boolean;
     selectProperties?: string[];
+    selectPropertyTypes?: SelectArticlePropertyType[];
     filters?: {
       expression?: Record<string, any>;
       returnType?: GetArticlesFilterReturnType;

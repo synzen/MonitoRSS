@@ -100,9 +100,15 @@ export class FeedsController {
       skip,
       filters,
       selectProperties,
+      selectPropertyTypes,
       formatter,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
+    console.log(
+      "🚀 ~ FeedsController ~ selectPropertyTypes:",
+      selectPropertyTypes
+    );
+
     try {
       const fetchResult = await this.articlesService.fetchFeedArticles(url, {
         formatOptions: {
@@ -161,6 +167,7 @@ export class FeedsController {
         selectProperties,
         filters,
         random,
+        selectPropertyTypes,
         customPlaceholders: formatter.customPlaceholders,
       });
 

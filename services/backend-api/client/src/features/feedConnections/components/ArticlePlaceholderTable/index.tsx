@@ -60,7 +60,7 @@ const PlaceholderRow = ({
       }}
     >
       <Td>
-        <HStack width="min-content">
+        <HStack width="auto">
           <Code>{placeholderKey}</Code>
           <IconButton
             display={withoutCopy ? "none" : "block"}

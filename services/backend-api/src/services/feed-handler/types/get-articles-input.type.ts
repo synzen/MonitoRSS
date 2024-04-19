@@ -1,5 +1,8 @@
 import { CustomPlaceholderDto } from "../../../common";
-import { GetFeedArticlesFilterReturnType } from "../../../features/user-feeds/constants";
+import {
+  GetFeedArticlesFilterReturnType,
+  SelectArticlePropertyType,
+} from "../../../features/user-feeds/constants";
 
 export interface GetArticlesInput {
   url: string;
@@ -7,6 +10,7 @@ export interface GetArticlesInput {
   skip: number;
   random?: boolean;
   selectProperties?: string[];
+  selectPropertyTypes?: SelectArticlePropertyType[];
   filters?: {
     expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;

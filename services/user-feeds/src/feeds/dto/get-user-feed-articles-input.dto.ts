@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -19,6 +20,7 @@ import { GetUserFeedArticlesFormatterDto } from "./shared";
 import { CustomPlaceholder } from "../../article-formatter/types/format-options";
 import { ArticleInjection } from "../../article-parser/constants";
 import { ArticleInjectionDto } from "../../article-formatter/types";
+import { SelectPropertyType } from "../constants/select-property-type.constants";
 export class CustomPlaceholderStepDto {
   @IsString()
   @IsNotEmpty()
@@ -102,6 +104,13 @@ export class GetUserFeedArticlesInputDto {
   @IsString({ each: true })
   @IsOptional()
   selectProperties?: string[];
+
+  @IsString({ each: true })
+  @IsOptional()
+  @IsIn(Object.values(SelectPropertyType), {
+    each: true,
+  })
+  selectPropertyTypes?: SelectPropertyType[];
 
   /**
    * Include the filter results for each article

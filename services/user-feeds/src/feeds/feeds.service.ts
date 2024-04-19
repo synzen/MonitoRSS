@@ -5,6 +5,7 @@ import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limi
 import { Article } from "../shared";
 import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
 import { GetUserFeedArticlesFilterReturnType } from "./constants";
+import { SelectPropertyType } from "./constants/select-property-type.constants";
 import { QueryForArticlesInput, QueryForArticlesOutput } from "./types";
 
 @Injectable()
@@ -24,6 +25,7 @@ export class FeedsService {
     skip,
     random,
     selectProperties,
+    selectPropertyTypes,
     filters,
     customPlaceholders,
   }: QueryForArticlesInput): Promise<QueryForArticlesOutput> {
@@ -31,7 +33,8 @@ export class FeedsService {
       customPlaceholders?.map((c) => c.sourcePlaceholder) || [];
     const properties = this.queryForArticleProperties(
       articles,
-      selectProperties?.concat(placeholdersFromCustomPlaceholders)
+      selectProperties?.concat(placeholdersFromCustomPlaceholders),
+      selectPropertyTypes
     );
 
     if (articles.length === 0) {
@@ -157,11 +160,30 @@ export class FeedsService {
 
   private queryForArticleProperties(
     articles: Article[],
-    requestedProperties?: string[]
+    requestedProperties?: string[],
+    selectPropertyTypes?: SelectPropertyType[]
   ): string[] {
     let properties: string[] = requestedProperties || [];
 
-    if (properties.includes("*")) {
+    if (selectPropertyTypes?.length) {
+      if (properties.includes("*")) {
+        properties = [];
+      }
+
+      articles.forEach((a) => {
+        Object.entries(a.flattened).forEach(([key, value]) => {
+          const isUrl = value.startsWith("http");
+
+          if (
+            selectPropertyTypes.includes(SelectPropertyType.Url) &&
+            isUrl &&
+            !properties.includes(key)
+          ) {
+            properties.push(key);
+          }
+        });
+      });
+    } else if (properties.includes("*")) {
       properties = Array.from(
         new Set(articles.flatMap((article) => Object.keys(article.flattened)))
       );

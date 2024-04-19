@@ -233,6 +233,7 @@ export class FeedHandlerService {
     skip,
     filters,
     selectProperties,
+    selectPropertyTypes,
     formatter,
   }: GetArticlesInput): Promise<GetArticlesOutput> {
     const body = {
@@ -242,6 +243,7 @@ export class FeedHandlerService {
       skip,
       filters,
       selectProperties,
+      selectPropertyTypes,
       formatter,
     };
 
