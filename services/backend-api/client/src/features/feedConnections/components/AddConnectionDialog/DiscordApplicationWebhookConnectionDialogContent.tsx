@@ -233,7 +233,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                       </FormHelperText>
                     )}
                   </FormControl>
-                  <FormControl isInvalid={!!errors.webhook?.name}>
+                  <FormControl isInvalid={!!errors.webhook?.name} isRequired>
                     <FormLabel>
                       {t(
                         "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
@@ -245,7 +245,6 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                       render={({ field }) => (
                         <Input
                           {...field}
-                          placeholder="Optional"
                           isDisabled={isSubmitting}
                           value={field.value || ""}
                           bg="gray.800"
@@ -256,7 +255,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                       <FormErrorMessage>{errors.webhook.name.message}</FormErrorMessage>
                     )}
                     {!errors.webhook?.name && (
-                      <FormHelperText>The user name the webhook will use</FormHelperText>
+                      <FormHelperText>The username the webhook will use</FormHelperText>
                     )}
                   </FormControl>
                   <FormControl isInvalid={!!errors.webhook?.iconUrl}>
