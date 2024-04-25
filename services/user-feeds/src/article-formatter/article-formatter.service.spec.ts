@@ -409,6 +409,14 @@ describe("ArticleFormatterService", () => {
 
         expect(result.value).toEqual("```hello world```");
       });
+
+      it('returns the text in a code block if its only child is a "code" element with a text node', async () => {
+        const value = "<pre><code>hello world</code></pre>";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("```hello world```");
+      });
     });
 
     describe("em", () => {

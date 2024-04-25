@@ -348,6 +348,21 @@ export class ArticleFormatterService {
           builder.addLiteral("`");
         },
         blockCode: (elem, walk, builder, options) => {
+          // Handle <pre><code>...</code></pre> as ```...``` instead of ````...````
+          if (
+            elem.children.length === 1 &&
+            elem.children[0].name === "code" &&
+            elem.children[0].children.length === 1 &&
+            elem.children[0].children[0].type === "text" &&
+            elem.children[0].children[0].data
+          ) {
+            builder.addLiteral("```");
+            builder.addLiteral(elem.children[0].children[0].data);
+            builder.addLiteral("```");
+
+            return;
+          }
+
           builder.openBlock(options);
           builder.addInline("```");
           walk(elem.children, builder);
