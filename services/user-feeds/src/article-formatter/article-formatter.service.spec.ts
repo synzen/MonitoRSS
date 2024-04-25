@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import { CustomPlaceholderStepType } from "../shared";
 import { ArticleFormatterService } from "./article-formatter.service";
 
 describe("ArticleFormatterService", () => {
@@ -73,13 +74,16 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "Hello",
                   replacementString: "Goodbye",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual("Goodbye World");
+        expect(result.article.flattened["custom::test"]).toEqual(
+          "Goodbye World"
+        );
       });
 
       it("does not modify the source placeholder", async () => {
@@ -106,13 +110,14 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "Hello",
                   replacementString: "Goodbye",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["title"]).toEqual("Hello World");
+        expect(result.article.flattened["title"]).toEqual("Hello World");
       });
 
       it("replaces matches with an empty string if no replacement is specified", async () => {
@@ -139,13 +144,14 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "Hello",
                   replacementString: null,
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual("World");
+        expect(result.article.flattened["custom::test"]).toEqual("World");
       });
 
       it("replaces matches globally", async () => {
@@ -172,13 +178,14 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "l",
                   replacementString: "z",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual("Hezzo Worzd");
+        expect(result.article.flattened["custom::test"]).toEqual("Hezzo Worzd");
       });
 
       it("replaces searches multi-line", async () => {
@@ -205,13 +212,14 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "^q$",
                   replacementString: "replaced",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual(
+        expect(result.article.flattened["custom::test"]).toEqual(
           "q hello\nreplaced\nreplaced\nq world"
         );
       });
@@ -240,13 +248,14 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "hello",
                   replacementString: "replaced",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual(
+        expect(result.article.flattened["custom::test"]).toEqual(
           "replaced replaced world"
         );
       });
@@ -275,17 +284,21 @@ describe("ArticleFormatterService", () => {
                 {
                   regexSearch: "hello",
                   replacementString: "goodbye",
+                  type: CustomPlaceholderStepType.Regex,
                 },
                 {
                   regexSearch: "goodbye",
                   replacementString: "farewell",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
           ],
         });
 
-        expect(result.flattened["custom::test"]).toEqual("farewell world");
+        expect(result.article.flattened["custom::test"]).toEqual(
+          "farewell world"
+        );
       });
     });
 
