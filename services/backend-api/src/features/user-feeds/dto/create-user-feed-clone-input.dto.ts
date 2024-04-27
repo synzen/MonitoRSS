@@ -3,7 +3,6 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
-  IsIn,
   IsInt,
   IsObject,
   IsOptional,
@@ -15,7 +14,6 @@ import {
 } from "class-validator";
 import { CustomPlaceholderDto } from "../../../common";
 import { ArticleInjectionDto } from "../../../common/types/article-injection.type";
-import { SelectArticlePropertyType } from "../constants";
 import { GetFeedArticlesFilterReturnType } from "../types";
 
 class FiltersDto {
@@ -114,10 +112,9 @@ export class GetUserFeedArticlesInputDto {
   selectProperties?: string[];
 
   @IsArray()
-  @IsIn(Object.values(SelectArticlePropertyType), { each: true })
   @IsOptional()
   @IsString({ each: true })
-  selectPropertyTypes?: SelectArticlePropertyType[];
+  selectPropertyTypes?: string[];
 
   @Type(() => FiltersDto)
   @IsOptional()

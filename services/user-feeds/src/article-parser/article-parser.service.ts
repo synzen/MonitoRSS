@@ -187,6 +187,10 @@ export class ArticleParserService {
       targetRecord: Record<string, string>
     ) => Promise<void>;
   }> {
+    console.log(
+      "🚀 ~ ArticleParserService ~ articleInjections:",
+      articleInjections
+    );
     const flattened = flatten(input, {
       delimiter: ARTICLE_FIELD_DELIMITER,
     }) as Record<string, unknown>;
@@ -316,11 +320,7 @@ export class ArticleParserService {
 
             selectors.forEach(({ cssSelector, label }) => {
               const outerHtmlOfElement =
-                parsedBody.querySelector(cssSelector)?.outerHTML;
-
-              if (!outerHtmlOfElement) {
-                return;
-              }
+                parsedBody.querySelector(cssSelector)?.outerHTML || "";
 
               const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}`;
 

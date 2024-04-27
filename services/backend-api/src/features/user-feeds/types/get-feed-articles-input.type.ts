@@ -1,15 +1,12 @@
 import { CustomPlaceholderDto } from "../../../common";
-import {
-  GetFeedArticlesFilterReturnType,
-  SelectArticlePropertyType,
-} from "../constants";
+import { GetFeedArticlesFilterReturnType } from "../constants";
 
 export interface GetFeedArticlesInput {
   limit: number;
   url: string;
   random?: boolean;
   selectProperties?: string[];
-  selectPropertyTypes?: SelectArticlePropertyType[];
+  selectPropertyTypes?: string[];
   skip?: number;
   discordUserId: string;
   filters?: {

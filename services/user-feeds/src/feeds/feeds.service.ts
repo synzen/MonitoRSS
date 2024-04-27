@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { LogicalExpression } from "../article-filters/types";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
-import { Article } from "../shared";
+import { Article, INJECTED_ARTICLE_PLACEHOLDER_PREFIX } from "../shared";
 import { getNumbersInRange } from "../shared/utils/get-numbers-in-range";
 import { GetUserFeedArticlesFilterReturnType } from "./constants";
 import { SelectPropertyType } from "./constants/select-property-type.constants";
@@ -173,10 +173,23 @@ export class FeedsService {
       articles.forEach((a) => {
         Object.entries(a.flattened).forEach(([key, value]) => {
           const isUrl = value.startsWith("http");
+          const isExternalInjection = key.startsWith(
+            INJECTED_ARTICLE_PLACEHOLDER_PREFIX
+          );
 
           if (
             selectPropertyTypes.includes(SelectPropertyType.Url) &&
             isUrl &&
+            !properties.includes(key)
+          ) {
+            properties.push(key);
+          }
+
+          if (
+            selectPropertyTypes.includes(
+              SelectPropertyType.ExternalInjections
+            ) &&
+            isExternalInjection &&
             !properties.includes(key)
           ) {
             properties.push(key);

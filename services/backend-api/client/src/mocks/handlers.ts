@@ -690,7 +690,7 @@ const handlers = [
       ctx.json<GetUserFeedArticlesOutput>({
         result: {
           articles,
-          totalArticles: 37,
+          totalArticles: mockUserFeedArticles.length,
           requestStatus: UserFeedArticleRequestStatus.Success,
           response: {
             statusCode: 403,
