@@ -29,6 +29,11 @@ const mockUserMe: UserMe = {
   featureFlags: {
     articleInjections: true,
   },
+  supporterFeatures: {
+    articleInjections: {
+      enabled: true,
+    },
+  },
 };
 
 export default mockUserMe;

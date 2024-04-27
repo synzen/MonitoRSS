@@ -77,7 +77,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   USER_MANAGER_ALREADY_INVITED: "You have already invited this user to manage this feed",
   USER_FEED_TRANSFER_REQUEST_EXISTS:
     "You already have a feed ownership transfer invite for this feed.",
-  INSUFFICIENT_SUPPORTER_LEVEL: "Must be a supporter of the proper tier.",
+  INSUFFICIENT_SUPPORTER_LEVEL: "You must be a paid supporter of the proper tier to access this.",
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT:
     "Invalid regex search preview input for custom placeholders",
   INVALID_FILTERS_REGEX: "Invalid regex for filters",

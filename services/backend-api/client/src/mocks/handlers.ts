@@ -677,7 +677,7 @@ const handlers = [
 
     const articles = mockUserFeedArticles
       .filter((article) => {
-        if (filters.articleId) {
+        if (filters?.articleId) {
           return article.id === filters.articleId;
         }
 
@@ -690,7 +690,7 @@ const handlers = [
       ctx.json<GetUserFeedArticlesOutput>({
         result: {
           articles,
-          totalArticles: mockUserFeedArticles.length,
+          totalArticles: 37,
           requestStatus: UserFeedArticleRequestStatus.Success,
           response: {
             statusCode: 403,

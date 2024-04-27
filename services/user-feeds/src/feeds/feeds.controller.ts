@@ -104,11 +104,6 @@ export class FeedsController {
       formatter,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
-    console.log(
-      "🚀 ~ FeedsController ~ selectPropertyTypes:",
-      selectPropertyTypes
-    );
-
     try {
       const fetchResult = await this.articlesService.fetchFeedArticles(url, {
         formatOptions: {

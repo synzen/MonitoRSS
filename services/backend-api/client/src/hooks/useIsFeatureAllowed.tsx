@@ -1,5 +1,5 @@
 import { BlockableFeature } from "../constants";
-import { useDiscordUserMe } from "../features/discordUser";
+import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 
 interface Props {
   feature: BlockableFeature;
@@ -13,15 +13,20 @@ interface Returned {
 
 export const useIsFeatureAllowed = ({ feature }: Props): Returned => {
   const { data, status, error } = useDiscordUserMe();
+  const { data: userMeData, status: userMeStatus, error: userMeError } = useUserMe();
 
-  if (status === "loading" || !data) {
+  const isLoading = status === "loading" || userMeStatus === "loading";
+  const isError = status === "error" || userMeStatus === "error";
+  const finalError = error || userMeError;
+
+  if (isLoading || !data || !userMeData) {
     return {
       loaded: false,
       allowed: false,
     };
   }
 
-  if (status === "error" || error) {
+  if (isError || finalError) {
     return {
       loaded: true,
       allowed: false,
@@ -29,10 +34,24 @@ export const useIsFeatureAllowed = ({ feature }: Props): Returned => {
     };
   }
 
+  if (feature === BlockableFeature.DiscordWebhooks) {
+    return {
+      loaded: true,
+      allowed: !!data.supporter,
+    };
+  }
+
   if (feature === BlockableFeature.CustomPlaceholders) {
     return {
       loaded: true,
       allowed: data.allowCustomPlaceholders === true,
+    };
+  }
+
+  if (feature === BlockableFeature.ArticleInjections) {
+    return {
+      loaded: true,
+      allowed: userMeData.result.supporterFeatures?.articleInjections?.enabled === true,
     };
   }
 

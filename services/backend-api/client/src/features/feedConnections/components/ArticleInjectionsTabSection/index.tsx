@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   CloseButton,
+  Collapse,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -14,24 +15,32 @@ import {
   HStack,
   Heading,
   Input,
+  Select,
   Stack,
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { v4 } from "uuid";
-import { useState } from "react";
+import { ComponentProps, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateArticleInjectionModal from "./CreateArticleInjectionModal";
-import { SavedUnsavedChangesPopupBar } from "../../../../components";
+import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
 import { useUpdateUserFeed } from "../../../feed";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
-import { ArticleInjection } from "../../../../types";
+import {
+  ArticleInjection,
+  FeedConnectionType,
+  FeedDiscordChannelConnection,
+} from "../../../../types";
+import { ArticleInjectionPlaceholderPreview } from "./ArticleInjectionPlaceholderPreview";
+import { BlockableFeature, SupporterTier } from "../../../../constants";
+import { useArticleInjectionEligibility } from "./hooks/useArticleInjectionEligibility";
 
 const formSchema = object({
   injections: array(
@@ -60,99 +69,181 @@ const formSchema = object({
 
 type FormData = InferType<typeof formSchema>;
 
-const ArticleTabInjectionForm = ({ injectionIndex }: { injectionIndex: number }) => {
+const SelectorForm = ({
+  selectorIndex,
+  injectionIndex,
+}: {
+  selectorIndex: number;
+  injectionIndex: number;
+}) => {
+  const { userFeed } = useUserFeedContext();
   const {
     control,
     formState: { errors },
+    watch,
   } = useFormContext<FormData>();
-  const {
-    fields: selectors,
-    append,
-    remove,
-  } = useFieldArray({
+  const { fields: selectors, remove } = useFieldArray({
+    control,
+    name: `injections.${injectionIndex}.selectors`,
+    keyName: "idkey",
+  });
+  const [injection, selector] = watch([
+    `injections.${injectionIndex}`,
+    `injections.${injectionIndex}.selectors.${selectorIndex}`,
+  ]);
+
+  const cssSelectorError =
+    errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.cssSelector?.message;
+  const labelError =
+    errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.label?.message;
+
+  const [previewFormatOptions, setPreviewFormatOptions] =
+    useState<ComponentProps<typeof ArticleInjectionPlaceholderPreview>["formatOptions"]>();
+
+  const showPreview = !!previewFormatOptions;
+
+  const onChangeSelectedConnection = (connectionId: string) => {
+    const connection = userFeed.connections.find((c) => c.id === connectionId);
+
+    if (!connection) {
+      return;
+    }
+
+    if (connection.key === FeedConnectionType.DiscordChannel) {
+      const c = connection as FeedDiscordChannelConnection;
+
+      setPreviewFormatOptions({
+        formatTables: c.details.formatter.formatTables,
+        stripImages: c.details.formatter.stripImages,
+        disableImageLinkPreviews: c.details.formatter.disableImageLinkPreviews,
+      });
+    }
+  };
+
+  const onTogglePreview = () => {
+    if (!showPreview) {
+      const firstConnectionId = userFeed.connections[0]?.id;
+
+      if (!firstConnectionId) {
+        return;
+      }
+
+      onChangeSelectedConnection(firstConnectionId);
+    } else {
+      setPreviewFormatOptions(undefined);
+    }
+  };
+
+  return (
+    <Stack border="solid 2px" borderColor="gray.600" p={4} rounded="lg" spacing={4}>
+      <HStack spacing={4} flexWrap="wrap">
+        <FormControl flex={1} isInvalid={!!cssSelectorError}>
+          <FormLabel>CSS Selector</FormLabel>
+          <Controller
+            control={control}
+            name={`injections.${injectionIndex}.selectors.${selectorIndex}.cssSelector`}
+            render={({ field }) => (
+              <Input
+                {...field}
+                minWidth={300}
+                bg="gray.800"
+                fontFamily="mono"
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+              />
+            )}
+          />
+          {!cssSelectorError && (
+            <FormHelperText>
+              Target the element on the external page that contains the desired content.
+            </FormHelperText>
+          )}
+          {cssSelectorError && <FormErrorMessage>{cssSelectorError}</FormErrorMessage>}
+        </FormControl>
+        <FormControl flex={1} isInvalid={!!labelError}>
+          <FormLabel>Placeholder Label</FormLabel>
+          <Controller
+            control={control}
+            name={`injections.${injectionIndex}.selectors.${selectorIndex}.label`}
+            render={({ field }) => (
+              <Input
+                {...field}
+                minWidth={300}
+                bg="gray.800"
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+              />
+            )}
+          />
+          {!labelError && (
+            <FormHelperText>A unique label to reference as a placeholder.</FormHelperText>
+          )}
+          {labelError && <FormErrorMessage>{labelError}</FormErrorMessage>}
+        </FormControl>
+        <CloseButton
+          aria-label="Delete"
+          size="sm"
+          variant="ghost"
+          isDisabled={selectors.length === 1}
+          onClick={() => remove(selectorIndex)}
+          alignSelf="flex-start"
+        />
+      </HStack>
+      <Button
+        leftIcon={showPreview ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        size="sm"
+        onClick={() => onTogglePreview()}
+        mt={2}
+      >
+        {showPreview ? "Hide Preview" : "Show Preview"}
+      </Button>
+      <Box>
+        <Collapse in={!!previewFormatOptions} transition={{ enter: { duration: 0.3 } }}>
+          <Stack px={4}>
+            <FormControl flex={1}>
+              <FormLabel>Preview Connection</FormLabel>
+              <Select bg="gray.800" onChange={(e) => onChangeSelectedConnection(e.target.value)}>
+                {userFeed.connections.map((con) => (
+                  <option key={con.id} value={con.id}>
+                    {con.name}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+            <ArticleInjectionPlaceholderPreview
+              articleInjections={[
+                {
+                  id: injection.id,
+                  selectors: [selector],
+                  sourceField: injection.sourceField,
+                },
+              ]}
+              formatOptions={previewFormatOptions}
+            />
+          </Stack>
+        </Collapse>
+      </Box>
+    </Stack>
+  );
+};
+
+const ArticleTabInjectionForm = ({ injectionIndex }: { injectionIndex: number }) => {
+  const { control } = useFormContext<FormData>();
+  const { fields: selectors, append } = useFieldArray({
     control,
     name: `injections.${injectionIndex}.selectors`,
     keyName: "idkey",
   });
 
   return (
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    <Stack spacing={6} background="gray.700" p={4} rounded="lg">
+    <Stack spacing={8} background="gray.700" p={4} rounded="lg">
       {selectors?.map((s, selectorIndex) => {
-        const cssSelectorError =
-          errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.cssSelector?.message;
-        const labelError =
-          errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.label?.message;
-
         return (
-          <HStack
-            key={s.id}
-            spacing={4}
-            flexWrap="wrap"
-            border="solid 2px"
-            borderColor="gray.600"
-            p={4}
-            rounded="lg"
-          >
-            <FormControl flex={1} isInvalid={!!cssSelectorError}>
-              <FormLabel>CSS Selector</FormLabel>
-              <Controller
-                control={control}
-                name={`injections.${injectionIndex}.selectors.${selectorIndex}.cssSelector`}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    minWidth={300}
-                    bg="gray.800"
-                    fontFamily="mono"
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck="false"
-                  />
-                )}
-              />
-              {!cssSelectorError && (
-                <FormHelperText>
-                  Select the element on the page that contains the content that you want.
-                </FormHelperText>
-              )}
-              {cssSelectorError && <FormErrorMessage>{cssSelectorError}</FormErrorMessage>}
-            </FormControl>
-            <FormControl flex={1} isInvalid={!!labelError}>
-              <FormLabel>Placeholder Label</FormLabel>
-              <Controller
-                control={control}
-                name={`injections.${injectionIndex}.selectors.${selectorIndex}.label`}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    minWidth={300}
-                    bg="gray.800"
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck="false"
-                  />
-                )}
-              />
-              {!labelError && (
-                <FormHelperText>
-                  A unique label for this field. This will be used to reference this field as a
-                  placeholder.
-                </FormHelperText>
-              )}
-              {labelError && <FormErrorMessage>{labelError}</FormErrorMessage>}
-            </FormControl>
-            <CloseButton
-              aria-label="Delete"
-              size="sm"
-              variant="ghost"
-              isDisabled={selectors.length === 1}
-              onClick={() => remove(selectorIndex)}
-              alignSelf="flex-start"
-            />
-          </HStack>
+          <SelectorForm key={s.id} selectorIndex={selectorIndex} injectionIndex={injectionIndex} />
         );
       })}
       <Box>
@@ -176,6 +267,7 @@ const ArticleTabInjectionForm = ({ injectionIndex }: { injectionIndex: number })
 export const ArticleInjectionsTabSection = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
+  const { eligible, alertComponent } = useArticleInjectionEligibility();
   const formData = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues: {
@@ -224,12 +316,19 @@ export const ArticleInjectionsTabSection = () => {
               Article Injections
             </Heading>
             <Text>Create placeholders from external URLs to inject into your</Text>
+            <SubscriberBlockText
+              feature={BlockableFeature.ArticleInjections}
+              supporterTier={SupporterTier.T2}
+              alternateText={`While you can use this feature, you must be a supporter at a sufficient tier to
+    have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
+            />
+            {!eligible && <Box my={4}>{alertComponent}</Box>}
           </Stack>
           {fields?.length && (
             <Accordion allowToggle index={activeIndex} onChange={setActiveIndex}>
               {fields?.map((a, fieldIndex) => {
                 return (
-                  <AccordionItem>
+                  <AccordionItem key={a.id}>
                     <Heading as="h2" paddingY={2}>
                       <AccordionButton>
                         <HStack spacing={4}>
@@ -262,7 +361,11 @@ export const ArticleInjectionsTabSection = () => {
           )}
           <Box>
             <CreateArticleInjectionModal
-              trigger={<Button leftIcon={<AddIcon fontSize={13} />}>Add Placeholder</Button>}
+              trigger={
+                <Button isDisabled={!eligible} leftIcon={<AddIcon fontSize={13} />}>
+                  Add Placeholder
+                </Button>
+              }
               onSubmitted={(data) => {
                 append({
                   id: v4(),

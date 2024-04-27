@@ -33,6 +33,11 @@ export const UserMeSchema = object({
   featureFlags: object({
     articleInjections: bool(),
   }),
+  supporterFeatures: object({
+    articleInjections: object({
+      enabled: bool(),
+    }).optional(),
+  }).optional(),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;

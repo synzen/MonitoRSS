@@ -129,7 +129,7 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
                           }
 
                           return (
-                            <Tr>
+                            <Tr key={field}>
                               <Td width="min-content">
                                 <Radio
                                   value={field}

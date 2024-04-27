@@ -32,10 +32,8 @@ import { InlineErrorAlert, SavedUnsavedChangesPopupBar } from "@/components";
 import { FeedConnectionType } from "@/types";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
-import { useIsFeatureAllowed } from "@/hooks";
 import { BlockableFeature, CustomPlaceholderStepType, SupporterTier } from "@/constants";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
-import { useUserMe } from "../../../discordUser";
 
 interface Props {
   feedId: string;
@@ -50,14 +48,10 @@ export const CustomPlaceholdersTabSection = ({
   connectionType,
   articleFormat,
 }: Props) => {
-  const { allowed, loaded: loadedFeatures } = useIsFeatureAllowed({
-    feature: BlockableFeature.CustomPlaceholders,
-  });
   const { connection, status, error } = useConnection({
     connectionId,
     feedId,
   });
-  const { data: userMeData } = useUserMe();
   const { mutateAsync } = useUpdateConnection({
     type: connectionType,
     disablePreviewInvalidation: true,
@@ -150,7 +144,7 @@ export const CustomPlaceholdersTabSection = ({
     );
   }
 
-  if (status === "loading" || !loadedFeatures) {
+  if (status === "loading") {
     return (
       <Center>
         <Spinner />
@@ -169,13 +163,12 @@ export const CustomPlaceholdersTabSection = ({
           series of steps to only include the content you&apos;re interested in.
         </Text>
       </Stack>
-      {!allowed && (
-        <SubscriberBlockText
-          tier={userMeData?.result.isOnPatreon ? SupporterTier.T3 : SupporterTier.T1}
-          alternateText={`While you can use this feature, you must be a supporter at a sufficient tier to
+      <SubscriberBlockText
+        feature={BlockableFeature.CustomPlaceholders}
+        supporterTier={SupporterTier.T1}
+        alternateText={`While you can use this feature, you must be a supporter at a sufficient tier to
           have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
-        />
-      )}
+      />
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={4}>
