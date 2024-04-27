@@ -46,7 +46,7 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
     showTier = SupporterTier.T3;
   } else if (isOnPatreon && supporterTier === SupporterTier.T2) {
     showTier = SupporterTier.T4;
-  } else if (!isOnPatreon && supporterTier === SupporterTier.T3) {
+  } else if (isOnPatreon && supporterTier === SupporterTier.T3) {
     showTier = SupporterTier.T6;
   }
 
