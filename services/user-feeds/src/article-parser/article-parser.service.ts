@@ -319,39 +319,39 @@ export class ArticleParserService {
             const parsedBody = parse(body);
 
             selectors.forEach(({ cssSelector, label }) => {
-              const outerHtmlOfElement =
-                parsedBody.querySelector(cssSelector)?.outerHTML || "";
+              parsedBody
+                .querySelectorAll(cssSelector)
+                .slice(0, 10)
+                .forEach((e, index) => {
+                  const outerHtmlOfElement = e?.outerHTML || "";
 
-              const key = `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}`;
+                  const key =
+                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
+                    `${index}`;
 
-              targetRecord[key] = outerHtmlOfElement;
+                  targetRecord[key] = outerHtmlOfElement;
 
-              const { images: imageList, anchors: anchorList } =
-                this.extractExtraInfo(outerHtmlOfElement);
+                  const { images: imageList, anchors: anchorList } =
+                    this.extractExtraInfo(outerHtmlOfElement);
 
-              if (imageList.length) {
-                for (let i = 0; i < imageList.length; i++) {
-                  const image = imageList[i];
+                  if (imageList.length) {
+                    for (let i = 0; i < imageList.length; i++) {
+                      const image = imageList[i];
 
-                  newRecord[
-                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}extracted::${key}::image${
-                      i + 1
-                    }`
-                  ] = image;
-                }
-              }
+                      const imageKey = `${key}::image${i}`;
+                      targetRecord[imageKey] = image;
+                    }
+                  }
 
-              if (anchorList.length) {
-                for (let i = 0; i < anchorList.length; i++) {
-                  const anchor = anchorList[i];
+                  if (anchorList.length) {
+                    for (let i = 0; i < anchorList.length; i++) {
+                      const anchor = anchorList[i];
 
-                  newRecord[
-                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}extracted::${key}::anchor${
-                      i + 1
-                    }`
-                  ] = anchor;
-                }
-              }
+                      const anchorKey = `${key}::anchor${i}`;
+                      targetRecord[anchorKey] = anchor;
+                    }
+                  }
+                });
             });
           })
         );

@@ -136,7 +136,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
               </Text>
               <SubscriberBlockText
                 feature={BlockableFeature.DiscordWebhooks}
-                tier={SupporterTier.T1}
+                supporterTier={SupporterTier.T1}
                 onClick={onClose}
               />
               <Stack spacing={4}>

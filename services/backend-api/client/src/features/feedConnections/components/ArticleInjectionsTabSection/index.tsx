@@ -18,7 +18,6 @@ import {
   Heading,
   IconButton,
   Input,
-  Select,
   Stack,
   Text,
   Tooltip,
@@ -29,7 +28,7 @@ import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { v4 } from "uuid";
-import { ComponentProps, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateArticleInjectionModal from "./CreateArticleInjectionModal";
@@ -37,11 +36,7 @@ import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../co
 import { useUpdateUserFeed } from "../../../feed";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
-import {
-  ArticleInjection,
-  FeedConnectionType,
-  FeedDiscordChannelConnection,
-} from "../../../../types";
+import { ArticleInjection } from "../../../../types";
 import { ArticleInjectionPlaceholderPreview } from "./ArticleInjectionPlaceholderPreview";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { useArticleInjectionEligibility } from "./hooks/useArticleInjectionEligibility";
@@ -80,7 +75,6 @@ const SelectorForm = ({
   selectorIndex: number;
   injectionIndex: number;
 }) => {
-  const { userFeed } = useUserFeedContext();
   const {
     control,
     formState: { errors },
@@ -101,45 +95,25 @@ const SelectorForm = ({
   const labelError =
     errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.label?.message;
 
-  const [previewFormatOptions, setPreviewFormatOptions] =
-    useState<ComponentProps<typeof ArticleInjectionPlaceholderPreview>["formatOptions"]>();
-
-  const showPreview = !!previewFormatOptions;
-
-  const onChangeSelectedConnection = (connectionId: string) => {
-    const connection = userFeed.connections.find((c) => c.id === connectionId);
-
-    if (!connection) {
-      return;
-    }
-
-    if (connection.key === FeedConnectionType.DiscordChannel) {
-      const c = connection as FeedDiscordChannelConnection;
-
-      setPreviewFormatOptions({
-        formatTables: c.details.formatter.formatTables,
-        stripImages: c.details.formatter.stripImages,
-        disableImageLinkPreviews: c.details.formatter.disableImageLinkPreviews,
-      });
-    }
-  };
+  const [showPreview, setShowPreview] = useState(false);
 
   const onTogglePreview = () => {
-    if (!showPreview) {
-      const firstConnectionId = userFeed.connections[0]?.id;
-
-      if (!firstConnectionId) {
-        return;
-      }
-
-      onChangeSelectedConnection(firstConnectionId);
-    } else {
-      setPreviewFormatOptions(undefined);
-    }
+    setShowPreview((p) => !p);
   };
 
+  const previewInput = useMemo(
+    () => [
+      {
+        id: injection.id,
+        selectors: [selector],
+        sourceField: injection.sourceField,
+      },
+    ],
+    [injection.sourceField, selector.cssSelector, selector.label]
+  );
+
   return (
-    <Stack border="solid 2px" borderColor="gray.600" p={4} rounded="lg" spacing={4}>
+    <Stack border="solid 2px" borderColor="gray.600" p={4} rounded="lg" spacing={0}>
       <HStack spacing={4} flexWrap="wrap">
         <FormControl flex={1} isInvalid={!!cssSelectorError} isRequired>
           <Flex>
@@ -219,34 +193,17 @@ const SelectorForm = ({
         leftIcon={showPreview ? <ChevronUpIcon /> : <ChevronDownIcon />}
         size="sm"
         onClick={() => onTogglePreview()}
-        mt={2}
+        mt={6}
+        mb={1}
       >
         {showPreview ? "Hide Preview" : "Show Preview"}
       </Button>
-      <Box>
-        <Collapse in={!!previewFormatOptions} transition={{ enter: { duration: 0.3 } }}>
-          <Stack px={4}>
-            <FormControl flex={1}>
-              <FormLabel>Preview Connection</FormLabel>
-              <Select bg="gray.800" onChange={(e) => onChangeSelectedConnection(e.target.value)}>
-                {userFeed.connections.map((con) => (
-                  <option key={con.id} value={con.id}>
-                    {con.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-            <ArticleInjectionPlaceholderPreview
-              articleInjections={[
-                {
-                  id: injection.id,
-                  selectors: [selector],
-                  sourceField: injection.sourceField,
-                },
-              ]}
-              formatOptions={previewFormatOptions}
-            />
-          </Stack>
+      <Box bg="gray.800" rounded="lg">
+        <Collapse in={showPreview} transition={{ enter: { duration: 0.3 } }}>
+          <ArticleInjectionPlaceholderPreview
+            articleInjections={previewInput}
+            disabled={!showPreview}
+          />
         </Collapse>
       </Box>
     </Stack>

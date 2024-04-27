@@ -28,7 +28,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { Loading, Menu, ThemedSelect } from "@/components";
-import { GetArticlesFilterReturnType } from "../../constants";
 import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from "../../hooks";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { GetUserFeedArticlesInput } from "../../api";
@@ -90,10 +89,11 @@ export const ArticleSelectDialog = ({
           ]
             .concat(["id"])
             .filter((i) => i) as string[]),
-      filters: {
-        returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
-        search: debouncedSearch,
-      },
+      filters: debouncedSearch
+        ? {
+            search: debouncedSearch,
+          }
+        : undefined,
       formatter: articleFormatter,
     },
   });
