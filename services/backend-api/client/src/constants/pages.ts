@@ -1,4 +1,5 @@
 import { FeedConnectionType } from "../types";
+import { UserFeedTabSearchParam } from "./userFeedTabSearchParam";
 
 const getConnectionPathByType = (type: FeedConnectionType) => {
   switch (type) {
@@ -14,7 +15,8 @@ export const pages = {
   userFeeds: () => "/feeds",
   notFound: () => "/not-found",
   testPaddle: () => "/test-paddle",
-  userFeed: (feedId: string) => `/feeds/${feedId}`,
+  userFeed: (feedId: string, opts?: { tab?: UserFeedTabSearchParam }) =>
+    `/feeds/${feedId}${opts?.tab ? opts.tab : ""}`,
   userFeedConnection: (data: {
     feedId: string;
     connectionType: FeedConnectionType;

@@ -1,25 +1,4 @@
-import { Type } from "class-transformer";
-import {
-  IsArray,
-  IsNotEmpty,
-  IsObject,
-  IsString,
-  ValidateNested,
-} from "class-validator";
-
-export class ExternalPropertyFieldDto {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @IsString()
-  @IsNotEmpty()
-  label: string;
-
-  @IsString()
-  @IsNotEmpty()
-  cssSelector: string;
-}
+import { IsNotEmpty, IsString } from "class-validator";
 
 export class ExternalPropertyDto {
   @IsString()
@@ -30,9 +9,11 @@ export class ExternalPropertyDto {
   @IsNotEmpty()
   sourceField: string;
 
-  @IsArray()
-  @IsObject({ each: true })
-  @ValidateNested({ each: true })
-  @Type(() => ExternalPropertyFieldDto)
-  selectors: ExternalPropertyFieldDto[];
+  @IsString()
+  @IsNotEmpty()
+  label: string;
+
+  @IsString()
+  @IsNotEmpty()
+  cssSelector: string;
 }

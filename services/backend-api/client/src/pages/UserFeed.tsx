@@ -70,21 +70,14 @@ import { FeedConnectionDisabledCode } from "../types";
 import { formatRefreshRateSeconds } from "../utils/formatRefreshRateSeconds";
 import { ExternalPropertiesTabSection } from "../features/feedConnections/components/ExternalPropertiesTabSection";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
-
-enum TabSearchParam {
-  Connections = "?view=connections",
-  Comparisons = "?view=comparisons",
-  Logs = "?view=logs",
-  Settings = "?view=settings",
-  ExternalProperties = "?view=external-properties",
-}
+import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 
 const tabIndexBySearchParam = new Map<string, number>([
-  [TabSearchParam.Connections, 0],
-  [TabSearchParam.Comparisons, 1],
-  [TabSearchParam.Settings, 2],
-  [TabSearchParam.Logs, 3],
-  [TabSearchParam.ExternalProperties, 4],
+  [UserFeedTabSearchParam.Connections, 0],
+  [UserFeedTabSearchParam.Comparisons, 1],
+  [UserFeedTabSearchParam.Settings, 2],
+  [UserFeedTabSearchParam.Logs, 3],
+  [UserFeedTabSearchParam.ExternalProperties, 4],
 ]);
 
 export const UserFeed: React.FC = () => {
@@ -94,6 +87,7 @@ export const UserFeed: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
+  console.log("url", urlSearch);
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<
@@ -232,6 +226,8 @@ export const UserFeed: React.FC = () => {
     (c) => c.disabledCode === FeedConnectionDisabledCode.Manual
   );
 
+  const tabIndex = tabIndexBySearchParam.get(urlSearch);
+
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <UserFeedProvider feedId={feedId}>
@@ -251,7 +247,7 @@ export const UserFeed: React.FC = () => {
           }}
           onUpdate={onUpdateFeed}
         />
-        <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
+        <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined}>
           <Stack
             width="100%"
             minWidth="100%"
@@ -494,7 +490,7 @@ export const UserFeed: React.FC = () => {
                 <Tab
                   onClick={() =>
                     navigate({
-                      search: TabSearchParam.Connections,
+                      search: UserFeedTabSearchParam.Connections,
                     })
                   }
                 >
@@ -503,7 +499,7 @@ export const UserFeed: React.FC = () => {
                 <Tab
                   onClick={() =>
                     navigate({
-                      search: TabSearchParam.Comparisons,
+                      search: UserFeedTabSearchParam.Comparisons,
                     })
                   }
                 >
@@ -512,7 +508,7 @@ export const UserFeed: React.FC = () => {
                 <Tab
                   onClick={() =>
                     navigate({
-                      search: TabSearchParam.Settings,
+                      search: UserFeedTabSearchParam.Settings,
                     })
                   }
                 >
@@ -521,7 +517,7 @@ export const UserFeed: React.FC = () => {
                 <Tab
                   onClick={() =>
                     navigate({
-                      search: TabSearchParam.Logs,
+                      search: UserFeedTabSearchParam.Logs,
                     })
                   }
                 >
@@ -531,7 +527,7 @@ export const UserFeed: React.FC = () => {
                   <Tab
                     onClick={() =>
                       navigate({
-                        search: TabSearchParam.ExternalProperties,
+                        search: UserFeedTabSearchParam.ExternalProperties,
                       })
                     }
                   >

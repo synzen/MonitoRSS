@@ -18,10 +18,8 @@ export interface GetFeedArticlesInput {
     customPlaceholders?: Array<CustomPlaceholderDto> | null;
     externalProperties?: Array<{
       sourceField: string;
-      selectors: Array<{
-        label: string;
-        cssSelector: string;
-      }>;
+      label: string;
+      cssSelector: string;
     }> | null;
     options: {
       stripImages: boolean;

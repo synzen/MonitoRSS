@@ -24,10 +24,8 @@ export interface GetArticlesInput {
     };
     externalProperties?: Array<{
       sourceField: string;
-      selectors: Array<{
-        label: string;
-        cssSelector: string;
-      }>;
+      label: string;
+      cssSelector: string;
     }> | null;
     customPlaceholders?: CustomPlaceholderDto[] | null;
   };

@@ -10,7 +10,7 @@ import {
 } from "../shared";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { parse, valid } from "node-html-parser";
+import { HTMLElement, parse, valid } from "node-html-parser";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import { ExternalFeedProperty, PostProcessParserRule } from "./constants";
 import "dayjs/locale/af";
@@ -282,76 +282,89 @@ export class ArticleParserService {
           return;
         }
 
+        const parsedBodiesBySourceField: Record<string, HTMLElement | null> =
+          {};
+
         await Promise.allSettled(
           (externalFeedProperties || [])?.map(
-            async ({ selectors, sourceField }) => {
+            async ({ cssSelector, label, sourceField }) => {
               const sourceFieldValue = targetRecord[sourceField];
 
               if (!sourceFieldValue) {
                 return;
               }
 
-              const res = await this.feedFetcherService.fetch(
-                sourceFieldValue,
-                {
-                  executeFetchIfNotInCache: true,
-                  retries: 3,
-                }
-              );
+              let parsedBody = parsedBodiesBySourceField[sourceField];
 
-              if (res.requestStatus !== FeedResponseRequestStatus.Success) {
-                logger.error(`Failed to fetch article injection`, {
-                  sourceField,
+              if (parsedBody === null) {
+                return;
+              }
+
+              if (!parsedBody) {
+                const res = await this.feedFetcherService.fetch(
                   sourceFieldValue,
-                  res,
-                });
+                  {
+                    executeFetchIfNotInCache: true,
+                    retries: 3,
+                  }
+                );
 
-                return;
-              }
-
-              const { body } = res;
-
-              if (!valid(body)) {
-                return;
-              }
-
-              const parsedBody = parse(body);
-
-              selectors.forEach(({ cssSelector, label }) => {
-                parsedBody
-                  .querySelectorAll(cssSelector)
-                  .slice(0, 10)
-                  .forEach((e, index) => {
-                    const outerHtmlOfElement = e?.outerHTML || "";
-
-                    const key =
-                      `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
-                      `${index}`;
-
-                    targetRecord[key] = outerHtmlOfElement;
-
-                    const { images: imageList, anchors: anchorList } =
-                      this.extractExtraInfo(outerHtmlOfElement);
-
-                    if (imageList.length) {
-                      for (let i = 0; i < imageList.length; i++) {
-                        const image = imageList[i];
-
-                        const imageKey = `${key}::image${i}`;
-                        targetRecord[imageKey] = image;
-                      }
-                    }
-
-                    if (anchorList.length) {
-                      for (let i = 0; i < anchorList.length; i++) {
-                        const anchor = anchorList[i];
-
-                        const anchorKey = `${key}::anchor${i}`;
-                        targetRecord[anchorKey] = anchor;
-                      }
-                    }
+                if (res.requestStatus !== FeedResponseRequestStatus.Success) {
+                  logger.error(`Failed to fetch article injection`, {
+                    sourceField,
+                    sourceFieldValue,
+                    res,
                   });
-              });
+
+                  parsedBodiesBySourceField[sourceField] = null;
+
+                  return;
+                }
+
+                const body = res.body;
+
+                if (!valid(body)) {
+                  parsedBodiesBySourceField[sourceField] = null;
+
+                  return;
+                }
+
+                parsedBody = parse(body);
+              }
+
+              parsedBody
+                .querySelectorAll(cssSelector)
+                .slice(0, 10)
+                .forEach((e, index) => {
+                  const outerHtmlOfElement = e?.outerHTML || "";
+
+                  const key =
+                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
+                    `${index}`;
+
+                  targetRecord[key] = outerHtmlOfElement;
+
+                  const { images: imageList, anchors: anchorList } =
+                    this.extractExtraInfo(outerHtmlOfElement);
+
+                  if (imageList.length) {
+                    for (let i = 0; i < imageList.length; i++) {
+                      const image = imageList[i];
+
+                      const imageKey = `${key}::image${i}`;
+                      targetRecord[imageKey] = image;
+                    }
+                  }
+
+                  if (anchorList.length) {
+                    for (let i = 0; i < anchorList.length; i++) {
+                      const anchor = anchorList[i];
+
+                      const anchorKey = `${key}::anchor${i}`;
+                      targetRecord[anchorKey] = anchor;
+                    }
+                  }
+                });
             }
           )
         );

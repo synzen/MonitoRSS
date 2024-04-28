@@ -1,9 +1,4 @@
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Button,
   CloseButton,
@@ -29,15 +24,15 @@ import {
   Portal,
   Stack,
   Text,
-  chakra,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, EditIcon } from "@chakra-ui/icons";
 import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { v4 } from "uuid";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FiHelpCircle } from "react-icons/fi";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateArticleInjectionModal from "./CreateExternalPropertyModal";
 import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
@@ -48,61 +43,51 @@ import { ExternalPropertyPreview } from "./ExternalPropertyPreview";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { useExternalPropertiesEligibility } from "./hooks/useExternalPropertiesEligibility";
 import { ExternalProperty } from "../../../../types";
+import UpdateExternalPropertyModal from "./UpdateExternalPropertyModal";
 
 const formSchema = object({
   externalProperties: array(
     object({
       id: string().required(),
       sourceField: string().required(),
-      selectors: array(
-        object({
-          id: string().required(),
-          label: string()
-            .required("This is a required field")
-            .test("unique", "Cannot have duplicate placeholder labels", (value, context) => {
-              const { selectors } = context.from?.[1].value as ExternalProperty;
-              const names = selectors.map((s) => s.label);
+      cssSelector: string().required("This is a required field"),
+      label: string()
+        .required("This is a required field")
+        .test(
+          "unique",
+          "Placeholder labels must be unique among all selectors",
+          (value, context) => {
+            const properties = context.from?.[1].value.externalProperties as ExternalProperty[];
+            const names = properties.map((s) => s.label);
 
-              return !names.length || names.filter((n) => n === value).length === 1;
-            }),
-          cssSelector: string().required("This is a required field"),
-        }).required()
-      )
-        .required()
-        .min(1),
+            return !names.length || names.filter((n) => n === value).length === 1;
+          }
+        ),
     }).required()
-  ),
+  ).required(),
 });
 
 type FormData = InferType<typeof formSchema>;
 
-const SelectorForm = ({
-  selectorIndex,
+const ExternalPropertyForm = ({
   externalPropertyIndex,
+  onClickDelete,
 }: {
-  selectorIndex: number;
   externalPropertyIndex: number;
+  onClickDelete: () => void;
 }) => {
   const {
     control,
     formState: { errors },
     watch,
   } = useFormContext<FormData>();
-  const { fields: selectors, remove } = useFieldArray({
-    control,
-    name: `externalProperties.${externalPropertyIndex}.selectors`,
-    keyName: "idkey",
-  });
-  const [externalProperty, selector] = watch([
-    `externalProperties.${externalPropertyIndex}`,
-    `externalProperties.${externalPropertyIndex}.selectors.${selectorIndex}`,
-  ]);
+  const [externalProperty] = watch([`externalProperties.${externalPropertyIndex}`]);
 
+  const sourceFieldError =
+    errors?.externalProperties?.[externalPropertyIndex]?.sourceField?.message;
   const cssSelectorError =
-    errors?.externalProperties?.[externalPropertyIndex]?.selectors?.[selectorIndex]?.cssSelector
-      ?.message;
-  const labelError =
-    errors?.externalProperties?.[externalPropertyIndex]?.selectors?.[selectorIndex]?.label?.message;
+    errors?.externalProperties?.[externalPropertyIndex]?.cssSelector?.message;
+  const labelError = errors?.externalProperties?.[externalPropertyIndex]?.label?.message;
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -114,23 +99,80 @@ const SelectorForm = ({
     () => [
       {
         id: externalProperty.id,
-        selectors: [selector],
         sourceField: externalProperty.sourceField,
+        cssSelector: externalProperty.cssSelector,
+        label: externalProperty.label,
       },
     ],
-    [externalProperty.sourceField, selector.cssSelector, selector.label]
+    [externalProperty.sourceField, externalProperty.cssSelector, externalProperty.label]
   );
 
   return (
-    <Stack border="solid 2px" borderColor="gray.600" p={4} rounded="lg" spacing={0}>
-      <FormControl />
-      <HStack spacing={4} flexWrap="wrap">
-        <FormControl flex={1} isInvalid={!!cssSelectorError} isRequired>
+    <Stack
+      border="solid 2px"
+      borderColor="gray.600"
+      bg="gray.700"
+      px={6}
+      py={6}
+      rounded="lg"
+      spacing={0}
+      position="relative"
+    >
+      <CloseButton
+        aria-label="Delete"
+        position="absolute"
+        right={2}
+        top={2}
+        size="sm"
+        variant="ghost"
+        onClick={() => onClickDelete()}
+        alignSelf="flex-start"
+      />
+      <Stack spacing={4} flexWrap="wrap">
+        <HStack>
+          <FormControl isInvalid={!!sourceFieldError} isRequired>
+            <FormLabel>Source Property</FormLabel>
+            <Controller
+              control={control}
+              name={`externalProperties.${externalPropertyIndex}.sourceField`}
+              render={({ field }) => (
+                <UpdateExternalPropertyModal
+                  defaultValue={field.value}
+                  trigger={
+                    <Button
+                      fontSize="md"
+                      variant="outline"
+                      fontFamily="mono"
+                      fontWeight="medium"
+                      rightIcon={<EditIcon />}
+                    >
+                      {field.value}
+                    </Button>
+                  }
+                  onSubmitted={({ sourceField }) => field.onChange(sourceField)}
+                />
+              )}
+            />
+            {!sourceFieldError && (
+              <FormHelperText>
+                The property containing the URL that references the page with the desired content.
+              </FormHelperText>
+            )}
+            {sourceFieldError && <FormErrorMessage>{sourceFieldError}</FormErrorMessage>}
+          </FormControl>
+        </HStack>
+        <FormControl isInvalid={!!cssSelectorError} isRequired>
           <Flex justifyContent="space-between">
             <FormLabel>CSS Selector</FormLabel>
             <Popover>
               <PopoverTrigger>
-                <Button variant="link" fontWeight="medium" color="whiteAlpha.700" fontSize="sm">
+                <Button
+                  variant="link"
+                  fontWeight="medium"
+                  color="blue.300"
+                  fontSize="sm"
+                  leftIcon={<FiHelpCircle />}
+                >
                   What is this?
                 </Button>
               </PopoverTrigger>
@@ -155,6 +197,8 @@ const SelectorForm = ({
                     <br />
                     <br />
                     <OrderedList>
+                      <ListItem>Click &quot;Show Preview&quot; in this form</ListItem>
+                      <ListItem>Open the external page in a new tab</ListItem>
                       <ListItem>Right-click the element on the page you want to target</ListItem>
                       <ListItem>Click &quot;Inspect&quot;</ListItem>
                       <ListItem>
@@ -171,7 +215,7 @@ const SelectorForm = ({
           </Flex>
           <Controller
             control={control}
-            name={`externalProperties.${externalPropertyIndex}.selectors.${selectorIndex}.cssSelector`}
+            name={`externalProperties.${externalPropertyIndex}.cssSelector`}
             render={({ field }) => (
               <Input
                 {...field}
@@ -187,16 +231,16 @@ const SelectorForm = ({
           />
           {!cssSelectorError && (
             <FormHelperText>
-              Target the element on the external page that contains the desired content.
+              Target the elements on the external page that contains the desired content.
             </FormHelperText>
           )}
           {cssSelectorError && <FormErrorMessage>{cssSelectorError}</FormErrorMessage>}
         </FormControl>
-        <FormControl flex={1} isInvalid={!!labelError} isRequired>
+        <FormControl isInvalid={!!labelError} isRequired>
           <FormLabel>Placeholder Label</FormLabel>
           <Controller
             control={control}
-            name={`externalProperties.${externalPropertyIndex}.selectors.${selectorIndex}.label`}
+            name={`externalProperties.${externalPropertyIndex}.label`}
             render={({ field }) => (
               <Input
                 {...field}
@@ -210,19 +254,14 @@ const SelectorForm = ({
             )}
           />
           {!labelError && (
-            <FormHelperText>A unique label to reference as a placeholder.</FormHelperText>
+            <FormHelperText>
+              A label to reference as a placeholder within connections for customizations. Must be
+              unique among all selectors.
+            </FormHelperText>
           )}
           {labelError && <FormErrorMessage>{labelError}</FormErrorMessage>}
         </FormControl>
-        <CloseButton
-          aria-label="Delete"
-          size="sm"
-          variant="ghost"
-          isDisabled={selectors.length === 1}
-          onClick={() => remove(selectorIndex)}
-          alignSelf="flex-start"
-        />
-      </HStack>
+      </Stack>
       <Button
         leftIcon={showPreview ? <ChevronUpIcon /> : <ChevronDownIcon />}
         size="sm"
@@ -241,58 +280,19 @@ const SelectorForm = ({
   );
 };
 
-const ArticleTabInjectionForm = ({ externalPropertyIndex }: { externalPropertyIndex: number }) => {
-  const { control } = useFormContext<FormData>();
-  const { fields: selectors, append } = useFieldArray({
-    control,
-    name: `externalProperties.${externalPropertyIndex}.selectors`,
-    keyName: "idkey",
-  });
-
-  return (
-    <Stack spacing={8} background="gray.700" p={4} rounded="lg">
-      {selectors?.map((s, selectorIndex) => {
-        return (
-          <SelectorForm
-            key={s.id}
-            selectorIndex={selectorIndex}
-            externalPropertyIndex={externalPropertyIndex}
-          />
-        );
-      })}
-      <Box>
-        <Button
-          leftIcon={<AddIcon fontSize={13} />}
-          onClick={() =>
-            append({
-              id: v4(),
-              label: "",
-              cssSelector: "",
-            })
-          }
-        >
-          Add selector
-        </Button>
-      </Box>
-    </Stack>
-  );
-};
-
 export const ExternalPropertiesTabSection = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
   const { eligible, alertComponent } = useExternalPropertiesEligibility();
   const formData = useForm<FormData>({
+    mode: "all",
     resolver: yupResolver(formSchema),
     defaultValues: {
       externalProperties: (userFeed?.externalProperties || []).map((i) => ({
         id: i.id,
         sourceField: i.sourceField,
-        selectors: i.selectors.map((f) => ({
-          id: f.id,
-          label: f.label,
-          cssSelector: f.cssSelector,
-        })),
+        cssSelector: i.cssSelector,
+        label: i.label,
       })),
     },
   });
@@ -302,7 +302,6 @@ export const ExternalPropertiesTabSection = () => {
     name: "externalProperties",
     keyName: "idkey",
   });
-  const [activeIndex, setActiveIndex] = useState<number[] | number>();
   const { mutateAsync } = useUpdateUserFeed();
 
   const onSubmit = async (data: FormData) => {
@@ -333,7 +332,8 @@ export const ExternalPropertiesTabSection = () => {
               <Text>
                 Create additional article properties that come from linked pages within feed
                 articles. These article properties can then be used as placeholders to further
-                customize messages per connection.
+                customize messages per connection. Up to 10 external placeholders can be generated
+                per selector.
               </Text>
             </Stack>
             {!eligible ? <Box mb={4}>{alertComponent}</Box> : undefined}
@@ -344,62 +344,31 @@ export const ExternalPropertiesTabSection = () => {
     have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
             />
           </Box>
-          {fields?.length && (
-            <Accordion allowToggle index={activeIndex} onChange={setActiveIndex}>
-              {fields?.map((a, fieldIndex) => {
-                return (
-                  <AccordionItem key={a.id}>
-                    <Heading as="h2" paddingY={2}>
-                      <AccordionButton>
-                        <HStack spacing={4}>
-                          <AccordionIcon />
-                          <chakra.span>Source Property: </chakra.span>
-                          <chakra.span fontFamily="mono">{a.sourceField}</chakra.span>
-                        </HStack>
-                      </AccordionButton>
-                    </Heading>
-                    <AccordionPanel pb={4}>
-                      <Stack spacing={4}>
-                        <ArticleTabInjectionForm externalPropertyIndex={fieldIndex} />
-                        <Box>
-                          <Button
-                            variant="outline"
-                            colorScheme="red"
-                            onClick={() => {
-                              remove(fieldIndex);
-                              setActiveIndex(undefined);
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        </Box>
-                      </Stack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-          )}
+          {fields?.map((a, fieldIndex) => {
+            return (
+              <ExternalPropertyForm
+                key={a.id}
+                externalPropertyIndex={fieldIndex}
+                onClickDelete={() => {
+                  remove(fieldIndex);
+                }}
+              />
+            );
+          })}
           <Box>
             <CreateArticleInjectionModal
               trigger={
                 <Button isDisabled={!eligible} leftIcon={<AddIcon fontSize={13} />}>
-                  Add External Property
+                  Add Selector
                 </Button>
               }
               onSubmitted={(data) => {
                 append({
                   id: v4(),
                   sourceField: data.sourceField,
-                  selectors: [
-                    {
-                      id: v4(),
-                      label: "",
-                      cssSelector: "",
-                    },
-                  ],
+                  label: "",
+                  cssSelector: "",
                 });
-                setActiveIndex(fields.length);
               }}
             />
           </Box>

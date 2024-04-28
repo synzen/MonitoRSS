@@ -43,34 +43,26 @@ const mockUserFeeds: UserFeed[] = [
       {
         id: "1",
         sourceField: "url",
-        selectors: [
-          {
-            id: "field-1",
-            label: "field1",
-            cssSelector: "#title",
-          },
-          {
-            id: "field-2",
-            label: "field2",
-            cssSelector: "#description",
-          },
-        ],
+        label: "field1",
+        cssSelector: "#title",
+      },
+      {
+        id: "1a",
+        sourceField: "url",
+        label: "field2",
+        cssSelector: "#description",
       },
       {
         id: "2",
         sourceField: "image::url",
-        selectors: [
-          {
-            id: "field-1",
-            label: "field1",
-            cssSelector: "#title",
-          },
-          {
-            id: "field-2",
-            label: "field2",
-            cssSelector: "#description",
-          },
-        ],
+        label: "field3",
+        cssSelector: "#title",
+      },
+      {
+        id: "2a",
+        sourceField: "image::url",
+        label: "field4",
+        cssSelector: "#description",
       },
     ],
     refreshRateOptions: [
