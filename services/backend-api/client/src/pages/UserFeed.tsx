@@ -87,7 +87,6 @@ export const UserFeed: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { search: urlSearch } = useLocation();
-  console.log("url", urlSearch);
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<

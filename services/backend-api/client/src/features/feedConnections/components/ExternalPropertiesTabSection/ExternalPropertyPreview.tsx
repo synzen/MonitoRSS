@@ -237,7 +237,15 @@ export const ExternalPropertyPreview = ({
       />
       <HStack>
         <FormControl>
-          <FormLabel>External Pages from Source Properties</FormLabel>
+          <FormLabel>
+            External Pages from Preview Article (
+            <HStack display="inline">
+              {externalProperties.map((p) => (
+                <Code>{p.sourceField}</Code>
+              ))}
+            </HStack>
+            )
+          </FormLabel>
           <Stack>
             {externalProperties.map(({ sourceField, id }) => {
               const href = article[sourceField];

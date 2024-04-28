@@ -30,12 +30,17 @@ import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { v4 } from "uuid";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FiHelpCircle } from "react-icons/fi";
+import { motion } from "framer-motion";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateArticleInjectionModal from "./CreateExternalPropertyModal";
-import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
+import {
+  AnimatedComponent,
+  SavedUnsavedChangesPopupBar,
+  SubscriberBlockText,
+} from "../../../../components";
 import { useUpdateUserFeed } from "../../../feed";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
@@ -72,16 +77,16 @@ type FormData = InferType<typeof formSchema>;
 const ExternalPropertyForm = ({
   externalPropertyIndex,
   onClickDelete,
+  externalProperty,
 }: {
   externalPropertyIndex: number;
   onClickDelete: () => void;
+  externalProperty: ExternalProperty;
 }) => {
   const {
     control,
     formState: { errors },
-    watch,
   } = useFormContext<FormData>();
-  const [externalProperty] = watch([`externalProperties.${externalPropertyIndex}`]);
 
   const sourceFieldError =
     errors?.externalProperties?.[externalPropertyIndex]?.sourceField?.message;
@@ -94,18 +99,6 @@ const ExternalPropertyForm = ({
   const onTogglePreview = () => {
     setShowPreview((p) => !p);
   };
-
-  const previewInput = useMemo(
-    () => [
-      {
-        id: externalProperty.id,
-        sourceField: externalProperty.sourceField,
-        cssSelector: externalProperty.cssSelector,
-        label: externalProperty.label,
-      },
-    ],
-    [externalProperty.sourceField, externalProperty.cssSelector, externalProperty.label]
-  );
 
   return (
     <Stack
@@ -273,7 +266,21 @@ const ExternalPropertyForm = ({
       </Button>
       <Box bg="gray.800" rounded="lg">
         <Collapse in={showPreview} transition={{ enter: { duration: 0.3 } }}>
-          <ExternalPropertyPreview externalProperties={previewInput} disabled={!showPreview} />
+          <ExternalPropertyPreview
+            externalProperties={
+              !externalProperty
+                ? []
+                : [
+                    {
+                      id: externalProperty.id,
+                      sourceField: externalProperty.sourceField,
+                      cssSelector: externalProperty.cssSelector,
+                      label: externalProperty.label,
+                    },
+                  ]
+            }
+            disabled={!showPreview}
+          />
         </Collapse>
       </Box>
     </Stack>
@@ -344,17 +351,47 @@ export const ExternalPropertiesTabSection = () => {
     have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
             />
           </Box>
-          {fields?.map((a, fieldIndex) => {
-            return (
-              <ExternalPropertyForm
-                key={a.id}
-                externalPropertyIndex={fieldIndex}
-                onClickDelete={() => {
-                  remove(fieldIndex);
-                }}
-              />
-            );
-          })}
+          <AnimatedComponent>
+            {fields?.map((a, fieldIndex) => {
+              return (
+                <Box
+                  /**
+                   * fields from useFieldsArray will be empty when the last element is removed, but the form state
+                   * will still contain the last element due to a bug with framer motion.
+                   *
+                   * https://github.com/orgs/react-hook-form/discussions/11379
+                   */
+                  onAnimationComplete={(anim: { opacity: number }) => {
+                    if (anim.opacity === 0 && fieldIndex === fields.length - 1) {
+                      remove(fieldIndex);
+                    }
+                  }}
+                  key={a.idkey}
+                  as={motion.div}
+                  exit={{
+                    opacity: 0,
+                  }}
+                  initial={{
+                    opacity: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                  }}
+                  transition={{
+                    type: "linear",
+                  }}
+                >
+                  <ExternalPropertyForm
+                    externalPropertyIndex={fieldIndex}
+                    externalProperty={a}
+                    onClickDelete={() => {
+                      remove(fieldIndex);
+                    }}
+                  />
+                </Box>
+              );
+            })}
+          </AnimatedComponent>
           <Box>
             <CreateArticleInjectionModal
               trigger={
