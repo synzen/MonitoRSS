@@ -5,7 +5,7 @@ import { useUserFeedArticles } from "../../../../feed";
 
 const ARTICLE_THRESHOLD = 25;
 
-export const useArticleInjectionEligibility = () => {
+export const useExternalPropertiesEligibility = () => {
   const { userFeed } = useUserFeedContext();
   const { data } = useUserFeedArticles({
     feedId: userFeed.id,
@@ -44,13 +44,14 @@ export const useArticleInjectionEligibility = () => {
     loaded: true,
     eligible: false,
     alertComponent: (
-      <Alert status="warning">
+      <Alert status="warning" rounded="lg">
         <AlertIcon />
         <Box>
           <AlertTitle>This feature is disabled for this feed</AlertTitle>
           <AlertDescription>
-            To prevent performance issues, this feature is disabled and will not be processed for
-            any articles in feeds with over {ARTICLE_THRESHOLD} articles in them.
+            To prevent performance issues, this feature is only enabled for feeds with fewer than{" "}
+            {ARTICLE_THRESHOLD + 1} articles. This feed currently has {data.result.totalArticles}{" "}
+            articles.
           </AlertDescription>
         </Box>
       </Alert>

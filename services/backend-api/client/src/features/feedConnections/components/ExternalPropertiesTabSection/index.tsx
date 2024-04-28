@@ -16,14 +16,22 @@ import {
   FormLabel,
   HStack,
   Heading,
-  IconButton,
   Input,
+  ListItem,
+  OrderedList,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+  Portal,
   Stack,
   Text,
-  Tooltip,
   chakra,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, InfoOutlineIcon } from "@chakra-ui/icons";
+import { AddIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -38,7 +46,7 @@ import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
 import { ExternalPropertyPreview } from "./ExternalPropertyPreview";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
-import { useArticleInjectionEligibility } from "./hooks/useArticleInjectionEligibility";
+import { useExternalPropertiesEligibility } from "./hooks/useExternalPropertiesEligibility";
 import { ExternalProperty } from "../../../../types";
 
 const formSchema = object({
@@ -115,26 +123,51 @@ const SelectorForm = ({
 
   return (
     <Stack border="solid 2px" borderColor="gray.600" p={4} rounded="lg" spacing={0}>
+      <FormControl />
       <HStack spacing={4} flexWrap="wrap">
         <FormControl flex={1} isInvalid={!!cssSelectorError} isRequired>
-          <Flex>
+          <Flex justifyContent="space-between">
             <FormLabel>CSS Selector</FormLabel>
-            <Tooltip
-              label={
-                <span>
-                  CSS selectors are like paths to target element(s) on a webpage. An example is{" "}
-                  <Code colorScheme="black">img</Code> if you want to target images, or{" "}
-                  <Code colorScheme="black">a</Code> if you want to target links.
-                </span>
-              }
-            >
-              <IconButton
-                aria-label="tooltip"
-                icon={<InfoOutlineIcon />}
-                size="xs"
-                variant="link"
-              />
-            </Tooltip>
+            <Popover>
+              <PopoverTrigger>
+                <Button variant="link" fontWeight="medium" color="whiteAlpha.700" fontSize="sm">
+                  What is this?
+                </Button>
+              </PopoverTrigger>
+              <Portal>
+                <PopoverContent maxWidth={500} width="100%">
+                  <PopoverArrow />
+                  <PopoverHeader fontWeight="semibold">What is a CSS Selector?</PopoverHeader>
+                  <PopoverCloseButton />
+                  <PopoverBody>
+                    CSS selectors are like paths to target element(s) on a webpage. Some examples
+                    are:
+                    <br />
+                    <br />
+                    <Code colorScheme="black">img</Code> - targets all images
+                    <br />
+                    <Code colorScheme="black">a</Code> - target all anchors/links
+                    <br />
+                    <br />
+                    The more specific the selector, the more likely it is to be unique to the
+                    content you want to extract. You can use your browser&apos;s developer tools to
+                    find the CSS selector of an element on any page. To do so:
+                    <br />
+                    <br />
+                    <OrderedList>
+                      <ListItem>Right-click the element on the page you want to target</ListItem>
+                      <ListItem>Click &quot;Inspect&quot;</ListItem>
+                      <ListItem>
+                        Right-click the highlighted element in the developer tools and select
+                        &quot;Copy&quot; -&gt; &quot;Copy CSS selector&quot;
+                      </ListItem>
+                    </OrderedList>
+                    <br />
+                    The steps may vary depending on the browser you are using.
+                  </PopoverBody>
+                </PopoverContent>
+              </Portal>
+            </Popover>
           </Flex>
           <Controller
             control={control}
@@ -248,7 +281,7 @@ const ArticleTabInjectionForm = ({ externalPropertyIndex }: { externalPropertyIn
 export const ExternalPropertiesTabSection = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
-  const { eligible, alertComponent } = useArticleInjectionEligibility();
+  const { eligible, alertComponent } = useExternalPropertiesEligibility();
   const formData = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues: {
@@ -292,8 +325,8 @@ export const ExternalPropertiesTabSection = () => {
     <FormProvider {...formData}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={8} mb={24}>
-          <Stack spacing={4}>
-            <Stack>
+          <Box>
+            <Stack mb={4}>
               <Heading as="h2" size="md">
                 External Properties
               </Heading>
@@ -303,14 +336,14 @@ export const ExternalPropertiesTabSection = () => {
                 customize messages per connection.
               </Text>
             </Stack>
+            {!eligible ? <Box mb={4}>{alertComponent}</Box> : undefined}
             <SubscriberBlockText
               feature={BlockableFeature.ArticleInjections}
               supporterTier={SupporterTier.T2}
               alternateText={`While you can use this feature, you must be a ${SupporterTier.T2} supporter to
     have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
             />
-            {!eligible && <Box my={4}>{alertComponent}</Box>}
-          </Stack>
+          </Box>
           {fields?.length && (
             <Accordion allowToggle index={activeIndex} onChange={setActiveIndex}>
               {fields?.map((a, fieldIndex) => {
@@ -320,6 +353,7 @@ export const ExternalPropertiesTabSection = () => {
                       <AccordionButton>
                         <HStack spacing={4}>
                           <AccordionIcon />
+                          <chakra.span>Source Property: </chakra.span>
                           <chakra.span fontFamily="mono">{a.sourceField}</chakra.span>
                         </HStack>
                       </AccordionButton>

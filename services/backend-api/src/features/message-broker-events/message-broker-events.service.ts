@@ -101,22 +101,28 @@ export class MessageBrokerEventsService {
         const hasCustomPlaceholders = cons.find(
           (c) => !c.customPlaceholders?.length
         );
+        const hasExternalProperties = !!feed.externalProperties?.length;
+        const hasPremiumFeatures =
+          hasCustomPlaceholders || hasExternalProperties;
 
         let allowCustomPlaceholders = false;
+        let allowExternalProperties = false;
 
-        if (hasCustomPlaceholders) {
+        if (hasPremiumFeatures) {
           const benefits =
             await this.supportersService.getBenefitsOfDiscordUser(
               feed.user.discordUserId
             );
 
           allowCustomPlaceholders = benefits.allowCustomPlaceholders;
+          allowExternalProperties = benefits.allowExternalProperties;
         }
 
         await this.emitDeliverFeedArticlesEvent({
           userFeed: feed,
           maxDailyArticles: feed.maxDailyArticles as number,
           parseCustomPlaceholders: allowCustomPlaceholders,
+          parseExternalProperties: allowExternalProperties,
           user: feed.users[0],
         });
       } catch (err) {
@@ -377,11 +383,13 @@ export class MessageBrokerEventsService {
     userFeed,
     maxDailyArticles,
     parseCustomPlaceholders,
+    parseExternalProperties,
     user,
   }: {
     userFeed: UserFeed;
     maxDailyArticles: number;
     parseCustomPlaceholders: boolean;
+    parseExternalProperties?: boolean;
     user?: User;
   }) {
     const discordChannelMediums = userFeed.connections.discordChannels
@@ -494,7 +502,9 @@ export class MessageBrokerEventsService {
           dateLocale:
             userFeed.formatOptions?.dateLocale || user?.preferences?.dateLocale,
         },
-        externalProperties: userFeed.externalProperties,
+        externalProperties: parseExternalProperties
+          ? userFeed.externalProperties
+          : undefined,
         dateChecks: userFeed.dateCheckOptions,
       },
       mediums: allMediums,

@@ -1,1 +1,1 @@
-export const INJECTED_ARTICLE_PLACEHOLDER_PREFIX = "article::";
+export const INJECTED_ARTICLE_PLACEHOLDER_PREFIX = "external::";
