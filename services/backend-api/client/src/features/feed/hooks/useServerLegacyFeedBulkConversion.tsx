@@ -51,9 +51,7 @@ export const useSeverLegacyFeedBulkConversion = (
           await queryClient.invalidateQueries({
             predicate: (query) => {
               return (
-                (query.queryKey[0] === "feed" &&
-                  // @ts-ignore
-                  query.queryKey[1]?.feedId === inputData.feedId) ||
+                query.queryKey[0] === "feed" ||
                 query.queryKey[0] === "feeds" ||
                 query.queryKey[0] === "user-feeds" ||
                 query.queryKey[0] === "discord-user-me" ||
