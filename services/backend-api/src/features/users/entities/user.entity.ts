@@ -28,7 +28,7 @@ export const UserPreferencesSchema =
 })
 export class UserFeatureFlags {
   @Prop()
-  articleInjections?: boolean;
+  externalProperties?: boolean;
 }
 
 export const UserFeatureFlagsSchema =

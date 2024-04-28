@@ -12,7 +12,7 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { parse, valid } from "node-html-parser";
 import advancedFormat from "dayjs/plugin/advancedFormat";
-import { PostProcessParserRule } from "./constants";
+import { ExternalFeedProperty, PostProcessParserRule } from "./constants";
 import "dayjs/locale/af";
 import "dayjs/locale/am";
 import "dayjs/locale/ar-dz";
@@ -156,7 +156,6 @@ import "dayjs/locale/zh-tw";
 import "dayjs/locale/zh";
 import "dayjs/locale/rw";
 import "dayjs/locale/ru";
-import { ArticleInjection } from "./constants/article-injection.constants";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import logger from "../shared/utils/logger";
 
@@ -175,11 +174,11 @@ export class ArticleParserService {
     {
       useParserRules,
       formatOptions,
-      articleInjections,
+      externalFeedProperties,
     }: {
       formatOptions?: UserFeedFormatOptions;
       useParserRules: PostProcessParserRule[] | undefined;
-      articleInjections?: ArticleInjection[];
+      externalFeedProperties?: ExternalFeedProperty[];
     }
   ): Promise<{
     flattened: FlattenedArticleWithoutId;
@@ -187,10 +186,6 @@ export class ArticleParserService {
       targetRecord: Record<string, string>
     ) => Promise<void>;
   }> {
-    console.log(
-      "🚀 ~ ArticleParserService ~ articleInjections:",
-      articleInjections
-    );
     const flattened = flatten(input, {
       delimiter: ARTICLE_FIELD_DELIMITER,
     }) as Record<string, unknown>;
@@ -283,77 +278,82 @@ export class ArticleParserService {
     return {
       flattened: postProcessed,
       injectArticleContent: async (targetRecord: Record<string, string>) => {
-        if (!articleInjections?.length) {
+        if (!externalFeedProperties?.length) {
           return;
         }
 
         await Promise.allSettled(
-          (articleInjections || [])?.map(async ({ selectors, sourceField }) => {
-            const sourceFieldValue = targetRecord[sourceField];
+          (externalFeedProperties || [])?.map(
+            async ({ selectors, sourceField }) => {
+              const sourceFieldValue = targetRecord[sourceField];
 
-            if (!sourceFieldValue) {
-              return;
-            }
+              if (!sourceFieldValue) {
+                return;
+              }
 
-            const res = await this.feedFetcherService.fetch(sourceFieldValue, {
-              executeFetchIfNotInCache: true,
-              retries: 3,
-            });
-
-            if (res.requestStatus !== FeedResponseRequestStatus.Success) {
-              logger.error(`Failed to fetch article injection`, {
-                sourceField,
+              const res = await this.feedFetcherService.fetch(
                 sourceFieldValue,
-                res,
-              });
+                {
+                  executeFetchIfNotInCache: true,
+                  retries: 3,
+                }
+              );
 
-              return;
-            }
-
-            const { body } = res;
-
-            if (!valid(body)) {
-              return;
-            }
-
-            const parsedBody = parse(body);
-
-            selectors.forEach(({ cssSelector, label }) => {
-              parsedBody
-                .querySelectorAll(cssSelector)
-                .slice(0, 10)
-                .forEach((e, index) => {
-                  const outerHtmlOfElement = e?.outerHTML || "";
-
-                  const key =
-                    `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
-                    `${index}`;
-
-                  targetRecord[key] = outerHtmlOfElement;
-
-                  const { images: imageList, anchors: anchorList } =
-                    this.extractExtraInfo(outerHtmlOfElement);
-
-                  if (imageList.length) {
-                    for (let i = 0; i < imageList.length; i++) {
-                      const image = imageList[i];
-
-                      const imageKey = `${key}::image${i}`;
-                      targetRecord[imageKey] = image;
-                    }
-                  }
-
-                  if (anchorList.length) {
-                    for (let i = 0; i < anchorList.length; i++) {
-                      const anchor = anchorList[i];
-
-                      const anchorKey = `${key}::anchor${i}`;
-                      targetRecord[anchorKey] = anchor;
-                    }
-                  }
+              if (res.requestStatus !== FeedResponseRequestStatus.Success) {
+                logger.error(`Failed to fetch article injection`, {
+                  sourceField,
+                  sourceFieldValue,
+                  res,
                 });
-            });
-          })
+
+                return;
+              }
+
+              const { body } = res;
+
+              if (!valid(body)) {
+                return;
+              }
+
+              const parsedBody = parse(body);
+
+              selectors.forEach(({ cssSelector, label }) => {
+                parsedBody
+                  .querySelectorAll(cssSelector)
+                  .slice(0, 10)
+                  .forEach((e, index) => {
+                    const outerHtmlOfElement = e?.outerHTML || "";
+
+                    const key =
+                      `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
+                      `${index}`;
+
+                    targetRecord[key] = outerHtmlOfElement;
+
+                    const { images: imageList, anchors: anchorList } =
+                      this.extractExtraInfo(outerHtmlOfElement);
+
+                    if (imageList.length) {
+                      for (let i = 0; i < imageList.length; i++) {
+                        const image = imageList[i];
+
+                        const imageKey = `${key}::image${i}`;
+                        targetRecord[imageKey] = image;
+                      }
+                    }
+
+                    if (anchorList.length) {
+                      for (let i = 0; i < anchorList.length; i++) {
+                        const anchor = anchorList[i];
+
+                        const anchorKey = `${key}::anchor${i}`;
+                        targetRecord[anchorKey] = anchor;
+                      }
+                    }
+                  });
+              });
+            }
+          )
         );
       },
     };

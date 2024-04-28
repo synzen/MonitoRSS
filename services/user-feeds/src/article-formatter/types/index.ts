@@ -1,2 +1,2 @@
 export * from "./format-options";
-export * from "./article-injection.type";
+export * from "./external-feed-property.type";

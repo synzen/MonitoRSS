@@ -46,6 +46,7 @@ interface SupporterBenefits {
       }
     | undefined;
   maxPatreonPledge?: number;
+  allowExternalProperties: boolean;
 }
 
 interface ServerBenefits {
@@ -368,16 +369,6 @@ export class SupportersService {
     };
   }
 
-  async getLegacyPatreonDetails(discordId: string): Promise<{
-    maxPatreonPledge?: number;
-  }> {
-    const { maxPatreonPledge } = await this.getBenefitsOfDiscordUser(discordId);
-
-    return {
-      maxPatreonPledge,
-    };
-  }
-
   async getBenefitsOfDiscordUser(
     discordId: string
   ): Promise<SupporterBenefits> {
@@ -397,6 +388,7 @@ export class SupportersService {
         allowCustomPlaceholders: true,
         articleRateLimits: this.defaultRateLimits,
         subscription: undefined,
+        allowExternalProperties: true,
       };
     }
 
@@ -437,6 +429,7 @@ export class SupportersService {
         allowCustomPlaceholders: false,
         articleRateLimits: this.defaultRateLimits,
         subscription: undefined,
+        allowExternalProperties: false,
       };
     }
 
@@ -468,6 +461,7 @@ export class SupportersService {
             }
           : undefined,
       maxPatreonPledge: benefits.maxPatreonPledge,
+      allowExternalProperties: benefits.allowExternalProperties,
     };
   }
 
@@ -737,10 +731,12 @@ export class SupportersService {
         },
         allowCustomPlaceholders: false,
         dailyArticleLimit: this.maxDailyArticlesDefault,
+        allowExternalProperties: false,
       };
     }
 
     let useAllowCustomPlaceholders = false;
+    let useAllowExternalProperties = false;
 
     const {
       existsAndIsValid: patronExistsAndIsValid,
@@ -761,7 +757,6 @@ export class SupportersService {
       refreshRateSeconds =
         supporter.paddleCustomer.subscription.benefits.refreshRateSeconds;
 
-      useAllowCustomPlaceholders = true;
       isFromPatrons = false;
     } else if (supporter.slowRate) {
       refreshRateSeconds = this.defaultRefreshRateSeconds;
@@ -769,11 +764,30 @@ export class SupportersService {
       if (patronExistsAndIsValid) {
         refreshRateSeconds =
           patronRefreshRateSeconds || this.defaultRefreshRateSeconds;
-
-        useAllowCustomPlaceholders = patronAllowCustomPlaceholders;
       }
     } else {
       refreshRateSeconds = this.defaultSupporterRefreshRateSeconds;
+    }
+
+    // Custom/Remote placeholders
+    if (supporter.paddleCustomer?.subscription) {
+      const ineligibleProductKeys = [
+        SubscriptionProductKey.Free,
+        SubscriptionProductKey.Tier1,
+      ];
+
+      useAllowCustomPlaceholders = true;
+
+      if (
+        !ineligibleProductKeys.includes(
+          supporter.paddleCustomer.subscription.productKey
+        )
+      ) {
+        useAllowExternalProperties = true;
+      }
+    } else if (isFromPatrons && patronExistsAndIsValid) {
+      useAllowCustomPlaceholders = patronAllowCustomPlaceholders;
+      useAllowExternalProperties = maxPatreonPledge > 10000;
     }
 
     // Max user feeds
@@ -828,6 +842,7 @@ export class SupportersService {
         supporter.allowCustomPlaceholders || useAllowCustomPlaceholders,
       dailyArticleLimit,
       maxPatreonPledge,
+      allowExternalProperties: useAllowExternalProperties,
     };
   }
 

@@ -31,10 +31,10 @@ export const UserMeSchema = object({
   enableBilling: bool(),
   migratedToPersonalFeeds: bool(),
   featureFlags: object({
-    articleInjections: bool(),
+    externalProperties: bool(),
   }),
   supporterFeatures: object({
-    articleInjections: object({
+    exrternalProperties: object({
       enabled: bool(),
     }).optional(),
   }).optional(),

@@ -18,9 +18,9 @@ import {
 import { GetUserFeedArticlesFilterReturnType } from "../constants";
 import { GetUserFeedArticlesFormatterDto } from "./shared";
 import { CustomPlaceholder } from "../../article-formatter/types/format-options";
-import { ArticleInjection } from "../../article-parser/constants";
-import { ArticleInjectionDto } from "../../article-formatter/types";
+import { ExternalFeedPropertyDto } from "../../article-formatter/types";
 import { SelectPropertyType } from "../constants/select-property-type.constants";
+
 export class CustomPlaceholderStepDto {
   @IsString()
   @IsNotEmpty()
@@ -50,9 +50,9 @@ class FormatterDto {
   @IsObject({ each: true })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => ArticleInjectionDto)
-  @ValidateIf((v) => v.articleInjections !== null)
-  articleInjections?: ArticleInjectionDto[] | null;
+  @Type(() => ExternalFeedPropertyDto)
+  @ValidateIf((v) => v.externalProperties !== null)
+  externalProperties?: ExternalFeedPropertyDto[] | null;
 }
 
 class FiltersDto {

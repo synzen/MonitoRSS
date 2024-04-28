@@ -27,10 +27,10 @@ const mockUserMe: UserMe = {
   enableBilling: true,
   migratedToPersonalFeeds: true,
   featureFlags: {
-    articleInjections: true,
+    externalProperties: true,
   },
   supporterFeatures: {
-    articleInjections: {
+    exrternalProperties: {
       enabled: true,
     },
   },

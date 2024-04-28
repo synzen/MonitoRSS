@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const articleInjectionSchema = z.object({
+export const externalFeedPropertySchema = z.object({
   sourceField: z.string(),
   selectors: z.array(
     z.object({
@@ -10,4 +10,4 @@ export const articleInjectionSchema = z.object({
   ),
 });
 
-export type ArticleInjection = z.infer<typeof articleInjectionSchema>;
+export type ExternalFeedProperty = z.infer<typeof externalFeedPropertySchema>;

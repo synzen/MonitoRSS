@@ -38,6 +38,19 @@ function getPrettySubscriptioNameFromKey(key: string) {
   return key;
 }
 
+export interface GetUserByDiscordIdOutput {
+  user: User;
+  creditBalance: CreditBalanceDetails;
+  subscription: SubscriptionDetails;
+  isOnPatreon?: boolean;
+  migratedToPersonalFeeds: boolean;
+  supporterFeatures: {
+    exrternalProperties: {
+      enabled: boolean;
+    };
+  };
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -90,13 +103,9 @@ export class UsersService {
     return user;
   }
 
-  async getByDiscordId(discordUserId: string): Promise<{
-    user: User;
-    creditBalance: CreditBalanceDetails;
-    subscription: SubscriptionDetails;
-    isOnPatreon?: boolean;
-    migratedToPersonalFeeds: boolean;
-  } | null> {
+  async getByDiscordId(
+    discordUserId: string
+  ): Promise<GetUserByDiscordIdOutput | null> {
     const user = await this.getOrCreateUserByDiscordId(discordUserId);
 
     const freeSubscription: SubscriptionDetails = {
@@ -108,15 +117,16 @@ export class UsersService {
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
 
-    const [legacyPatreonDetails, userFeed] = await Promise.all([
-      this.supportersService.getLegacyPatreonDetails(discordUserId),
-      this.userFeedModel
-        .findOne({ "user.discordUserId": discordUserId })
-        .select("_id")
-        .lean(),
-    ]);
+    const [{ maxPatreonPledge, allowExternalProperties }, userFeed] =
+      await Promise.all([
+        this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+        this.userFeedModel
+          .findOne({ "user.discordUserId": discordUserId })
+          .select("_id")
+          .lean(),
+      ]);
 
-    const isOnPatreon = !!legacyPatreonDetails.maxPatreonPledge;
+    const isOnPatreon = !!maxPatreonPledge;
     const migratedToPersonalFeeds = !!userFeed;
 
     if (!user.email) {
@@ -130,6 +140,11 @@ export class UsersService {
         },
         subscription: freeSubscription,
         migratedToPersonalFeeds,
+        supporterFeatures: {
+          exrternalProperties: {
+            enabled: allowExternalProperties,
+          },
+        },
       };
     }
 
@@ -166,6 +181,11 @@ export class UsersService {
         subscription: freeSubscription,
         isOnPatreon,
         migratedToPersonalFeeds,
+        supporterFeatures: {
+          exrternalProperties: {
+            enabled: allowExternalProperties,
+          },
+        },
       };
     }
 
@@ -194,6 +214,11 @@ export class UsersService {
       },
       isOnPatreon,
       migratedToPersonalFeeds,
+      supporterFeatures: {
+        exrternalProperties: {
+          enabled: allowExternalProperties,
+        },
+      },
     };
   }
 

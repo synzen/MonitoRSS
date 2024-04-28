@@ -174,7 +174,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                           feedId={feedId as string}
                           type={FeedConnectionType.DiscordChannel}
                           articleFormatter={{
-                            articleInjections: feed?.articleInjections,
+                            externalProperties: feed?.externalProperties,
                             options: {
                               formatTables: connection?.details.formatter?.formatTables || false,
                               stripImages: connection?.details.formatter?.stripImages || false,
@@ -336,7 +336,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   }}
                   articleFormatter={{
                     customPlaceholders: connection?.customPlaceholders,
-                    articleInjections: feed?.articleInjections,
+                    externalProperties: feed?.externalProperties,
                     options: {
                       formatTables: connection?.details.formatter?.formatTables || false,
                       stripImages: connection?.details.formatter?.stripImages || false,
@@ -374,7 +374,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   feedId={feedId}
                   filters={connection?.filters?.expression as LogicalFilterExpression}
                   articleFormatter={{
-                    articleInjections: feed?.articleInjections,
+                    externalProperties: feed?.externalProperties,
                     options: {
                       formatTables: connection?.details.formatter?.formatTables || false,
                       stripImages: connection?.details.formatter?.stripImages || false,
@@ -405,7 +405,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   feedId={feedId as string}
                   connectionType={FeedConnectionType.DiscordChannel}
                   articleFormat={{
-                    articleInjections: feed?.articleInjections,
+                    externalProperties: feed?.externalProperties,
                     customPlaceholders: connection?.customPlaceholders,
                     options: {
                       formatTables: connection?.details.formatter?.formatTables || false,

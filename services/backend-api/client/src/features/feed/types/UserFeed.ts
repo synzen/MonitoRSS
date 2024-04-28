@@ -1,5 +1,5 @@
 import { array, bool, InferType, number, object, string } from "yup";
-import { ArticleInjectionSchema, FeedConnectionSchema } from "../../../types";
+import { ExternalPropertySchema, FeedConnectionSchema } from "../../../types";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
 import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../constants";
@@ -14,7 +14,7 @@ export const UserFeedSchema = object({
   }).optional(),
   passingComparisons: array(string().required()).optional().default(undefined),
   blockingComparisons: array(string().required()).optional().default(undefined),
-  articleInjections: array(ArticleInjectionSchema.required()).nullable(),
+  externalProperties: array(ExternalPropertySchema.required()).nullable(),
   createdAt: string()
     .transform((value) => (value ? new Date(value).toISOString() : value))
     .required(),

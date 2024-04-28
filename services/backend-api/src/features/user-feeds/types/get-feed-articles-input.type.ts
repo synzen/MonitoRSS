@@ -16,7 +16,7 @@ export interface GetFeedArticlesInput {
   };
   formatter: {
     customPlaceholders?: Array<CustomPlaceholderDto> | null;
-    articleInjections?: Array<{
+    externalProperties?: Array<{
       sourceField: string;
       selectors: Array<{
         label: string;

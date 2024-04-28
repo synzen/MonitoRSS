@@ -26,7 +26,7 @@ import { useState } from "react";
 import { FiMousePointer } from "react-icons/fi";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import {
-  ArticleInjection,
+  ExternalProperty,
   FeedConnectionType,
   FeedDiscordChannelConnection,
 } from "../../../../types";
@@ -35,7 +35,7 @@ import { useGetUserFeedArticlesError } from "../../hooks";
 import { useDebounce } from "../../../../hooks";
 
 interface Props {
-  articleInjections: ArticleInjection[];
+  externalProperties: ExternalProperty[];
   disabled?: boolean;
 }
 
@@ -45,8 +45,8 @@ interface ConnectionFormatOptions {
   disableImageLinkPreviews: boolean;
 }
 
-export const ArticleInjectionPlaceholderPreview = ({
-  articleInjections: inputArticleInjections,
+export const ExternalPropertyPreview = ({
+  externalProperties: inputExternalProperties,
   disabled,
 }: Props) => {
   const { userFeed } = useUserFeedContext();
@@ -74,8 +74,8 @@ export const ArticleInjectionPlaceholderPreview = ({
     | undefined
   >(initialFormatOptions);
   const [articleId, setArticleId] = useState<string | undefined>();
-  const { articleInjections } = useDebounce({ articleInjections: inputArticleInjections }, 500);
-  const isIncomplete = articleInjections.some(
+  const { externalProperties } = useDebounce({ externalProperties: inputExternalProperties }, 500);
+  const isIncomplete = externalProperties.some(
     (i) =>
       !i.sourceField || !i.selectors.length || i.selectors.some((s) => !s.cssSelector || !s.label)
   );
@@ -100,11 +100,11 @@ export const ArticleInjectionPlaceholderPreview = ({
           stripImages: formatOptions?.stripImages ?? false,
           disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews ?? false,
         },
-        articleInjections,
+        externalProperties,
         customPlaceholders: [],
       },
     },
-    disabled: disabled || articleInjections.length === 0 || !formatOptions || isIncomplete,
+    disabled: disabled || externalProperties.length === 0 || !formatOptions || isIncomplete,
     feedId: userFeed.id,
   });
 
@@ -140,6 +140,17 @@ export const ArticleInjectionPlaceholderPreview = ({
     ([key, value]) => !key.startsWith("id") && !!value
   );
 
+  if (isIncomplete) {
+    return (
+      <Alert status="warning" justifyContent="center">
+        <AlertDescription>
+          The preview is disabled because one or more input fields are incomplete. Please fill in
+          all required fields.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (
     !data ||
     status === "loading" ||
@@ -165,17 +176,6 @@ export const ArticleInjectionPlaceholderPreview = ({
     );
   }
 
-  if (isIncomplete) {
-    return (
-      <Alert status="warning" justifyContent="center">
-        <AlertDescription>
-          The preview is disabled because one or more input fields are incomplete. Please fill in
-          all required fields.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
     <Stack px={4} py={2}>
       <HStack>
@@ -192,7 +192,7 @@ export const ArticleInjectionPlaceholderPreview = ({
         <ArticleSelectDialog
           trigger={
             <Button size="sm" alignSelf="flex-end" leftIcon={<FiMousePointer />}>
-              Select Article
+              Select Preview Article
             </Button>
           }
           feedId={userFeed.id}
@@ -204,7 +204,7 @@ export const ArticleInjectionPlaceholderPreview = ({
               stripImages: formatOptions?.stripImages ?? false,
               disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews ?? false,
             },
-            articleInjections,
+            externalProperties,
             customPlaceholders: [],
           }}
           onArticleSelected={(id) => setArticleId(id)}
@@ -223,7 +223,7 @@ export const ArticleInjectionPlaceholderPreview = ({
             <Table size="sm" variant="simple">
               <Thead>
                 <Tr>
-                  <Th>Placeholder</Th>
+                  <Th>Property</Th>
                   <Th>Value</Th>
                 </Tr>
               </Thead>
@@ -250,7 +250,7 @@ export const ArticleInjectionPlaceholderPreview = ({
       {!articleEntries.length && (
         <Alert status="info" justifyContent="center">
           <AlertDescription>
-            No additional placeholders were generated for this article. If this is unexpected,
+            No additional properties were generated for this article. If this is unexpected,
             consider adjusting your CSS selector.
           </AlertDescription>
         </Alert>

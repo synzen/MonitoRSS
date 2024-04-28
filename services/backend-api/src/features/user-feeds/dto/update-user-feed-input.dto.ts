@@ -17,7 +17,7 @@ import {
   UserFeedFormatOptions,
   UserFeedShareManageOptions,
 } from "../../../common";
-import { ArticleInjectionDto } from "../../../common/types/article-injection.type";
+import { ExternalPropertyDto } from "../../../common/types/external-property.type";
 import { UserFeedDisabledCode } from "../types";
 
 export class UpdateUserFeedInputDto {
@@ -77,6 +77,6 @@ export class UpdateUserFeedInputDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ArticleInjectionDto)
-  articleInjections?: ArticleInjectionDto[];
+  @Type(() => ExternalPropertyDto)
+  externalProperties?: ExternalPropertyDto[];
 }

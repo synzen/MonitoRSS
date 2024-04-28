@@ -1,7 +1,7 @@
 import { Type } from "class-transformer";
 import { IsArray, IsObject, IsString, ValidateNested } from "class-validator";
 
-export class ArticleInjectionFieldDto {
+export class ExternalFeedPropertySelectorDto {
   @IsString()
   label: string;
 
@@ -9,13 +9,13 @@ export class ArticleInjectionFieldDto {
   cssSelector: string;
 }
 
-export class ArticleInjectionDto {
+export class ExternalFeedPropertyDto {
   @IsString()
   sourceField: string;
 
   @IsArray()
   @IsObject({ each: true })
   @ValidateNested({ each: true })
-  @Type(() => ArticleInjectionFieldDto)
-  selectors: ArticleInjectionFieldDto[];
+  @Type(() => ExternalFeedPropertySelectorDto)
+  selectors: ExternalFeedPropertySelectorDto[];
 }

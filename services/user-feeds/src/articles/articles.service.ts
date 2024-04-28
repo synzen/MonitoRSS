@@ -16,20 +16,22 @@ import { ArticleParserService } from "../article-parser/article-parser.service";
 import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-options.type";
 import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
-import { PostProcessParserRule } from "../article-parser/constants";
+import {
+  ExternalFeedProperty,
+  PostProcessParserRule,
+} from "../article-parser/constants";
 import { createHash } from "crypto";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
-import { ArticleInjection } from "../article-parser/constants/article-injection.constants";
 import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
-import { ArticleInjectionDto } from "../article-formatter/types";
+import { ExternalFeedPropertyDto } from "../article-formatter/types";
 
 const sha1 = createHash("sha1");
 
 interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
-  articleInjections?: ArticleInjectionDto[];
+  externalFeedProperties?: ExternalFeedPropertyDto[];
 }
 
 @Injectable()
@@ -46,7 +48,7 @@ export class ArticlesService {
 
   async fetchFeedArticles(
     url: string,
-    { formatOptions, articleInjections }: FetchFeedArticleOptions
+    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
   ) {
     const response = await this.feedFetcherService.fetch(url, {
       executeFetchIfNotInCache: true,
@@ -59,18 +61,18 @@ export class ArticlesService {
     return this.getArticlesFromXml(response.body, {
       formatOptions,
       useParserRules: getParserRules({ url }),
-      articleInjections,
+      externalFeedProperties,
     });
   }
 
   async fetchFeedArticle(
     url: string,
     id: string,
-    { formatOptions, articleInjections }: FetchFeedArticleOptions
+    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
   ) {
     const result = await this.fetchFeedArticles(url, {
       formatOptions,
-      articleInjections,
+      externalFeedProperties,
     });
 
     if (!result) {
@@ -128,7 +130,7 @@ export class ArticlesService {
       dateChecks,
       debug,
       useParserRules,
-      articleInjections,
+      externalFeedProperties,
     }: {
       id: string;
       blockingComparisons: string[];
@@ -137,13 +139,13 @@ export class ArticlesService {
       dateChecks?: UserFeedDateCheckOptions;
       debug?: boolean;
       useParserRules: PostProcessParserRule[] | undefined;
-      articleInjections?: ArticleInjection[];
+      externalFeedProperties?: ExternalFeedProperty[];
     }
   ) {
     const { articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions,
       useParserRules,
-      articleInjections,
+      externalFeedProperties,
     });
 
     logger.debug(`Found articles:`, {
@@ -537,7 +539,7 @@ export class ArticlesService {
       timeout?: number;
       formatOptions: UserFeedFormatOptions;
       useParserRules: PostProcessParserRule[] | undefined;
-      articleInjections?: Array<ArticleInjection>;
+      externalFeedProperties?: Array<ExternalFeedProperty>;
     }
   ): Promise<{
     articles: Article[];
@@ -604,7 +606,7 @@ export class ArticlesService {
               await this.articleParserService.flatten(rawArticle as never, {
                 formatOptions: options.formatOptions,
                 useParserRules: options.useParserRules,
-                articleInjections: options.articleInjections,
+                externalFeedProperties: options.externalFeedProperties,
               });
 
             return {

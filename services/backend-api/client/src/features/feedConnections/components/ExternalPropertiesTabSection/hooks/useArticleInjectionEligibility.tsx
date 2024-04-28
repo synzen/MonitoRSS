@@ -20,7 +20,7 @@ export const useArticleInjectionEligibility = () => {
           stripImages: false,
           disableImageLinkPreviews: false,
         },
-        articleInjections: [],
+        externalProperties: [],
       },
       selectProperties: ["id"],
     },

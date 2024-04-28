@@ -50,7 +50,7 @@ class GetUserFeedOutputResultDto {
   @IsOptional()
   blockingComparisons?: string[];
 
-  articleInjections?: UserFeed["articleInjections"];
+  externalProperties?: UserFeed["externalProperties"];
 
   formatOptions?: UserFeed["formatOptions"];
 

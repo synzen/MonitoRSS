@@ -76,7 +76,7 @@ interface UpdateFeedInput {
     invites: Array<{ discordUserId: string }>;
   };
   userRefreshRateSeconds?: number;
-  articleInjections?: UserFeed["articleInjections"];
+  externalProperties?: UserFeed["externalProperties"];
 }
 
 @Injectable()
@@ -193,7 +193,7 @@ export class UserFeedsService {
         healthStatus: feed.healthStatus,
         passingComparisons: feed.passingComparisons,
         blockingComparisons: feed.blockingComparisons,
-        articleInjections: feed.articleInjections,
+        externalProperties: feed.externalProperties,
         createdAt: feed.createdAt.toISOString(),
         updatedAt: feed.updatedAt.toISOString(),
         formatOptions: feed.formatOptions,
@@ -678,8 +678,8 @@ export class UserFeedsService {
       useUpdateObject.$set!.shareManageOptions = updates.shareManageOptions;
     }
 
-    if (updates.articleInjections) {
-      useUpdateObject.$set!.articleInjections = updates.articleInjections;
+    if (updates.externalProperties) {
+      useUpdateObject.$set!.externalProperties = updates.externalProperties;
     }
 
     if (updates.userRefreshRateSeconds) {

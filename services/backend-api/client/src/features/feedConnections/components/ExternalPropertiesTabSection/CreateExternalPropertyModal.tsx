@@ -85,11 +85,14 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
       <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Create a new placeholder</ModalHeader>
+          <ModalHeader>Create a new external property</ModalHeader>
           <ModalCloseButton />
           <ModalBody tabIndex={-1}>
             <Stack spacing={4} paddingBottom={4}>
-              <Text>Select the field that you want to create a placeholder for.</Text>
+              <Text>
+                Select the source property containing the URL that references the page with the
+                desired content.
+              </Text>
               {error && (
                 <InlineErrorAlert
                   title="Failed to get article properties"
@@ -103,9 +106,9 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
                       <Thead>
                         <Tr>
                           <Th />
-                          <Th>Article Field</Th>
+                          <Th>Article Property</Th>
                           <Th>
-                            Sample Article Values
+                            Sample Article Value
                             <Tooltip label="See another random article's values">
                               <Button
                                 size="xs"

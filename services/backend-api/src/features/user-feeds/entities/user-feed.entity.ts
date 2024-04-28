@@ -4,10 +4,6 @@ import {
   FeedConnections,
   FeedConnectionSchema,
 } from "../../feeds/entities/feed-connections.entity";
-import {
-  ArticleInjection,
-  ArticleInjectionSchema,
-} from "./article-injection.entity";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "../types";
 import {
   UserFeedDateCheckOptions,
@@ -22,6 +18,10 @@ import {
   UserFeedShareManageOptionsSchema,
 } from "./user-feed-share-manage-options.entity";
 import { UserFeedUser, UserFeedUserSchema } from "./user-feed-user.entity";
+import {
+  ExternalFeedProperty,
+  ExternalFeedPropertySchema,
+} from "./external-feed-property.entity";
 
 @Schema({
   timestamps: true,
@@ -59,10 +59,10 @@ export class UserFeed {
   blockingComparisons?: string[];
 
   @Prop({
-    type: [ArticleInjectionSchema],
+    type: [ExternalFeedPropertySchema],
     required: false,
   })
-  articleInjections?: Array<ArticleInjection>;
+  externalProperties?: Array<ExternalFeedProperty>;
 
   @Prop({
     enum: Object.values(UserFeedHealthStatus),

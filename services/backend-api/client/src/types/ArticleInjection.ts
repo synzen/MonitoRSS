@@ -1,6 +1,6 @@
 import { InferType, array, object, string } from "yup";
 
-export const ArticleInjectionSchema = object({
+export const ExternalPropertySchema = object({
   id: string().required(),
   sourceField: string().required(),
   selectors: array(
@@ -12,4 +12,4 @@ export const ArticleInjectionSchema = object({
   ).required(),
 });
 
-export type ArticleInjection = InferType<typeof ArticleInjectionSchema>;
+export type ExternalProperty = InferType<typeof ExternalPropertySchema>;

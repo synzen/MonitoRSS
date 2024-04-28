@@ -494,7 +494,7 @@ export class MessageBrokerEventsService {
           dateLocale:
             userFeed.formatOptions?.dateLocale || user?.preferences?.dateLocale,
         },
-        articleInjections: userFeed.articleInjections,
+        externalProperties: userFeed.externalProperties,
         dateChecks: userFeed.dateCheckOptions,
       },
       mediums: allMediums,

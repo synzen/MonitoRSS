@@ -6,13 +6,10 @@ import {
   Patch,
   ValidationPipe,
 } from "@nestjs/common";
-import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
-import { SubscriptionDetails } from "../../common/types/subscription-details.type";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { UpdateMeDto } from "./dto/update-me-input.dto";
-import { User } from "./entities/user.entity";
-import { UsersService } from "./users.service";
+import { GetUserByDiscordIdOutput, UsersService } from "./users.service";
 
 @Controller("users")
 export class UsersController {
@@ -56,13 +53,8 @@ export class UsersController {
     creditBalance,
     isOnPatreon,
     migratedToPersonalFeeds,
-  }: {
-    user: User;
-    creditBalance: CreditBalanceDetails;
-    subscription: SubscriptionDetails;
-    isOnPatreon?: boolean;
-    migratedToPersonalFeeds: boolean;
-  }) {
+    supporterFeatures,
+  }: GetUserByDiscordIdOutput) {
     return {
       result: {
         id: user._id,
@@ -75,6 +67,7 @@ export class UsersController {
         enableBilling: user.enableBilling,
         migratedToPersonalFeeds,
         featureFlags: user.featureFlags || {},
+        supporterFeatures,
       },
     };
   }

@@ -6,7 +6,7 @@ import { Types } from "mongoose";
   timestamps: false,
   versionKey: false,
 })
-export class ArticleInjectionSelector {
+export class ExternalFeedPropertySelector {
   @Prop({
     required: true,
     default: () => new Types.ObjectId().toHexString(),
@@ -24,8 +24,8 @@ export class ArticleInjectionSelector {
   cssSelector: string;
 }
 
-export const ArticleInjectionFieldSchema = SchemaFactory.createForClass(
-  ArticleInjectionSelector
+export const ExternalFeedPropertyFieldSchema = SchemaFactory.createForClass(
+  ExternalFeedPropertySelector
 );
 
 @Schema({
@@ -33,7 +33,7 @@ export const ArticleInjectionFieldSchema = SchemaFactory.createForClass(
   timestamps: false,
   versionKey: false,
 })
-export class ArticleInjection {
+export class ExternalFeedProperty {
   @Prop({
     required: true,
     default: () => new Types.ObjectId().toHexString(),
@@ -47,10 +47,10 @@ export class ArticleInjection {
 
   @Prop({
     required: true,
-    type: [ArticleInjectionFieldSchema],
+    type: [ExternalFeedPropertyFieldSchema],
   })
-  selectors: ArticleInjectionSelector[];
+  selectors: ExternalFeedPropertySelector[];
 }
 
-export const ArticleInjectionSchema =
-  SchemaFactory.createForClass(ArticleInjection);
+export const ExternalFeedPropertySchema =
+  SchemaFactory.createForClass(ExternalFeedProperty);

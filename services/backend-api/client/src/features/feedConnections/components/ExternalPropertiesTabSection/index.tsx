@@ -31,18 +31,18 @@ import { v4 } from "uuid";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
-import CreateArticleInjectionModal from "./CreateArticleInjectionModal";
+import CreateArticleInjectionModal from "./CreateExternalPropertyModal";
 import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
 import { useUpdateUserFeed } from "../../../feed";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
-import { ArticleInjection } from "../../../../types";
-import { ArticleInjectionPlaceholderPreview } from "./ArticleInjectionPlaceholderPreview";
+import { ExternalPropertyPreview } from "./ExternalPropertyPreview";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { useArticleInjectionEligibility } from "./hooks/useArticleInjectionEligibility";
+import { ExternalProperty } from "../../../../types";
 
 const formSchema = object({
-  injections: array(
+  externalProperties: array(
     object({
       id: string().required(),
       sourceField: string().required(),
@@ -52,7 +52,7 @@ const formSchema = object({
           label: string()
             .required("This is a required field")
             .test("unique", "Cannot have duplicate placeholder labels", (value, context) => {
-              const { selectors } = context.from?.[1].value as ArticleInjection;
+              const { selectors } = context.from?.[1].value as ExternalProperty;
               const names = selectors.map((s) => s.label);
 
               return !names.length || names.filter((n) => n === value).length === 1;
@@ -70,10 +70,10 @@ type FormData = InferType<typeof formSchema>;
 
 const SelectorForm = ({
   selectorIndex,
-  injectionIndex,
+  externalPropertyIndex,
 }: {
   selectorIndex: number;
-  injectionIndex: number;
+  externalPropertyIndex: number;
 }) => {
   const {
     control,
@@ -82,18 +82,19 @@ const SelectorForm = ({
   } = useFormContext<FormData>();
   const { fields: selectors, remove } = useFieldArray({
     control,
-    name: `injections.${injectionIndex}.selectors`,
+    name: `externalProperties.${externalPropertyIndex}.selectors`,
     keyName: "idkey",
   });
-  const [injection, selector] = watch([
-    `injections.${injectionIndex}`,
-    `injections.${injectionIndex}.selectors.${selectorIndex}`,
+  const [externalProperty, selector] = watch([
+    `externalProperties.${externalPropertyIndex}`,
+    `externalProperties.${externalPropertyIndex}.selectors.${selectorIndex}`,
   ]);
 
   const cssSelectorError =
-    errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.cssSelector?.message;
+    errors?.externalProperties?.[externalPropertyIndex]?.selectors?.[selectorIndex]?.cssSelector
+      ?.message;
   const labelError =
-    errors?.injections?.[injectionIndex]?.selectors?.[selectorIndex]?.label?.message;
+    errors?.externalProperties?.[externalPropertyIndex]?.selectors?.[selectorIndex]?.label?.message;
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -104,12 +105,12 @@ const SelectorForm = ({
   const previewInput = useMemo(
     () => [
       {
-        id: injection.id,
+        id: externalProperty.id,
         selectors: [selector],
-        sourceField: injection.sourceField,
+        sourceField: externalProperty.sourceField,
       },
     ],
-    [injection.sourceField, selector.cssSelector, selector.label]
+    [externalProperty.sourceField, selector.cssSelector, selector.label]
   );
 
   return (
@@ -137,7 +138,7 @@ const SelectorForm = ({
           </Flex>
           <Controller
             control={control}
-            name={`injections.${injectionIndex}.selectors.${selectorIndex}.cssSelector`}
+            name={`externalProperties.${externalPropertyIndex}.selectors.${selectorIndex}.cssSelector`}
             render={({ field }) => (
               <Input
                 {...field}
@@ -162,7 +163,7 @@ const SelectorForm = ({
           <FormLabel>Placeholder Label</FormLabel>
           <Controller
             control={control}
-            name={`injections.${injectionIndex}.selectors.${selectorIndex}.label`}
+            name={`externalProperties.${externalPropertyIndex}.selectors.${selectorIndex}.label`}
             render={({ field }) => (
               <Input
                 {...field}
@@ -200,21 +201,18 @@ const SelectorForm = ({
       </Button>
       <Box bg="gray.800" rounded="lg">
         <Collapse in={showPreview} transition={{ enter: { duration: 0.3 } }}>
-          <ArticleInjectionPlaceholderPreview
-            articleInjections={previewInput}
-            disabled={!showPreview}
-          />
+          <ExternalPropertyPreview externalProperties={previewInput} disabled={!showPreview} />
         </Collapse>
       </Box>
     </Stack>
   );
 };
 
-const ArticleTabInjectionForm = ({ injectionIndex }: { injectionIndex: number }) => {
+const ArticleTabInjectionForm = ({ externalPropertyIndex }: { externalPropertyIndex: number }) => {
   const { control } = useFormContext<FormData>();
   const { fields: selectors, append } = useFieldArray({
     control,
-    name: `injections.${injectionIndex}.selectors`,
+    name: `externalProperties.${externalPropertyIndex}.selectors`,
     keyName: "idkey",
   });
 
@@ -222,7 +220,11 @@ const ArticleTabInjectionForm = ({ injectionIndex }: { injectionIndex: number })
     <Stack spacing={8} background="gray.700" p={4} rounded="lg">
       {selectors?.map((s, selectorIndex) => {
         return (
-          <SelectorForm key={s.id} selectorIndex={selectorIndex} injectionIndex={injectionIndex} />
+          <SelectorForm
+            key={s.id}
+            selectorIndex={selectorIndex}
+            externalPropertyIndex={externalPropertyIndex}
+          />
         );
       })}
       <Box>
@@ -243,14 +245,14 @@ const ArticleTabInjectionForm = ({ injectionIndex }: { injectionIndex: number })
   );
 };
 
-export const ArticleInjectionsTabSection = () => {
+export const ExternalPropertiesTabSection = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
   const { eligible, alertComponent } = useArticleInjectionEligibility();
   const formData = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues: {
-      injections: (userFeed?.articleInjections || []).map((i) => ({
+      externalProperties: (userFeed?.externalProperties || []).map((i) => ({
         id: i.id,
         sourceField: i.sourceField,
         selectors: i.selectors.map((f) => ({
@@ -264,7 +266,7 @@ export const ArticleInjectionsTabSection = () => {
   const { handleSubmit, control, reset } = formData;
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "injections",
+    name: "externalProperties",
     keyName: "idkey",
   });
   const [activeIndex, setActiveIndex] = useState<number[] | number>();
@@ -275,7 +277,7 @@ export const ArticleInjectionsTabSection = () => {
       await mutateAsync({
         feedId: userFeed.id,
         data: {
-          articleInjections: data.injections,
+          externalProperties: data.externalProperties,
         },
       });
 
@@ -290,11 +292,17 @@ export const ArticleInjectionsTabSection = () => {
     <FormProvider {...formData}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={8} mb={24}>
-          <Stack>
-            <Heading as="h2" size="md">
-              Article Injections
-            </Heading>
-            <Text>Create placeholders from external URLs to inject into your</Text>
+          <Stack spacing={4}>
+            <Stack>
+              <Heading as="h2" size="md">
+                External Properties
+              </Heading>
+              <Text>
+                Create additional article properties that come from linked pages within feed
+                articles. These article properties can then be used as placeholders to further
+                customize messages per connection.
+              </Text>
+            </Stack>
             <SubscriberBlockText
               feature={BlockableFeature.ArticleInjections}
               supporterTier={SupporterTier.T2}
@@ -318,7 +326,7 @@ export const ArticleInjectionsTabSection = () => {
                     </Heading>
                     <AccordionPanel pb={4}>
                       <Stack spacing={4}>
-                        <ArticleTabInjectionForm injectionIndex={fieldIndex} />
+                        <ArticleTabInjectionForm externalPropertyIndex={fieldIndex} />
                         <Box>
                           <Button
                             variant="outline"
@@ -342,7 +350,7 @@ export const ArticleInjectionsTabSection = () => {
             <CreateArticleInjectionModal
               trigger={
                 <Button isDisabled={!eligible} leftIcon={<AddIcon fontSize={13} />}>
-                  Add Placeholder
+                  Add External Property
                 </Button>
               }
               onSubmitted={(data) => {

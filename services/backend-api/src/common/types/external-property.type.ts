@@ -7,7 +7,7 @@ import {
   ValidateNested,
 } from "class-validator";
 
-export class ArticleInjectionFieldDto {
+export class ExternalPropertyFieldDto {
   @IsString()
   @IsNotEmpty()
   id: string;
@@ -21,7 +21,7 @@ export class ArticleInjectionFieldDto {
   cssSelector: string;
 }
 
-export class ArticleInjectionDto {
+export class ExternalPropertyDto {
   @IsString()
   @IsNotEmpty()
   id: string;
@@ -33,6 +33,6 @@ export class ArticleInjectionDto {
   @IsArray()
   @IsObject({ each: true })
   @ValidateNested({ each: true })
-  @Type(() => ArticleInjectionFieldDto)
-  selectors: ArticleInjectionFieldDto[];
+  @Type(() => ExternalPropertyFieldDto)
+  selectors: ExternalPropertyFieldDto[];
 }

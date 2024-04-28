@@ -51,7 +51,7 @@ export const useIsFeatureAllowed = ({ feature }: Props): Returned => {
   if (feature === BlockableFeature.ArticleInjections) {
     return {
       loaded: true,
-      allowed: userMeData.result.supporterFeatures?.articleInjections?.enabled === true,
+      allowed: userMeData.result.supporterFeatures?.exrternalProperties?.enabled === true,
     };
   }
 

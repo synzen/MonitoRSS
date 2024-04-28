@@ -270,7 +270,7 @@ export class UserFeedsController {
       selectProperties,
       selectPropertyTypes,
       skip,
-      formatter: { articleInjections, ...formatter },
+      formatter: { externalProperties, ...formatter },
     }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,
@@ -288,8 +288,8 @@ export class UserFeedsController {
       skip,
       formatter: {
         ...formatter,
-        articleInjections: user.featureFlags?.articleInjections
-          ? articleInjections
+        externalProperties: user.featureFlags?.externalProperties
+          ? externalProperties
           : undefined,
         options: {
           ...formatter.options,
@@ -402,7 +402,7 @@ export class UserFeedsController {
       dateCheckOptions,
       shareManageOptions,
       userRefreshRateSeconds,
-      articleInjections,
+      externalProperties,
     }: UpdateUserFeedInputDto,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
@@ -423,7 +423,7 @@ export class UserFeedsController {
         dateCheckOptions,
         shareManageOptions,
         userRefreshRateSeconds,
-        articleInjections,
+        externalProperties,
       }
     )) as UserFeed;
 

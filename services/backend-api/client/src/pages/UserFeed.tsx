@@ -68,7 +68,7 @@ import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
 import { FeedConnectionDisabledCode } from "../types";
 import { formatRefreshRateSeconds } from "../utils/formatRefreshRateSeconds";
-import { ArticleInjectionsTabSection } from "../features/feedConnections/components/ArticleInjectionsTabSection";
+import { ExternalPropertiesTabSection } from "../features/feedConnections/components/ExternalPropertiesTabSection";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
 
 enum TabSearchParam {
@@ -76,7 +76,7 @@ enum TabSearchParam {
   Comparisons = "?view=comparisons",
   Logs = "?view=logs",
   Settings = "?view=settings",
-  ArticleInjections = "?view=article-injections",
+  ExternalProperties = "?view=external-properties",
 }
 
 const tabIndexBySearchParam = new Map<string, number>([
@@ -84,7 +84,7 @@ const tabIndexBySearchParam = new Map<string, number>([
   [TabSearchParam.Comparisons, 1],
   [TabSearchParam.Settings, 2],
   [TabSearchParam.Logs, 3],
-  [TabSearchParam.ArticleInjections, 4],
+  [TabSearchParam.ExternalProperties, 4],
 ]);
 
 export const UserFeed: React.FC = () => {
@@ -527,15 +527,15 @@ export const UserFeed: React.FC = () => {
                 >
                   {t("pages.userFeeds.tabLogs")}
                 </Tab>
-                {userMe?.result.featureFlags?.articleInjections && (
+                {userMe?.result.featureFlags?.externalProperties && (
                   <Tab
                     onClick={() =>
                       navigate({
-                        search: TabSearchParam.ArticleInjections,
+                        search: TabSearchParam.ExternalProperties,
                       })
                     }
                   >
-                    Article Injections
+                    External Properties
                   </Tab>
                 )}
               </TabList>
@@ -691,11 +691,11 @@ export const UserFeed: React.FC = () => {
                 </BoxConstrained.Container>
               </BoxConstrained.Wrapper>
             </TabPanel>
-            {userMe?.result.featureFlags.articleInjections && (
+            {userMe?.result.featureFlags.externalProperties && (
               <TabPanel width="100%">
                 <BoxConstrained.Wrapper>
                   <BoxConstrained.Container>
-                    <ArticleInjectionsTabSection />
+                    <ExternalPropertiesTabSection />
                   </BoxConstrained.Container>
                 </BoxConstrained.Wrapper>
               </TabPanel>

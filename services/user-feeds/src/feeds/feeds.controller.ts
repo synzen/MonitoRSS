@@ -112,7 +112,7 @@ export class FeedsController {
           disableImageLinkPreviews: formatter.options.disableImageLinkPreviews,
           dateLocale: formatter.options.dateLocale,
         },
-        articleInjections: formatter.articleInjections || [],
+        externalFeedProperties: formatter.externalProperties || [],
       });
 
       if (!fetchResult) {

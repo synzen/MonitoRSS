@@ -39,7 +39,7 @@ const mockUserFeeds: UserFeed[] = [
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    articleInjections: [
+    externalProperties: [
       {
         id: "1",
         sourceField: "url",

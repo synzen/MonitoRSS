@@ -93,7 +93,7 @@ export const MessageTabSection = ({
       selectProperties: ["*"],
       formatter: {
         ...articleFormatter,
-        articleInjections: feed?.articleInjections,
+        externalProperties: feed?.externalProperties,
       },
       filters: {
         articleId: selectedArticleId,

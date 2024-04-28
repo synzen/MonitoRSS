@@ -22,7 +22,7 @@ export interface GetArticlesInput {
       dateLocale: string | undefined;
       disableImageLinkPreviews: boolean;
     };
-    articleInjections?: Array<{
+    externalProperties?: Array<{
       sourceField: string;
       selectors: Array<{
         label: string;

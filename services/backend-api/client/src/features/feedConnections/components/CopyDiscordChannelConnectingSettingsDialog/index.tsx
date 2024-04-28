@@ -344,6 +344,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                     <Checkbox
                       onChange={(e) => onCheckSettingChange(setting, e.target.checked)}
                       isChecked={checkedSettings.includes(setting)}
+                      key={setting}
                     >
                       {settingDescription.description}
                       <br />

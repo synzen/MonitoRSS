@@ -54,7 +54,9 @@ const createGetUserFeedsPipe = (
         : [inputFeedIds];
 
       if (feedIds.some((id) => !Types.ObjectId.isValid(id))) {
-        throw new NotFoundException("Some feed IDs are invalid Object Ids");
+        throw new NotFoundException(
+          `Some feed IDs are invalid Object Ids: ${feedIds.join(",")}`
+        );
       }
 
       const accessToken = getAccessTokenFromRequest(this.request);
