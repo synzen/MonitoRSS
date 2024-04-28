@@ -339,7 +339,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                             <Stack>
                               {!connectionNames.length && <Text>All</Text>}
                               {connectionNames.map((n) => (
-                                <Text display="block">{n}</Text>
+                                <Text display="block" key={n}>
+                                  {n}
+                                </Text>
                               ))}
                             </Stack>
                           </Td>
@@ -463,7 +465,11 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                         const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
 
                         return (
-                          <Radio value={r.rateSeconds.toString()} isDisabled={!!r.disabledCode}>
+                          <Radio
+                            value={r.rateSeconds.toString()}
+                            isDisabled={!!r.disabledCode}
+                            key={r.rateSeconds}
+                          >
                             {displayDuration}
                             {reason ? ` ${reason}` : ""}
                           </Radio>
