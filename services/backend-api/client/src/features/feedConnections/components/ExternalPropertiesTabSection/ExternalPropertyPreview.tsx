@@ -146,7 +146,7 @@ export const ExternalPropertyPreview = ({
   }
 
   const articleEntries = Object.entries(data?.result.articles[0] || {}).filter(
-    ([key, value]) => !key.startsWith("id") && !!value
+    ([key, value]) => key.startsWith("external::") && !!value
   );
 
   if (isIncomplete) {
@@ -241,7 +241,7 @@ export const ExternalPropertyPreview = ({
             External Pages from Preview Article (
             <HStack display="inline">
               {externalProperties.map((p) => (
-                <Code>{p.sourceField}</Code>
+                <Code key={p.id}>{p.sourceField}</Code>
               ))}
             </HStack>
             )
@@ -274,7 +274,7 @@ export const ExternalPropertyPreview = ({
       </HStack>
       <HStack>
         <FormControl flex={1}>
-          <FormLabel>Connection</FormLabel>
+          <FormLabel>Preview Connection</FormLabel>
           <HStack flexWrap="wrap">
             <Select
               size="sm"

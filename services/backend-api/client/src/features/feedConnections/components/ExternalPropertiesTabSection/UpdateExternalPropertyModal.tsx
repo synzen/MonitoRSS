@@ -2,6 +2,7 @@ import {
   Button,
   Code,
   Flex,
+  HStack,
   Link,
   Modal,
   ModalBody,
@@ -41,7 +42,7 @@ interface Props {
 const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Props) => {
   const { userFeed } = useUserFeedContext();
   const { isOpen, onClose, onOpen } = useDisclosure();
-  const [selected, setSelected] = useState(defaultValue);
+  const [selected, setSelected] = useState("");
   const {
     data: articlesData,
     error,
@@ -101,7 +102,7 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
                 />
               )}
               {!error && (
-                <RadioGroup onChange={setSelected} value={selected} defaultValue={defaultValue}>
+                <RadioGroup onChange={setSelected} value={selected || defaultValue}>
                   <TableContainer overflow="auto">
                     <Table size="sm">
                       <Thead>
@@ -128,7 +129,7 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
                       </Thead>
                       <Tbody>
                         {articleObjectEntries.map(([field, value]) => {
-                          if (field === "id" || field === "idHash") {
+                          if (field === "id" || field === "idHash" || !value) {
                             return null;
                           }
 
@@ -180,16 +181,21 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button
-              colorScheme="blue"
-              isDisabled={!selected}
-              onClick={() => {
-                onSubmitted({ sourceField: selected });
-                onClose();
-              }}
-            >
-              Update
-            </Button>
+            <HStack>
+              <Button onClick={onClose} variant="ghost">
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                isDisabled={!selected}
+                onClick={() => {
+                  onSubmitted({ sourceField: selected });
+                  onClose();
+                }}
+              >
+                Update
+              </Button>
+            </HStack>
           </ModalFooter>
         </ModalContent>
       </Modal>

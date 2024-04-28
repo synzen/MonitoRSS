@@ -2,6 +2,7 @@ import {
   Button,
   Code,
   Flex,
+  HStack,
   Link,
   Modal,
   ModalBody,
@@ -127,7 +128,7 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
                       </Thead>
                       <Tbody>
                         {articleObjectEntries.map(([field, value]) => {
-                          if (field === "id" || field === "idHash") {
+                          if (field === "id" || field === "idHash" || !value) {
                             return null;
                           }
 
@@ -179,16 +180,21 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button
-              colorScheme="blue"
-              isDisabled={!selected}
-              onClick={() => {
-                onSubmitted({ sourceField: selected });
-                onClose();
-              }}
-            >
-              Create
-            </Button>
+            <HStack>
+              <Button onClick={onClose} variant="ghost">
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                isDisabled={!selected}
+                onClick={() => {
+                  onSubmitted({ sourceField: selected });
+                  onClose();
+                }}
+              >
+                Create
+              </Button>
+            </HStack>
           </ModalFooter>
         </ModalContent>
       </Modal>
