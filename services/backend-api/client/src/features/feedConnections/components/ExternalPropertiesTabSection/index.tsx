@@ -36,11 +36,7 @@ import { FiHelpCircle } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateArticleInjectionModal from "./CreateExternalPropertyModal";
-import {
-  AnimatedComponent,
-  SavedUnsavedChangesPopupBar,
-  SubscriberBlockText,
-} from "../../../../components";
+import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
 import { useUpdateUserFeed } from "../../../feed";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
@@ -81,12 +77,15 @@ const ExternalPropertyForm = ({
   externalPropertyIndex: number;
   onClickDelete: () => void;
 }) => {
+  const { userFeed } = useUserFeedContext();
   const {
     control,
     formState: { errors },
     watch,
   } = useFormContext<FormData>();
   const externalProperty = watch(`externalProperties.${externalPropertyIndex}`);
+  const isNewSelector =
+    externalProperty && !userFeed.externalProperties?.find((p) => p.id === externalProperty.id);
 
   const sourceFieldError =
     errors?.externalProperties?.[externalPropertyIndex]?.sourceField?.message;
@@ -94,7 +93,7 @@ const ExternalPropertyForm = ({
     errors?.externalProperties?.[externalPropertyIndex]?.cssSelector?.message;
   const labelError = errors?.externalProperties?.[externalPropertyIndex]?.label?.message;
 
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(isNewSelector);
 
   const onTogglePreview = () => {
     setShowPreview((p) => !p);
@@ -348,46 +347,33 @@ export const ExternalPropertiesTabSection = () => {
     have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
             />
           </Box>
-          <AnimatedComponent>
-            {fields?.map((a, fieldIndex) => {
-              return (
-                <Box
-                  /**
-                   * fields from useFieldsArray will be empty when the last element is removed, but the form state
-                   * will still contain the last element due to a bug with framer motion.
-                   *
-                   * https://github.com/orgs/react-hook-form/discussions/11379
-                   */
-                  onAnimationComplete={(anim: { opacity: number }) => {
-                    if (anim.opacity === 0 && fieldIndex === fields.length - 1) {
-                      remove(fieldIndex);
-                    }
+          {fields?.map((a, fieldIndex) => {
+            return (
+              <Box
+                key={a.idkey}
+                as={motion.div}
+                exit={{
+                  opacity: 0,
+                }}
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                transition={{
+                  type: "linear",
+                }}
+              >
+                <ExternalPropertyForm
+                  externalPropertyIndex={fieldIndex}
+                  onClickDelete={() => {
+                    remove(fieldIndex);
                   }}
-                  key={a.idkey}
-                  as={motion.div}
-                  exit={{
-                    opacity: 0,
-                  }}
-                  initial={{
-                    opacity: 0,
-                  }}
-                  animate={{
-                    opacity: 1,
-                  }}
-                  transition={{
-                    type: "linear",
-                  }}
-                >
-                  <ExternalPropertyForm
-                    externalPropertyIndex={fieldIndex}
-                    onClickDelete={() => {
-                      remove(fieldIndex);
-                    }}
-                  />
-                </Box>
-              );
-            })}
-          </AnimatedComponent>
+                />
+              </Box>
+            );
+          })}
           <Box>
             <CreateArticleInjectionModal
               trigger={
