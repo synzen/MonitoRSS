@@ -1,4 +1,5 @@
 import { UserMe } from "@/features/discordUser";
+import { ProductKey } from "../../constants";
 
 const mockUserMe: UserMe = {
   id: "1",
@@ -16,7 +17,7 @@ const mockUserMe: UserMe = {
       end: "2021-02-01T00:00:00.000Z",
     },
     product: {
-      key: "tier2",
+      key: ProductKey.Tier2,
       name: "Tier 2",
     },
     status: "ACTIVE",

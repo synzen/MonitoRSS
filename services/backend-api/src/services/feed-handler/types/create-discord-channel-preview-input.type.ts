@@ -1,4 +1,8 @@
-import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
+import {
+  CustomPlaceholderDto,
+  DiscordMediumEvent,
+  ExternalPropertyDto,
+} from "../../../common";
 import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
 
 export interface CreateDiscordChannelPreviewInput {
@@ -12,6 +16,7 @@ export interface CreateDiscordChannelPreviewInput {
         dateTimezone?: string | undefined;
         dateLocale?: string | undefined;
       };
+      externalProperties?: Array<ExternalPropertyDto> | null;
     };
     article?: {
       id: string;

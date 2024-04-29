@@ -17,6 +17,7 @@ import {
 import { z } from "zod";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
+import { externalFeedPropertySchema } from "../article-parser/constants";
 import { ArticlesService } from "../articles/articles.service";
 import { InvalidFeedException } from "../articles/exceptions";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
@@ -252,7 +253,11 @@ export class FeedsController {
     @Body() payload: Record<string, unknown>
   ): Promise<CreateTestArticleOutputDto> {
     try {
-      const withType = await z
+      const {
+        type,
+        article: dtoArticle,
+        feed,
+      } = await z
         .object({
           type: z.nativeEnum(TestDeliveryMedium),
           feed: z.object({
@@ -262,6 +267,11 @@ export class FeedsController {
               .nullable()
               .default(null),
             dateChecks: feedV2EventSchemaDateChecks
+              .optional()
+              .nullable()
+              .default(null),
+            externalProperties: z
+              .array(externalFeedPropertySchema)
               .optional()
               .nullable()
               .default(null),
@@ -276,8 +286,6 @@ export class FeedsController {
         })
         .parse(payload);
 
-      const type = withType.type;
-
       if (type === TestDeliveryMedium.Discord) {
         const { mediumDetails } = await z
           .object({
@@ -288,26 +296,28 @@ export class FeedsController {
         let article: Article | null = null;
 
         const formatOptions: UserFeedFormatOptions = {
-          dateFormat: withType.feed.formatOptions?.dateFormat,
-          dateTimezone: withType.feed.formatOptions?.dateTimezone,
+          dateFormat: feed.formatOptions?.dateFormat,
+          dateTimezone: feed.formatOptions?.dateTimezone,
           disableImageLinkPreviews:
             mediumDetails.formatter.disableImageLinkPreviews,
-          dateLocale: withType.feed.formatOptions?.dateLocale,
+          dateLocale: feed.formatOptions?.dateLocale,
         };
 
-        if (!withType.article) {
+        if (!dtoArticle) {
           article = await this.articlesService.fetchRandomFeedArticle(
-            withType.feed.url,
+            feed.url,
             {
               formatOptions,
+              externalFeedProperties: feed.externalProperties || [],
             }
           );
         } else {
           article = await this.articlesService.fetchFeedArticle(
-            withType.feed.url,
-            withType.article.id,
+            feed.url,
+            dtoArticle.id,
             {
               formatOptions,
+              externalFeedProperties: feed.externalProperties || [],
             }
           );
         }
@@ -415,6 +425,11 @@ export class FeedsController {
               .optional()
               .nullable()
               .default(null),
+            externalProperties: z
+              .array(externalFeedPropertySchema)
+              .optional()
+              .nullable()
+              .default(null),
           }),
           article: z.object({
             id: z.string(),
@@ -426,7 +441,7 @@ export class FeedsController {
         })
         .parse(payload);
 
-      const { type, includeCustomPlaceholderPreviews } = withType;
+      const { type, includeCustomPlaceholderPreviews, feed } = withType;
 
       if (type === TestDeliveryMedium.Discord) {
         const { mediumDetails } = await z
@@ -448,6 +463,7 @@ export class FeedsController {
           withType.article.id,
           {
             formatOptions,
+            externalFeedProperties: feed.externalProperties || [],
           }
         );
 

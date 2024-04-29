@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, Box, Button, Stack, Text } from "@chakra-ui/react";
 import { useContext } from "react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
-import { BlockableFeature, SupporterTier } from "../../constants";
+import { BlockableFeature, ProductKey, SupporterTier } from "../../constants";
 import { PricingDialogContext } from "../../contexts";
 import { useUserMe } from "../../features/discordUser";
 import { useIsFeatureAllowed } from "../../hooks";
@@ -12,6 +12,30 @@ interface Props {
   feature: BlockableFeature;
   supporterTier: SupporterTier;
 }
+
+const tierByProductKey = {
+  [ProductKey.Free]: null,
+  [ProductKey.Tier1]: {
+    patreon: SupporterTier.T3,
+    regular: SupporterTier.T1,
+  },
+  [ProductKey.Tier2]: {
+    patreon: SupporterTier.T4,
+    regular: SupporterTier.T2,
+  },
+  [ProductKey.Tier3]: {
+    patreon: SupporterTier.T6,
+    regular: SupporterTier.T3,
+  },
+};
+
+const supporterTiersOrdered = [
+  SupporterTier.T1,
+  SupporterTier.T2,
+  SupporterTier.T3,
+  SupporterTier.T4,
+  SupporterTier.T6,
+];
 
 export const SubscriberBlockText = ({ alternateText, onClick, feature, supporterTier }: Props) => {
   const { onOpen } = useContext(PricingDialogContext);
@@ -50,6 +74,23 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
     showTier = SupporterTier.T6;
   }
 
+  let buttonText = "Become a supporter";
+
+  if (userMeData) {
+    const currentTier = tierByProductKey[userMeData.result.subscription.product.key];
+
+    if (currentTier) {
+      const currentTierIndex = supporterTiersOrdered.indexOf(
+        isOnPatreon ? currentTier.patreon : currentTier.regular
+      );
+      const requiredTierIndex = supporterTiersOrdered.indexOf(showTier);
+
+      if (currentTierIndex < requiredTierIndex) {
+        buttonText = "Upgrade to access";
+      }
+    }
+  }
+
   return (
     <Stack>
       <Alert rounded="md" colorScheme="purple">
@@ -62,7 +103,7 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
             </Text>
             {userMeData?.result.enableBilling && (
               <Button mt={4} onClick={onClickBecomeSupporter} colorScheme="purple">
-                Become a supporter
+                {buttonText}
               </Button>
             )}
             {!userMeData?.result.enableBilling && (

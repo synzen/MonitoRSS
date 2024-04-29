@@ -1,6 +1,7 @@
 import { array, boolean, InferType, number, object, string } from "yup";
 import { CustomPlaceholderSchema } from "../CustomPlaceholder";
 import { DiscordComponentButtonStyle, DiscordComponentType } from "../FeedConnection";
+import { ExternalPropertySchema } from "../ArticleInjection";
 
 export const discordMessageEmbedFieldFormSchema = object({
   name: string().required(),
@@ -134,6 +135,7 @@ export const discordMessageFormSchema = object({
     .optional()
     .nullable(),
   customPlaceholders: array(CustomPlaceholderSchema.required()).nullable(),
+  externalProperties: array(ExternalPropertySchema.required()).nullable(),
   placeholderLimits: array(
     object({
       characterCount: number().min(1).positive().integer().required(),

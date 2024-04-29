@@ -1,4 +1,5 @@
 import { InferType, bool, object, string } from "yup";
+import { ProductKey } from "../../../constants";
 
 export const UserMeSchema = object({
   id: string().required(),
@@ -11,7 +12,7 @@ export const UserMeSchema = object({
   }).default({}),
   subscription: object({
     product: object({
-      key: string().required(),
+      key: string().oneOf(Object.values(ProductKey)).required(),
       name: string().required(),
     }).required(),
     status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),

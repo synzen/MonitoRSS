@@ -24,6 +24,7 @@ import {
   Portal,
   Stack,
   Text,
+  theme,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronDownIcon, ChevronUpIcon, EditIcon } from "@chakra-ui/icons";
 import { InferType, array, object, string } from "yup";
@@ -34,6 +35,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FiHelpCircle } from "react-icons/fi";
 import { motion } from "framer-motion";
+import CreatableSelect from "react-select/creatable";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateArticleInjectionModal from "./CreateExternalPropertyModal";
 import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
@@ -45,6 +47,8 @@ import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { useExternalPropertiesEligibility } from "./hooks/useExternalPropertiesEligibility";
 import { ExternalProperty } from "../../../../types";
 import UpdateExternalPropertyModal from "./UpdateExternalPropertyModal";
+import { REACT_SELECT_STYLES } from "../../../../constants/reactSelectStyles";
+import { CssSelectorFormattedOption } from "./CssSelectorFormattedOption";
 
 const formSchema = object({
   externalProperties: array(
@@ -208,20 +212,60 @@ const ExternalPropertyForm = ({
             control={control}
             name={`externalProperties.${externalPropertyIndex}.cssSelector`}
             render={({ field }) => (
-              <Input
+              <CreatableSelect
                 {...field}
-                bg="gray.800"
-                fontFamily="mono"
-                autoComplete="off"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck="false"
+                value={{
+                  label: field.value,
+                  value: field.value,
+                }}
+                onChange={(option) => option && field.onChange(option.label)}
+                styles={{
+                  ...REACT_SELECT_STYLES,
+                  input: (provided, props) => {
+                    return {
+                      ...provided,
+                      ...REACT_SELECT_STYLES?.input?.(provided, props),
+                      fontFamily: theme.fonts.mono,
+                      "& input": {
+                        font: "inherit",
+                      },
+                    };
+                  },
+                }}
+                formatCreateLabel={(input) => `Custom: ${input}`}
+                formatOptionLabel={({ label }) =>
+                  CssSelectorFormattedOption({
+                    label,
+                    isSelected: field.value === label,
+                  })
+                }
+                hideSelectedOptions
+                options={[
+                  {
+                    label: "Common Selectors",
+                    options: [
+                      {
+                        label: "img",
+                        value: "img",
+                      },
+                      {
+                        label: "a",
+                        value: "a",
+                      },
+                      {
+                        label: 'meta[property="og:image"]',
+                        value: 'meta[property="og:image"]',
+                      },
+                    ],
+                  },
+                ]}
               />
             )}
           />
           {!cssSelectorError && (
             <FormHelperText>
-              Target the elements on the external page that contains the desired content.
+              Target the elements on the external page that contains the desired content. Sample CSS
+              selectors are provided for common use cases, but you may also input your own.
             </FormHelperText>
           )}
           {cssSelectorError && <FormErrorMessage>{cssSelectorError}</FormErrorMessage>}
@@ -335,8 +379,9 @@ export const ExternalPropertiesTabSection = () => {
               <Text>
                 Create additional article properties that come from linked pages within feed
                 articles. These article properties can then be used as placeholders to further
-                customize messages per connection. Up to 10 external placeholders can be generated
-                per selector.
+                customize messages per connection. Up to 10 external properties (excluding any
+                properties derived from them such as images and anchors) can be generated per
+                selector.
               </Text>
             </Stack>
             {!eligible ? <Box mb={4}>{alertComponent}</Box> : undefined}
@@ -350,7 +395,7 @@ export const ExternalPropertiesTabSection = () => {
           {fields?.map((a, fieldIndex) => {
             return (
               <Box
-                key={a.idkey}
+                key={a.id}
                 as={motion.div}
                 exit={{
                   opacity: 0,

@@ -87,6 +87,7 @@ export const DiscordMessageForm = ({
       mentions: defaultValues?.mentions,
       placeholderLimits: defaultValues?.placeholderLimits,
       splitOptions: defaultValues?.splitOptions,
+      externalProperties: defaultValues?.externalProperties,
     },
     mode: "all",
   });
@@ -117,6 +118,7 @@ export const DiscordMessageForm = ({
     forumThreadTags,
     forumThreadTitle,
     componentRows,
+    externalProperties,
   ] = useWatch({
     control,
     name: [
@@ -131,6 +133,7 @@ export const DiscordMessageForm = ({
       "forumThreadTags",
       "forumThreadTitle",
       "componentRows",
+      "externalProperties",
     ],
   });
 
@@ -158,6 +161,7 @@ export const DiscordMessageForm = ({
       forumThreadTags,
       forumThreadTitle,
       componentRows,
+      externalProperties,
     },
   };
 
@@ -219,6 +223,8 @@ export const DiscordMessageForm = ({
     if (!previewInput.data.article) {
       return;
     }
+
+    console.log("🚀 ~ onClickSendPreviewToDiscord ~ previewInput:", previewInput);
 
     try {
       await sendTestArticle({

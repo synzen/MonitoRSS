@@ -18,6 +18,7 @@ import {
   DiscordPlaceholderLimitOptions,
   CustomPlaceholderDto,
   ForumThreadTagDto,
+  ExternalPropertyDto,
 } from "../../../common";
 import { DiscordComponentRow } from "../../../common/types/discord-component-row.type";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
@@ -81,6 +82,13 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @ValidateNested({ each: true })
   @Type(() => CustomPlaceholderDto)
   customPlaceholders?: CustomPlaceholderDto[] | undefined | null;
+
+  @IsObject({ each: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExternalPropertyDto)
+  externalProperties?: ExternalPropertyDto[] | undefined | null;
 
   @IsOptional()
   @Type(() => DiscordPlaceholderLimitOptions)

@@ -93,15 +93,20 @@ export class ArticlesService {
       );
     }
 
+    if (articles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
+      await article.injectArticleContent(article.flattened);
+    }
+
     return article;
   }
 
   async fetchRandomFeedArticle(
     url: string,
-    { formatOptions }: FetchFeedArticleOptions
+    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
   ) {
     const result = await this.fetchFeedArticles(url, {
       formatOptions,
+      externalFeedProperties,
     });
 
     if (!result) {

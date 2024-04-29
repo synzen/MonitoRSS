@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Code,
   Flex,
@@ -101,81 +102,83 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
                 />
               )}
               {!error && (
-                <RadioGroup onChange={setSelected} value={selected}>
-                  <TableContainer overflow="auto">
-                    <Table size="sm">
-                      <Thead>
-                        <Tr>
-                          <Th />
-                          <Th>Article Property</Th>
-                          <Th>
-                            Sample Article Value
-                            <Tooltip label="See another random article's values">
-                              <Button
-                                size="xs"
-                                ml={2}
-                                isLoading={fetchStatus === "fetching"}
-                                onClick={onClickRandomize}
-                                variant="outline"
-                                leftIcon={<RepeatIcon />}
-                                aria-label="See another random article's values"
-                              >
-                                Randomize sample article
-                              </Button>
-                            </Tooltip>
-                          </Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {articleObjectEntries.map(([field, value]) => {
-                          if (field === "id" || field === "idHash" || !value) {
-                            return null;
-                          }
+                <Box bg="gray.800" p={2} rounded="lg">
+                  <RadioGroup onChange={setSelected} value={selected}>
+                    <TableContainer overflow="auto">
+                      <Table size="sm">
+                        <Thead>
+                          <Tr>
+                            <Th />
+                            <Th>Article Property</Th>
+                            <Th>
+                              Sample Article Value
+                              <Tooltip label="See another random article's values">
+                                <Button
+                                  size="xs"
+                                  ml={2}
+                                  isLoading={fetchStatus === "fetching"}
+                                  onClick={onClickRandomize}
+                                  variant="outline"
+                                  leftIcon={<RepeatIcon />}
+                                  aria-label="See another random article's values"
+                                >
+                                  Randomize sample article
+                                </Button>
+                              </Tooltip>
+                            </Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {articleObjectEntries.map(([field, value]) => {
+                            if (field === "id" || field === "idHash" || !value) {
+                              return null;
+                            }
 
-                          return (
-                            <Tr key={field}>
-                              <Td width="min-content">
-                                <Radio
-                                  value={field}
-                                  id={`field-${field}`}
-                                  name="field"
-                                  isDisabled={fetchStatus !== "idle"}
-                                />
-                              </Td>
-                              <Td>
-                                <Skeleton isLoaded={fetchStatus === "idle"}>
-                                  <chakra.label htmlFor={`field-${field}`}>
-                                    <Code>{field}</Code>
-                                  </chakra.label>
-                                </Skeleton>
-                              </Td>
-                              <Td whiteSpace="nowrap">
-                                <Skeleton isLoaded={fetchStatus === "idle"}>
-                                  <Flex
-                                    as={chakra.label}
-                                    alignItems="center"
-                                    htmlFor={`field-${field}`}
-                                    gap={2}
-                                  >
-                                    {value}
-                                    <Link
-                                      color="blue.300"
-                                      href={value}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                            return (
+                              <Tr key={field}>
+                                <Td width="min-content">
+                                  <Radio
+                                    value={field}
+                                    id={`field-${field}`}
+                                    name="field"
+                                    isDisabled={fetchStatus !== "idle"}
+                                  />
+                                </Td>
+                                <Td>
+                                  <Skeleton isLoaded={fetchStatus === "idle"}>
+                                    <chakra.label htmlFor={`field-${field}`}>
+                                      <Code>{field}</Code>
+                                    </chakra.label>
+                                  </Skeleton>
+                                </Td>
+                                <Td whiteSpace="nowrap">
+                                  <Skeleton isLoaded={fetchStatus === "idle"}>
+                                    <Flex
+                                      as={chakra.label}
+                                      alignItems="center"
+                                      htmlFor={`field-${field}`}
+                                      gap={2}
                                     >
-                                      <ExternalLinkIcon />
-                                    </Link>
-                                  </Flex>
-                                </Skeleton>
-                              </Td>
-                            </Tr>
-                          );
-                        })}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-                </RadioGroup>
+                                      {value}
+                                      <Link
+                                        color="blue.300"
+                                        href={value}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <ExternalLinkIcon />
+                                      </Link>
+                                    </Flex>
+                                  </Skeleton>
+                                </Td>
+                              </Tr>
+                            );
+                          })}
+                        </Tbody>
+                      </Table>
+                    </TableContainer>
+                  </RadioGroup>
+                </Box>
               )}
             </Stack>
           </ModalBody>

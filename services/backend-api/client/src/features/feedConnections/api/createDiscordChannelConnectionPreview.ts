@@ -1,6 +1,11 @@
 import { InferType, object } from "yup";
 import fetchRest from "../../../utils/fetchRest";
-import { CreatePreviewResultSchema, CustomPlaceholder, PreviewEmbedInput } from "@/types";
+import {
+  CreatePreviewResultSchema,
+  CustomPlaceholder,
+  ExternalProperty,
+  PreviewEmbedInput,
+} from "@/types";
 
 export interface CreateDiscordChannelConnectionPreviewInput {
   feedId: string;
@@ -45,6 +50,7 @@ export interface CreateDiscordChannelConnectionPreviewInput {
       }> | null;
     } | null;
     customPlaceholders?: Array<CustomPlaceholder> | null;
+    externalProperties?: Array<ExternalProperty> | null;
     placeholderLimits?: Array<{
       placeholder: string;
       characterCount: number;

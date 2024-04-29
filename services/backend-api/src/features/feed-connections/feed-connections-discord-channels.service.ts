@@ -6,6 +6,7 @@ import {
   CustomRateLimitDto,
   DiscordGuildChannel,
   DiscordWebhook,
+  ExternalPropertyDto,
 } from "../../common";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import {
@@ -124,6 +125,7 @@ interface CreatePreviewInput {
   articleId?: string;
   mentions?: DiscordChannelConnection["mentions"] | null;
   customPlaceholders?: CustomPlaceholderDto[] | null;
+  externalProperties?: ExternalPropertyDto[] | null;
   placeholderLimits?:
     | DiscordChannelConnection["details"]["placeholderLimits"]
     | null;
@@ -851,15 +853,21 @@ export class FeedConnectionsDiscordChannelsService {
 
     let useCustomPlaceholders =
       previewInput?.customPlaceholders || connection.customPlaceholders;
+    let useExternalProperties =
+      previewInput?.externalProperties || userFeed.externalProperties;
 
     if (previewInput?.customPlaceholders?.length) {
-      const { allowCustomPlaceholders } =
+      const { allowCustomPlaceholders, allowExternalProperties } =
         await this.supportersService.getBenefitsOfDiscordUser(
           userFeed.user.discordUserId
         );
 
       if (!allowCustomPlaceholders) {
         useCustomPlaceholders = [];
+      }
+
+      if (!allowExternalProperties) {
+        useExternalProperties = [];
       }
     }
 
@@ -916,6 +924,7 @@ export class FeedConnectionsDiscordChannelsService {
             userFeed.formatOptions?.dateLocale ||
             user?.preferences?.dateLocale,
         },
+        externalProperties: useExternalProperties,
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {
@@ -986,6 +995,7 @@ export class FeedConnectionsDiscordChannelsService {
     customPlaceholders,
     componentRows,
     includeCustomPlaceholderPreviews,
+    externalProperties,
   }: CreatePreviewInput) {
     const user = await this.userModel
       .findOne(
@@ -1012,6 +1022,7 @@ export class FeedConnectionsDiscordChannelsService {
           dateLocale:
             feedFormatOptions?.dateLocale || user?.preferences?.dateLocale,
         },
+        externalProperties,
       },
       article: articleId ? { id: articleId } : undefined,
       mediumDetails: {

@@ -332,6 +332,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                     mentions: connection?.mentions,
                     customPlaceholders: connection?.customPlaceholders,
                     componentRows: connection?.details.componentRows,
+                    externalProperties: feed?.externalProperties,
                     ...connection?.details,
                   }}
                   articleFormatter={{

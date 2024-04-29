@@ -233,6 +233,7 @@ export class FeedConnectionsDiscordChannelsController {
       enablePlaceholderFallback,
       customPlaceholders,
       componentRows,
+      externalProperties,
       includeCustomPlaceholderPreviews,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
@@ -251,6 +252,7 @@ export class FeedConnectionsDiscordChannelsController {
       customPlaceholders,
       componentRows,
       includeCustomPlaceholderPreviews,
+      externalProperties,
     });
 
     return {

@@ -1,8 +1,9 @@
+import { SubscriptionProductKey } from "../../features/supporter-subscriptions/constants/subscription-product-key.constants";
 import { SubscriptionStatus } from "../constants/subscription-status.constants";
 
 export interface SubscriptionDetails {
   product: {
-    key: string;
+    key: SubscriptionProductKey;
     name: string;
   };
   status: SubscriptionStatus;
