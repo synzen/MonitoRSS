@@ -207,11 +207,11 @@ export const ExternalPropertyPreview = ({
   }
 
   return (
-    <Stack px={6} py={4}>
+    <Stack px={[4, 4, 6]} py={4}>
       <ArticleSelectDialog
         trigger={
           <Button size="sm" leftIcon={<RepeatIcon />}>
-            Change Preview Article
+            Update Preview Article
           </Button>
         }
         feedId={userFeed.id}
@@ -280,6 +280,7 @@ export const ExternalPropertyPreview = ({
               size="sm"
               width="auto"
               flex={1}
+              minWidth={200}
               onChange={(e) => onChangeSelectedConnection(e.target.value)}
             >
               {userFeed.connections.map((con) => (

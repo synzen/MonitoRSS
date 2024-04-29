@@ -75,9 +75,9 @@ import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedTabSearchParam.Connections, 0],
   [UserFeedTabSearchParam.Comparisons, 1],
-  [UserFeedTabSearchParam.Settings, 2],
-  [UserFeedTabSearchParam.Logs, 3],
-  [UserFeedTabSearchParam.ExternalProperties, 4],
+  [UserFeedTabSearchParam.Settings, 3],
+  [UserFeedTabSearchParam.Logs, 4],
+  [UserFeedTabSearchParam.ExternalProperties, 2],
 ]);
 
 export const UserFeed: React.FC = () => {
@@ -254,7 +254,7 @@ export const UserFeed: React.FC = () => {
             background="gray.700"
             alignItems="center"
           >
-            <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, lg: 12 }} spacing={6}>
+            <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, md: 8, lg: 12 }} spacing={6}>
               <Stack spacing={6}>
                 <Stack spacing={4}>
                   {/* <HStack justifyContent="space-between"> */}
@@ -485,55 +485,63 @@ export const UserFeed: React.FC = () => {
                   </CategoryText>
                 </Grid>
               </Stack>
-              <TabList>
-                <Tab
-                  onClick={() =>
-                    navigate({
-                      search: UserFeedTabSearchParam.Connections,
-                    })
-                  }
-                >
-                  {t("pages.userFeeds.tabConnections")}
-                </Tab>
-                <Tab
-                  onClick={() =>
-                    navigate({
-                      search: UserFeedTabSearchParam.Comparisons,
-                    })
-                  }
-                >
-                  {t("pages.userFeeds.tabComparisons")}
-                </Tab>
-                <Tab
-                  onClick={() =>
-                    navigate({
-                      search: UserFeedTabSearchParam.Settings,
-                    })
-                  }
-                >
-                  {t("pages.userFeeds.settings")}
-                </Tab>
-                <Tab
-                  onClick={() =>
-                    navigate({
-                      search: UserFeedTabSearchParam.Logs,
-                    })
-                  }
-                >
-                  {t("pages.userFeeds.tabLogs")}
-                </Tab>
-                {userMe?.result.featureFlags?.externalProperties && (
+              <Box overflow="auto" display="flex">
+                <TabList w="max-content" flex={1}>
                   <Tab
+                    fontWeight="semibold"
+                    onClick={() =>
+                      navigate({
+                        search: UserFeedTabSearchParam.Connections,
+                      })
+                    }
+                  >
+                    {t("pages.userFeeds.tabConnections")}
+                  </Tab>
+                  <Tab
+                    fontWeight="semibold"
+                    onClick={() =>
+                      navigate({
+                        search: UserFeedTabSearchParam.Comparisons,
+                      })
+                    }
+                  >
+                    {t("pages.userFeeds.tabComparisons")}
+                  </Tab>
+                  <Tab
+                    fontWeight="semibold"
+                    display={userMe?.result.featureFlags?.externalProperties ? "block" : "none"}
                     onClick={() =>
                       navigate({
                         search: UserFeedTabSearchParam.ExternalProperties,
                       })
                     }
+                    whiteSpace="nowrap"
                   >
                     External Properties
                   </Tab>
-                )}
-              </TabList>
+                  <Tab
+                    fontWeight="semibold"
+                    onClick={() =>
+                      navigate({
+                        search: UserFeedTabSearchParam.Settings,
+                      })
+                    }
+                    whiteSpace="nowrap"
+                  >
+                    {t("pages.userFeeds.settings")}
+                  </Tab>
+                  <Tab
+                    fontWeight="semibold"
+                    onClick={() =>
+                      navigate({
+                        search: UserFeedTabSearchParam.Logs,
+                      })
+                    }
+                  >
+                    {t("pages.userFeeds.tabLogs")}
+                  </Tab>
+                </TabList>
+              </Box>
             </Stack>
           </Stack>
           <TabPanels width="100%" display="flex" justifyContent="center" mt="8">
@@ -675,6 +683,13 @@ export const UserFeed: React.FC = () => {
             <TabPanel width="100%">
               <BoxConstrained.Wrapper>
                 <BoxConstrained.Container>
+                  <ExternalPropertiesTabSection />
+                </BoxConstrained.Container>
+              </BoxConstrained.Wrapper>
+            </TabPanel>
+            <TabPanel width="100%">
+              <BoxConstrained.Wrapper>
+                <BoxConstrained.Container>
                   <UserFeedSettingsTabSection feedId={feedId as string} />
                 </BoxConstrained.Container>
               </BoxConstrained.Wrapper>
@@ -686,15 +701,6 @@ export const UserFeed: React.FC = () => {
                 </BoxConstrained.Container>
               </BoxConstrained.Wrapper>
             </TabPanel>
-            {userMe?.result.featureFlags.externalProperties && (
-              <TabPanel width="100%">
-                <BoxConstrained.Wrapper>
-                  <BoxConstrained.Container>
-                    <ExternalPropertiesTabSection />
-                  </BoxConstrained.Container>
-                </BoxConstrained.Wrapper>
-              </TabPanel>
-            )}
           </TabPanels>
         </Tabs>
       </UserFeedProvider>

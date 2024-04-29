@@ -105,8 +105,7 @@ const ExternalPropertyForm = ({
       border="solid 2px"
       borderColor="gray.600"
       bg="gray.700"
-      px={6}
-      py={6}
+      p={[4, 4, 6]}
       rounded="lg"
       spacing={0}
       position="relative"
@@ -170,7 +169,7 @@ const ExternalPropertyForm = ({
                 </Button>
               </PopoverTrigger>
               <Portal>
-                <PopoverContent maxWidth={500} width="100%">
+                <PopoverContent maxWidth={[350, 450, 500]} width="100%">
                   <PopoverArrow />
                   <PopoverHeader fontWeight="semibold">What is a CSS Selector?</PopoverHeader>
                   <PopoverCloseButton />
@@ -212,7 +211,6 @@ const ExternalPropertyForm = ({
             render={({ field }) => (
               <Input
                 {...field}
-                minWidth={300}
                 bg="gray.800"
                 fontFamily="mono"
                 autoComplete="off"
@@ -237,7 +235,6 @@ const ExternalPropertyForm = ({
             render={({ field }) => (
               <Input
                 {...field}
-                minWidth={300}
                 bg="gray.800"
                 autoComplete="off"
                 autoCapitalize="off"
