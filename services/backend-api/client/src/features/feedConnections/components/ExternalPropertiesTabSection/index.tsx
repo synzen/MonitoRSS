@@ -77,16 +77,16 @@ type FormData = InferType<typeof formSchema>;
 const ExternalPropertyForm = ({
   externalPropertyIndex,
   onClickDelete,
-  externalProperty,
 }: {
   externalPropertyIndex: number;
   onClickDelete: () => void;
-  externalProperty: ExternalProperty;
 }) => {
   const {
     control,
     formState: { errors },
+    watch,
   } = useFormContext<FormData>();
+  const externalProperty = watch(`externalProperties.${externalPropertyIndex}`);
 
   const sourceFieldError =
     errors?.externalProperties?.[externalPropertyIndex]?.sourceField?.message;
@@ -287,7 +287,7 @@ const ExternalPropertyForm = ({
 export const ExternalPropertiesTabSection = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
-  const { eligible, alertComponent } = useExternalPropertiesEligibility();
+  const { loaded, eligible, alertComponent } = useExternalPropertiesEligibility();
   const formData = useForm<FormData>({
     mode: "all",
     resolver: yupResolver(formSchema),
@@ -392,7 +392,11 @@ export const ExternalPropertiesTabSection = () => {
           <Box>
             <CreateArticleInjectionModal
               trigger={
-                <Button isDisabled={!eligible} leftIcon={<AddIcon fontSize={13} />}>
+                <Button
+                  isLoading={!loaded}
+                  isDisabled={!eligible}
+                  leftIcon={<AddIcon fontSize={13} />}
+                >
                   Add Selector
                 </Button>
               }

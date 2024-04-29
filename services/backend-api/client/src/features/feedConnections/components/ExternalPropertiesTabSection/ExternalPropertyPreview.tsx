@@ -190,7 +190,7 @@ export const ExternalPropertyPreview = ({
       <Center flexDir="column" gap={2} bg="gray.800" rounded="lg" p={4}>
         <Spinner />
         <Text color="whiteAlpha.700" fontSize="sm">
-          Loading preview...
+          Loading preview...this might take a while
         </Text>
       </Center>
     );
