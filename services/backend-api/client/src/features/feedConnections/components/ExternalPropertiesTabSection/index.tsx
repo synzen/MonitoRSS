@@ -380,7 +380,6 @@ export const ExternalPropertiesTabSection = () => {
                 >
                   <ExternalPropertyForm
                     externalPropertyIndex={fieldIndex}
-                    externalProperty={a}
                     onClickDelete={() => {
                       remove(fieldIndex);
                     }}
