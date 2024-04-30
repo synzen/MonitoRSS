@@ -224,8 +224,6 @@ export const DiscordMessageForm = ({
       return;
     }
 
-    console.log("🚀 ~ onClickSendPreviewToDiscord ~ previewInput:", previewInput);
-
     try {
       await sendTestArticle({
         connectionType: connection.type,

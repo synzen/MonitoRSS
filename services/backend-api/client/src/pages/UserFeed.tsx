@@ -509,7 +509,6 @@ export const UserFeed: React.FC = () => {
                   </Tab>
                   <Tab
                     fontWeight="semibold"
-                    display={userMe?.result.featureFlags?.externalProperties ? "block" : "none"}
                     onClick={() =>
                       navigate({
                         search: UserFeedTabSearchParam.ExternalProperties,
