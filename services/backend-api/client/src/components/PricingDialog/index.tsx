@@ -117,7 +117,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ExternalProperties,
-        description: "Scrape external links*",
+        description: "External properties (scrape external links)*",
         enabled: true,
       },
       {
@@ -154,7 +154,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ExternalProperties,
-        description: "Scrape external links*",
+        description: "External properties (scrape external links)*",
         enabled: true,
       },
       {
@@ -546,7 +546,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                 </Flex>
                 <Box textAlign="center" pb={3} fontSize="lg">
                   <Text color="whiteAlpha.600" fontSize="sm">
-                    * Scraping external links is currently only enabled for feeds with under 26
+                    * External properties are currently only enabled for feeds with under 26
                     articles
                   </Text>
                 </Box>
