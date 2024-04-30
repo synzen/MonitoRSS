@@ -218,7 +218,13 @@ const ExternalPropertyForm = ({
                   label: field.value,
                   value: field.value,
                 }}
+                noOptionsMessage={() => null}
                 onChange={(option) => option && field.onChange(option.label)}
+                onInputChange={(value, action) => {
+                  if (action.action === "input-change") {
+                    field.onChange(value);
+                  }
+                }}
                 styles={{
                   ...REACT_SELECT_STYLES,
                   input: (provided, props) => {
