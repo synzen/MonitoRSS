@@ -855,8 +855,11 @@ export class FeedConnectionsDiscordChannelsService {
       previewInput?.customPlaceholders || connection.customPlaceholders;
     let useExternalProperties =
       previewInput?.externalProperties || userFeed.externalProperties;
+    const hasPremiumFeatures =
+      previewInput?.customPlaceholders?.length ||
+      previewInput?.externalProperties?.length;
 
-    if (previewInput?.customPlaceholders?.length) {
+    if (hasPremiumFeatures) {
       const { allowCustomPlaceholders, allowExternalProperties } =
         await this.supportersService.getBenefitsOfDiscordUser(
           userFeed.user.discordUserId
