@@ -40,7 +40,6 @@ import {
   GetFeedArticlesRequestStatus,
   TransformValidationPipe,
   UserFeedFormatOptions,
-  MAX_ARTICLE_INJECTION_ARTICLE_COUNT,
 } from "../shared";
 import {
   CustomPlaceholderRegexEvalException,
@@ -136,12 +135,6 @@ export class FeedsController {
             selectedProperties: [],
           },
         };
-      }
-
-      if (fetchResult.articles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
-        await Promise.all(
-          fetchResult.articles.map((a) => a.injectArticleContent(a.flattened))
-        );
       }
 
       const {

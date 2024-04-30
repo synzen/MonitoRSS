@@ -93,10 +93,6 @@ export class ArticlesService {
       );
     }
 
-    if (articles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
-      await article.injectArticleContent(article.flattened);
-    }
-
     return article;
   }
 
@@ -275,12 +271,6 @@ export class ArticlesService {
           })),
         }
       );
-    }
-
-    if (articlesPostDateCheck.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
-      for (const a of articlesPostDateCheck) {
-        await a.injectArticleContent(a.flattened);
-      }
     }
 
     return articlesPostDateCheck;
@@ -614,6 +604,10 @@ export class ArticlesService {
                 externalFeedProperties: options.externalFeedProperties,
               });
 
+            if (rawArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
+              await injectArticleContent(flattened);
+            }
+
             return {
               flattened: {
                 ...flattened,
@@ -621,7 +615,6 @@ export class ArticlesService {
                 idHash: sha1.copy().update(id).digest("hex"),
               },
               raw: rawArticle,
-              injectArticleContent,
             };
           })
         );
