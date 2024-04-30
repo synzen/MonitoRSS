@@ -46,6 +46,7 @@ enum Feature {
   Webhooks = "Webhooks",
   CustomPlaceholders = "Custom Placeholders",
   RefreshRate = "Refresh Rate",
+  ExternalProperties = "External Properties",
 }
 
 const tiers: Array<{
@@ -115,6 +116,11 @@ const tiers: Array<{
         enabled: true,
       },
       {
+        name: Feature.ExternalProperties,
+        description: "Scrape external links*",
+        enabled: true,
+      },
+      {
         name: Feature.RefreshRate,
         description: "2 minute refresh rate",
         enabled: true,
@@ -144,6 +150,11 @@ const tiers: Array<{
       {
         name: Feature.CustomPlaceholders,
         description: "Custom placeholders",
+        enabled: true,
+      },
+      {
+        name: Feature.ExternalProperties,
+        description: "Scrape external links*",
         enabled: true,
       },
       {
@@ -533,6 +544,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                     )}
                   </Stack>
                 </Flex>
+                <Box textAlign="center" pb={3} fontSize="lg">
+                  <Text color="whiteAlpha.600" fontSize="sm">
+                    * Scraping external links is currently only enabled for feeds with under 26
+                    articles
+                  </Text>
+                </Box>
                 <Box textAlign="center" pb={3} fontSize="lg">
                   <Text>
                     Don&apos;t see what you&apos;re looking for?{" "}
