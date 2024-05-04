@@ -4,7 +4,13 @@ import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import {
+  BrowserRouter,
+  createRoutesFromChildren,
+  matchRoutes,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import * as Sentry from "@sentry/react";
 import theme from "./utils/theme";
 import setupMockBrowserWorker from "./mocks/browser";
@@ -23,7 +29,13 @@ async function prepare() {
       Sentry.init({
         dsn: DSN,
         integrations: [
-          Sentry.browserTracingIntegration(),
+          Sentry.reactRouterV6BrowserTracingIntegration({
+            useEffect: React.useEffect,
+            useLocation,
+            useNavigationType,
+            createRoutesFromChildren,
+            matchRoutes,
+          }),
           Sentry.replayIntegration({
             maskAllText: false,
             blockAllMedia: false,

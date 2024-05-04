@@ -1,4 +1,5 @@
 import { Route, Routes, Navigate } from "react-router-dom";
+import * as Sentry from "@sentry/react";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
 import FeedMessage from "./FeedMessage";
@@ -27,8 +28,10 @@ import { NotFound } from "./NotFound";
 import { UserSettings } from "./UserSettings";
 import { TestPaddle } from "./TestPaddle";
 
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
+
 const Pages: React.FC = () => (
-  <Routes>
+  <SentryRoutes>
     <Route path={pages.testPaddle()} element={<TestPaddle />} />
     <Route path={pages.notFound()} element={<NotFound />} />
     <Route
@@ -227,7 +230,7 @@ const Pages: React.FC = () => (
       }
     />
     <Route path="*" element={<Navigate to="/not-found" />} />
-  </Routes>
+  </SentryRoutes>
 );
 
 export default Pages;
