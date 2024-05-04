@@ -16,6 +16,8 @@ export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
     try {
       setIsUpdating(true);
       await onEnable();
+    } catch (err) {
+      // do nothing - this is handled in onEnable()
     } finally {
       setIsUpdating(false);
     }

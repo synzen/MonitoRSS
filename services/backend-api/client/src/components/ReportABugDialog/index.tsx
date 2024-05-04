@@ -99,7 +99,7 @@ export const ReportABugDialog = ({ trigger }: Props) => {
                     rows={10}
                   />
                   <FormHelperText>
-                    Please be as descriptive as possible. Include steps to reproduce if possible.
+                    Please be as descriptive as possible (including steps to reproduce if relevant).
                   </FormHelperText>
                 </FormControl>
               </Stack>
