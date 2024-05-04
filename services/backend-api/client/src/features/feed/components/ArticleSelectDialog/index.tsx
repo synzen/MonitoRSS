@@ -23,8 +23,9 @@ import {
   Stack,
   Text,
   useDisclosure,
+  chakra,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import React, { ReactElement, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { Loading, Menu, ThemedSelect } from "@/components";
@@ -229,14 +230,26 @@ export const ArticleSelectDialog = ({
                           borderRadius="lg"
                         >
                           <Menu
-                            items={articles.map((article) => ({
-                              id: article.id,
-                              title: article[useArticleProperty as never] || (
-                                <Text color="gray.400">(empty)</Text>
-                              ),
-                              value: article.id,
-                              description: "",
-                            }))}
+                            items={articles.map((article) => {
+                              const articleValue = article[useArticleProperty as never];
+
+                              let title: ReactElement;
+
+                              if (!articleValue) {
+                                title = <Text color="gray.400">(empty)</Text>;
+                              } else {
+                                title = (
+                                  <chakra.span whiteSpace="pre-wrap">{articleValue}</chakra.span>
+                                );
+                              }
+
+                              return {
+                                id: article.id,
+                                title,
+                                value: article.id,
+                                description: "",
+                              };
+                            })}
                             boxProps={{
                               background: "transparent",
                               // border: `solid 2px ${getChakraColor("gray.600")}`,
