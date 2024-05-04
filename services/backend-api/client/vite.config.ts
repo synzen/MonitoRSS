@@ -28,7 +28,10 @@ const proxyOptionsByEnv: Record<string, Record<string, ProxyOptions>> = {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), sentryVitePlugin({
+    org: "monitorss-t0",
+    project: "javascript-react"
+  })],
   publicDir: "./public",
   resolve: {
     alias: {

@@ -245,7 +245,7 @@ export const ArticleSelectDialog = ({
 
                               return {
                                 id: article.id,
-                                title,
+                                title: title as never,
                                 value: article.id,
                                 description: "",
                               };
