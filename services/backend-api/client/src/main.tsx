@@ -41,7 +41,6 @@ async function prepare() {
           Sentry.replayIntegration({
             maskAllText: false,
             blockAllMedia: false,
-            networkDetailAllowUrls: ["/api/v1/user-feeds"],
           }),
         ],
         tracesSampleRate: 0.2,
