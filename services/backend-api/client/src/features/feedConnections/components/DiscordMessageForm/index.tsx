@@ -1,10 +1,12 @@
 import { AddIcon } from "@chakra-ui/icons";
 import {
   Button,
+  Center,
   Flex,
   Heading,
   Highlight,
   HStack,
+  Spinner,
   Stack,
   Tab,
   TabList,
@@ -14,7 +16,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useContext, useState } from "react";
+import { lazy, Suspense, useContext, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FiPlay } from "react-icons/fi";
@@ -25,10 +27,9 @@ import {
   discordMessageFormSchema,
 } from "@/types/discord";
 import { DiscordMessageContentForm } from "./DiscordMessageContentForm";
-import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
+// import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
 import { notifyError } from "../../../../utils/notifyError";
 import { FeedConnectionType } from "../../../../types";
-import { DiscordChannelConnectionPreview } from "./DiscordChannelConnectionPreview";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
@@ -38,6 +39,20 @@ import { AnimatedComponent } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 import { useUserFeed } from "../../../feed/hooks";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
+
+const DiscordMessageEmbedForm = lazy(() =>
+  import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
+    default: component,
+  }))
+);
+
+const DiscordChannelConnectionPreview = lazy(() =>
+  import("./DiscordChannelConnectionPreview").then(
+    ({ DiscordChannelConnectionPreview: component }) => ({
+      default: component,
+    })
+  )
+);
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -288,12 +303,20 @@ export const DiscordMessageForm = ({
               <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
             </Stack>
             {connection.type === FeedConnectionType.DiscordChannel && (
-              <DiscordChannelConnectionPreview
-                connectionId={connection.id}
-                data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
-                feedId={feedId}
-                hasErrors={errorsExist}
-              />
+              <Suspense
+                fallback={
+                  <Center my={8}>
+                    <Spinner />
+                  </Center>
+                }
+              >
+                <DiscordChannelConnectionPreview
+                  connectionId={connection.id}
+                  data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
+                  feedId={feedId}
+                  hasErrors={errorsExist}
+                />
+              </Suspense>
             )}
           </Stack>
           {include?.forumForms && (
@@ -334,19 +357,21 @@ export const DiscordMessageForm = ({
               <TabPanels>
                 {embeds?.map((embed, index) => (
                   <TabPanel key={embed.id}>
-                    <Stack spacing={8}>
-                      <Flex justifyContent="flex-end">
-                        <Button
-                          colorScheme="red"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onRemoveEmbed(index)}
-                        >
-                          {t("features.feedConnections.components.embedForm.deleteButtonText")}
-                        </Button>
-                      </Flex>
-                      <DiscordMessageEmbedForm index={index} />
-                    </Stack>
+                    <Suspense fallback={<Spinner />}>
+                      <Stack spacing={8}>
+                        <Flex justifyContent="flex-end">
+                          <Button
+                            colorScheme="red"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onRemoveEmbed(index)}
+                          >
+                            {t("features.feedConnections.components.embedForm.deleteButtonText")}
+                          </Button>
+                        </Flex>
+                        <DiscordMessageEmbedForm index={index} />
+                      </Stack>
+                    </Suspense>
                   </TabPanel>
                 ))}
               </TabPanels>

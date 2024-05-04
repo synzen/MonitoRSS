@@ -1,5 +1,4 @@
 import { array, InferType, number, object } from "yup";
-import qs from "qs";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedRequestSchema } from "../types";
 
@@ -26,7 +25,12 @@ export const getUserFeedRequests = async ({
   feedId,
   data,
 }: GetUserFeedRequestsInput): Promise<GetUserFeedRequestsOutput> => {
-  const query = qs.stringify(data);
+  const params = new URLSearchParams();
+
+  params.append("limit", data.limit.toString());
+  params.append("skip", data.skip.toString());
+
+  const query = params.toString();
 
   const res = await fetchRest(`/api/v1/user-feeds/${feedId}/requests?${query}`, {
     requestOptions: {

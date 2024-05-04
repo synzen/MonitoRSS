@@ -28,10 +28,10 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
-import { usePaddleCheckout } from "../../hooks";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { ProductKey } from "../../constants";
 import { useSubscriptionProducts } from "../../features/subscriptionProducts";
+import { usePaddleCheckout } from "../../hooks/usePaddleCheckout";
 
 interface Props {
   isOpen: boolean;

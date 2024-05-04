@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import moment from "moment-timezone";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import dayjs from "dayjs";
 import getChakraColor from "@/utils/getChakraColor";
 
 interface Props {
@@ -17,11 +17,11 @@ export const LiveClock: React.FC<Props> = ({ dateFormat, timezone }) => {
       return "";
     }
 
-    if (!moment.tz.zone(timezone)) {
+    if (!Intl.supportedValuesOf("timeZone").includes(timezone)) {
       return "";
     }
 
-    return moment().tz(timezone).format(dateFormat);
+    return dayjs().tz(timezone).format(dateFormat);
   };
 
   const [timeNow, setTimeNow] = useState(getCurrentTime());

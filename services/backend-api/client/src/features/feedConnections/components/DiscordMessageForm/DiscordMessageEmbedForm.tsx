@@ -34,7 +34,6 @@ import { Controller, FieldError, useFieldArray, useFormContext, useWatch } from 
 import { useTranslation } from "react-i18next";
 import { ChevronDownIcon, ChevronUpIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
-import styled from "@emotion/styled";
 import { motion } from "framer-motion";
 import { uniqueId } from "lodash";
 import { DiscordMessageFormData } from "@/types/discord";
@@ -46,20 +45,6 @@ import { AnimatedComponent } from "../../../../components";
 interface Props {
   index: number;
 }
-
-const StyledSketchPicker = styled(SketchPicker)`
-  background: ${getChakraColor("black.100")} !important;
-  .sketch-picker > div:last-child {
-    background: red;
-  }
-  .flexbox-fix {
-    display: none;
-  }
-  border: solid 1px ${getChakraColor("whiteAlpha.400")};
-  label {
-    color: ${getChakraColor("whiteAlpha.800")} !important;
-  }
-`;
 
 export const DiscordMessageEmbedForm = ({ index }: Props) => {
   const {
@@ -180,7 +165,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                             />
                           </PopoverTrigger>
                           <PopoverContent backgroundColor="black.100" width="min-content">
-                            <StyledSketchPicker
+                            <SketchPicker
                               presetColors={[]}
                               disableAlpha
                               color={hexValue}

@@ -5,6 +5,10 @@ import { Entity, Property, PrimaryKey, Index } from "@mikro-orm/core";
   properties: ["feed_id", "field_name", "field_value", "is_hashed"],
   name: "article_property_idx",
 })
+@Index({
+  properties: ["created_at"],
+  name: "created_at_idx",
+})
 export class FeedArticleField {
   @PrimaryKey()
   id: number;

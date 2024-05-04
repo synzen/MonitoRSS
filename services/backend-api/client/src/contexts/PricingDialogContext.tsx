@@ -1,7 +1,12 @@
-import { PropsWithChildren, createContext, useMemo } from "react";
+import { PropsWithChildren, Suspense, createContext, lazy, useMemo } from "react";
 import { useDisclosure } from "@chakra-ui/react";
 import { useSearchParams } from "react-router-dom";
-import { PricingDialog } from "../components/PricingDialog";
+
+const PricingDialog = lazy(() =>
+  import("../components/PricingDialog").then(({ PricingDialog: com }) => ({
+    default: com,
+  }))
+);
 
 interface ContextProps {
   onOpen: () => void;
@@ -27,7 +32,14 @@ export const PricingDialogProvider = ({ children }: PropsWithChildren<{}>) => {
 
   return (
     <PricingDialogContext.Provider value={value}>
-      <PricingDialog isOpen={isOpen} onOpen={onOpen} onClose={onClose} openWithPriceId={priceId} />
+      <Suspense fallback={null}>
+        <PricingDialog
+          isOpen={isOpen}
+          onOpen={onOpen}
+          onClose={onClose}
+          openWithPriceId={priceId}
+        />
+      </Suspense>
       {children}
     </PricingDialogContext.Provider>
   );

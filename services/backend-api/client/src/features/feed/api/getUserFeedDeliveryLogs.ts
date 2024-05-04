@@ -1,5 +1,4 @@
 import { array, InferType, object } from "yup";
-import qs from "qs";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedDeliveryLogSchema } from "../types";
 
@@ -25,7 +24,12 @@ export const getUserFeedDeliveryLogs = async ({
   feedId,
   data,
 }: GetUserFeedDeliveryLogsInput): Promise<GetUserFeedDeliveryLogsOutput> => {
-  const query = qs.stringify(data);
+  const params = new URLSearchParams();
+
+  params.append("limit", data.limit.toString());
+  params.append("skip", data.skip.toString());
+
+  const query = params.toString();
 
   const res = await fetchRest(`/api/v1/user-feeds/${feedId}/delivery-logs?${query}`, {
     requestOptions: {

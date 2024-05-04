@@ -1,5 +1,7 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import * as Sentry from "@sentry/react";
+import { Spinner } from "@chakra-ui/react";
+import { Suspense, lazy } from "react";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
 import FeedMessage from "./FeedMessage";
@@ -25,14 +27,17 @@ import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { NotFound } from "./NotFound";
-import { UserSettings } from "./UserSettings";
-import { TestPaddle } from "./TestPaddle";
+
+const UserSettings = lazy(() =>
+  import("./UserSettings").then(({ UserSettings: c }) => ({
+    default: c,
+  }))
+);
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 const Pages: React.FC = () => (
   <SentryRoutes>
-    <Route path={pages.testPaddle()} element={<TestPaddle />} />
     <Route path={pages.notFound()} element={<NotFound />} />
     <Route
       path="/"
@@ -93,7 +98,9 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth>
           <PageContentV2 invertBackground>
-            <UserSettings />
+            <Suspense fallback={<Spinner mt={24} />}>
+              <UserSettings />
+            </Suspense>
           </PageContentV2>
         </RequireAuth>
       }

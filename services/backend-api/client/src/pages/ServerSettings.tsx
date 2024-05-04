@@ -17,7 +17,6 @@ import { InferType, object, string } from "yup";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect, useMemo, useState } from "react";
-import moment from "moment-timezone";
 import {
   DiscordServerBackupButton,
   LiveClock,
@@ -51,9 +50,7 @@ export const ServerSettings: React.FC<Props> = () => {
               return false;
             }
 
-            const zone = moment.tz.zone(value);
-
-            return !!zone;
+            return Intl.supportedValuesOf("timeZone").includes(value);
           }
         ),
       }).required(),

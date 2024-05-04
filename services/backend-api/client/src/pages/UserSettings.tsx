@@ -39,7 +39,7 @@ import {
   DashboardContentV2,
   SavedUnsavedChangesPopupBar,
 } from "../components";
-import { useLogin, usePaddleCheckout } from "../hooks";
+import { useLogin } from "../hooks";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
@@ -48,6 +48,7 @@ import getChakraColor from "../utils/getChakraColor";
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 import { PricingDialogContext } from "../contexts";
 import { DatePreferencesForm } from "../components/DatePreferencesForm";
+import { usePaddleCheckout } from "../hooks/usePaddleCheckout";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),

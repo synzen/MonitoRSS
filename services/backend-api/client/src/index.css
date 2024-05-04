@@ -10,3 +10,18 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
+
+.sketch-picker {
+  background: #2d3748 !important;
+  border: solid 1px rgba(255, 255, 255, 0.24);
+}
+
+.sketch-picker > div:last-child {
+  background: red;
+}
+.flexbox-fix {
+  display: none;
+}
+label {
+  color: rgba(255, 255, 255, 0.80) !important;
+}
