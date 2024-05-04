@@ -164,7 +164,9 @@ export const CustomPlaceholderPreview = ({
               contentToDisplay.split("\n")?.map((line, idx) => (
                 // eslint-disable-next-line react/no-array-index-key
                 <span key={idx}>
-                  {line} <br />
+                  <span>{line}</span>
+                  <span> </span>
+                  <br />
                 </span>
               ))}
           </Box>
@@ -174,7 +176,9 @@ export const CustomPlaceholderPreview = ({
           dataPreview?.result &&
           !dataPreview?.result.messages.length && (
             <Alert status="warning">
-              <AlertDescription>No article found for preview</AlertDescription>
+              <AlertDescription>
+                <span>No article found for preview</span>
+              </AlertDescription>
             </Alert>
           )}
         {errorComponent}

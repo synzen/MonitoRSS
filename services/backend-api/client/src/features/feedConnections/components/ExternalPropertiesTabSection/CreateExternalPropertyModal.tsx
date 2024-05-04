@@ -122,7 +122,7 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
                                   leftIcon={<RepeatIcon />}
                                   aria-label="See another random article's values"
                                 >
-                                  Randomize sample article
+                                  <span>Randomize sample article</span>
                                 </Button>
                               </Tooltip>
                             </Th>

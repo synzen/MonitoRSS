@@ -592,7 +592,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                         variant="outline"
                         onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
                       >
-                        Cancel Subscription
+                        <span>Cancel Subscription</span>
                       </Button>
                     </Flex>
                   </Stack>

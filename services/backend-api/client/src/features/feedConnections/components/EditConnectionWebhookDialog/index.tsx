@@ -295,7 +295,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
           <ModalFooter>
             <HStack>
               <Button onClick={onClose} variant="ghost" isDisabled={isSubmitting}>
-                {t("common.buttons.cancel")}
+                <span>{t("common.buttons.cancel")}</span>
               </Button>
               <Button
                 type="submit"
@@ -303,7 +303,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                 isDisabled={isSubmitting || !isDirty}
                 isLoading={isSubmitting}
               >
-                {t("common.buttons.save")}
+                <span>{t("common.buttons.save")}</span>
               </Button>
             </HStack>
           </ModalFooter>

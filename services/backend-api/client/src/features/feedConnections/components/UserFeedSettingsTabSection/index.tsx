@@ -682,7 +682,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
       </Stack>
       <HStack justifyContent="flex-end" mb={16}>
         <Button isDisabled={!isDirty || isSubmitting} onClick={() => reset()} variant="ghost">
-          {t("common.buttons.reset")}
+          <span>{t("common.buttons.reset")}</span>
         </Button>
         <Button
           type="submit"
@@ -690,7 +690,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
           isLoading={isSubmitting}
           isDisabled={isSubmitting || !isDirty}
         >
-          {t("common.buttons.save")}
+          <span>{t("common.buttons.save")}</span>
         </Button>
       </HStack>
     </form>

@@ -137,7 +137,7 @@ export const RequestHistory = ({ feedId }: Props) => {
                     isLoading={manualRequestStatus === "loading"}
                     onClick={handleManualAttempt}
                   >
-                    Attempt request
+                    <span>Attempt request</span>
                   </Button>
                 </div>
               </Flex>

@@ -121,7 +121,9 @@ export const FiltersForm = ({
           <Stack spacing={8}>
             <Stack>
               <Button onClick={addInitialExpression}>
-                {t("features.feedConnections.components.filtersForm.addNewFiltersButtonText")}
+                <span>
+                  {t("features.feedConnections.components.filtersForm.addNewFiltersButtonText")}
+                </span>
               </Button>
               <HStack justifyContent="flex-end">
                 <Button
@@ -130,7 +132,7 @@ export const FiltersForm = ({
                   isLoading={isSubmitting}
                   isDisabled={!isDirty || isSubmitting}
                 >
-                  {t("common.buttons.save")}
+                  <span>{t("common.buttons.save")}</span>
                 </Button>
               </HStack>
             </Stack>
@@ -164,7 +166,7 @@ export const FiltersForm = ({
             <HStack justifyContent="flex-end">
               {isDirty && (
                 <Button variant="ghost" onClick={onClickReset} type="reset">
-                  {t("common.buttons.reset")}
+                  <span>{t("common.buttons.reset")}</span>
                 </Button>
               )}
               <Button
@@ -173,7 +175,7 @@ export const FiltersForm = ({
                 isDisabled={!isDirty || isSubmitting}
                 type="submit"
               >
-                {t("common.buttons.save")}
+                <span>{t("common.buttons.save")}</span>
               </Button>
             </HStack>
           </Stack>

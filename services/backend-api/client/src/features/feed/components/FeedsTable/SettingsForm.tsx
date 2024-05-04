@@ -119,7 +119,7 @@ export const SettingsForm: React.FC<Props> = ({ feedId, serverId, onUpdated }) =
         <Flex justifyContent="flex-end">
           <HStack>
             <Button onClick={() => reset()} variant="ghost" isDisabled={!isDirty || isSubmitting}>
-              {t("features.feed.components.sidebar.resetButton")}
+              <span>{t("features.feed.components.sidebar.resetButton")}</span>
             </Button>
             <Button
               type="submit"
@@ -127,7 +127,7 @@ export const SettingsForm: React.FC<Props> = ({ feedId, serverId, onUpdated }) =
               isDisabled={isSubmitting || !isDirty}
               isLoading={isSubmitting}
             >
-              {t("features.feed.components.sidebar.saveButton")}
+              <span>{t("features.feed.components.sidebar.saveButton")}</span>
             </Button>
           </HStack>
         </Flex>

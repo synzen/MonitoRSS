@@ -209,7 +209,6 @@ const DiscordMessageComponentRow = ({
               aria-label="Add button"
               size="sm"
               onClick={() => {
-                // const newRows = calculateRowsAfterAddComponent(fields, rowIndex);
                 appendButton({
                   id: v4(),
                   type: DiscordComponentType.Button,
@@ -217,12 +216,6 @@ const DiscordMessageComponentRow = ({
                   label: "",
                   url: "",
                 });
-
-                // setValue(`componentRows.${rowIndex}.components`, newRows[rowIndex].components, {
-                //   shouldDirty: true,
-                //   shouldTouch: true,
-                //   shouldValidate: true,
-                // });
 
                 setTimeout(() => {
                   scrollContainer.current?.scrollTo({

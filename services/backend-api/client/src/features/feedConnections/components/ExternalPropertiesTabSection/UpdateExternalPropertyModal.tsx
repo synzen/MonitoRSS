@@ -112,7 +112,7 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
                             <Th />
                             <Th>Article Property</Th>
                             <Th>
-                              Sample Article Value
+                              <span>Sample Article Value</span>
                               <Tooltip label="See another random article's values">
                                 <Button
                                   size="xs"
@@ -123,7 +123,7 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
                                   leftIcon={<RepeatIcon />}
                                   aria-label="See another random article's values"
                                 >
-                                  Randomize sample article
+                                  <span>Randomize sample article</span>
                                 </Button>
                               </Tooltip>
                             </Th>

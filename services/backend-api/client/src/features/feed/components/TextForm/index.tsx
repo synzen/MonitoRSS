@@ -70,7 +70,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
             onClick={() => reset(defaultValues)}
             variant="ghost"
           >
-            {t("pages.message.textSectionResetButton")}
+            <span>{t("pages.message.textSectionResetButton")}</span>
           </Button>
           <Button
             type="submit"
@@ -78,7 +78,7 @@ export const TextForm: React.FC<Props> = ({ feedId, text, onUpdated }) => {
             isLoading={isSubmitting}
             isDisabled={isSubmitting || !isDirty}
           >
-            {t("pages.message.textSectionSaveButton")}
+            <span>{t("pages.message.textSectionSaveButton")}</span>
           </Button>
         </HStack>
       </Stack>

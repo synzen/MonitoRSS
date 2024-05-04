@@ -176,7 +176,7 @@ export const ServerSettings: React.FC<Props> = () => {
                     isLoading={isSubmitting}
                     type="submit"
                   >
-                    {t("pages.serverSettings.saveButton")}
+                    <span>{t("pages.serverSettings.saveButton")}</span>
                   </Button>
                 </HStack>
               </Stack>

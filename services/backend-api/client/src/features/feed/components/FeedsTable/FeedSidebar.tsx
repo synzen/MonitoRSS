@@ -212,7 +212,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
                 size="lg"
                 isLoading={convertingStatus === "loading"}
               >
-                Convert to Personal Feed
+                <span>Convert to Personal Feed</span>
               </Button>
             }
             onConfirm={onConvertToUserFeed}
@@ -270,7 +270,7 @@ export const FeedSidebar: React.FC<Props> = ({ feedId, onDeleted }) => {
           isDisabled={deleting}
           onClick={onDeleteFeed}
         >
-          {t("features.feed.components.sidebar.deleteButton")}
+          <span>{t("features.feed.components.sidebar.deleteButton")}</span>
         </Button>
       </Stack>
       {/* <Divider /> */}

@@ -387,7 +387,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         <ModalFooter>
           <HStack>
             <Button variant="ghost" onClick={onClose}>
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               colorScheme="blue"
@@ -400,7 +400,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 status === "loading"
               }
             >
-              Confirm
+              <span>Confirm</span>
             </Button>
           </HStack>
         </ModalFooter>

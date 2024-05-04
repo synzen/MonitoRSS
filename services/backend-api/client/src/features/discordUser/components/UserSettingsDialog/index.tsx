@@ -116,7 +116,7 @@ export const UserSettingsDialog: React.FC<Props> = ({ isOpen, onClose }) => {
         <ModalFooter>
           <HStack>
             <Button onClick={onReset} variant="ghost" isDisabled={formState.isSubmitting}>
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               colorScheme="blue"
@@ -125,7 +125,7 @@ export const UserSettingsDialog: React.FC<Props> = ({ isOpen, onClose }) => {
               isDisabled={!formState.isDirty || formState.isSubmitting}
               isLoading={formState.isSubmitting}
             >
-              Save
+              <span>Save</span>
             </Button>
           </HStack>
         </ModalFooter>

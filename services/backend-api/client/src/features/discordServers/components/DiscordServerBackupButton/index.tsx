@@ -39,7 +39,7 @@ export const DiscordServerBackupButton: React.FC<Props> = ({ serverId }) => {
 
   return (
     <Button onClick={onClick} isLoading={downloading} isDisabled={downloading || !serverId}>
-      {t("features.discordServers.components.backupButton.text")}
+      <span>{t("features.discordServers.components.backupButton.text")}</span>
     </Button>
   );
 };

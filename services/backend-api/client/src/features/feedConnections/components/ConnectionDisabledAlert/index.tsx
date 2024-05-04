@@ -36,7 +36,7 @@ export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
             )}
             <Box marginTop="1rem">
               <Button isLoading={isUpdating} onClick={onClickEnable}>
-                {t("common.buttons.reEnable")}
+                <span>{t("common.buttons.reEnable")}</span>
               </Button>
             </Box>
           </AlertDescription>
@@ -92,7 +92,7 @@ export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
             )}
             <Box marginTop="1rem">
               <Button isLoading={isUpdating} onClick={onClickEnable}>
-                {t("common.buttons.reEnable")}
+                <span>{t("common.buttons.reEnable")}</span>
               </Button>
             </Box>
           </AlertDescription>

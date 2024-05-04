@@ -186,7 +186,7 @@ export const SelectUserDialog = ({ onAdded, trigger, title, description, okButto
                 isDisabled={!selectedMention || saving}
                 isLoading={saving}
               >
-                {okButtonText || t("common.buttons.save")}
+                <span>{okButtonText || t("common.buttons.save")}</span>
               </Button>
             </HStack>
           </ModalFooter>

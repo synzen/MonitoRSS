@@ -137,8 +137,8 @@ const ChangePaymentMethodUrlButton = () => {
         isDisabled={!!error}
         colorScheme={error ? "red" : undefined}
       >
-        {!error && "Change Payment Method"}
-        {error && "Failed to load change payment method button"}
+        {!error && <span>Change Payment Method</span>}
+        {error && <span>Failed to load change payment method button</span>}
       </Button>
     </Box>
   );
@@ -283,7 +283,7 @@ export const UserSettings = () => {
                     leftIcon={<RepeatIcon />}
                     onClick={onClickGrantEmailAccess}
                   >
-                    Refresh Email
+                    <span>Refresh Email</span>
                   </Button>
                 </Flex>
               </Stack>
@@ -307,7 +307,7 @@ export const UserSettings = () => {
                             colorScheme="blue"
                             onClick={onClickGrantEmailAccess}
                           >
-                            Grant email access
+                            <span>Grant email access</span>
                           </Button>
                         </AlertDescription>
                       </Stack>
@@ -489,7 +489,7 @@ export const UserSettings = () => {
                                     <ConfirmModal
                                       trigger={
                                         <Button size="sm" variant="solid" colorScheme="blue">
-                                          Resume subscription
+                                          <span>Resume subscription</span>
                                         </Button>
                                       }
                                       onConfirm={onClickResumeSubscription}
@@ -502,7 +502,7 @@ export const UserSettings = () => {
                                 )}
                                 {!subscriptionPendingCancellation && (
                                   <Button size="sm" variant="outline" onClick={onOpenPricingDialog}>
-                                    Manage Subscription
+                                    <span>Manage Subscription</span>
                                   </Button>
                                 )}
                                 {!subscriptionPendingCancellation && (
@@ -536,7 +536,7 @@ export const UserSettings = () => {
                                 colorScheme="blue"
                                 onClick={onClickGrantEmailAccess}
                               >
-                                Grant email access
+                                <span>Grant email access</span>
                               </Button>
                             </AlertDescription>
                           </Stack>

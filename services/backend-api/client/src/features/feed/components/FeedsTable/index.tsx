@@ -228,7 +228,7 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
                       variant="outline"
                       isLoading={createConvertStatus === "loading"}
                     >
-                      Convert Server Feeds
+                      <span>Convert Server Feeds</span>
                     </Button>
                   }
                   title="Heads up!"
@@ -394,7 +394,9 @@ export const FeedsTable: React.FC<Props> = ({ serverId, selectedFeedId, onSelect
             isDisabled={isFetchingNewPage || !canPreviousPage}
           />
           <Flex alignItems="center">
-            <Text>{pageIndex + 1}</Text>/<Text>{Math.ceil(total / maxPerPage)}</Text>
+            <Text>{pageIndex + 1}</Text>
+            <span>/</span>
+            <Text>{Math.ceil(total / maxPerPage)}</Text>
           </Flex>
           <IconButton
             icon={<ChevronRightIcon />}

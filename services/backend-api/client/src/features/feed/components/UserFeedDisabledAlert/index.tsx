@@ -60,7 +60,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
                   })
                 }
               >
-                {t("pages.userFeed.manuallyDisabledEnableButtonText")}
+                <span>{t("pages.userFeed.manuallyDisabledEnableButtonText")}</span>
               </Button>
             </Box>
           </AlertDescription>
@@ -75,7 +75,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
         <Box>
           <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
           <AlertDescription display="block">
-            {t("pages.userFeed.invalidFeedFailureText")}
+            <span>{t("pages.userFeed.invalidFeedFailureText")}</span>
             <Box marginTop="1rem">{feedId && <RefreshUserFeedButton feedId={feedId} />}</Box>
           </AlertDescription>
         </Box>
@@ -89,7 +89,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
         <Box>
           <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
           <AlertDescription display="block">
-            {t("pages.userFeed.invalidFeedFailureText")}
+            <span>{t("pages.userFeed.invalidFeedFailureText")}</span>
             <Box marginTop="1rem">{feedId && <RefreshUserFeedButton feedId={feedId} />}</Box>
           </AlertDescription>
         </Box>
@@ -103,7 +103,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
         <Box>
           <AlertTitle>{t("pages.userFeed.connectionFailureTitle")}</AlertTitle>
           <AlertDescription display="block">
-            {t("pages.userFeed.connectionFailureText")}
+            <span>{t("pages.userFeed.connectionFailureText")}</span>
             <Box marginTop="1rem">{feedId && <RefreshUserFeedButton feedId={feedId} />}</Box>
           </AlertDescription>
         </Box>
@@ -117,7 +117,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
         <Box>
           <AlertTitle>{t("pages.userFeed.exceededFeedLimitTitle")}</AlertTitle>
           <AlertDescription display="block">
-            {t("pages.userFeed.exceededFeedLimitText")}
+            <span>{t("pages.userFeed.exceededFeedLimitText")}</span>
           </AlertDescription>
         </Box>
       </Alert>
@@ -130,7 +130,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
         <Box>
           <AlertTitle>{t("pages.userFeed.feedTooLargeTitle")}</AlertTitle>
           <AlertDescription display="block">
-            {t("pages.userFeed.feedTooLargeText")}
+            <span>{t("pages.userFeed.feedTooLargeText")}</span>
           </AlertDescription>
         </Box>
       </Alert>
@@ -143,7 +143,7 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
         <Box>
           <AlertTitle>{t("pages.userFeed.adminDisabledTitle")}</AlertTitle>
           <AlertDescription display="block">
-            {t("pages.userFeed.adminDisabledText")}
+            <span>{t("pages.userFeed.adminDisabledText")}</span>
           </AlertDescription>
         </Box>
       </Alert>
@@ -154,7 +154,9 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
     <Alert status="error" borderRadius="md">
       <Box>
         <AlertTitle>{t("pages.userFeed.unknownTitle")}</AlertTitle>
-        <AlertDescription display="block">{t("pages.userFeed.unknownText")}</AlertDescription>
+        <AlertDescription display="block">
+          <span>{t("pages.userFeed.unknownText")}</span>
+        </AlertDescription>
       </Box>
     </Alert>
   );

@@ -297,7 +297,7 @@ export const DiscordMessageForm = ({
                   isLoading={isSendingTestArticle}
                   isDisabled={isSendingTestArticle || !articleIdToPreview}
                 >
-                  {t("components.discordMessageForm.sendPreviewToDiscordButtonText")}
+                  <span>{t("components.discordMessageForm.sendPreviewToDiscordButtonText")}</span>
                 </Button>
               </HStack>
               <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
@@ -423,7 +423,7 @@ export const DiscordMessageForm = ({
                       variant="ghost"
                       isDisabled={!isDirty || isSubmitting}
                     >
-                      {t("features.feed.components.sidebar.resetButton")}
+                      <span>{t("features.feed.components.sidebar.resetButton")}</span>
                     </Button>
                     <Button
                       type="submit"
@@ -431,7 +431,7 @@ export const DiscordMessageForm = ({
                       isDisabled={isSubmitting || !isDirty || errorsExist}
                       isLoading={isSubmitting}
                     >
-                      {t("features.feed.components.sidebar.saveButton")}
+                      <span>{t("features.feed.components.sidebar.saveButton")}</span>
                     </Button>
                   </HStack>
                 </HStack>

@@ -54,7 +54,7 @@ export const EditDiscordChannelWebhookConnectionButton = ({ feedId, connection }
         />
       )}
       <Button onClick={editOnOpen} isLoading={updateStatus === "loading"}>
-        Update webhook connection
+        <span>Update webhook connection</span>
       </Button>
     </>
   );

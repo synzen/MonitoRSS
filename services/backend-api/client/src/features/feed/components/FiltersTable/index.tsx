@@ -118,7 +118,7 @@ export const FiltersTable: React.FC<Props> = ({
             marginRight="4"
             marginBottom="2"
           >
-            {t("pages.filters.removeSelectedFilters")}
+            <span>{t("pages.filters.removeSelectedFilters")}</span>
           </Button>
           <AddFilterDialog onSubmit={onAddFilters} />
         </Flex>
@@ -138,9 +138,15 @@ export const FiltersTable: React.FC<Props> = ({
                   {headerGroup.headers.map((column) => (
                     <Th {...column.getHeaderProps(column.getSortByToggleProps())}>
                       <Flex alignItems="center" userSelect="none">
-                        {column.render("Header")}
-                        {column.isSorted && column.isSortedDesc && <ArrowDownIcon marginLeft="1" />}
-                        {column.isSorted && !column.isSortedDesc && <ArrowUpIcon marginLeft="1" />}
+                        <span>
+                          {column.render("Header")}
+                          {column.isSorted && column.isSortedDesc && (
+                            <ArrowDownIcon marginLeft="1" />
+                          )}
+                          {column.isSorted && !column.isSortedDesc && (
+                            <ArrowUpIcon marginLeft="1" />
+                          )}
+                        </span>
                       </Flex>
                     </Th>
                   ))}

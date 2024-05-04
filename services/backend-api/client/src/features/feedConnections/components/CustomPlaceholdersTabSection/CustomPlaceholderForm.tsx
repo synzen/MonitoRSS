@@ -495,7 +495,7 @@ export const CustomPlaceholderForm = ({
                       isLoading={fetchStatusUserFeedArticles === "fetching"}
                       isDisabled={fetchStatusUserFeedArticles === "fetching" || hasArticlesAlert}
                     >
-                      Select preview placeholder content
+                      <span>Select preview placeholder content</span>
                     </Button>
                   }
                   feedId={feedId}
@@ -786,7 +786,7 @@ export const CustomPlaceholderForm = ({
           )}
           {isNewField && (
             <Button variant="outline" colorScheme="red" onClick={onClickDeleteCustomPlaceholder}>
-              Delete
+              <span>Delete</span>
             </Button>
           )}
         </Box>

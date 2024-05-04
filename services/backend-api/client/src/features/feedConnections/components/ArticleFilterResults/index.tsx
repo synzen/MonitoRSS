@@ -169,7 +169,7 @@ export const ArticleFilterResults = ({
                   onClick={prevPage}
                   isDisabled={onFirstPage || fetchStatus === "fetching"}
                 >
-                  {t("features.feedConnections.components.filtersTabSection.prevPage")}
+                  <span>{t("features.feedConnections.components.filtersTabSection.prevPage")}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -177,7 +177,7 @@ export const ArticleFilterResults = ({
                   onClick={nextPage}
                   isDisabled={onLastPage || fetchStatus === "fetching"}
                 >
-                  {t("features.feedConnections.components.filtersTabSection.nextPage")}
+                  <span>{t("features.feedConnections.components.filtersTabSection.nextPage")}</span>
                 </Button>
               </HStack>
             </Flex>

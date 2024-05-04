@@ -316,7 +316,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         <ModalFooter>
           <HStack>
             <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
-              {t("common.buttons.cancel")}
+              <span>{t("common.buttons.cancel")}</span>
             </Button>
             <Button
               colorScheme="blue"
@@ -325,7 +325,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
               isLoading={isSubmitting}
               isDisabled={isSubmitting || !isValid}
             >
-              {t("common.buttons.save")}
+              <span>{t("common.buttons.save")}</span>
             </Button>
           </HStack>
         </ModalFooter>

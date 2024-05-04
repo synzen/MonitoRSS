@@ -149,7 +149,7 @@ export const BulkLegacyFeedConversionDialog = ({ serverId, trigger }: Props) => 
                             onClick={onClickRetryFailed}
                             isLoading={retryStatus === "loading"}
                           >
-                            Retry all
+                            <span>Retry all</span>
                           </Button>
                         </AlertDescription>
                       </Flex>

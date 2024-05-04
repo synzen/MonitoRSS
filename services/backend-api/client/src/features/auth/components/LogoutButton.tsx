@@ -42,7 +42,7 @@ export const LogoutButton = ({ trigger }: Props) => {
       isDisabled={loggingOut}
       onClick={onClickLogout}
     >
-      Logout
+      <span>Logout</span>
     </Button>
   );
 };

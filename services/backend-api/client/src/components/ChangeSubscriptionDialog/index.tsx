@@ -246,7 +246,7 @@ export const ChangeSubscriptionDialog = ({
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" mr={3} onClick={() => onClose(true)} ref={initialRef}>
-            Cancel
+            <span>Cancel</span>
           </Button>
           <Button
             colorScheme={!isDowngrade ? "blue" : "red"}
@@ -261,8 +261,10 @@ export const ChangeSubscriptionDialog = ({
               (createStatus === "loading" || cancelStatus === "loading" || !data)
             }
           >
-            {!isDowngrade && "Confirm Payment"}
-            {isDowngrade && "Confirm Downgrade"}
+            <span>
+              {!isDowngrade && "Confirm Payment"}
+              {isDowngrade && "Confirm Downgrade"}
+            </span>
           </Button>
         </ModalFooter>
       </ModalContent>

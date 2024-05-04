@@ -143,7 +143,6 @@ export const ArticleSelectDialog = ({
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={4}>
-              {/* <Divider /> */}
               <Box>
                 {userFeedArticlesStatus === "loading" && (
                   <Stack>
@@ -202,7 +201,7 @@ export const ArticleSelectDialog = ({
                             isLoading={fetchStatus === "fetching"}
                             onClick={() => refetch()}
                           >
-                            Reload
+                            <span>Reload</span>
                           </Button>
                         </HStack>
                       </FormControl>
@@ -218,7 +217,9 @@ export const ArticleSelectDialog = ({
                           justifyContent="center"
                           alignItems="center"
                         >
-                          <Spinner />
+                          <span>
+                            <Spinner />
+                          </span>
                         </Flex>
                       )}
                       <Stack spacing={4} bg="gray.700" rounded="lg">
@@ -275,7 +276,9 @@ export const ArticleSelectDialog = ({
                           onClick={prevPage}
                           isDisabled={onFirstPage || fetchStatus === "fetching"}
                         >
-                          {t("features.feedConnections.components.filtersTabSection.prevPage")}
+                          <span>
+                            {t("features.feedConnections.components.filtersTabSection.prevPage")}
+                          </span>
                         </Button>
                         <Button
                           size="sm"
@@ -283,7 +286,9 @@ export const ArticleSelectDialog = ({
                           onClick={nextPage}
                           isDisabled={onLastPage || fetchStatus === "fetching"}
                         >
-                          {t("features.feedConnections.components.filtersTabSection.nextPage")}
+                          <span>
+                            {t("features.feedConnections.components.filtersTabSection.nextPage")}
+                          </span>
                         </Button>
                       </HStack>
                     </Flex>
@@ -301,7 +306,9 @@ export const ArticleSelectDialog = ({
                   </Alert>
                   <Divider />
                   <Button onClick={() => onClickArticle()} leftIcon={<RepeatIcon />}>
-                    {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
+                    <span>
+                      {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
+                    </span>
                   </Button>
                 </>
               )}
@@ -309,7 +316,7 @@ export const ArticleSelectDialog = ({
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>
-              {t("common.buttons.close")}
+              <span>{t("common.buttons.close")}</span>
             </Button>
           </ModalFooter>
         </ModalContent>

@@ -52,7 +52,7 @@ export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
                 variant="ghost"
                 isDisabled={!isDirty || isSubmitting}
               >
-                {t("features.feed.components.sidebar.resetButton")}
+                <span>{t("features.feed.components.sidebar.resetButton")}</span>
               </Button>
               <Button
                 type="submit"
@@ -60,7 +60,7 @@ export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
                 isDisabled={isSubmitting || !isDirty || !isValid}
                 isLoading={isSubmitting}
               >
-                {t("features.feed.components.sidebar.saveButton")}
+                <span>{t("features.feed.components.sidebar.saveButton")}</span>
               </Button>
             </HStack>
           </HStack>

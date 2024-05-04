@@ -25,7 +25,7 @@ export const RefreshUserFeedButton: React.FC<Props> = ({ feedId }) => {
 
   return (
     <Button onClick={onRefreshFeed} isLoading={status === "loading"}>
-      {t("features.feed.components.refreshButton.text")}
+      <span>{t("features.feed.components.refreshButton.text")}</span>
     </Button>
   );
 };

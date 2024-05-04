@@ -128,10 +128,10 @@ export const CloneUserFeedDialog = ({
           <ModalFooter>
             <HStack>
               <Button variant="ghost" onClick={onClose}>
-                Cancel
+                <span>Cancel</span>
               </Button>
               <Button colorScheme="blue" type="submit" form="clonefeed" isLoading={isSubmitting}>
-                Clone
+                <span>Clone</span>
               </Button>
             </HStack>
           </ModalFooter>

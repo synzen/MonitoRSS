@@ -47,7 +47,11 @@ export const DiscordChannelName: React.FC<Props> = ({
   }
 
   if (status === "loading") {
-    return <Loading size={spinnerSize || "sm"} />;
+    return (
+      <span>
+        <Loading size={spinnerSize || "sm"} />
+      </span>
+    );
   }
 
   if (error) {
@@ -63,17 +67,19 @@ export const DiscordChannelName: React.FC<Props> = ({
   const useName = parenthesis ? `(#${channelName})` : `#${channelName}`;
 
   return (
-    <chakra.a
-      _hover={{
-        textDecoration: "underline",
-      }}
-      href={`https://discord.com/channels/${serverId}/${channelId}`}
-      target="_blank"
-      rel="noreferrer"
-    >
-      <chakra.span display="inline" {...textProps}>
-        {useName}
-      </chakra.span>
-    </chakra.a>
+    <span>
+      <chakra.a
+        _hover={{
+          textDecoration: "underline",
+        }}
+        href={`https://discord.com/channels/${serverId}/${channelId}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <chakra.span display="inline" {...textProps}>
+          {useName}
+        </chakra.span>
+      </chakra.a>
+    </span>
   );
 };

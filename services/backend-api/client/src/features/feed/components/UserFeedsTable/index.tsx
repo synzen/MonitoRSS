@@ -197,11 +197,11 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       }),
       columnHelper.accessor("computedStatus", {
         cell: (info) => <UserFeedStatusTag status={info.getValue()} />,
-        header: () => t("pages.feeds.tableStatus") as string,
+        header: () => <span>{t("pages.feeds.tableStatus")}</span>,
       }),
       columnHelper.accessor("title", {
         id: "title",
-        header: () => t("pages.feeds.tableTitle") as string,
+        header: () => <span>{t("pages.feeds.tableTitle")}</span>,
         cell: (info) => {
           const value = info.getValue();
 
@@ -236,7 +236,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       }),
       columnHelper.accessor("url", {
         id: "url",
-        header: () => t("pages.feeds.tableUrl") as string,
+        header: () => <span>{t("pages.feeds.tableUrl")}</span>,
         cell: (info) => {
           const value = info.getValue();
 
@@ -273,7 +273,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       }),
       columnHelper.accessor("createdAt", {
         id: "createdAt",
-        header: () => "Added on",
+        header: () => <span>Added on</span>,
         cell: (info) => {
           const value = info.getValue();
 
@@ -281,12 +281,12 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             return null;
           }
 
-          return dayjs(value).format(DATE_FORMAT);
+          return <span>{dayjs(value).format(DATE_FORMAT)}</span>;
         },
       }),
       columnHelper.accessor("ownedByUser", {
         id: "ownedByUser",
-        header: () => "Shared with Me",
+        header: () => <span>Shared with Me</span>,
         cell: (info) => {
           const isOwnedByCurrentUser = info.getValue();
 

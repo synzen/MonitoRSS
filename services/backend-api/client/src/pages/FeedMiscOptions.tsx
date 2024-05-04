@@ -175,7 +175,7 @@ const FeedMiscOptions: React.FC = () => {
                 isLoading={isSubmitting}
                 isDisabled={!isDirty || isSubmitting}
               >
-                {t("pages.miscOptions.saveButton")}
+                <span>{t("pages.miscOptions.saveButton")}</span>
               </Button>
             </HStack>
           </Stack>

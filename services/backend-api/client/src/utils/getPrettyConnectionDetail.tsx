@@ -32,7 +32,8 @@ export const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnecti
             fontSize: 14,
             color: getChakraColor("whiteAlpha.800"),
           }}
-        />{" "}
+        />
+        <span> </span>
         <span>
           (
           <DiscordChannelName

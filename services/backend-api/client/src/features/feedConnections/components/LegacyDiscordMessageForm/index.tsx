@@ -177,7 +177,7 @@ export const DiscordMessageFormLegacy = ({ defaultValues, onClickSave }: Props) 
                 isDisabled={isSubmitting || !isDirty || errorsExist}
                 isLoading={isSubmitting}
               >
-                {t("features.feed.components.sidebar.saveButton")}
+                <span>{t("features.feed.components.sidebar.saveButton")}</span>
               </Button>
             </HStack>
           </Flex>

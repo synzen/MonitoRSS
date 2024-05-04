@@ -240,7 +240,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
             </ModalBody>
             <ModalFooter>
               <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
-                {t("common.buttons.cancel")}
+                <span>{t("common.buttons.cancel")}</span>
               </Button>
               <Button
                 colorScheme="blue"
@@ -248,7 +248,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                 isLoading={isSubmitting}
                 isDisabled={!isDirty || isSubmitting}
               >
-                {t("common.buttons.save")}
+                <span>{t("common.buttons.save")}</span>
               </Button>
             </ModalFooter>
           </form>

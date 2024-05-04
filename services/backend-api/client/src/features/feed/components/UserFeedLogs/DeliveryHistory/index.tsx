@@ -299,7 +299,7 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                 onClick={prevPage}
                 isDisabled={onFirstPage || fetchStatus === "fetching"}
               >
-                Previous
+                <span>Previous</span>
               </Button>
               <Button
                 width="min-content"
@@ -307,7 +307,7 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                 onClick={nextPage}
                 isDisabled={fetchStatus === "fetching" || data?.result.logs.length === 0}
               >
-                Next
+                <span>Next</span>
               </Button>
             </HStack>
           </Flex>

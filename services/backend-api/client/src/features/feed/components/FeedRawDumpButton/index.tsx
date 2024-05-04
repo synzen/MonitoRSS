@@ -39,7 +39,7 @@ export const FeedDumpButton: React.FC<Props> = ({ feedId }) => {
 
   return (
     <Button onClick={onClick} isLoading={downloading} isDisabled={downloading || !feedId}>
-      {t("features.feed.components.dumpButton.text")}
+      <span>{t("features.feed.components.dumpButton.text")}</span>
     </Button>
   );
 };

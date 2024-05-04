@@ -433,7 +433,7 @@ export const ExternalPropertiesTabSection = () => {
                   isDisabled={!eligible}
                   leftIcon={<AddIcon fontSize={13} />}
                 >
-                  Add Selector
+                  <span>Add Selector</span>
                 </Button>
               }
               onSubmitted={(data) => {

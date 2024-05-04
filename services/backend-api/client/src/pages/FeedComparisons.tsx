@@ -189,7 +189,7 @@ const FeedComparisons: React.FC = () => {
               type="submit"
               isDisabled={!formIsDifferent || saving}
             >
-              {t("pages.comparisons.saveButtonLabel")}
+              <span>{t("pages.comparisons.saveButtonLabel")}</span>
             </Button>
           </HStack>
         </form>

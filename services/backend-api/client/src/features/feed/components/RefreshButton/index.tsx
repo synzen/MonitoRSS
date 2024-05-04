@@ -32,7 +32,7 @@ export const RefreshButton: React.FC<Props> = ({ feedId, onSuccess }) => {
 
   return (
     <Button onClick={onRefreshFeed} isLoading={loading}>
-      {t("features.feed.components.refreshButton.text")}
+      <span>{t("features.feed.components.refreshButton.text")}</span>
     </Button>
   );
 };

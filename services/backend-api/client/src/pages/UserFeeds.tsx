@@ -132,7 +132,13 @@ export const UserFeeds: React.FC = () => {
               </AlertTitle>
               <AlertDescription>
                 <Flex justifyContent="flex-end" flex={1}>
-                  <FeedManagementInvitesDialog trigger={<Button variant="outline">View</Button>} />
+                  <FeedManagementInvitesDialog
+                    trigger={
+                      <Button variant="outline">
+                        <span>View</span>
+                      </Button>
+                    }
+                  />
                 </Flex>
               </AlertDescription>
             </Alert>

@@ -70,7 +70,7 @@ export const AddSubscriberControls: React.FC<Props> = ({ feedId, roles, loading 
         onClick={onClickAdd}
         isLoading={status === "loading"}
       >
-        {t("pages.subscribers.addSubscriberButton")}
+        <span>{t("pages.subscribers.addSubscriberButton")}</span>
       </Button>
     </Flex>
   );

@@ -187,7 +187,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
         <ModalFooter>
           <HStack>
             <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
-              {t("common.buttons.cancel")}
+              <span>{t("common.buttons.cancel")}</span>
             </Button>
             <Button
               colorScheme="blue"
@@ -196,7 +196,9 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
               isLoading={isSubmitting}
               isDisabled={isSubmitting || !isValid}
             >
-              {t("features.feed.components.addDiscordChannelConnectionDialog.saveButton")}
+              <span>
+                {t("features.feed.components.addDiscordChannelConnectionDialog.saveButton")}
+              </span>
             </Button>
           </HStack>
         </ModalFooter>

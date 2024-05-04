@@ -134,7 +134,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
         <ModalFooter>
           <HStack>
             <Button variant="ghost" onClick={onClose}>
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               colorScheme="blue"
@@ -143,7 +143,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
               isLoading={status === "loading"}
               isDisabled={checkedConnections.length === 0 || status === "loading"}
             >
-              Save
+              <span>Save</span>
             </Button>
           </HStack>
         </ModalFooter>

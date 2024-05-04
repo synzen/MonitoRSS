@@ -124,7 +124,7 @@ const FeedManagementInviteRow = ({
             onClick={onAccept}
             isLoading={isAccepting}
           >
-            Accept
+            <span>Accept</span>
           </Button>
           <Button
             size="xs"
@@ -134,7 +134,7 @@ const FeedManagementInviteRow = ({
             onClick={onDecline}
             isLoading={isDeclining}
           >
-            Decline
+            <span>Decline</span>
           </Button>
         </HStack>
       </Td>

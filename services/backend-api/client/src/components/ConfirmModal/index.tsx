@@ -67,7 +67,7 @@ export const ConfirmModal = ({
           {descriptionNode && !description && <AlertDialogBody>{descriptionNode}</AlertDialogBody>}
           <AlertDialogFooter>
             <Button ref={cancelRef} variant="ghost" mr={3} onClick={onClose}>
-              {cancelText || t("common.buttons.cancel")}
+              <span>{cancelText || t("common.buttons.cancel")}</span>
             </Button>
             <Button
               isLoading={loading}
@@ -75,7 +75,7 @@ export const ConfirmModal = ({
               variant="solid"
               onClick={onClickConfirm}
             >
-              {okText || t("common.buttons.confirm")}
+              <span>{okText || t("common.buttons.confirm")}</span>
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

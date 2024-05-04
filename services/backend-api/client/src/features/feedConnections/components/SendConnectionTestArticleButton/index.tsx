@@ -56,7 +56,7 @@ export const SendConnectionTestArticleButton = ({
       feedId={feedId}
       trigger={
         <Button variant="solid" colorScheme="blue" isLoading={isFetching} leftIcon={<FiPlay />}>
-          {t("features.feedConnections.components.sendTestArticleButton.text")}
+          <span>{t("features.feedConnections.components.sendTestArticleButton.text")}</span>
         </Button>
       }
       onArticleSelected={onClick}

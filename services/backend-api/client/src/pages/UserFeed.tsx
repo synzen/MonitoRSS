@@ -304,7 +304,7 @@ export const UserFeed: React.FC = () => {
                             ref={menuButtonRef}
                             rightIcon={<ChevronDownIcon />}
                           >
-                            {t("pages.userFeed.actionsButtonText")}
+                            <span>{t("pages.userFeed.actionsButtonText")}</span>
                           </MenuButton>
                           <MenuList>
                             <MenuItem aria-label="Edit" onClick={editOnOpen}>
@@ -312,7 +312,11 @@ export const UserFeed: React.FC = () => {
                             </MenuItem>
                             {feed && (
                               <CloneUserFeedDialog
-                                trigger={<MenuItem>Clone</MenuItem>}
+                                trigger={
+                                  <MenuItem>
+                                    <span>Clone</span>
+                                  </MenuItem>
+                                }
                                 defaultValues={{
                                   title: feed.title,
                                   url: feed.url,
@@ -327,7 +331,7 @@ export const UserFeed: React.FC = () => {
                                 description="Are you sure you want to remove your access to this feed? You will no longer be able to view or manage this feed."
                                 trigger={
                                   <MenuItem isDisabled={updatingStatus === "loading"}>
-                                    Remove my shared access
+                                    <span>Remove my shared access</span>
                                   </MenuItem>
                                 }
                                 okText={t("common.buttons.yes")}
@@ -341,7 +345,7 @@ export const UserFeed: React.FC = () => {
                                 description={t("pages.userFeed.disableFeedConfirmDescription")}
                                 trigger={
                                   <MenuItem isDisabled={updatingStatus === "loading"}>
-                                    {t("pages.userFeed.disableFeedButtonText")}
+                                    <span>{t("pages.userFeed.disableFeedButtonText")}</span>
                                   </MenuItem>
                                 }
                                 okText={t("common.buttons.yes")}
@@ -413,7 +417,7 @@ export const UserFeed: React.FC = () => {
                                 description={t("pages.userFeed.deleteConfirmDescription")}
                                 trigger={
                                   <MenuItem isDisabled={deleteingStatus === "loading"}>
-                                    {t("common.buttons.delete")}
+                                    <span>{t("common.buttons.delete")}</span>
                                   </MenuItem>
                                 }
                                 okText={t("pages.userFeed.deleteConfirmOk")}
