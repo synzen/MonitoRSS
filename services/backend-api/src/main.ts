@@ -9,7 +9,6 @@ import { useContainer } from "class-validator";
 import fastifySession from "@fastify/secure-session";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
-
 import "dayjs/locale/af";
 import "dayjs/locale/am";
 import "dayjs/locale/ar-dz";
@@ -163,15 +162,25 @@ import "dayjs/locale/ru";
 class StaticAppModule {}
 
 async function bootstrap() {
+  const adapter = new FastifyAdapter({
+    logger: true,
+    trustProxy: true,
+  });
   const app = await NestFactory.create<NestFastifyApplication>(
     StaticAppModule,
-    new FastifyAdapter({
-      logger: true,
-      trustProxy: true,
-    }),
+    adapter,
     {
       cors: true,
     }
+  );
+  const fastifyInstance = adapter.getInstance();
+
+  fastifyInstance.addContentTypeParser(
+    "*",
+    {
+      parseAs: "buffer",
+    },
+    (req, body, done) => done(null, body)
   );
 
   app.enableShutdownHooks();

@@ -1,5 +1,6 @@
 import { plainToClass, Type } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
@@ -181,6 +182,15 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   BACKEND_API_SUPPORTER_SUBROLE_IDS?: string;
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_SENTRY_HOST?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  BACKEND_API_SENTRY_PROJECT_IDS?: string[];
 }
 
 export function validateConfig(

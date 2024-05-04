@@ -22,12 +22,14 @@ import { PricingDialogProvider } from "./contexts";
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
     await setupMockBrowserWorker().then((worker) => worker.start());
-  } else if (import.meta.env.MODE !== "development") {
+  } else {
     const DSN = import.meta.env.VITE_SENTRY_DSN;
 
     if (DSN) {
       Sentry.init({
         dsn: DSN,
+        tunnel: "/api/v1/sentry-tunnel",
+        environment: import.meta.env.MODE,
         integrations: [
           Sentry.reactRouterV6BrowserTracingIntegration({
             useEffect: React.useEffect,

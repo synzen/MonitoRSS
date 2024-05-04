@@ -28,7 +28,7 @@ export default function config(options?: {
 }): EnvironmentVariables {
   const port = parseInt(process.env.BACKEND_API_PORT as string, 10);
 
-  const configVals = {
+  const configVals: EnvironmentVariables = {
     NODE_ENV: (process.env.NODE_ENV as Environment) || Environment.Local,
     BACKEND_API_PORT: isNaN(port) ? 3000 : port,
     BACKEND_API_DISCORD_BOT_TOKEN: process.env
@@ -106,7 +106,10 @@ export default function config(options?: {
     BACKEND_API_SUPPORTER_ROLE_ID: process.env.BACKEND_API_SUPPORTER_ROLE_ID,
     BACKEND_API_SUPPORTER_SUBROLE_IDS:
       process.env.BACKEND_API_SUPPORTER_SUBROLE_IDS,
-  } as const;
+    BACKEND_API_SENTRY_HOST: process.env.BACKEND_API_SENTRY_HOST,
+    BACKEND_API_SENTRY_PROJECT_IDS:
+      process.env.BACKEND_API_SENTRY_PROJECT_IDS?.split(",") || [],
+  };
 
   if (!options?.skipValidation) {
     validateConfig(configVals);
