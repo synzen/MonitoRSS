@@ -14,6 +14,7 @@ import { SessionAccessToken } from "./types/SessionAccessToken.type";
 import { ConfigService } from "@nestjs/config";
 import { UsersService } from "../users/users.service";
 import { randomUUID } from "crypto";
+import { Session as FastifySecureSession } from "@fastify/secure-session";
 
 @Controller("discord")
 export class DiscordAuthController {
@@ -33,7 +34,7 @@ export class DiscordAuthController {
   @Get("login-v2")
   loginV2(
     @Res() res: FastifyReply,
-    @Session() session: FastifyRequest["session"],
+    @Session() session: FastifySecureSession,
     @Query("jsonState") jsonState?: string,
     @Query("addScopes") addScopes?: string
   ) {
@@ -50,6 +51,7 @@ export class DiscordAuthController {
 
     const authStateString = encodeURIComponent(JSON.stringify(authState));
 
+    // @ts-ignore
     session.set("authState", authStateString);
 
     let scopes = addScopes?.trim();
@@ -82,6 +84,7 @@ export class DiscordAuthController {
     }
 
     const { token } = await this.discordAuthService.createAccessToken(code);
+    // @ts-ignore
     session.set("accessToken", token);
 
     const loginRedirectUri = this.configService.get<string>(
@@ -126,6 +129,7 @@ export class DiscordAuthController {
     const { token, user } = await this.discordAuthService.createAccessToken(
       code
     );
+    // @ts-ignore
     session.set("accessToken", token);
 
     const loginRedirectUri = this.configService.get<string>(

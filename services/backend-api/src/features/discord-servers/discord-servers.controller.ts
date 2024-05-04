@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 import {
   Body,
-  CacheTTL,
   Controller,
   Get,
   Param,
@@ -38,6 +37,7 @@ import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-fe
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { ConvertServerLegacyFeedsFilter } from "./filters/convert-server-legacy-feeds.filter";
+import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)

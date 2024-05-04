@@ -2,8 +2,6 @@
 import {
   BadRequestException,
   Body,
-  CacheInterceptor,
-  CacheTTL,
   Controller,
   Get,
   Headers,
@@ -31,6 +29,7 @@ import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToke
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import logger from "../../utils/logger";
 import { FastifyRequest } from "fastify";
+import { CacheInterceptor, CacheTTL } from "@nestjs/cache-manager";
 
 type ProductId = string;
 

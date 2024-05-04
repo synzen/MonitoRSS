@@ -1,5 +1,4 @@
 import {
-  CacheTTL,
   Controller,
   Get,
   HttpStatus,
@@ -23,6 +22,7 @@ import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.typ
 import { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { WebhookMissingPermissionsException } from "./exceptions";
+import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("discord-webhooks")
 @UseGuards(DiscordOAuth2Guard)

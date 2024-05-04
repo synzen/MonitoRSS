@@ -2,7 +2,6 @@
 import {
   BadRequestException,
   Body,
-  CacheTTL,
   Controller,
   Delete,
   Get,
@@ -52,6 +51,7 @@ import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-fe
 import { randomUUID } from "crypto";
 import { DiscordWebhook } from "../../common";
 import { UserFeed } from "../user-feeds/entities";
+import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("feeds")
 @UseGuards(DiscordOAuth2Guard)

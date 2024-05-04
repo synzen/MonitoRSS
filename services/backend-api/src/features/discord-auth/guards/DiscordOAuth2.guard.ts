@@ -25,6 +25,7 @@ export class DiscordOAuth2Guard implements CanActivate {
 
     if (this.discordAuthService.isTokenExpired(token)) {
       token = await this.discordAuthService.refreshToken(token);
+      // @ts-ignore
       request.session.set("accessToken", token);
     }
 

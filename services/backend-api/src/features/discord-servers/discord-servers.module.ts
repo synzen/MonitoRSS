@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { DiscordApiModule } from "../../services/apis/discord/discord-api.module";
 import { DiscordAuthModule } from "../discord-auth/discord-auth.module";
@@ -11,6 +11,7 @@ import { LegacyFeedConversionModule } from "../legacy-feed-conversion/legacy-fee
 import { DiscordServersController } from "./discord-servers.controller";
 import { DiscordServersService } from "./discord-servers.service";
 import { DiscordServerProfileFeature } from "./entities/discord-server-profile.entity";
+import { CacheModule } from "@nestjs/cache-manager";
 
 @Module({
   imports: [

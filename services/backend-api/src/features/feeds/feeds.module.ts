@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { CacheModule, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { FeedsService } from "./feeds.service";
 import { FeedsController } from "./feeds.controller";
 import { MongooseModule } from "@nestjs/mongoose";
@@ -19,6 +19,7 @@ import { BannedFeedFeature } from "./entities/banned-feed.entity";
 import { FeedFilteredFormatFeature } from "./entities/feed-filtered-format.entity";
 import { UserFeedFeature } from "../user-feeds/entities";
 import { LegacyFeedConversionModule } from "../legacy-feed-conversion/legacy-feed-conversion.module";
+import { CacheModule } from "@nestjs/cache-manager";
 
 @Module({
   controllers: [FeedsController, FeedSubscribersController],
