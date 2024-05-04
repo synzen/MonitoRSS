@@ -27,7 +27,11 @@ import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
 import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
 import { ExternalFeedPropertyDto } from "../article-formatter/types";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
+import { deflate, inflate } from "zlib";
+import { promisify } from "util";
 
+const deflatePromise = promisify(deflate);
+const inflatePromise = promisify(inflate);
 const sha1 = createHash("sha1");
 
 interface FetchFeedArticleOptions {
@@ -65,15 +69,19 @@ export class ArticlesService {
     url: string;
     options: FetchFeedArticleOptions;
   }): Promise<XmlParsedArticlesOutput | null> {
-    const value = await this.cacheStorageService.get({
+    const compressedValue = await this.cacheStorageService.get({
       key: this.calculateCacheKeyForArticles(data),
     });
 
-    if (!value) {
+    if (!compressedValue) {
       return null;
     }
 
-    return JSON.parse(value) as XmlParsedArticlesOutput;
+    const jsonText = await (
+      await inflatePromise(Buffer.from(compressedValue, "base64"))
+    ).toString();
+
+    return JSON.parse(jsonText) as XmlParsedArticlesOutput;
   }
 
   async invalidateFeedArticlesCache(data: {
@@ -93,9 +101,15 @@ export class ArticlesService {
     },
     options?: { useOldTTL?: boolean }
   ) {
+    const jsonBody = JSON.stringify(data.data);
+
+    const compressed = await (
+      await deflatePromise(jsonBody)
+    ).toString("base64");
+
     await this.cacheStorageService.set({
       key: this.calculateCacheKeyForArticles(data),
-      body: JSON.stringify(data.data),
+      body: compressed,
       expSeconds: 60 * 5,
       useOldTTL: options?.useOldTTL,
     });
@@ -884,7 +898,7 @@ export class ArticlesService {
       delete normalizedOptions.externalFeedProperties;
     }
 
-    return `articles:${sha1
+    return `articles:com:${sha1
       .copy()
       .update(
         JSON.stringify({
