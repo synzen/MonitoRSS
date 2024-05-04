@@ -40,6 +40,7 @@ async function prepare() {
             maskAllText: false,
             blockAllMedia: false,
           }),
+          Sentry.feedbackIntegration(),
         ],
         tracesSampleRate: 0.2,
         // Session Replay

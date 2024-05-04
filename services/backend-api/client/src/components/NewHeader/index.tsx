@@ -14,7 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaRightFromBracket } from "react-icons/fa6";
-import { SettingsIcon, InfoIcon } from "@chakra-ui/icons";
+import { SettingsIcon, InfoIcon, WarningTwoIcon } from "@chakra-ui/icons";
 
 import { pages } from "../../constants";
 import { LogoutButton } from "../../features/auth";
@@ -22,6 +22,7 @@ import { LogoutButton } from "../../features/auth";
 import { useDiscordBot, useDiscordUserMe, useUserMe } from "../../features/discordUser";
 import { Loading } from "../Loading";
 import { AddUserFeedDialog } from "../../features/feed";
+import { ReportABugDialog } from "../ReportABugDialog";
 
 interface Props {
   invertBackground?: boolean;
@@ -124,6 +125,19 @@ export const NewHeader = ({ invertBackground }: Props) => {
               >
                 Support
               </MenuItem>
+              <ReportABugDialog
+                trigger={
+                  <MenuItem
+                    alignItems="center"
+                    icon={<WarningTwoIcon />}
+                    onClick={() => {
+                      window.open("https://support.monitorss.xyz", "_blank");
+                    }}
+                  >
+                    Report a Bug
+                  </MenuItem>
+                }
+              />
               <LogoutButton
                 trigger={
                   <MenuItem icon={<FaRightFromBracket />}>
