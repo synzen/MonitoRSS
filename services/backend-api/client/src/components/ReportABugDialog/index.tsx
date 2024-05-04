@@ -81,6 +81,7 @@ export const ReportABugDialog = ({ trigger }: Props) => {
                   <FormControl isRequired>
                     <FormLabel>Email</FormLabel>
                     <Input
+                      bg="gray.800"
                       placeholder="your.email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
