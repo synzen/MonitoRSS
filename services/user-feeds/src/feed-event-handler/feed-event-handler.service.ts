@@ -12,6 +12,8 @@ import {
   FeedV2Event,
   feedV2EventSchema,
   FeedRejectedDisabledCode,
+  Article,
+  UserFeedFormatOptions,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import {
@@ -364,9 +366,8 @@ export class FeedEventHandlerService {
         event.debug
       );
 
-      const articles = await this.articlesService.getArticlesToDeliverFromXml(
-        response.body,
-        {
+      const { allArticles, articlesToDeliver: articles } =
+        await this.articlesService.getArticlesToDeliverFromXml(response.body, {
           id: event.data.feed.id,
           blockingComparisons,
           passingComparisons,
@@ -381,8 +382,9 @@ export class FeedEventHandlerService {
           debug: event.debug,
           useParserRules: getParserRules({ url: event.data.feed.url }),
           externalFeedProperties: event.data.feed.externalProperties,
-        }
-      );
+        });
+
+      await this.updateFeedArticlesInCache({ event, articles: allArticles });
 
       // START TEMPORARY - Should revisit this for a more robust retry strategy
 
@@ -588,5 +590,49 @@ export class FeedEventHandlerService {
         success,
       });
     }
+  }
+
+  private async updateFeedArticlesInCache({
+    event,
+    articles,
+  }: {
+    event: FeedV2Event;
+    articles: Article[];
+  }) {
+    const formatOptions: UserFeedFormatOptions = {
+      dateFormat: event.data.feed.formatOptions?.dateFormat,
+      dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+      disableImageLinkPreviews:
+        event.data.feed.formatOptions?.disableImageLinkPreviews,
+      dateLocale: event.data.feed.formatOptions?.dateLocale,
+    };
+
+    const cacheKeyParameters = {
+      url: event.data.feed.url,
+      options: {
+        formatOptions,
+        externalFeedProperties: event.data.feed.externalProperties,
+      },
+    };
+
+    const existsInCache = await this.articlesService.doFeedArticlesExistInCache(
+      cacheKeyParameters
+    );
+
+    if (!existsInCache) {
+      return;
+    }
+
+    await this.articlesService.setFeedArticlesInCache(
+      {
+        ...cacheKeyParameters,
+        data: {
+          articles,
+        },
+      },
+      {
+        useOldTTL: true,
+      }
+    );
   }
 }

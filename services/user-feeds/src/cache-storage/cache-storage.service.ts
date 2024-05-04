@@ -22,15 +22,33 @@ export class CacheStorageService {
     body,
     expSeconds,
     getOldValue,
+    useOldTTL,
   }: {
     body: string;
     key: string;
     expSeconds?: number;
     getOldValue?: boolean;
+    useOldTTL?: boolean;
   }) {
+    let ex = expSeconds || 60 * 5; // default expire in 5m
+
+    if (useOldTTL) {
+      try {
+        const ttl = await this.redisClient.ttl(generateKey(key));
+
+        if (ttl !== -1) {
+          ex = ttl;
+        }
+      } catch (err) {
+        logger.error(`Failed to get TTL of key ${key} from cache storage`, {
+          err: (err as Error).stack,
+        });
+      }
+    }
+
     try {
       return await this.redisClient.set(generateKey(key), body, {
-        EX: expSeconds || 60 * 5, // default expire in 5m
+        EX: ex,
         GET: getOldValue ? true : undefined,
       });
     } catch (err) {
@@ -40,11 +58,45 @@ export class CacheStorageService {
     }
   }
 
+  async get({ key }: { key: string }) {
+    try {
+      return await this.redisClient.get(generateKey(key));
+    } catch (err) {
+      logger.error(`Failed to get content with key ${key} from cache storage`, {
+        err: (err as Error).stack,
+      });
+
+      return null;
+    }
+  }
+
   async del(key: string) {
     try {
       await this.redisClient.del(generateKey(key));
     } catch (err) {
       logger.error(`Failed to delete content from cache storage`, {
+        err: (err as Error).stack,
+      });
+    }
+  }
+
+  async exists(key: string) {
+    try {
+      return await this.redisClient.exists(generateKey(key));
+    } catch (err) {
+      logger.error(`Failed to check existence of key ${key} in cache storage`, {
+        err: (err as Error).stack,
+      });
+
+      return false;
+    }
+  }
+
+  async setExpire(key: string, seconds: number) {
+    try {
+      await this.redisClient.expire(generateKey(key), seconds);
+    } catch (err) {
+      logger.error(`Failed to set expire for key ${key} in cache storage`, {
         err: (err as Error).stack,
       });
     }

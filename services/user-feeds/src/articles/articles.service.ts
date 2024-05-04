@@ -26,6 +26,7 @@ import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
 import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
 import { ExternalFeedPropertyDto } from "../article-formatter/types";
+import { CacheStorageService } from "../cache-storage/cache-storage.service";
 
 const sha1 = createHash("sha1");
 
@@ -33,6 +34,10 @@ interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
   externalFeedProperties?: ExternalFeedPropertyDto[];
 }
+
+type XmlParsedArticlesOutput = {
+  articles: Article[];
+};
 
 @Injectable()
 export class ArticlesService {
@@ -43,13 +48,87 @@ export class ArticlesService {
     private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
     private readonly articleParserService: ArticleParserService,
     private readonly orm: MikroORM,
-    private readonly feedFetcherService: FeedFetcherService
+    private readonly feedFetcherService: FeedFetcherService,
+    private readonly cacheStorageService: CacheStorageService
   ) {}
+
+  async doFeedArticlesExistInCache(data: {
+    url: string;
+    options: FetchFeedArticleOptions;
+  }) {
+    const key = this.calculateCacheKeyForArticles(data);
+
+    return !!(await this.cacheStorageService.exists(key));
+  }
+
+  async getFeedArticlesFromCache(data: {
+    url: string;
+    options: FetchFeedArticleOptions;
+  }): Promise<XmlParsedArticlesOutput | null> {
+    const value = await this.cacheStorageService.get({
+      key: this.calculateCacheKeyForArticles(data),
+    });
+
+    if (!value) {
+      return null;
+    }
+
+    return JSON.parse(value) as XmlParsedArticlesOutput;
+  }
+
+  async invalidateFeedArticlesCache(data: {
+    url: string;
+    options: FetchFeedArticleOptions;
+  }) {
+    return this.cacheStorageService.del(
+      this.calculateCacheKeyForArticles(data)
+    );
+  }
+
+  async setFeedArticlesInCache(
+    data: {
+      url: string;
+      options: FetchFeedArticleOptions;
+      data: XmlParsedArticlesOutput;
+    },
+    options?: { useOldTTL?: boolean }
+  ) {
+    await this.cacheStorageService.set({
+      key: this.calculateCacheKeyForArticles(data),
+      body: JSON.stringify(data.data),
+      expSeconds: 60 * 5,
+      useOldTTL: options?.useOldTTL,
+    });
+  }
+
+  async refreshFeedArticlesCacheExpiration(data: {
+    url: string;
+    options: FetchFeedArticleOptions;
+  }) {
+    await this.cacheStorageService.setExpire(
+      this.calculateCacheKeyForArticles(data),
+      60 * 5
+    );
+  }
 
   async fetchFeedArticles(
     url: string,
     { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
   ) {
+    const cachedArticles = await this.getFeedArticlesFromCache({
+      url,
+      options: { formatOptions, externalFeedProperties },
+    });
+
+    if (cachedArticles) {
+      await this.refreshFeedArticlesCacheExpiration({
+        url,
+        options: { formatOptions, externalFeedProperties },
+      });
+
+      return cachedArticles;
+    }
+
     const response = await this.feedFetcherService.fetch(url, {
       executeFetchIfNotInCache: true,
     });
@@ -58,11 +137,19 @@ export class ArticlesService {
       return null;
     }
 
-    return this.getArticlesFromXml(response.body, {
+    const fromXml = await this.getArticlesFromXml(response.body, {
       formatOptions,
       useParserRules: getParserRules({ url }),
       externalFeedProperties,
     });
+
+    await this.setFeedArticlesInCache({
+      url,
+      options: { formatOptions, externalFeedProperties },
+      data: fromXml,
+    });
+
+    return fromXml;
   }
 
   async fetchFeedArticle(
@@ -142,7 +229,7 @@ export class ArticlesService {
       useParserRules: PostProcessParserRule[] | undefined;
       externalFeedProperties?: ExternalFeedProperty[];
     }
-  ) {
+  ): Promise<{ articlesToDeliver: Article[]; allArticles: Article[] }> {
     const { articles } = await this.getArticlesFromXml(feedXml, {
       formatOptions,
       useParserRules,
@@ -150,7 +237,7 @@ export class ArticlesService {
     });
 
     logger.debug(`Found articles:`, {
-      titles: articles.map((a) => a.raw.title),
+      titles: articles.map((a) => a.flattened.title),
     });
 
     if (debug) {
@@ -164,7 +251,10 @@ export class ArticlesService {
     }
 
     if (!articles.length) {
-      return [];
+      return {
+        allArticles: articles,
+        articlesToDeliver: [],
+      };
     }
 
     const priorArticlesStored = await this.hasPriorArticlesStored(id);
@@ -174,7 +264,10 @@ export class ArticlesService {
         comparisonFields: [...blockingComparisons, ...passingComparisons],
       });
 
-      return [];
+      return {
+        allArticles: articles,
+        articlesToDeliver: [],
+      };
     }
 
     const newArticles = await this.filterForNewArticles(id, articles);
@@ -273,7 +366,10 @@ export class ArticlesService {
       );
     }
 
-    return articlesPostDateCheck;
+    return {
+      allArticles: articles,
+      articlesToDeliver: articlesPostDateCheck,
+    };
   }
 
   filterArticlesBasedOnDateChecks(
@@ -536,9 +632,7 @@ export class ArticlesService {
       useParserRules: PostProcessParserRule[] | undefined;
       externalFeedProperties?: Array<ExternalFeedProperty>;
     }
-  ): Promise<{
-    articles: Article[];
-  }> {
+  ): Promise<XmlParsedArticlesOutput> {
     const feedparser = new FeedParser({});
     const idResolver = new ArticleIDResolver();
     const rawArticles: FeedParser.Item[] = [];
@@ -614,7 +708,10 @@ export class ArticlesService {
                 id,
                 idHash: sha1.copy().update(id).digest("hex"),
               },
-              raw: rawArticle,
+              raw: {
+                date: rawArticle.date?.toISOString(),
+                pubdate: rawArticle.pubdate?.toISOString(),
+              },
             };
           })
         );
@@ -751,5 +848,50 @@ export class ArticlesService {
     await this.articleCustomComparisonRepo.nativeDelete({
       feed_id: feedId,
     });
+  }
+
+  private calculateCacheKeyForArticles({
+    url,
+    options,
+  }: {
+    url: string;
+    options: FetchFeedArticleOptions;
+  }) {
+    const normalizedOptions: Partial<FetchFeedArticleOptions> = {
+      formatOptions: {
+        dateFormat: options.formatOptions.dateFormat || undefined,
+        dateLocale: options.formatOptions.dateLocale || undefined,
+        dateTimezone: options.formatOptions.dateTimezone || undefined,
+        disableImageLinkPreviews:
+          options.formatOptions.disableImageLinkPreviews || undefined,
+      },
+      externalFeedProperties: !!options.externalFeedProperties?.length
+        ? options.externalFeedProperties
+        : undefined,
+    };
+
+    // delete format options if every field is undefined
+
+    if (
+      Object.keys(normalizedOptions?.formatOptions || {}).every(
+        (key) => normalizedOptions?.formatOptions?.[key as never] === undefined
+      )
+    ) {
+      delete normalizedOptions?.formatOptions;
+    }
+
+    if (!normalizedOptions.externalFeedProperties) {
+      delete normalizedOptions.externalFeedProperties;
+    }
+
+    return `articles:${sha1
+      .copy()
+      .update(
+        JSON.stringify({
+          url,
+          options: normalizedOptions,
+        })
+      )
+      .digest("hex")}`;
   }
 }
