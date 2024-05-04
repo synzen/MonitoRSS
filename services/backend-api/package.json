@@ -29,6 +29,7 @@
     "test:e2e": "jest --config ./src/test/jest-e2e.json"
   },
   "dependencies": {
+    "@fastify/compress": "^7.0.3",
     "@fastify/cookie": "9.3.1",
     "@fastify/secure-session": "7.5.1",
     "@fastify/static": "^7.0.3",

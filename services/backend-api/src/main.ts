@@ -9,6 +9,7 @@ import { useContainer } from "class-validator";
 import fastifySession from "@fastify/secure-session";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+import compression from "@fastify/compress";
 import "dayjs/locale/af";
 import "dayjs/locale/am";
 import "dayjs/locale/ar-dz";
@@ -199,6 +200,9 @@ async function bootstrap() {
   const sessionSecret = config.get("BACKEND_API_SESSION_SECRET");
   const sessionSalt = config.get("BACKEND_API_SESSION_SALT");
 
+  await app.register(compression, {
+    encodings: ["gzip", "deflate"],
+  });
   await app.register(fastifySession, {
     secret: sessionSecret,
     salt: sessionSalt,
