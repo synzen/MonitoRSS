@@ -27,6 +27,7 @@ import UserFeedsFAQ from "./UserFeedsFAQ";
 import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { NotFound } from "./NotFound";
+import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 
 const UserSettings = lazy(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
@@ -98,9 +99,11 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth>
           <PageContentV2 invertBackground>
-            <Suspense fallback={<Spinner mt={24} />}>
-              <UserSettings />
-            </Suspense>
+            <SuspenseErrorBoundary>
+              <Suspense fallback={<Spinner mt={24} />}>
+                <UserSettings />
+              </Suspense>
+            </SuspenseErrorBoundary>
           </PageContentV2>
         </RequireAuth>
       }

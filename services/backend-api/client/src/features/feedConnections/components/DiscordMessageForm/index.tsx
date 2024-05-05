@@ -39,6 +39,7 @@ import { AnimatedComponent } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 import { useUserFeed } from "../../../feed/hooks";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
+import { SuspenseErrorBoundary } from "../../../../components/SuspenseErrorBoundary";
 
 const DiscordMessageEmbedForm = lazy(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
@@ -303,20 +304,22 @@ export const DiscordMessageForm = ({
               <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
             </Stack>
             {connection.type === FeedConnectionType.DiscordChannel && (
-              <Suspense
-                fallback={
-                  <Center my={8}>
-                    <Spinner />
-                  </Center>
-                }
-              >
-                <DiscordChannelConnectionPreview
-                  connectionId={connection.id}
-                  data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
-                  feedId={feedId}
-                  hasErrors={errorsExist}
-                />
-              </Suspense>
+              <SuspenseErrorBoundary>
+                <Suspense
+                  fallback={
+                    <Center my={8}>
+                      <Spinner />
+                    </Center>
+                  }
+                >
+                  <DiscordChannelConnectionPreview
+                    connectionId={connection.id}
+                    data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
+                    feedId={feedId}
+                    hasErrors={errorsExist}
+                  />
+                </Suspense>
+              </SuspenseErrorBoundary>
             )}
           </Stack>
           {include?.forumForms && (
@@ -357,21 +360,23 @@ export const DiscordMessageForm = ({
               <TabPanels>
                 {embeds?.map((embed, index) => (
                   <TabPanel key={embed.id}>
-                    <Suspense fallback={<Spinner />}>
-                      <Stack spacing={8}>
-                        <Flex justifyContent="flex-end">
-                          <Button
-                            colorScheme="red"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onRemoveEmbed(index)}
-                          >
-                            {t("features.feedConnections.components.embedForm.deleteButtonText")}
-                          </Button>
-                        </Flex>
-                        <DiscordMessageEmbedForm index={index} />
-                      </Stack>
-                    </Suspense>
+                    <SuspenseErrorBoundary>
+                      <Suspense fallback={<Spinner />}>
+                        <Stack spacing={8}>
+                          <Flex justifyContent="flex-end">
+                            <Button
+                              colorScheme="red"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onRemoveEmbed(index)}
+                            >
+                              {t("features.feedConnections.components.embedForm.deleteButtonText")}
+                            </Button>
+                          </Flex>
+                          <DiscordMessageEmbedForm index={index} />
+                        </Stack>
+                      </Suspense>
+                    </SuspenseErrorBoundary>
                   </TabPanel>
                 ))}
               </TabPanels>

@@ -15,7 +15,7 @@ import * as Sentry from "@sentry/react";
 import theme from "./utils/theme";
 import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
-import { GenericErrorBoundary } from "./components/GenericErrorBoundary";
+import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
 import { PricingDialogProvider } from "./contexts";
 
@@ -88,11 +88,11 @@ prepare().then(() => {
         <ColorModeScript initialColorMode={theme.config.initialColorMode} />
         <QueryClientProvider client={queryClient}>
           <ForceDarkMode>
-            <GenericErrorBoundary>
+            <GlobalErrorBoundary>
               <PricingDialogProvider>
                 <App />
               </PricingDialogProvider>
-            </GenericErrorBoundary>
+            </GlobalErrorBoundary>
           </ForceDarkMode>
         </QueryClientProvider>
       </ChakraProvider>
