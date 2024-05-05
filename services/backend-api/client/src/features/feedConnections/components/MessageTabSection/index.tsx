@@ -281,9 +281,11 @@ export const MessageTabSection = ({
                           }
                           isDisabled={userFeedArticlesFetchStatus === "fetching"}
                         >
-                          {t(
-                            "features.feedConnections.components.articlePlaceholderTable.selectArticle"
-                          )}
+                          <span>
+                            {t(
+                              "features.feedConnections.components.articlePlaceholderTable.selectArticle"
+                            )}
+                          </span>
                         </Button>
                       }
                       feedId={feedId}
@@ -297,9 +299,11 @@ export const MessageTabSection = ({
                       isDisabled={userFeedArticlesFetchStatus === "fetching"}
                       onClick={onClickRandomFeedArticle}
                     >
-                      {t(
-                        "features.feedConnections.components.articlePlaceholderTable.randomButton"
-                      )}
+                      <span>
+                        {t(
+                          "features.feedConnections.components.articlePlaceholderTable.randomButton"
+                        )}
+                      </span>
                     </Button>
                   </HStack>
                 </HStack>
