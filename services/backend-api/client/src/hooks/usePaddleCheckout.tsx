@@ -2,8 +2,9 @@
 /* eslint-disable no-continue */
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUserMe } from "../features/discordUser";
-import { ProductKey } from "../constants";
+import { pages, ProductKey } from "../constants";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -26,6 +27,7 @@ export function usePaddleCheckout(props?: Props) {
   const [paddle, setPaddle] = useState<Paddle>();
   const [pricePreviewErrored, setPricePreviewErrored] = useState(false);
   const { data: user } = useUserMe();
+  const navigate = useNavigate();
   const [isLoadingPricePreview, setIsLoadingPricePreview] = useState(true);
   const [pricePreview, setPricePreview] = useState<
     Array<{
@@ -56,6 +58,17 @@ export function usePaddleCheckout(props?: Props) {
       eventCallback(event) {
         if (event.name === "checkout.completed") {
           props?.onCheckoutSuccess?.();
+        } else if (event.name === "checkout.error") {
+          fetch("/api/v1/error-reports", {
+            method: "POST",
+            body: JSON.stringify({
+              message: `Paddle Checkout error`,
+              event,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
         }
       },
     }).then((paddleInstance: Paddle | undefined) => {
@@ -173,6 +186,8 @@ export function usePaddleCheckout(props?: Props) {
   const openCheckout = useCallback(
     ({ priceId }: { priceId: string }) => {
       if (!user?.result.email) {
+        navigate(pages.userSettings());
+
         return;
       }
 

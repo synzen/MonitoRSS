@@ -542,38 +542,40 @@ export const UserSettings = () => {
                           </Stack>
                         </Alert>
                       )}
-                      <Stack spacing={4}>
-                        <FormControl
-                          as={Flex}
-                          justifyContent="space-between"
-                          flexWrap="wrap"
-                          gap={4}
-                        >
-                          <Box>
-                            <FormLabel htmlFor="email-alerts">
-                              Disabled feed or feed connections
-                            </FormLabel>
-                            <FormHelperText>
-                              Whenever feed or feed connections automatically get disabled due to
-                              issues while processing.
-                            </FormHelperText>
-                          </Box>
-                          <Controller
-                            name="alertOnDisabledFeeds"
-                            control={control}
-                            render={({ field }) => {
-                              return (
-                                <Switch
-                                  size="lg"
-                                  isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
-                                  isChecked={!!field.value}
-                                  onChange={(e) => field.onChange(e.target.checked)}
-                                />
-                              );
-                            }}
-                          />
-                        </FormControl>
-                      </Stack>
+                      {hasEmailAvailable && (
+                        <Stack spacing={4}>
+                          <FormControl
+                            as={Flex}
+                            justifyContent="space-between"
+                            flexWrap="wrap"
+                            gap={4}
+                          >
+                            <Box>
+                              <FormLabel htmlFor="email-alerts">
+                                Disabled feed or feed connections
+                              </FormLabel>
+                              <FormHelperText>
+                                Whenever feed or feed connections automatically get disabled due to
+                                issues while processing.
+                              </FormHelperText>
+                            </Box>
+                            <Controller
+                              name="alertOnDisabledFeeds"
+                              control={control}
+                              render={({ field }) => {
+                                return (
+                                  <Switch
+                                    size="lg"
+                                    isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
+                                    isChecked={!!field.value}
+                                    onChange={(e) => field.onChange(e.target.checked)}
+                                  />
+                                );
+                              }}
+                            />
+                          </FormControl>
+                        </Stack>
+                      )}
                       <SavedUnsavedChangesPopupBar />
                     </Stack>
                     <Stack spacing={4}>
