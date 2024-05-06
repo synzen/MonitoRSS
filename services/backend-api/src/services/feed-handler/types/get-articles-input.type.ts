@@ -8,6 +8,7 @@ export interface GetArticlesInput {
   random?: boolean;
   selectProperties?: string[];
   selectPropertyTypes?: string[];
+  findRssFromHtml?: boolean;
   filters?: {
     expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;

@@ -14,6 +14,7 @@ import {
   InvalidFeedException,
   FeedFetchTimeoutException,
   FeedInvalidSslCertException,
+  NoFeedOnHtmlPageException,
 } from "../../../services/feed-fetcher/exceptions";
 import { FeedTooLargeException } from "../../../services/feed-fetcher/exceptions/FeedTooLargeException";
 import { FeedLimitReachedException } from "../exceptions";
@@ -30,7 +31,11 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     },
     [FeedParseException.name]: {
       status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.FEED_PARSE_FAILED,
+      code: ApiErrorCode.ADD_FEED_PARSE_FAILED,
+    },
+    [NoFeedOnHtmlPageException.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.NO_FEED_IN_HTML_PAGE,
     },
     [FeedParseTimeoutException.name]: {
       status: HttpStatus.BAD_REQUEST,

@@ -13,6 +13,8 @@ class ResultDto {
   totalArticles: number;
   filterStatuses?: Array<FilterStatus>;
   selectedProperties: string[];
+  url: string;
+  attemptedToResolveFromHtml?: boolean;
 }
 
 export class GetUserFeedArticlesOutputDto {

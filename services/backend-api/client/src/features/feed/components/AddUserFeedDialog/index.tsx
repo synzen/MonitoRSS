@@ -133,7 +133,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.title}>
+                <FormControl isInvalid={!!errors.title} isRequired>
                   <FormLabel>
                     {t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
                   </FormLabel>
@@ -155,8 +155,8 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                   </FormHelperText>
                   <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
                 </FormControl>
-                <FormControl isInvalid={!!errors.url}>
-                  <FormLabel>RSS Feed Link</FormLabel>
+                <FormControl isInvalid={!!errors.url} isRequired>
+                  <FormLabel>Feed Link</FormLabel>
                   <Controller
                     name="url"
                     control={control}
@@ -166,12 +166,13 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         {...field}
                         value={field.value || ""}
                         bg="gray.800"
+                        type="url"
                       />
                     )}
                   />
                   <FormHelperText>
-                    Must be a valid RSS feed. To check if a link is a valid feed, you may search for
-                    online feed validators.
+                    Must be a link to a valid RSS feed, or a page that contains an embedded link to
+                    an RSS feed.
                   </FormHelperText>
                   <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
                 </FormControl>
@@ -189,7 +190,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         alignItems="center"
                         textAlign="left"
                       >
-                        What is an RSS feed?
+                        What is a valid RSS feed?
                         <AccordionIcon />
                       </Flex>
                     </AccordionButton>
@@ -229,9 +230,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                     </AccordionButton>
                     <AccordionPanel>
                       <Text fontSize={13}>
-                        With RSS, article delivery is not instant. Instead, we check for new
-                        articles on a regular interval (every 10 minutes by default for free). Once
-                        new articles are found, they are automatically delivered.
+                        With RSS, article delivery is not instant. New articles are checked on a
+                        regular interval (every 10 minutes by default for free). Once new articles
+                        are found, they are automatically delivered.
                       </Text>
                     </AccordionPanel>
                   </AccordionItem>

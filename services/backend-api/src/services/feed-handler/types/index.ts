@@ -4,7 +4,6 @@ export * from "./send-test-discord-webhook-article-input.type";
 export * from "./send-test-article-input.type";
 export * from "./get-articles-input.type";
 export * from "./get-articles-response.type";
-export * from "./get-articles-output.type";
 export * from "./create-filter-validation-input.type";
 export * from "./create-filter-validation-output.type";
 export * from "./create-filter-validation-response.type";

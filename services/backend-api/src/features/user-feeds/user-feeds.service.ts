@@ -24,7 +24,10 @@ import { FeedHandlerService } from "../../services/feed-handler/feed-handler.ser
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
-import { GetArticlesInput } from "../../services/feed-handler/types";
+import {
+  GetArticlesInput,
+  GetArticlesResponseRequestStatus,
+} from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
 import { FilterQuery, PipelineStage, Types, UpdateQuery } from "mongoose";
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
@@ -55,6 +58,12 @@ import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import { CreateDiscordChannelConnectionOutputDto } from "../feed-connections/dto";
 import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
 import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
+import {
+  FeedFetchTimeoutException,
+  FeedParseException,
+  FeedRequestException,
+  NoFeedOnHtmlPageException,
+} from "../../services/feed-fetcher/exceptions";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -187,6 +196,7 @@ export class UserFeedsService {
           : undefined,
         title: feed.title,
         url: feed.url,
+        inputUrl: feed.inputUrl,
         isLegacyFeed: !!feed.legacyFeedId,
         connections: [...discordChannelConnections],
         disabledCode: feed.disabledCode,
@@ -305,11 +315,12 @@ export class UserFeedsService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
-    await this.checkUrlIsValid(url);
+    const { finalUrl } = await this.checkUrlIsValid(url);
 
     const created = await this.userFeedModel.create({
       title,
-      url,
+      url: finalUrl,
+      inputUrl: url,
       user: {
         discordUserId,
       },
@@ -349,15 +360,20 @@ export class UserFeedsService {
 
     const newFeedId = new Types.ObjectId();
 
+    let inputUrl = found.inputUrl;
+    let finalUrl = found.url;
+
     if (data?.url && data.url !== found.url) {
-      await this.checkUrlIsValid(data.url);
+      finalUrl = (await this.checkUrlIsValid(data.url)).finalUrl;
+      inputUrl = data.url;
     }
 
     const created = await this.userFeedModel.create({
       ...found,
       _id: newFeedId,
       title: data?.title || found.title,
-      url: data?.url || found.url,
+      url: finalUrl,
+      inputUrl,
       connections: {},
     });
 
@@ -650,8 +666,9 @@ export class UserFeedsService {
     }
 
     if (updates.url) {
-      await this.checkUrlIsValid(updates.url);
-      useUpdateObject.$set!.url = updates.url;
+      const { finalUrl } = await this.checkUrlIsValid(updates.url);
+      useUpdateObject.$set!.url = finalUrl;
+      useUpdateObject.$set!.inputUrl = updates.url;
     }
 
     if (updates.disabledCode) {
@@ -1015,6 +1032,7 @@ export class UserFeedsService {
       },
     ];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const $match: FilterQuery<any> = {};
 
     if (filters?.ownedByUser) {
@@ -1406,18 +1424,67 @@ export class UserFeedsService {
     );
   }
 
-  private async checkUrlIsValid(url: string) {
-    await this.feedFetcherService.fetchFeed(url, {
-      fetchOptions: {
-        useServiceApi: true,
-        useServiceApiCache: false,
+  private async checkUrlIsValid(url: string): Promise<{ finalUrl: string }> {
+    const getArticlesResponse = await this.feedHandlerService.getArticles({
+      url,
+      formatter: {
+        options: {
+          dateFormat: undefined,
+          dateLocale: undefined,
+          dateTimezone: undefined,
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+        },
       },
+      limit: 1,
+      skip: 0,
+      findRssFromHtml: true,
     });
 
-    const bannedRecord = await this.feedsService.getBannedFeedDetails(url, "");
+    const {
+      requestStatus,
+      url: finalUrl,
+      attemptedToResolveFromHtml,
+    } = getArticlesResponse;
 
-    if (bannedRecord) {
-      throw new BannedFeedException();
+    if (requestStatus === GetArticlesResponseRequestStatus.Success) {
+      const bannedRecord = await this.feedsService.getBannedFeedDetails(
+        finalUrl || url,
+        ""
+      );
+
+      if (bannedRecord) {
+        throw new BannedFeedException();
+      }
+
+      return {
+        finalUrl: finalUrl || url,
+      };
+    } else if (requestStatus === GetArticlesResponseRequestStatus.TimedOut) {
+      throw new FeedFetchTimeoutException(`Feed fetch timed out`);
+    } else if (requestStatus === GetArticlesResponseRequestStatus.ParseError) {
+      if (attemptedToResolveFromHtml) {
+        throw new NoFeedOnHtmlPageException(`No feed found on HTML page`);
+      }
+
+      throw new FeedParseException(
+        `Feed host failed to return a valid, parseable feed`
+      );
+    } else if (
+      requestStatus === GetArticlesResponseRequestStatus.BadStatusCode
+    ) {
+      const statusCode = getArticlesResponse.response?.statusCode;
+
+      if (!statusCode) {
+        throw new FeedRequestException(`Non-200 status code returned`);
+      }
+
+      this.feedFetcherService.handleStatusCode(statusCode);
+    } else if (requestStatus === GetArticlesResponseRequestStatus.FetchError) {
+      throw new FeedRequestException(`Feed fetch failed`);
     }
+
+    throw new Error(`Unhandled request status ${requestStatus}`);
   }
 }

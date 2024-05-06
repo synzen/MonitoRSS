@@ -104,7 +104,7 @@ export const CloneUserFeedDialog = ({
           <ModalBody>
             <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.title}>
+                <FormControl isInvalid={!!errors.title} isRequired>
                   <FormLabel>Title</FormLabel>
                   <Controller
                     name="title"
@@ -113,8 +113,8 @@ export const CloneUserFeedDialog = ({
                   />
                   {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
                 </FormControl>
-                <FormControl isInvalid={!!errors.url}>
-                  <FormLabel>RSS Feed Link</FormLabel>
+                <FormControl isInvalid={!!errors.url} isRequired>
+                  <FormLabel>Feed Link</FormLabel>
                   <Controller
                     name="url"
                     control={control}

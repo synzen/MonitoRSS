@@ -58,6 +58,14 @@ class Result {
   @IsString({ each: true })
   @IsArray()
   selectedProperties: string[];
+
+  @IsString()
+  @IsOptional()
+  url?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  attemptedToResolveFromHtml?: boolean;
 }
 
 export class GetArticlesResponse {

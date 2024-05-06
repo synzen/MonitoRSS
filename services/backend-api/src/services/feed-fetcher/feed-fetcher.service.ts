@@ -221,7 +221,7 @@ export class FeedFetcherService {
     });
   }
 
-  private handleStatusCode(code: number) {
+  handleStatusCode(code: number) {
     if (code === HttpStatus.OK) {
       return;
     }

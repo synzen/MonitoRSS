@@ -32,6 +32,7 @@ import {
   AlertIcon,
   Tooltip,
   SimpleGrid,
+  chakra,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -227,6 +228,8 @@ export const UserFeed: React.FC = () => {
 
   const tabIndex = tabIndexBySearchParam.get(urlSearch);
 
+  const urlIsDifferentFromInput = feed?.inputUrl && feed?.url !== feed?.inputUrl;
+
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <UserFeedProvider feedId={feedId}>
@@ -285,17 +288,34 @@ export const UserFeed: React.FC = () => {
                               </Tooltip>
                             )}
                           </Flex>
-                          <Link
-                            color="gray.400"
-                            _hover={{
-                              color: "gray.200",
-                            }}
-                            href={feed?.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {feed?.url}
-                          </Link>
+                          <chakra.span color="whiteAlpha.700">
+                            <Link
+                              _hover={{
+                                color: "gray.200",
+                              }}
+                              href={feed?.inputUrl || feed?.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {feed?.inputUrl || feed?.url}
+                            </Link>
+                            {urlIsDifferentFromInput && (
+                              <>
+                                <span> (</span>
+                                <Link
+                                  _hover={{
+                                    color: "gray.200",
+                                  }}
+                                  href={feed?.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  RSS Feed
+                                </Link>
+                                <span>)</span>
+                              </>
+                            )}
+                          </chakra.span>
                         </Stack>
                         <Menu>
                           <MenuButton

@@ -124,4 +124,8 @@ export class GetUserFeedArticlesInputDto {
   @Type(() => FormatterDto)
   @ValidateNested()
   formatter: FormatterDto;
+
+  @IsBoolean()
+  @IsOptional()
+  findRssFromHtml?: boolean;
 }

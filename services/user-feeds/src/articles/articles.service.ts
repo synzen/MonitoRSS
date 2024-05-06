@@ -29,6 +29,7 @@ import { ExternalFeedPropertyDto } from "../article-formatter/types";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
 import { deflate, inflate } from "zlib";
 import { promisify } from "util";
+import { parse, valid } from "node-html-parser";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -37,6 +38,7 @@ const sha1 = createHash("sha1");
 interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
   externalFeedProperties?: ExternalFeedPropertyDto[];
+  findRssFromHtml?: boolean;
 }
 
 type XmlParsedArticlesOutput = {
@@ -127,8 +129,20 @@ export class ArticlesService {
 
   async fetchFeedArticles(
     url: string,
-    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
-  ) {
+    {
+      formatOptions,
+      externalFeedProperties,
+      findRssFromHtml,
+      redirectedFromHtml,
+    }: FetchFeedArticleOptions & {
+      findRssFromHtml?: boolean;
+      redirectedFromHtml?: boolean;
+    }
+  ): Promise<{
+    output: XmlParsedArticlesOutput | null;
+    url: string;
+    attemptedToResolveFromHtml?: boolean;
+  }> {
     const cachedArticles = await this.getFeedArticlesFromCache({
       url,
       options: { formatOptions, externalFeedProperties },
@@ -140,7 +154,11 @@ export class ArticlesService {
         options: { formatOptions, externalFeedProperties },
       });
 
-      return cachedArticles;
+      return {
+        output: cachedArticles,
+        url,
+        attemptedToResolveFromHtml: redirectedFromHtml,
+      };
     }
 
     const response = await this.feedFetcherService.fetch(url, {
@@ -148,22 +166,49 @@ export class ArticlesService {
     });
 
     if (!response.body) {
-      return null;
+      return {
+        output: null,
+        url,
+        attemptedToResolveFromHtml: redirectedFromHtml,
+      };
     }
 
-    const fromXml = await this.getArticlesFromXml(response.body, {
-      formatOptions,
-      useParserRules: getParserRules({ url }),
-      externalFeedProperties,
-    });
+    try {
+      const fromXml = await this.getArticlesFromXml(response.body, {
+        formatOptions,
+        useParserRules: getParserRules({ url }),
+        externalFeedProperties,
+        redirectedFromHtml,
+      });
 
-    await this.setFeedArticlesInCache({
-      url,
-      options: { formatOptions, externalFeedProperties },
-      data: fromXml,
-    });
+      await this.setFeedArticlesInCache({
+        url,
+        options: { formatOptions, externalFeedProperties },
+        data: fromXml,
+      });
 
-    return fromXml;
+      return {
+        output: fromXml,
+        url,
+        attemptedToResolveFromHtml: redirectedFromHtml,
+      };
+    } catch (err) {
+      if (err instanceof InvalidFeedException && findRssFromHtml) {
+        const rssUrl = this.extractRssFromHtml(response.body);
+
+        if (rssUrl) {
+          return this.fetchFeedArticles(rssUrl, {
+            formatOptions,
+            externalFeedProperties,
+            redirectedFromHtml: true,
+          });
+        } else {
+          err.redirectedFromHtml = true;
+        }
+      }
+
+      throw err;
+    }
   }
 
   async fetchFeedArticle(
@@ -171,7 +216,7 @@ export class ArticlesService {
     id: string,
     { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
   ) {
-    const result = await this.fetchFeedArticles(url, {
+    const { output: result } = await this.fetchFeedArticles(url, {
       formatOptions,
       externalFeedProperties,
     });
@@ -201,7 +246,7 @@ export class ArticlesService {
     url: string,
     { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
   ) {
-    const result = await this.fetchFeedArticles(url, {
+    const { output: result } = await this.fetchFeedArticles(url, {
       formatOptions,
       externalFeedProperties,
     });
@@ -645,6 +690,7 @@ export class ArticlesService {
       formatOptions: UserFeedFormatOptions;
       useParserRules: PostProcessParserRule[] | undefined;
       externalFeedProperties?: Array<ExternalFeedProperty>;
+      redirectedFromHtml?: boolean;
     }
   ): Promise<XmlParsedArticlesOutput> {
     const feedparser = new FeedParser({});
@@ -663,7 +709,11 @@ export class ArticlesService {
           err.message === "Not a feed" ||
           err.message.startsWith("Unexpected end")
         ) {
-          reject(new InvalidFeedException("Invalid feed"));
+          reject(
+            new InvalidFeedException("Invalid feed", {
+              redirectedFromHtml: options.redirectedFromHtml,
+            })
+          );
         } else {
           reject(err);
         }
@@ -907,5 +957,21 @@ export class ArticlesService {
         })
       )
       .digest("hex")}`;
+  }
+
+  private extractRssFromHtml(html: string) {
+    if (!valid(html)) {
+      return null;
+    }
+
+    const root = parse(html);
+
+    const elem = root.querySelector('link[type="application/rss+xml"]');
+
+    if (!elem) {
+      return null;
+    }
+
+    return elem.getAttribute("href") || null;
   }
 }

@@ -36,6 +36,11 @@ export class UserFeed {
   title: string;
 
   @Prop({
+    required: false,
+  })
+  inputUrl?: string;
+
+  @Prop({
     required: true,
   })
   url: string;

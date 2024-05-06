@@ -19,7 +19,10 @@ import { ArticleFiltersService } from "../article-filters/article-filters.servic
 import { ArticleFormatterService } from "../article-formatter/article-formatter.service";
 import { externalFeedPropertySchema } from "../article-parser/constants";
 import { ArticlesService } from "../articles/articles.service";
-import { InvalidFeedException } from "../articles/exceptions";
+import {
+  FeedParseTimeoutException,
+  InvalidFeedException,
+} from "../articles/exceptions";
 import { DeliveryRecordService } from "../delivery-record/delivery-record.service";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { DiscordEmbed } from "../delivery/types";
@@ -102,10 +105,15 @@ export class FeedsController {
       selectProperties,
       selectPropertyTypes,
       formatter,
+      findRssFromHtml,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     try {
-      const fetchResult = await this.articlesService.fetchFeedArticles(url, {
+      const {
+        output: fetchResult,
+        url: resolvedUrl,
+        attemptedToResolveFromHtml,
+      } = await this.articlesService.fetchFeedArticles(url, {
         formatOptions: {
           dateFormat: formatter.options.dateFormat,
           dateTimezone: formatter.options.dateTimezone,
@@ -113,6 +121,7 @@ export class FeedsController {
           dateLocale: formatter.options.dateLocale,
         },
         externalFeedProperties: formatter.externalProperties || [],
+        findRssFromHtml,
       });
 
       if (!fetchResult) {
@@ -122,6 +131,8 @@ export class FeedsController {
             articles: [],
             totalArticles: 0,
             selectedProperties: [],
+            url: resolvedUrl,
+            attemptedToResolveFromHtml,
           },
         };
       }
@@ -133,6 +144,8 @@ export class FeedsController {
             articles: [],
             totalArticles: 0,
             selectedProperties: [],
+            url: resolvedUrl,
+            attemptedToResolveFromHtml,
           },
         };
       }
@@ -167,6 +180,8 @@ export class FeedsController {
           totalArticles,
           filterStatuses: filterEvalResults,
           selectedProperties: properties,
+          url: resolvedUrl,
+          attemptedToResolveFromHtml,
         },
       };
     } catch (err) {
@@ -180,6 +195,11 @@ export class FeedsController {
             articles: [],
             totalArticles: 0,
             selectedProperties: [],
+            url,
+            attemptedToResolveFromHtml:
+              err instanceof InvalidFeedException
+                ? err.redirectedFromHtml
+                : false,
           },
         };
       }
@@ -191,6 +211,8 @@ export class FeedsController {
             articles: [],
             totalArticles: 0,
             selectedProperties: [],
+            url,
+            attemptedToResolveFromHtml: false,
           },
         };
       }
@@ -205,17 +227,24 @@ export class FeedsController {
               statusCode: err.statusCode,
             },
             selectedProperties: [],
+            url,
+            attemptedToResolveFromHtml: false,
           },
         };
       }
 
-      if (err instanceof FeedRequestTimedOutException) {
+      if (
+        err instanceof FeedRequestTimedOutException ||
+        err instanceof FeedParseTimeoutException
+      ) {
         return {
           result: {
             requestStatus: GetFeedArticlesRequestStatus.TimedOut,
             articles: [],
             totalArticles: 0,
             selectedProperties: [],
+            url,
+            attemptedToResolveFromHtml: false,
           },
         };
       }

@@ -9,6 +9,7 @@ export const UserFeedSchema = object({
   allowLegacyReversion: bool(),
   title: string().required(),
   url: string().required(),
+  inputUrl: string(),
   sharedAccessDetails: object({
     inviteId: string().required(),
   }).optional(),

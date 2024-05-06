@@ -17,7 +17,6 @@ import {
   CreateFilterValidationResponse,
   CreatePreviewInput,
   GetArticlesInput,
-  GetArticlesOutput,
   GetArticlesResponse,
   GetArticlesResponseRequestStatus,
 } from "./types";
@@ -268,7 +267,7 @@ describe("FeedHandlerService", () => {
 
       const result = await service.getArticles(validPayload);
 
-      const expectedResult: GetArticlesOutput = {
+      const expectedResult: GetArticlesResponse["result"] = {
         requestStatus: GetArticlesResponseRequestStatus.Success,
         articles: [],
         totalArticles: 0,

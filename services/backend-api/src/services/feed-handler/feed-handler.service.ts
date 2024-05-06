@@ -20,7 +20,6 @@ import {
   CreateFilterValidationResponse,
   CreatePreviewInput,
   GetArticlesInput,
-  GetArticlesOutput,
   GetArticlesResponse,
   GetDeliveryCountResult,
   SendTestArticleInput,
@@ -235,7 +234,8 @@ export class FeedHandlerService {
     selectProperties,
     selectPropertyTypes,
     formatter,
-  }: GetArticlesInput): Promise<GetArticlesOutput> {
+    findRssFromHtml,
+  }: GetArticlesInput): Promise<GetArticlesResponse["result"]> {
     const body = {
       url,
       limit,
@@ -245,6 +245,7 @@ export class FeedHandlerService {
       selectProperties,
       selectPropertyTypes,
       formatter,
+      findRssFromHtml,
     };
 
     const res = await fetch(`${this.host}/v1/user-feeds/get-articles`, {
