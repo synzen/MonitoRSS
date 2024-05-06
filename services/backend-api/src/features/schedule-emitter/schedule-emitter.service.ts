@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
-import logger from "../../utils/logger";
+import logger, { ENABLE_DEBUG_LOGS } from "../../utils/logger";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 
@@ -18,12 +18,19 @@ export class ScheduleEmitterService {
   async syncTimerStates(
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
-    const allRefreshRatesSeconds: number[] = await this.userFeedModel
-      .distinct("refreshRateSeconds")
-      .exec();
-    const allUserRefreshRateSeconds: number[] = await this.userFeedModel
-      .distinct("userRefreshRateSeconds")
-      .exec();
+    const [allRefreshRatesSeconds, allUserRefreshRateSeconds] =
+      await Promise.all([
+        this.userFeedModel.distinct("refreshRateSeconds").exec(),
+        this.userFeedModel.distinct("userRefreshRateSeconds").exec(),
+      ]);
+
+    if (ENABLE_DEBUG_LOGS) {
+      const totalFeeds = await this.userFeedModel.countDocuments().exec();
+
+      logger.debug(
+        `Extracting refresh rates from ${totalFeeds} feeds to sync timer states`
+      );
+    }
 
     const setOfRefreshRatesMs = new Set([
       ...allRefreshRatesSeconds
