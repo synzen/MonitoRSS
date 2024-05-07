@@ -117,17 +117,10 @@ export class UsersService {
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
 
-    const [{ maxPatreonPledge, allowExternalProperties }, userFeed] =
-      await Promise.all([
-        this.supportersService.getBenefitsOfDiscordUser(discordUserId),
-        this.userFeedModel
-          .findOne({ "user.discordUserId": discordUserId })
-          .select("_id")
-          .lean(),
-      ]);
+    const { maxPatreonPledge, allowExternalProperties } =
+      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
     const isOnPatreon = !!maxPatreonPledge;
-    const migratedToPersonalFeeds = !!userFeed;
 
     if (!user.email) {
       return {
@@ -139,7 +132,7 @@ export class UsersService {
           availableFormatted: "0",
         },
         subscription: freeSubscription,
-        migratedToPersonalFeeds,
+        migratedToPersonalFeeds: true,
         supporterFeatures: {
           exrternalProperties: {
             enabled: allowExternalProperties,
@@ -180,7 +173,7 @@ export class UsersService {
         },
         subscription: freeSubscription,
         isOnPatreon,
-        migratedToPersonalFeeds,
+        migratedToPersonalFeeds: true,
         supporterFeatures: {
           exrternalProperties: {
             enabled: allowExternalProperties,
@@ -213,7 +206,7 @@ export class UsersService {
         updatedAt: subscription.updatedAt,
       },
       isOnPatreon,
-      migratedToPersonalFeeds,
+      migratedToPersonalFeeds: true,
       supporterFeatures: {
         exrternalProperties: {
           enabled: allowExternalProperties,

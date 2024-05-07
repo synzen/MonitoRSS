@@ -49,7 +49,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
         maxWidth="1400px"
         paddingX={{ base: 4, lg: 12 }}
       >
-        <HStack overflow="hidden" gap={4}>
+        <HStack overflow="hidden" gap={8}>
           <Flex alignItems="center" overflow="hidden">
             {discordBotData && (
               <Flex alignItems="center" paddingBottom="1" overflow="hidden">
@@ -82,13 +82,6 @@ export const NewHeader = ({ invertBackground }: Props) => {
             {error && <Alert status="error">{error.message}</Alert>}
           </Flex>
           <HStack>
-            <Button
-              variant="ghost"
-              colorScheme={pathname === pages.userFeeds() ? "blue" : undefined}
-              onClick={() => navigate(pages.userFeeds())}
-            >
-              Home
-            </Button>
             {userMe && !userMe?.result.migratedToPersonalFeeds && (
               <Button
                 variant="ghost"
