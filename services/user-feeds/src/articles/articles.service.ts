@@ -748,64 +748,76 @@ export class ArticlesService {
           );
         }
 
-        const mappedArticles: Article[] = await Promise.all(
-          rawArticles.map(async (rawArticle) => {
-            const id = ArticleIDResolver.getIDTypeValue(
-              rawArticle as never,
-              idType
-            );
+        try {
+          const mappedArticles: Article[] = await Promise.all(
+            rawArticles.map(async (rawArticle) => {
+              const id = ArticleIDResolver.getIDTypeValue(
+                rawArticle as never,
+                idType
+              );
 
-            const { flattened, injectArticleContent } =
-              await this.articleParserService.flatten(rawArticle as never, {
-                formatOptions: options.formatOptions,
-                useParserRules: options.useParserRules,
-                externalFeedProperties: options.externalFeedProperties,
-              });
+              const { flattened, injectArticleContent } =
+                await this.articleParserService.flatten(rawArticle as never, {
+                  formatOptions: options.formatOptions,
+                  useParserRules: options.useParserRules,
+                  externalFeedProperties: options.externalFeedProperties,
+                });
 
-            if (rawArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
-              await injectArticleContent(flattened);
+              if (rawArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
+                await injectArticleContent(flattened);
+              }
+
+              console.log(rawArticle);
+
+              return {
+                flattened: {
+                  ...flattened,
+                  id,
+                  idHash: sha1.copy().update(id).digest("hex"),
+                },
+                raw: {
+                  date:
+                    !!rawArticle.date && dayjs(rawArticle.date).isValid()
+                      ? rawArticle.date.toISOString()
+                      : undefined,
+                  pubdate:
+                    !!rawArticle.pubdate && dayjs(rawArticle.pubdate).isValid()
+                      ? rawArticle.pubdate.toISOString()
+                      : undefined,
+                },
+              };
+            })
+          );
+
+          // check for duplicate id hashes
+          const idHashes = new Set<string>();
+
+          for (const article of mappedArticles) {
+            const idHash = article.flattened.idHash;
+
+            if (!idHash) {
+              return reject(new Error("Some articles are missing id hash"));
             }
 
-            return {
-              flattened: {
-                ...flattened,
-                id,
-                idHash: sha1.copy().update(id).digest("hex"),
-              },
-              raw: {
-                date: rawArticle.date?.toISOString(),
-                pubdate: rawArticle.pubdate?.toISOString(),
-              },
-            };
-          })
-        );
+            if (idHashes.has(article.flattened.idHash)) {
+              logger.warn(
+                `Feed has duplicate article id hash: ${article.flattened.idHash}`,
+                {
+                  id: article.flattened.id,
+                  idHash,
+                }
+              );
+            }
 
-        // check for duplicate id hashes
-        const idHashes = new Set<string>();
-
-        for (const article of mappedArticles) {
-          const idHash = article.flattened.idHash;
-
-          if (!idHash) {
-            return reject(new Error("Some articles are missing id hash"));
+            idHashes.add(article.flattened.idHash);
           }
 
-          if (idHashes.has(article.flattened.idHash)) {
-            logger.warn(
-              `Feed has duplicate article id hash: ${article.flattened.idHash}`,
-              {
-                id: article.flattened.id,
-                idHash,
-              }
-            );
-          }
-
-          idHashes.add(article.flattened.idHash);
+          resolve({
+            articles: mappedArticles,
+          });
+        } catch (err) {
+          reject(err);
         }
-
-        resolve({
-          articles: mappedArticles,
-        });
       });
     });
 
