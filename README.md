@@ -75,5 +75,5 @@ It's recommended that you don't delete your v6 files until you've confirmed that
 2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
 3. Run `docker compose --parallel 1 up -d --build`
     - If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker compose --parallel 1 up -d`
-5. Access the control panel via http://localhost:8000 and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
+5. Access the control panel via http://localhost:8000/servers and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
 6. After verifying that all is working as expected, you may delete your v6 files.
