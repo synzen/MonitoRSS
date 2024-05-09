@@ -25,6 +25,8 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "@/features/discordServers";
+import { notifySuccess } from "../../../../utils/notifySuccess";
+import { notifyError } from "../../../../utils/notifyError";
 
 const formSchema = object({
   name: string().required(),
@@ -79,14 +81,19 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
     threadId,
     serverId: inputServerId,
   }: FormData) => {
-    if (type === "thread" && threadId) {
-      await onUpdate({ channelId: threadId, name, serverId: inputServerId });
-    } else {
-      await onUpdate({ channelId: inputChannelId, name, serverId: inputServerId });
-    }
+    try {
+      if (type === "thread" && threadId) {
+        await onUpdate({ channelId: threadId, name, serverId: inputServerId });
+      } else {
+        await onUpdate({ channelId: inputChannelId, name, serverId: inputServerId });
+      }
 
-    onClose();
-    reset({ channelId, name, threadId });
+      onClose();
+      reset({ channelId, name, threadId });
+      notifySuccess(t("common.success.savedChanges"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
   };
 
   useEffect(() => {

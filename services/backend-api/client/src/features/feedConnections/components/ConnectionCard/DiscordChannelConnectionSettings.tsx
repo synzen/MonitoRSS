@@ -55,17 +55,11 @@ export const DiscordChannelConnectionSettings = ({
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId: connection.id,
-        details,
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-      throw err;
-    }
+    await mutateAsync({
+      feedId,
+      connectionId: connection.id,
+      details,
+    });
   };
 
   return (
@@ -166,11 +160,16 @@ export const DiscordChannelConnectionSettings = ({
               }
               okText={t("common.buttons.disable")}
               colorScheme="blue"
-              onConfirm={async () =>
-                onUpdate({
-                  disabledCode: FeedConnectionDisabledCode.Manual,
-                })
-              }
+              onConfirm={async () => {
+                try {
+                  await onUpdate({
+                    disabledCode: FeedConnectionDisabledCode.Manual,
+                  });
+                  notifySuccess(t("common.success.savedChanges"));
+                } catch (err) {
+                  notifyError(t("common.errors.somethingWentWrong"), err as Error);
+                }
+              }}
             />
           )}
           {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
@@ -180,11 +179,16 @@ export const DiscordChannelConnectionSettings = ({
               trigger={<MenuItem isDisabled={updateStatus === "loading"}>Enable</MenuItem>}
               okText="Enable"
               colorScheme="blue"
-              onConfirm={async () =>
-                onUpdate({
-                  disabledCode: null,
-                })
-              }
+              onConfirm={async () => {
+                try {
+                  await onUpdate({
+                    disabledCode: null,
+                  });
+                  notifySuccess(t("common.success.savedChanges"));
+                } catch (err) {
+                  notifyError(t("common.errors.somethingWentWrong"), err as Error);
+                }
+              }}
             />
           )}
           {connection && connection.details.channel && (

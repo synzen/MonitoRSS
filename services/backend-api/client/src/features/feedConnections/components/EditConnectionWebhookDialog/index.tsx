@@ -28,6 +28,8 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
+import { notifyError } from "../../../../utils/notifyError";
+import { notifySuccess } from "../../../../utils/notifySuccess";
 
 const formSchema = object({
   name: string().optional(),
@@ -79,18 +81,23 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
   const onSubmit = async (formData: FormData) => {
     const { name, serverId: inputServerId, applicationWebhook } = formData;
 
-    await onUpdate({
-      name,
-      serverId: inputServerId,
-      applicationWebhook: {
-        name: applicationWebhook.name,
-        channelId: applicationWebhook.channelId,
-        iconUrl: applicationWebhook.iconUrl,
-        threadId: applicationWebhook.threadId,
-      },
-    });
-    onClose();
-    reset(formData);
+    try {
+      await onUpdate({
+        name,
+        serverId: inputServerId,
+        applicationWebhook: {
+          name: applicationWebhook.name,
+          channelId: applicationWebhook.channelId,
+          iconUrl: applicationWebhook.iconUrl,
+          threadId: applicationWebhook.threadId,
+        },
+      });
+      onClose();
+      reset(formData);
+      notifySuccess(t("common.success.savedChanges"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
   };
 
   useEffect(() => {
