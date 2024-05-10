@@ -250,7 +250,6 @@ services:
       - mongo
       - rabbitmq-broker
     environment:
-      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
       - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
       - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
       - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
