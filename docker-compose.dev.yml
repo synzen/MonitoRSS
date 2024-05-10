@@ -198,6 +198,7 @@ services:
     environment:
       - BACKEND_API_NODE_ENV=local
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
+      - LOG_LEVEL=debug
     command: npm run start:local
     networks:
       - monitorss-default

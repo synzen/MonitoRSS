@@ -24,6 +24,7 @@ import { ErrorReportsController } from "./error-reports.controller";
 import { MessageBrokerEventsModule } from "./features/message-broker-events/message-broker-events.module";
 import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions/supporter-subscriptions.module";
 import { MongoMigrationsModule } from "./features/mongo-migrations/mongo-migrations.module";
+import logger from "./utils/logger";
 
 @Module({
   imports: [
@@ -47,6 +48,9 @@ import { MongoMigrationsModule } from "./features/mongo-migrations/mongo-migrati
 export class AppModule {
   static forRoot(): DynamicModule {
     const configValues = config();
+
+    const mongoUri = new URL(configValues.BACKEND_API_MONGODB_URI);
+    logger.debug(`Connecting to MongoDB at ${mongoUri.host}`);
 
     return {
       module: AppModule,
