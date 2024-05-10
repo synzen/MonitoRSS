@@ -164,7 +164,7 @@ services:
       feed-requests-postgres-db:
         condition: service_started
     healthcheck:
-      test: "wget --no-verbose --tries=1 --spider http://localhost:5000/v1/feed-requests/health || exit 1"
+      test: "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/v1/feed-requests/health || exit 1"
       interval: 5s
       timeout: 5s
       retries: 3
@@ -194,7 +194,7 @@ services:
       - feed-requests-service
       - rabbitmq-broker
     healthcheck:
-      test: "wget --no-verbose --tries=1 --spider http://localhost:5000/v1/user-feeds/health || exit 1"
+      test: "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/v1/user-feeds/health || exit 1"
       interval: 5s
       timeout: 5s
       retries: 3
