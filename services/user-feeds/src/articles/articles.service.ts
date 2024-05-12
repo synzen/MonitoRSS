@@ -767,8 +767,6 @@ export class ArticlesService {
                 await injectArticleContent(flattened);
               }
 
-              console.log(rawArticle);
-
               return {
                 flattened: {
                   ...flattened,
