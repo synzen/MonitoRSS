@@ -16,6 +16,7 @@ const logger = setupLogger({
       }
     : undefined,
   enableDebugLogs: process.env.LOG_LEVEL === 'debug',
+  disableConsole: !!datadogApiKey,
 });
 
 export default logger;

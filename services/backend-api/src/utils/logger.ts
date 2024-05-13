@@ -12,6 +12,7 @@ const logger = setupLogger({
     service: process.env.SERVICE_NAME || "monitorss-web-v2",
   },
   enableDebugLogs: ENABLE_DEBUG_LOGS,
+  disableConsole: !!configValues.BACKEND_API_DATADOG_API_KEY,
 });
 
 export default logger;

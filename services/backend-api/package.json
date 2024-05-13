@@ -34,7 +34,7 @@
     "@fastify/secure-session": "7.5.1",
     "@fastify/static": "^7.0.3",
     "@golevelup/nestjs-rabbitmq": "^3.4.0",
-    "@monitorss/logger": "^1.1.1",
+    "@monitorss/logger": "^1.1.2",
     "@nestjs/cache-manager": "^2.2.2",
     "@nestjs/common": "^10.3.8",
     "@nestjs/config": "^3.2.2",

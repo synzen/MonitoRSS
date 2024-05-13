@@ -37,7 +37,7 @@
     "@mikro-orm/core": "^5.7.12",
     "@mikro-orm/nestjs": "^5.2.0",
     "@mikro-orm/postgresql": "^5.7.12",
-    "@monitorss/logger": "^1.1.1",
+    "@monitorss/logger": "^1.1.2",
     "@nestjs/common": "^10.1.3",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.1.3",

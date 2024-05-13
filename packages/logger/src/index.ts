@@ -59,6 +59,7 @@ interface Config {
    * The Node.js environment (typically process.env.NODE_ENV)
    */
   env: string,
+  disableConsole?: boolean
   /**
    * Datadog configuration variables. If undefined, datadog logging will be disabled.
    */
@@ -91,13 +92,13 @@ const setupLogger = (config: Config) => {
   const debugTransports: LoggerType[] = config.enableDebugLogs
     ? [consoleLogger]
     : [];
-  const infoTransports: LoggerType[] = [
+  const infoTransports: LoggerType[] = config.disableConsole ? [] : [
     consoleLogger,
   ];
-  const warnTransports: LoggerType[] = [
+  const warnTransports: LoggerType[] = config.disableConsole ? [] : [
     consoleLogger,
   ];
-  const errorTransports: LoggerType[] = [
+  const errorTransports: LoggerType[] = config.disableConsole ? [] : [
     consoleLogger,
   ];
   const datadogTransports: LoggerType[] = [];
