@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getApplicationContext } from "..";
 import { UserFeed, UserFeedModel } from "../../features/user-feeds/entities";

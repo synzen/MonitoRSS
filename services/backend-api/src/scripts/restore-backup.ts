@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { getApplicationContext } from ".";
 import { DiscordServersService } from "../features/discord-servers/discord-servers.service";
 import { program } from "commander";

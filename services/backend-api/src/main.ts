@@ -153,6 +153,7 @@ import "dayjs/locale/zh-tw";
 import "dayjs/locale/zh";
 import "dayjs/locale/rw";
 import "dayjs/locale/ru";
+import logger from "./utils/logger";
 
 /**
  * Required  because Nest's app.select() does not work for dynamic modules
@@ -214,7 +215,7 @@ async function bootstrap() {
 
   const port = config.getOrThrow("BACKEND_API_PORT");
 
-  console.log(`NestJS is listening on port ${port}`);
+  logger.info(`NestJS is listening on port ${port}`);
 
   await app.listen(port, "0.0.0.0");
 }

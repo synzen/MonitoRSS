@@ -99,7 +99,7 @@ describe("handle-schedule", () => {
 
   describe("handleRefreshRate", () => {
     it("calls the handlers for feeds with default refresh rate", async () => {
-      const createdFeeds = await userFeedModel.create([
+      await userFeedModel.create([
         {
           title: "feed-title",
           url: "new-york-times.com",

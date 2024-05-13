@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { getApplicationContext } from "..";
 import { UserFeed, UserFeedModel } from "../../features/user-feeds/entities";
 import { getModelToken } from "@nestjs/mongoose";

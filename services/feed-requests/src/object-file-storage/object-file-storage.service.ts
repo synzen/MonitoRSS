@@ -32,8 +32,6 @@ export class ObjectFileStorageService {
 
       return await response.Body?.transformToString();
     } catch (err) {
-      console.warn(key, err);
-
       if (err instanceof NoSuchKey) {
         return '';
       }

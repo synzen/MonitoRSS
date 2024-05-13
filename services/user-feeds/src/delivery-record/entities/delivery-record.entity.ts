@@ -5,7 +5,6 @@ import {
   Enum,
   Index,
   OneToOne,
-  Unique,
 } from "@mikro-orm/core";
 import { ArticleDeliveryStatus } from "../../shared";
 import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-content-type.type";

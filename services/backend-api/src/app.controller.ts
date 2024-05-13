@@ -36,7 +36,7 @@ export class AppController {
       const envelope = req.body as Buffer;
       const pieces = envelope.toString().split("\n");
       const header = JSON.parse(pieces[0]);
-      const { hostname, pathname, username } = new URL(header.dsn);
+      const { hostname, pathname } = new URL(header.dsn);
       const projectId = pathname.replace("/", "");
 
       if (hostname !== sentryHost) {

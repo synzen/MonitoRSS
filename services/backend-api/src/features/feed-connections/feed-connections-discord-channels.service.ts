@@ -1159,8 +1159,6 @@ export class FeedConnectionsDiscordChannelsService {
 
       return { webhook, channel };
     } catch (err) {
-      console.log("check err", err);
-
       if (
         err instanceof DiscordAPIError &&
         err.statusCode === HttpStatus.FORBIDDEN
@@ -1199,8 +1197,6 @@ export class FeedConnectionsDiscordChannelsService {
         });
       }
     } catch (err) {
-      console.log("crreate err", err);
-
       if (
         err instanceof DiscordAPIError &&
         err.statusCode === HttpStatus.FORBIDDEN

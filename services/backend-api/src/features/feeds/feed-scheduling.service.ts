@@ -77,10 +77,6 @@ export class FeedSchedulingService {
       );
 
       if (!feedServerBenefits) {
-        console.error(
-          `Missing calculated server benefits for ${feed.guild} when determing feed refresh rates`
-        );
-
         return this.defaultRefreshRateSeconds;
       }
 

@@ -15,7 +15,7 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [NoLegacyFeedsToConvertException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.NO_LEGACY_FEEDS_TO_CONVERT,
-    }
+    },
   };
 
 @Catch(StandardException)

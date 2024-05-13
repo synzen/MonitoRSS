@@ -23,6 +23,7 @@ module.exports = {
         "endOfLine": "auto"
       },
     ],
+    'no-console': 'error',
     'react/jsx-filename-extension': 'off',
     "newline-before-return": "error",
     'curly': 'error',

@@ -17,6 +17,7 @@ const devLog = winston.createLogger({
 let datadogLog: winston.Logger;
 
 if (config.datadog) {
+  // eslint-disable-next-line no-console
   console.log('Setting up datadog')
   datadogLog = winston.createLogger({
     level: 'info',

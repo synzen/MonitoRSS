@@ -30,6 +30,7 @@ module.exports = {
     'curly': 'error',
     "eol-last": ["error"],
     "@typescript-eslint/explicit-module-boundary-types": "off",
+    'no-console': 'error',
     "padding-line-between-statements": [
       "error",
       {

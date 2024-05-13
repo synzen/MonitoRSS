@@ -24,6 +24,7 @@ import { Metadata } from "@grpc/grpc-js";
 export class FeedFetcherService implements OnModuleInit {
   SERVICE_HOST: string;
   API_KEY: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   feedFetcherGrpcPackage: any;
 
   constructor(
