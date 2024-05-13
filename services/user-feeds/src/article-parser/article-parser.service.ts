@@ -214,9 +214,11 @@ export class ArticleParserService {
           .locale(formatOptions?.dateLocale || "en");
         let stringDate = dateVal.format();
 
-        if (formatOptions?.dateFormat) {
-          stringDate = dateVal.format(formatOptions.dateFormat);
-        }
+        try {
+          if (formatOptions?.dateFormat) {
+            stringDate = dateVal.format(formatOptions.dateFormat);
+          }
+        } catch (err) {}
 
         newRecord[key] = stringDate;
 
