@@ -535,7 +535,7 @@ export class FeedEventHandlerService {
           `Error while handling feed event: ${(err as Error).message}`,
           {
             err,
-            event,
+            feedId: event.data.feed.id,
             stack: (err as Error).stack,
           }
         );
