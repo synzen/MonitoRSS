@@ -18,6 +18,7 @@ import {
   Stack,
   Table,
   TableContainer,
+  Tag,
   Tbody,
   Td,
   Text,
@@ -68,6 +69,9 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
     },
   });
 
+  // @ts-ignore
+  const linkExists = !!articlesData?.result.articles[0]?.link;
+
   const article = articlesData?.result.articles[0];
   const articleObjectEntries = Object.entries(article ?? {});
 
@@ -80,6 +84,12 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
       setSelected("");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && linkExists && !selected) {
+      setSelected("link");
+    }
+  }, [linkExists, selected, isOpen]);
 
   return (
     <>
@@ -149,6 +159,11 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
                                     <chakra.label htmlFor={`field-${field}`}>
                                       <Code>{field}</Code>
                                     </chakra.label>
+                                    {field === "link" && (
+                                      <Tag ml={3} colorScheme="blue" size="sm">
+                                        Recommended
+                                      </Tag>
+                                    )}
                                   </Skeleton>
                                 </Td>
                                 <Td whiteSpace="nowrap">

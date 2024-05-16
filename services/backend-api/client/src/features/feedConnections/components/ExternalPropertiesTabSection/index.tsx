@@ -86,6 +86,7 @@ const ExternalPropertyForm = ({
     control,
     formState: { errors },
     watch,
+    setValue,
   } = useFormContext<FormData>();
   const externalProperty = watch(`externalProperties.${externalPropertyIndex}`);
   const isNewSelector =
@@ -219,10 +220,29 @@ const ExternalPropertyForm = ({
                   value: field.value,
                 }}
                 noOptionsMessage={() => null}
-                onChange={(option) => option && field.onChange(option.label)}
+                onChange={(option) => {
+                  if (!option) {
+                    return;
+                  }
+
+                  field.onChange(option.label);
+                  setValue(
+                    `externalProperties.${externalPropertyIndex}.label`,
+                    // @ts-ignore
+                    option.displayLabel
+                  );
+
+                  if (!showPreview) {
+                    setShowPreview(true);
+                  }
+                }}
                 onInputChange={(value, action) => {
                   if (action.action === "input-change") {
                     field.onChange(value);
+
+                    if (!showPreview) {
+                      setShowPreview(true);
+                    }
                   }
                 }}
                 styles={{
@@ -239,12 +259,14 @@ const ExternalPropertyForm = ({
                   },
                 }}
                 formatCreateLabel={(input) => `Custom: ${input}`}
-                formatOptionLabel={({ label }) =>
-                  CssSelectorFormattedOption({
+                formatOptionLabel={(option) => {
+                  const { label } = option as { label: string };
+
+                  return CssSelectorFormattedOption({
                     label,
                     isSelected: field.value === label,
-                  })
-                }
+                  });
+                }}
                 hideSelectedOptions
                 options={[
                   {
@@ -253,16 +275,19 @@ const ExternalPropertyForm = ({
                       {
                         label: "img",
                         value: "img",
+                        displayLabel: "img",
                       },
                       {
                         label: "a",
                         value: "a",
+                        displayLabel: "link",
                       },
                       {
                         label: 'meta[property="og:image"]',
                         value: 'meta[property="og:image"]',
+                        displayLabel: "ogimage",
                       },
-                    ],
+                    ] as any,
                   },
                 ]}
               />
