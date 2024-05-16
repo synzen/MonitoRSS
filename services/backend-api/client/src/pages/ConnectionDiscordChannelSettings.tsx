@@ -42,19 +42,13 @@ import { notifySuccess } from "../utils/notifySuccess";
 import { DeliveryRateLimitsTabSection } from "../features/feedConnections/components/DeliveryRateLimitsTabSection";
 import { useDiscordWebhook } from "../features/discordWebhooks";
 import { DiscordChannelConnectionSettings } from "../features/feedConnections/components/ConnectionCard/DiscordChannelConnectionSettings";
-
-enum TabSearchParam {
-  Message = "?view=message",
-  Filters = "?view=filters",
-  RateLimits = "?view=rate-limits",
-  CustomPlaceholders = "?view=custom-placeholders",
-}
+import { UserFeedConnectionTabSearchParam } from "../constants/userFeedConnectionTabSearchParam";
 
 const tabIndexBySearchParam = new Map<string, number>([
-  [TabSearchParam.Message, 0],
-  [TabSearchParam.Filters, 1],
-  [TabSearchParam.RateLimits, 2],
-  [TabSearchParam.CustomPlaceholders, 3],
+  [UserFeedConnectionTabSearchParam.Message, 0],
+  [UserFeedConnectionTabSearchParam.Filters, 1],
+  [UserFeedConnectionTabSearchParam.RateLimits, 2],
+  [UserFeedConnectionTabSearchParam.CustomPlaceholders, 3],
 ]);
 
 const getPrettyChannelType = (details?: FeedDiscordChannelConnection["details"]) => {
@@ -137,12 +131,14 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
     }
   };
 
+  const tabIndex = tabIndexBySearchParam.get(urlSearch);
+
   return (
     <DashboardContentV2
       error={feedError || connectionError}
       loading={feedStatus === "loading" || connectionStatus === "loading"}
     >
-      <Tabs isLazy isFitted defaultIndex={tabIndexBySearchParam.get(urlSearch) || 0}>
+      <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined}>
         <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
           <BoxConstrained.Container spacing={12}>
             <Stack spacing={6}>
@@ -286,7 +282,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <Tab
                 onClick={() => {
                   navigate({
-                    search: TabSearchParam.Message,
+                    search: UserFeedConnectionTabSearchParam.Message,
                   });
                 }}
               >
@@ -295,19 +291,21 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
               <Tab
                 onClick={() => {
                   navigate({
-                    search: TabSearchParam.Filters,
+                    search: UserFeedConnectionTabSearchParam.Filters,
                   });
                 }}
               >
                 Filters
               </Tab>
-              <Tab onClick={() => navigate({ search: TabSearchParam.RateLimits })}>
+              <Tab
+                onClick={() => navigate({ search: UserFeedConnectionTabSearchParam.RateLimits })}
+              >
                 Delivery Rate Limits
               </Tab>
               <Tab
                 onClick={() => {
                   navigate({
-                    search: TabSearchParam.CustomPlaceholders,
+                    search: UserFeedConnectionTabSearchParam.CustomPlaceholders,
                   });
                 }}
               >

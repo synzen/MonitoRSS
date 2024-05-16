@@ -1,4 +1,5 @@
 import { FeedConnectionType } from "../types";
+import { UserFeedConnectionTabSearchParam } from "./userFeedConnectionTabSearchParam";
 import { UserFeedTabSearchParam } from "./userFeedTabSearchParam";
 
 const getConnectionPathByType = (type: FeedConnectionType) => {
@@ -17,10 +18,16 @@ export const pages = {
   testPaddle: () => "/test-paddle",
   userFeed: (feedId: string, opts?: { tab?: UserFeedTabSearchParam }) =>
     `/feeds/${feedId}${opts?.tab ? opts.tab : ""}`,
-  userFeedConnection: (data: {
-    feedId: string;
-    connectionType: FeedConnectionType;
-    connectionId: string;
-  }) => `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}`,
+  userFeedConnection: (
+    data: {
+      feedId: string;
+      connectionType: FeedConnectionType;
+      connectionId: string;
+    },
+    opts?: { tab?: UserFeedConnectionTabSearchParam }
+  ) =>
+    `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}${
+      opts?.tab ? opts.tab : ""
+    }`,
   userFeedsFaq: () => "/feeds/faq",
 };

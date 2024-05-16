@@ -182,6 +182,7 @@ export class ArticleParserService {
     }
   ): Promise<{
     flattened: FlattenedArticleWithoutId;
+    hasArticleContentInjection: boolean;
     injectArticleContent: (
       targetRecord: Record<string, string>
     ) => Promise<void>;
@@ -279,6 +280,7 @@ export class ArticleParserService {
 
     return {
       flattened: postProcessed,
+      hasArticleContentInjection: !!externalFeedProperties?.length,
       injectArticleContent: async (targetRecord: Record<string, string>) => {
         if (!externalFeedProperties?.length) {
           return;

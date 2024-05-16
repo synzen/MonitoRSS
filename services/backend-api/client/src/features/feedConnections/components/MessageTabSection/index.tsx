@@ -32,11 +32,13 @@ import {
   Stack,
   Text,
   useDisclosure,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FiMousePointer } from "react-icons/fi";
 import { useState } from "react";
 import { FaExpandAlt } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
 import { GetUserFeedArticlesInput } from "../../../feed/api";
@@ -48,6 +50,9 @@ import { FeedConnectionType } from "../../../../types";
 import { DiscordMessageForm } from "../DiscordMessageForm";
 import { ArticleSelectDialog } from "../../../feed/components";
 import getChakraColor from "../../../../utils/getChakraColor";
+import { pages } from "../../../../constants";
+import { UserFeedConnectionTabSearchParam } from "../../../../constants/userFeedConnectionTabSearchParam";
+import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 
 interface Props {
   feedId: string;
@@ -203,6 +208,7 @@ export const MessageTabSection = ({
             searchText={placeholderTableSearch}
             hideEmptyPlaceholders={hideEmptyPlaceholders}
             isFetching={userFeedArticlesFetchStatus === "fetching"}
+            withoutCopy
           />
         )}
       </Stack>
@@ -339,6 +345,39 @@ export const MessageTabSection = ({
                       mt={-4}
                     >
                       {accordionPanelContent}
+                      <Center mt={4}>
+                        <Text fontSize="sm" color="whiteAlpha.600">
+                          Don&apos;t see the content that you need? You can transform placeholder
+                          content through{" "}
+                          <ChakraLink
+                            as={Link}
+                            color="blue.400"
+                            to={pages.userFeedConnection(
+                              {
+                                feedId: feed?.id as string,
+                                connectionId: connection.id,
+                                connectionType: connection.type,
+                              },
+                              {
+                                tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
+                              }
+                            )}
+                          >
+                            Custom Placeholders
+                          </ChakraLink>
+                          , or get additional ones with{" "}
+                          <ChakraLink
+                            color="blue.400"
+                            as={Link}
+                            to={pages.userFeed(feed?.id as string, {
+                              tab: UserFeedTabSearchParam.ExternalProperties,
+                            })}
+                          >
+                            External Properties
+                          </ChakraLink>
+                          .
+                        </Text>
+                      </Center>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>

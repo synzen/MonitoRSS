@@ -3,7 +3,7 @@ import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { useUserMe } from "../../../../discordUser";
 import { useUserFeedArticles } from "../../../../feed";
 
-const ARTICLE_THRESHOLD = 25;
+const ARTICLE_THRESHOLD = 50;
 
 export const useExternalPropertiesEligibility = () => {
   const { userFeed } = useUserFeedContext();

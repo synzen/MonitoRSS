@@ -211,7 +211,7 @@ export const ExternalPropertyPreview = ({
       <ArticleSelectDialog
         trigger={
           <Button size="sm" leftIcon={<RepeatIcon />}>
-            Update Preview Article
+            Change Preview Article
           </Button>
         }
         feedId={userFeed.id}

@@ -30,6 +30,7 @@ import { CacheStorageService } from "../cache-storage/cache-storage.service";
 import { deflate, inflate } from "zlib";
 import { promisify } from "util";
 import { parse, valid } from "node-html-parser";
+import { chunkArray } from "../shared/utils/chunk-array";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -749,23 +750,22 @@ export class ArticlesService {
         }
 
         try {
-          const mappedArticles: Article[] = await Promise.all(
+          const mappedArticles = await Promise.all(
             rawArticles.map(async (rawArticle) => {
               const id = ArticleIDResolver.getIDTypeValue(
                 rawArticle as never,
                 idType
               );
 
-              const { flattened, injectArticleContent } =
-                await this.articleParserService.flatten(rawArticle as never, {
-                  formatOptions: options.formatOptions,
-                  useParserRules: options.useParserRules,
-                  externalFeedProperties: options.externalFeedProperties,
-                });
-
-              if (rawArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT) {
-                await injectArticleContent(flattened);
-              }
+              const {
+                flattened,
+                injectArticleContent,
+                hasArticleContentInjection,
+              } = await this.articleParserService.flatten(rawArticle as never, {
+                formatOptions: options.formatOptions,
+                useParserRules: options.useParserRules,
+                externalFeedProperties: options.externalFeedProperties,
+              });
 
               return {
                 flattened: {
@@ -783,6 +783,8 @@ export class ArticlesService {
                       ? rawArticle.pubdate.toISOString()
                       : undefined,
                 },
+                injectArticleContent,
+                hasArticleContentInjection,
               };
             })
           );
@@ -810,8 +812,26 @@ export class ArticlesService {
             idHashes.add(article.flattened.idHash);
           }
 
+          if (
+            mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT &&
+            mappedArticles.some((a) => a.hasArticleContentInjection)
+          ) {
+            const chunked = chunkArray(mappedArticles, 25);
+
+            for (const chunk of chunked) {
+              await Promise.all(
+                chunk.map((a) => a.injectArticleContent(a.flattened))
+              );
+
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+          }
+
           resolve({
-            articles: mappedArticles,
+            articles: mappedArticles.map((a) => ({
+              flattened: a.flattened,
+              raw: a.raw,
+            })),
           });
         } catch (err) {
           reject(err);
