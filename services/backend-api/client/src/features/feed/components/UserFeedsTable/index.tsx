@@ -240,6 +240,8 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
         cell: (info) => {
           const value = info.getValue();
 
+          const urlIsDifferentFromInput = info.row.original.inputUrl !== value;
+
           if (!search) {
             return (
               <Stack>
@@ -255,7 +257,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 >
                   {info.row.original.inputUrl || value}
                 </Link>
-                {info.row.original.inputUrl && (
+                {urlIsDifferentFromInput && (
                   <Text
                     color="whiteAlpha.600"
                     fontSize="sm"
