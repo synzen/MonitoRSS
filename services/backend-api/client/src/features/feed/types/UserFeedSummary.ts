@@ -7,6 +7,7 @@ export const UserFeedSummarySchema = object({
   id: string().required(),
   title: string().required(),
   url: string().required(),
+  inputUrl: string(),
   createdAt: string()
     .transform((value) => (value ? new Date(value).toISOString() : value))
     .required(),

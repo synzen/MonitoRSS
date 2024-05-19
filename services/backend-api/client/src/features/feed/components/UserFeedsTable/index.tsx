@@ -242,16 +242,45 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
           if (!search) {
             return (
-              <Link
-                as="a"
-                target="_blank"
-                href={value}
-                _hover={{
-                  textDecoration: "underline",
-                }}
-              >
-                {value}
-              </Link>
+              <Stack>
+                <Link
+                  as="a"
+                  target="_blank"
+                  href={info.row.original.inputUrl || value}
+                  _hover={{
+                    textDecoration: "underline",
+                  }}
+                  title={info.row.original.inputUrl || value}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {info.row.original.inputUrl || value}
+                </Link>
+                {info.row.original.inputUrl && (
+                  <Text
+                    color="whiteAlpha.600"
+                    fontSize="sm"
+                    display="inline"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                  >
+                    Resolved to{" "}
+                    <Link
+                      as="a"
+                      fontSize="sm"
+                      target="_blank"
+                      href={value}
+                      color="whiteAlpha.600"
+                      _hover={{
+                        textDecoration: "underline",
+                      }}
+                      title={value}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {value}
+                    </Link>
+                  </Text>
+                )}
+              </Stack>
             );
           }
 

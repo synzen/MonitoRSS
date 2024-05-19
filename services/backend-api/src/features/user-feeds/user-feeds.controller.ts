@@ -458,6 +458,7 @@ export class UserFeedsController {
         id: feed._id.toHexString(),
         title: feed.title,
         url: feed.url,
+        inputUrl: feed.inputUrl,
         healthStatus: feed.healthStatus,
         disabledCode: feed.disabledCode,
         createdAt: feed.createdAt.toISOString(),

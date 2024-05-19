@@ -557,6 +557,7 @@ export class UserFeedsService {
       _id: Types.ObjectId;
       title: string;
       url: string;
+      inputUrl?: string;
       healthStatus: UserFeedHealthStatus;
       disabledCode?: UserFeedDisabledCode;
       createdAt: Date;
@@ -592,6 +593,7 @@ export class UserFeedsService {
           _id: 1,
           title: 1,
           url: 1,
+          inputUrl: 1,
           healthStatus: 1,
           disabledCode: 1,
           createdAt: 1,

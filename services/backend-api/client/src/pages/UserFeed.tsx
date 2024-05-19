@@ -32,11 +32,10 @@ import {
   AlertIcon,
   Tooltip,
   SimpleGrid,
-  chakra,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AddIcon, ArrowLeftIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { AddIcon, ArrowLeftIcon, ChevronDownIcon, QuestionOutlineIcon } from "@chakra-ui/icons";
 import { useContext, useEffect, useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -288,34 +287,38 @@ export const UserFeed: React.FC = () => {
                               </Tooltip>
                             )}
                           </Flex>
-                          <chakra.span color="whiteAlpha.700">
+                          <Stack spacing={1}>
                             <Link
-                              _hover={{
-                                color: "gray.200",
-                              }}
                               href={feed?.inputUrl || feed?.url}
                               target="_blank"
                               rel="noopener noreferrer"
+                              aria-label={
+                                urlIsDifferentFromInput ? "Original input feed url" : "RSS feed url"
+                              }
                             >
                               {feed?.inputUrl || feed?.url}
                             </Link>
                             {urlIsDifferentFromInput && (
-                              <>
-                                <span> (</span>
-                                <Link
-                                  _hover={{
-                                    color: "gray.200",
-                                  }}
-                                  href={feed?.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  RSS Feed
-                                </Link>
-                                <span>)</span>
-                              </>
+                              <Flex alignItems="center">
+                                <Text color="whiteAlpha.600" fontSize="sm" display="inline">
+                                  Resolved to{" "}
+                                  <Link
+                                    color="whiteAlpha.600"
+                                    href={feed?.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    fontSize="sm"
+                                    aria-label="RSS feed url"
+                                  >
+                                    {feed?.url}
+                                  </Link>
+                                </Text>
+                                <Tooltip label="The RSS feed that is actually being used since the original URL was not a valid RSS feed">
+                                  <QuestionOutlineIcon ml={2} color="whiteAlpha.600" />
+                                </Tooltip>
+                              </Flex>
                             )}
-                          </chakra.span>
+                          </Stack>
                         </Stack>
                         <Menu>
                           <MenuButton
