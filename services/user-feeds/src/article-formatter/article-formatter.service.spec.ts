@@ -20,6 +20,26 @@ describe("ArticleFormatterService", () => {
       });
     });
 
+    describe("br", () => {
+      it("adds a newline", () => {
+        const value = "hello<br />world";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("hello\nworld");
+      });
+    });
+
+    describe("new lines", () => {
+      it("adds new lines", () => {
+        const value = "hello\nworld";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("hello\nworld");
+      });
+    });
+
     describe("a (anchors)", () => {
       it("returns the text with the link", async () => {
         const value = 'Say <a href="https://example.com">Hello World</a> to me';

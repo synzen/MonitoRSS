@@ -153,11 +153,13 @@ export class FeedHandlerService {
         body,
       });
     } catch (err) {
-      // Fetch may have some obscure errors
       throw new Error(
         `Failed to send test article request through user feeds API: ${
           err.constructor.name
-        }: ${(err as Error).message}`
+        }: ${(err as Error).message}. Cause: ${
+          // @ts-ignore
+          (err as Error)["cause"]?.["message"]
+        }. Body: ${body}`
       );
     }
 
