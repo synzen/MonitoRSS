@@ -64,6 +64,7 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
           formatTables: false,
           stripImages: false,
           disableImageLinkPreviews: false,
+          ignoreNewLines: false,
         },
       },
     },

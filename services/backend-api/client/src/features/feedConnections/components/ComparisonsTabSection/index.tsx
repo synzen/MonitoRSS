@@ -52,6 +52,7 @@ export const ComparisonsTabSection = ({
     formatTables: false,
     stripImages: false,
     disableImageLinkPreviews: false,
+    ignoreNewLines: false,
   };
   const {
     data: userFeedArticles,

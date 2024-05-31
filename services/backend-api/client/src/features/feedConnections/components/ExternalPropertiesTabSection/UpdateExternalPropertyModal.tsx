@@ -64,6 +64,7 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
           formatTables: false,
           stripImages: false,
           disableImageLinkPreviews: false,
+          ignoreNewLines: false,
         },
       },
     },

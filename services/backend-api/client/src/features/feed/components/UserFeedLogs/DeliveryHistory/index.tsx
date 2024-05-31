@@ -130,6 +130,7 @@ export const DeliveryHistory = ({ feedId }: Props) => {
           formatTables: false,
           stripImages: false,
           disableImageLinkPreviews: false,
+          ignoreNewLines: false,
         },
         customPlaceholders: [],
       },

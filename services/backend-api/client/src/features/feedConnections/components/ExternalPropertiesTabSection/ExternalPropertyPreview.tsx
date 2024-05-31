@@ -49,6 +49,7 @@ interface ConnectionFormatOptions {
   disableImageLinkPreviews: boolean;
   connectionId: string;
   connectionType: FeedConnectionType;
+  ignoreNewLines: boolean;
 }
 
 export const ExternalPropertyPreview = ({
@@ -67,6 +68,7 @@ export const ExternalPropertyPreview = ({
           formatTables: connection.details.formatter.formatTables,
           stripImages: connection.details.formatter.stripImages,
           disableImageLinkPreviews: connection.details.formatter.disableImageLinkPreviews,
+          ignoreNewLines: connection.details.formatter.ignoreNewLines,
         };
       }
 
@@ -80,6 +82,7 @@ export const ExternalPropertyPreview = ({
         formatTables: boolean;
         stripImages: boolean;
         disableImageLinkPreviews: boolean;
+        ignoreNewLines: boolean;
       }
     | undefined
   >(initialFormatOptions);
@@ -106,6 +109,7 @@ export const ExternalPropertyPreview = ({
           formatTables: formatOptions?.formatTables ?? false,
           stripImages: formatOptions?.stripImages ?? false,
           disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews ?? false,
+          ignoreNewLines: formatOptions?.ignoreNewLines ?? false,
         },
         externalProperties,
         customPlaceholders: [],
@@ -137,6 +141,7 @@ export const ExternalPropertyPreview = ({
         formatTables: c.details.formatter.formatTables,
         stripImages: c.details.formatter.stripImages,
         disableImageLinkPreviews: c.details.formatter.disableImageLinkPreviews,
+        ignoreNewLines: c.details.formatter.ignoreNewLines,
       });
     }
   };
@@ -222,6 +227,7 @@ export const ExternalPropertyPreview = ({
             formatTables: formatOptions?.formatTables ?? false,
             stripImages: formatOptions?.stripImages ?? false,
             disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews ?? false,
+            ignoreNewLines: formatOptions?.ignoreNewLines ?? false,
           },
           externalProperties,
           customPlaceholders: [],

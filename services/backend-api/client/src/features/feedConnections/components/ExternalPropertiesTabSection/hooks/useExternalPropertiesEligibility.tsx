@@ -19,6 +19,7 @@ export const useExternalPropertiesEligibility = () => {
           formatTables: false,
           stripImages: false,
           disableImageLinkPreviews: false,
+          ignoreNewLines: false,
         },
         externalProperties: [],
       },
