@@ -28,6 +28,7 @@ export interface GetUserFeedArticlesInput {
         dateFormat: string | undefined;
         dateTimezone: string | undefined;
         disableImageLinkPreviews?: boolean;
+        ignoreNewLines: boolean | undefined;
       };
     };
   };

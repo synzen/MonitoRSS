@@ -158,6 +158,7 @@ export const discordMessageFormSchema = object({
     stripImages: boolean().default(false),
     formatTables: boolean().default(false),
     disableImageLinkPreviews: boolean().default(false),
+    ignoreNewLines: boolean().default(false),
   })
     .optional()
     .nullable(),

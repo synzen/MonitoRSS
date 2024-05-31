@@ -227,7 +227,7 @@ export class ArticleFormatterService {
 
     const htmlToTextOptions: HtmlToTextOptions = {
       wordwrap: false,
-      preserveNewlines: true,
+      preserveNewlines: options?.ignoreNewLines ? false : true,
       formatters: {
         div: (elem, walk, builder, options) => {
           if (elem.children.length === 0) {

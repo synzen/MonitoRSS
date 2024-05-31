@@ -16,4 +16,9 @@ export class DiscordConnectionFormatterOptions {
   @IsBoolean()
   @Type(() => Boolean)
   disableImageLinkPreviews?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  ignoreNewLines?: boolean;
 }

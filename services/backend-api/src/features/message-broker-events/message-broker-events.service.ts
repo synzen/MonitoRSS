@@ -436,6 +436,7 @@ export class MessageBrokerEventsService {
             stripImages: con.details.formatter?.stripImages,
             disableImageLinkPreviews:
               con.details.formatter?.disableImageLinkPreviews,
+            ignoreNewLines: con.details.formatter?.ignoreNewLines,
           },
           splitOptions: con.splitOptions?.isEnabled
             ? con.splitOptions

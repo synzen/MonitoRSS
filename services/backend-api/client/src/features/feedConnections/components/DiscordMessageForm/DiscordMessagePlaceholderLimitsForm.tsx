@@ -155,9 +155,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
             feedId={feedId}
             articleFormatter={articleFormatter}
             trigger={
-              <Button leftIcon={<AddIcon fontSize="sm" />} variant="ghost">
-                {t("common.buttons.add")}
-              </Button>
+              <Button leftIcon={<AddIcon fontSize="sm" />}>{t("common.buttons.add")}</Button>
             }
             onSubmit={onSubmitNewLimit}
             mode="add"

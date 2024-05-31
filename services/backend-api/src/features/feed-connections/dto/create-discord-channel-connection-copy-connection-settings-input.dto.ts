@@ -9,6 +9,7 @@ export enum CopyableSetting {
   Content = "content",
   ContentFormatTables = "contentFormatTables",
   ContentStripImages = "contentStripImages",
+  IgnoreNewLines = "ignoreNewLines",
   ContentDisableImageLinkPreviews = "contentDisableImageLinkPreviews",
   Components = "components",
   ForumThreadTitle = "forumThreadTitle",

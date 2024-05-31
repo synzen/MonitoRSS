@@ -185,6 +185,7 @@ export const discordMediumPayloadDetailsSchema = z.object({
     stripImages: z.boolean().optional().default(false),
     formatTables: z.boolean().optional().default(false),
     disableImageLinkPreviews: z.boolean().optional().default(false),
+    ignoreNewLines: z.boolean().optional().default(true),
   }),
   splitOptions: z
     .object({

@@ -258,6 +258,7 @@ export const DiscordMessageForm = ({
       formatTables: formatOptions?.formatTables || false,
       stripImages: formatOptions?.stripImages || false,
       disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
+      ignoreNewLines: formatOptions?.ignoreNewLines || false,
     },
   };
 
@@ -341,15 +342,16 @@ export const DiscordMessageForm = ({
             <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
             <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
               <HStack overflow="auto">
-                <TabList>
-                  {embeds?.map((embed, index) => (
-                    <Tab key={embed.id}>Embed {index + 1}</Tab>
-                  ))}
-                </TabList>
+                {!!embeds.length && (
+                  <TabList>
+                    {embeds?.map((embed, index) => (
+                      <Tab key={embed.id}>Embed {index + 1}</Tab>
+                    ))}
+                  </TabList>
+                )}
                 {(embeds?.length ?? 0) < 10 && (
                   <Button
                     onClick={onAddEmbed}
-                    variant="ghost"
                     aria-label="Add new embed"
                     leftIcon={<AddIcon fontSize="sm" />}
                   >

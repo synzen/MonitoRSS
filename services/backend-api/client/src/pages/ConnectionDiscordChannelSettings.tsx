@@ -176,6 +176,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                               stripImages: connection?.details.formatter?.stripImages || false,
                               dateFormat: feed?.formatOptions?.dateFormat,
                               dateTimezone: feed?.formatOptions?.dateTimezone,
+                              ignoreNewLines:
+                                connection?.details.formatter?.ignoreNewLines || false,
                             },
                             customPlaceholders: connection.customPlaceholders,
                           }}
@@ -341,6 +343,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ignoreNewLines: connection?.details.formatter?.ignoreNewLines || false,
                       ...feed?.formatOptions,
                     },
                   }}
@@ -379,6 +382,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ignoreNewLines: connection?.details.formatter?.ignoreNewLines || false,
                     },
                   }}
                 />
@@ -411,6 +415,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       stripImages: connection?.details.formatter?.stripImages || false,
                       dateFormat: feed?.formatOptions?.dateFormat,
                       dateTimezone: feed?.formatOptions?.dateTimezone,
+                      ignoreNewLines: connection?.details.formatter?.ignoreNewLines || false,
                       ...feed?.formatOptions,
                     },
                   }}

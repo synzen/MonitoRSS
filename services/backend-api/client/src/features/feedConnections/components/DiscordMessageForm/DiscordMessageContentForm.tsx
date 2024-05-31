@@ -58,7 +58,7 @@ export const DiscordMessageContentForm = () => {
   }, [isSplitOptionsEnabled, accordionIndex]);
 
   return (
-    <Stack spacing={8} divider={<StackDivider />}>
+    <Stack spacing={6} divider={<StackDivider />}>
       <FormControl isInvalid={!!errors.content}>
         <Stack
           direction={{ base: "column", md: "row" }}
@@ -338,6 +338,43 @@ export const DiscordMessageContentForm = () => {
           >
             <Controller
               name="formatter.disableImageLinkPreviews"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Switch
+                    {...field}
+                    isChecked={!!field.value}
+                    value=""
+                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  />
+                );
+              }}
+            />
+          </Stack>
+        </Stack>
+      </FormControl>
+      <FormControl>
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: "1.5", md: "8" }}
+          justify="space-between"
+        >
+          <Box>
+            <FormLabel>Ignore new lines</FormLabel>
+            <FormHelperText>
+              Prevents excessive new lines from being added to the message if the text content
+              within placeholder content have new lines.
+            </FormHelperText>
+          </Box>
+          <Stack
+            spacing={8}
+            flexGrow="1"
+            width="100%"
+            maxW={{ md: "3xl" }}
+            minW={{ md: "md", lg: "lg", xl: "3xl" }}
+          >
+            <Controller
+              name="formatter.ignoreNewLines"
               control={control}
               render={({ field }) => {
                 return (

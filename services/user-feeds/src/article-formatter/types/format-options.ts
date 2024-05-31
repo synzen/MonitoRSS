@@ -189,4 +189,9 @@ export class FormatOptions {
   @ValidateNested({ each: true })
   @Type(() => CustomPlaceholder)
   customPlaceholders: CustomPlaceholder[] | undefined | null;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  ignoreNewLines?: boolean;
 }

@@ -23,6 +23,12 @@ export class DiscordFormatter {
     default: false,
   })
   disableImageLinkPreviews?: boolean;
+
+  @Prop({
+    required: false,
+    default: false,
+  })
+  ignoreNewLines?: boolean;
 }
 
 export const DiscordFormatterSchema =

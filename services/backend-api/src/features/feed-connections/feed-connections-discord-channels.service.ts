@@ -493,6 +493,11 @@ export class FeedConnectionsDiscordChannelsService {
           sourceConnection.details.formatter.stripImages;
       }
 
+      if (properties.includes(CopyableSetting.IgnoreNewLines)) {
+        currentConnection.details.formatter.ignoreNewLines =
+          sourceConnection.details.formatter.ignoreNewLines;
+      }
+
       if (properties.includes(CopyableSetting.Components)) {
         currentConnection.details.componentRows =
           sourceConnection.details.componentRows;

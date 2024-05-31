@@ -304,7 +304,6 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
         <Box>
           <Button
             leftIcon={<AddIcon fontSize={12} />}
-            variant="ghost"
             isDisabled={rows ? rows.length >= 5 : false}
             onClick={() => {
               append({

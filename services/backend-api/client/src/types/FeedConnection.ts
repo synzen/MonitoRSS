@@ -80,6 +80,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     formatTables: boolean().default(false),
     stripImages: boolean().default(false),
     disableImageLinkPreviews: boolean().default(false),
+    ignoreNewLines: boolean().default(false),
   }),
   placeholderLimits: array(
     object({
