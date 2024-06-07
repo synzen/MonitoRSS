@@ -90,6 +90,7 @@ export class FeedFetcherService implements OnModuleInit {
   async fetchWithGrpc(
     url: string,
     options?: {
+      executeFetch?: boolean;
       executeFetchIfNotInCache?: boolean;
       retries?: number;
       hashToCompare?: string;
@@ -97,6 +98,7 @@ export class FeedFetcherService implements OnModuleInit {
   ) {
     const payload = {
       url,
+      executeFetch: options?.executeFetch ?? false,
       executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
       hashToCompare: options?.hashToCompare || undefined,
     };

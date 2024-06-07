@@ -128,4 +128,8 @@ export class GetUserFeedArticlesInputDto {
   @IsBoolean()
   @IsOptional()
   findRssFromHtml?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  executeFetch?: boolean;
 }

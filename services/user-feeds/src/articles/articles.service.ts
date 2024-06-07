@@ -135,9 +135,11 @@ export class ArticlesService {
       externalFeedProperties,
       findRssFromHtml,
       redirectedFromHtml,
+      executeFetch,
     }: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
       redirectedFromHtml?: boolean;
+      executeFetch?: boolean;
     }
   ): Promise<{
     output: XmlParsedArticlesOutput | null;
@@ -164,6 +166,7 @@ export class ArticlesService {
 
     const response = await this.feedFetcherService.fetchWithGrpc(url, {
       executeFetchIfNotInCache: true,
+      executeFetch,
     });
 
     if (!response.body) {

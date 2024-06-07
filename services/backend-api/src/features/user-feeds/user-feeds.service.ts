@@ -1442,6 +1442,7 @@ export class UserFeedsService {
       limit: 1,
       skip: 0,
       findRssFromHtml: true,
+      executeFetch: true,
     });
 
     const {

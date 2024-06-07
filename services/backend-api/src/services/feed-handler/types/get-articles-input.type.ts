@@ -9,6 +9,7 @@ export interface GetArticlesInput {
   selectProperties?: string[];
   selectPropertyTypes?: string[];
   findRssFromHtml?: boolean;
+  executeFetch?: boolean;
   filters?: {
     expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;

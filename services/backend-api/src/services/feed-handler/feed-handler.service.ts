@@ -237,6 +237,7 @@ export class FeedHandlerService {
     selectPropertyTypes,
     formatter,
     findRssFromHtml,
+    executeFetch,
   }: GetArticlesInput): Promise<GetArticlesResponse["result"]> {
     const body = {
       url,
@@ -248,6 +249,7 @@ export class FeedHandlerService {
       selectPropertyTypes,
       formatter,
       findRssFromHtml,
+      executeFetch,
     };
 
     const res = await fetch(`${this.host}/v1/user-feeds/get-articles`, {
