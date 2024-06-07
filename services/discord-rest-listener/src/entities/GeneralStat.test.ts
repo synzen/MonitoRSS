@@ -1,4 +1,4 @@
-import { MikroORM } from "@mikro-orm/core"
+import { MikroORM } from "@mikro-orm/mongodb"
 import testConfig from "../utils/testConfig"
 import GeneralStat from "./GeneralStat"
 
@@ -9,7 +9,6 @@ describe('GeneralStat', () => {
   beforeAll(async () => {
     orm = await MikroORM.init({
       entities: [GeneralStat],
-      type: 'mongo',
       clientUrl: testConfig.databaseURI,
     })
   })
@@ -28,9 +27,10 @@ describe('GeneralStat', () => {
     })
     it('adds 1 for a stat that does exist', async () => {
       const statId = 'statexists'
-      await orm.em.nativeInsert(GeneralStat, {
+      await orm.em.insert(GeneralStat, {
         _id: statId,
-        data: 100
+        data: 100,
+        addedAt: new Date().toISOString()
       })
       await GeneralStat.increaseNumericStat(orm, statId)
       const found = await orm.em.findOne(GeneralStat, statId)

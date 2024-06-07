@@ -1,4 +1,4 @@
-import { MikroORM } from "@mikro-orm/core"
+import { MikroORM } from "@mikro-orm/mongodb"
 import DeliveryRecord from "../entities/DeliveryRecord"
 import Feed from "../entities/Feed"
 import GeneralStat from "../entities/GeneralStat"
@@ -12,7 +12,6 @@ async function setup () {
   log.info('Connecting to Mongo')
   const orm = await MikroORM.init({
     entities: [DeliveryRecord, GeneralStat, Feed, Profile],
-    type: 'mongo',
     clientUrl: config.databaseURI,
     ensureIndexes: true,
   })

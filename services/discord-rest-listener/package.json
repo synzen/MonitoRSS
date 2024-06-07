@@ -13,9 +13,8 @@
   "author": "synzen",
   "license": "MIT",
   "dependencies": {
-    "@bull-board/express": "^3.9.1",
-    "@mikro-orm/core": "^4.5.5",
-    "@mikro-orm/mongodb": "^4.5.5",
+    "@mikro-orm/core": "^6.2.9",
+    "@mikro-orm/mongodb": "^6.2.9",
     "@synzen/discord-rest": "^0.7.0-beta.9",
     "amqp-connection-manager": "^4.1.9",
     "amqplib": "^0.10.3",
@@ -28,13 +27,14 @@
   "devDependencies": {
     "@types/amqplib": "^0.10.0",
     "@types/jest": "^26.0.23",
+    "@types/node": "^20.14.2",
     "@typescript-eslint/eslint-plugin": "^3.10.1",
     "@typescript-eslint/parser": "^3.10.1",
     "eslint": "^7.27.0",
-    "jest": "^26.6.3",
+    "jest": "^29.7.0",
     "nodemon": "^3.0.1",
-    "ts-jest": "^26.5.6",
+    "ts-jest": "^29.1.4",
     "ts-node": "^9.1.1",
-    "typescript": "^4.2.4"
+    "typescript": "^5.4.5"
   }
 }

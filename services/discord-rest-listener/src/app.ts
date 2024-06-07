@@ -36,7 +36,7 @@ const recordArticleSuccess = async (orm: MikroORM, jobMeta: JobMeta, articleMeta
       executionTimeSeconds: jobMeta.duration,
       feedId: jobMeta.feedId
     }, true)
-    await orm.em.nativeInsert(record)
+    await orm.em.insert(record)
     await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
   } catch (err) {
     const errMessage = `Failed to record article success (${(err as Error).message})`
@@ -56,7 +56,7 @@ const recordArticleFailure = async (orm: MikroORM, jobMeta: JobMeta, articleMeta
       feedId: jobMeta.feedId
     }, false)
     record.comment = errorMessage
-    await orm.em.nativeInsert(record)
+    await orm.em.insert(record)
   } catch (err) {
     const errMessage = `Failed to record article failure (${(err as Error).message})`
     log.error(errMessage)
