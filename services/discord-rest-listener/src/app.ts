@@ -1,7 +1,7 @@
 import 'source-map-support/register'
 import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
-import { MikroORM } from '@mikro-orm/core'
+import { MikroORM } from '@mikro-orm/mongodb'
 import { GLOBAL_BLOCK_TYPE, RequestTimeoutError, RESTConsumer, RESTProducer } from '@synzen/discord-rest'
 import config from './utils/config'
 import DeliveryRecord from './entities/DeliveryRecord'
