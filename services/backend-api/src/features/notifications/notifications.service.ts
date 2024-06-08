@@ -12,8 +12,6 @@ import {
   DiscordChannelConnection,
   DiscordWebhookConnection,
 } from "../feeds/entities/feed-connections";
-import fs from "fs";
-import { join } from "path";
 import Handlebars from "handlebars";
 import { UserFeedDisabledCode } from "../user-feeds/types";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
@@ -24,13 +22,11 @@ import {
 import { NotificationDeliveryAttemptStatus } from "./constants/notification-delivery-attempt-status.constants";
 import { NotificationDeliveryAttemptType } from "./constants/notification-delivery-attempt-type.constants";
 import { ConfigService } from "@nestjs/config";
+import NOTIFICATIONS_DISABLED_FEED_TEMPLATE from "./notifications.disabled-feed.template";
 
-const disabledFeedHandlebarsText = fs.readFileSync(
-  join(__dirname, "handlebars-templates", "disabled-feed.hbs"),
-  "utf8"
+const disabledFeedTemplate = Handlebars.compile(
+  NOTIFICATIONS_DISABLED_FEED_TEMPLATE
 );
-
-const disabledFeedTemplate = Handlebars.compile(disabledFeedHandlebarsText);
 
 const USER_FEED_DISABLED_REASONS: Partial<
   Record<UserFeedDisabledCode, { reason: string; action: string }>
