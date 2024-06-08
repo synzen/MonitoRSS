@@ -1,4 +1,4 @@
-import { FaCircleExclamation, FaPause } from "react-icons/fa6";
+import { FaCircleExclamation, FaClock, FaPause } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
 import { UserFeedComputedStatus } from "../../types";
 import getChakraColor from "../../../../utils/getChakraColor";
@@ -10,6 +10,10 @@ interface Props {
 export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
   if (status === UserFeedComputedStatus.RequiresAttention) {
     return <FaCircleExclamation fontSize={18} color={getChakraColor("red.300")} />;
+  }
+
+  if (status === UserFeedComputedStatus.Retrying) {
+    return <FaClock fontSize={18} />;
   }
 
   if (status === UserFeedComputedStatus.ManuallyDisabled) {

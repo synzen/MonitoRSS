@@ -1025,7 +1025,15 @@ export class UserFeedsService {
                     $eq: ["$disabledCode", UserFeedDisabledCode.Manual],
                   },
                   then: UserFeedComputedStatus.ManuallyDisabled,
-                  else: UserFeedComputedStatus.Ok,
+                  else: {
+                    $cond: {
+                      if: {
+                        $eq: ["$healthStatus", UserFeedHealthStatus.Failing],
+                      },
+                      then: UserFeedComputedStatus.Retrying,
+                      else: UserFeedComputedStatus.Ok,
+                    },
+                  },
                 },
               },
             },

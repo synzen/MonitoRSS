@@ -40,6 +40,8 @@ import {
   UserFeedHealthStatus,
 } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
+import { UserFeature } from "../users/entities/user.entity";
+import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 
 const mockDiscordChannelConnection: DiscordChannelConnection = {
   id: new Types.ObjectId(),
@@ -105,6 +107,13 @@ describe("UserFeedsService", () => {
             getRequests: jest.fn(),
           },
         },
+        {
+          provide: FeedConnectionsDiscordChannelsService,
+          useValue: {
+            deleteConnection: jest.fn(),
+            cloneConnection: jest.fn(),
+          },
+        },
       ],
       imports: [
         MongooseTestModule.forRoot(),
@@ -113,6 +122,7 @@ describe("UserFeedsService", () => {
           LegacyFeedConversionJobFeature,
           UserFeedFeature,
           UserFeedLimitOverrideFeature,
+          UserFeature,
         ]),
       ],
     });
@@ -146,6 +156,14 @@ describe("UserFeedsService", () => {
     feedFetcherService = module.get<FeedFetcherService>(FeedFetcherService);
     feedsService = module.get<FeedsService>(FeedsService);
     feedHandlerService = module.get<FeedHandlerService>(FeedHandlerService);
+  });
+
+  beforeEach(() => {
+    jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue({
+      requestStatus: GetArticlesResponseRequestStatus.Success,
+      url: "",
+      attemptedToResolveFromHtml: false,
+    } as never);
   });
 
   afterEach(() => {
@@ -255,34 +273,6 @@ describe("UserFeedsService", () => {
         },
       });
     });
-
-    it("initializes the feed with the feed handler service", async () => {
-      jest
-        .spyOn(feedFetcherService, "fetchFeed")
-        .mockResolvedValue({} as never);
-
-      jest
-        .spyOn(supportersService, "getBenefitsOfDiscordUser")
-        .mockResolvedValue({ maxFeeds: 1, maxDailyArticles: 105 } as never);
-
-      const createDetails = {
-        title: "title",
-        url: "url",
-      };
-      await service.addFeed(
-        {
-          discordUserId,
-        },
-        createDetails
-      );
-
-      expect(feedHandlerService.initializeFeed).toHaveBeenCalledWith(
-        expect.any(String),
-        {
-          maxDailyArticles: 105,
-        }
-      );
-    });
   });
 
   describe("bulkDelete", () => {
@@ -316,10 +306,7 @@ describe("UserFeedsService", () => {
     });
 
     it("bulk deletes feeds of the discord user id", async () => {
-      await service.bulkDelete(
-        created.map((c) => c._id.toHexString()),
-        discordUserId
-      );
+      await service.bulkDelete(created.map((c) => c._id.toHexString()));
 
       const result = await userFeedModel.find({}).select("title").lean();
 
@@ -335,7 +322,7 @@ describe("UserFeedsService", () => {
 
     it("returns the results", async () => {
       const inputIds = created.map((c) => c._id.toHexString());
-      const results = await service.bulkDelete(inputIds, discordUserId);
+      const results = await service.bulkDelete(inputIds);
 
       expect(results).toHaveLength(3);
       expect(results).toEqual([
@@ -362,7 +349,7 @@ describe("UserFeedsService", () => {
         },
       ]);
       const inputIds = created.map((c) => c._id.toHexString());
-      const results = await service.bulkDelete(inputIds, discordUserId);
+      const results = await service.bulkDelete(inputIds);
 
       expect(results).toHaveLength(3);
       expect(results.filter((r) => r.isLegacy)).toHaveLength(1);
@@ -386,7 +373,7 @@ describe("UserFeedsService", () => {
         },
       ]);
       const inputIds = created.map((c) => c._id.toHexString());
-      const results = await service.bulkDelete(inputIds, discordUserId);
+      const results = await service.bulkDelete(inputIds);
 
       expect(results).toHaveLength(3);
       expect(results.filter((r) => r.isLegacy)).toHaveLength(1);
@@ -441,10 +428,7 @@ describe("UserFeedsService", () => {
     });
 
     it("bulk disables feeds of the discord user id", async () => {
-      await service.bulkDisable(
-        created.map((c) => c._id.toHexString()),
-        discordUserId
-      );
+      await service.bulkDisable(created.map((c) => c._id.toHexString()));
 
       const result = await userFeedModel
         .find({
@@ -508,10 +492,7 @@ describe("UserFeedsService", () => {
     });
 
     it("bulk enables feeds of the discord user id", async () => {
-      await service.bulkEnable(
-        created.map((c) => c._id.toHexString()),
-        discordUserId
-      );
+      await service.bulkEnable(created.map((c) => c._id.toHexString()));
 
       const result = await userFeedModel
         .find({})
@@ -548,7 +529,7 @@ describe("UserFeedsService", () => {
 
     it("returns the results", async () => {
       const inputIds = created.map((c) => c._id.toHexString());
-      const results = await service.bulkEnable(inputIds, discordUserId);
+      const results = await service.bulkEnable(inputIds);
 
       expect(results).toHaveLength(4);
       expect(results).toEqual([
@@ -671,28 +652,28 @@ describe("UserFeedsService", () => {
 
     it("unsets the refresh rate seconds if it is the original", async () => {
       await service.updateFeedById(feed._id.toHexString(), {
-        refreshRateSeconds: userRefreshRateSeconds,
+        userRefreshRateSeconds: userRefreshRateSeconds,
       });
 
       const found = await userFeedModel.findById(feed._id).lean();
 
-      expect(found).not.toHaveProperty("refreshRateSeconds");
+      expect(found).not.toHaveProperty("userRefreshRateSeconds");
     });
 
     it("sets the refresh rate seconds if it is slower than the original", async () => {
       await service.updateFeedById(feed._id.toHexString(), {
-        refreshRateSeconds: userRefreshRateSeconds + 100,
+        userRefreshRateSeconds: userRefreshRateSeconds + 100,
       });
 
       const found = await userFeedModel.findById(feed._id).lean();
 
-      expect(found?.refreshRateSeconds).toBe(userRefreshRateSeconds + 100);
+      expect(found?.userRefreshRateSeconds).toBe(userRefreshRateSeconds + 100);
     });
 
     it("throws if the refresh rate seconds is faster than the original", async () => {
       await expect(
         service.updateFeedById(feed._id.toHexString(), {
-          refreshRateSeconds: userRefreshRateSeconds - 100,
+          userRefreshRateSeconds: userRefreshRateSeconds - 100,
         })
       ).rejects.toThrowError();
     });
@@ -1105,6 +1086,12 @@ describe("UserFeedsService", () => {
             ],
           },
         },
+        {
+          title: "title4",
+          url: "url HERE",
+          user,
+          healthStatus: UserFeedHealthStatus.Failing,
+        },
       ]);
 
       const result = await service.getFeedsByUser(user.discordUserId, {
@@ -1114,10 +1101,23 @@ describe("UserFeedsService", () => {
         },
       });
 
+      const retryingResult = await service.getFeedsByUser(user.discordUserId, {
+        ...dto,
+        filters: {
+          computedStatuses: [UserFeedComputedStatus.Retrying],
+        },
+      });
+
       expect(result).toHaveLength(1);
       expect(result).toMatchObject([
         {
           title: "title3",
+        },
+      ]);
+      expect(retryingResult).toHaveLength(1);
+      expect(retryingResult).toMatchObject([
+        {
+          title: "title4",
         },
       ]);
     });
@@ -1520,43 +1520,12 @@ describe("UserFeedsService", () => {
     });
   });
 
-  describe("getFeedDailyLimit", () => {
-    it("returns only the daily rate limits", async () => {
-      jest.spyOn(feedHandlerService, "getRateLimits").mockResolvedValue({
-        results: {
-          limits: [
-            {
-              max: 100,
-              progress: 10,
-              remaining: 90,
-              windowSeconds: 60,
-            },
-            {
-              max: 10,
-              progress: 1,
-              remaining: 9,
-              windowSeconds: 86400,
-            },
-          ],
-        },
-      });
-
-      const result = await service.getFeedDailyLimit("url");
-
-      expect(result).toEqual({
-        max: 10,
-        progress: 1,
-        remaining: 9,
-        windowSeconds: 86400,
-      });
-    });
-  });
-
   describe("getFeedArticles", () => {
     const validInput: GetFeedArticlesInput = {
       limit: 1,
       random: true,
       url: "random-url",
+      discordUserId: "user-id",
       formatter: {
         options: {
           formatTables: false,
@@ -1564,6 +1533,7 @@ describe("UserFeedsService", () => {
           dateFormat: "foo",
           dateTimezone: "bar",
           disableImageLinkPreviews: false,
+          dateLocale: undefined,
         },
       },
     };
@@ -1650,6 +1620,7 @@ describe("UserFeedsService", () => {
             user: {
               discordUserId: discordUserId,
             },
+            refreshRateSeconds: 600,
           },
           {
             title: "title2",
@@ -1657,6 +1628,7 @@ describe("UserFeedsService", () => {
             user: {
               discordUserId: discordUserId,
             },
+            refreshRateSeconds: 600,
           },
           {
             title: "title3",
@@ -1664,6 +1636,7 @@ describe("UserFeedsService", () => {
             user: {
               discordUserId: discordUserId,
             },
+            refreshRateSeconds: 600,
           },
         ]);
 
@@ -1693,6 +1666,7 @@ describe("UserFeedsService", () => {
           {
             discordUserId,
             maxUserFeeds: 2,
+            refreshRateSeconds: 600,
           },
         ]);
 
@@ -1723,6 +1697,7 @@ describe("UserFeedsService", () => {
             user: {
               discordUserId: discordUserId,
             },
+            refreshRateSeconds: 600,
           },
           {
             title: "title2",
@@ -1730,6 +1705,7 @@ describe("UserFeedsService", () => {
             user: {
               discordUserId: discordUserId,
             },
+            refreshRateSeconds: 600,
           },
         ]);
 
@@ -1737,6 +1713,7 @@ describe("UserFeedsService", () => {
           {
             discordUserId: discordUserId,
             maxUserFeeds: 3,
+            refreshRateSeconds: 600,
           },
         ]);
 
@@ -1765,6 +1742,7 @@ describe("UserFeedsService", () => {
               discordUserId,
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+            refreshRateSeconds: 600,
           },
           {
             title: "title2",
@@ -1773,6 +1751,7 @@ describe("UserFeedsService", () => {
               discordUserId,
             },
             disabledCode: UserFeedDisabledCode.BadFormat,
+            refreshRateSeconds: 600,
           },
           {
             title: "title3",
@@ -1781,6 +1760,7 @@ describe("UserFeedsService", () => {
               discordUserId,
             },
             disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            refreshRateSeconds: 600,
           },
         ]);
 
@@ -1788,6 +1768,7 @@ describe("UserFeedsService", () => {
           {
             discordUserId: discordUserId,
             maxUserFeeds: 1,
+            refreshRateSeconds: 600,
           },
         ]);
 

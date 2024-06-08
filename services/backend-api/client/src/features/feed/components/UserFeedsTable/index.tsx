@@ -31,6 +31,7 @@ import {
   MenuItemOption,
   InputRightElement,
   Link,
+  chakra,
 } from "@chakra-ui/react";
 import React, { CSSProperties, useContext, useEffect, useMemo, useState } from "react";
 import {
@@ -87,15 +88,23 @@ const convertSortStateToSortKey = (state: SortingState) => {
 const STATUS_FILTERS = [
   {
     label: "Ok",
+    description: "Working as expected",
     value: UserFeedComputedStatus.Ok,
   },
   {
-    label: "Disabled",
-    value: UserFeedComputedStatus.ManuallyDisabled,
+    label: "Failed",
+    description: "Disabled after too many failures",
+    value: UserFeedComputedStatus.RequiresAttention,
   },
   {
-    label: "Requires Attention",
-    value: UserFeedComputedStatus.RequiresAttention,
+    label: "Failing",
+    description: "Unable to request the feed and is pending a retry",
+    value: UserFeedComputedStatus.Retrying,
+  },
+  {
+    label: "Manually Disabled",
+    description: "Manually disabled",
+    value: UserFeedComputedStatus.ManuallyDisabled,
   },
 ];
 
@@ -570,6 +579,9 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                   {STATUS_FILTERS.map((val) => (
                     <MenuItemOption key={val.value} value={val.value}>
                       {val.label}
+                      <chakra.span display="block" color="whiteAlpha.600">
+                        {val.description}
+                      </chakra.span>
                     </MenuItemOption>
                   ))}
                 </MenuOptionGroup>

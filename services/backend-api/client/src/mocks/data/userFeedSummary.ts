@@ -35,7 +35,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     createdAt: new Date().toISOString(),
     healthStatus: UserFeedHealthStatus.Failing,
     disabledCode: undefined,
-    computedStatus: UserFeedComputedStatus.ManuallyDisabled,
+    computedStatus: UserFeedComputedStatus.Retrying,
     isLegacyFeed: false,
     ownedByUser: true,
   },
