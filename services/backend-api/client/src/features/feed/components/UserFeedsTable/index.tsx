@@ -97,8 +97,8 @@ const STATUS_FILTERS = [
     value: UserFeedComputedStatus.RequiresAttention,
   },
   {
-    label: "Failing",
-    description: "Unable to request the feed and is pending a retry",
+    label: "Pending Retry",
+    description: "Currently unable to fetch the feed and is pending a retry",
     value: UserFeedComputedStatus.Retrying,
   },
   {
@@ -578,7 +578,10 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 >
                   {STATUS_FILTERS.map((val) => (
                     <MenuItemOption key={val.value} value={val.value}>
-                      {val.label}
+                      <HStack>
+                        <UserFeedStatusTag status={val.value} />
+                        <chakra.span>{val.label}</chakra.span>
+                      </HStack>
                       <chakra.span display="block" color="whiteAlpha.600">
                         {val.description}
                       </chakra.span>

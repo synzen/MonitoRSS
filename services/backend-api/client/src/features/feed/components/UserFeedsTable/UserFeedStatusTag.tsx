@@ -1,5 +1,5 @@
-import { FaCircleExclamation, FaClock, FaPause } from "react-icons/fa6";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCircleExclamation, FaClock } from "react-icons/fa6";
+import { FaCheckCircle, FaPauseCircle } from "react-icons/fa";
 import { UserFeedComputedStatus } from "../../types";
 import getChakraColor from "../../../../utils/getChakraColor";
 
@@ -17,7 +17,7 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
   }
 
   if (status === UserFeedComputedStatus.ManuallyDisabled) {
-    return <FaPause opacity="0.5" fontSize={18} />;
+    return <FaPauseCircle opacity="0.5" fontSize={18} />;
   }
 
   return <FaCheckCircle color={getChakraColor("green.500")} fontSize={18} />;
