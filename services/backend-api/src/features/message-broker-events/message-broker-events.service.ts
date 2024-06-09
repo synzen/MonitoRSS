@@ -64,6 +64,30 @@ export class MessageBrokerEventsService {
 
   @RabbitSubscribe({
     exchange: "",
+    queue: MessageBrokerQueue.UrlFailing,
+    createQueueIfNotExists: true,
+  })
+  async handleUrlFailing({
+    data: { lookupKey, url },
+  }: {
+    data: { lookupKey?: string; url: string };
+  }) {
+    await this.userFeedModel.updateMany(
+      {
+        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+        healthStatus: {
+          $ne: UserFeedHealthStatus.Failing,
+        },
+      },
+      {
+        $set: {
+          healthStatus: UserFeedHealthStatus.Failing,
+        },
+      }
+    );
+  }
+  @RabbitSubscribe({
+    exchange: "",
     queue: MessageBrokerQueue.UrlFetchCompleted,
     createQueueIfNotExists: true,
   })
@@ -72,6 +96,29 @@ export class MessageBrokerEventsService {
   }: {
     data: { url: string; lookupKey?: string; rateSeconds: number };
   }) {
+    const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
+      ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+      healthStatus: {
+        $ne: UserFeedHealthStatus.Ok,
+      },
+    });
+
+    if (healthStatusUpdateCount > 0) {
+      await this.userFeedModel.updateMany(
+        {
+          ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+          healthStatus: {
+            $ne: UserFeedHealthStatus.Ok,
+          },
+        },
+        {
+          $set: {
+            healthStatus: UserFeedHealthStatus.Ok,
+          },
+        }
+      );
+    }
+
     let feedCursor: Cursor<UserFeedDocument & { users: UserDocument[] }>;
 
     if (lookupKey) {

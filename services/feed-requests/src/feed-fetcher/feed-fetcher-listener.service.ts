@@ -136,11 +136,13 @@ export class FeedFetcherListenerService {
               request = result.request;
             }
 
-            await this.emitFetchCompleted({
-              lookupKey,
-              url,
-              rateSeconds: rateSeconds,
-            });
+            if (result?.request.status === RequestStatus.OK) {
+              await this.emitFetchCompleted({
+                lookupKey,
+                url,
+                rateSeconds: rateSeconds,
+              });
+            }
           } finally {
             if (message.timestamp) {
               const nowTs = Date.now();
@@ -241,6 +243,8 @@ export class FeedFetcherListenerService {
           new Date(),
           failedAttemptsCount,
         );
+
+        this.emitFailingUrl({ lookupKey, url });
 
         logger.debug(
           `Request with url ${url} failed, next retry date: ${nextRetryDate}`,
@@ -367,6 +371,24 @@ export class FeedFetcherListenerService {
       });
     } catch (err) {
       logger.error(`Failed to publish failed url event: ${lookupKey}`, {
+        stack: (err as Error).stack,
+        lookupKey,
+      });
+    }
+  }
+
+  emitFailingUrl({ lookupKey, url }: { lookupKey?: string; url: string }) {
+    try {
+      this.amqpConnection.publish<{
+        data: { lookupKey?: string; url: string };
+      }>('', 'url.failing', {
+        data: {
+          lookupKey,
+          url,
+        },
+      });
+    } catch (err) {
+      logger.error(`Failed to publish failing lookup key event`, {
         stack: (err as Error).stack,
         lookupKey,
       });

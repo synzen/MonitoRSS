@@ -169,6 +169,16 @@ UserFeedSchema.index(
 
 UserFeedSchema.index({
   feedRequestLookupKey: 1,
+  healthStatus: 1,
+});
+
+UserFeedSchema.index({
+  url: 1,
+  healthStatus: 1,
+});
+
+UserFeedSchema.index({
+  feedRequestLookupKey: 1,
   disabledCode: 1,
   "connections.discordChannels.disabledCode": 1,
   url: 1,
