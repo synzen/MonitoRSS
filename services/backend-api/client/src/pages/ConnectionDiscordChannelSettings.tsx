@@ -282,6 +282,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
             </Stack>
             <TabList>
               <Tab
+                fontWeight="semibold"
                 onClick={() => {
                   navigate({
                     search: UserFeedConnectionTabSearchParam.Message,
@@ -291,6 +292,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 Message
               </Tab>
               <Tab
+                fontWeight="semibold"
                 onClick={() => {
                   navigate({
                     search: UserFeedConnectionTabSearchParam.Filters,
@@ -300,11 +302,13 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                 Filters
               </Tab>
               <Tab
+                fontWeight="semibold"
                 onClick={() => navigate({ search: UserFeedConnectionTabSearchParam.RateLimits })}
               >
                 Delivery Rate Limits
               </Tab>
               <Tab
+                fontWeight="semibold"
                 onClick={() => {
                   navigate({
                     search: UserFeedConnectionTabSearchParam.CustomPlaceholders,

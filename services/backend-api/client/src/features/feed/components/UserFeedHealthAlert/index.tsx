@@ -1,6 +1,7 @@
-import { Alert, AlertDescription, AlertTitle, Box, Button, Flex } from "@chakra-ui/react";
+import { Alert, AlertDescription, AlertTitle, Box, Button, Flex, HStack } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { UserFeedArticleRequestStatus, UserFeedHealthStatus } from "../../types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import {
@@ -11,6 +12,8 @@ import {
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
+import { pages } from "../../../../constants";
+import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 
 export const UserFeedHealthAlert = () => {
   const { t } = useTranslation();
@@ -21,6 +24,7 @@ export const UserFeedHealthAlert = () => {
     disabled: userFeed.healthStatus !== UserFeedHealthStatus.Failing,
   });
   const { mutateAsync, status: manualRequestStatus } = useCreateUserFeedManualRequest();
+  const navigate = useNavigate();
 
   const handleManualAttempt = async () => {
     try {
@@ -66,12 +70,24 @@ export const UserFeedHealthAlert = () => {
             We&apos;ve been unable to successfully fetch this feed. Attempts will continue
             automatically. The next earliest automatic attempt will be on{" "}
             {(nextRetryTimestamp || fallbackNextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss")}.
-            You may also manually attempt a request via the button below
-            <div>
+            You may also manually attempt a request via the button below.
+            <HStack>
               <Button isLoading={manualRequestStatus === "loading"} onClick={handleManualAttempt}>
                 <span>Attempt request</span>
               </Button>
-            </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate(
+                    pages.userFeed(userFeed.id, {
+                      tab: UserFeedTabSearchParam.Logs,
+                    })
+                  )
+                }
+              >
+                View request history
+              </Button>
+            </HStack>
           </Flex>
         </AlertDescription>
       </Box>
