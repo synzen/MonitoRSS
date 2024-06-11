@@ -71,6 +71,7 @@ import { formatRefreshRateSeconds } from "../utils/formatRefreshRateSeconds";
 import { ExternalPropertiesTabSection } from "../features/feedConnections/components/ExternalPropertiesTabSection";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
+import { UserFeedHealthAlert } from "../features/feed/components/UserFeedHealthAlert";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedTabSearchParam.Connections, 0],
@@ -453,6 +454,7 @@ export const UserFeed: React.FC = () => {
                       </HStack>
                     </Stack>
                   </Stack>
+                  <UserFeedHealthAlert />
                   <UserFeedDisabledAlert feedId={feedId} />
                 </Stack>
                 <Grid

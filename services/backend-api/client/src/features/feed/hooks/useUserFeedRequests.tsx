@@ -5,9 +5,10 @@ import { GetUserFeedRequestsInput, GetUserFeedRequestsOutput, getUserFeedRequest
 interface Props {
   feedId?: string;
   data: GetUserFeedRequestsInput["data"];
+  disabled?: boolean;
 }
 
-export const useUserFeedRequests = ({ feedId, data: inputData }: Props) => {
+export const useUserFeedRequests = ({ feedId, data: inputData, disabled }: Props) => {
   const queryKey = [
     "user-feed-requests",
     {
@@ -32,7 +33,7 @@ export const useUserFeedRequests = ({ feedId, data: inputData }: Props) => {
       });
     },
     {
-      enabled: !!feedId,
+      enabled: !!feedId && !disabled,
       keepPreviousData: true,
       refetchOnWindowFocus: true,
     }

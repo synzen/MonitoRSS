@@ -13,7 +13,7 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
   }
 
   if (status === UserFeedComputedStatus.Retrying) {
-    return <FaClock fontSize={18} />;
+    return <FaClock fontSize={18} color={getChakraColor("orange.200")} />;
   }
 
   if (status === UserFeedComputedStatus.ManuallyDisabled) {

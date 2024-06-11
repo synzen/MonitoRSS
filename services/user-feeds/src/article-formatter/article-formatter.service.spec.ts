@@ -10,6 +10,16 @@ describe("ArticleFormatterService", () => {
   });
 
   describe("formatValueForDiscord", () => {
+    describe("asterisks", () => {
+      it("escapes asterisks", () => {
+        const value = "hello *world*";
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("hello \\*world\\*");
+      });
+    });
+
     describe("div", () => {
       it("ignores when there are no children", () => {
         const value = "<div>hello <div></div></div>";

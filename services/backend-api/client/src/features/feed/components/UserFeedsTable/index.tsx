@@ -578,13 +578,15 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 >
                   {STATUS_FILTERS.map((val) => (
                     <MenuItemOption key={val.value} value={val.value}>
-                      <HStack>
+                      <HStack alignItems="center" gap={4}>
                         <UserFeedStatusTag status={val.value} />
-                        <chakra.span>{val.label}</chakra.span>
+                        <div>
+                          <chakra.span>{val.label}</chakra.span>
+                          <chakra.span display="block" color="whiteAlpha.600">
+                            {val.description}
+                          </chakra.span>
+                        </div>
                       </HStack>
-                      <chakra.span display="block" color="whiteAlpha.600">
-                        {val.description}
-                      </chakra.span>
                     </MenuItemOption>
                   ))}
                 </MenuOptionGroup>
