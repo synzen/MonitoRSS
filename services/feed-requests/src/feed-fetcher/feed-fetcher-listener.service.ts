@@ -136,13 +136,12 @@ export class FeedFetcherListenerService {
               request = result.request;
             }
 
-            if (result?.request.status === RequestStatus.OK) {
-              await this.emitFetchCompleted({
-                lookupKey,
-                url,
-                rateSeconds: rateSeconds,
-              });
-            }
+            await this.emitFetchCompleted({
+              lookupKey,
+              url,
+              rateSeconds: rateSeconds,
+              successful: result?.request.status === RequestStatus.OK,
+            });
           } finally {
             if (message.timestamp) {
               const nowTs = Date.now();
@@ -399,19 +398,27 @@ export class FeedFetcherListenerService {
     lookupKey,
     url,
     rateSeconds,
+    successful,
   }: {
     lookupKey?: string;
     url: string;
     rateSeconds: number;
+    successful: boolean;
   }) {
     try {
       this.amqpConnection.publish<{
-        data: { lookupKey?: string; url: string; rateSeconds: number };
+        data: {
+          lookupKey?: string;
+          url: string;
+          rateSeconds: number;
+          successful: boolean;
+        };
       }>('', 'url.fetch.completed', {
         data: {
           lookupKey,
           url,
           rateSeconds,
+          successful,
         },
       });
     } catch (err) {

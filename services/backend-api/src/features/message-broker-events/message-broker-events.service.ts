@@ -86,37 +86,45 @@ export class MessageBrokerEventsService {
       }
     );
   }
+
   @RabbitSubscribe({
     exchange: "",
     queue: MessageBrokerQueue.UrlFetchCompleted,
     createQueueIfNotExists: true,
   })
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds },
+    data: { url, lookupKey, rateSeconds, successful },
   }: {
-    data: { url: string; lookupKey?: string; rateSeconds: number };
+    data: {
+      url: string;
+      lookupKey?: string;
+      rateSeconds: number;
+      successful: boolean;
+    };
   }) {
-    const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
-      ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
-      healthStatus: {
-        $ne: UserFeedHealthStatus.Ok,
-      },
-    });
-
-    if (healthStatusUpdateCount > 0) {
-      await this.userFeedModel.updateMany(
-        {
-          ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
-          healthStatus: {
-            $ne: UserFeedHealthStatus.Ok,
-          },
+    if (successful) {
+      const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
+        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+        healthStatus: {
+          $ne: UserFeedHealthStatus.Ok,
         },
-        {
-          $set: {
-            healthStatus: UserFeedHealthStatus.Ok,
+      });
+
+      if (healthStatusUpdateCount > 0) {
+        await this.userFeedModel.updateMany(
+          {
+            ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+            healthStatus: {
+              $ne: UserFeedHealthStatus.Ok,
+            },
           },
-        }
-      );
+          {
+            $set: {
+              healthStatus: UserFeedHealthStatus.Ok,
+            },
+          }
+        );
+      }
     }
 
     let feedCursor: Cursor<UserFeedDocument & { users: UserDocument[] }>;
