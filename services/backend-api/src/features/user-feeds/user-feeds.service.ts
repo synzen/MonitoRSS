@@ -844,6 +844,10 @@ export class UserFeedsService {
       .findByIdAndUpdate(feed._id, {
         $set: {
           lastManualRequestAt: requestDate,
+          healthStatus:
+            res.requestStatus === FeedFetcherFetchStatus.Success
+              ? UserFeedHealthStatus.Ok
+              : feed.healthStatus,
         },
       })
       .lean();
