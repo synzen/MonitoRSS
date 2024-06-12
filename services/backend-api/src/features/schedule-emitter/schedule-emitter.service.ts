@@ -39,6 +39,12 @@ export class ScheduleEmitterService {
         .map((seconds) => seconds * 1000),
     ]);
 
+    logger.info(
+      `Found ${setOfRefreshRatesMs.size} unique refresh rates: ${Array.from(
+        setOfRefreshRatesMs
+      ).join(",")}`
+    );
+
     this.cleanupTimers(this.timers, setOfRefreshRatesMs);
     this.setNewTimers(this.timers, setOfRefreshRatesMs, onTimerTrigger);
   }

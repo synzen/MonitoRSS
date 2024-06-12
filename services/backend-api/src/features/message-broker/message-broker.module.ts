@@ -22,6 +22,12 @@ export class MessageBrokerModule implements OnApplicationShutdown {
       imports: [
         RabbitMQModule.forRoot(RabbitMQModule, {
           uri: configValues.BACKEND_API_RABBITMQ_BROKER_URL,
+          connectionInitOptions: {
+            wait: false,
+          },
+          connectionManagerOptions: {
+            heartbeatIntervalInSeconds: 0,
+          },
           defaultExchangeType: "direct",
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
           channels: {
