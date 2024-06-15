@@ -381,6 +381,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                   filters={connection?.filters?.expression as LogicalFilterExpression}
                   articleFormatter={{
                     externalProperties: feed?.externalProperties,
+                    customPlaceholders: connection?.customPlaceholders,
                     options: {
                       formatTables: connection?.details.formatter?.formatTables || false,
                       stripImages: connection?.details.formatter?.stripImages || false,
