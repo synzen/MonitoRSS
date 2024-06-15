@@ -114,7 +114,7 @@ export class FeedsController {
         output: fetchResult,
         url: resolvedUrl,
         attemptedToResolveFromHtml,
-      } = await this.articlesService.fetchFeedArticles(url, {
+      } = await this.articlesService.findOrFetchFeedArticles(url, {
         formatOptions: {
           dateFormat: formatter.options.dateFormat,
           dateTimezone: formatter.options.dateTimezone,

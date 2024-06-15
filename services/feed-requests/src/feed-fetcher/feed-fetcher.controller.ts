@@ -96,7 +96,6 @@ export class FeedFetcherController {
     data: FetchFeedDto,
     metadata: Metadata,
   ): Promise<FetchFeedDetailsDto> {
-    console.log('🚀 ~ FeedFetcherController ~ data:', data);
     const classData = plainToClass(FetchFeedDto, data);
     const results = validateSync(classData);
 
