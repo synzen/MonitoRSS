@@ -128,17 +128,51 @@ export class ArticlesService {
     );
   }
 
+  async findOrFetchFeedArticles(
+    originalUrl: string,
+    options: FetchFeedArticleOptions & {
+      findRssFromHtml?: boolean;
+      executeFetch?: boolean;
+    }
+  ) {
+    try {
+      return await this.fetchFeedArticles(originalUrl, options);
+    } catch (err) {
+      if (!(err instanceof InvalidFeedException)) {
+        throw err;
+      }
+
+      const url = new URL(originalUrl);
+
+      const base = (url.origin + url.pathname).endsWith("/")
+        ? (url.origin + url.pathname).slice(0, -1)
+        : url.origin + url.pathname;
+
+      const newUrls = [`${base}/feed`, `${base}/rss`];
+
+      for (const newUrl of newUrls) {
+        try {
+          return await this.fetchFeedArticles(newUrl, {
+            ...options,
+          });
+        } catch (subError) {
+          continue;
+        }
+      }
+
+      throw err;
+    }
+  }
+
   async fetchFeedArticles(
     url: string,
     {
       formatOptions,
       externalFeedProperties,
       findRssFromHtml,
-      redirectedFromHtml,
       executeFetch,
     }: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
-      redirectedFromHtml?: boolean;
       executeFetch?: boolean;
     }
   ): Promise<{
@@ -160,7 +194,6 @@ export class ArticlesService {
       return {
         output: cachedArticles,
         url,
-        attemptedToResolveFromHtml: redirectedFromHtml,
       };
     }
 
@@ -173,7 +206,6 @@ export class ArticlesService {
       return {
         output: null,
         url,
-        attemptedToResolveFromHtml: redirectedFromHtml,
       };
     }
 
@@ -182,7 +214,6 @@ export class ArticlesService {
         formatOptions,
         useParserRules: getParserRules({ url }),
         externalFeedProperties,
-        redirectedFromHtml,
       });
 
       await this.setFeedArticlesInCache({
@@ -194,20 +225,25 @@ export class ArticlesService {
       return {
         output: fromXml,
         url,
-        attemptedToResolveFromHtml: redirectedFromHtml,
       };
     } catch (err) {
       if (err instanceof InvalidFeedException && findRssFromHtml) {
         const rssUrl = this.extractRssFromHtml(response.body);
 
         if (rssUrl) {
-          return this.fetchFeedArticles(rssUrl, {
-            formatOptions,
-            externalFeedProperties,
-            redirectedFromHtml: true,
-          });
-        } else {
-          err.redirectedFromHtml = true;
+          if (rssUrl.startsWith("/")) {
+            const newUrl = new URL(url);
+
+            return this.fetchFeedArticles(newUrl.origin + rssUrl, {
+              formatOptions,
+              externalFeedProperties,
+            });
+          } else {
+            return this.fetchFeedArticles(rssUrl, {
+              formatOptions,
+              externalFeedProperties,
+            });
+          }
         }
       }
 
@@ -694,7 +730,6 @@ export class ArticlesService {
       formatOptions: UserFeedFormatOptions;
       useParserRules: PostProcessParserRule[] | undefined;
       externalFeedProperties?: Array<ExternalFeedProperty>;
-      redirectedFromHtml?: boolean;
     }
   ): Promise<XmlParsedArticlesOutput> {
     const feedparser = new FeedParser({});
@@ -713,11 +748,7 @@ export class ArticlesService {
           err.message === "Not a feed" ||
           err.message.startsWith("Unexpected end")
         ) {
-          reject(
-            new InvalidFeedException("Invalid feed", {
-              redirectedFromHtml: options.redirectedFromHtml,
-            })
-          );
+          reject(new InvalidFeedException("Invalid feed"));
         } else {
           reject(err);
         }

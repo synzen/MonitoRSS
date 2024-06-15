@@ -198,10 +198,7 @@ export class FeedsController {
             totalArticles: 0,
             selectedProperties: [],
             url,
-            attemptedToResolveFromHtml:
-              err instanceof InvalidFeedException
-                ? err.redirectedFromHtml
-                : false,
+            attemptedToResolveFromHtml: true,
           },
         };
       }
