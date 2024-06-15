@@ -44,6 +44,10 @@ export class EnvironmentVariables {
   USER_FEEDS_DISCORD_CLIENT_ID: string;
 
   @IsString()
+  @IsNotEmpty()
+  USER_FEEDS_DISCORD_API_TOKEN: string;
+
+  @IsString()
   USER_FEEDS_DISCORD_RABBITMQ_URI: string;
 
   @IsNumberString()

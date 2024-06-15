@@ -11,6 +11,7 @@ export function testConfig(): EnvironmentVariables {
     USER_FEEDS_FEED_REQUESTS_API_KEY: "feed-fetcher-api-key",
     USER_FEEDS_POSTGRES_DATABASE: "test",
     USER_FEEDS_DISCORD_CLIENT_ID: "discord-client-id",
+    USER_FEEDS_DISCORD_API_TOKEN: "discord-token",
     USER_FEEDS_DISCORD_RABBITMQ_URI: "amqp://localhost:5672",
     USER_FEEDS_RABBITMQ_BROKER_URL: "amqp://localhost:5672",
     USER_FEEDS_FEED_REQUESTS_GRPC_URL: "dns:///localhost:4999",

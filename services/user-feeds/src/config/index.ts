@@ -45,6 +45,8 @@ export function config(options?: {
       .USER_FEEDS_POSTGRES_DATABASE as string,
     USER_FEEDS_DISCORD_CLIENT_ID: process.env
       .USER_FEEDS_DISCORD_CLIENT_ID as string,
+    USER_FEEDS_DISCORD_API_TOKEN: process.env
+      .USER_FEEDS_DISCORD_API_TOKEN as string,
     USER_FEEDS_DISCORD_RABBITMQ_URI: process.env
       .USER_FEEDS_DISCORD_RABBITMQ_URI as string,
     USER_FEEDS_API_PORT: process.env.USER_FEEDS_API_PORT as string,

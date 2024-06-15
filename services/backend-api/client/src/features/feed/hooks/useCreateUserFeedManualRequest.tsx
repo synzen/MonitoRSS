@@ -25,7 +25,8 @@ export const useCreateUserFeedManualRequest = () => {
             (query.queryKey[0] === "user-feed-requests" &&
               (query.queryKey[1] as { feedId?: string })?.feedId === input.feedId) ||
             (query.queryKey[0] === "user-feed" &&
-              (query.queryKey[1] as { feedId?: string })?.feedId === input.feedId)
+              (query.queryKey[1] as { feedId?: string })?.feedId === input.feedId) || 
+            (query.queryKey[0] === "user-feeds")
           );
         },
         exact: false,
