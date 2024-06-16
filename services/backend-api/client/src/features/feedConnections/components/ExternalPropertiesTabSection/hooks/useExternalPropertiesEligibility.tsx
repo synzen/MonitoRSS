@@ -2,8 +2,7 @@ import { Alert, AlertDescription, AlertIcon, AlertTitle, Box } from "@chakra-ui/
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { useUserMe } from "../../../../discordUser";
 import { useUserFeedArticles } from "../../../../feed";
-
-const ARTICLE_THRESHOLD = 50;
+import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../../../../constants/externalPropertiesMaxArticles";
 
 export const useExternalPropertiesEligibility = () => {
   const { userFeed } = useUserFeedContext();
@@ -34,7 +33,7 @@ export const useExternalPropertiesEligibility = () => {
     };
   }
 
-  if (data.result.totalArticles <= ARTICLE_THRESHOLD) {
+  if (data.result.totalArticles < EXTERNAL_PROPERTIES_MAX_ARTICLES) {
     return {
       loaded: true,
       eligible: true,
@@ -51,7 +50,7 @@ export const useExternalPropertiesEligibility = () => {
           <AlertTitle>This feature is disabled for this feed</AlertTitle>
           <AlertDescription>
             To prevent performance issues, this feature is only enabled for feeds with fewer than{" "}
-            {ARTICLE_THRESHOLD + 1} articles. This feed currently has {data.result.totalArticles}{" "}
+            {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles. This feed currently has {data.result.totalArticles}{" "}
             articles.
           </AlertDescription>
         </Box>

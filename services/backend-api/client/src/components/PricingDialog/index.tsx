@@ -32,6 +32,7 @@ import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { ProductKey } from "../../constants";
 import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 import { usePaddleCheckout } from "../../hooks/usePaddleCheckout";
+import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../constants/externalPropertiesMaxArticles";
 
 interface Props {
   isOpen: boolean;
@@ -546,7 +547,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                 </Flex>
                 <Box textAlign="center" pb={3} fontSize="lg">
                   <Text color="whiteAlpha.600" fontSize="sm">
-                    * External properties is currently limited to feeds with fewer than 26 articles
+                    * External properties is currently limited to feeds with fewer than {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
                   </Text>
                 </Box>
                 <Box textAlign="center" pb={3} fontSize="lg">
