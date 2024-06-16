@@ -50,8 +50,8 @@ export const useExternalPropertiesEligibility = () => {
           <AlertTitle>This feature is disabled for this feed</AlertTitle>
           <AlertDescription>
             To prevent performance issues, this feature is only enabled for feeds with fewer than{" "}
-            {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles. This feed currently has {data.result.totalArticles}{" "}
-            articles.
+            {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles. This feed currently has{" "}
+            {data.result.totalArticles} articles.
           </AlertDescription>
         </Box>
       </Alert>

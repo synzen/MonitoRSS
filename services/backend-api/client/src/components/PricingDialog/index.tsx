@@ -547,7 +547,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                 </Flex>
                 <Box textAlign="center" pb={3} fontSize="lg">
                   <Text color="whiteAlpha.600" fontSize="sm">
-                    * External properties is currently limited to feeds with fewer than {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
+                    * External properties is currently limited to feeds with fewer than{" "}
+                    {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
                   </Text>
                 </Box>
                 <Box textAlign="center" pb={3} fontSize="lg">
