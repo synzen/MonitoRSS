@@ -11,6 +11,7 @@ import {
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { HTMLElement, parse, valid } from "node-html-parser";
+import { convert, SelectorDefinition } from "html-to-text";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import { ExternalFeedProperty, PostProcessParserRule } from "./constants";
 import "dayjs/locale/af";
@@ -382,21 +383,58 @@ export class ArticleParserService {
   } {
     const isValid = valid(inputString);
 
+    let images: string[] = [];
+    let anchors: string[] = [];
+
     if (!isValid) {
+      // fallback to using the slower html-to-text
+
+      const imageSelector: SelectorDefinition = {
+        selector: "img",
+        format: "images",
+      };
+
+      const anchorSelector: SelectorDefinition = {
+        selector: "a",
+        format: "anchors",
+      };
+
+      convert(inputString, {
+        formatters: {
+          images: (elem) => {
+            const attribs = elem.attribs || {};
+
+            const src = (attribs.src || "").trim();
+
+            if (src) {
+              images.push(src);
+            }
+          },
+          anchors: (elem) => {
+            const href = elem.attribs.href;
+
+            if (href) {
+              anchors.push(href);
+            }
+          },
+        },
+        selectors: [imageSelector, anchorSelector],
+      });
+
       return {
-        images: [],
-        anchors: [],
+        images,
+        anchors,
       };
     }
 
     const root = parse(inputString);
 
-    const images = root
+    images = root
       .getElementsByTagName("img")
       .map((e) => e.getAttribute("src"))
       .filter((e): e is string => !!e);
 
-    const anchors = root
+    anchors = root
       .querySelectorAll("a")
       .map((e) => e.getAttribute("href"))
       .filter((e): e is string => !!e);

@@ -8,7 +8,7 @@ describe("ArticleParserService", () => {
   let service: ArticleParserService;
 
   beforeEach(() => {
-    service = new ArticleParserService();
+    service = new ArticleParserService({} as never);
   });
 
   describe("flatten", () => {
@@ -361,6 +361,7 @@ describe("ArticleParserService", () => {
           dateFormat,
           dateTimezone: undefined,
           disableImageLinkPreviews: false,
+          dateLocale: undefined,
         },
         useParserRules: [],
       });
@@ -390,6 +391,7 @@ describe("ArticleParserService", () => {
           dateFormat,
           dateTimezone: undefined,
           disableImageLinkPreviews: false,
+          dateLocale: undefined,
         },
         useParserRules: [],
       });
@@ -422,6 +424,7 @@ describe("ArticleParserService", () => {
           dateFormat: undefined,
           dateTimezone,
           disableImageLinkPreviews: false,
+          dateLocale: undefined,
         },
         useParserRules: [],
       });

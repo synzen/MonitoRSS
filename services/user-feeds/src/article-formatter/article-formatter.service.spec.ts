@@ -410,6 +410,15 @@ describe("ArticleFormatterService", () => {
 
         expect(result.value).toEqual("First **Before**:");
       });
+
+      it("adds spaces around it", () => {
+        const value = `this <strong>is</strong> bold`;
+        service = new ArticleFormatterService();
+
+        const result = service.formatValueForDiscord(value);
+
+        expect(result.value).toEqual("this **is** bold");
+      });
     });
 
     describe("code", () => {

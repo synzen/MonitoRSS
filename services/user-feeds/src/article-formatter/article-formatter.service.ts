@@ -152,9 +152,6 @@ export class ArticleFormatterService {
     value: string,
     options?: FormatOptions
   ): { value: string } {
-    const images: string[] = [];
-    const anchors: string[] = [];
-
     const tableSelector: SelectorDefinition = {
       selector: "table",
       format: "codedDataTable",
@@ -302,10 +299,6 @@ export class ArticleFormatterService {
           if (options?.disableImageLinkPreviews) {
             builder.addInline(">");
           }
-
-          if (src) {
-            images.push(elem.attribs.src);
-          }
         },
         anchors: (elem, walk, builder, options) => {
           const anchorsFormatter = builder.options.formatters.anchor;
@@ -321,8 +314,6 @@ export class ArticleFormatterService {
 
             return;
           }
-
-          anchors.push(href);
 
           if (
             elem.children.length === 1 &&
