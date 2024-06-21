@@ -236,10 +236,20 @@ export class ArticleFormatterService {
           builder.closeBlock(options);
         },
         heading: (elem, walk, builder, options) => {
+          /**
+           * Spacing should normally be around bolded elements, but is excluded for paragraphs
+           * since spacing is accounted for in the paragraph formatter, and anchors since they
+           * are converted to masked links
+           */
+          const skipSpacingAround =
+            elem.parent?.type === "tag" &&
+            elem.parent.name &&
+            ["p", "a"].includes(elem.parent.name);
+
           builder.openBlock(options);
-          builder.addLiteral("**");
+          builder.addLiteral(`${skipSpacingAround ? "" : " "}**`);
           walk(elem.children, builder);
-          builder.addLiteral("**");
+          builder.addLiteral(`**${skipSpacingAround ? "" : " "}`);
           builder.closeBlock(options);
         },
         paragraph: (elem, walk, builder, options) => {

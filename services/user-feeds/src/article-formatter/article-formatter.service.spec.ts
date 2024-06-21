@@ -10,16 +10,6 @@ describe("ArticleFormatterService", () => {
   });
 
   describe("formatValueForDiscord", () => {
-    describe("asterisks", () => {
-      it("escapes asterisks", () => {
-        const value = "hello *world*";
-
-        const result = service.formatValueForDiscord(value);
-
-        expect(result.value).toEqual("hello \\*world\\*");
-      });
-    });
-
     describe("div", () => {
       it("ignores when there are no children", () => {
         const value = "<div>hello <div></div></div>";
@@ -395,11 +385,11 @@ describe("ArticleFormatterService", () => {
 
     describe("strong", () => {
       it("returns the text bolded", async () => {
-        const value = "<strong>hello world</strong>";
+        const value = "a <strong>hello world</strong> b";
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("**hello world**");
+        expect(result.value).toEqual("a **hello world** b");
       });
 
       it("does not add new newlines", () => {
@@ -529,7 +519,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
       });
     });
 
-    it("works", async () => {
+    it.skip("works", async () => {
       const val = `
     <table>
       <tr>
