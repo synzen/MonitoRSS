@@ -75,12 +75,14 @@ const PlaceholderRow = ({
         </HStack>
       </Td>
       <Td whiteSpace="normal">
-        {value.split("\n").map((line, idx) => (
-          // eslint-disable-next-line react/no-array-index-key
-          <span key={idx}>
-            {line} <br />
-          </span>
-        ))}
+        <Box maxHeight={150} overflow="auto">
+          {value.split("\n").map((line, idx) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <span key={idx}>
+              {line} <br />
+            </span>
+          ))}
+        </Box>
       </Td>
     </Tr>
   );
