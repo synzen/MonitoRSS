@@ -392,13 +392,13 @@ describe('FeedFetcherListenerService (Integration)', () => {
       await requestRepo.persistAndFlush(req);
 
       await expect(
-        service.requestExistsAfterTime(
+        service.getLatestRequestAfterTime(
           {
             url,
           },
           new Date(2019, 1, 1),
         ),
-      ).resolves.toEqual(true);
+      ).resolves.toBeTruthy();
     });
 
     it('should return true if no request exists after the given time', async () => {
@@ -410,13 +410,13 @@ describe('FeedFetcherListenerService (Integration)', () => {
       await requestRepo.persistAndFlush(req);
 
       await expect(
-        service.requestExistsAfterTime(
+        service.getLatestRequestAfterTime(
           {
             url,
           },
           new Date(2021, 1, 1),
         ),
-      ).resolves.toEqual(false);
+      ).resolves.toBeTruthy();
     });
   });
 

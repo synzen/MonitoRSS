@@ -136,12 +136,13 @@ export class FeedFetcherListenerService {
               request = result.request;
             }
 
-            await this.emitFetchCompleted({
-              lookupKey,
-              url,
-              rateSeconds: rateSeconds,
-              successful: result?.request.status === RequestStatus.OK,
-            });
+            if (result.successful) {
+              await this.emitFetchCompleted({
+                lookupKey,
+                url,
+                rateSeconds: rateSeconds,
+              });
+            }
           } finally {
             if (message.timestamp) {
               const nowTs = Date.now();
@@ -192,7 +193,7 @@ export class FeedFetcherListenerService {
     url: string;
     rateSeconds: number;
     saveToObjectStorage?: boolean;
-  }): Promise<undefined | { request: Request }> {
+  }): Promise<{ successful: boolean; request?: Request }> {
     const url = data.url;
     const rateSeconds = data.rateSeconds;
     const lookupKey = data.lookupKey;
@@ -201,17 +202,17 @@ export class FeedFetcherListenerService {
       .subtract(Math.round(rateSeconds * 0.75), 'seconds')
       .toDate();
 
-    const requestExistsAfterTime = await this.requestExistsAfterTime(
+    const latestRequestAfterTime = await this.getLatestRequestAfterTime(
       { url },
       dateToCheck,
     );
 
-    if (requestExistsAfterTime) {
+    if (latestRequestAfterTime) {
       logger.debug(
         `Request ${url} with rate ${rateSeconds} has been recently processed, skipping`,
       );
 
-      return;
+      return { successful: latestRequestAfterTime.status === RequestStatus.OK };
     }
 
     const { skip, nextRetryDate, failedAttemptsCount } =
@@ -225,37 +226,37 @@ export class FeedFetcherListenerService {
         `Request ${url} with rate ${rateSeconds} has ` +
           `recently failed and will be skipped until ${nextRetryDate}`,
       );
-    } else {
-      const { request } = await this.feedFetcherService.fetchAndSaveResponse(
-        url,
-        {
-          saveResponseToObjectStorage: data.saveToObjectStorage,
-          lookupKey,
-          source: RequestSource.Schedule,
-        },
-      );
 
-      if (request.status === RequestStatus.REFUSED_LARGE_FEED) {
-        this.emitRejectedUrl({ url });
-      } else if (request.status !== RequestStatus.OK) {
-        const nextRetryDate = this.calculateNextRetryDate(
-          new Date(),
-          failedAttemptsCount,
-        );
-
-        this.emitFailingUrl({ lookupKey, url });
-
-        logger.debug(
-          `Request with url ${url} failed, next retry date: ${nextRetryDate}`,
-        );
-
-        request.nextRetryDate = nextRetryDate;
-      }
-
-      return { request };
+      return { successful: false };
     }
 
-    // await this.deleteStaleRequests(url);
+    const { request } = await this.feedFetcherService.fetchAndSaveResponse(
+      url,
+      {
+        saveResponseToObjectStorage: data.saveToObjectStorage,
+        lookupKey,
+        source: RequestSource.Schedule,
+      },
+    );
+
+    if (request.status === RequestStatus.REFUSED_LARGE_FEED) {
+      this.emitRejectedUrl({ url });
+    } else if (request.status !== RequestStatus.OK) {
+      const nextRetryDate = this.calculateNextRetryDate(
+        new Date(),
+        failedAttemptsCount,
+      );
+
+      this.emitFailingUrl({ lookupKey, url });
+
+      logger.debug(
+        `Request with url ${url} failed, next retry date: ${nextRetryDate}`,
+      );
+
+      request.nextRetryDate = nextRetryDate;
+    }
+
+    return { request, successful: request.status === RequestStatus.OK };
   }
 
   async shouldSkipAfterPreviousFailedAttempt({
@@ -398,12 +399,10 @@ export class FeedFetcherListenerService {
     lookupKey,
     url,
     rateSeconds,
-    successful,
   }: {
     lookupKey?: string;
     url: string;
     rateSeconds: number;
-    successful: boolean;
   }) {
     try {
       this.amqpConnection.publish<{
@@ -411,14 +410,12 @@ export class FeedFetcherListenerService {
           lookupKey?: string;
           url: string;
           rateSeconds: number;
-          successful: boolean;
         };
       }>('', 'url.fetch.completed', {
         data: {
           lookupKey,
           url,
           rateSeconds,
-          successful,
         },
       });
     } catch (err) {
@@ -479,7 +476,7 @@ export class FeedFetcherListenerService {
     return dayjs(referenceDate).add(minutesToWait, 'minute').toDate();
   }
 
-  async requestExistsAfterTime(
+  async getLatestRequestAfterTime(
     requestQuery: {
       lookupKey?: string;
       url: string;
@@ -495,11 +492,14 @@ export class FeedFetcherListenerService {
         source: RequestSource.Schedule,
       },
       {
-        fields: ['id'],
+        fields: ['status'],
+        orderBy: {
+          createdAt: 'DESC',
+        },
       },
     );
 
-    return !!found;
+    return found;
   }
 
   /**

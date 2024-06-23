@@ -93,38 +93,35 @@ export class MessageBrokerEventsService {
     createQueueIfNotExists: true,
   })
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds, successful },
+    data: { url, lookupKey, rateSeconds },
   }: {
     data: {
       url: string;
       lookupKey?: string;
       rateSeconds: number;
-      successful: boolean;
     };
   }) {
-    if (successful) {
-      const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
-        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
-        healthStatus: {
-          $ne: UserFeedHealthStatus.Ok,
-        },
-      });
+    const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
+      ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+      healthStatus: {
+        $ne: UserFeedHealthStatus.Ok,
+      },
+    });
 
-      if (healthStatusUpdateCount > 0) {
-        await this.userFeedModel.updateMany(
-          {
-            ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
-            healthStatus: {
-              $ne: UserFeedHealthStatus.Ok,
-            },
+    if (healthStatusUpdateCount > 0) {
+      await this.userFeedModel.updateMany(
+        {
+          ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+          healthStatus: {
+            $ne: UserFeedHealthStatus.Ok,
           },
-          {
-            $set: {
-              healthStatus: UserFeedHealthStatus.Ok,
-            },
-          }
-        );
-      }
+        },
+        {
+          $set: {
+            healthStatus: UserFeedHealthStatus.Ok,
+          },
+        }
+      );
     }
 
     let feedCursor: Cursor<UserFeedDocument & { users: UserDocument[] }>;
@@ -180,6 +177,23 @@ export class MessageBrokerEventsService {
           parseExternalProperties: allowExternalProperties,
           user: feed.users[0],
         });
+
+        // await this.userFeedModel.updateOne(
+        //   {
+        //     _id: feed._id,
+        //   },
+        //   {
+        //     $set: {
+        //       lastRefreshedAt: new Date(),
+        //     },
+        //   },
+        //   {
+        //     writeConcern: {
+        //       w: 0,
+        //       journal: false,
+        //     },
+        //   }
+        // );
       } catch (err) {
         logger.error(
           `Failed to emit deliver feed articles event for feed ${feed._id}: ${
