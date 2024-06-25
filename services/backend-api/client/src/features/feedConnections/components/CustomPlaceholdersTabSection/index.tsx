@@ -6,19 +6,17 @@ import {
   AccordionPanel,
   Box,
   Button,
-  Center,
   Code,
   HStack,
   Heading,
   Highlight,
-  Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AddIcon } from "@chakra-ui/icons";
 import { v4 as uuidv4 } from "uuid";
 import { notifyError } from "../../../../utils/notifyError";
@@ -27,31 +25,22 @@ import {
   CustomPlaceholdersFormSchema,
 } from "./constants/CustomPlaceholderFormSchema";
 import { CustomPlaceholderForm } from "./CustomPlaceholderForm";
-import { useConnection, useUpdateConnection } from "../../hooks";
-import { InlineErrorAlert, SavedUnsavedChangesPopupBar } from "@/components";
-import { FeedConnectionType } from "@/types";
+import { useUpdateConnection } from "../../hooks";
+import { SavedUnsavedChangesPopupBar } from "@/components";
 import { notifySuccess } from "@/utils/notifySuccess";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { BlockableFeature, CustomPlaceholderStepType, SupporterTier } from "@/constants";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
-interface Props {
-  feedId: string;
-  connectionId: string;
-  connectionType: FeedConnectionType;
-  articleFormat: GetUserFeedArticlesInput["data"]["formatter"];
-}
-
-export const CustomPlaceholdersTabSection = ({
-  feedId,
-  connectionId,
-  connectionType,
-  articleFormat,
-}: Props) => {
-  const { connection, status, error } = useConnection({
-    connectionId,
-    feedId,
-  });
+export const CustomPlaceholdersTabSection = () => {
+  const {
+    userFeed: { id: feedId },
+    connection: {
+      id: connectionId,
+      key: connectionType,
+      customPlaceholders: currentCustomPlaceholders,
+    },
+  } = useUserFeedConnectionContext();
   const { mutateAsync } = useUpdateConnection({
     type: connectionType,
     disablePreviewInvalidation: true,
@@ -60,7 +49,7 @@ export const CustomPlaceholdersTabSection = ({
     resolver: yupResolver(CustomPlaceholdersFormSchema),
     mode: "all",
     defaultValues: {
-      customPlaceholders: connection?.customPlaceholders || [],
+      customPlaceholders: currentCustomPlaceholders || [],
     },
   });
   const {
@@ -70,21 +59,12 @@ export const CustomPlaceholdersTabSection = ({
     formState: { dirtyFields },
   } = formMethods;
   const { t } = useTranslation();
-  const currentCustomPlaceholders = connection?.customPlaceholders;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "customPlaceholders",
     keyName: "hookKey",
   });
   const [activeIndex, setActiveIndex] = useState<number | number[] | undefined>();
-
-  useEffect(() => {
-    if (currentCustomPlaceholders) {
-      reset({
-        customPlaceholders: currentCustomPlaceholders || [],
-      });
-    }
-  }, [currentCustomPlaceholders]);
 
   const onSubmit = async ({ customPlaceholders }: CustomPlaceholdersFormData) => {
     try {
@@ -108,6 +88,7 @@ export const CustomPlaceholdersTabSection = ({
           })),
         },
       });
+      reset({ customPlaceholders });
       notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
       notifyError(t("common.errors.failedToSave"), err as Error);
@@ -137,20 +118,6 @@ export const CustomPlaceholdersTabSection = ({
     remove(index);
     setActiveIndex(-1);
   };
-
-  if (error) {
-    return (
-      <InlineErrorAlert title={t("common.errors.somethingWentWrong")} description={error.message} />
-    );
-  }
-
-  if (status === "loading") {
-    return (
-      <Center>
-        <Spinner />
-      </Center>
-    );
-  }
 
   return (
     <Stack spacing={8} mb={24}>
@@ -218,13 +185,9 @@ export const CustomPlaceholdersTabSection = ({
                       <AccordionPanel pb={4}>
                         <Stack>
                           <CustomPlaceholderForm
-                            articleFormat={articleFormat}
                             isExpanded={activeIndex === index}
                             onDelete={() => onDeleteCustomPlaceholder(index)}
-                            feedId={feedId}
-                            connectionId={connectionId}
                             index={index}
-                            connectionType={connectionType}
                           />
                         </Stack>
                       </AccordionPanel>

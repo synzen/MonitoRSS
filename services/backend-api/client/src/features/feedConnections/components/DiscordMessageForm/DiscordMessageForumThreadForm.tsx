@@ -22,17 +22,12 @@ import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FiFilter } from "react-icons/fi";
 import { DiscordMessageFormData } from "@/types/discord";
-import { useDiscordChannelConnection, useDiscordChannelForumTags } from "../../hooks";
+import { useDiscordChannelForumTags } from "../../hooks";
 import { DiscordForumTagFiltersDialog } from "./DiscordForumTagFiltersDialog";
 import { LogicalFilterExpression } from "../../types";
 import { useDiscordWebhook } from "../../../discordWebhooks";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
-
-interface Props {
-  feedId: string;
-  connectionId: string;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
-}
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../../../../types";
 
 const TagCheckbox = ({
   emojiName,
@@ -42,8 +37,6 @@ const TagCheckbox = ({
   filters,
   name,
   onChange,
-  feedId,
-  articleFormatter,
 }: {
   id: string;
   isChecked: boolean;
@@ -52,8 +45,6 @@ const TagCheckbox = ({
   emojiName: string | null;
   name?: string;
   hasPermissionToUse: boolean;
-  feedId: string;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }) => {
   const { t } = useTranslation();
 
@@ -87,9 +78,7 @@ const TagCheckbox = ({
           </Checkbox>
           {isChecked && (
             <DiscordForumTagFiltersDialog
-              articleFormatter={articleFormatter}
               tagName={`${emojiName || ""} ${name || ""}`.trim()}
-              feedId={feedId}
               onFiltersUpdated={async (newFilters) => {
                 onChange(isChecked, newFilters);
               }}
@@ -112,22 +101,15 @@ const TagCheckbox = ({
   );
 };
 
-export const DiscordMessageForumThreadForm = ({
-  feedId,
-  connectionId,
-  articleFormatter,
-}: Props) => {
+export const DiscordMessageForumThreadForm = () => {
   const {
     control,
     formState: { errors },
   } = useFormContext<DiscordMessageFormData>();
-  const { connection } = useDiscordChannelConnection({
-    feedId,
-    connectionId,
-  });
-  const guildId = connection?.details?.channel?.guildId || connection?.details.webhook?.guildId;
-  const channelId = connection?.details?.channel?.id;
-  const webhookId = connection?.details?.webhook?.id;
+  const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const guildId = connection.details.channel?.guildId || connection.details.webhook?.guildId;
+  const channelId = connection.details.channel?.id;
+  const webhookId = connection.details.webhook?.id;
   const { data: discordWebhookData } = useDiscordWebhook({
     webhookId,
   });
@@ -138,7 +120,7 @@ export const DiscordMessageForumThreadForm = ({
   const { t } = useTranslation();
   const availableTagIds = new Set(availableTags?.map((tag) => tag.id));
   const deletedTagIds = new Set(
-    connection?.details?.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id)
+    connection.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id)
   );
 
   return (
@@ -220,8 +202,6 @@ export const DiscordMessageForumThreadForm = ({
                         return (
                           <TagCheckbox
                             key={id}
-                            articleFormatter={articleFormatter}
-                            feedId={feedId}
                             filters={filters || null}
                             emojiName={emojiName}
                             hasPermissionToUse={hasPermissionToUse}

@@ -31,17 +31,17 @@ import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { Loading, Menu, ThemedSelect } from "@/components";
 import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from "../../hooks";
 import getChakraColor from "../../../../utils/getChakraColor";
-import { GetUserFeedArticlesInput } from "../../api";
 import { useDebounce } from "../../../../hooks";
 import { useGetUserFeedArticlesError } from "../../../feedConnections/hooks";
+import { DiscordFormatOptions } from "../../../../types/DiscordFormatOptions";
 
 interface Props {
   feedId: string;
   trigger: React.ReactElement;
   onArticleSelected: (articleId: string) => void;
-  onClickRandomArticle: () => void;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
+  onClickRandomArticle?: () => void;
   singleProperty?: string;
+  articleFormatOptions: DiscordFormatOptions;
 }
 
 export const ArticleSelectDialog = ({
@@ -49,8 +49,8 @@ export const ArticleSelectDialog = ({
   trigger,
   onArticleSelected,
   onClickRandomArticle,
-  articleFormatter,
   singleProperty,
+  articleFormatOptions,
 }: Props) => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { t } = useTranslation();
@@ -62,7 +62,7 @@ export const ArticleSelectDialog = ({
     useUserFeedArticleProperties({
       feedId,
       data: {
-        customPlaceholders: articleFormatter.customPlaceholders,
+        customPlaceholders: articleFormatOptions.customPlaceholders,
       },
       isDisabled: !isOpen,
     });
@@ -95,7 +95,7 @@ export const ArticleSelectDialog = ({
             search: debouncedSearch,
           }
         : undefined,
-      formatter: articleFormatter,
+      formatOptions: articleFormatOptions,
     },
   });
   const { alertComponent } = useGetUserFeedArticlesError({
@@ -111,7 +111,7 @@ export const ArticleSelectDialog = ({
   const onClickArticle = async (articleId?: string) => {
     if (articleId) {
       onArticleSelected(articleId);
-    } else {
+    } else if (onClickRandomArticle) {
       onClickRandomArticle();
     }
 
@@ -304,18 +304,22 @@ export const ArticleSelectDialog = ({
                       </Text>
                     </AlertDescription>
                   </Alert>
-                  <Divider />
-                  <Button onClick={() => onClickArticle()} leftIcon={<RepeatIcon />}>
-                    <span>
-                      {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
-                    </span>
-                  </Button>
+                  {onClickRandomArticle && (
+                    <>
+                      <Divider />
+                      <Button onClick={() => onClickArticle()} leftIcon={<RepeatIcon />}>
+                        <span>
+                          {t("features.userFeeds.components.articleSelectPrompt.selectRandom")}
+                        </span>
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" onClick={onClose}>
+            <Button onClick={onClose}>
               <span>{t("common.buttons.close")}</span>
             </Button>
           </ModalFooter>

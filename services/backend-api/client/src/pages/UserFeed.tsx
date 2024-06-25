@@ -455,7 +455,7 @@ export const UserFeed: React.FC = () => {
                     </Stack>
                   </Stack>
                   <UserFeedHealthAlert />
-                  <UserFeedDisabledAlert feedId={feedId} />
+                  <UserFeedDisabledAlert />
                 </Stack>
                 <Grid
                   templateColumns={{
@@ -695,7 +695,6 @@ export const UserFeed: React.FC = () => {
               <BoxConstrained.Wrapper>
                 <BoxConstrained.Container>
                   <ComparisonsTabSection
-                    feedId={feedId as string}
                     passingComparisons={feed?.passingComparisons}
                     blockingComparisons={feed?.blockingComparisons}
                     onUpdate={({ passingComparisons, blockingComparisons }) =>
@@ -725,7 +724,7 @@ export const UserFeed: React.FC = () => {
             <TabPanel width="100%">
               <BoxConstrained.Wrapper>
                 <BoxConstrained.Container>
-                  <UserFeedLogs feedId={feedId} />
+                  <UserFeedLogs />
                 </BoxConstrained.Container>
               </BoxConstrained.Wrapper>
             </TabPanel>

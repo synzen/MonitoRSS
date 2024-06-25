@@ -25,14 +25,8 @@ import { AddIcon } from "@chakra-ui/icons";
 import { FaEllipsisVertical } from "react-icons/fa6";
 import { DiscordMessageFormData } from "@/types/discord";
 import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 
-interface Props {
-  feedId: string;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
-}
-
-export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }: Props) => {
+export const DiscordMessagePlaceholderLimitsForm = () => {
   const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
   const { fields, append, update, remove } = useFieldArray({
@@ -62,7 +56,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
         </Text>
         {fields.length && (
           <PlaceholderLimitDialog
-            feedId={feedId}
             trigger={
               <Button leftIcon={<AddIcon fontSize="xs" />} size="sm">
                 {t("common.buttons.add")}
@@ -70,7 +63,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
             }
             onSubmit={onSubmitNewLimit}
             mode="add"
-            articleFormatter={articleFormatter}
           />
         )}
       </HStack>
@@ -123,7 +115,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
                           <MenuList>
                             <PlaceholderLimitDialog
                               mode="update"
-                              articleFormatter={articleFormatter}
                               trigger={<MenuItem>{t("common.buttons.edit")}</MenuItem>}
                               onSubmit={(limit) => {
                                 update(index, limit);
@@ -133,7 +124,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
                                 appendString: field.appendString || "",
                                 characterCount: field.characterCount,
                               }}
-                              feedId={feedId}
                             />
                             <MenuItem onClick={() => remove(index)}>
                               {t("common.buttons.delete")}
@@ -152,8 +142,6 @@ export const DiscordMessagePlaceholderLimitsForm = ({ feedId, articleFormatter }
       {!fields.length && (
         <Flex>
           <PlaceholderLimitDialog
-            feedId={feedId}
-            articleFormatter={articleFormatter}
             trigger={
               <Button leftIcon={<AddIcon fontSize="sm" />}>{t("common.buttons.add")}</Button>
             }

@@ -30,7 +30,6 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
   include,
 }) => {
   const { data, error, isFetching } = useDiscordServerChannels({ serverId, include });
-  const { t } = useTranslation();
 
   const options =
     data?.results.map((channel) => ({

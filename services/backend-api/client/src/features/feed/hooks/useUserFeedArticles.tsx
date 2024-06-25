@@ -1,15 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getUserFeedArticles, GetUserFeedArticlesInput, GetUserFeedArticlesOutput } from "../api";
+import { DiscordFormatOptions } from "../../../types/DiscordFormatOptions";
 
-interface Props {
+export interface UseUserFeedArticlesProps {
   feedId?: string;
-  data: GetUserFeedArticlesInput["data"];
+  data: Omit<GetUserFeedArticlesInput["data"], "formatter"> & {
+    formatOptions: DiscordFormatOptions;
+  };
   onSuccess?: (data: GetUserFeedArticlesOutput) => void;
   disabled?: boolean;
 }
 
-export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess, disabled }: Props) => {
+export const useUserFeedArticles = ({
+  feedId,
+  data: inputData,
+  onSuccess,
+  disabled,
+}: UseUserFeedArticlesProps) => {
   const queryKey = [
     "user-feed-articles",
     {
@@ -29,9 +37,25 @@ export const useUserFeedArticles = ({ feedId, data: inputData, onSuccess, disabl
         throw new Error("Feed ID is required to fetch feed articles");
       }
 
+      const { formatOptions, ...rest } = inputData;
+
       return getUserFeedArticles({
         feedId,
-        data: inputData,
+        data: {
+          ...rest,
+          formatter: {
+            customPlaceholders: formatOptions.customPlaceholders,
+            externalProperties: formatOptions.externalProperties,
+            options: {
+              dateFormat: formatOptions.dateFormat,
+              dateTimezone: formatOptions.dateTimezone,
+              disableImageLinkPreviews: formatOptions.disableImageLinkPreviews,
+              formatTables: formatOptions.formatTables,
+              ignoreNewLines: formatOptions.ignoreNewLines,
+              stripImages: formatOptions.stripImages,
+            },
+          },
+        },
       });
     },
     {

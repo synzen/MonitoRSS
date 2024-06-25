@@ -11,32 +11,30 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { CustomPlaceholder, FeedConnectionType } from "../../../../types";
+import { CustomPlaceholder } from "../../../../types";
 import { useCreateConnectionPreview } from "../../hooks";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { InlineErrorAlert } from "../../../../components";
 import { useDebounce } from "../../../../hooks";
 import { CustomPlaceholderStepType } from "../../../../constants";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
 interface Props {
   customPlaceholder: CustomPlaceholder;
-  connectionType: FeedConnectionType;
-  feedId: string;
-  connectionId: string;
-  articleFormat: GetUserFeedArticlesInput["data"]["formatter"];
   selectedArticleId?: string;
   stepIndex: number;
 }
 
 export const CustomPlaceholderPreview = ({
   customPlaceholder: inputCustomPlaceholder,
-  feedId,
-  connectionId,
-  articleFormat,
-  connectionType,
   selectedArticleId,
   stepIndex,
 }: Props) => {
+  const { t } = useTranslation();
+  const {
+    articleFormatOptions,
+    connection: { id: connectionId, key: connectionType },
+    userFeed: { id: feedId },
+  } = useUserFeedConnectionContext();
   const previewInputToDebounce: CustomPlaceholder[] = [
     {
       ...inputCustomPlaceholder,
@@ -59,7 +57,6 @@ export const CustomPlaceholderPreview = ({
   const referenceName = customPlaceholders[0]?.referenceName;
   const customPlaceholder = customPlaceholders[0];
 
-  const { t } = useTranslation();
   const allStepsAreComplete = customPlaceholder.steps.every((s) => {
     if (!s.type || s.type === CustomPlaceholderStepType.Regex) {
       return !!s.regexSearch;
@@ -90,8 +87,8 @@ export const CustomPlaceholderPreview = ({
         customPlaceholders,
         content: `{{custom::${referenceName}}}`,
         connectionFormatOptions: {
-          formatTables: articleFormat.options.formatTables,
-          stripImages: articleFormat.options.stripImages,
+          formatTables: articleFormatOptions.formatTables,
+          stripImages: articleFormatOptions.stripImages,
         },
       },
     },

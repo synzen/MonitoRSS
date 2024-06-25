@@ -2,30 +2,21 @@ import { Alert, AlertDescription, AlertTitle, Box, Button } from "@chakra-ui/rea
 import { useTranslation } from "react-i18next";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { notifyError } from "../../../../utils/notifyError";
-import { useUpdateUserFeed, useUserFeed } from "../../hooks";
+import { useUpdateUserFeed } from "../../hooks";
 import { UserFeedDisabledCode } from "../../types";
 import { UpdateUserFeedInput } from "../../api";
 import { RefreshUserFeedButton } from "../RefreshUserFeedButton";
+import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 
-interface Props {
-  feedId?: string;
-}
-
-export const UserFeedDisabledAlert = ({ feedId }: Props) => {
+export const UserFeedDisabledAlert = () => {
+  const { userFeed: feed } = useUserFeedContext();
   const { t } = useTranslation();
-  const { feed } = useUserFeed({
-    feedId,
-  });
   const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
 
   const onUpdateFeed = async ({ url, ...rest }: UpdateUserFeedInput["data"]) => {
-    if (!feedId) {
-      return;
-    }
-
     try {
       await mutateAsyncUserFeed({
-        feedId,
+        feedId: feed.id,
         data: {
           url: url === feed?.url ? undefined : url,
           ...rest,
@@ -76,7 +67,9 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
           <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
           <AlertDescription display="block">
             <span>{t("pages.userFeed.invalidFeedFailureText")}</span>
-            <Box marginTop="1rem">{feedId && <RefreshUserFeedButton feedId={feedId} />}</Box>
+            <Box marginTop="1rem">
+              <RefreshUserFeedButton />
+            </Box>
           </AlertDescription>
         </Box>
       </Alert>
@@ -90,7 +83,9 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
           <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
           <AlertDescription display="block">
             <span>{t("pages.userFeed.invalidFeedFailureText")}</span>
-            <Box marginTop="1rem">{feedId && <RefreshUserFeedButton feedId={feedId} />}</Box>
+            <Box marginTop="1rem">
+              <RefreshUserFeedButton />
+            </Box>
           </AlertDescription>
         </Box>
       </Alert>
@@ -104,7 +99,9 @@ export const UserFeedDisabledAlert = ({ feedId }: Props) => {
           <AlertTitle>{t("pages.userFeed.connectionFailureTitle")}</AlertTitle>
           <AlertDescription display="block">
             <span>{t("pages.userFeed.connectionFailureText")}</span>
-            <Box marginTop="1rem">{feedId && <RefreshUserFeedButton feedId={feedId} />}</Box>
+            <Box marginTop="1rem">
+              <RefreshUserFeedButton />
+            </Box>
           </AlertDescription>
         </Box>
       </Alert>

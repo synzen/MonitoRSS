@@ -3,29 +3,31 @@ import { useTranslation } from "react-i18next";
 import Select from "react-select";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
 import { InlineErrorAlert, ThemedSelect } from "../../../../components";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
+import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
+import { CustomPlaceholder } from "../../../../types";
 
 interface Props {
-  feedId?: string;
   selectRef?: React.ComponentProps<typeof Select>["ref"] | null;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
+  customPlaceholders: CustomPlaceholder[];
   onChange: (value: string) => void;
   value?: string;
   placeholder?: string;
 }
 
 export const ArticlePropertySelect = ({
-  feedId,
   selectRef,
-  articleFormatter,
+  customPlaceholders,
   value,
   onChange,
   placeholder,
 }: Props) => {
+  const {
+    userFeed: { id: feedId },
+  } = useUserFeedContext();
   const input = {
     feedId,
     data: {
-      customPlaceholders: articleFormatter.customPlaceholders,
+      customPlaceholders,
     },
   };
   const { data, error, fetchStatus } = useUserFeedArticleProperties(input);
@@ -48,15 +50,6 @@ export const ArticlePropertySelect = ({
         value={value}
         placeholder={placeholder}
       />
-      {/* <Select
-        isDisabled={fetchStatus === "fetching" || !!error}
-        borderColor="gray.600"
-        placeholder={t("features.feedConnections.components.articlePropertySelect.placeholder")}
-        {...selectProps}
-        ref={selectRef}
-      >
-        {options}
-      </Select> */}
       {error && (
         <InlineErrorAlert
           title={t("common.errors.somethingWentWrong")}

@@ -36,8 +36,7 @@ import { FiMousePointer } from "react-icons/fi";
 import { CustomPlaceholdersFormData } from "./constants/CustomPlaceholderFormSchema";
 import { AnimatedComponent, ConfirmModal } from "../../../../components";
 import { CustomPlaceholderPreview } from "./CustomPlaceholderPreview";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
-import { CustomPlaceholderDateFormatStep, FeedConnectionType } from "../../../../types";
+import { CustomPlaceholderDateFormatStep } from "../../../../types";
 import { notifyError } from "../../../../utils/notifyError";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
@@ -47,15 +46,12 @@ import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { ArticleSelectDialog } from "../../../feed/components";
 import { useUserFeedArticles } from "../../../feed";
 import { useUserMe } from "../../../discordUser";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
 interface Props {
-  feedId: string;
-  connectionId: string;
   index: number;
   onDelete: (index: number) => Promise<void>;
   isExpanded: boolean;
-  articleFormat: GetUserFeedArticlesInput["data"]["formatter"];
-  connectionType: FeedConnectionType;
 }
 
 interface StepProps {
@@ -313,15 +309,7 @@ const DateFormatStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
   );
 };
 
-export const CustomPlaceholderForm = ({
-  feedId,
-  connectionId,
-  index,
-  onDelete,
-  isExpanded,
-  connectionType,
-  articleFormat,
-}: Props) => {
+export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) => {
   const { t } = useTranslation();
   const {
     control,
@@ -333,6 +321,7 @@ export const CustomPlaceholderForm = ({
     `customPlaceholders.${index}`,
     `customPlaceholders.${index}.steps`,
   ]);
+  const { userFeed, articleFormatOptions } = useUserFeedConnectionContext();
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
   const {
     data: dataUserFeedArticles,
@@ -340,17 +329,14 @@ export const CustomPlaceholderForm = ({
     fetchStatus: fetchStatusUserFeedArticles,
     status: statusUserFeedArticles,
   } = useUserFeedArticles({
-    feedId,
+    feedId: userFeed.id,
     disabled: !isExpanded || !customPlaceholder.sourcePlaceholder,
     data: {
       limit: 1,
       skip: 0,
       selectProperties: [customPlaceholder.sourcePlaceholder],
       random: true,
-      formatter: {
-        ...articleFormat,
-        customPlaceholders: [],
-      },
+      formatOptions: articleFormatOptions,
       filters: {
         articleId: selectedArticleId,
       },
@@ -441,17 +427,11 @@ export const CustomPlaceholderForm = ({
           defaultValue=""
           render={({ field }) => (
             <ArticlePropertySelect
-              feedId={feedId}
-              // selectProps={{ ...field, bg: "gray.800" }}
               value={field.value || ""}
               onChange={(val) => {
                 field.onChange(val);
               }}
-              articleFormatter={{
-                ...articleFormat,
-                // Don't show custom placeholders in the list of available properties
-                customPlaceholders: [],
-              }}
+              customPlaceholders={[]}
             />
           )}
         />
@@ -498,20 +478,16 @@ export const CustomPlaceholderForm = ({
                       <span>Select preview placeholder content</span>
                     </Button>
                   }
-                  feedId={feedId}
-                  articleFormatter={articleFormat}
+                  feedId={userFeed.id}
                   onArticleSelected={setSelectedArticleId}
                   onClickRandomArticle={onClickRandomFeedArticle}
+                  articleFormatOptions={articleFormatOptions}
                 />
                 <Text fontSize={12} color="whiteAlpha.700">
                   Preview Input
                 </Text>
                 <CustomPlaceholderPreview
-                  articleFormat={articleFormat}
-                  connectionId={connectionId}
-                  connectionType={connectionType}
                   customPlaceholder={{ ...customPlaceholder, steps: [] }}
-                  feedId={feedId}
                   stepIndex={0}
                   selectedArticleId={selectedArticleId}
                 />
@@ -625,10 +601,6 @@ export const CustomPlaceholderForm = ({
                           )}
                           {/** Debouncing values works at the upper level, but not here does not work for some reason... */}
                           <CustomPlaceholderPreview
-                            articleFormat={articleFormat}
-                            feedId={feedId}
-                            connectionId={connectionId}
-                            connectionType={connectionType}
                             customPlaceholder={customPlaceholder}
                             selectedArticleId={selectedArticleId}
                             stepIndex={stepIndex + 1}

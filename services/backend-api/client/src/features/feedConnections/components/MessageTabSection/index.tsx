@@ -41,46 +41,25 @@ import { FaExpandAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { notifyError } from "../../../../utils/notifyError";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
-import { useUserFeed, useUserFeedArticles } from "../../../feed/hooks";
+import { useUserFeedArticles } from "../../../feed/hooks";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
-import { FeedConnectionType } from "../../../../types";
 import { DiscordMessageForm } from "../DiscordMessageForm";
 import { ArticleSelectDialog } from "../../../feed/components";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { pages } from "../../../../constants";
 import { UserFeedConnectionTabSearchParam } from "../../../../constants/userFeedConnectionTabSearchParam";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
 interface Props {
-  feedId: string;
-  defaultMessageValues?: DiscordMessageFormData;
   onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
-  connection: {
-    id: string;
-    type: FeedConnectionType;
-  };
-  include?: {
-    forumForms?: boolean;
-  };
   guildId: string | undefined;
 }
 
-export const MessageTabSection = ({
-  feedId,
-  defaultMessageValues,
-  onMessageUpdated,
-  articleFormatter,
-  connection,
-  include,
-  guildId,
-}: Props) => {
-  const { feed } = useUserFeed({
-    feedId,
-  });
+export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
+  const { userFeed, connection, articleFormatOptions } = useUserFeedConnectionContext();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
   const [placeholderTableSearch, setPlaceholderTableSearch] = useState<string>("");
@@ -91,21 +70,17 @@ export const MessageTabSection = ({
     fetchStatus: userFeedArticlesFetchStatus,
     status: userFeedArticlesStatus,
   } = useUserFeedArticles({
-    feedId,
+    feedId: userFeed.id,
     data: {
       limit: 1,
       skip: 0,
       selectProperties: ["*"],
-      formatter: {
-        ...articleFormatter,
-        externalProperties: feed?.externalProperties,
-      },
+      formatOptions: articleFormatOptions,
       filters: {
         articleId: selectedArticleId,
       },
       random: !selectedArticleId,
     },
-    disabled: !feed,
   });
 
   const firstArticle = userFeedArticles?.result.articles[0];
@@ -279,6 +254,7 @@ export const MessageTabSection = ({
                   </Box>
                   <HStack alignItems="center" flexWrap="wrap">
                     <ArticleSelectDialog
+                      articleFormatOptions={articleFormatOptions}
                       trigger={
                         <Button
                           leftIcon={<FiMousePointer />}
@@ -294,8 +270,7 @@ export const MessageTabSection = ({
                           </span>
                         </Button>
                       }
-                      feedId={feedId}
-                      articleFormatter={articleFormatter}
+                      feedId={userFeed.id}
                       onArticleSelected={onSelectedArticle}
                       onClickRandomArticle={onClickRandomFeedArticle}
                     />
@@ -354,9 +329,9 @@ export const MessageTabSection = ({
                             color="blue.400"
                             to={pages.userFeedConnection(
                               {
-                                feedId: feed?.id as string,
+                                feedId: userFeed.id,
                                 connectionId: connection.id,
-                                connectionType: connection.type,
+                                connectionType: connection.key,
                               },
                               {
                                 tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
@@ -369,7 +344,7 @@ export const MessageTabSection = ({
                           <ChakraLink
                             color="blue.400"
                             as={Link}
-                            to={pages.userFeed(feed?.id as string, {
+                            to={pages.userFeed(userFeed.id, {
                               tab: UserFeedTabSearchParam.ExternalProperties,
                             })}
                           >
@@ -388,11 +363,7 @@ export const MessageTabSection = ({
       </Stack>
       <DiscordMessageForm
         onClickSave={onMessageUpdated}
-        defaultValues={defaultMessageValues}
-        connection={connection}
-        feedId={feedId}
         articleIdToPreview={firstArticle?.id}
-        include={include}
         guildId={guildId}
       />
     </Stack>

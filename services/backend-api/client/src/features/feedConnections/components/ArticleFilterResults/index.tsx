@@ -19,33 +19,31 @@ import {
 import { GetArticlesFilterReturnType } from "../../../feed/constants";
 import { LogicalFilterExpression } from "../../types";
 import { useGetUserFeedArticlesError } from "../../hooks";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { ThemedSelect } from "../../../../components";
 import { useDebounce } from "../../../../hooks";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../../../../types";
+import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 
 interface Props {
   title?: React.ReactNode | undefined;
-  feedId?: string;
   filters?: LogicalFilterExpression | null;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
   tableContainer?: {
     theadProps?: TableHeadProps;
   };
 }
 
-export const ArticleFilterResults = ({
-  title,
-  feedId,
-  filters,
-  tableContainer,
-  articleFormatter,
-}: Props) => {
+export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) => {
+  const {
+    userFeed: { id: feedId },
+  } = useUserFeedContext();
+  const { articleFormatOptions } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const [selectedArticleProperty, setSelectedArticleProperty] = useState("title");
   const { data: feedArticlePropertiesResult, status: feedArticlePropertiesStatus } =
     useUserFeedArticleProperties({
       feedId,
       data: {
-        customPlaceholders: articleFormatter.customPlaceholders,
+        customPlaceholders: articleFormatOptions.customPlaceholders,
       },
     });
 
@@ -68,7 +66,7 @@ export const ArticleFilterResults = ({
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
         expression: debouncedFilters || undefined,
       },
-      formatter: articleFormatter,
+      formatOptions: articleFormatOptions,
     },
   });
   const { t } = useTranslation();

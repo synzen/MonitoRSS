@@ -14,11 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { FiMousePointer } from "react-icons/fi";
-import {
-  useUserFeed,
-  useUserFeedArticleProperties,
-  useUserFeedArticles,
-} from "../../../feed/hooks";
+import { useUserFeedArticleProperties, useUserFeedArticles } from "../../../feed/hooks";
 import { AddComparisonSelect } from "./AddComparisonSelect";
 import { ComparisonTag } from "./ComparisonTag";
 import { ArticleSelectDialog } from "../../../feed/components";
@@ -26,9 +22,9 @@ import { notifyError } from "../../../../utils/notifyError";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
+import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 
 interface Props {
-  feedId: string;
   passingComparisons?: string[];
   blockingComparisons?: string[];
   onUpdate: (data: {
@@ -38,22 +34,16 @@ interface Props {
 }
 
 export const ComparisonsTabSection = ({
-  feedId,
   blockingComparisons,
   passingComparisons,
   onUpdate,
 }: Props) => {
   const { t } = useTranslation();
-  const { feed } = useUserFeed({ feedId });
+  const {
+    userFeed: { id: feedId },
+    articleFormatOptions,
+  } = useUserFeedContext();
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
-  const formatOptions = {
-    dateFormat: feed?.formatOptions?.dateFormat,
-    dateTimezone: feed?.formatOptions?.dateTimezone,
-    formatTables: false,
-    stripImages: false,
-    disableImageLinkPreviews: false,
-    ignoreNewLines: false,
-  };
   const {
     data: userFeedArticles,
     refetch: refetchUserFeedArticle,
@@ -66,9 +56,7 @@ export const ComparisonsTabSection = ({
       random: true,
       skip: 0,
       selectProperties: ["*"],
-      formatter: {
-        options: formatOptions,
-      },
+      formatOptions: articleFormatOptions,
       filters: {
         articleId: selectedArticleId,
       },
@@ -211,11 +199,9 @@ export const ComparisonsTabSection = ({
               </Button>
             }
             feedId={feedId}
-            articleFormatter={{
-              options: formatOptions,
-            }}
             onArticleSelected={onSelectedArticle}
             onClickRandomArticle={onClickRandomFeedArticle}
+            articleFormatOptions={articleFormatOptions}
           />
         </Flex>
         {fetchErrorAlert || parseErrorAlert || noArticlesAlert}

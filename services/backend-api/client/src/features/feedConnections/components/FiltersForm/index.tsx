@@ -11,7 +11,6 @@ import {
   RelationalExpressionRightOperandType,
 } from "../../types";
 import { LogicalExpressionForm } from "./LogicalExpressionForm";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { ArticleFilterResults } from "../ArticleFilterResults";
 
 interface FormData {
@@ -21,10 +20,6 @@ interface FormData {
 interface Props {
   expression?: LogicalFilterExpression | null;
   onSave: (expression: LogicalFilterExpression | null) => Promise<void>;
-  data: {
-    feedId?: string;
-    articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
-  };
   formContainerProps?: BoxProps;
   previewContainerProps?: {
     thead: TableHeadProps;
@@ -35,7 +30,6 @@ interface Props {
 export const FiltersForm = ({
   expression = null,
   onSave,
-  data,
   previewTitle,
   previewContainerProps,
   formContainerProps,
@@ -137,8 +131,6 @@ export const FiltersForm = ({
               </HStack>
             </Stack>
             <ArticleFilterResults
-              articleFormatter={data.articleFormatter}
-              feedId={data.feedId}
               filters={watchedExpression}
               title={previewTitle}
               tableContainer={{
@@ -159,9 +151,7 @@ export const FiltersForm = ({
             <LogicalExpressionForm
               onDeleted={onDeletedExpression}
               prefix="expression."
-              data={data}
               containerProps={formContainerProps}
-              articleFormatter={data.articleFormatter}
             />
             <HStack justifyContent="flex-end">
               {isDirty && (
@@ -180,8 +170,6 @@ export const FiltersForm = ({
             </HStack>
           </Stack>
           <ArticleFilterResults
-            articleFormatter={data.articleFormatter}
-            feedId={data.feedId}
             filters={watchedExpression}
             title={previewTitle}
             tableContainer={{

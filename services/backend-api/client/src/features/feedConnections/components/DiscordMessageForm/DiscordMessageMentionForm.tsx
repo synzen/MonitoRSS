@@ -18,12 +18,9 @@ import { MentionSelectDialog } from "../MentionSelectDialog";
 import { useDiscordServerRoles } from "../../../discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
 import { useDiscordUser } from "../../../discordUser";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
-  feedId: string;
   guildId: string | undefined;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 const MentionCheckbox = ({
@@ -32,18 +29,14 @@ const MentionCheckbox = ({
   filters,
   onChangeFilters,
   onDelete,
-  feedId,
   guildId,
-  articleFormatter,
 }: {
   id: string;
   type: "role" | "user";
   filters: { expression: LogicalFilterExpression } | null;
   onChangeFilters: (filters: { expression: LogicalFilterExpression } | null) => void;
   onDelete: () => void;
-  feedId?: string;
   guildId?: string;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }) => {
   const { getRolebyId, isFetching: isFetchingRoles } = useDiscordServerRoles({
     serverId: guildId,
@@ -87,12 +80,10 @@ const MentionCheckbox = ({
           </Flex>
           <DiscordMentionSettingsDialog
             onRemoved={onDelete}
-            feedId={feedId}
             onFiltersUpdated={async (newFilters) => {
               onChangeFilters(newFilters);
             }}
             filters={filters}
-            articleFormatter={articleFormatter}
             trigger={
               <IconButton
                 icon={<SettingsIcon fontSize="sm" />}
@@ -109,7 +100,7 @@ const MentionCheckbox = ({
   );
 };
 
-export const DiscordMessageMentionForm = ({ feedId, guildId, articleFormatter }: Props) => {
+export const DiscordMessageMentionForm = ({ guildId }: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
 
@@ -136,12 +127,10 @@ export const DiscordMessageMentionForm = ({ feedId, guildId, articleFormatter }:
                 return (
                   <MentionCheckbox
                     key={target.id}
-                    articleFormatter={articleFormatter}
                     filters={target.filters as any}
                     id={target.id}
                     type={target.type}
                     guildId={guildId}
-                    feedId={feedId}
                     onChangeFilters={(newFilters) => {
                       const copyTargets = [...(field.value?.targets || [])];
 

@@ -17,9 +17,9 @@ import {
 } from "../../types";
 // import { ArticlePropertySelect } from "./ArticlePropertySelect";
 import { ConditionInput } from "./ConditionInput";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { getNestedField } from "../../../../utils/getNestedField";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
 const { Equals, Contains, Matches } = RelationalExpressionOperator;
 
@@ -27,18 +27,15 @@ interface Props {
   onDelete: () => void;
   prefix?: string;
   deletable?: boolean;
-  data: {
-    feedId?: string;
-  };
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
-export const Condition = ({ onDelete, prefix = "", deletable, data, articleFormatter }: Props) => {
+export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
   const {
     control,
     watch,
     formState: { errors },
   } = useFormContext();
+  const { articleFormatOptions } = useUserFeedConnectionContext();
 
   const { t } = useTranslation();
   const leftOperandType = watch(`${prefix}left.type`) as
@@ -64,8 +61,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, data, articleForma
         render={({ field }) => (
           <>
             <ArticlePropertySelect
-              feedId={data.feedId}
-              articleFormatter={articleFormatter}
+              customPlaceholders={articleFormatOptions.customPlaceholders || []}
               value={field.value}
               onChange={field.onChange}
               placeholder={t(

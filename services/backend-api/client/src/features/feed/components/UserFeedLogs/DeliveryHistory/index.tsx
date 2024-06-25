@@ -34,19 +34,12 @@ import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Search2Icon } from "@chakra-ui/icons";
-import {
-  useUserFeed,
-  useUserFeedArticles,
-  useUserFeedDeliveryLogsWithPagination,
-} from "../../../hooks";
+import { useUserFeedArticles, useUserFeedDeliveryLogsWithPagination } from "../../../hooks";
 import { UserFeedDeliveryLogStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
-
-interface Props {
-  feedId?: string;
-}
+import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 
 const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) => {
   if (status === UserFeedDeliveryLogStatus.DELIVERED) {
@@ -104,12 +97,12 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
   return null;
 };
 
-export const DeliveryHistory = ({ feedId }: Props) => {
+export const DeliveryHistory = () => {
   const [detailsData, setDetailsData] = useState("");
-  const { feed, error: feedError } = useUserFeed({ feedId });
+  const { articleFormatOptions, userFeed } = useUserFeedContext();
   const { data, status, error, skip, nextPage, prevPage, fetchStatus } =
     useUserFeedDeliveryLogsWithPagination({
-      feedId,
+      feedId: userFeed.id,
       data: {},
     });
   const {
@@ -117,23 +110,13 @@ export const DeliveryHistory = ({ feedId }: Props) => {
     error: articlesError,
     fetchStatus: articlesFetchStatus,
   } = useUserFeedArticles({
-    feedId,
+    feedId: userFeed.id,
     disabled: !data?.result.logs.length,
     data: {
       filters: {
         articleIdHashes: data?.result.logs.map((l) => l.articleIdHash),
       },
-      formatter: {
-        options: {
-          dateFormat: feed?.formatOptions?.dateFormat,
-          dateTimezone: feed?.formatOptions?.dateTimezone,
-          formatTables: false,
-          stripImages: false,
-          disableImageLinkPreviews: false,
-          ignoreNewLines: false,
-        },
-        customPlaceholders: [],
-      },
+      formatOptions: articleFormatOptions,
       limit: 25,
       skip: 0,
       selectProperties: ["title", "idHash"],
@@ -195,7 +178,7 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                 </Thead>
                 <Tbody>
                   {data.result.logs.map((item) => {
-                    const connection = feed?.connections.find((c) => c.id === item.mediumId);
+                    const connection = userFeed.connections.find((c) => c.id === item.mediumId);
                     const matchedArticle = articles?.result.articles.find(
                       (a) => a.idHash === item.articleIdHash
                     );
@@ -208,7 +191,7 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                           </Skeleton>
                         </Td>
                         <Td>
-                          <Skeleton isLoaded={!!(feed || feedError) && fetchStatus === "idle"}>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
                             {!connection && (
                               <Text color="whiteAlpha.700" fontStyle="italic">
                                 (deleted connection)
@@ -219,7 +202,7 @@ export const DeliveryHistory = ({ feedId }: Props) => {
                                 as={Link}
                                 fontWeight="semibold"
                                 to={pages.userFeedConnection({
-                                  feedId: feedId as string,
+                                  feedId: userFeed.id,
                                   connectionType: connection?.key as FeedConnectionType,
                                   connectionId: item.mediumId,
                                 })}

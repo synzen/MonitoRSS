@@ -5,23 +5,13 @@ import { useUserFeedArticles } from "../../../../feed";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../../../../constants/externalPropertiesMaxArticles";
 
 export const useExternalPropertiesEligibility = () => {
-  const { userFeed } = useUserFeedContext();
+  const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { data } = useUserFeedArticles({
     feedId: userFeed.id,
     data: {
       limit: 1,
       skip: 0,
-      formatter: {
-        options: {
-          dateFormat: undefined,
-          dateTimezone: undefined,
-          formatTables: false,
-          stripImages: false,
-          disableImageLinkPreviews: false,
-          ignoreNewLines: false,
-        },
-        externalProperties: [],
-      },
+      formatOptions: articleFormatOptions,
       selectProperties: ["id"],
     },
   });

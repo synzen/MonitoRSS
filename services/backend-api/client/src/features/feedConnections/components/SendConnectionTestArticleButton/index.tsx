@@ -2,28 +2,13 @@ import { Button } from "@chakra-ui/react";
 import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { FiPlay } from "react-icons/fi";
-import { FeedConnectionType } from "../../../../types";
 import { notifyError } from "../../../../utils/notifyError";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { ArticleSelectDialog } from "../../../feed/components";
-import { CreateDiscordChannelConnectionTestArticleInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
-interface Props {
-  feedId: string;
-  connectionId: string;
-  type: FeedConnectionType;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
-  previewInput?: CreateDiscordChannelConnectionTestArticleInput;
-}
-
-export const SendConnectionTestArticleButton = ({
-  feedId,
-  connectionId,
-  type,
-  articleFormatter,
-  previewInput,
-}: Props) => {
+export const SendConnectionTestArticleButton = () => {
+  const { userFeed, connection, articleFormatOptions } = useUserFeedConnectionContext();
   const { t } = useTranslation();
   const { sendTestArticle, isFetching } = useContext(SendTestArticleContext);
 
@@ -34,15 +19,14 @@ export const SendConnectionTestArticleButton = ({
 
     try {
       await sendTestArticle({
-        connectionType: type,
+        connectionType: connection.key,
         previewInput: {
-          feedId,
-          connectionId,
+          feedId: userFeed.id,
+          connectionId: connection.id,
           data: {
             article: {
               id: articleId,
             },
-            ...previewInput,
           },
         },
       });
@@ -53,7 +37,8 @@ export const SendConnectionTestArticleButton = ({
 
   return (
     <ArticleSelectDialog
-      feedId={feedId}
+      articleFormatOptions={articleFormatOptions}
+      feedId={userFeed.id}
       trigger={
         <Button variant="solid" colorScheme="blue" isLoading={isFetching} leftIcon={<FiPlay />}>
           <span>{t("features.feedConnections.components.sendTestArticleButton.text")}</span>
@@ -61,7 +46,6 @@ export const SendConnectionTestArticleButton = ({
       }
       onArticleSelected={onClick}
       onClickRandomArticle={onClick}
-      articleFormatter={articleFormatter}
     />
   );
 };

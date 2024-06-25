@@ -41,7 +41,7 @@ interface Props {
 }
 
 const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
-  const { userFeed } = useUserFeedContext();
+  const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [selected, setSelected] = useState("");
   const {
@@ -57,16 +57,7 @@ const CreateArticleInjectionModal = ({ trigger, onSubmitted }: Props) => {
       limit: 1,
       skip: 0,
       random: true,
-      formatter: {
-        options: {
-          dateFormat: undefined,
-          dateTimezone: undefined,
-          formatTables: false,
-          stripImages: false,
-          disableImageLinkPreviews: false,
-          ignoreNewLines: false,
-        },
-      },
+      formatOptions: articleFormatOptions,
     },
   });
 

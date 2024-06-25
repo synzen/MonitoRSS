@@ -13,24 +13,19 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { FiltersForm } from "../FiltersForm";
 import { LogicalFilterExpression } from "../../types";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 
 interface Props {
   trigger: React.ReactElement;
   tagName: string;
-  feedId?: string;
   filters: { expression: LogicalFilterExpression } | null;
   onFiltersUpdated: (filters: { expression: LogicalFilterExpression } | null) => Promise<void>;
-  articleFormatter: GetUserFeedArticlesInput["data"]["formatter"];
 }
 
 export const DiscordForumTagFiltersDialog = ({
   trigger,
   tagName,
-  feedId,
   filters,
   onFiltersUpdated,
-  articleFormatter,
 }: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
@@ -53,10 +48,6 @@ export const DiscordForumTagFiltersDialog = ({
                 {t("components.discordMessageForumThreadForm.threadTagFiltersDescription")}
               </Text>
               <FiltersForm
-                data={{
-                  feedId,
-                  articleFormatter,
-                }}
                 expression={filters?.expression || null}
                 onSave={async (expression) => {
                   onFiltersUpdated(expression ? { expression } : null);

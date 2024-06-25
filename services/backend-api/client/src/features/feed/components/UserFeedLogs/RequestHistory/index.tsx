@@ -22,10 +22,7 @@ import dayjs from "dayjs";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
 import { UserFeedRequestStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
-
-interface Props {
-  feedId?: string;
-}
+import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 
 const createStatusLabel = (
   status: UserFeedRequestStatus,
@@ -67,7 +64,10 @@ const createStatusLabel = (
   }
 };
 
-export const RequestHistory = ({ feedId }: Props) => {
+export const RequestHistory = () => {
+  const {
+    userFeed: { id: feedId },
+  } = useUserFeedContext();
   const { data, status, error, skip, nextPage, prevPage, fetchStatus } =
     useUserFeedRequestsWithPagination({
       feedId,

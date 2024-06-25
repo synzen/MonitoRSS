@@ -27,9 +27,8 @@ import {
   discordMessageFormSchema,
 } from "@/types/discord";
 import { DiscordMessageContentForm } from "./DiscordMessageContentForm";
-// import { DiscordMessageEmbedForm } from "./DiscordMessageEmbedForm";
 import { notifyError } from "../../../../utils/notifyError";
-import { FeedConnectionType } from "../../../../types";
+import { FeedConnectionType, FeedDiscordChannelConnection } from "../../../../types";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
@@ -37,9 +36,11 @@ import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
 import { AnimatedComponent } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
-import { useUserFeed } from "../../../feed/hooks";
-import { GetUserFeedArticlesInput } from "../../../feed/api";
 import { SuspenseErrorBoundary } from "../../../../components/SuspenseErrorBoundary";
+import {
+  UserFeedConnectionProvider,
+  useUserFeedConnectionContext,
+} from "../../../../contexts/UserFeedConnectionContext";
 
 const DiscordMessageEmbedForm = lazy(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
@@ -58,52 +59,35 @@ const DiscordChannelConnectionPreview = lazy(() =>
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 interface Props {
-  defaultValues?: DiscordMessageFormData;
   onClickSave: (data: DiscordMessageFormData) => Promise<void>;
   articleIdToPreview?: string;
-  feedId: string;
   guildId: string | undefined;
-  connection: {
-    id: string;
-    type: FeedConnectionType;
-  };
-  include?: {
-    forumForms?: boolean;
-  };
 }
 
 const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({});
 
-export const DiscordMessageForm = ({
-  defaultValues,
-  onClickSave,
-  articleIdToPreview,
-  connection,
-  feedId,
-  guildId,
-  include,
-}: Props) => {
-  const defaultIndex = defaultValues?.embeds?.length ? defaultValues.embeds.length - 1 : 0;
-  const { feed: userFeed } = useUserFeed({ feedId });
+export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }: Props) => {
+  const { userFeed, connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const defaultIndex = connection.details?.embeds?.length
+    ? connection.details.embeds.length - 1
+    : 0;
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
-
+  const showForumForms =
+    connection.details.channel?.type === "forum" || connection.details.webhook?.type === "forum";
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
     defaultValues: {
-      componentRows: defaultValues?.componentRows,
-      content: defaultValues?.content || "",
-      customPlaceholders: defaultValues?.customPlaceholders,
-      embeds: defaultValues?.embeds,
-      enablePlaceholderFallback: defaultValues?.enablePlaceholderFallback,
-      formatter: defaultValues?.formatter,
-      forumThreadTags: defaultValues?.forumThreadTags,
-      forumThreadTitle: defaultValues?.forumThreadTitle,
-      mentions: defaultValues?.mentions,
-      placeholderLimits: defaultValues?.placeholderLimits,
-      splitOptions: defaultValues?.splitOptions,
-      externalProperties: defaultValues?.externalProperties,
+      content: connection?.details.content,
+      splitOptions: connection?.splitOptions || null,
+      forumThreadTitle: connection?.details.forumThreadTitle,
+      forumThreadTags: connection?.details.forumThreadTags || [],
+      mentions: connection?.mentions,
+      customPlaceholders: connection?.customPlaceholders,
+      componentRows: connection?.details.componentRows,
+      externalProperties: userFeed?.externalProperties,
+      ...connection?.details,
     },
     mode: "all",
   });
@@ -159,7 +143,7 @@ export const DiscordMessageForm = ({
     };
   } = {
     connectionId: connection.id,
-    feedId,
+    feedId: userFeed.id,
     data: {
       article: articleIdToPreview
         ? {
@@ -242,7 +226,7 @@ export const DiscordMessageForm = ({
 
     try {
       await sendTestArticle({
-        connectionType: connection.type,
+        connectionType: connection.key,
         previewInput: previewInput as CreateDiscordChannelConnectionPreviewInput,
       });
     } catch (err) {
@@ -250,203 +234,194 @@ export const DiscordMessageForm = ({
     }
   };
 
-  const articleFormatOptions: GetUserFeedArticlesInput["data"]["formatter"] = {
-    customPlaceholders,
-    options: {
-      dateFormat: userFeed?.formatOptions?.dateFormat,
-      dateTimezone: userFeed?.formatOptions?.dateTimezone,
-      formatTables: formatOptions?.formatTables || false,
-      stripImages: formatOptions?.stripImages || false,
-      disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
-      ignoreNewLines: formatOptions?.ignoreNewLines || false,
-    },
-  };
-
   const errorsExist = Object.keys(errors).length > 0;
 
   return (
-    <FormProvider {...formMethods}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={24} mb={36}>
-          <Stack>
+    <UserFeedConnectionProvider
+      feedId={userFeed.id}
+      connectionId={connection.id}
+      articleFormatOptions={{
+        customPlaceholders,
+        formatTables: formatOptions?.formatTables || false,
+        stripImages: formatOptions?.stripImages || false,
+        disableImageLinkPreviews: formatOptions?.disableImageLinkPreviews || false,
+        ignoreNewLines: formatOptions?.ignoreNewLines || false,
+      }}
+    >
+      <FormProvider {...formMethods}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack spacing={24} mb={36}>
             <Stack>
-              <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
-                <HStack spacing={4} alignItems="center" flexWrap="wrap">
-                  <Heading as="h2" size="md">
-                    {t("components.discordMessageForm.previewSectionTitle")}
-                  </Heading>
-                  {isDirty && (
-                    <Text fontSize="sm" fontWeight={600}>
-                      <Highlight
-                        query={t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                        styles={{
-                          bg: "orange.200",
-                          rounded: "full",
-                          px: "2",
-                          py: "1",
-                        }}
-                      >
-                        {t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                      </Highlight>
-                    </Text>
+              <Stack>
+                <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
+                  <HStack spacing={4} alignItems="center" flexWrap="wrap">
+                    <Heading as="h2" size="md">
+                      {t("components.discordMessageForm.previewSectionTitle")}
+                    </Heading>
+                    {isDirty && (
+                      <Text fontSize="sm" fontWeight={600}>
+                        <Highlight
+                          query={t("components.discordMessageForm.previewSectionUnsavedWarning")}
+                          styles={{
+                            bg: "orange.200",
+                            rounded: "full",
+                            px: "2",
+                            py: "1",
+                          }}
+                        >
+                          {t("components.discordMessageForm.previewSectionUnsavedWarning")}
+                        </Highlight>
+                      </Text>
+                    )}
+                  </HStack>
+                  <Button
+                    leftIcon={<FiPlay />}
+                    onClick={onClickSendPreviewToDiscord}
+                    size="sm"
+                    colorScheme="blue"
+                    isLoading={isSendingTestArticle}
+                    isDisabled={isSendingTestArticle || !articleIdToPreview}
+                  >
+                    <span>{t("components.discordMessageForm.sendPreviewToDiscordButtonText")}</span>
+                  </Button>
+                </HStack>
+                <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
+              </Stack>
+              {connection.key === FeedConnectionType.DiscordChannel && (
+                <SuspenseErrorBoundary>
+                  <Suspense
+                    fallback={
+                      <Center my={8}>
+                        <Spinner />
+                      </Center>
+                    }
+                  >
+                    <DiscordChannelConnectionPreview
+                      connectionId={connection.id}
+                      data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
+                      feedId={userFeed.id}
+                      hasErrors={errorsExist}
+                    />
+                  </Suspense>
+                </SuspenseErrorBoundary>
+              )}
+            </Stack>
+            {showForumForms && (
+              <Stack>
+                <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
+                <DiscordMessageForumThreadForm />
+              </Stack>
+            )}
+            <Stack>
+              <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
+              <DiscordMessageContentForm />
+            </Stack>
+            <Stack>
+              <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
+              <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
+              <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
+                <HStack overflow="auto">
+                  {!!embeds.length && (
+                    <TabList>
+                      {embeds?.map((embed, index) => (
+                        <Tab key={embed.id}>Embed {index + 1}</Tab>
+                      ))}
+                    </TabList>
+                  )}
+                  {(embeds?.length ?? 0) < 10 && (
+                    <Button
+                      onClick={onAddEmbed}
+                      aria-label="Add new embed"
+                      leftIcon={<AddIcon fontSize="sm" />}
+                    >
+                      Add
+                    </Button>
                   )}
                 </HStack>
-                <Button
-                  leftIcon={<FiPlay />}
-                  onClick={onClickSendPreviewToDiscord}
-                  size="sm"
-                  colorScheme="blue"
-                  isLoading={isSendingTestArticle}
-                  isDisabled={isSendingTestArticle || !articleIdToPreview}
-                >
-                  <span>{t("components.discordMessageForm.sendPreviewToDiscordButtonText")}</span>
-                </Button>
-              </HStack>
-              <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
+                <TabPanels>
+                  {embeds?.map((embed, index) => (
+                    <TabPanel key={embed.id}>
+                      <SuspenseErrorBoundary>
+                        <Suspense fallback={<Spinner />}>
+                          <Stack spacing={8}>
+                            <Flex justifyContent="flex-end">
+                              <Button
+                                colorScheme="red"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onRemoveEmbed(index)}
+                              >
+                                {t(
+                                  "features.feedConnections.components.embedForm.deleteButtonText"
+                                )}
+                              </Button>
+                            </Flex>
+                            <DiscordMessageEmbedForm index={index} />
+                          </Stack>
+                        </Suspense>
+                      </SuspenseErrorBoundary>
+                    </TabPanel>
+                  ))}
+                </TabPanels>
+              </Tabs>
             </Stack>
-            {connection.type === FeedConnectionType.DiscordChannel && (
-              <SuspenseErrorBoundary>
-                <Suspense
-                  fallback={
-                    <Center my={8}>
-                      <Spinner />
-                    </Center>
-                  }
-                >
-                  <DiscordChannelConnectionPreview
-                    connectionId={connection.id}
-                    data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
-                    feedId={feedId}
-                    hasErrors={errorsExist}
-                  />
-                </Suspense>
-              </SuspenseErrorBoundary>
-            )}
-          </Stack>
-          {include?.forumForms && (
             <Stack>
-              <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
-              <DiscordMessageForumThreadForm
-                articleFormatter={articleFormatOptions}
-                connectionId={connection.id}
-                feedId={feedId}
-              />
+              <Heading size="md">Buttons</Heading>
+              <DiscordMessageComponentsForm connectionId={connection.id} feedId={userFeed.id} />
             </Stack>
-          )}
-          <Stack>
-            <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
-            <DiscordMessageContentForm />
-          </Stack>
-          <Stack>
-            <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
-            <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
-            <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
-              <HStack overflow="auto">
-                {!!embeds.length && (
-                  <TabList>
-                    {embeds?.map((embed, index) => (
-                      <Tab key={embed.id}>Embed {index + 1}</Tab>
-                    ))}
-                  </TabList>
-                )}
-                {(embeds?.length ?? 0) < 10 && (
-                  <Button
-                    onClick={onAddEmbed}
-                    aria-label="Add new embed"
-                    leftIcon={<AddIcon fontSize="sm" />}
-                  >
-                    Add
-                  </Button>
-                )}
-              </HStack>
-              <TabPanels>
-                {embeds?.map((embed, index) => (
-                  <TabPanel key={embed.id}>
-                    <SuspenseErrorBoundary>
-                      <Suspense fallback={<Spinner />}>
-                        <Stack spacing={8}>
-                          <Flex justifyContent="flex-end">
-                            <Button
-                              colorScheme="red"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => onRemoveEmbed(index)}
-                            >
-                              {t("features.feedConnections.components.embedForm.deleteButtonText")}
-                            </Button>
-                          </Flex>
-                          <DiscordMessageEmbedForm index={index} />
-                        </Stack>
-                      </Suspense>
-                    </SuspenseErrorBoundary>
-                  </TabPanel>
-                ))}
-              </TabPanels>
-            </Tabs>
-          </Stack>
-          <Stack>
-            <Heading size="md">Buttons</Heading>
-            <DiscordMessageComponentsForm connectionId={connection.id} feedId={feedId} />
-          </Stack>
-          <Stack>
-            <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
-            <DiscordMessageMentionForm
-              guildId={guildId}
-              feedId={feedId}
-              articleFormatter={articleFormatOptions}
-            />
-          </Stack>
-          <Stack>
-            <Heading size="md">Placeholder Limits</Heading>
-            <DiscordMessagePlaceholderLimitsForm
-              feedId={feedId}
-              articleFormatter={articleFormatOptions}
-            />
-          </Stack>
-          <AnimatedComponent>
-            {isDirty && (
-              <Flex
-                as={motion.div}
-                direction="row-reverse"
-                position="fixed"
-                bottom="-100px"
-                left="50%"
-                opacity="0"
-                zIndex={100}
-                transform="translate(-50%, -50%)"
-                width={["90%", "90%", "80%", "80%", "1200px"]}
-                borderRadius="md"
-                paddingX={4}
-                paddingY={2}
-                bg="blue.600"
-                animate={{ opacity: 1, bottom: "0px" }}
-                exit={{ opacity: 0, bottom: "-100px" }}
-              >
-                <HStack justifyContent="space-between" width="100%">
-                  <Text>You have unsaved changes!</Text>
-                  <HStack>
-                    <Button
-                      onClick={() => reset()}
-                      variant="ghost"
-                      isDisabled={!isDirty || isSubmitting}
-                    >
-                      <span>{t("features.feed.components.sidebar.resetButton")}</span>
-                    </Button>
-                    <Button
-                      type="submit"
-                      colorScheme="blue"
-                      isDisabled={isSubmitting || !isDirty || errorsExist}
-                      isLoading={isSubmitting}
-                    >
-                      <span>{t("features.feed.components.sidebar.saveButton")}</span>
-                    </Button>
+            <Stack>
+              <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
+              <DiscordMessageMentionForm guildId={guildId} />
+            </Stack>
+            <Stack>
+              <Heading size="md">Placeholder Limits</Heading>
+              <DiscordMessagePlaceholderLimitsForm />
+            </Stack>
+            <AnimatedComponent>
+              {isDirty && (
+                <Flex
+                  as={motion.div}
+                  direction="row-reverse"
+                  position="fixed"
+                  bottom="-100px"
+                  left="50%"
+                  opacity="0"
+                  zIndex={100}
+                  transform="translate(-50%, -50%)"
+                  width={["90%", "90%", "80%", "80%", "1200px"]}
+                  borderRadius="md"
+                  paddingX={4}
+                  paddingY={2}
+                  bg="blue.600"
+                  animate={{ opacity: 1, bottom: "0px" }}
+                  exit={{ opacity: 0, bottom: "-100px" }}
+                >
+                  <HStack justifyContent="space-between" width="100%">
+                    <Text>You have unsaved changes!</Text>
+                    <HStack>
+                      <Button
+                        onClick={() => reset()}
+                        variant="ghost"
+                        isDisabled={!isDirty || isSubmitting}
+                      >
+                        <span>{t("features.feed.components.sidebar.resetButton")}</span>
+                      </Button>
+                      <Button
+                        type="submit"
+                        colorScheme="blue"
+                        isDisabled={isSubmitting || !isDirty || errorsExist}
+                        isLoading={isSubmitting}
+                      >
+                        <span>{t("features.feed.components.sidebar.saveButton")}</span>
+                      </Button>
+                    </HStack>
                   </HStack>
-                </HStack>
-              </Flex>
-            )}
-          </AnimatedComponent>
-        </Stack>
-      </form>
-    </FormProvider>
+                </Flex>
+              )}
+            </AnimatedComponent>
+          </Stack>
+        </form>
+      </FormProvider>
+    </UserFeedConnectionProvider>
   );
 };

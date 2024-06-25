@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { notifyError } from "@/utils/notifyError";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { useRefreshUserFeed } from "../../hooks";
+import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 
-interface Props {
-  feedId: string;
-}
-
-export const RefreshUserFeedButton: React.FC<Props> = ({ feedId }) => {
+export const RefreshUserFeedButton = () => {
+  const {
+    userFeed: { id: feedId },
+  } = useUserFeedContext();
   const { t } = useTranslation();
   const { mutateAsync, status } = useRefreshUserFeed();
 

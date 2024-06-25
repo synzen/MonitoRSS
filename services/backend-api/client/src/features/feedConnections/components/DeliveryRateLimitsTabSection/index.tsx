@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Center,
   CloseButton,
   FormControl,
   FormErrorMessage,
@@ -14,7 +13,6 @@ import {
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  Spinner,
   Stack,
   Text,
   chakra,
@@ -26,27 +24,18 @@ import { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { AddIcon } from "@chakra-ui/icons";
 import { notifyError } from "../../../../utils/notifyError";
-import { useConnection, useUpdateConnection } from "../../hooks";
-import { InlineErrorAlert, SavedUnsavedChangesPopupBar } from "@/components";
-import { FeedConnectionType } from "@/types";
+import { useUpdateConnection } from "../../hooks";
+import { SavedUnsavedChangesPopupBar } from "@/components";
 import { notifySuccess } from "@/utils/notifySuccess";
 import {
   DeliveryRateLimitsFormData,
   DeliveryRateLimitsFormSchema,
 } from "./constants/DeliveryRateLimitsFormSchema";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 
-interface Props {
-  feedId: string;
-  connectionId: string;
-  connectionType: FeedConnectionType;
-}
-
-export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionType }: Props) => {
-  const { connection, status, error } = useConnection({
-    connectionId,
-    feedId,
-  });
-  const { mutateAsync } = useUpdateConnection({ type: connectionType });
+export const DeliveryRateLimitsTabSection = () => {
+  const { userFeed, connection } = useUserFeedConnectionContext();
+  const { mutateAsync } = useUpdateConnection({ type: connection.key });
   const formMethods = useForm<DeliveryRateLimitsFormData>({
     resolver: yupResolver(DeliveryRateLimitsFormSchema),
     mode: "all",
@@ -79,8 +68,8 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
   const onSubmit = async ({ rateLimits }: DeliveryRateLimitsFormData) => {
     try {
       await mutateAsync({
-        connectionId,
-        feedId,
+        connectionId: connection.id,
+        feedId: userFeed.id,
         details: {
           rateLimits,
         },
@@ -103,20 +92,6 @@ export const DeliveryRateLimitsTabSection = ({ feedId, connectionId, connectionT
   const onDelete = async (index: number) => {
     remove(index);
   };
-
-  if (error) {
-    return (
-      <InlineErrorAlert title={t("common.errors.somethingWentWrong")} description={error.message} />
-    );
-  }
-
-  if (status === "loading") {
-    return (
-      <Center>
-        <Spinner />
-      </Center>
-    );
-  }
 
   return (
     <Stack spacing={8} mb={24}>
