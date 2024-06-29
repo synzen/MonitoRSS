@@ -28,6 +28,10 @@ export class ArticleFormatterService {
     };
 
     Object.keys(flattened).map((key) => {
+      if (key === "id") {
+        return;
+      }
+
       const { value } = this.formatValueForDiscord(flattened[key], options);
 
       flattened[key] = value;
