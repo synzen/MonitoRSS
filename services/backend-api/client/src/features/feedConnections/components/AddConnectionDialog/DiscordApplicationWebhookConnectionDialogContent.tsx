@@ -24,7 +24,6 @@ import { InferType, object, string } from "yup";
 import { useEffect, useRef } from "react";
 
 import RouteParams from "../../../../types/RouteParams";
-import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordChannelConnection } from "../../hooks";
 import {
   DiscordActiveThreadDropdown,
@@ -35,6 +34,7 @@ import {
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
+import { InlineErrorAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -72,7 +72,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     mode: "all",
   });
   const [serverId, channelId, threadId] = watch(["serverId", "channelId", "threadId"]);
-  const { mutateAsync } = useCreateDiscordChannelConnection();
+  const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
 
   const onSubmit = async ({ threadId: inputThreadId, name, webhook }: FormData) => {
@@ -97,9 +97,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         "Succesfully added connection. New articles will be automatically delivered when found."
       );
       onClose();
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -311,6 +309,12 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 </FormControl>
               </Stack>
             </form>
+            {error && (
+              <InlineErrorAlert
+                title={t("common.errors.somethingWentWrong")}
+                description={error.message}
+              />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>

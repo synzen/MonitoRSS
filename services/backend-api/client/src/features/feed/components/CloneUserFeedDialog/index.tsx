@@ -22,9 +22,9 @@ import { InferType, object, string } from "yup";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { pages } from "../../../../constants";
-import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { useCreateUserFeedClone } from "../../hooks";
+import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 
 const formSchema = object({
   title: string().required(),
@@ -62,12 +62,13 @@ export const CloneUserFeedDialog = ({
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
-  const { mutateAsync } = useCreateUserFeedClone();
+  const { mutateAsync, error, reset: resetError } = useCreateUserFeedClone();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   useEffect(() => {
     reset(defaultValues);
+    resetError();
   }, [isOpen]);
 
   const onSubmit = async ({ title, url }: FormData) => {
@@ -88,9 +89,7 @@ export const CloneUserFeedDialog = ({
 
       onClose();
       reset({ title });
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), (err as Error).message);
-    }
+    } catch (err) {}
   };
 
   return (
@@ -102,28 +101,36 @@ export const CloneUserFeedDialog = ({
           <ModalHeader>Clone feed</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-              <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.title} isRequired>
-                  <FormLabel>Title</FormLabel>
-                  <Controller
-                    name="title"
-                    control={control}
-                    render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
-                  />
-                  {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
-                </FormControl>
-                <FormControl isInvalid={!!errors.url} isRequired>
-                  <FormLabel>Feed Link</FormLabel>
-                  <Controller
-                    name="url"
-                    control={control}
-                    render={({ field }) => <Input {...field} bg="gray.800" />}
-                  />
-                  {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
-                </FormControl>
-              </Stack>
-            </form>
+            <Stack spacing={4}>
+              <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
+                <Stack spacing={4}>
+                  <FormControl isInvalid={!!errors.title} isRequired>
+                    <FormLabel>Title</FormLabel>
+                    <Controller
+                      name="title"
+                      control={control}
+                      render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+                    />
+                    {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
+                  </FormControl>
+                  <FormControl isInvalid={!!errors.url} isRequired>
+                    <FormLabel>Feed Link</FormLabel>
+                    <Controller
+                      name="url"
+                      control={control}
+                      render={({ field }) => <Input {...field} bg="gray.800" />}
+                    />
+                    {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
+                  </FormControl>
+                </Stack>
+              </form>
+              {error && (
+                <InlineErrorAlert
+                  title={t("common.errors.somethingWentWrong")}
+                  description={error.message}
+                />
+              )}
+            </Stack>
           </ModalBody>
           <ModalFooter>
             <HStack>

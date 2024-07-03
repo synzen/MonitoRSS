@@ -18,7 +18,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   DiscordActiveThreadDropdown,
   DiscordChannelDropdown,
@@ -26,14 +26,14 @@ import {
   GetDiscordChannelType,
 } from "@/features/discordServers";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { notifyError } from "../../../../utils/notifyError";
+import { InlineErrorAlert } from "../../../../components";
 
 const formSchema = object({
-  name: string().required(),
-  serverId: string().required(),
+  name: string().required("Connection name is required"),
+  serverId: string().required("Server is required"),
   channelId: string().when("serverId", ([serverId], schema) => {
     if (serverId) {
-      return schema.required();
+      return schema.required("Channel is required");
     }
 
     return schema.optional();
@@ -65,7 +65,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, errors, isSubmitting },
+    formState: { errors, isSubmitting },
     watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
@@ -74,6 +74,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
   });
   const [serverId, channelId] = watch(["serverId", "channelId"]);
   const initialRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
 
   const onSubmit = async ({
     channelId: inputChannelId,
@@ -92,7 +93,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
       reset({ channelId, name, threadId });
       notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      setError((err as Error).message);
     }
   };
 
@@ -218,6 +219,9 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                   </FormHelperText>
                 </FormControl>
               )}
+              {error && (
+                <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
+              )}
             </Stack>
           </form>
         </ModalBody>
@@ -230,7 +234,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
             type="submit"
             form="addfeed"
             isLoading={isSubmitting}
-            isDisabled={!isDirty || isSubmitting}
+            isDisabled={isSubmitting}
           >
             <span>{t("common.buttons.save")}</span>
           </Button>

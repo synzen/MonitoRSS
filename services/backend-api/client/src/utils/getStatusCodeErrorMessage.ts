@@ -24,7 +24,7 @@ const getStatusCodeErrorMessage = (statusCode: number) => {
     return messages.BAD_REQUEST;
   }
 
-  return `UNEXPECTED_ERROR: ${statusCode}`;
+  return `Internal error occurred. You may try refreshing the page. If the error persists, please contact support@monitorss.xyz (status code: ${statusCode})`;
 };
 
 export default getStatusCodeErrorMessage;

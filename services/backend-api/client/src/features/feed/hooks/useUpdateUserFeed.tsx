@@ -9,33 +9,27 @@ import {
 
 export const useUpdateUserFeed = () => {
   const queryClient = useQueryClient();
-  const { mutateAsync, status, error } = useMutation<
-    UpdateUserFeedOutput,
-    ApiAdapterError,
-    UpdateUserFeedInput
-  >((details) => updateUserFeed(details), {
-    onSuccess: (data, inputData) => {
-      queryClient.setQueryData<GetUserFeedOutput>(
-        [
-          "user-feed",
-          {
-            feedId: inputData.feedId,
+
+  return useMutation<UpdateUserFeedOutput, ApiAdapterError, UpdateUserFeedInput>(
+    (details) => updateUserFeed(details),
+    {
+      onSuccess: (data, inputData) => {
+        queryClient.setQueryData<GetUserFeedOutput>(
+          [
+            "user-feed",
+            {
+              feedId: inputData.feedId,
+            },
+          ],
+          data
+        );
+
+        return queryClient.invalidateQueries({
+          predicate: (query) => {
+            return query.queryKey[0] === "user-feeds";
           },
-        ],
-        data
-      );
-
-      return queryClient.invalidateQueries({
-        predicate: (query) => {
-          return query.queryKey[0] === "user-feeds";
-        },
-      });
-    },
-  });
-
-  return {
-    mutateAsync,
-    status,
-    error,
-  };
+        });
+      },
+    }
+  );
 };

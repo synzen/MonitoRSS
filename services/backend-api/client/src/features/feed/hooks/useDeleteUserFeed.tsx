@@ -5,7 +5,7 @@ import { deleteUserFeed, DeleteUserFeedInput } from "../api";
 export const useDeleteUserFeed = () => {
   const queryClient = useQueryClient();
 
-  const { mutateAsync, status, error } = useMutation<void, ApiAdapterError, DeleteUserFeedInput>(
+  return useMutation<void, ApiAdapterError, DeleteUserFeedInput>(
     (details) => deleteUserFeed(details),
     {
       onSuccess: () => {
@@ -24,10 +24,4 @@ export const useDeleteUserFeed = () => {
       },
     }
   );
-
-  return {
-    mutateAsync,
-    status,
-    error,
-  };
 };

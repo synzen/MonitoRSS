@@ -200,6 +200,7 @@ export const ArticleSelectDialog = ({
                             leftIcon={<RepeatIcon />}
                             isLoading={fetchStatus === "fetching"}
                             onClick={() => refetch()}
+                            aria-label="Reload articles"
                           >
                             <span>Reload</span>
                           </Button>

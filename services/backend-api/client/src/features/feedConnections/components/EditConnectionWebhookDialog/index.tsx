@@ -20,7 +20,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDiscordUserMe } from "../../../discordUser";
 import {
   DiscordActiveThreadDropdown,
@@ -28,14 +28,14 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
-import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { InlineErrorAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().optional(),
   applicationWebhook: object({
-    name: string().required(),
-    channelId: string().required(),
+    name: string().required("Webhook name is required"),
+    channelId: string().required("Channel is required"),
     iconUrl: string().optional(),
     threadId: string().optional(),
   }),
@@ -68,7 +68,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, isSubmitting, errors },
+    formState: { isSubmitting, errors },
     watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
@@ -77,6 +77,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
   const [serverId, channelId] = watch(["serverId", "applicationWebhook.channelId"]);
   const { data: discordUser, status: discordUserStatus } = useDiscordUserMe();
   const initialRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
 
   const onSubmit = async (formData: FormData) => {
     const { name, serverId: inputServerId, applicationWebhook } = formData;
@@ -96,12 +97,13 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
       reset(formData);
       notifySuccess(t("common.success.savedChanges"));
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      setError((err as Error).message);
     }
   };
 
   useEffect(() => {
     reset();
+    setError("");
   }, [isOpen]);
 
   const webhooksDisabled = discordUserStatus !== "success" || !discordUser?.supporter;
@@ -296,6 +298,9 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     )}
                   </FormHelperText>
                 </FormControl>
+                {error && (
+                  <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
+                )}
               </Stack>
             )}
           </ModalBody>
@@ -304,12 +309,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
               <Button onClick={onClose} variant="ghost" isDisabled={isSubmitting}>
                 <span>{t("common.buttons.cancel")}</span>
               </Button>
-              <Button
-                type="submit"
-                colorScheme="blue"
-                isDisabled={isSubmitting || !isDirty}
-                isLoading={isSubmitting}
-              >
+              <Button type="submit" colorScheme="blue" isLoading={isSubmitting}>
                 <span>{t("common.buttons.save")}</span>
               </Button>
             </HStack>

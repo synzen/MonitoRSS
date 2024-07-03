@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ConfirmModal } from "../../../../components";
 import { FeedConnectionType } from "../../../../types";
-import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { useDeleteConnection } from "../../hooks";
 import { pages } from "@/constants";
@@ -19,20 +18,16 @@ interface Props {
 
 export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: Props) => {
   const { t } = useTranslation();
-  const { mutateAsync, status } = useDeleteConnection(type);
+  const { mutateAsync, status, error, reset } = useDeleteConnection(type);
   const navigate = useNavigate();
 
   const onDelete = async () => {
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId,
-      });
-      navigate(pages.userFeed(feedId));
-      notifySuccess(t("common.success.deleted"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    await mutateAsync({
+      feedId,
+      connectionId,
+    });
+    navigate(pages.userFeed(feedId));
+    notifySuccess(t("common.success.deleted"));
   };
 
   return (
@@ -53,6 +48,8 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
       okText={t("pages.userFeed.deleteConfirmOk")}
       colorScheme="red"
       onConfirm={onDelete}
+      error={error?.message}
+      onClosed={reset}
     />
   );
 };

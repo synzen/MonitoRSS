@@ -19,6 +19,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
+import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 
 const formSchema = object({
   title: string().optional(),
@@ -33,6 +34,7 @@ interface Props {
   onCloseRef?: React.RefObject<HTMLButtonElement>;
   isOpen: boolean;
   onClose: () => void;
+  error?: string;
 }
 
 export const EditUserFeedDialog: React.FC<Props> = ({
@@ -41,6 +43,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   onCloseRef,
   onClose,
   isOpen,
+  error,
 }) => {
   const { t } = useTranslation();
   const initialFocusRef = useRef<HTMLInputElement>(null);
@@ -81,36 +84,43 @@ export const EditUserFeedDialog: React.FC<Props> = ({
         <ModalHeader>{t("features.feed.components.updateUserFeedDialog.title")}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <form id="update-user-feed" onSubmit={handleSubmit(onSubmit)}>
-            <Stack spacing={4}>
-              <FormControl isInvalid={!!errors.title}>
-                <FormLabel>{t("features.feed.components.addFeedDialog.formTitleLabel")}</FormLabel>
-                <Controller
-                  name="title"
-                  control={control}
-                  render={({ field }) => (
-                    <Input {...field} tabIndex={0} ref={initialFocusRef} bg="gray.800" />
-                  )}
-                />
-                {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
-                <FormHelperText>
-                  {t("features.feed.components.addFeedDialog.formTitleDescription")}
-                </FormHelperText>
-              </FormControl>
-              <FormControl isInvalid={!!errors.title}>
-                <FormLabel>RSS Feed Link</FormLabel>
-                <Controller
-                  name="url"
-                  control={control}
-                  render={({ field }) => <Input {...field} tabIndex={0} bg="gray.800" />}
-                />
-                {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
-                <FormHelperText>
-                  {t("features.feed.components.addFeedDialog.formLinkDescription")}
-                </FormHelperText>
-              </FormControl>
-            </Stack>
-          </form>
+          <Stack spacing={4}>
+            <form id="update-user-feed" onSubmit={handleSubmit(onSubmit)}>
+              <Stack spacing={4}>
+                <FormControl isInvalid={!!errors.title}>
+                  <FormLabel>
+                    {t("features.feed.components.addFeedDialog.formTitleLabel")}
+                  </FormLabel>
+                  <Controller
+                    name="title"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} tabIndex={0} ref={initialFocusRef} bg="gray.800" />
+                    )}
+                  />
+                  {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
+                  <FormHelperText>
+                    {t("features.feed.components.addFeedDialog.formTitleDescription")}
+                  </FormHelperText>
+                </FormControl>
+                <FormControl isInvalid={!!errors.title}>
+                  <FormLabel>RSS Feed Link</FormLabel>
+                  <Controller
+                    name="url"
+                    control={control}
+                    render={({ field }) => <Input {...field} tabIndex={0} bg="gray.800" />}
+                  />
+                  {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
+                  <FormHelperText>
+                    {t("features.feed.components.addFeedDialog.formLinkDescription")}
+                  </FormHelperText>
+                </FormControl>
+              </Stack>
+            </form>
+            {error && (
+              <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
+            )}
+          </Stack>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>

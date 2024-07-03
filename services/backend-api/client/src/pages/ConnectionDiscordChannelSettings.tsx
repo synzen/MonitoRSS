@@ -179,6 +179,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                                   as={Button}
                                   variant="outline"
                                   rightIcon={<ChevronDownIcon />}
+                                  aria-label="Connection actions"
                                 >
                                   {t("common.buttons.actions")}
                                 </MenuButton>

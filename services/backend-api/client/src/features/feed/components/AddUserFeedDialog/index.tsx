@@ -5,11 +5,13 @@ import {
   AccordionItem,
   AccordionPanel,
   Button,
+  Divider,
   Flex,
   FormControl,
   FormErrorMessage,
   FormHelperText,
   FormLabel,
+  Heading,
   Input,
   Modal,
   ModalBody,
@@ -30,11 +32,11 @@ import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
-import { notifyError } from "@/utils/notifyError";
 import { useDiscordUserMe } from "../../../discordUser";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { pages } from "../../../../constants";
 import getChakraColor from "../../../../utils/getChakraColor";
+import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 
 const formSchema = object({
   title: string().required(),
@@ -57,11 +59,11 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, errors, isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
-  const { mutateAsync } = useCreateUserFeed();
+  const { mutateAsync, error, reset: resetMutation } = useCreateUserFeed();
   const { data: discordUserMe, status: discordUserStatus } = useDiscordUserMe();
   const { data: userFeeds, status: userFeedsStatus } = useUserFeeds({
     limit: 1,
@@ -83,13 +85,12 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
       onClose();
       notifySuccess(t("features.userFeeds.components.addUserFeedDialog.successAdd"));
       navigate(pages.userFeed(result.result.id));
-    } catch (err) {
-      notifyError(t("features.feed.components.addFeedDialog.failedToAdd"), err as Error);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
     reset();
+    resetMutation();
   }, [isOpen]);
 
   const totalFeeds = userFeeds?.total;
@@ -146,6 +147,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         {...field}
                         value={field.value || ""}
                         ref={initialFocusRef}
+                        autoComplete="off"
                         bg="gray.800"
                       />
                     )}
@@ -176,6 +178,10 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                   </FormHelperText>
                   <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
                 </FormControl>
+                <Divider />
+                <Heading as="h2" size="sm" fontWeight="medium">
+                  Frequently Asked Questions
+                </Heading>
                 <Accordion allowToggle>
                   <AccordionItem
                     border="none"
@@ -237,18 +243,16 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
+                {error && (
+                  <InlineErrorAlert title="Failed to add feed" description={error.message} />
+                )}
               </Stack>
             </ModalBody>
             <ModalFooter>
               <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
                 <span>{t("common.buttons.cancel")}</span>
               </Button>
-              <Button
-                colorScheme="blue"
-                type="submit"
-                isLoading={isSubmitting}
-                isDisabled={!isDirty || isSubmitting}
-              >
+              <Button colorScheme="blue" type="submit" isLoading={isSubmitting}>
                 <span>{t("common.buttons.save")}</span>
               </Button>
             </ModalFooter>

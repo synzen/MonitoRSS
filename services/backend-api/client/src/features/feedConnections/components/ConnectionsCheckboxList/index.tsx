@@ -18,7 +18,7 @@ export const ConnectionsCheckboxList = ({
   return (
     <FormControl isInvalid={checkedConnectionIds.length === 0}>
       <Stack>
-        <FormErrorMessage>You must select at least one connection to share.</FormErrorMessage>
+        <FormErrorMessage>Select at least one connection to share.</FormErrorMessage>
         <Stack>
           {feed?.connections
             .filter((c) => c.key === FeedConnectionType.DiscordChannel)

@@ -24,7 +24,6 @@ import { InferType, object, string } from "yup";
 import { useEffect, useRef } from "react";
 
 import RouteParams from "../../../../types/RouteParams";
-import { notifyError } from "../../../../utils/notifyError";
 import { useCreateDiscordChannelConnection } from "../../hooks";
 import {
   DiscordActiveThreadDropdown,
@@ -33,6 +32,7 @@ import {
   GetDiscordChannelType,
 } from "../../../discordServers";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { InlineErrorAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -66,7 +66,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
     mode: "all",
   });
   const [serverId, channelId] = watch(["serverId", "channelId"]);
-  const { mutateAsync } = useCreateDiscordChannelConnection();
+  const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
 
   const onSubmit = async ({ threadId, name }: FormData) => {
@@ -86,9 +86,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
         "Succesfully added connection. New articles will be automatically delivered when found."
       );
       onClose();
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -222,6 +220,12 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                 </FormControl>
               </Stack>
             </form>
+            {error && (
+              <InlineErrorAlert
+                title={t("common.errors.somethingWentWrong")}
+                description={error.message}
+              />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>

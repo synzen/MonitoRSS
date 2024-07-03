@@ -47,7 +47,6 @@ import { array, InferType, number, object, string } from "yup";
 import { ChevronDownIcon, DeleteIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
-import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import {
   useCreateUserFeedManagementInvite,
@@ -162,11 +161,19 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     data: debouncedPreviewInput,
   });
 
-  const { mutateAsync } = useUpdateUserFeed();
-  const { mutateAsync: createUserFeedManagementInvite, status: creatingInvitesStatus } =
-    useCreateUserFeedManagementInvite();
-  const { mutateAsync: deleteUserFeedManagementInvite, status: deletingInviteStatus } =
-    useDeleteUserFeedManagementInvite({ feedId });
+  const { mutateAsync, error } = useUpdateUserFeed();
+  const {
+    mutateAsync: createUserFeedManagementInvite,
+    status: creatingInvitesStatus,
+    error: createInviteError,
+    reset: resetCreateInvite,
+  } = useCreateUserFeedManagementInvite();
+  const {
+    mutateAsync: deleteUserFeedManagementInvite,
+    status: deletingInviteStatus,
+    error: deleteInviteError,
+    reset: resetDeleteInvite,
+  } = useDeleteUserFeedManagementInvite({ feedId });
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
@@ -200,9 +207,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
           updatedFeed.result.userRefreshRateSeconds || updatedFeed.result.refreshRateSeconds,
       });
       notifySuccess(t("common.success.savedChanges"));
-    } catch (error) {
-      notifyError(t("common.errors.somethingWentWrong"), error as Error);
-    }
+    } catch (e) {}
   };
 
   const onAddUser = async ({
@@ -214,28 +219,20 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     type: UserFeedManagerInviteType;
     connections: Array<{ connectionId: string }>;
   }) => {
-    try {
-      await createUserFeedManagementInvite({
-        data: {
-          feedId,
-          discordUserId: id,
-          type,
-          connections,
-        },
-      });
-      notifySuccess("Successfully sent invite");
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    await createUserFeedManagementInvite({
+      data: {
+        feedId,
+        discordUserId: id,
+        type,
+        connections,
+      },
+    });
+    notifySuccess("Successfully sent invite");
   };
 
   const removeInvite = async (id: string) => {
-    try {
-      await deleteUserFeedManagementInvite({ id });
-      notifySuccess("Successfully removed invite");
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    await deleteUserFeedManagementInvite({ id });
+    notifySuccess("Successfully removed invite");
   };
 
   if (feedStatus === "loading") {
@@ -372,6 +369,8 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                                 description="Are you sure you want to remove this user? They will lose access to this feed."
                                 colorScheme="red"
                                 onConfirm={() => removeInvite(u.id)}
+                                onClosed={resetDeleteInvite}
+                                error={deleteInviteError?.message}
                               />
                             </HStack>
                           </Td>
@@ -406,9 +405,11 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   }
                   title="Invite User to Co-manage Feed"
                   okButtonText="Invite"
+                  error={createInviteError?.message}
                   onAdded={({ id, connections }) =>
                     onAddUser({ id, type: UserFeedManagerInviteType.CoManage, connections })
                   }
+                  onClosed={resetCreateInvite}
                 />
                 <SelectUserDialog
                   trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
@@ -423,6 +424,8 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   onAdded={({ id }) =>
                     onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
                   }
+                  onClosed={resetCreateInvite}
+                  error={createInviteError?.message}
                 />
               </MenuList>
             </Menu>
@@ -679,6 +682,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             />
           </Stack>
         </Stack>
+        {error && (
+          <InlineErrorAlert
+            title={t("common.errors.failedToSave")}
+            description={error.message}
+            scrollIntoViewOnMount
+          />
+        )}
       </Stack>
       <HStack justifyContent="flex-end" mb={16}>
         <Button isDisabled={!isDirty || isSubmitting} onClick={() => reset()} variant="ghost">

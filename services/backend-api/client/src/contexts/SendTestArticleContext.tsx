@@ -22,11 +22,15 @@ import { notifyInfo } from "../utils/notifyInfo";
 import { useCreateConnectionTestArticle } from "../features/feedConnections/hooks";
 
 interface ContextProps {
-  sendTestArticle: (data: {
-    connectionType: FeedConnectionType;
-    previewInput: CreateDiscordChannelConnectionPreviewInput;
-  }) => Promise<void>;
+  sendTestArticle: (
+    data: {
+      connectionType: FeedConnectionType;
+      previewInput: CreateDiscordChannelConnectionPreviewInput;
+    },
+    opts?: { disableToastErrors?: boolean }
+  ) => Promise<void>;
   isFetching: boolean;
+  error?: string;
 }
 
 export const SendTestArticleContext = createContext<ContextProps>({
@@ -115,9 +119,9 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
     description: <div />,
     headerBackgroundColor: "",
   });
-  const { mutateAsync, status } = useCreateConnectionTestArticle();
+  const { mutateAsync, status, error } = useCreateConnectionTestArticle();
 
-  const sendTestArticle: ContextProps["sendTestArticle"] = useCallback(async (data) => {
+  const sendTestArticle: ContextProps["sendTestArticle"] = useCallback(async (data, opts) => {
     try {
       const { result } = await mutateAsync(data);
 
@@ -178,7 +182,9 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
       });
       onOpen();
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      if (!opts?.disableToastErrors) {
+        notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      }
     }
   }, []);
 
@@ -186,6 +192,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
     () => ({
       sendTestArticle,
       isFetching: status === "loading",
+      error: error?.message,
     }),
     [sendTestArticle, status]
   );

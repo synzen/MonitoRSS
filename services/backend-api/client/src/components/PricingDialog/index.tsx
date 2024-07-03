@@ -316,6 +316,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
     );
   }
 
+  const failedToLoadPrices = pricePreviewErrored || subProductsError || userError;
+
   return (
     <Box>
       <ChangeSubscriptionDialog
@@ -362,8 +364,11 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                         Add in your support in exchange for some upgrades!
                       </Text>
                     </Stack>
+                    <Heading as="h2" size="md" hidden>
+                      Tiers
+                    </Heading>
                     {(isLoadingPricePreview || userStatus === "loading") && <Spinner mb={8} />}
-                    {(pricePreviewErrored || subProductsError || userError) && (
+                    {failedToLoadPrices && (
                       <Stack mb={4}>
                         <InlineErrorAlert
                           title="Sorry, something went wrong while loading prices"
@@ -545,41 +550,45 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                     )}
                   </Stack>
                 </Flex>
-                <Box textAlign="center" pb={3} fontSize="lg">
-                  <Text color="whiteAlpha.600" fontSize="sm">
-                    * External properties is currently limited to feeds with fewer than{" "}
-                    {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
-                  </Text>
-                </Box>
-                <Box textAlign="center" pb={3} fontSize="lg">
-                  <Text>
-                    Don&apos;t see what you&apos;re looking for?{" "}
-                    <Link
-                      color="blue.300"
-                      href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
-                    >
-                      Let&apos;s chat!
-                    </Link>
-                  </Text>
-                </Box>
-                <Text textAlign="center" color="whiteAlpha.600">
-                  By proceeding to payment, you are agreeing to our{" "}
-                  <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
-                    terms and conditions
-                  </Link>{" "}
-                  as well as our{" "}
-                  <Link
-                    target="_blank"
-                    color="blue.300"
-                    href="https://monitorss.xyz/privacy-policy"
-                  >
-                    privacy policy
-                  </Link>
-                  .<br />
-                  The checkout process is handled by our reseller and Merchant of Record,
-                  Paddle.com, who also handles subscription-related inquiries. Prices will be
-                  localized your location.
-                </Text>
+                {!failedToLoadPrices && (
+                  <>
+                    <Box textAlign="center" pb={3} fontSize="lg">
+                      <Text color="whiteAlpha.600" fontSize="sm">
+                        * External properties are currently limited to feeds with fewer than{" "}
+                        {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
+                      </Text>
+                    </Box>
+                    <Box textAlign="center" pb={3} fontSize="lg">
+                      <Text>
+                        Don&apos;t see what you&apos;re looking for?{" "}
+                        <Link
+                          color="blue.300"
+                          href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
+                        >
+                          Let&apos;s chat!
+                        </Link>
+                      </Text>
+                    </Box>
+                    <Text textAlign="center" color="whiteAlpha.600">
+                      By proceeding to payment, you are agreeing to our{" "}
+                      <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
+                        terms and conditions
+                      </Link>{" "}
+                      as well as our{" "}
+                      <Link
+                        target="_blank"
+                        color="blue.300"
+                        href="https://monitorss.xyz/privacy-policy"
+                      >
+                        privacy policy
+                      </Link>
+                      .<br />
+                      The checkout process is handled by our reseller and Merchant of Record,
+                      Paddle.com, who also handles subscription-related inquiries. Prices will be
+                      localized your location.
+                    </Text>
+                  </>
+                )}
                 {userSubscription?.product.key !== ProductKey.Free && (
                   <Stack
                     margin="auto"
@@ -601,7 +610,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                 )}
               </Stack>
               <Stack justifyContent="center" width="100%" alignItems="center">
-                <Stack mt={16} maxW={1400} width="100%">
+                <Stack mt={16} spacing={8} maxW={1400} width="100%">
+                  <Heading size="md" as="h2" alignSelf="center">
+                    Frequently Asked Questions
+                  </Heading>
                   <FAQ
                     items={[
                       {

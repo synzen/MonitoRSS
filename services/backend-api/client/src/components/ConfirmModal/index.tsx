@@ -6,37 +6,45 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
+  Stack,
   Text,
   ThemingProps,
   useDisclosure,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { InlineErrorAlert } from "../InlineErrorAlert";
 
 interface Props {
   onConfirm: () => void;
   trigger: React.ReactElement;
   title?: string;
+  error?: string;
   description?: string;
   descriptionNode?: React.ReactNode;
   cancelText?: string;
   okText?: string;
   colorScheme?: ThemingProps["colorScheme"];
   size?: ThemingProps["size"];
+  onClosed?: () => void;
 }
 
 export const ConfirmModal = ({
   onConfirm,
   trigger,
   title,
+  error,
   description,
   cancelText,
   okText,
   colorScheme,
   descriptionNode,
   size,
+  onClosed,
 }: Props) => {
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const { isOpen, onClose, onOpen } = useDisclosure({
+    onClose: onClosed,
+  });
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -47,6 +55,7 @@ export const ConfirmModal = ({
     try {
       await onConfirm();
       onClose();
+      onClosed?.();
     } finally {
       setLoading(false);
     }
@@ -59,12 +68,18 @@ export const ConfirmModal = ({
         <AlertDialogOverlay />
         <AlertDialogContent>
           {title && <AlertDialogHeader marginRight={4}>{title}</AlertDialogHeader>}
-          {description && !descriptionNode && (
-            <AlertDialogBody>
-              <Text>{description}</Text>
-            </AlertDialogBody>
-          )}
-          {descriptionNode && !description && <AlertDialogBody>{descriptionNode}</AlertDialogBody>}
+          <AlertDialogBody>
+            <Stack spacing={4}>
+              {description && !descriptionNode && <Text>{description}</Text>}
+              {descriptionNode && !description && descriptionNode}
+              {error && (
+                <InlineErrorAlert
+                  title={t("common.errors.somethingWentWrong")}
+                  description={error}
+                />
+              )}
+            </Stack>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <Button ref={cancelRef} variant="ghost" mr={3} onClick={onClose}>
               <span>{cancelText || t("common.buttons.cancel")}</span>

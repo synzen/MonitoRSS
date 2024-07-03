@@ -42,14 +42,26 @@ interface Props {
   description?: React.ReactNode;
   title?: React.ReactNode;
   okButtonText?: string;
+  onClosed?: () => void;
+  error?: string;
 }
 
-export const SelectUserDialog = ({ onAdded, trigger, title, description, okButtonText }: Props) => {
+export const SelectUserDialog = ({
+  onAdded,
+  trigger,
+  title,
+  description,
+  okButtonText,
+  onClosed,
+  error,
+}: Props) => {
   const { t } = useTranslation();
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure({
+    onClose: onClosed,
+  });
   const { data: discordUserMe } = useDiscordUserMe();
   const debouncedSearch = useDebounce(currentInput, 500);
   const { data: serverAccessData } = useDiscordServerAccessStatus({ serverId: guildId });
@@ -172,6 +184,12 @@ export const SelectUserDialog = ({ onAdded, trigger, title, description, okButto
                   <InlineErrorAlert title="Failed to get users" description={usersError.message} />
                 )}
               </Stack>
+              {error && (
+                <InlineErrorAlert
+                  title={t("common.errors.somethingWentWrong")}
+                  description={error}
+                />
+              )}
             </Stack>
           </ModalBody>
           <ModalFooter>

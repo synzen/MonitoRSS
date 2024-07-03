@@ -48,6 +48,8 @@ interface Props {
   title?: React.ReactNode;
   okButtonText?: string;
   feedId?: string;
+  error?: string;
+  onClosed?: () => void;
 }
 
 export const AddFeedComanagerDialog = ({
@@ -57,13 +59,17 @@ export const AddFeedComanagerDialog = ({
   description,
   okButtonText,
   feedId,
+  error,
+  onClosed,
 }: Props) => {
   const { t } = useTranslation();
   const { feed } = useUserFeed({ feedId });
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure({
+    onClose: onClosed,
+  });
   const { data: discordUserMe } = useDiscordUserMe();
   const [checkedConnections, setCheckedConnections] = useState<string[]>([]);
   const debouncedSearch = useDebounce(currentInput, 500);
@@ -91,20 +97,21 @@ export const AddFeedComanagerDialog = ({
   };
 
   const onClickSave = async () => {
-    if (selectedMention) {
-      try {
-        setSaving(true);
-        await onAdded({
-          id: selectedMention.id,
-          connections: checkedConnections.map((id) => ({
-            connectionId: id,
-          })),
-        });
-      } finally {
-        setSaving(false);
-      }
+    if (!selectedMention) {
+      return;
+    }
 
+    try {
+      setSaving(true);
+      await onAdded({
+        id: selectedMention.id,
+        connections: checkedConnections.map((id) => ({
+          connectionId: id,
+        })),
+      });
       onClose();
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -149,7 +156,7 @@ export const AddFeedComanagerDialog = ({
   return (
     <>
       {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{title || "Select a User"}</ModalHeader>
@@ -219,6 +226,12 @@ export const AddFeedComanagerDialog = ({
                   />
                 </Stack>
               </Stack>
+              {error && (
+                <InlineErrorAlert
+                  title={t("common.errors.somethingWentWrong")}
+                  description={error}
+                />
+              )}
             </Stack>
           </ModalBody>
           <ModalFooter>

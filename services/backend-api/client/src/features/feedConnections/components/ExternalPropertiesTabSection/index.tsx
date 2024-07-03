@@ -41,7 +41,6 @@ import CreateArticleInjectionModal from "./CreateExternalPropertyModal";
 import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
 import { useUpdateUserFeed } from "../../../feed";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { notifyError } from "../../../../utils/notifyError";
 import { ExternalPropertyPreview } from "./ExternalPropertyPreview";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { useExternalPropertiesEligibility } from "./hooks/useExternalPropertiesEligibility";
@@ -49,6 +48,7 @@ import { ExternalProperty } from "../../../../types";
 import UpdateExternalPropertyModal from "./UpdateExternalPropertyModal";
 import { REACT_SELECT_STYLES } from "../../../../constants/reactSelectStyles";
 import { CssSelectorFormattedOption } from "./CssSelectorFormattedOption";
+import { notifyError } from "../../../../utils/notifyError";
 
 const formSchema = object({
   externalProperties: array(
@@ -403,7 +403,7 @@ export const ExternalPropertiesTabSection = () => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={8} mb={24}>
           <Box>
-            <Stack mb={4}>
+            <Stack>
               <Heading as="h2" size="md">
                 External Properties
               </Heading>
@@ -420,7 +420,7 @@ export const ExternalPropertiesTabSection = () => {
               feature={BlockableFeature.ArticleInjections}
               supporterTier={SupporterTier.T2}
               alternateText={`While you can use this feature, you must be a ${SupporterTier.T2} supporter to
-    have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
+              have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
             />
           </Box>
           {fields?.map((a, fieldIndex) => {

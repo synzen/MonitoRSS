@@ -13,6 +13,7 @@ module.exports = {
     project: "./tsconfig.eslint.json",
   },
   rules: {
+    "no-empty": 0,
     "prettier/prettier": [
       "error",
       {

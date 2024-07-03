@@ -19,7 +19,7 @@
       "results": "Showing {{start}}-{{end}} of {{total}} results"
     },
     "errors": {
-      "somethingWentWrong": "Sorry, something went wrong.",
+      "somethingWentWrong": "Something went wrong.",
       "tryAgainLater": "Please try again later.",
       "detailsTitle": "Details",
       "failedToSave": "Failed to save changes",
@@ -46,7 +46,7 @@
       "feedRequestTooManyRequests": "Failed to get feed articles - requests to the feed has been rate limited. Please try again later.",
       "feedRequestUnauthorized": "Failed to get feed articles - the feed host is requesting authorization. Please check if the feed is publicly accessible, or ensure that some authorization key is included in the feed URL if it is required.",
       "bannedFeed": "This feed is banned",
-      "feedMissingChannelPermission": "The bot does not have permission to send or view messages in the channel",
+      "feedMissingChannelPermission": "The bot does not have permission to send messages within the channel. Ensure that the bot has the channel-level \"View Channel\" and \"Send Messages\" permissions and try again.",
       "feedLimitReached": "You have reached your feed limit",
       "feedMissingChannel": "The channel does not exist",
       "feedUserMissingManageGuild": "You are missing the server-wide Manage Channels permission. Please contact your server administrator to grant you this permission.",
@@ -367,7 +367,7 @@
           "cancelButton": "Cancel",
           "saveButton": "Add",
           "formTitleLabel": "Title",
-          "formTitleDescription": "This is only for your reference.",
+          "formTitleDescription": "Used to identify the feed.",
           "formChannelLabel": "Channel",
           "formLinkDescription": "Must be a link to a valid RSS XML feed.",
           "failedToAdd": "Failed to add feed"
@@ -378,7 +378,7 @@
         "addDiscordChannelThreadConnectionDialog": {
           "title": "Add a Discord thread connection",
           "formNameLabel": "Connection name",
-          "formNameDescription": "This is only for your reference.",
+          "formNameDescription": "Used to identify the connection.",
           "formThreadLabel": "Thread",
           "formThreadDescripton": "Only unlocked (unarchived) threads are listed.",
           "failedToGetThreads": "Failed to get threads"
@@ -388,7 +388,7 @@
           "saveButton": "Add",
           "formServerLabel": "Server",
           "formNameLabel": "Connection name",
-          "formNameDescription": "This is only for your reference.",
+          "formNameDescription": "Used to identify the connection.",
           "formChannelLabel": "Channel",
           "failedToGetChannels": "Failed to get server channels"
         },
@@ -401,7 +401,7 @@
           "formNameLabel": "Connection name",
           "formServerLabel": "Server",
           "formServerDescription": "The Discord server the webhook belong to",
-          "formNameDescription": "This is only for your reference.",
+          "formNameDescription": "Used to identify the connection.",
           "webhookNameLabel": "Webhook Name",
           "webhookNameDescription": "This will override the webhook's name.",
           "webhookIconUrlLabel": "Webhook Icon URL",
@@ -421,7 +421,7 @@
           "webhookIconUrlLabel": "Icon URL",
           "webhookIconUrlDescription": "This will override the webhook's icon.",
           "titleFormLabel": "Title",
-          "titleFormHint": "This is only for your reference.",
+          "titleFormHint": "Used to identify the feed.",
           "channelFormLabel": "Channel",
           "webhookFormLabel": "Webhook",
           "webhooksPremiumDisabled": "This server must be backed by a supporter to access this.",
@@ -448,9 +448,9 @@
       "components": {
         "addUserFeedDialog": {
           "title": "Add a new feed",
-          "formTitleLabel": "Title",
+          "formTitleLabel": "Feed Title",
           "formLinkLabel": "Link",
-          "onlyForYourReferenceLabel": "This is only for your reference",
+          "onlyForYourReferenceLabel": "Used to identify the feed",
           "addButton": "Add Feed",
           "overLimitHint": "You have reached the maximum number of feeds available to you.",
           "successAdd": "Successfully added feed! Add connections to specify where articles will be sent to."

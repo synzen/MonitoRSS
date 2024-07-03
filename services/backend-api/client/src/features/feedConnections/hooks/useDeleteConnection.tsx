@@ -14,7 +14,8 @@ const methodsByType: Record<FeedConnectionType, (input: DeleteConnectionInput) =
 
 export const useDeleteConnection = (type: FeedConnectionType) => {
   const queryClient = useQueryClient();
-  const { mutateAsync, status } = useMutation<void, ApiAdapterError, DeleteConnectionInput>(
+
+  return useMutation<void, ApiAdapterError, DeleteConnectionInput>(
     (details) => {
       const method = methodsByType[type];
 
@@ -33,9 +34,4 @@ export const useDeleteConnection = (type: FeedConnectionType) => {
         }),
     }
   );
-
-  return {
-    mutateAsync,
-    status,
-  };
 };

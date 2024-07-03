@@ -29,7 +29,7 @@ const methodsByType: Record<
 };
 
 export const useCreateConnectionTestArticle = () => {
-  const { mutateAsync, status } = useMutation<
+  return useMutation<
     CreateConnectionTestArticleOutput,
     ApiAdapterError,
     CreateConnectionTestArticleInput
@@ -38,9 +38,4 @@ export const useCreateConnectionTestArticle = () => {
 
     return method(details.previewInput);
   });
-
-  return {
-    mutateAsync,
-    status,
-  };
 };

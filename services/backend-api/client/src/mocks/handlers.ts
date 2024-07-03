@@ -470,6 +470,7 @@ const handlers = [
 
     return res(
       ctx.delay(500),
+      ctx.status(404),
       ctx.json<CreateUserFeedManagementInviteOutput>({
         result: {
           status: "success",
@@ -486,7 +487,7 @@ const handlers = [
       1
     );
 
-    return res(ctx.delay(500), ctx.status(204));
+    return res(ctx.delay(500), ctx.status(404));
   }),
 
   rest.post("/api/v1/user-feed-management-invites/:id/resend", async (req, res, ctx) => {
@@ -503,7 +504,7 @@ const handlers = [
     matchedFeed.shareManageOptions!.invites.find((u) => u.id === id)!.status =
       UserFeedManagerStatus.Pending;
 
-    return res(ctx.delay(500), ctx.status(204));
+    return res(ctx.delay(500), ctx.status(404));
   }),
 
   rest.delete("/api/v1/user-feed-management-invites/:id", async (req, res, ctx) => {
@@ -521,7 +522,7 @@ const handlers = [
       1
     );
 
-    return res(ctx.delay(500), ctx.status(204));
+    return res(ctx.delay(500), ctx.status(404));
   }),
 
   rest.get("/api/v1/user-feeds", (req, res, ctx) => {
@@ -604,6 +605,7 @@ const handlers = [
   rest.post("/api/v1/user-feeds", (req, res, ctx) =>
     res(
       ctx.delay(500),
+      ctx.status(400),
       ctx.json<CreateUserFeedOutput>({
         result: mockUserFeeds[0],
       })
@@ -628,7 +630,7 @@ const handlers = [
 
     mockUserFeeds.splice(index, 1);
 
-    return res(ctx.delay(500), ctx.status(204));
+    return res(ctx.delay(500), ctx.status(404), ctx.status(204));
   }),
 
   rest.patch("/api/v1/user-feeds/:feedId", (req, res, ctx) => {
@@ -640,6 +642,7 @@ const handlers = [
 
     return res(
       ctx.delay(500),
+      ctx.status(404),
       ctx.json<UpdateUserFeedOutput>({
         result: matchingUserFeed,
       })
@@ -819,6 +822,7 @@ const handlers = [
   rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels", (req, res, ctx) =>
     res(
       ctx.delay(500),
+      ctx.status(400),
       ctx.json<CreateDiscordChannelConnectionOutput>({
         result: mockFeedChannelConnections[0],
       })
@@ -828,6 +832,8 @@ const handlers = [
   rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/clone", (req, res, ctx) =>
     res(
       ctx.delay(500),
+      ctx.status(400),
+
       ctx.json<CreateDiscordChannelConnectionCloneOutput>({
         result: {
           id: mockUserFeeds[0].connections[1].id,
@@ -838,12 +844,13 @@ const handlers = [
 
   rest.post(
     "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/copy-connection-settings",
-    (req, res, ctx) => res(ctx.delay(500), ctx.status(204))
+    (req, res, ctx) => res(ctx.delay(500), ctx.status(400), ctx.status(204))
   ),
 
   rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/test", (req, res, ctx) =>
     res(
       ctx.delay(500),
+      ctx.status(404),
       ctx.json<CreateDiscordChannelConnectionTestArticleOutput>({
         result: mockSendTestArticleResult,
       })
@@ -865,6 +872,7 @@ const handlers = [
   rest.patch("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) => {
     return res(
       ctx.delay(500),
+      ctx.status(400),
       ctx.json<UpdateDiscordChannelConnectionOutput>({
         result: mockFeedChannelConnections[0],
       })
@@ -872,7 +880,7 @@ const handlers = [
   }),
 
   rest.delete("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) =>
-    res(ctx.delay(500), ctx.status(204))
+    res(ctx.delay(500), ctx.status(404))
   ),
 
   rest.delete("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id", (req, res, ctx) =>

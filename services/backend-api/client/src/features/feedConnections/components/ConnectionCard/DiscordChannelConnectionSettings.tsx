@@ -20,7 +20,6 @@ import { CloneDiscordConnectionCloneDialog } from "../CloneDiscordConnectionClon
 import { ConfirmModal } from "../../../../components";
 import { UpdateDiscordChannelConnectionInput } from "../../api";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { notifyError } from "../../../../utils/notifyError";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 import { DeleteConnectionButton } from "../DeleteConnectionButton";
 import { EditConnectionChannelDialog } from "../EditConnectionChannelDialog";
@@ -39,7 +38,12 @@ export const DiscordChannelConnectionSettings = ({
   trigger,
   redirectOnCloneSuccess,
 }: Props) => {
-  const { mutateAsync, status: updateStatus } = useUpdateDiscordChannelConnection();
+  const {
+    mutateAsync,
+    status: updateStatus,
+    error,
+    reset: resetErrorState,
+  } = useUpdateDiscordChannelConnection();
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const { t } = useTranslation();
   const {
@@ -153,6 +157,7 @@ export const DiscordChannelConnectionSettings = ({
             <ConfirmModal
               title={t("pages.discordChannelConnection.manualDisableConfirmTitle")}
               description={t("pages.discordChannelConnection.manualDisableConfirmDescription")}
+              error={error?.message}
               trigger={
                 <MenuItem isDisabled={updateStatus === "loading"}>
                   {t("common.buttons.disable")}
@@ -160,15 +165,12 @@ export const DiscordChannelConnectionSettings = ({
               }
               okText={t("common.buttons.disable")}
               colorScheme="blue"
+              onClosed={resetErrorState}
               onConfirm={async () => {
-                try {
-                  await onUpdate({
-                    disabledCode: FeedConnectionDisabledCode.Manual,
-                  });
-                  notifySuccess(t("common.success.savedChanges"));
-                } catch (err) {
-                  notifyError(t("common.errors.somethingWentWrong"), err as Error);
-                }
+                await onUpdate({
+                  disabledCode: FeedConnectionDisabledCode.Manual,
+                });
+                notifySuccess(t("common.success.savedChanges"));
               }}
             />
           )}
@@ -176,18 +178,16 @@ export const DiscordChannelConnectionSettings = ({
             <ConfirmModal
               title="Re-enable connection"
               description="Are you sure you want to re-enable this connection?"
+              error={error?.message}
               trigger={<MenuItem isDisabled={updateStatus === "loading"}>Enable</MenuItem>}
               okText="Enable"
               colorScheme="blue"
+              onClosed={resetErrorState}
               onConfirm={async () => {
-                try {
-                  await onUpdate({
-                    disabledCode: null,
-                  });
-                  notifySuccess(t("common.success.savedChanges"));
-                } catch (err) {
-                  notifyError(t("common.errors.somethingWentWrong"), err as Error);
-                }
+                await onUpdate({
+                  disabledCode: null,
+                });
+                notifySuccess(t("common.success.savedChanges"));
               }}
             />
           )}

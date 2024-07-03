@@ -18,7 +18,7 @@ import { useUpdateUserFeedManagementInvite, useUserFeed } from "../../../../feed
 import { ConnectionsCheckboxList } from "../../ConnectionsCheckboxList";
 import { UserFeed } from "../../../../feed/types";
 import { notifySuccess } from "../../../../../utils/notifySuccess";
-import { notifyError } from "../../../../../utils/notifyError";
+import { InlineErrorAlert } from "../../../../../components";
 
 interface Props {
   feedId?: string;
@@ -35,7 +35,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
   onClose,
   onCloseRef,
 }: Props) => {
-  const { mutateAsync, status } = useUpdateUserFeedManagementInvite({ feedId });
+  const { mutateAsync, status, error } = useUpdateUserFeedManagementInvite({ feedId });
   const { t } = useTranslation();
   const { feed, status: feedStatus } = useUserFeed({ feedId });
   const currentConnectionIds = feed?.shareManageOptions?.invites
@@ -83,9 +83,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
       onClose();
       notifySuccess(t("common.success.savedChanges"));
       setCheckedConnections([]);
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -129,6 +127,12 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
                 feed={feed as UserFeed}
               />
             </Stack>
+            {error && (
+              <InlineErrorAlert
+                title={t("common.errors.failedToSave")}
+                description={error.message}
+              />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>
@@ -136,13 +140,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
             <Button variant="ghost" onClick={onClose}>
               <span>Cancel</span>
             </Button>
-            <Button
-              colorScheme="blue"
-              mr={3}
-              onClick={onSubmit}
-              isLoading={status === "loading"}
-              isDisabled={checkedConnections.length === 0 || status === "loading"}
-            >
+            <Button colorScheme="blue" mr={3} onClick={onSubmit} isLoading={status === "loading"}>
               <span>Save</span>
             </Button>
           </HStack>

@@ -24,11 +24,11 @@ import { FeedDiscordChannelConnection } from "../../../../types";
 import { getPrettyConnectionName } from "../../../../utils/getPrettyConnectionName";
 import { CopyableConnectionDiscordChannelSettings } from "../../constants";
 import { useConnection, useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
-import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { getPrettyConnectionDetail } from "../../../../utils/getPrettyConnectionDetail";
 import { ConnectionsCheckboxList } from "../ConnectionsCheckboxList";
 import { UserFeed } from "../../../feed/types";
+import { InlineErrorAlert } from "../../../../components";
 
 enum CopyCategory {
   Message = "Message",
@@ -138,7 +138,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   onClose,
   onCloseRef,
 }: Props) => {
-  const { mutateAsync, status } = useCreateDiscordChannelConnectionCopySettings();
+  const { mutateAsync, status, error } = useCreateDiscordChannelConnectionCopySettings();
   const { connection: uncastedConnection } = useConnection({
     feedId,
     connectionId,
@@ -202,9 +202,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
       notifySuccess(t("common.success.savedChanges"));
       setCheckedConnections([]);
       setCheckedSettings([]);
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    } catch (err) {}
   };
 
   const checkboxesByCategories = Object.values(CopyCategory).map((category) => {
@@ -382,6 +380,12 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 />
               </Stack>
             </Stack>
+            {error && (
+              <InlineErrorAlert
+                title={t("common.errors.somethingWentWrong")}
+                description={error.message}
+              />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>

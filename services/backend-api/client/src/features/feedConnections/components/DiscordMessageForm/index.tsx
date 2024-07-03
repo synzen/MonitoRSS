@@ -1,5 +1,6 @@
 import { AddIcon } from "@chakra-ui/icons";
 import {
+  Box,
   Button,
   Center,
   Flex,
@@ -34,7 +35,7 @@ import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { SendTestArticleContext } from "../../../../contexts";
-import { AnimatedComponent } from "../../../../components";
+import { AnimatedComponent, InlineErrorAlert } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 import { SuspenseErrorBoundary } from "../../../../components/SuspenseErrorBoundary";
 import {
@@ -73,7 +74,11 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
     : 0;
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
-  const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
+  const {
+    isFetching: isSendingTestArticle,
+    sendTestArticle,
+    error: sendTestArticleError,
+  } = useContext(SendTestArticleContext);
   const showForumForms =
     connection.details.channel?.type === "forum" || connection.details.webhook?.type === "forum";
   const formMethods = useForm<DiscordMessageFormData>({
@@ -225,13 +230,16 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
     }
 
     try {
-      await sendTestArticle({
-        connectionType: connection.key,
-        previewInput: previewInput as CreateDiscordChannelConnectionPreviewInput,
-      });
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+      await sendTestArticle(
+        {
+          connectionType: connection.key,
+          previewInput: previewInput as CreateDiscordChannelConnectionPreviewInput,
+        },
+        {
+          disableToastErrors: true,
+        }
+      );
+    } catch (err) {}
   };
 
   const errorsExist = Object.keys(errors).length > 0;
@@ -286,6 +294,14 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   </Button>
                 </HStack>
                 <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
+                {sendTestArticleError && (
+                  <Box mt={3} mb={3}>
+                    <InlineErrorAlert
+                      title="Failed to send preview article to Discord"
+                      description={sendTestArticleError}
+                    />
+                  </Box>
+                )}
               </Stack>
               {connection.key === FeedConnectionType.DiscordChannel && (
                 <SuspenseErrorBoundary>

@@ -23,6 +23,7 @@ import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
+import { InlineErrorAlert } from "../../../../components";
 
 interface Props {
   passingComparisons?: string[];
@@ -31,12 +32,14 @@ interface Props {
     passingComparisons?: string[];
     blockingComparisons?: string[];
   }) => Promise<void>;
+  updateError?: string;
 }
 
 export const ComparisonsTabSection = ({
   blockingComparisons,
   passingComparisons,
   onUpdate,
+  updateError,
 }: Props) => {
   const { t } = useTranslation();
   const {
@@ -62,6 +65,7 @@ export const ComparisonsTabSection = ({
       },
     },
   });
+  const [errorLocation, setErrorLocation] = useState<"passing" | "blocking" | "">("");
 
   const onClickRandomFeedArticle = async () => {
     try {
@@ -98,8 +102,9 @@ export const ComparisonsTabSection = ({
         passingComparisons: [...(passingComparisons || []), value],
         blockingComparisons,
       });
+      setErrorLocation("");
     } catch (err) {
-      console.error(err);
+      setErrorLocation("passing");
     }
   };
 
@@ -109,8 +114,9 @@ export const ComparisonsTabSection = ({
         passingComparisons,
         blockingComparisons: [...(blockingComparisons || []), value],
       });
+      setErrorLocation("");
     } catch (err) {
-      console.error(err);
+      setErrorLocation("blocking");
     }
   };
 
@@ -120,8 +126,9 @@ export const ComparisonsTabSection = ({
         passingComparisons: passingComparisons?.filter((comparison) => comparison !== value),
         blockingComparisons,
       });
+      setErrorLocation("");
     } catch (err) {
-      console.error(err);
+      setErrorLocation("passing");
     }
   };
 
@@ -131,8 +138,9 @@ export const ComparisonsTabSection = ({
         passingComparisons,
         blockingComparisons: blockingComparisons?.filter((comparison) => comparison !== value),
       });
+      setErrorLocation("");
     } catch (err) {
-      console.error(err);
+      setErrorLocation("blocking");
     }
   };
 
@@ -254,6 +262,9 @@ export const ComparisonsTabSection = ({
             properties={passingComaprisonsToAdd}
           />
         </HStack>
+        {updateError && errorLocation === "passing" && (
+          <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
+        )}
       </Stack>
       <Stack spacing={4}>
         <Stack>
@@ -283,6 +294,9 @@ export const ComparisonsTabSection = ({
             properties={blockingComparisonsToAdd}
           />
         </HStack>
+        {updateError && errorLocation === "blocking" && (
+          <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
+        )}
       </Stack>
     </Stack>
   );

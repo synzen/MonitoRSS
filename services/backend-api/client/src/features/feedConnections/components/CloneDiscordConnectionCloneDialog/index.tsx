@@ -12,6 +12,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Stack,
   useDisclosure,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -23,8 +24,8 @@ import { useTranslation } from "react-i18next";
 import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { pages } from "../../../../constants";
 import { FeedConnectionType } from "../../../../types";
-import { notifyError } from "../../../../utils/notifyError";
 import { notifySuccess } from "../../../../utils/notifySuccess";
+import { InlineErrorAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().required(),
@@ -62,7 +63,7 @@ export const CloneDiscordConnectionCloneDialog = ({
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
-  const { mutateAsync: createChannelClone } = useCreateDiscordChannelConnectionClone();
+  const { mutateAsync: createChannelClone, error } = useCreateDiscordChannelConnectionClone();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -99,9 +100,7 @@ export const CloneDiscordConnectionCloneDialog = ({
 
       onClose();
       reset({ name });
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), (err as Error).message);
-    }
+    } catch (err) {}
   };
 
   return (
@@ -113,17 +112,25 @@ export const CloneDiscordConnectionCloneDialog = ({
           <ModalHeader>Clone connection</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-              <FormControl isInvalid={!!errors.name}>
-                <FormLabel>Name</FormLabel>
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+            <Stack>
+              <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
+                <FormControl isInvalid={!!errors.name}>
+                  <FormLabel>Name</FormLabel>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+                  />
+                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
+                </FormControl>
+              </form>
+              {error && (
+                <InlineErrorAlert
+                  title={t("common.errors.somethingWentWrong")}
+                  description={error.message}
                 />
-                {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-              </FormControl>
-            </form>
+              )}
+            </Stack>
           </ModalBody>
           <ModalFooter>
             <HStack>

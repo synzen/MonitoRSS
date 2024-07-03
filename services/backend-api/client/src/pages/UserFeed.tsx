@@ -101,9 +101,19 @@ export const UserFeed: React.FC = () => {
   });
   const { data: userMe } = useUserMe();
   const feedTitle = feed?.title;
-  const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
+  const {
+    mutateAsync: mutateAsyncUserFeed,
+    status: updatingStatus,
+    error: updateError,
+    reset: resetUpdateError,
+  } = useUpdateUserFeed();
 
-  const { mutateAsync, status: deleteingStatus } = useDeleteUserFeed();
+  const {
+    mutateAsync,
+    status: deleteingStatus,
+    error: deleteError,
+    reset: resetDeleteError,
+  } = useDeleteUserFeed();
   const { mutateAsync: restoreLegacyFeed } = useCreateUserFeedLegacyRestore();
   const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInviteStatus();
   const isSharedWithMe = !!feed?.sharedAccessDetails?.inviteId;
@@ -129,15 +139,11 @@ export const UserFeed: React.FC = () => {
       return;
     }
 
-    try {
-      await mutateAsync({
-        feedId,
-      });
-      notifySuccess(t("common.success.deleted"));
-      navigate(pages.userFeeds());
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-    }
+    await mutateAsync({
+      feedId,
+    });
+    notifySuccess(t("common.success.deleted"));
+    navigate(pages.userFeeds());
   };
 
   const onUpdateFeed = async ({ url, ...rest }: UpdateUserFeedInput["data"]) => {
@@ -145,19 +151,14 @@ export const UserFeed: React.FC = () => {
       return;
     }
 
-    try {
-      await mutateAsyncUserFeed({
-        feedId,
-        data: {
-          url: url === feed?.url ? undefined : url,
-          ...rest,
-        },
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-      throw err;
-    }
+    await mutateAsyncUserFeed({
+      feedId,
+      data: {
+        url: url === feed?.url ? undefined : url,
+        ...rest,
+      },
+    });
+    notifySuccess(t("common.success.savedChanges"));
   };
 
   const onRestoreLegacyFeed = async () => {
@@ -242,12 +243,16 @@ export const UserFeed: React.FC = () => {
         <EditUserFeedDialog
           onCloseRef={menuButtonRef}
           isOpen={editIsOpen}
-          onClose={editOnClose}
+          onClose={() => {
+            editOnClose();
+            resetUpdateError();
+          }}
           defaultValues={{
             title: feed?.title as string,
             url: feed?.url as string,
           }}
           onUpdate={onUpdateFeed}
+          error={updateError?.message}
         />
         <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined}>
           <Stack
@@ -327,6 +332,7 @@ export const UserFeed: React.FC = () => {
                             variant="outline"
                             ref={menuButtonRef}
                             rightIcon={<ChevronDownIcon />}
+                            aria-label="Feed actions"
                           >
                             <span>{t("pages.userFeed.actionsButtonText")}</span>
                           </MenuButton>
@@ -361,6 +367,8 @@ export const UserFeed: React.FC = () => {
                                 okText={t("common.buttons.yes")}
                                 colorScheme="red"
                                 onConfirm={onRemoveMyAccess}
+                                onClosed={resetUpdateError}
+                                error={updateError?.message}
                               />
                             )}
                             {feed && !feed.disabledCode && (
@@ -379,6 +387,8 @@ export const UserFeed: React.FC = () => {
                                     disabledCode: UserFeedDisabledCode.Manual,
                                   })
                                 }
+                                onClosed={resetUpdateError}
+                                error={updateError?.message}
                               />
                             )}
                             <MenuDivider />
@@ -447,6 +457,8 @@ export const UserFeed: React.FC = () => {
                                 okText={t("pages.userFeed.deleteConfirmOk")}
                                 colorScheme="red"
                                 onConfirm={onDeleteFeed}
+                                error={deleteError?.message}
+                                onClosed={resetDeleteError}
                               />
                             )}
                           </MenuList>
@@ -697,6 +709,7 @@ export const UserFeed: React.FC = () => {
                   <ComparisonsTabSection
                     passingComparisons={feed?.passingComparisons}
                     blockingComparisons={feed?.blockingComparisons}
+                    updateError={updateError?.message}
                     onUpdate={({ passingComparisons, blockingComparisons }) =>
                       onUpdateFeed({
                         passingComparisons,
