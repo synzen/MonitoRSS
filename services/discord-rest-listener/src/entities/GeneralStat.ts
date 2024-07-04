@@ -28,14 +28,17 @@ class GeneralStat {
    * Atomically increase a particular numeric stat by 1
    */
   static async increaseNumericStat (orm: MikroORM, key: string) {
-    const c = await orm.em.findOne(this, {
+    const c = await orm.em.fork().findOne(this, {
       _id: key
     })
     if (!c) {
-      const stat = new GeneralStat(key, 1)
-      await orm.em.insert(stat)
+      await orm.em.fork().insert(this, {
+        data: 1,
+        _id: key,
+        addedAt: new Date()
+      })
     } else {
-      await orm.em.nativeUpdate(this, {
+      await orm.em.fork().nativeUpdate(this, {
         _id: key
       }, {
         data: Number(c.data) + 1
