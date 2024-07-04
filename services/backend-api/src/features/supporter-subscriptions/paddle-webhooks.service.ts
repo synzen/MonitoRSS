@@ -46,7 +46,7 @@ const BENEFITS_BY_TIER: Partial<
   [SubscriptionProductKey.Tier3]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
-    maxUserFeeds: 105,
+    maxUserFeeds: 140,
     refreshRateSeconds: 120,
   },
   [LegacySubscriptionProductKey.Tier1Legacy]: {

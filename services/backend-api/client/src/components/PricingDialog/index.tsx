@@ -135,7 +135,7 @@ const tiers: Array<{
     features: [
       {
         name: Feature.Feeds,
-        description: "Track 105 news feeds",
+        description: "Track 140 news feeds",
         enabled: true,
       },
       {
