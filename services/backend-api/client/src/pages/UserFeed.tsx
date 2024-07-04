@@ -279,7 +279,7 @@ export const UserFeed: React.FC = () => {
                     </Breadcrumb>
                     <Stack flex={1}>
                       <HStack alignItems="flex-start" justifyContent="space-between">
-                        <Stack>
+                        <Stack width="fit-content">
                           <Flex alignItems="center" gap={0}>
                             <Heading size="lg" marginRight={4}>
                               {feed?.title}
@@ -298,6 +298,7 @@ export const UserFeed: React.FC = () => {
                               href={feed?.inputUrl || feed?.url}
                               target="_blank"
                               rel="noopener noreferrer"
+                              wordBreak="break-all"
                               aria-label={
                                 urlIsDifferentFromInput ? "Original input feed url" : "RSS feed url"
                               }
