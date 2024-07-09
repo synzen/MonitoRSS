@@ -89,12 +89,20 @@ export class FeedFetcherService {
   }: {
     lookupKey: string;
   }): Promise<Date | null> {
-    const request = await this.requestRepo.findOne({
-      lookupKey,
-      nextRetryDate: {
-        $ne: null,
+    const request = await this.requestRepo.findOne(
+      {
+        lookupKey,
+        nextRetryDate: {
+          $ne: null,
+        },
       },
-    });
+      {
+        orderBy: {
+          createdAt: 'DESC',
+        },
+        fields: ['nextRetryDate'],
+      },
+    );
 
     if (!request) {
       return null;
