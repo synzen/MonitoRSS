@@ -163,7 +163,7 @@ export const discordMessageFormSchema = object({
     .optional()
     .nullable(),
   enablePlaceholderFallback: boolean().optional(),
-});
+}).noUnknown();
 
 export type DiscordMessageFormData = InferType<typeof discordMessageFormSchema>;
 export type DiscordMessageEmbedFormData = InferType<typeof discordMessageEmbedFormSchema>;
