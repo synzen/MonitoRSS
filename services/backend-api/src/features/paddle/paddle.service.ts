@@ -84,6 +84,13 @@ export class PaddleService {
     };
   }
 
+  async updateCustomer(id: string, data: { email: string }) {
+    await this.executeApiCall(`/customers/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
   async getSubscription(subscriptionId: string) {
     return this.executeApiCall<PaddleSubscriptionResponse>(
       `/subscriptions/${subscriptionId}`

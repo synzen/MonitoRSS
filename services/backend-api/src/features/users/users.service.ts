@@ -17,6 +17,11 @@ import {
   UserModel,
   UserPreferences,
 } from "./entities/user.entity";
+import {
+  Supporter,
+  SupporterModel,
+} from "../supporters/entities/supporter.entity";
+import logger from "../../utils/logger";
 
 function getPrettySubscriptioNameFromKey(key: string) {
   if (key === "free") {
@@ -58,6 +63,8 @@ export class UsersService {
     private readonly supportersService: SupportersService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
+    @InjectModel(Supporter.name)
+    private readonly supporterModel: SupporterModel,
     private readonly paddleService: PaddleService
   ) {}
 
@@ -77,8 +84,8 @@ export class UsersService {
         discordUserId,
         email: data?.email,
       });
-    } else if (!found.email && data?.email) {
-      return (await this.userModel.findOneAndUpdate(
+    } else if (data?.email && (!found.email || found.email !== data.email)) {
+      const updated = (await this.userModel.findOneAndUpdate(
         {
           _id: found._id,
         },
@@ -88,6 +95,36 @@ export class UsersService {
           },
         }
       )) as User;
+
+      if (found.email !== data.email) {
+        const supporter = await this.supporterModel
+          .findOne({
+            _id: found.discordUserId,
+          })
+          .select("paddleCustomer")
+          .lean();
+
+        if (!supporter || !supporter.paddleCustomer) {
+          return updated;
+        }
+
+        const {
+          paddleCustomer: { customerId },
+        } = supporter;
+
+        await this.paddleService
+          .updateCustomer(customerId, {
+            email: data.email,
+          })
+          .catch((e) => {
+            logger.error(
+              "Failed to update paddle customer email after email change",
+              e
+            );
+          });
+      }
+
+      return updated;
     } else {
       return found;
     }
