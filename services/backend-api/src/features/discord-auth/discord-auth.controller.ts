@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Query,
@@ -32,6 +33,8 @@ export class DiscordAuthController {
   }
 
   @Get("login-v2")
+  // Caching is disable in case of email changes
+  @Header("Cache-Control", "no-store")
   loginV2(
     @Res() res: FastifyReply,
     @Session() session: FastifySecureSession,
@@ -97,6 +100,8 @@ export class DiscordAuthController {
   }
 
   @Get("callback-v2")
+  // Caching is disable in case of email changes
+  @Header("Cache-Control", "no-store")
   async discordCallbackV2(
     @Res({ passthrough: true }) res: FastifyReply,
     @Session() session: FastifyRequest["session"],
