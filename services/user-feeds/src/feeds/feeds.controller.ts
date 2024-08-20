@@ -369,7 +369,9 @@ export class FeedsController {
         if (result.state !== "success") {
           throw new Error(
             `Internal error occurred while delivering test` +
-              ` article: (status: ${result.state}, message: ${result.message}`
+              ` article: (status: ${result.status}, message: ${
+                result.message
+              }, body: ${JSON.stringify(result.body)}`
           );
         }
 
