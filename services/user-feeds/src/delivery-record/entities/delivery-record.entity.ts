@@ -8,7 +8,6 @@ import {
 } from "@mikro-orm/core";
 import { ArticleDeliveryStatus } from "../../shared";
 import { ArticleDeliveryContentType } from "../../shared/types/article-delivery-content-type.type";
-import { randomUUID } from "crypto";
 
 @Entity()
 @Index({
@@ -30,7 +29,7 @@ import { randomUUID } from "crypto";
 })
 export class DeliveryRecord {
   @PrimaryKey()
-  id: string = randomUUID();
+  id: string;
 
   @Property()
   feed_id: string;
@@ -95,6 +94,7 @@ export class DeliveryRecord {
       created_at?: Date;
     }
   ) {
+    this.id = data.id;
     this.feed_id = data.feed_id;
     this.status = data.status;
     this.error_code = data.error_code;
