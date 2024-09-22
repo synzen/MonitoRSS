@@ -396,6 +396,20 @@ export class FeedFetcherService {
 
       await this.requestRepo.persist(request);
 
+      if (this.usePartitionedResponses) {
+        await this.partitionedRequestsStore.markForPersistence({
+          url: request.url,
+          lookupKey: request.lookupKey,
+          createdAt: request.createdAt,
+          errorMessage: request.errorMessage || null,
+          fetchOptions: request.fetchOptions || null,
+          nextRetryDate: request.nextRetryDate,
+          source: (request.source as RequestSource | null) || null,
+          status: request.status,
+          response: null,
+        });
+      }
+
       return { request };
     } finally {
       if (options?.flushEntities) {
