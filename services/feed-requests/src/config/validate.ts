@@ -80,6 +80,10 @@ export class EnvironmentVariables {
 
   @IsNumber()
   FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT!: number;
+
+  @IsBoolean()
+  @IsOptional()
+  FEED_REQUESTS_USE_PARTITIONED_TABLES?: boolean;
 }
 
 export function validateConfig(

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
@@ -14,6 +15,7 @@ import { CacheStorageService } from '../cache-storage/cache-storage.service';
 import { FeedTooLargeException } from './exceptions';
 import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
+import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -49,6 +51,7 @@ interface FetchOptions {
 export class FeedFetcherService {
   defaultUserAgent: string;
   feedRequestTimeoutMs: number;
+  usePartitionedResponses: boolean;
 
   constructor(
     @InjectRepository(Request)
@@ -58,12 +61,16 @@ export class FeedFetcherService {
     private readonly configService: ConfigService,
     private readonly objectFileStorageService: ObjectFileStorageService,
     private readonly cacheStorageService: CacheStorageService,
+    private readonly partitionedRequestsStore: PartitionedRequestsStoreService,
   ) {
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
     );
     this.feedRequestTimeoutMs = this.configService.getOrThrow(
       'FEED_REQUESTS_REQUEST_TIMEOUT_MS',
+    );
+    this.usePartitionedResponses = !!this.configService.getOrThrow(
+      'FEED_REQUESTS_USE_PARTITIONED_TABLES',
     );
   }
 
@@ -147,6 +154,7 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
+    // this.requestRepo.getEntityManager().getConnection().execute()
     const request = await this.requestRepo.findOne(
       {
         lookupKey: lookupKey || url,
@@ -334,9 +342,30 @@ export class FeedFetcherService {
       response.isCloudflare = isCloudflareServer;
 
       await this.responseRepo.persist(response);
+
       request.response = response;
 
       await this.requestRepo.persist(request);
+
+      if (this.usePartitionedResponses) {
+        await this.partitionedRequestsStore.markForPersistence({
+          url: request.url,
+          lookupKey: request.lookupKey,
+          createdAt: request.createdAt,
+          errorMessage: request.errorMessage || null,
+          fetchOptions: request.fetchOptions || null,
+          nextRetryDate: request.nextRetryDate,
+          source: (request.source as RequestSource | null) || null,
+          status: request.status,
+          response: {
+            statusCode: response.statusCode,
+            textHash: response.textHash || null,
+            s3ObjectKey: response.s3ObjectKey || null,
+            redisCacheKey: response.redisCacheKey || null,
+            headers: response.headers,
+          },
+        });
+      }
 
       return {
         request,
@@ -371,6 +400,10 @@ export class FeedFetcherService {
     } finally {
       if (options?.flushEntities) {
         await this.requestRepo.flush();
+
+        if (this.usePartitionedResponses) {
+          await this.partitionedRequestsStore.flushPendingInserts();
+        }
       }
     }
   }

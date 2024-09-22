@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
@@ -10,6 +11,7 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { MikroORM, UseRequestContext } from '@mikro-orm/core';
 import { FeedFetcherService } from './feed-fetcher.service';
 import { RequestSource } from './constants/request-source.constants';
+import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -29,13 +31,12 @@ export class FeedFetcherListenerService {
   constructor(
     @InjectRepository(Request)
     private readonly requestRepo: EntityRepository<Request>,
-    // @InjectRepository(Response)
-    // private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly amqpConnection: AmqpConnection,
     private readonly orm: MikroORM, // For @UseRequestContext decorator
     private readonly em: EntityManager,
+    private readonly partitionedRequestsStoreService: PartitionedRequestsStoreService,
   ) {
     this.maxFailAttempts = this.configService.get(
       'FEED_REQUESTS_MAX_FAIL_ATTEMPTS',
@@ -176,6 +177,8 @@ export class FeedFetcherListenerService {
       }
 
       await this.em.flush();
+
+      await this.partitionedRequestsStoreService.flushPendingInserts();
 
       logger.debug(`Fetch batch request message processed for urls`, {
         urls,
@@ -500,57 +503,5 @@ export class FeedFetcherListenerService {
     );
 
     return found;
-  }
-
-  /**
-   * While this may delete all requests of feeds that have been disabled and were not fetched
-   * for a long time for example, fetches should always execute anyways if there are no
-   * existing requests stored.
-   */
-  async deleteStaleRequests(url: string) {
-    const cutoff = dayjs().subtract(1, 'days').toDate();
-
-    // const staleRequestsExists = await this.requestRepo.findOne(
-    //   {
-    //     url,
-    //     createdAt: {
-    //       $lt: cutoff,
-    //     },
-    //   },
-    //   {
-    //     fields: ['id'],
-    //   },
-    // );
-
-    // if (!staleRequestsExists) {
-    //   return;
-    // }
-
-    try {
-      // const oldResponseIds = this.requestRepo
-      //   .createQueryBuilder('a')
-      //   .select('response')
-      //   .where({ url, createdAt: { $lt: cutoff } })
-      //   .getKnexQuery();
-      // await this.responseRepo
-      //   .createQueryBuilder()
-      //   .delete()
-      //   .where({
-      //     id: {
-      //       $in: oldResponseIds,
-      //     },
-      //   });
-      // await this.requestRepo.nativeDelete({
-      //   url,
-      //   createdAt: {
-      //     $lt: cutoff,
-      //   },
-      // });
-    } catch (err) {
-      logger.error(`Failed to delete stale requests for url ${url}`, {
-        stack: (err as Error).stack,
-        url,
-      });
-    }
   }
 }

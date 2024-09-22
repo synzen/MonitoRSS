@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { DynamicModule, Module } from '@nestjs/common';
 import { Request, Response } from './entities';
 import { FeedFetcherController } from './feed-fetcher.controller';
@@ -7,6 +8,7 @@ import { MessageBrokerModule } from '../message-broker/message-broker.module';
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
 import { ObjectFileStorageModule } from '../object-file-storage/object-file-storage.module';
 import { CacheStorageModule } from '../cache-storage/cache-storage.module';
+import { PartitionedRequestsStoreModule } from '../partitioned-requests-store/partitioned-requests-store.module';
 
 @Module({
   controllers: [],
@@ -16,6 +18,7 @@ import { CacheStorageModule } from '../cache-storage/cache-storage.module';
     ObjectFileStorageModule,
     CacheStorageModule,
     MikroOrmModule.forFeature([Request, Response]),
+    PartitionedRequestsStoreModule,
   ],
 })
 export class FeedFetcherModule {
