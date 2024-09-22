@@ -51,7 +51,7 @@ interface FetchOptions {
 export class FeedFetcherService {
   defaultUserAgent: string;
   feedRequestTimeoutMs: number;
-  usePartitionedResponses: boolean;
+  loadPartitionedRequests: boolean;
 
   constructor(
     @InjectRepository(Request)
@@ -69,8 +69,8 @@ export class FeedFetcherService {
     this.feedRequestTimeoutMs = this.configService.getOrThrow(
       'FEED_REQUESTS_REQUEST_TIMEOUT_MS',
     );
-    this.usePartitionedResponses = !!this.configService.getOrThrow(
-      'FEED_REQUESTS_USE_PARTITIONED_TABLES',
+    this.loadPartitionedRequests = !!this.configService.getOrThrow(
+      'FEED_REQUESTS_LOAD_PARTITIONED_TABLES',
     );
   }
 
@@ -347,7 +347,7 @@ export class FeedFetcherService {
 
       await this.requestRepo.persist(request);
 
-      if (this.usePartitionedResponses) {
+      if (this.loadPartitionedRequests) {
         await this.partitionedRequestsStore.markForPersistence({
           url: request.url,
           lookupKey: request.lookupKey,
@@ -396,7 +396,7 @@ export class FeedFetcherService {
 
       await this.requestRepo.persist(request);
 
-      if (this.usePartitionedResponses) {
+      if (this.loadPartitionedRequests) {
         await this.partitionedRequestsStore.markForPersistence({
           url: request.url,
           lookupKey: request.lookupKey,
@@ -415,7 +415,7 @@ export class FeedFetcherService {
       if (options?.flushEntities) {
         await this.requestRepo.flush();
 
-        if (this.usePartitionedResponses) {
+        if (this.loadPartitionedRequests) {
           await this.partitionedRequestsStore.flushPendingInserts();
         }
       }
