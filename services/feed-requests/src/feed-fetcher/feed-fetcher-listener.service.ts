@@ -27,6 +27,7 @@ interface BatchRequestMessage {
 export class FeedFetcherListenerService {
   maxFailAttempts: number;
   defaultUserAgent: string;
+  usePartitionedRequests: boolean;
 
   constructor(
     @InjectRepository(Request)
@@ -43,6 +44,9 @@ export class FeedFetcherListenerService {
     ) as number;
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
+    );
+    this.usePartitionedRequests = !!this.configService.get(
+      'FEED_REQUESTS_USE_PARTITIONED_TABLES',
     );
   }
 
@@ -294,20 +298,26 @@ export class FeedFetcherListenerService {
       };
     }
 
-    const latestNextRetryDate = await this.requestRepo.findOne(
-      {
-        lookupKey: lookupKey || url,
-        nextRetryDate: {
-          $ne: null,
-        },
-      },
-      {
-        fields: ['nextRetryDate'],
-        orderBy: {
-          createdAt: 'DESC',
-        },
-      },
-    );
+    const latestNextRetryDate = this.usePartitionedRequests
+      ? await this.partitionedRequestsStoreService.getLatestNextRetryDate(
+          lookupKey || url,
+        )
+      : (
+          await this.requestRepo.findOne(
+            {
+              lookupKey: lookupKey || url,
+              nextRetryDate: {
+                $ne: null,
+              },
+            },
+            {
+              fields: ['nextRetryDate'],
+              orderBy: {
+                createdAt: 'DESC',
+              },
+            },
+          )
+        )?.nextRetryDate;
 
     if (!latestNextRetryDate) {
       logger.error(
@@ -322,10 +332,10 @@ export class FeedFetcherListenerService {
       };
     }
 
-    if (dayjs().isBefore(latestNextRetryDate.nextRetryDate)) {
+    if (dayjs().isBefore(latestNextRetryDate)) {
       return {
         skip: true,
-        nextRetryDate: latestNextRetryDate.nextRetryDate,
+        nextRetryDate: latestNextRetryDate,
         failedAttemptsCount: failedAttempts,
       };
     }
@@ -436,18 +446,29 @@ export class FeedFetcherListenerService {
     lookupKey?: string;
     url: string;
   }): Promise<number> {
-    const latestOkRequest = await this.requestRepo.findOne(
-      {
-        lookupKey: lookupKey || url,
-        status: RequestStatus.OK,
-      },
-      {
-        fields: ['createdAt'],
-        orderBy: {
-          createdAt: 'DESC',
-        },
-      },
-    );
+    const latestOkRequest = this.usePartitionedRequests
+      ? await this.partitionedRequestsStoreService.getLatestOkRequest(
+          lookupKey || url,
+        )
+      : await this.requestRepo.findOne(
+          {
+            lookupKey: lookupKey || url,
+            status: RequestStatus.OK,
+          },
+          {
+            fields: ['createdAt'],
+            orderBy: {
+              createdAt: 'DESC',
+            },
+          },
+        );
+
+    if (this.usePartitionedRequests) {
+      return this.partitionedRequestsStoreService.countFailedRequests(
+        lookupKey || url,
+        latestOkRequest?.createdAt,
+      );
+    }
 
     if (latestOkRequest) {
       return this.requestRepo.count({
@@ -486,6 +507,13 @@ export class FeedFetcherListenerService {
     },
     time: Date,
   ) {
+    if (this.usePartitionedRequests) {
+      return this.partitionedRequestsStoreService.getLatestStatusAfterTime(
+        requestQuery.lookupKey || requestQuery.url,
+        time,
+      );
+    }
+
     const found = await this.requestRepo.findOne(
       {
         lookupKey: requestQuery.lookupKey || requestQuery.url,

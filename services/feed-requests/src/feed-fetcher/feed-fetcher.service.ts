@@ -52,6 +52,7 @@ export class FeedFetcherService {
   defaultUserAgent: string;
   feedRequestTimeoutMs: number;
   loadPartitionedRequests: boolean;
+  usePartitionedRequests: boolean;
 
   constructor(
     @InjectRepository(Request)
@@ -72,9 +73,20 @@ export class FeedFetcherService {
     this.loadPartitionedRequests = !!this.configService.getOrThrow(
       'FEED_REQUESTS_LOAD_PARTITIONED_TABLES',
     );
+    this.usePartitionedRequests = !!this.configService.getOrThrow(
+      'FEED_REQUESTS_USE_PARTITIONED_TABLES',
+    );
   }
 
   async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
+    if (this.usePartitionedRequests) {
+      return this.partitionedRequestsStore.getRequests({
+        limit,
+        skip,
+        url,
+      });
+    }
+
     return this.requestRepo.find(
       {
         lookupKey: url,
@@ -96,6 +108,10 @@ export class FeedFetcherService {
   }: {
     lookupKey: string;
   }): Promise<Date | null> {
+    if (this.usePartitionedRequests) {
+      return this.partitionedRequestsStore.getLatestNextRetryDate(lookupKey);
+    }
+
     const request = await this.requestRepo.findOne(
       {
         lookupKey,
@@ -154,18 +170,19 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
-    // this.requestRepo.getEntityManager().getConnection().execute()
-    const request = await this.requestRepo.findOne(
-      {
-        lookupKey: lookupKey || url,
-      },
-      {
-        orderBy: {
-          createdAt: 'DESC',
-        },
-        populate: [],
-      },
-    );
+    const request = this.usePartitionedRequests
+      ? await this.partitionedRequestsStore.getLatestRequest(lookupKey || url)
+      : await this.requestRepo.findOne(
+          {
+            lookupKey: lookupKey || url,
+          },
+          {
+            orderBy: {
+              createdAt: 'DESC',
+            },
+            populate: [],
+          },
+        );
 
     if (!request) {
       return null;
@@ -173,10 +190,12 @@ export class FeedFetcherService {
 
     let response: Response | null = null;
 
-    if (request.response?.id) {
+    if (!this.usePartitionedRequests && request.response?.id) {
       response = await this.responseRepo.findOne({
         id: request.response.id,
       });
+    } else if (this.usePartitionedRequests) {
+      response = request.response;
     }
 
     const cacheKey = response?.redisCacheKey;
