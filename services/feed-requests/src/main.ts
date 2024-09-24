@@ -16,6 +16,7 @@ import { RequestContext } from '@mikro-orm/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import compression from '@fastify/compress';
+import pruneAndCreatePartitions from './utils/prune-and-create-partitions';
 
 async function startApi() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -72,6 +73,8 @@ async function startApi() {
   }, 60000);
 
   logger.info(`API is running on port ${port}`);
+
+  return { app };
 }
 
 async function startService() {
@@ -89,19 +92,27 @@ async function startService() {
   }, 60000);
 
   logger.info(`Service is running`);
+
+  return { app };
 }
 
 async function bootstrap() {
   if (process.env.FEED_REQUESTS_START_TARGET === 'api') {
-    await startApi();
+    const { app } = await startApi();
+
+    await schedulePruneAndCreatePartitions(app);
   } else if (process.env.FEED_REQUESTS_START_TARGET === 'service') {
-    await startService();
+    const { app } = await startService();
+
+    await schedulePruneAndCreatePartitions(app);
   } else if (process.env.FEED_REQUESTS_START_TARGET) {
     logger.error('Invalid FEED_REQUESTS_START_TARGET environment variable');
 
     process.exit(1);
   } else {
-    await startApi();
+    const { app } = await startApi();
+
+    await schedulePruneAndCreatePartitions(app);
     await startService();
   }
 }
@@ -124,6 +135,26 @@ async function tryDbConnection(orm: MikroORM, currentTries = 0) {
 
       return tryDbConnection(orm, currentTries + 1);
     });
+}
+
+async function schedulePruneAndCreatePartitions(app) {
+  await pruneAndCreatePartitions(app);
+
+  setInterval(() => {
+    logger.info('Running recurring task to prune and create partitions...');
+    pruneAndCreatePartitions(app)
+      .then(() => {
+        logger.info(
+          'Recurring task to prune and create partitions ran successfully',
+        );
+      })
+      .catch(() => {
+        logger.error(
+          `Failed to run recurring task to prune and create partitions`,
+        );
+        process.exit(1);
+      });
+  }, 60000);
 }
 
 bootstrap();
