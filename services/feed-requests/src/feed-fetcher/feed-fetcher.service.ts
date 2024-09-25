@@ -4,8 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
-import { EntityRepository } from '@mikro-orm/postgresql';
-import { InjectRepository } from '@mikro-orm/nestjs';
 import { GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
@@ -16,6 +14,7 @@ import { FeedTooLargeException } from './exceptions';
 import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
+import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -51,14 +50,8 @@ interface FetchOptions {
 export class FeedFetcherService {
   defaultUserAgent: string;
   feedRequestTimeoutMs: number;
-  loadPartitionedRequests: boolean;
-  usePartitionedRequests: boolean;
 
   constructor(
-    @InjectRepository(Request)
-    private readonly requestRepo: EntityRepository<Request>,
-    @InjectRepository(Response)
-    private readonly responseRepo: EntityRepository<Response>,
     private readonly configService: ConfigService,
     private readonly objectFileStorageService: ObjectFileStorageService,
     private readonly cacheStorageService: CacheStorageService,
@@ -70,37 +63,14 @@ export class FeedFetcherService {
     this.feedRequestTimeoutMs = this.configService.getOrThrow(
       'FEED_REQUESTS_REQUEST_TIMEOUT_MS',
     );
-    this.loadPartitionedRequests = !!this.configService.getOrThrow(
-      'FEED_REQUESTS_LOAD_PARTITIONED_TABLES',
-    );
-    this.usePartitionedRequests = !!this.configService.getOrThrow(
-      'FEED_REQUESTS_USE_PARTITIONED_TABLES',
-    );
   }
 
-  async getRequests({ skip, limit, url, select }: GetFeedRequestsInput) {
-    if (this.usePartitionedRequests) {
-      return this.partitionedRequestsStore.getRequests({
-        limit,
-        skip,
-        url,
-      });
-    }
-
-    return this.requestRepo.find(
-      {
-        lookupKey: url,
-      },
-      {
-        limit,
-        offset: skip,
-        orderBy: {
-          createdAt: 'DESC',
-        },
-        fields: [...(select || []), 'response.statusCode'],
-        populate: ['response'],
-      },
-    );
+  async getRequests({ skip, limit, url }: GetFeedRequestsInput) {
+    return this.partitionedRequestsStore.getRequests({
+      limit,
+      skip,
+      url,
+    });
   }
 
   async getLatestRetryDate({
@@ -108,30 +78,7 @@ export class FeedFetcherService {
   }: {
     lookupKey: string;
   }): Promise<Date | null> {
-    if (this.usePartitionedRequests) {
-      return this.partitionedRequestsStore.getLatestNextRetryDate(lookupKey);
-    }
-
-    const request = await this.requestRepo.findOne(
-      {
-        lookupKey,
-        nextRetryDate: {
-          $ne: null,
-        },
-      },
-      {
-        orderBy: {
-          createdAt: 'DESC',
-        },
-        fields: ['nextRetryDate'],
-      },
-    );
-
-    if (!request) {
-      return null;
-    }
-
-    return request.nextRetryDate || null;
+    return this.partitionedRequestsStore.getLatestNextRetryDate(lookupKey);
   }
 
   // async getLatestRequestHeaders({
@@ -170,39 +117,17 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
-    const request = this.usePartitionedRequests
-      ? await this.partitionedRequestsStore.getLatestRequest(lookupKey || url)
-      : await this.requestRepo.findOne(
-          {
-            lookupKey: lookupKey || url,
-          },
-          {
-            orderBy: {
-              createdAt: 'DESC',
-            },
-            populate: [],
-          },
-        );
+    const request = await this.partitionedRequestsStore.getLatestRequest(
+      lookupKey || url,
+    );
 
     if (!request) {
       return null;
     }
 
-    let response: Response | null = null;
-
-    if (!this.usePartitionedRequests && request.response?.id) {
-      response = await this.responseRepo.findOne({
-        id: request.response.id,
-      });
-    } else if (this.usePartitionedRequests) {
-      response = request.response;
-    }
-
-    const cacheKey = response?.redisCacheKey;
-
-    if (response && cacheKey) {
+    if (request.response?.redisCacheKey) {
       const compressedText = await this.cacheStorageService.getFeedHtmlContent({
-        key: cacheKey,
+        key: request.response.redisCacheKey,
       });
 
       const text = compressedText
@@ -212,12 +137,7 @@ export class FeedFetcherService {
         : '';
 
       return {
-        request: {
-          ...request,
-          response: {
-            ...response,
-          },
-        },
+        request,
         decodedResponseText: text,
       };
     }
@@ -235,7 +155,7 @@ export class FeedFetcherService {
       source: RequestSource | undefined;
     },
   ): Promise<{
-    request: Request;
+    request: PartitionedRequestInsert;
     responseText?: string | null;
   }> {
     const fetchOptions: FetchOptions = {
@@ -359,35 +279,32 @@ export class FeedFetcherService {
         ?.includes('cloudflare');
 
       response.isCloudflare = isCloudflareServer;
-
-      await this.responseRepo.persist(response);
-
       request.response = response;
 
-      await this.requestRepo.persist(request);
+      const partitionedRequest: PartitionedRequestInsert = {
+        url: request.url,
+        lookupKey: request.lookupKey,
+        createdAt: request.createdAt,
+        errorMessage: request.errorMessage || null,
+        fetchOptions: request.fetchOptions || null,
+        nextRetryDate: request.nextRetryDate,
+        source: (request.source as RequestSource | null) || null,
+        status: request.status,
+        response: {
+          statusCode: response.statusCode,
+          textHash: response.textHash || null,
+          s3ObjectKey: response.s3ObjectKey || null,
+          redisCacheKey: response.redisCacheKey || null,
+          headers: response.headers,
+        },
+      };
 
-      if (this.loadPartitionedRequests) {
-        await this.partitionedRequestsStore.markForPersistence({
-          url: request.url,
-          lookupKey: request.lookupKey,
-          createdAt: request.createdAt,
-          errorMessage: request.errorMessage || null,
-          fetchOptions: request.fetchOptions || null,
-          nextRetryDate: request.nextRetryDate,
-          source: (request.source as RequestSource | null) || null,
-          status: request.status,
-          response: {
-            statusCode: response.statusCode,
-            textHash: response.textHash || null,
-            s3ObjectKey: response.s3ObjectKey || null,
-            redisCacheKey: response.redisCacheKey || null,
-            headers: response.headers,
-          },
-        });
-      }
+      await this.partitionedRequestsStore.markForPersistence(
+        partitionedRequest,
+      );
 
       return {
-        request,
+        request: partitionedRequest,
         responseText: text,
       };
     } catch (err) {
@@ -413,30 +330,26 @@ export class FeedFetcherService {
         }`;
       }
 
-      await this.requestRepo.persist(request);
+      const partitionedRequest: PartitionedRequestInsert = {
+        url: request.url,
+        lookupKey: request.lookupKey,
+        createdAt: request.createdAt,
+        errorMessage: request.errorMessage || null,
+        fetchOptions: request.fetchOptions || null,
+        nextRetryDate: request.nextRetryDate,
+        source: (request.source as RequestSource | null) || null,
+        status: request.status,
+        response: null,
+      };
 
-      if (this.loadPartitionedRequests) {
-        await this.partitionedRequestsStore.markForPersistence({
-          url: request.url,
-          lookupKey: request.lookupKey,
-          createdAt: request.createdAt,
-          errorMessage: request.errorMessage || null,
-          fetchOptions: request.fetchOptions || null,
-          nextRetryDate: request.nextRetryDate,
-          source: (request.source as RequestSource | null) || null,
-          status: request.status,
-          response: null,
-        });
-      }
+      await this.partitionedRequestsStore.markForPersistence(
+        partitionedRequest,
+      );
 
-      return { request };
+      return { request: partitionedRequest };
     } finally {
       if (options?.flushEntities) {
-        await this.requestRepo.flush();
-
-        if (this.loadPartitionedRequests) {
-          await this.partitionedRequestsStore.flushPendingInserts();
-        }
+        await this.partitionedRequestsStore.flushPendingInserts();
       }
     }
   }

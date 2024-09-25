@@ -3,15 +3,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
-import { Request } from './entities';
 import dayjs from 'dayjs';
 import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
-import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityManager } from '@mikro-orm/postgresql';
 import { MikroORM, UseRequestContext } from '@mikro-orm/core';
 import { FeedFetcherService } from './feed-fetcher.service';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
+import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -27,11 +26,8 @@ interface BatchRequestMessage {
 export class FeedFetcherListenerService {
   maxFailAttempts: number;
   defaultUserAgent: string;
-  usePartitionedRequests: boolean;
 
   constructor(
-    @InjectRepository(Request)
-    private readonly requestRepo: EntityRepository<Request>,
     private readonly configService: ConfigService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly amqpConnection: AmqpConnection,
@@ -44,9 +40,6 @@ export class FeedFetcherListenerService {
     ) as number;
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
-    );
-    this.usePartitionedRequests = !!this.configService.get(
-      'FEED_REQUESTS_USE_PARTITIONED_TABLES',
     );
   }
 
@@ -127,7 +120,7 @@ export class FeedFetcherListenerService {
     try {
       const results = await Promise.allSettled(
         message.data.map(async ({ url, lookupKey, saveToObjectStorage }) => {
-          let request: Request | undefined = undefined;
+          let request: PartitionedRequestInsert | undefined = undefined;
 
           try {
             const result = await this.handleBrokerFetchRequest({
@@ -200,7 +193,10 @@ export class FeedFetcherListenerService {
     url: string;
     rateSeconds: number;
     saveToObjectStorage?: boolean;
-  }): Promise<{ successful: boolean; request?: Request }> {
+  }): Promise<{
+    successful: boolean;
+    request?: PartitionedRequestInsert;
+  }> {
     const url = data.url;
     const rateSeconds = data.rateSeconds;
     const lookupKey = data.lookupKey;
@@ -263,7 +259,10 @@ export class FeedFetcherListenerService {
       request.nextRetryDate = nextRetryDate;
     }
 
-    return { request, successful: request.status === RequestStatus.OK };
+    return {
+      request,
+      successful: request.status === RequestStatus.OK,
+    };
   }
 
   async shouldSkipAfterPreviousFailedAttempt({
@@ -298,26 +297,10 @@ export class FeedFetcherListenerService {
       };
     }
 
-    const latestNextRetryDate = this.usePartitionedRequests
-      ? await this.partitionedRequestsStoreService.getLatestNextRetryDate(
-          lookupKey || url,
-        )
-      : (
-          await this.requestRepo.findOne(
-            {
-              lookupKey: lookupKey || url,
-              nextRetryDate: {
-                $ne: null,
-              },
-            },
-            {
-              fields: ['nextRetryDate'],
-              orderBy: {
-                createdAt: 'DESC',
-              },
-            },
-          )
-        )?.nextRetryDate;
+    const latestNextRetryDate =
+      await this.partitionedRequestsStoreService.getLatestNextRetryDate(
+        lookupKey || url,
+      );
 
     if (!latestNextRetryDate) {
       logger.error(
@@ -446,50 +429,15 @@ export class FeedFetcherListenerService {
     lookupKey?: string;
     url: string;
   }): Promise<number> {
-    const latestOkRequest = this.usePartitionedRequests
-      ? await this.partitionedRequestsStoreService.getLatestOkRequest(
-          lookupKey || url,
-        )
-      : await this.requestRepo.findOne(
-          {
-            lookupKey: lookupKey || url,
-            status: RequestStatus.OK,
-          },
-          {
-            fields: ['createdAt'],
-            orderBy: {
-              createdAt: 'DESC',
-            },
-          },
-        );
-
-    if (this.usePartitionedRequests) {
-      return this.partitionedRequestsStoreService.countFailedRequests(
+    const latestOkRequest =
+      await this.partitionedRequestsStoreService.getLatestOkRequest(
         lookupKey || url,
-        latestOkRequest?.createdAt,
       );
-    }
 
-    if (latestOkRequest) {
-      return this.requestRepo.count({
-        lookupKey: lookupKey || url,
-        status: {
-          $ne: RequestStatus.OK,
-        },
-        createdAt: {
-          $gte: latestOkRequest.createdAt,
-        },
-        source: RequestSource.Schedule,
-      });
-    } else {
-      return this.requestRepo.count({
-        lookupKey: lookupKey || url,
-        status: {
-          $ne: RequestStatus.OK,
-        },
-        source: RequestSource.Schedule,
-      });
-    }
+    return this.partitionedRequestsStoreService.countFailedRequests(
+      lookupKey || url,
+      latestOkRequest?.createdAt,
+    );
   }
 
   calculateNextRetryDate(referenceDate: Date, attemptsSoFar: number) {
@@ -507,29 +455,9 @@ export class FeedFetcherListenerService {
     },
     time: Date,
   ) {
-    if (this.usePartitionedRequests) {
-      return this.partitionedRequestsStoreService.getLatestStatusAfterTime(
-        requestQuery.lookupKey || requestQuery.url,
-        time,
-      );
-    }
-
-    const found = await this.requestRepo.findOne(
-      {
-        lookupKey: requestQuery.lookupKey || requestQuery.url,
-        createdAt: {
-          $gt: time,
-        },
-        source: RequestSource.Schedule,
-      },
-      {
-        fields: ['status'],
-        orderBy: {
-          createdAt: 'DESC',
-        },
-      },
+    return this.partitionedRequestsStoreService.getLatestStatusAfterTime(
+      requestQuery.lookupKey || requestQuery.url,
+      time,
     );
-
-    return found;
   }
 }

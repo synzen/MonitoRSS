@@ -131,7 +131,17 @@ export class FeedFetcherController {
       }
     }
 
-    let latestRequest = await this.feedFetcherService.getLatestRequest({
+    let latestRequest: {
+      request: {
+        response: {
+          textHash?: string | null;
+          statusCode: number;
+          redisCacheKey?: string | null;
+        } | null;
+        status: RequestStatus;
+      };
+      decodedResponseText?: string | null;
+    } | null = await this.feedFetcherService.getLatestRequest({
       url: data.url,
       lookupKey: data.lookupKey,
     });
@@ -154,7 +164,7 @@ export class FeedFetcherController {
         );
 
         latestRequest = {
-          request: savedData.request,
+          request: { ...savedData.request },
           decodedResponseText: savedData.responseText,
         };
       } else {
