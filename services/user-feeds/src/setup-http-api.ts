@@ -34,4 +34,6 @@ export async function setupHttpApi() {
   await app.listen(port, "0.0.0.0");
 
   logger.info(`HTTP API listening on port ${port}`);
+
+  return { app };
 }

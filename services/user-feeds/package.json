@@ -27,7 +27,8 @@
     "migration:local:pending": "cross-env NODE_ENV=local mikro-orm migration:pending",
     "migration:local:down": "cross-env NODE_ENV=local mikro-orm migration:down",
     "migration:prod:create": "cross-env NODE_ENV=production mikro-orm migration:create",
-    "migration:prod:up": "cross-env NODE_ENV=production mikro-orm migration:up"
+    "migration:prod:up": "cross-env NODE_ENV=production mikro-orm migration:up",
+    "migration:blank": "cross-env NODE_ENV=local mikro-orm migration:create --blank"
   },
   "dependencies": {
     "@fastify/compress": "^6.4.0",
