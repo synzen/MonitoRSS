@@ -553,9 +553,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                 {!failedToLoadPrices && (
                   <>
                     <Box textAlign="center" pb={3} fontSize="lg">
-                      <Text color="whiteAlpha.600" fontSize="sm">
-                        * External properties are currently limited to feeds with fewer than{" "}
-                        {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
+                      <Text fontSize="sm">
+                        If you are having issues after clicking &quot;Upgrade&quot;, try using
+                        incognito mode or a different browser. If you are still having issues,
+                        please contact us at{" "}
+                        <Link color="blue.300" href="mailto:support@monitorss.xyz">
+                          support@monitorss.xyz
+                        </Link>
+                        .
                       </Text>
                     </Box>
                     <Box textAlign="center" pb={3} fontSize="lg">
@@ -569,7 +574,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                         </Link>
                       </Text>
                     </Box>
+                    
+                    {/* <Text color="whiteAlpha.600" fontSize="sm">
+                      * External properties are currently limited to feeds with fewer than{" "}
+                      {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles
+                    </Text> */}
                     <Text textAlign="center" color="whiteAlpha.600">
+                      * External properties are currently limited to feeds with fewer than{" "}
+                      {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
                       By proceeding to payment, you are agreeing to our{" "}
                       <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
                         terms and conditions
