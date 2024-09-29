@@ -67,8 +67,6 @@ export class ArticlesService {
     private readonly configService: ConfigService
   ) {
     this.usePartitionedTables = false;
-
-    logger.info(`Using partitioned tables: ${this.usePartitionedTables}`);
   }
 
   async doFeedArticlesExistInCache(data: {
