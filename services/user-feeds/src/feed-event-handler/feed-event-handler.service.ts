@@ -102,12 +102,14 @@ export class FeedEventHandlerService {
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
       await this.handleV2EventWithDb(event);
 
-      this.logEventFinish(event, {
-        success: true,
-      });
+      this.logEventFinish(event);
     } catch (err) {
+      logger.error(`Failed to handle feed event`, {
+        feedId: event.data.feed.id,
+        error: (err as Error).stack,
+      });
       this.logEventFinish(event, {
-        success: false,
+        error: err as Error,
       });
     } finally {
       await this.cacheStorageService.del(cacheKey);
@@ -573,22 +575,25 @@ export class FeedEventHandlerService {
 
   private logEventFinish(
     event: FeedV2Event,
-    {
-      success,
-    }: {
-      success: boolean;
+    meta?: {
+      error?: Error;
     }
   ) {
     if (event.timestamp) {
       const nowTs = Date.now();
       const finishedTs = nowTs - event.timestamp;
 
-      logger.datadog(`Finished handling user feed event in ${finishedTs}ms`, {
-        duration: finishedTs,
-        feedId: event.data.feed.id,
-        feedURL: event.data.feed.url,
-        success,
-      });
+      logger.datadog(
+        !meta?.error
+          ? `Finished handling user feed event in ${finishedTs}ms`
+          : `Error while handling user event feed`,
+        {
+          duration: finishedTs,
+          feedId: event.data.feed.id,
+          feedURL: event.data.feed.url,
+          error: meta?.error,
+        }
+      );
     }
   }
 
