@@ -40,7 +40,9 @@ export class PartitionedFeedArticleFieldStoreService {
           error: (err as Error).stack,
         });
       } else {
-        throw err;
+        logger.error("Error while inserting partitioned feed article field", {
+          error: (err as Error).stack,
+        });
       }
     }
   }
