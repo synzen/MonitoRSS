@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PartitionedRequestInsert } from './types/partitioned-request.type';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { MikroORM } from '@mikro-orm/core';
 import logger from '../utils/logger';
 import { RequestSource } from '../feed-fetcher/constants/request-source.constants';
@@ -36,6 +36,7 @@ export default class PartitionedRequestsStoreService {
 
           return em.execute(
             `INSERT INTO request_partitioned (
+              id,
               status,
               source,
               fetch_options,
@@ -51,9 +52,10 @@ export default class PartitionedRequestsStoreService {
               response_redis_cache_key,
               response_headers
             ) VALUES (
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )`,
             [
+              randomUUID(),
               responseInsert.status,
               responseInsert.source,
               this.stringifyJson(responseInsert.fetchOptions),
