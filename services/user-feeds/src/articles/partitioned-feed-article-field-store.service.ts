@@ -16,7 +16,6 @@ export class PartitionedFeedArticleFieldStoreService {
     inserts: PartitionedFeedArticleFieldInsert[],
     em: EntityManager<IDatabaseDriver<Connection>>
   ) {
-    return;
     const connection = em.getConnection();
 
     try {
