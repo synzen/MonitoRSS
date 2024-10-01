@@ -162,6 +162,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "1",
+            idHash: "1-hash",
             title: "title1",
           },
           raw: {},
@@ -169,6 +170,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "2",
+            idHash: "2-hash",
             title: "title2",
           },
           raw: {},
@@ -176,6 +178,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "3",
+            idHash: "3-hash",
             title: "title3",
           },
           raw: {},
@@ -198,6 +201,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "1",
+            idHash: "1-hash",
             title: "title1",
           },
           raw: {},
@@ -205,6 +209,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "2",
+            idHash: "2-hash",
             title: "title2",
           },
           raw: {},
@@ -212,6 +217,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "3",
+            idHash: "3-hash",
             title: "title3",
           },
           raw: {},
@@ -244,18 +250,21 @@ describe("FeedsService", () => {
           {
             flattened: {
               id: "1",
+              idHash: "hash-1",
             },
             raw: {},
           },
           {
             flattened: {
               id: "2",
+              idHash: "hash-2",
             },
             raw: {},
           },
           {
             flattened: {
               id: "3",
+              idHash: "hash-3",
             },
             raw: {},
           },
@@ -309,6 +318,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "1",
+            idHash: "1-hash",
             title: "title1",
             description: "description1",
             author: "",
@@ -319,6 +329,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "2",
+            idHash: "2-hash",
             title: "title2",
             description: "description2",
             author: "author2",
@@ -329,6 +340,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "3",
+            idHash: "3-hash",
             title: "title3",
             description: "description3",
             author: "",
@@ -340,6 +352,7 @@ describe("FeedsService", () => {
 
       expect(result.properties).toEqual([
         "id",
+        "idHash",
         "title",
         "description",
         "author",
@@ -361,9 +374,9 @@ describe("FeedsService", () => {
 
       jest
         .spyOn(articleFiltersService, "evaluateExpression")
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(false)
-        .mockResolvedValue(true);
+        .mockResolvedValueOnce({ result: true })
+        .mockResolvedValueOnce({ result: false })
+        .mockResolvedValue({ result: true });
 
       const result = await service.queryForArticles(input);
 

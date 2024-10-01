@@ -86,6 +86,7 @@ describe("ArticleFiltersService", () => {
           ARTICLE: {
             flattened: {
               id: "1",
+              idHash: "1",
               title: "1",
             },
             raw: {} as never,
@@ -114,15 +115,16 @@ describe("ArticleFiltersService", () => {
           [RelationalExpressionLeft.Article]: {
             flattened: {
               id: "1",
+              idHash: "1",
               title: "s",
             },
             raw: {} as never,
           },
         };
 
-        expect(service.evaluateExpression(expression, reference)).toEqual(
-          false
-        );
+        expect(
+          service.evaluateExpression(expression, reference).result
+        ).toEqual(false);
       });
 
       it.each([
@@ -164,15 +166,16 @@ describe("ArticleFiltersService", () => {
             [RelationalExpressionLeft.Article]: {
               flattened: {
                 id: "1",
+                idHash: "1",
                 [articleProperty]: articleValue,
               },
               raw: {} as never,
             },
           };
 
-          expect(service.evaluateExpression(expression, reference)).toEqual(
-            expected
-          );
+          expect(
+            service.evaluateExpression(expression, reference).result
+          ).toEqual(expected);
         }
       );
       it.each([
@@ -206,15 +209,16 @@ describe("ArticleFiltersService", () => {
             [RelationalExpressionLeft.Article]: {
               flattened: {
                 id: "1",
+                idHash: "1",
                 title: articleValue,
               },
               raw: {} as never,
             },
           };
 
-          expect(service.evaluateExpression(expression, reference)).toEqual(
-            expected
-          );
+          expect(
+            service.evaluateExpression(expression, reference).result
+          ).toEqual(expected);
         }
       );
 
@@ -249,15 +253,16 @@ describe("ArticleFiltersService", () => {
             [RelationalExpressionLeft.Article]: {
               flattened: {
                 id: "1",
+                idHash: "1",
                 title: articleValue,
               },
               raw: {} as never,
             },
           };
 
-          expect(service.evaluateExpression(expression, reference)).toEqual(
-            expected
-          );
+          expect(
+            service.evaluateExpression(expression, reference).result
+          ).toEqual(expected);
         }
       );
     });
@@ -288,12 +293,13 @@ describe("ArticleFiltersService", () => {
               ARTICLE: {
                 flattened: {
                   id: "1",
+                  idHash: "1",
                   title: "a",
                 },
                 raw: {} as never,
               },
             }
-          )
+          ).result
         ).toBe(true);
       });
 
@@ -334,13 +340,14 @@ describe("ArticleFiltersService", () => {
               ARTICLE: {
                 flattened: {
                   id: "1",
+                  idHash: "1",
                   title: "a",
                   description: "b",
                 },
                 raw: {} as never,
               },
             }
-          )
+          ).result
         ).toBe(true);
       });
 
@@ -381,13 +388,14 @@ describe("ArticleFiltersService", () => {
               ARTICLE: {
                 flattened: {
                   id: "1",
+                  idHash: "1",
                   title: "a",
                   description: "b",
                 },
                 raw: {} as never,
               },
             }
-          )
+          ).result
         ).toBe(false);
       });
     });
@@ -430,13 +438,14 @@ describe("ArticleFiltersService", () => {
               ARTICLE: {
                 flattened: {
                   id: "1",
+                  idHash: "1",
                   title: "a",
                   description: "b",
                 },
                 raw: {} as never,
               },
             }
-          )
+          ).result
         ).toBe(true);
       });
 
@@ -477,13 +486,14 @@ describe("ArticleFiltersService", () => {
               ARTICLE: {
                 flattened: {
                   id: "1",
+                  idHash: "1",
                   title: "a",
                   description: "b",
                 },
                 raw: {} as never,
               },
             }
-          )
+          ).result
         ).toBe(false);
       });
 
@@ -524,11 +534,12 @@ describe("ArticleFiltersService", () => {
               ARTICLE: {
                 flattened: {
                   id: "1",
+                  idHash: "1",
                 },
                 raw: {} as never,
               },
             }
-          )
+          ).result
         ).toBe(false);
       });
 
@@ -566,7 +577,7 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {} as never
-          )
+          ).result
         ).toBe(false);
       });
     });

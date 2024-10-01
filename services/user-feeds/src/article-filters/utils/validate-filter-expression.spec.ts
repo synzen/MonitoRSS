@@ -334,20 +334,6 @@ describe("validateLogicalExpression", () => {
     ]);
   });
 
-  it("should return an error if children is empty", () => {
-    const expression = {
-      type: ExpressionType.Logical,
-      op: LogicalExpressionOperator.And,
-      children: [],
-    };
-
-    const errors = validateLogicalExpression(expression);
-
-    expect(errors).toEqual([
-      "Expected root.children to have at least one item",
-    ]);
-  });
-
   it("should return an error if children is not an array of valid expressions", () => {
     const expression = {
       type: ExpressionType.Logical,

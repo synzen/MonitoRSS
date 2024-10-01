@@ -3,7 +3,6 @@ import { EntityRepository } from "@mikro-orm/postgresql";
 import {
   ArticleDeliveryContentType,
   ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
   clearDatabase,
@@ -131,17 +130,19 @@ describe("DeliveryRecordService", () => {
           id: "1",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
           internalMessage: "internal-message",
           articleIdHash: "hash",
+          externalDetail: "",
         },
         {
           id: "2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
           internalMessage: "internal-message-2",
           articleIdHash: "hash2",
+          externalDetail: "",
         },
       ];
       await service.store(feedId, articleStates);
@@ -154,13 +155,13 @@ describe("DeliveryRecordService", () => {
           expect.objectContaining({
             feed_id: feedId,
             status: ArticleDeliveryStatus.Rejected,
-            error_code: ArticleDeliveryRejectedCode.BadRequest,
+            error_code: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
             internal_message: "internal-message",
           }),
           expect.objectContaining({
             feed_id: feedId,
             status: ArticleDeliveryStatus.Rejected,
-            error_code: ArticleDeliveryRejectedCode.BadRequest,
+            error_code: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
             internal_message: "internal-message-2",
           }),
         ])
@@ -213,12 +214,14 @@ describe("DeliveryRecordService", () => {
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
           articleIdHash: "hash",
+          externalDetail: "",
         },
         {
           id: "id-2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
           articleIdHash: "hash2",
+          externalDetail: "",
         },
       ];
       await service.store(feedId, articleStates);

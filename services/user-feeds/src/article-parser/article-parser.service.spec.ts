@@ -12,7 +12,7 @@ describe("ArticleParserService", () => {
   });
 
   describe("flatten", () => {
-    it("flattens nested objects", () => {
+    it("flattens nested objects", async () => {
       const article = {
         id: "hello world",
         author: {
@@ -22,54 +22,48 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          [`author${DL}name${DL}tag`]: article.author.name.tag,
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        [`author${DL}name${DL}tag`]: article.author.name.tag,
       });
     });
 
-    it("flattens categories into a single string", () => {
+    it("flattens categories into a single string", async () => {
       const article = {
         categories: ["cat1", "cat2", "cat3"],
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toMatchObject({
-        flattened: {
-          ["processed::categories"]: "cat1,cat2,cat3",
-        },
+      expect(flattenedArticle.flattened).toMatchObject({
+        ["processed::categories"]: "cat1,cat2,cat3",
       });
     });
 
-    it("flattens arrays", () => {
+    it("flattens arrays", async () => {
       const article = {
         id: "hello world",
         tags: ["tag1", "tag2"],
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          [`tags${DL}0`]: article.tags[0],
-          [`tags${DL}1`]: article.tags[1],
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        [`tags${DL}0`]: article.tags[0],
+        [`tags${DL}1`]: article.tags[1],
       });
     });
 
-    it("flattens arrays of objects", () => {
+    it("flattens arrays of objects", async () => {
       const article = {
         id: "hello world",
         tags: [
@@ -82,20 +76,18 @@ describe("ArticleParserService", () => {
         ],
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          [`tags${DL}0${DL}name`]: article.tags[0].name,
-          [`tags${DL}1${DL}name`]: article.tags[1].name,
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        [`tags${DL}0${DL}name`]: article.tags[0].name,
+        [`tags${DL}1${DL}name`]: article.tags[1].name,
       });
     });
 
-    it("flattens arrays of objects with arrays", () => {
+    it("flattens arrays of objects with arrays", async () => {
       const article = {
         id: "hello world",
         tags: [
@@ -110,24 +102,22 @@ describe("ArticleParserService", () => {
         ],
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          [`tags${DL}0${DL}name`]: article.tags[0].name,
-          [`tags${DL}0${DL}aliases${DL}0`]: article.tags[0].aliases[0],
-          [`tags${DL}0${DL}aliases${DL}1`]: article.tags[0].aliases[1],
-          [`tags${DL}1${DL}name`]: article.tags[1].name,
-          [`tags${DL}1${DL}aliases${DL}0`]: article.tags[1].aliases[0],
-          [`tags${DL}1${DL}aliases${DL}1`]: article.tags[1].aliases[1],
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        [`tags${DL}0${DL}name`]: article.tags[0].name,
+        [`tags${DL}0${DL}aliases${DL}0`]: article.tags[0].aliases[0],
+        [`tags${DL}0${DL}aliases${DL}1`]: article.tags[0].aliases[1],
+        [`tags${DL}1${DL}name`]: article.tags[1].name,
+        [`tags${DL}1${DL}aliases${DL}0`]: article.tags[1].aliases[0],
+        [`tags${DL}1${DL}aliases${DL}1`]: article.tags[1].aliases[1],
       });
     });
 
-    it("handles keys with the delimiter in it", () => {
+    it("handles keys with the delimiter in it", async () => {
       const article = {
         id: "hello world",
         a: {
@@ -135,15 +125,13 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          [`a${DL}${DL}b`]: article.a[`${DL}b`],
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        [`a${DL}${DL}b`]: article.a[`${DL}b`],
       });
     });
 
@@ -152,7 +140,7 @@ describe("ArticleParserService", () => {
       { val: undefined, desc: "undefined" },
       { val: "", desc: "empty string" },
       { val: " ", desc: "whitespace" },
-    ])("excludes $desc values from the final object", ({ val }) => {
+    ])("excludes $desc values from the final object", async ({ val }) => {
       const article = {
         id: "hello world",
         a: val,
@@ -163,18 +151,16 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
       });
     });
 
-    it("omits null values", () => {
+    it("omits null values", async () => {
       const article = {
         id: "hello world",
         a: null,
@@ -187,18 +173,16 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
       });
     });
 
-    it("removes empty objects", () => {
+    it("removes empty objects", async () => {
       const article = {
         id: "hello world",
         a: {},
@@ -211,18 +195,16 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
       });
     });
 
-    it("removes empty arrays", () => {
+    it("removes empty arrays", async () => {
       const article = {
         id: "hello world",
         a: [],
@@ -235,18 +217,16 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
       });
     });
 
-    it("converts numbers to strings", () => {
+    it("converts numbers to strings", async () => {
       const article = {
         id: "hello world",
         a: 1,
@@ -259,20 +239,18 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          a: "1",
-          [`b${DL}c${DL}d${DL}e`]: "2",
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        a: "1",
+        [`b${DL}c${DL}d${DL}e`]: "2",
       });
     });
 
-    it("extracts images", () => {
+    it("extracts images", async () => {
       const article = {
         id: "123",
         description:
@@ -281,41 +259,37 @@ describe("ArticleParserService", () => {
         summary: "hello world <img src='https://example.com/image3.jpg' />",
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toMatchObject({
-        flattened: {
-          [`extracted::description::image1`]: "https://example.com/image.jpg",
-          [`extracted::description::image2`]: "https://example.com/image2.jpg",
-          [`extracted::summary::image1`]: "https://example.com/image3.jpg",
-        },
+      expect(flattenedArticle.flattened).toMatchObject({
+        [`extracted::description::image1`]: "https://example.com/image.jpg",
+        [`extracted::description::image2`]: "https://example.com/image2.jpg",
+        [`extracted::summary::image1`]: "https://example.com/image3.jpg",
       });
     });
 
-    it("extracts anchors", () => {
+    it("extracts anchors", async () => {
       const article = {
         id: "123",
         description: 'hello <a href="https://example.com">world</a>',
         summary: 'hello world <a href="https://example.com">world</a>',
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toMatchObject({
-        flattened: {
-          [`extracted::description::anchor1`]: "https://example.com",
-          [`extracted::summary::anchor1`]: "https://example.com",
-        },
+      expect(flattenedArticle.flattened).toMatchObject({
+        [`extracted::description::anchor1`]: "https://example.com",
+        [`extracted::summary::anchor1`]: "https://example.com",
       });
     });
   });
 
   describe("dates", () => {
-    it("converts dates to ISO strings", () => {
+    it("converts dates to ISO strings", async () => {
       const article = {
         id: "hello world",
         a: new Date(),
@@ -328,20 +302,21 @@ describe("ArticleParserService", () => {
         },
       };
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          a: dayjs(article.a).tz("UTC").format(),
-          [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e).tz("UTC").format(),
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        a: dayjs(article.a).tz("UTC").locale("en").format(),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+          .tz("UTC")
+          .locale("en")
+          .format(),
       });
     });
 
-    it("converts dates to ISO strings with a custom date format", () => {
+    it("converts dates to ISO strings with a custom date format", async () => {
       const article = {
         id: "hello world",
         a: new Date(),
@@ -356,7 +331,7 @@ describe("ArticleParserService", () => {
 
       const dateFormat = "YYYY-MM-DD";
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         formatOptions: {
           dateFormat,
           dateTimezone: undefined,
@@ -366,18 +341,17 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          a: dayjs(article.a).tz("UTC").format(dateFormat),
-          [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-            .tz("UTC")
-            .format(dateFormat),
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        a: dayjs(article.a).tz("UTC").locale("en").format(dateFormat),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+          .tz("UTC")
+          .locale("en")
+          .format(dateFormat),
       });
     });
 
-    it("converts dates to ISO strings with a advanced custom date formats", () => {
+    it("converts dates to ISO strings with a advanced custom date formats", async () => {
       const date = new Date(2020, 1, 1);
       const article = {
         id: "hello world",
@@ -386,7 +360,7 @@ describe("ArticleParserService", () => {
 
       const dateFormat = "x";
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         formatOptions: {
           dateFormat,
           dateTimezone: undefined,
@@ -396,11 +370,9 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          a: expect.stringMatching(/^\d+$/),
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        a: expect.stringMatching(/^\d+$/),
       });
     });
 
@@ -419,7 +391,7 @@ describe("ArticleParserService", () => {
 
       const dateTimezone = "America/New_York";
 
-      const flattenedArticle = service.flatten(article, {
+      const flattenedArticle = await service.flatten(article, {
         formatOptions: {
           dateFormat: undefined,
           dateTimezone,
@@ -429,14 +401,12 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle).toEqual({
-        flattened: {
-          id: article.id,
-          a: dayjs(article.a).tz(dateTimezone).format(),
-          [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-            .tz(dateTimezone)
-            .format(),
-        },
+      expect(flattenedArticle.flattened).toEqual({
+        id: article.id,
+        a: dayjs(article.a).tz(dateTimezone).format(),
+        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
+          .tz(dateTimezone)
+          .format(),
       });
     });
   });
