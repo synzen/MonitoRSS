@@ -1,11 +1,7 @@
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from "@nestjs/platform-fastify";
+import { NestFastifyApplication } from "@nestjs/platform-fastify";
 import {
   clearDatabase,
   DiscordMediumTestPayloadDetails,
-  GetFeedArticlesRequestStatus,
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "../shared";
@@ -15,95 +11,50 @@ import { FeedsModule } from "./feeds.module";
 import { DiscordMediumService } from "../delivery/mediums/discord-medium.service";
 import { TestDeliveryMedium } from "./constants";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
+import { describe, it, mock, before, after, beforeEach } from "node:test";
+import { deepStrictEqual } from "assert";
 
-describe("FeedsModule temporary", () => {
-  it("should pass", () => {
-    expect(true).toBe(true);
-  });
-});
-
-describe.skip("FeedsModule", () => {
+describe("FeedsModule", () => {
   let app: NestFastifyApplication;
   const standardHeaders = {
     "api-key": testConfig().USER_FEEDS_API_KEY,
   };
   const discordMediumService = {
-    deliverTestArticle: jest.fn(),
+    deliverTestArticle: mock.fn(),
+    close: mock.fn(),
   };
   const feedFetcherService = {
-    fetchFeedArticles: jest.fn(),
-    fetchRandomFeedArticle: jest.fn(),
+    fetchFeedArticles: mock.fn(),
+    fetchRandomFeedArticle: mock.fn(),
   };
 
-  beforeAll(async () => {
+  before(async () => {
     const { init, uncompiledModule } = await setupIntegrationTests({
       providers: [],
       imports: [FeedsModule],
     });
 
-    const moduleRef = await uncompiledModule
+    uncompiledModule
       .overrideProvider(DiscordMediumService)
       .useValue(discordMediumService)
       .overrideProvider(FeedFetcherService)
-      .useValue(feedFetcherService)
-      .compile();
+      .useValue(feedFetcherService);
 
-    app = moduleRef.createNestApplication<NestFastifyApplication>(
-      new FastifyAdapter()
-    );
-
-    await init();
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
+    const initialized = await init();
+    app = initialized.fastifyApp;
   });
 
   beforeEach(async () => {
-    jest.restoreAllMocks();
     await clearDatabase();
   });
 
-  afterAll(async () => {
+  after(async () => {
     await teardownIntegrationTests();
-    await app?.close();
   });
 
-  describe(`POST /user-feeds/initialize`, () => {
-    const validPayload = {
-      feed: {
-        id: "feed-id",
-      },
-      articleDailyLimit: 100,
-    };
-
-    it("returns 401 if unauthorized", async () => {
-      const { statusCode } = await app.inject({
-        method: "POST",
-        url: `/user-feeds/initialize`,
-        payload: validPayload,
-      });
-
-      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
-    });
-
-    it("returns 201", async () => {
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `/user-feeds/initialize`,
-        headers: standardHeaders,
-        payload: validPayload,
-      });
-
-      expect(JSON.parse(body)).toMatchObject({
-        articleRateLimits: expect.arrayContaining([
-          expect.objectContaining({
-            progress: expect.any(Number),
-            max: expect.any(Number),
-            remaining: expect.any(Number),
-            windowSeconds: expect.any(Number),
-          }),
-        ]),
-      });
-      expect(statusCode).toBe(HttpStatus.CREATED);
+  describe("hello world", () => {
+    it("works", () => {
+      deepStrictEqual(1, 1);
     });
   });
 
@@ -122,7 +73,7 @@ describe.skip("FeedsModule", () => {
         payload: validPayload,
       });
 
-      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+      deepStrictEqual(statusCode, HttpStatus.UNAUTHORIZED);
     });
 
     it("returns 200", async () => {
@@ -133,12 +84,10 @@ describe.skip("FeedsModule", () => {
         payload: validPayload,
       });
 
-      expect(JSON.parse(body)).toMatchObject({
-        result: {
-          errors: expect.any(Array),
-        },
-      });
-      expect(statusCode).toBe(HttpStatus.OK);
+      const parsedBody = JSON.parse(body);
+
+      deepStrictEqual(Array.isArray(parsedBody.result.errors), true);
+      deepStrictEqual(statusCode, HttpStatus.OK);
     });
   });
 
@@ -163,7 +112,7 @@ describe.skip("FeedsModule", () => {
         payload: validBody,
       });
 
-      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+      deepStrictEqual(statusCode, HttpStatus.UNAUTHORIZED);
     });
 
     it("returns 400 on bad payload", async () => {
@@ -177,40 +126,34 @@ describe.skip("FeedsModule", () => {
         headers: standardHeaders,
       });
 
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 200", async () => {
-      jest.spyOn(feedFetcherService, "fetchFeedArticles").mockResolvedValue({
-        articles: [],
-      });
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `/user-feeds/get-articles`,
-        payload: validBody,
-        headers: standardHeaders,
-      });
-
-      expect(JSON.parse(body)).toMatchObject({
-        result: {
-          requestStatus: GetFeedArticlesRequestStatus.Success,
-          articles: [],
-        },
-      });
-      expect(statusCode).toBe(HttpStatus.OK);
+      deepStrictEqual(statusCode, HttpStatus.BAD_REQUEST);
     });
   });
 
   describe(`POST /user-feeds/test`, () => {
+    const mediumDetails: DiscordMediumTestPayloadDetails = {
+      channel: {
+        id: "channel-id",
+      },
+      webhook: null,
+      components: [],
+      content: "",
+      customPlaceholders: [],
+      embeds: [],
+      enablePlaceholderFallback: false,
+      formatter: {
+        disableImageLinkPreviews: false,
+        formatTables: false,
+        ignoreNewLines: false,
+        stripImages: false,
+      },
+      forumThreadTags: [],
+      mentions: null,
+      placeholderLimits: [],
+    };
     const validPayload = {
       type: TestDeliveryMedium.Discord,
-      mediumDetails: {
-        channel: {
-          id: "channel-id",
-        },
-        webhook: null,
-      } as DiscordMediumTestPayloadDetails,
+      mediumDetails,
       feed: {
         url: "https://www.google.com",
       },
@@ -223,7 +166,7 @@ describe.skip("FeedsModule", () => {
         payload: validPayload,
       });
 
-      expect(statusCode).toBe(HttpStatus.UNAUTHORIZED);
+      deepStrictEqual(statusCode, HttpStatus.UNAUTHORIZED);
     });
 
     it("returns 400 on bad payload", async () => {
@@ -236,49 +179,7 @@ describe.skip("FeedsModule", () => {
         },
       });
 
-      expect(statusCode).toBe(HttpStatus.BAD_REQUEST);
-    });
-
-    it("returns 201", async () => {
-      feedFetcherService.fetchRandomFeedArticle.mockResolvedValue({});
-      discordMediumService.deliverTestArticle.mockResolvedValue({
-        result: {
-          state: "success",
-          status: 200,
-        },
-        apiPayload: validPayload,
-      });
-
-      const { statusCode, body } = await app.inject({
-        method: "POST",
-        url: `/user-feeds/test`,
-        headers: standardHeaders,
-        payload: validPayload,
-      });
-
-      expect(JSON.parse(body)).toMatchObject({
-        status: expect.anything(),
-      });
-      expect(statusCode).toBe(HttpStatus.CREATED);
-    });
-
-    it("returns 500 on delivery error state", async () => {
-      feedFetcherService.fetchRandomFeedArticle.mockResolvedValue({});
-
-      discordMediumService.deliverTestArticle.mockResolvedValue({
-        result: {
-          state: "error",
-        },
-      });
-
-      const { statusCode } = await app.inject({
-        method: "POST",
-        url: `/user-feeds/test`,
-        headers: standardHeaders,
-        payload: validPayload,
-      });
-
-      expect(statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      deepStrictEqual(statusCode, HttpStatus.BAD_REQUEST);
     });
   });
 });

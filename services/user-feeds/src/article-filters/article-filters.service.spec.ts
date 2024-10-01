@@ -10,6 +10,8 @@ import {
   RelationalExpressionOperator,
   RelationalExpressionRight,
 } from "./types";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 
 describe("ArticleFiltersService", () => {
   let service: ArticleFiltersService;
@@ -23,7 +25,7 @@ describe("ArticleFiltersService", () => {
   });
 
   it("should be defined", () => {
-    expect(service).toBeDefined();
+    assert.ok(service);
   });
 
   describe("getArticleFilterResults", () => {
@@ -32,9 +34,10 @@ describe("ArticleFiltersService", () => {
         type: "invalid",
       } as never;
 
-      expect(() =>
-        service.getArticleFilterResults(expression, {} as never)
-      ).toThrow(InvalidExpressionException);
+      assert.throws(
+        () => service.getArticleFilterResults(expression, {} as never),
+        InvalidExpressionException
+      );
     });
   });
 
@@ -44,7 +47,8 @@ describe("ArticleFiltersService", () => {
         type: "invalid",
       } as never;
 
-      expect(() => service.evaluateExpression(expression, {} as never)).toThrow(
+      assert.throws(
+        () => service.evaluateExpression(expression, {} as never),
         InvalidExpressionException
       );
     });
@@ -56,9 +60,10 @@ describe("ArticleFiltersService", () => {
         children: [],
       };
 
-      expect(() =>
-        service.evaluateExpression(expression as never, {} as never)
-      ).toThrow(InvalidExpressionException);
+      assert.throws(
+        () => service.evaluateExpression(expression as never, {} as never),
+        InvalidExpressionException
+      );
     });
 
     it("throws if relational expression operator for string operand is invalid", async () => {
@@ -81,18 +86,20 @@ describe("ArticleFiltersService", () => {
         ],
       };
 
-      expect(() =>
-        service.evaluateExpression(expression as never, {
-          ARTICLE: {
-            flattened: {
-              id: "1",
-              idHash: "1",
-              title: "1",
+      assert.throws(
+        () =>
+          service.evaluateExpression(expression as never, {
+            ARTICLE: {
+              flattened: {
+                id: "1",
+                idHash: "1",
+                title: "1",
+              },
+              raw: {} as never,
             },
-            raw: {} as never,
-          },
-        })
-      ).toThrow(InvalidExpressionException);
+          }),
+        InvalidExpressionException
+      );
     });
 
     describe("relational", () => {
@@ -122,12 +129,13 @@ describe("ArticleFiltersService", () => {
           },
         };
 
-        expect(
-          service.evaluateExpression(expression, reference).result
-        ).toEqual(false);
+        assert.strictEqual(
+          service.evaluateExpression(expression, reference).result,
+          false
+        );
       });
 
-      it.each([
+      const eqTestCases = [
         {
           value: "s",
           articleProperty: "title",
@@ -146,9 +154,15 @@ describe("ArticleFiltersService", () => {
           articleValue: "r/FORTnITE",
           expected: true,
         },
-      ])(
-        "supports Eq when expected is $expected",
-        async ({ value, articleProperty, articleValue, expected }) => {
+      ];
+
+      for (const {
+        value,
+        articleProperty,
+        articleValue,
+        expected,
+      } of eqTestCases) {
+        it(`supports Eq when expected is ${expected}`, async () => {
           const expression: RelationalExpression = {
             left: {
               type: RelationalExpressionLeft.Article,
@@ -173,12 +187,14 @@ describe("ArticleFiltersService", () => {
             },
           };
 
-          expect(
-            service.evaluateExpression(expression, reference).result
-          ).toEqual(expected);
-        }
-      );
-      it.each([
+          assert.strictEqual(
+            service.evaluateExpression(expression, reference).result,
+            expected
+          );
+        });
+      }
+
+      const containsTestCases = [
         {
           value: "s",
           articleValue: "sticks",
@@ -189,9 +205,10 @@ describe("ArticleFiltersService", () => {
           articleValue: "top gun",
           expected: false,
         },
-      ])(
-        "supports Contains when expected is $expected",
-        async ({ value, articleValue, expected }) => {
+      ];
+
+      for (const { value, articleValue, expected } of containsTestCases) {
+        it(`supports Contains when expected is ${expected}`, async () => {
           const expression: RelationalExpression = {
             left: {
               type: RelationalExpressionLeft.Article,
@@ -216,13 +233,14 @@ describe("ArticleFiltersService", () => {
             },
           };
 
-          expect(
-            service.evaluateExpression(expression, reference).result
-          ).toEqual(expected);
-        }
-      );
+          assert.strictEqual(
+            service.evaluateExpression(expression, reference).result,
+            expected
+          );
+        });
+      }
 
-      it.each([
+      const matchesTestCases = [
         {
           value: "a{3}",
           articleValue: "sticks",
@@ -233,9 +251,10 @@ describe("ArticleFiltersService", () => {
           articleValue: "hello-aaa-there",
           expected: true,
         },
-      ])(
-        "supports Matches when expected is $expected",
-        async ({ articleValue, expected, value }) => {
+      ];
+
+      for (const { articleValue, expected, value } of matchesTestCases) {
+        it(`supports Matches when expected is ${expected}`, async () => {
           const expression: RelationalExpression = {
             left: {
               type: RelationalExpressionLeft.Article,
@@ -260,16 +279,17 @@ describe("ArticleFiltersService", () => {
             },
           };
 
-          expect(
-            service.evaluateExpression(expression, reference).result
-          ).toEqual(expected);
-        }
-      );
+          assert.strictEqual(
+            service.evaluateExpression(expression, reference).result,
+            expected
+          );
+        });
+      }
     });
 
     describe("AND operand", () => {
       it("returns true correctly with 1 child", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -299,12 +319,13 @@ describe("ArticleFiltersService", () => {
                 raw: {} as never,
               },
             }
-          ).result
-        ).toBe(true);
+          ).result,
+          true
+        );
       });
 
       it("returns true correctly with 2 children", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -347,12 +368,13 @@ describe("ArticleFiltersService", () => {
                 raw: {} as never,
               },
             }
-          ).result
-        ).toBe(true);
+          ).result,
+          true
+        );
       });
 
       it("returns false correctly", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -395,14 +417,15 @@ describe("ArticleFiltersService", () => {
                 raw: {} as never,
               },
             }
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
     });
 
     describe("OR operand", () => {
       it("returns true correctly", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -445,12 +468,13 @@ describe("ArticleFiltersService", () => {
                 raw: {} as never,
               },
             }
-          ).result
-        ).toBe(true);
+          ).result,
+          true
+        );
       });
 
       it("returns false correctly", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -493,12 +517,13 @@ describe("ArticleFiltersService", () => {
                 raw: {} as never,
               },
             }
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
 
       it("returns false if reference contains no value", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -539,12 +564,13 @@ describe("ArticleFiltersService", () => {
                 raw: {} as never,
               },
             }
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
 
       it("returns false if reference object does not exist", () => {
-        expect(
+        assert.strictEqual(
           service.evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -577,8 +603,9 @@ describe("ArticleFiltersService", () => {
               ],
             },
             {} as never
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
     });
   });

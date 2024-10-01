@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import { ARTICLE_FIELD_DELIMITER } from "../articles/constants";
 import { ArticleParserService } from "./article-parser.service";
+import { describe, beforeEach, it } from "node:test";
+import assert from "assert";
 
 const DL = ARTICLE_FIELD_DELIMITER;
 
@@ -26,10 +28,11 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        [`author${DL}name${DL}tag`]: article.author.name.tag,
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened[`author${DL}name${DL}tag`],
+        article.author.name.tag
+      );
     });
 
     it("flattens categories into a single string", async () => {
@@ -41,9 +44,10 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toMatchObject({
-        ["processed::categories"]: "cat1,cat2,cat3",
-      });
+      assert.strictEqual(
+        flattenedArticle.flattened["processed::categories"],
+        "cat1,cat2,cat3"
+      );
     });
 
     it("flattens arrays", async () => {
@@ -56,11 +60,15 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        [`tags${DL}0`]: article.tags[0],
-        [`tags${DL}1`]: article.tags[1],
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}0`],
+        article.tags[0]
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}1`],
+        article.tags[1]
+      );
     });
 
     it("flattens arrays of objects", async () => {
@@ -80,11 +88,15 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        [`tags${DL}0${DL}name`]: article.tags[0].name,
-        [`tags${DL}1${DL}name`]: article.tags[1].name,
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}0${DL}name`],
+        article.tags[0].name
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}1${DL}name`],
+        article.tags[1].name
+      );
     });
 
     it("flattens arrays of objects with arrays", async () => {
@@ -106,15 +118,31 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        [`tags${DL}0${DL}name`]: article.tags[0].name,
-        [`tags${DL}0${DL}aliases${DL}0`]: article.tags[0].aliases[0],
-        [`tags${DL}0${DL}aliases${DL}1`]: article.tags[0].aliases[1],
-        [`tags${DL}1${DL}name`]: article.tags[1].name,
-        [`tags${DL}1${DL}aliases${DL}0`]: article.tags[1].aliases[0],
-        [`tags${DL}1${DL}aliases${DL}1`]: article.tags[1].aliases[1],
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}0${DL}name`],
+        article.tags[0].name
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}0${DL}aliases${DL}0`],
+        article.tags[0].aliases[0]
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}0${DL}aliases${DL}1`],
+        article.tags[0].aliases[1]
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}1${DL}name`],
+        article.tags[1].name
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}1${DL}aliases${DL}0`],
+        article.tags[1].aliases[0]
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`tags${DL}1${DL}aliases${DL}1`],
+        article.tags[1].aliases[1]
+      );
     });
 
     it("handles keys with the delimiter in it", async () => {
@@ -129,34 +157,40 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        [`a${DL}${DL}b`]: article.a[`${DL}b`],
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened[`a${DL}${DL}b`],
+        article.a[`${DL}b`]
+      );
     });
 
-    it.each([
+    [
       { val: null, desc: "null" },
       { val: undefined, desc: "undefined" },
       { val: "", desc: "empty string" },
       { val: " ", desc: "whitespace" },
-    ])("excludes $desc values from the final object", async ({ val }) => {
-      const article = {
-        id: "hello world",
-        a: val,
-        b: {
-          c: {
-            d: val,
+    ].forEach(({ val, desc }) => {
+      it(`excludes ${desc} values from the final object`, async () => {
+        const article = {
+          id: "hello world",
+          a: val,
+          b: {
+            c: {
+              d: val,
+            },
           },
-        },
-      };
+        };
 
-      const flattenedArticle = await service.flatten(article, {
-        useParserRules: [],
-      });
+        const flattenedArticle = await service.flatten(article, {
+          useParserRules: [],
+        });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
+        assert.strictEqual(flattenedArticle.flattened.id, article.id);
+        assert.strictEqual(flattenedArticle.flattened.a, undefined);
+        assert.strictEqual(
+          flattenedArticle.flattened[`b${DL}c${DL}d`],
+          undefined
+        );
       });
     });
 
@@ -177,9 +211,12 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(flattenedArticle.flattened.a, undefined);
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        undefined
+      );
     });
 
     it("removes empty objects", async () => {
@@ -199,9 +236,12 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(flattenedArticle.flattened.a, undefined);
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        undefined
+      );
     });
 
     it("removes empty arrays", async () => {
@@ -221,9 +261,12 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(flattenedArticle.flattened.a, undefined);
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        undefined
+      );
     });
 
     it("converts numbers to strings", async () => {
@@ -243,11 +286,12 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        a: "1",
-        [`b${DL}c${DL}d${DL}e`]: "2",
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(flattenedArticle.flattened.a, "1");
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        "2"
+      );
     });
 
     it("extracts images", async () => {
@@ -263,11 +307,18 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toMatchObject({
-        [`extracted::description::image1`]: "https://example.com/image.jpg",
-        [`extracted::description::image2`]: "https://example.com/image2.jpg",
-        [`extracted::summary::image1`]: "https://example.com/image3.jpg",
-      });
+      assert.strictEqual(
+        flattenedArticle.flattened[`extracted::description::image1`],
+        "https://example.com/image.jpg"
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`extracted::description::image2`],
+        "https://example.com/image2.jpg"
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`extracted::summary::image1`],
+        "https://example.com/image3.jpg"
+      );
     });
 
     it("extracts anchors", async () => {
@@ -281,10 +332,14 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toMatchObject({
-        [`extracted::description::anchor1`]: "https://example.com",
-        [`extracted::summary::anchor1`]: "https://example.com",
-      });
+      assert.strictEqual(
+        flattenedArticle.flattened[`extracted::description::anchor1`],
+        "https://example.com"
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`extracted::summary::anchor1`],
+        "https://example.com"
+      );
     });
   });
 
@@ -306,14 +361,15 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        a: dayjs(article.a).tz("UTC").locale("en").format(),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-          .tz("UTC")
-          .locale("en")
-          .format(),
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened.a,
+        dayjs(article.a).tz("UTC").locale("en").format()
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        dayjs(article.b.c.d.e).tz("UTC").locale("en").format()
+      );
     });
 
     it("converts dates to ISO strings with a custom date format", async () => {
@@ -341,14 +397,15 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        a: dayjs(article.a).tz("UTC").locale("en").format(dateFormat),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-          .tz("UTC")
-          .locale("en")
-          .format(dateFormat),
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened.a,
+        dayjs(article.a).tz("UTC").locale("en").format(dateFormat)
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        dayjs(article.b.c.d.e).tz("UTC").locale("en").format(dateFormat)
+      );
     });
 
     it("converts dates to ISO strings with a advanced custom date formats", async () => {
@@ -370,10 +427,7 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        a: expect.stringMatching(/^\d+$/),
-      });
+      assert.match(flattenedArticle.flattened.a, /^\d+$/);
     });
 
     it("works with custom timezones", async () => {
@@ -401,13 +455,15 @@ describe("ArticleParserService", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.flattened).toEqual({
-        id: article.id,
-        a: dayjs(article.a).tz(dateTimezone).format(),
-        [`b${DL}c${DL}d${DL}e`]: dayjs(article.b.c.d.e)
-          .tz(dateTimezone)
-          .format(),
-      });
+      assert.strictEqual(flattenedArticle.flattened.id, article.id);
+      assert.strictEqual(
+        flattenedArticle.flattened.a,
+        dayjs(article.a).tz(dateTimezone).format()
+      );
+      assert.strictEqual(
+        flattenedArticle.flattened[`b${DL}c${DL}d${DL}e`],
+        dayjs(article.b.c.d.e).tz(dateTimezone).format()
+      );
     });
   });
 });

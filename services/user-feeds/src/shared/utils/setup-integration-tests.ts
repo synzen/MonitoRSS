@@ -6,6 +6,10 @@ import { config } from "../../config";
 import { MikroORM } from "@mikro-orm/core";
 import { randomUUID } from "crypto";
 import { SqlEntityManager } from "@mikro-orm/postgresql";
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from "@nestjs/platform-fastify";
 
 let testingModule: TestingModule;
 let orm: MikroORM;
@@ -14,6 +18,7 @@ const postgresSchema = randomUUID().replace(/-/g, "");
 interface Options {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   models?: EntityName<Partial<any>>[];
+  withApi?: boolean;
 }
 
 export async function setupIntegrationTests(
@@ -50,14 +55,21 @@ export async function setupIntegrationTests(
 
   const init = async () => {
     testingModule = await uncompiledModule.compile();
+
+    const fastifyApp =
+      testingModule.createNestApplication<NestFastifyApplication>(
+        new FastifyAdapter()
+      );
+
+    await fastifyApp.init();
+    await fastifyApp.getHttpAdapter().getInstance().ready();
+
     orm = testingModule.get(MikroORM);
-    const generator = orm.getSchemaGenerator();
-    await generator.ensureDatabase();
-    await generator.dropSchema();
-    await generator.createSchema();
+    await clearDatabase();
 
     return {
       module: testingModule,
+      fastifyApp,
     };
   };
 

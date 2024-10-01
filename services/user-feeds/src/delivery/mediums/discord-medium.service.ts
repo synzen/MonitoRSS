@@ -84,6 +84,10 @@ export class DiscordMediumService implements DeliveryMedium {
     return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/threads`;
   }
 
+  async close() {
+    await this.producer.close();
+  }
+
   async formatArticle(
     article: Article,
     options: FormatOptions

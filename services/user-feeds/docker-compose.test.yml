@@ -1,11 +1,34 @@
 version: '3.8'
 services:
-  mrss-feed-handler:
-    volumes:
-      - ./:/usr/src/app
-      - /usr/src/app/node_modules/
-    command: npx jest --watchAll
+  redis:
+    image: redis:6-alpine
+  mrss-rabbitmq-broker:
+    image: rabbitmq:3-management-alpine
+    container_name: 'mrss-rabbitmq'
+  pg:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    tmpfs: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-volumes:
-  db:
-    driver: local
+  tests:
+    build: 
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - pg
+    volumes:
+      - ./src:/usr/src/app/src
+    environment:
+      - NODE_ENV=test
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@pg:5432
+      - USER_FEEDS_REDIS_URI=redis://redis:6379
+    tty: true
+    command: npm run test:node

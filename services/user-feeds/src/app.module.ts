@@ -90,10 +90,7 @@ export class AppModule implements OnApplicationShutdown {
     };
   }
 
-  constructor(
-    private readonly orm: MikroORM,
-    private readonly cacheStorageService: CacheStorageService
-  ) {}
+  constructor(private readonly orm: MikroORM) {}
 
   async onApplicationShutdown(signal?: string | undefined) {
     logger.info(`Received ${signal}. Shutting down db connection...`);
@@ -103,16 +100,6 @@ export class AppModule implements OnApplicationShutdown {
       logger.info(`Successfully closed db connection`);
     } catch (err) {
       logger.error("Failed to close database connection", {
-        error: (err as Error).stack,
-      });
-    }
-
-    try {
-      await this.cacheStorageService.closeClient();
-
-      logger.info(`Successfully closed redis client`);
-    } catch (err) {
-      logger.error("Failed to close redis client", {
         error: (err as Error).stack,
       });
     }
