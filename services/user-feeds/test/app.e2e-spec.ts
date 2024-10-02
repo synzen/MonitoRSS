@@ -4,13 +4,21 @@ import {
   teardownIntegrationTests,
 } from "../src/shared/utils/setup-integration-tests";
 import { FeedEventHandlerService } from "../src/feed-event-handler/feed-event-handler.service";
-import { FeedArticleField } from "../src/articles/entities";
-import { EntityManager, EntityRepository } from "@mikro-orm/core";
-import { Interceptable, MockAgent, setGlobalDispatcher } from "undici";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { ConfigService } from "@nestjs/config";
-import { FeedV2Event, MediumKey } from "../src/shared";
+import {
+  ArticleDeliveryContentType,
+  ArticleDeliveryState,
+  ArticleDeliveryStatus,
+  FeedResponseRequestStatus,
+  FeedV2Event,
+  MediumKey,
+} from "../src/shared";
+import { describe, before, after, it } from "node:test";
+import { FeedFetcherService } from "../src/feed-fetcher/feed-fetcher.service";
+import { DiscordMediumService } from "../src/delivery/mediums/discord-medium.service";
+import { XMLParser, XMLBuilder } from "fast-xml-parser";
+import { deepStrictEqual } from "assert";
 
 const feedId = "feed-id";
 const feedHost = "https://feed.com";
@@ -21,41 +29,78 @@ const feedText = readFileSync(
   "utf-8"
 );
 
+const addArticleToFeed = (
+  input: string,
+  article: {
+    guid: string;
+  }
+) => {
+  const parser = new XMLParser();
+  const parsed: {
+    rss: { channel: { item: Array<{ guid: string }> } };
+  } = parser.parse(input);
+  parsed.rss.channel.item.push(article);
+
+  const builder = new XMLBuilder();
+
+  const newFeedText = builder.build(parsed);
+
+  return newFeedText;
+};
+
 describe("App (e2e)", () => {
   let feedEventHandler: FeedEventHandlerService;
-  let configService: ConfigService;
-  let articlesRepo: EntityRepository<FeedArticleField>;
-  let client: Interceptable;
+  const feedFetcherService: FeedFetcherService = {
+    fetchWithGrpc: async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: feedText,
+      bodyHash: "bodyhash",
+    }),
+  } as never;
+  const discordMediumService = {
+    deliverArticle: async () =>
+      [
+        {
+          id: "1",
+          articleIdHash: "1",
+          status: ArticleDeliveryStatus.Sent,
+          mediumId: "medium-id",
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+        },
+      ] as ArticleDeliveryState[],
+    formatArticle: async () => ({
+      flattened: {
+        id: "id",
+        idHash: "hash",
+      },
+      raw: {},
+    }),
+    close: async () => ({}),
+  };
 
-  beforeAll(async () => {
-    const { init } = await setupIntegrationTests({
+  before(async () => {
+    const { uncompiledModule, init } = await setupIntegrationTests({
       imports: [AppModule.forFeedListenerService()],
     });
 
+    uncompiledModule
+      .overrideProvider(FeedFetcherService)
+      .useValue(feedFetcherService)
+      .overrideProvider(DiscordMediumService)
+      .useValue(discordMediumService);
+
     const { module } = await init();
     feedEventHandler = module.get(FeedEventHandlerService);
-    configService = module.get(ConfigService);
-    const em = module.get(EntityManager);
-    articlesRepo = em.getRepository(FeedArticleField);
   });
 
-  beforeEach(() => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
-    client = agent.get(
-      configService.getOrThrow("USER_FEEDS_FEED_REQUESTS_API_URL")
-    );
-    setGlobalDispatcher(agent);
-    jest.resetAllMocks();
-    jest.spyOn(console, "error").mockImplementation();
-  });
-
-  afterAll(async () => {
+  after(async () => {
     await teardownIntegrationTests();
   });
 
   it("sends new articles", async () => {
     const event: FeedV2Event = {
+      timestamp: new Date().getTime(),
+      debug: true,
       data: {
         articleDayLimit: 1,
         feed: {
@@ -75,33 +120,35 @@ describe("App (e2e)", () => {
               content: "1",
               embeds: [],
               webhook: null,
+              components: [],
+              customPlaceholders: [],
+              enablePlaceholderFallback: false,
+              formatter: {
+                disableImageLinkPreviews: false,
+                formatTables: false,
+                ignoreNewLines: false,
+                stripImages: false,
+              },
+              forumThreadTags: [],
+              mentions: null,
+              placeholderLimits: null,
             },
           },
         ],
       },
     };
 
-    // Pre-initialize the database with articles of this feed
-    await articlesRepo.nativeInsert({
-      id: -1,
-      feed_id: feedId,
-      created_at: new Date(),
-      field_name: "id",
-      field_value: "some-random-id",
+    await feedEventHandler.handleV2Event(event);
+
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: addArticleToFeed(feedText, {
+        guid: "new-article",
+      }),
+      bodyHash: "bodyhash",
     });
 
-    client
-      .intercept({
-        path: "/api/requests",
-        method: "POST",
-      })
-      .reply(200, {
-        requestStatus: "success",
-        response: {
-          body: feedText,
-        },
-      });
-
-    await feedEventHandler.handleV2Event(event);
+    const results = await feedEventHandler.handleV2Event(event);
+    deepStrictEqual(results?.length, 1);
   });
 });

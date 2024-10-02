@@ -14,6 +14,7 @@ import {
   FeedRejectedDisabledCode,
   Article,
   UserFeedFormatOptions,
+  ArticleDeliveryState,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import {
@@ -62,7 +63,9 @@ export class FeedEventHandlerService {
     exchange: "",
     queue: MessageBrokerQueue.FeedDeliverArticles,
   })
-  async handleV2Event(event: FeedV2Event): Promise<void> {
+  async handleV2Event(
+    event: FeedV2Event
+  ): Promise<ArticleDeliveryState[] | null> {
     try {
       feedV2EventSchema.parse(event);
     } catch (err) {
@@ -77,38 +80,27 @@ export class FeedEventHandlerService {
           error: (err as Error).stack,
         });
       }
+
+      return null;
     }
 
     const cacheKey = `processing-${event.data.feed.id}`;
 
     try {
-      const oldVal = await this.cacheStorageService.set({
-        key: cacheKey,
-        body: "1",
-        getOldValue: true,
-      });
-
-      if (oldVal === "1") {
-        logger.info(
-          `Feed event for feed ${event.data.feed.id} is already being processed, skipping`,
-          {
-            feedId: event.data.feed.id,
-          }
-        );
-
-        return;
-      }
-
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
-      await this.handleV2EventWithDb(event);
+      const val = await this.handleV2EventWithDb(event);
 
       this.logEventFinish(event, {
         success: true,
       });
+
+      return val || null;
     } catch (err) {
       this.logEventFinish(event, {
         success: false,
       });
+
+      return null;
     } finally {
       await this.cacheStorageService.del(cacheKey);
     }
@@ -429,7 +421,6 @@ export class FeedEventHandlerService {
 
       this.debugLog(
         `Debug ${event.data.feed.id}: Delivering ${articles.length} articles`,
-        {},
         event.debug
       );
 
@@ -473,6 +464,8 @@ export class FeedEventHandlerService {
         feedId: event.data.feed.id,
         hash: response.bodyHash,
       });
+
+      return deliveryStates;
     } catch (err) {
       if (err instanceof InvalidFeedException) {
         logger.debug(`Ignoring feed event due to invalid feed`, {

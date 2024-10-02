@@ -93,7 +93,7 @@ export class AppModule implements OnApplicationShutdown {
   constructor(private readonly orm: MikroORM) {}
 
   async onApplicationShutdown(signal?: string | undefined) {
-    logger.info(`Received ${signal}. Shutting down db connection...`);
+    logger.info(`Received signal ${signal}. Shutting down db connection...`);
 
     try {
       await this.orm.close();
