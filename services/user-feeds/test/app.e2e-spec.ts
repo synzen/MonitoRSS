@@ -4,77 +4,43 @@ import {
   teardownIntegrationTests,
 } from "../src/shared/utils/setup-integration-tests";
 import { FeedEventHandlerService } from "../src/feed-event-handler/feed-event-handler.service";
-import { readFileSync } from "fs";
-import { join } from "path";
 import {
+  Article,
   ArticleDeliveryContentType,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
+  ArticleDiscordFormatted,
   FeedResponseRequestStatus,
-  FeedV2Event,
-  MediumKey,
 } from "../src/shared";
-import { describe, before, after, it } from "node:test";
+import { describe, before, after, it, beforeEach } from "node:test";
 import { FeedFetcherService } from "../src/feed-fetcher/feed-fetcher.service";
 import { DiscordMediumService } from "../src/delivery/mediums/discord-medium.service";
-import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { deepStrictEqual } from "assert";
-
-const feedId = "feed-id";
-const feedHost = "https://feed.com";
-const feedPath = "/rss";
-
-const feedText = readFileSync(
-  join(__dirname, "data", "rss-2-feed.xml"),
-  "utf-8"
-);
-
-const addArticleToFeed = (
-  input: string,
-  article: {
-    guid: string;
-  }
-) => {
-  const parser = new XMLParser();
-  const parsed: {
-    rss: { channel: { item: Array<{ guid: string }> } };
-  } = parser.parse(input);
-  parsed.rss.channel.item.push(article);
-
-  const builder = new XMLBuilder();
-
-  const newFeedText = builder.build(parsed);
-
-  return newFeedText;
-};
+import testFeedV2Event from "./data/test-feed-v2-event";
+import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "./data/test-rss-feed";
+import { randomUUID } from "crypto";
 
 describe("App (e2e)", () => {
   let feedEventHandler: FeedEventHandlerService;
   const feedFetcherService: FeedFetcherService = {
     fetchWithGrpc: async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
-      body: feedText,
+      body: getTestRssFeed(),
       bodyHash: "bodyhash",
     }),
   } as never;
   const discordMediumService = {
-    deliverArticle: async () =>
+    deliverArticle: async (article: ArticleDiscordFormatted) =>
       [
         {
-          id: "1",
-          articleIdHash: "1",
+          id: article.flattened.id,
+          articleIdHash: article.flattened.idHash,
           status: ArticleDeliveryStatus.Sent,
           mediumId: "medium-id",
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
         },
       ] as ArticleDeliveryState[],
-    formatArticle: async () => ({
-      flattened: {
-        id: "id",
-        idHash: "hash",
-      },
-      raw: {},
-    }),
+    formatArticle: async (article: Article) => article,
     close: async () => ({}),
   };
 
@@ -97,58 +63,101 @@ describe("App (e2e)", () => {
     await teardownIntegrationTests();
   });
 
-  it("sends new articles", async () => {
-    const event: FeedV2Event = {
-      timestamp: new Date().getTime(),
-      debug: true,
-      data: {
-        articleDayLimit: 1,
-        feed: {
-          id: feedId,
-          blockingComparisons: [],
-          passingComparisons: [],
-          url: feedHost + feedPath,
+  beforeEach(async () => {
+    await feedEventHandler.handleV2Event(testFeedV2Event);
+  });
+
+  it("sends new articles based on guid", async () => {
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: "new-article",
         },
-        mediums: [
-          {
-            id: "medium-id",
-            key: MediumKey.Discord,
-            filters: null,
-            details: {
-              guildId: "1",
-              channel: { id: "channel 1" },
-              content: "1",
-              embeds: [],
-              webhook: null,
-              components: [],
-              customPlaceholders: [],
-              enablePlaceholderFallback: false,
-              formatter: {
-                disableImageLinkPreviews: false,
-                formatTables: false,
-                ignoreNewLines: false,
-                stripImages: false,
-              },
-              forumThreadTags: [],
-              mentions: null,
-              placeholderLimits: null,
-            },
-          },
-        ],
+      ]),
+      bodyHash: randomUUID(),
+    });
+
+    const results = await feedEventHandler.handleV2Event(testFeedV2Event);
+    deepStrictEqual(results?.length, 1);
+  });
+
+  it("does not send new articles if blocked by comparisons", async () => {
+    const feedEventWithBlockingComparisons = {
+      ...testFeedV2Event,
+      data: {
+        ...testFeedV2Event.data,
+        feed: {
+          ...testFeedV2Event.data.feed,
+          blockingComparisons: ["title"],
+        },
       },
     };
 
-    await feedEventHandler.handleV2Event(event);
+    // Initialize the comparisons storage first
+    await feedEventHandler.handleV2Event(feedEventWithBlockingComparisons);
 
     feedFetcherService.fetchWithGrpc = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
-      body: addArticleToFeed(feedText, {
-        guid: "new-article",
-      }),
-      bodyHash: "bodyhash",
+      body: getTestRssFeed([
+        {
+          guid: randomUUID(),
+          title: DEFAULT_TEST_ARTICLES[0].title,
+        },
+      ]),
+      bodyHash: randomUUID(),
     });
 
-    const results = await feedEventHandler.handleV2Event(event);
+    const results = await feedEventHandler.handleV2Event(
+      feedEventWithBlockingComparisons
+    );
+
+    deepStrictEqual(results?.length, 0);
+  });
+
+  it("sends new articles based on passing comparisons", async () => {
+    const feedEventWithPassingComparisons = {
+      ...testFeedV2Event,
+      data: {
+        ...testFeedV2Event.data,
+        feed: {
+          ...testFeedV2Event.data.feed,
+          passingComparisons: ["title"],
+        },
+      },
+    };
+
+    const initialArticles = [
+      {
+        guid: randomUUID(),
+        title: DEFAULT_TEST_ARTICLES[0].title,
+      },
+    ];
+
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed(initialArticles),
+      bodyHash: randomUUID(),
+    });
+
+    // Initialize the comparisons storage first
+    await feedEventHandler.handleV2Event(feedEventWithPassingComparisons);
+
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: initialArticles[0].guid,
+          title: initialArticles[0].title + "-different",
+        },
+      ]),
+      bodyHash: randomUUID(),
+    });
+
+    const results = await feedEventHandler.handleV2Event(
+      feedEventWithPassingComparisons
+    );
+
     deepStrictEqual(results?.length, 1);
   });
 });

@@ -416,7 +416,7 @@ export class FeedEventHandlerService {
           hash: response.bodyHash,
         });
 
-        return;
+        return [];
       }
 
       this.debugLog(
