@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react";
+import { useEffect } from "react";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { getUserMe, GetUserMeOutput } from "../api";
 import { ProductKey } from "../../../constants";
@@ -30,6 +32,15 @@ export const useUserMe = (props?: Props) => {
       enabled: props?.enabled,
     }
   );
+
+  useEffect(() => {
+    if (data?.result.id) {
+      Sentry.setUser({
+        id: data.result.id,
+        email: data.result.email,
+      });
+    }
+  }, [data?.result.id]);
 
   return {
     data,

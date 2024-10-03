@@ -3,6 +3,7 @@
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { captureException } from "@sentry/react";
 import { useUserMe } from "../features/discordUser";
 import { pages, ProductKey } from "../constants";
 
@@ -187,6 +188,12 @@ export function usePaddleCheckout(props?: Props) {
     ({ priceId }: { priceId: string }) => {
       if (!user?.result.email) {
         navigate(pages.userSettings());
+
+        return;
+      }
+
+      if (!paddle) {
+        captureException(Error("Failed to open paddle checkout since paddle is not initialized"));
 
         return;
       }
