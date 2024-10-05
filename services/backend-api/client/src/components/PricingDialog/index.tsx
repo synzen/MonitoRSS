@@ -192,7 +192,8 @@ interface ChangeSubscriptionDetails {
 }
 
 export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Props) => {
-  const { openCheckout, updateCheckout, getPricePreview, checkoutLoadedData } = usePaddleContext();
+  const { openCheckout, updateCheckout, getPricePreview, checkoutLoadedData, resetCheckoutData } =
+    usePaddleContext();
   const [pricePreviewErrored, setPricePreviewErrored] = useState(false);
   const [isLoadingPricePreview, setIsLoadingPricePreview] = useState(true);
   const [products, setProducts] = useState<Array<PricePreview>>();
@@ -208,6 +209,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
 
   const onClosePricingModal = () => {
     setCheckingOutPriceId(undefined);
+    resetCheckoutData();
     onClose();
   };
 

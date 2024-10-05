@@ -57,7 +57,7 @@ interface ContextProps {
   checkoutLoadedData?: CheckoutSummaryData;
   updatePaymentMethod: (transactionId: string) => void;
   updateCheckout: ({ priceId }: { priceId: string }) => void;
-  resetCheckoutData?: () => void;
+  resetCheckoutData: () => void;
   isLoaded?: boolean;
   openCheckout: ({ priceId }: { priceId: string }) => void;
   getPricePreview: (priceIdsToGet: string[]) => Promise<Array<PricePreview>>;
@@ -70,6 +70,7 @@ export const PaddleContext = createContext<ContextProps>({
   isLoaded: false,
   openCheckout: () => {},
   getPricePreview: async () => [],
+  resetCheckoutData: () => {},
 });
 
 export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
