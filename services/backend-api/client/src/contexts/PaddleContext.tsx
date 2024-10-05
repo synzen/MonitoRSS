@@ -205,8 +205,6 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           }
         }
 
-        console.log("prices by product", pricesByProduct);
-
         return Object.entries(pricesByProduct).map(([key, value]) => ({
           id: key as ProductKey,
           name: value.name,
