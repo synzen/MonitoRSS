@@ -17,7 +17,8 @@ dayjs.extend(utc)
 interface ArticleMeta {
   articleID: string
   feedURL: string
-  channel: string
+  channel?: string
+  webhookId?: string;
   feedId: string
   guildId: string
 }
@@ -80,7 +81,9 @@ setup().then(async (initializedData) => {
         deliveryId,
       })
 
-      return count > 0
+      const isDuplicate = count > 0;
+
+      return isDuplicate;
     }
   }, {
     maxRequestsPerSecond: config.maxRequestsPerSecond || 25,
