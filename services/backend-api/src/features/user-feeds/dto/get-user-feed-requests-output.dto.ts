@@ -2,7 +2,7 @@
 import { FeedFetcherRequestStatus } from "../../../services/feed-fetcher/types/feed-fetcher-request-status.type";
 
 interface Request {
-  id: number;
+  id: string;
   status: FeedFetcherRequestStatus;
   createdAt: number;
   response: {

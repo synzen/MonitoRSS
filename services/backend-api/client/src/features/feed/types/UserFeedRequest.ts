@@ -11,7 +11,7 @@ export enum UserFeedRequestStatus {
 }
 
 export const UserFeedRequestSchema = object({
-  id: number().required(),
+  id: string().required(),
   status: string().oneOf(Object.values(UserFeedRequestStatus)).required(),
   createdAt: number().required(),
   response: object({
