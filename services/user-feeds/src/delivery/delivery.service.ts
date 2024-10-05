@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import {
@@ -98,7 +99,7 @@ export class DeliveryService {
         article,
         medium,
         limitState,
-        `${medium.id}-${article.flattened.idHash}`
+        randomUUID()
       );
 
       results.push(...articleStates);

@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { MikroORM } from "@mikro-orm/core";
 import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
+import { randomUUID } from "crypto";
 
 const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
   ArticleDeliveryStatus;
@@ -32,10 +33,11 @@ export class DeliveryRecordService {
       const { status: articleStatus } = articleState;
 
       let record: DeliveryRecord;
+      const recordId = randomUUID();
 
       if (articleStatus === Sent) {
         record = new DeliveryRecord({
-          id: articleState.id,
+          id: recordId,
           feed_id: feedId,
           status: articleStatus,
           medium_id: articleState.mediumId,
@@ -47,7 +49,7 @@ export class DeliveryRecordService {
         });
       } else if (articleStatus === Failed || articleStatus === Rejected) {
         record = new DeliveryRecord({
-          id: articleState.id,
+          id: recordId,
           feed_id: feedId,
           status: articleStatus,
           error_code: articleState.errorCode,
@@ -59,7 +61,7 @@ export class DeliveryRecordService {
         });
       } else if (articleStatus === PendingDelivery) {
         record = new DeliveryRecord({
-          id: articleState.id,
+          id: recordId,
           feed_id: feedId,
           status: articleStatus,
           medium_id: articleState.mediumId,
@@ -73,7 +75,7 @@ export class DeliveryRecordService {
         });
       } else if (articleStatus === FilteredOut) {
         record = new DeliveryRecord({
-          id: articleState.id,
+          id: recordId,
           feed_id: feedId,
           status: articleStatus,
           medium_id: articleState.mediumId,
@@ -82,7 +84,7 @@ export class DeliveryRecordService {
         });
       } else {
         record = new DeliveryRecord({
-          id: articleState.id,
+          id: recordId,
           feed_id: feedId,
           status: articleStatus,
           medium_id: articleState.mediumId,
