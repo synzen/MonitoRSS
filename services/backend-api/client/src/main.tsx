@@ -18,6 +18,7 @@ import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
 import { PricingDialogProvider } from "./contexts";
+import { PaddleContextProvider } from "./contexts/PaddleContext";
 
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
@@ -89,9 +90,11 @@ prepare().then(() => {
         <QueryClientProvider client={queryClient}>
           <ForceDarkMode>
             <GlobalErrorBoundary>
-              <PricingDialogProvider>
-                <App />
-              </PricingDialogProvider>
+              <PaddleContextProvider>
+                <PricingDialogProvider>
+                  <App />
+                </PricingDialogProvider>
+              </PaddleContextProvider>
             </GlobalErrorBoundary>
           </ForceDarkMode>
         </QueryClientProvider>

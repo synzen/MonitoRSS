@@ -48,7 +48,7 @@ import getChakraColor from "../utils/getChakraColor";
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 import { PricingDialogContext } from "../contexts";
 import { DatePreferencesForm } from "../components/DatePreferencesForm";
-import { usePaddleCheckout } from "../hooks/usePaddleCheckout";
+import { usePaddleContext } from "../contexts/PaddleContext";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -91,22 +91,22 @@ const convertUserMeToFormData = (getUserMeOutput?: GetUserMeOutput): FormData =>
 const ChangePaymentMethodUrlButton = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const transactionIdFromQuery = searchParams.get("_ptxn");
-  const { updatePaymentMethod, isLoaded } = usePaddleCheckout();
   const { data } = useUserMe();
   const enabled = data && data?.result.subscription.product.key !== ProductKey.Free;
   const { error, refetch, fetchStatus } = useGetUpdatePaymentMethodTransaction({
     enabled: enabled && !transactionIdFromQuery,
   });
+  const { updatePaymentMethod } = usePaddleContext();
 
   useEffect(() => {
-    if (!transactionIdFromQuery || !isLoaded) {
+    if (!transactionIdFromQuery) {
       return;
     }
 
     updatePaymentMethod(transactionIdFromQuery);
 
     setSearchParams(new URLSearchParams());
-  }, [transactionIdFromQuery, isLoaded]);
+  }, [transactionIdFromQuery, updatePaymentMethod]);
 
   if (!enabled) {
     return null;
