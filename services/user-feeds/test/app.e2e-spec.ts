@@ -64,7 +64,7 @@ describe("App (e2e)", () => {
   });
 
   beforeEach(async () => {
-    await feedEventHandler.handleV2Event(testFeedV2Event);
+    await feedEventHandler.handleV2EventWithDb(testFeedV2Event);
   });
 
   it("sends new articles based on guid", async () => {
@@ -78,7 +78,7 @@ describe("App (e2e)", () => {
       bodyHash: randomUUID(),
     });
 
-    const results = await feedEventHandler.handleV2Event(testFeedV2Event);
+    const results = await feedEventHandler.handleV2EventWithDb(testFeedV2Event);
     deepStrictEqual(results?.length, 1);
   });
 
@@ -95,7 +95,9 @@ describe("App (e2e)", () => {
     };
 
     // Initialize the comparisons storage first
-    await feedEventHandler.handleV2Event(feedEventWithBlockingComparisons);
+    await feedEventHandler.handleV2EventWithDb(
+      feedEventWithBlockingComparisons
+    );
 
     feedFetcherService.fetchWithGrpc = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
@@ -108,7 +110,7 @@ describe("App (e2e)", () => {
       bodyHash: randomUUID(),
     });
 
-    const results = await feedEventHandler.handleV2Event(
+    const results = await feedEventHandler.handleV2EventWithDb(
       feedEventWithBlockingComparisons
     );
 
@@ -141,7 +143,7 @@ describe("App (e2e)", () => {
     });
 
     // Initialize the comparisons storage first
-    await feedEventHandler.handleV2Event(feedEventWithPassingComparisons);
+    await feedEventHandler.handleV2EventWithDb(feedEventWithPassingComparisons);
 
     feedFetcherService.fetchWithGrpc = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
@@ -154,7 +156,7 @@ describe("App (e2e)", () => {
       bodyHash: randomUUID(),
     });
 
-    const results = await feedEventHandler.handleV2Event(
+    const results = await feedEventHandler.handleV2EventWithDb(
       feedEventWithPassingComparisons
     );
 
