@@ -14,7 +14,6 @@ import {
   FeedRejectedDisabledCode,
   Article,
   UserFeedFormatOptions,
-  ArticleDeliveryState,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import {
@@ -63,48 +62,15 @@ export class FeedEventHandlerService {
     exchange: "",
     queue: MessageBrokerQueue.FeedDeliverArticles,
   })
-  async handleV2Event(
-    event: FeedV2Event
-  ): Promise<ArticleDeliveryState[] | null> {
-    try {
-      feedV2EventSchema.parse(event);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        logger.error(`Validation failed on incoming Feed V2 event`, {
-          feedId: event.data.feed.id,
-          errors: err.errors,
-        });
-      } else {
-        logger.error(`Failed to parse Feed V2 event`, {
-          feedId: event.data.feed.id,
-          error: (err as Error).stack,
-        });
-      }
-
-      return null;
-    }
-
-    const cacheKey = `processing-${event.data.feed.id}`;
-
+  async handleV2Event(event: FeedV2Event): Promise<void> {
     try {
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
-      const val = await this.handleV2EventWithDb(event);
-
-      this.logEventFinish(event);
-
-      return val || null;
+      await this.handleV2EventWithDb(event);
     } catch (err) {
       logger.error(`Failed to handle feed event`, {
         feedId: event.data.feed.id,
         error: (err as Error).stack,
       });
-      this.logEventFinish(event, {
-        error: err as Error,
-      });
-
-      return null;
-    } finally {
-      await this.cacheStorageService.del(cacheKey);
     }
   }
 
@@ -280,7 +246,27 @@ export class FeedEventHandlerService {
   }
 
   @UseRequestContext()
-  private async handleV2EventWithDb(event: FeedV2Event) {
+  async handleV2EventWithDb(event: FeedV2Event) {
+    const cacheKey = `processing-${event.data.feed.id}`;
+
+    try {
+      feedV2EventSchema.parse(event);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        logger.error(`Validation failed on incoming Feed V2 event`, {
+          feedId: event.data.feed.id,
+          errors: err.errors,
+        });
+      } else {
+        logger.error(`Failed to parse Feed V2 event`, {
+          feedId: event.data.feed.id,
+          error: (err as Error).stack,
+        });
+      }
+
+      return null;
+    }
+
     this.debugLog(
       `Handling event for feed ${event.data.feed.id} with url ${event.data.feed.url}`,
       {
@@ -467,6 +453,8 @@ export class FeedEventHandlerService {
         hash: response.bodyHash,
       });
 
+      this.logEventFinish(event);
+
       return deliveryStates;
     } catch (err) {
       if (err instanceof InvalidFeedException) {
@@ -536,7 +524,13 @@ export class FeedEventHandlerService {
         );
       }
 
+      this.logEventFinish(event, {
+        error: err as Error,
+      });
+
       throw err;
+    } finally {
+      await this.cacheStorageService.del(cacheKey);
     }
   }
 
