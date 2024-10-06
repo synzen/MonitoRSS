@@ -37,10 +37,10 @@ const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: 
   const isLoaded = !waitingForUpdate && !!checkoutData;
 
   useEffect(() => {
-    if (isLoaded) {
-      closeButtonRef.current?.focus();
+    if (isLoaded && closeButtonRef.current) {
+      closeButtonRef.current.focus();
     }
-  }, [isLoaded]);
+  }, [isLoaded, closeButtonRef.current]);
 
   useEffect(() => {
     if (!checkoutData) {
