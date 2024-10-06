@@ -21,7 +21,7 @@ import {
 } from "@chakra-ui/react";
 import { captureException } from "@sentry/react";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckoutSummaryData } from "../../types/CheckoutSummaryData";
 
 interface Props {
@@ -32,9 +32,15 @@ interface Props {
 }
 
 const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: Props) => {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [waitingForUpdate, setWaitingForUpdate] = useState(false);
   const isLoaded = !waitingForUpdate && !!checkoutData;
-  console.log("🚀 ~ CheckoutSummary ~ checkoutData:", checkoutData);
+
+  useEffect(() => {
+    if (isLoaded) {
+      closeButtonRef.current?.focus();
+    }
+  }, [isLoaded]);
 
   useEffect(() => {
     if (!checkoutData) {
@@ -93,7 +99,7 @@ const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: 
     >
       <Stack maxWidth="5xl" width="100%">
         <Flex justifyContent="flex-end" width="100%">
-          <CloseButton onClick={onClose} />
+          <CloseButton onClick={onClose} aria-label="Close checkout" ref={closeButtonRef} />
         </Flex>
         <HStack
           gap={0}
