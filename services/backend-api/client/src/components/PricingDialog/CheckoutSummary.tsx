@@ -34,6 +34,7 @@ interface Props {
 const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: Props) => {
   const [waitingForUpdate, setWaitingForUpdate] = useState(false);
   const isLoaded = !waitingForUpdate && !!checkoutData;
+  console.log("🚀 ~ CheckoutSummary ~ checkoutData:", checkoutData);
 
   useEffect(() => {
     if (!checkoutData) {
@@ -79,7 +80,7 @@ const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: 
     <Stack
       backdropFilter="blur(3px)"
       alignItems="center"
-      justifyContent="center"
+      // justifyContent="center"
       height="100vh"
       position="absolute"
       background="blackAlpha.700"
@@ -87,13 +88,23 @@ const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: 
       left={0}
       width="100vw"
       zIndex={10}
+      pt="3%"
+      px={4}
     >
-      <Stack maxWidth="5xl" width="100%" mb={24}>
+      <Stack maxWidth="5xl" width="100%">
         <Flex justifyContent="flex-end" width="100%">
           <CloseButton onClick={onClose} />
         </Flex>
-        <HStack gap={0} bg="gray.700" rounded="md" alignItems="flex-start">
-          <Stack flex={1} spacing={4} padding={8}>
+        <HStack
+          gap={0}
+          bg="gray.700"
+          rounded="md"
+          alignItems="flex-start"
+          flexWrap="wrap"
+          overflow="auto"
+          mb={4}
+        >
+          <Stack flex={1} spacing={4} px={8} pb={8} pt={6}>
             <Box>
               <Button leftIcon={<ArrowBackIcon />} variant="ghost" size="xs" onClick={onGoBack}>
                 Go back

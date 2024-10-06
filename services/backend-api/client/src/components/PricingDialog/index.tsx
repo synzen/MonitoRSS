@@ -228,7 +228,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
       return;
     }
 
-    onClosePricingModal();
+    onClose();
 
     if (userData.result.subscription.product.key === ProductKey.Free) {
       setCheckingOutPriceId(priceId);
@@ -317,6 +317,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
   const userSubscription = userData?.result.subscription;
   const userTierIndex = tiers?.findIndex((p) => p.productId === userSubscription?.product.key);
   const failedToLoadPrices = pricePreviewErrored || subProductsError || userError;
+
+  console.log("🚀 ~ PricingDialog ~ checkingOutPriceId:", checkingOutPriceId);
 
   return (
     <Box>
