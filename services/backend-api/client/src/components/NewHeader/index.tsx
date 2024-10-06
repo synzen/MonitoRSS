@@ -12,7 +12,7 @@ import {
   MenuList,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FaRightFromBracket } from "react-icons/fa6";
 import { SettingsIcon, InfoIcon, WarningTwoIcon } from "@chakra-ui/icons";
 
@@ -52,27 +52,29 @@ export const NewHeader = ({ invertBackground }: Props) => {
         <HStack overflow="hidden" gap={8}>
           <Flex alignItems="center" overflow="hidden">
             {discordBotData && (
-              <Flex alignItems="center" paddingBottom="1" overflow="hidden">
-                <Avatar
-                  src={discordBotData.result.avatar || undefined}
-                  size="sm"
-                  // name=
-                  name={discordBotData.result.username}
-                  marginRight="2"
-                  backgroundColor="transparent"
-                />
-                <Heading
-                  fontSize="xl"
-                  whiteSpace="nowrap"
-                  overflow="hidden"
-                  textOverflow="ellipsis"
-                  title="MonitoRSS"
-                  // title={discordBotData.result.username}
-                >
-                  MonitoRSS
-                  {/* {discordBotData.result.username} */}
-                </Heading>
-              </Flex>
+              <Link to={pages.userFeeds()}>
+                <Flex alignItems="center" paddingBottom="1" overflow="hidden">
+                  <Avatar
+                    src={discordBotData.result.avatar || undefined}
+                    size="sm"
+                    // name=
+                    name={discordBotData.result.username}
+                    marginRight="2"
+                    backgroundColor="transparent"
+                  />
+                  <Heading
+                    fontSize="xl"
+                    whiteSpace="nowrap"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                    title="MonitoRSS"
+                    // title={discordBotData.result.username}
+                  >
+                    MonitoRSS
+                    {/* {discordBotData.result.username} */}
+                  </Heading>
+                </Flex>
+              </Link>
             )}
             {status === "loading" && (
               <Box>

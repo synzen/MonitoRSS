@@ -18,6 +18,7 @@ import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
 import { PricingDialogProvider } from "./contexts";
+import { PaddleContextProvider } from "./contexts/PaddleContext";
 
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
@@ -45,7 +46,7 @@ async function prepare() {
         ],
         tracesSampleRate: 0.2,
         // Session Replay
-        replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+        replaysSessionSampleRate: 0.25, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
         replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
       });
     }
@@ -89,9 +90,11 @@ prepare().then(() => {
         <QueryClientProvider client={queryClient}>
           <ForceDarkMode>
             <GlobalErrorBoundary>
-              <PricingDialogProvider>
-                <App />
-              </PricingDialogProvider>
+              <PaddleContextProvider>
+                <PricingDialogProvider>
+                  <App />
+                </PricingDialogProvider>
+              </PaddleContextProvider>
             </GlobalErrorBoundary>
           </ForceDarkMode>
         </QueryClientProvider>

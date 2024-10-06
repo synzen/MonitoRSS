@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Scope } from "@nestjs/common";
 import { RedisClient } from "./constants/redis-client.constant";
 import { RedisClientType } from "redis";
 import logger from "../shared/utils/logger";
@@ -7,13 +7,17 @@ const generateKey = (key: string) => {
   return `user-feeds:${key}`;
 };
 
-@Injectable()
+@Injectable({
+  scope: Scope.DEFAULT,
+})
 export class CacheStorageService {
   constructor(
     @Inject(RedisClient) private readonly redisClient: RedisClientType
   ) {}
 
   async closeClient() {
+    this.redisClient.removeAllListeners();
+
     await this.redisClient.disconnect();
   }
 

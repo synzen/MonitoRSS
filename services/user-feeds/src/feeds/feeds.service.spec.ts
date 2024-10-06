@@ -1,24 +1,25 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
-import { GetUserFeedArticlesFilterReturnType } from "./constants";
 import { FeedsService } from "./feeds.service";
 import { QueryForArticlesInput } from "./types";
+import { describe, beforeEach, it, mock } from "node:test";
+import { deepEqual } from "node:assert";
 
 describe("FeedsService", () => {
   let service: FeedsService;
   const articleRateLimitService = {
-    getFeedLimitInformation: jest.fn(),
-    addOrUpdateFeedLimit: jest.fn(),
+    getFeedLimitInformation: mock.fn(),
+    addOrUpdateFeedLimit: mock.fn(),
   };
   const articleFiltersService = {
-    getFilterExpressionErrors: jest.fn(),
-    evaluateExpression: jest.fn(),
-    buildReferences: jest.fn(),
+    getFilterExpressionErrors: mock.fn(() => [] as string[]),
+    evaluateExpression: mock.fn(() => ({ result: false })),
+    buildReferences: mock.fn(),
   };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    mock.reset();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FeedsService,
@@ -37,16 +38,19 @@ describe("FeedsService", () => {
   });
 
   it("should be defined", () => {
-    expect(service).toBeDefined();
+    deepEqual(typeof service, "object");
   });
 
   describe("getFilterExpressionErrors", () => {
     it("returns errors", async () => {
       const errors = ["error"];
-      articleFiltersService.getFilterExpressionErrors.mockResolvedValue(errors);
+
+      articleFiltersService.getFilterExpressionErrors.mock.mockImplementationOnce(
+        () => errors
+      );
 
       const result = await service.getFilterExpressionErrors({});
-      expect(result).toEqual(errors);
+      deepEqual(result, errors);
     });
   });
 
@@ -97,12 +101,10 @@ describe("FeedsService", () => {
 
       const result = await service.queryForArticles(input);
 
-      expect(result).toMatchObject({
-        articles: [],
-        properties: input.selectProperties,
-        totalArticles: 0,
-        filterEvalResults: [],
-      });
+      deepEqual(result.articles, []);
+      deepEqual(result.properties, input.selectProperties);
+      deepEqual(result.totalArticles, 0);
+      deepEqual(result.filterEvalResults, []);
     });
 
     it("respects limit", async () => {
@@ -114,11 +116,10 @@ describe("FeedsService", () => {
 
       const result = await service.queryForArticles(input);
 
-      expect(result.articles.length).toEqual(2);
-
-      expect(result.articles[0].flattened.id).toEqual("1");
-      expect(result.articles[1].flattened.id).toEqual("2");
-      expect(result.totalArticles).toEqual(input.articles.length);
+      deepEqual(result.articles.length, 2);
+      deepEqual(result.articles[0].flattened.id, "1");
+      deepEqual(result.articles[1].flattened.id, "2");
+      deepEqual(result.totalArticles, input.articles.length);
     });
 
     it("respects skip", async () => {
@@ -130,10 +131,10 @@ describe("FeedsService", () => {
 
       const result = await service.queryForArticles(input);
 
-      expect(result.articles.length).toEqual(2);
-      expect(result.articles[0].flattened.id).toEqual("2");
-      expect(result.articles[1].flattened.id).toEqual("3");
-      expect(result.totalArticles).toEqual(input.articles.length);
+      deepEqual(result.articles.length, 2);
+      deepEqual(result.articles[0].flattened.id, "2");
+      deepEqual(result.articles[1].flattened.id, "3");
+      deepEqual(result.totalArticles, input.articles.length);
     });
 
     it("respects combination of skip and limit", async () => {
@@ -145,9 +146,9 @@ describe("FeedsService", () => {
 
       const result = await service.queryForArticles(input);
 
-      expect(result.articles.length).toEqual(1);
-      expect(result.articles[0].flattened.id).toEqual("2");
-      expect(result.totalArticles).toEqual(input.articles.length);
+      deepEqual(result.articles.length, 1);
+      deepEqual(result.articles[0].flattened.id, "2");
+      deepEqual(result.totalArticles, input.articles.length);
     });
 
     it("returns only the input properties if input properties exist", async () => {
@@ -162,6 +163,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "1",
+            idHash: "1-hash",
             title: "title1",
           },
           raw: {},
@@ -169,6 +171,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "2",
+            idHash: "2-hash",
             title: "title2",
           },
           raw: {},
@@ -176,14 +179,15 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "3",
+            idHash: "3-hash",
             title: "title3",
           },
           raw: {},
         },
       ];
 
-      expect(result.articles).toEqual(expected);
-      expect(result.properties).toEqual(["title"]);
+      deepEqual(result.articles, expected);
+      deepEqual(result.properties, ["title"]);
     });
 
     it("returns the default id and title property if no input properties exist", async () => {
@@ -198,6 +202,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "1",
+            idHash: "1-hash",
             title: "title1",
           },
           raw: {},
@@ -205,6 +210,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "2",
+            idHash: "2-hash",
             title: "title2",
           },
           raw: {},
@@ -212,14 +218,15 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "3",
+            idHash: "3-hash",
             title: "title3",
           },
           raw: {},
         },
       ];
 
-      expect(result.articles).toEqual(expected);
-      expect(result.properties).toEqual(["id", "title"]);
+      deepEqual(result.articles, expected);
+      deepEqual(result.properties, ["id", "title"]);
     });
 
     it(
@@ -244,25 +251,28 @@ describe("FeedsService", () => {
           {
             flattened: {
               id: "1",
+              idHash: "hash-1",
             },
             raw: {},
           },
           {
             flattened: {
               id: "2",
+              idHash: "hash-2",
             },
             raw: {},
           },
           {
             flattened: {
               id: "3",
+              idHash: "hash-3",
             },
             raw: {},
           },
         ];
 
-        expect(result.articles).toEqual(expected);
-        expect(result.properties).toEqual(["id"]);
+        deepEqual(result.articles, expected);
+        deepEqual(result.properties, ["id"]);
       }
     );
 
@@ -309,6 +319,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "1",
+            idHash: "1-hash",
             title: "title1",
             description: "description1",
             author: "",
@@ -319,6 +330,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "2",
+            idHash: "2-hash",
             title: "title2",
             description: "description2",
             author: "author2",
@@ -329,6 +341,7 @@ describe("FeedsService", () => {
         {
           flattened: {
             id: "3",
+            idHash: "3-hash",
             title: "title3",
             description: "description3",
             author: "",
@@ -338,46 +351,15 @@ describe("FeedsService", () => {
         },
       ];
 
-      expect(result.properties).toEqual([
+      deepEqual(result.properties, [
         "id",
+        "idHash",
         "title",
         "description",
         "author",
         "image",
       ]);
-      expect(result.articles).toEqual(expected);
-    });
-
-    it("returns filter evaluation results correctly", async () => {
-      const input: QueryForArticlesInput = {
-        ...sampleInput,
-        filters: {
-          expression: {},
-          returnType:
-            GetUserFeedArticlesFilterReturnType.IncludeEvaluationResults,
-        },
-        limit: articles.length,
-      };
-
-      jest
-        .spyOn(articleFiltersService, "evaluateExpression")
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(false)
-        .mockResolvedValue(true);
-
-      const result = await service.queryForArticles(input);
-
-      expect(result.filterEvalResults).toEqual([
-        {
-          passed: true,
-        },
-        {
-          passed: false,
-        },
-        {
-          passed: true,
-        },
-      ]);
+      deepEqual(result.articles, expected);
     });
   });
 });

@@ -1,6 +1,8 @@
 /* eslint-disable max-len */
 import { CustomPlaceholderStepType } from "../shared";
 import { ArticleFormatterService } from "./article-formatter.service";
+import { describe, beforeEach, it } from "node:test";
+import { deepStrictEqual } from "node:assert";
 
 describe("ArticleFormatterService", () => {
   let service: ArticleFormatterService;
@@ -16,7 +18,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("hello");
+        deepStrictEqual(result.value, "hello");
       });
     });
 
@@ -26,7 +28,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("hello\nworld");
+        deepStrictEqual(result.value, "hello\nworld");
       });
     });
 
@@ -36,7 +38,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("hello\nworld");
+        deepStrictEqual(result.value, "hello\nworld");
       });
     });
 
@@ -46,7 +48,8 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual(
+        deepStrictEqual(
+          result.value,
           "Say [Hello World](https://example.com) to me"
         );
       });
@@ -57,7 +60,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("Say https://example.com to me");
+        deepStrictEqual(result.value, "Say https://example.com to me");
       });
 
       it("works with nested inline elements", async () => {
@@ -65,7 +68,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("[**Hello World**](https://example.com)");
+        deepStrictEqual(result.value, "[**Hello World**](https://example.com)");
       });
     });
 
@@ -101,7 +104,8 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["custom::test"]).toEqual(
+        deepStrictEqual(
+          result.article.flattened["custom::test"],
           "Goodbye World"
         );
       });
@@ -137,7 +141,7 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["title"]).toEqual("Hello World");
+        deepStrictEqual(result.article.flattened["title"], "Hello World");
       });
 
       it("replaces matches with an empty string if no replacement is specified", async () => {
@@ -171,7 +175,7 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["custom::test"]).toEqual("World");
+        deepStrictEqual(result.article.flattened["custom::test"], "World");
       });
 
       it("replaces matches globally", async () => {
@@ -205,7 +209,10 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["custom::test"]).toEqual("Hezzo Worzd");
+        deepStrictEqual(
+          result.article.flattened["custom::test"],
+          "Hezzo Worzd"
+        );
       });
 
       it("replaces searches multi-line", async () => {
@@ -239,7 +246,8 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["custom::test"]).toEqual(
+        deepStrictEqual(
+          result.article.flattened["custom::test"],
           "q hello\nreplaced\nreplaced\nq world"
         );
       });
@@ -275,7 +283,8 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["custom::test"]).toEqual(
+        deepStrictEqual(
+          result.article.flattened["custom::test"],
           "replaced replaced world"
         );
       });
@@ -316,7 +325,8 @@ describe("ArticleFormatterService", () => {
           ],
         });
 
-        expect(result.article.flattened["custom::test"]).toEqual(
+        deepStrictEqual(
+          result.article.flattened["custom::test"],
           "farewell world"
         );
       });
@@ -328,7 +338,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("https://example.com/image.png");
+        deepStrictEqual(result.value, "https://example.com/image.png");
       });
 
       it("returns the image link with an alt", async () => {
@@ -337,7 +347,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("https://example.com/image.png");
+        deepStrictEqual(result.value, "https://example.com/image.png");
       });
 
       it("excludes the image is strip image optin is true", async () => {
@@ -350,7 +360,7 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [],
         });
 
-        expect(result.value).toEqual("Hello World");
+        deepStrictEqual(result.value, "Hello World");
       });
 
       it("wraps links with < and > when disable image link previews is true", async () => {
@@ -364,23 +374,23 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [],
         });
 
-        expect(result.value).toEqual(
+        deepStrictEqual(
+          result.value,
           "Hello <https://example.com/image.png> World <https://example.com/image2.png>"
         );
       });
     });
 
     describe("heading", () => {
-      it.each(["h1", "h2", "h3", "h4", "h5", "h6"])(
-        `returns the text bolded for %s`,
-        async (elem) => {
+      ["h1", "h2", "h3", "h4", "h5", "h6"].forEach((elem) => {
+        it(`returns the text bolded for ${elem}`, async () => {
           const result = service.formatValueForDiscord(
             `<${elem}>hello world</${elem}>`
           );
 
-          expect(result.value).toEqual("**hello world**");
-        }
-      );
+          deepStrictEqual(result.value, "**hello world**");
+        });
+      });
     });
 
     describe("strong", () => {
@@ -389,7 +399,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("a **hello world** b");
+        deepStrictEqual(result.value, "a **hello world** b");
       });
 
       it("does not add new newlines", () => {
@@ -398,7 +408,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("First **Before**:");
+        deepStrictEqual(result.value, "First **Before**:");
       });
 
       it("adds spaces around it", () => {
@@ -407,7 +417,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("this **is** bold");
+        deepStrictEqual(result.value, "this **is** bold");
       });
     });
 
@@ -417,7 +427,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("`hello world`");
+        deepStrictEqual(result.value, "`hello world`");
       });
 
       it("does not add new line before starting tag", async () => {
@@ -426,7 +436,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("First `Before`:");
+        deepStrictEqual(result.value, "First `Before`:");
       });
     });
 
@@ -436,7 +446,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("```hello world```");
+        deepStrictEqual(result.value, "```hello world```");
       });
 
       it('returns the text in a code block if its only child is a "code" element with a text node', async () => {
@@ -444,7 +454,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("```hello world```");
+        deepStrictEqual(result.value, "```hello world```");
       });
     });
 
@@ -454,7 +464,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("*hello world*");
+        deepStrictEqual(result.value, "*hello world*");
       });
     });
 
@@ -464,7 +474,7 @@ describe("ArticleFormatterService", () => {
 
         const result = service.formatValueForDiscord(value);
 
-        expect(result.value).toEqual("__hello world__");
+        deepStrictEqual(result.value, "__hello world__");
       });
     });
 
@@ -496,7 +506,8 @@ describe("ArticleFormatterService", () => {
           customPlaceholders: [],
         });
 
-        expect(result.value).toEqual(
+        deepStrictEqual(
+          result.value,
           `
 \`\`\`
 
@@ -515,7 +526,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
           "<ul><li>1</li><li>2</li></ul>"
         );
 
-        expect(result.value).toEqual("* 1\n* 2");
+        deepStrictEqual(result.value, "* 1\n* 2");
       });
     });
 
@@ -541,7 +552,8 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       const result = service.formatValueForDiscord(val);
 
-      expect(result.value).toEqual(
+      deepStrictEqual(
+        result.value,
         `
         https://image.com submitted by [ /u/FortniteStatusBot ](https://www.reddit.com/user/FortniteStatusBot) to [ r/FORTnITE ](https://www.reddit.com/r/FORTnITE/)
 [[link]](https://seebot.dev/images/archive/missions/22_Jan_2023.png?300) [[comments]](https://www.reddit.com/r/FORTnITE/comments/10i5m9z/mission_alerts_1200am_utc_22jan2023/)
@@ -557,7 +569,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
         const result = service.formatValueForDiscord(val);
 
-        expect(result.value).toEqual("hello **world 😀** \n\nanother example");
+        deepStrictEqual(result.value, "hello **world 😀** \n\nanother example");
       });
 
       it("does not add extra newlines for empty paragraphs", () => {
@@ -567,7 +579,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
         const result = service.formatValueForDiscord(val);
 
-        expect(result.value).toEqual("hello world \n\nHello world");
+        deepStrictEqual(result.value, "hello world \n\nHello world");
       });
     });
   });
@@ -578,7 +590,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: false,
       });
 
-      expect(result).toEqual(["hello world"]);
+      deepStrictEqual(result, ["hello world"]);
     });
 
     it("applies split with a low limit", () => {
@@ -589,13 +601,13 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar: "",
       });
 
-      expect(result).toEqual(["hell", "o", "worl", "d"]);
+      deepStrictEqual(result, ["hell", "o", "worl", "d"]);
     });
 
     it("returns an empty string if input text is empty", async () => {
       const result = await service.applySplit("");
 
-      expect(result).toEqual([""]);
+      deepStrictEqual(result, [""]);
     });
 
     it("applies split with a high limit", () => {
@@ -606,7 +618,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar: "",
       });
 
-      expect(result).toEqual(["hello world"]);
+      deepStrictEqual(result, ["hello world"]);
     });
 
     it("does not add append char if there was nothing to split on", () => {
@@ -617,7 +629,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar: "",
       });
 
-      expect(result).toEqual(["hello world"]);
+      deepStrictEqual(result, ["hello world"]);
     });
 
     it("does not add prepend char if there was nothing to split on", () => {
@@ -628,7 +640,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar: "!",
       });
 
-      expect(result).toEqual(["hello world"]);
+      deepStrictEqual(result, ["hello world"]);
     });
 
     it("does not add append and prepend char if there was nothing to split on", () => {
@@ -639,7 +651,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar: "!",
       });
 
-      expect(result).toEqual(["hello world"]);
+      deepStrictEqual(result, ["hello world"]);
     });
 
     it("applies split with a high limit and append and prepend char and multiple lines", () => {
@@ -650,7 +662,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar: "!",
       });
 
-      expect(result).toEqual(["!hello world", "hello world!"]);
+      deepStrictEqual(result, ["!hello world", "hello world!"]);
     });
 
     it("applies split with a high limit and append and prepend char and multiple lines and a long word", () => {
@@ -664,7 +676,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         }
       );
 
-      expect(result).toEqual([
+      deepStrictEqual(result, [
         "!hello world",
         "hello world",
         "supercalifragi",
@@ -684,7 +696,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         }
       );
 
-      expect(result).toEqual([
+      deepStrictEqual(result, [
         "!hello world",
         "hello world",
         "supercalifragi",
@@ -705,7 +717,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         }
       );
 
-      expect(result).toEqual(["hello", "world", ".", "hello", "world", "."]);
+      deepStrictEqual(result, ["hello", "world", ".", "hello", "world", "."]);
     });
 
     it("should preserve double new lines when possible", () => {
@@ -714,7 +726,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["a\n\na", "b"]);
+      deepStrictEqual(result, ["a\n\na", "b"]);
     });
 
     it("uses limit of 1 if input limit is under the length of append/prepend chars", () => {
@@ -730,12 +742,12 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar,
       });
 
-      expect(result[0]).toEqual(`${prependChar}h`);
+      deepStrictEqual(result[0], `${prependChar}h`);
       result.slice(1, result.length - 1).map((r) => {
         // The new input limit is assumed to be 4
-        expect(r.length).toEqual(1);
+        deepStrictEqual(r.length, 1);
       });
-      expect(result[result.length - 1]).toEqual(`d${appendChar}`);
+      deepStrictEqual(result[result.length - 1], `d${appendChar}`);
     });
 
     it("splits on periods when available", () => {
@@ -747,7 +759,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello.", "world."]);
+      deepStrictEqual(result, ["hello.", "world."]);
     });
 
     it("splits on question marks when available", () => {
@@ -759,7 +771,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello?", "world?"]);
+      deepStrictEqual(result, ["hello?", "world?"]);
     });
 
     it("splits on exclamation marks when available", () => {
@@ -771,7 +783,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello!", "world!"]);
+      deepStrictEqual(result, ["hello!", "world!"]);
     });
 
     it("splits on all punctuation when available", () => {
@@ -783,7 +795,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello!", "world?", "fate.", "codingh", "ere!"]);
+      deepStrictEqual(result, ["hello!", "world?", "fate.", "codingh", "ere!"]);
     });
   });
 });

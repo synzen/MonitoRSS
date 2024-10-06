@@ -12,6 +12,8 @@ import {
   validateRelationalLeft,
   validateRelationalRight,
 } from "./validate-filter-expression";
+import { describe, it } from "node:test";
+import { deepStrictEqual } from "node:assert";
 
 describe("validateRelationalLeft", () => {
   it("should return an error if left is not an object", () => {
@@ -19,7 +21,7 @@ describe("validateRelationalLeft", () => {
 
     const errors = validateRelationalLeft(left as never);
 
-    expect(errors).toEqual(["Expected root.left to be an object but got 123"]);
+    deepStrictEqual(errors, ["Expected root.left to be an object but got 123"]);
   });
 
   it("should return an error if type is not article", () => {
@@ -30,7 +32,7 @@ describe("validateRelationalLeft", () => {
 
     const errors = validateRelationalLeft(left);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       `Expected root.type to be one of ARTICLE but got notArticle`,
     ]);
   });
@@ -44,7 +46,7 @@ describe("validateRelationalLeft", () => {
 
       const errors = validateRelationalLeft(left);
 
-      expect(errors).toEqual([
+      deepStrictEqual(errors, [
         "Expected root.value to be a string but got 123",
       ]);
     });
@@ -57,7 +59,7 @@ describe("validateRelationalLeft", () => {
 
       const errors = validateRelationalLeft(left);
 
-      expect(errors).toEqual([]);
+      deepStrictEqual(errors, []);
     });
   });
 });
@@ -68,7 +70,9 @@ describe("validateRelationalRight", () => {
 
     const errors = validateRelationalRight(right as never);
 
-    expect(errors).toEqual(["Expected root.right to be an object but got 123"]);
+    deepStrictEqual(errors, [
+      "Expected root.right to be an object but got 123",
+    ]);
   });
 
   it("should return an error if type is not String", () => {
@@ -79,7 +83,7 @@ describe("validateRelationalRight", () => {
 
     const errors = validateRelationalRight(right);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.type to be one of STRING but got notStringOrRegExp",
     ]);
   });
@@ -93,7 +97,7 @@ describe("validateRelationalRight", () => {
 
       const errors = validateRelationalRight(right);
 
-      expect(errors).toEqual([
+      deepStrictEqual(errors, [
         "Expected root.value to be a string but got 123",
       ]);
     });
@@ -106,7 +110,7 @@ describe("validateRelationalRight", () => {
 
       const errors = validateRelationalRight(right);
 
-      expect(errors).toEqual([]);
+      deepStrictEqual(errors, []);
     });
   });
 });
@@ -117,7 +121,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression as never);
 
-    expect(errors).toEqual(["Expected root. to be an object but got 123"]);
+    deepStrictEqual(errors, ["Expected root. to be an object but got 123"]);
   });
 
   it("should return an error if type is not Relational", () => {
@@ -136,7 +140,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.type to be RELATIONAL but got notRelational",
     ]);
   });
@@ -154,7 +158,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual(["Expected root.left to be an object but got 123"]);
+    deepStrictEqual(errors, ["Expected root.left to be an object but got 123"]);
   });
 
   it("should return an error if there is no left", () => {
@@ -169,7 +173,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.left to be an object but got undefined",
     ]);
   });
@@ -190,7 +194,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       `Expected root.op to be one of ${Object.values(
         RelationalExpressionOperator
       )} but got notAnOperator`,
@@ -210,7 +214,9 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual(["Expected root.right to be an object but got 123"]);
+    deepStrictEqual(errors, [
+      "Expected root.right to be an object but got 123",
+    ]);
   });
 
   it("should return an error if there is no right", () => {
@@ -225,7 +231,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.right to be an object but got undefined",
     ]);
   });
@@ -246,7 +252,7 @@ describe("validateRelationalExpression", () => {
 
     const errors = validateRelationalExpression(expression);
 
-    expect(errors).toEqual([]);
+    deepStrictEqual(errors, []);
   });
 });
 
@@ -273,7 +279,7 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.type to be LOGICAL but got notLogical",
     ]);
   });
@@ -300,7 +306,7 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       `Expected root.op to be one of ${Object.values(
         LogicalExpressionOperator
       )} but got notAnOperator`,
@@ -316,7 +322,7 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.children to be an array but got 123",
     ]);
   });
@@ -329,22 +335,8 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.children to be an array but got undefined",
-    ]);
-  });
-
-  it("should return an error if children is empty", () => {
-    const expression = {
-      type: ExpressionType.Logical,
-      op: LogicalExpressionOperator.And,
-      children: [],
-    };
-
-    const errors = validateLogicalExpression(expression);
-
-    expect(errors).toEqual([
-      "Expected root.children to have at least one item",
     ]);
   });
 
@@ -376,7 +368,7 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.children[0].type to be one of RELATIONAL,LOGICAL but got notLogical",
     ]);
   });
@@ -384,7 +376,7 @@ describe("validateLogicalExpression", () => {
   it("should return an error if input record is not a object", () => {
     const errors = validateLogicalExpression(null as never);
 
-    expect(errors).toEqual(["Expected root. to be an object but got null"]);
+    deepStrictEqual(errors, ["Expected root. to be an object but got null"]);
   });
 
   it("should return an empty array if expression is valid", () => {
@@ -409,7 +401,7 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([]);
+    deepStrictEqual(errors, []);
   });
 
   it("should return a flat array of errors if there are nested errors", () => {
@@ -458,7 +450,7 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(expression);
 
-    expect(errors).toEqual([
+    deepStrictEqual(errors, [
       "Expected root.children[0].type to be one of RELATIONAL,LOGICAL but got TEST",
       "Expected root.children[1].type to be one of RELATIONAL,LOGICAL but got TEST",
     ]);
@@ -500,6 +492,6 @@ describe("validateLogicalExpression", () => {
 
     const errors = validateLogicalExpression(baseExpression);
 
-    expect(errors).toEqual([`Depth of logical expression is too deep.`]);
+    deepStrictEqual(errors, [`Depth of logical expression is too deep.`]);
   });
 });

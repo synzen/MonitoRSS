@@ -1,4 +1,6 @@
 import { getNestedPrimitiveValue } from "./get-nested-primitive-value";
+import { describe, beforeEach, it } from "node:test";
+import { deepStrictEqual } from "node:assert";
 
 describe("getNestedPrimitiveValue", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,14 +20,14 @@ describe("getNestedPrimitiveValue", () => {
     obj.foo.bar.a = "1";
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual("1");
+    deepStrictEqual(val, "1");
   });
 
   it("returns nested numbers as strings", async () => {
     obj.foo.bar.a = 1;
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual("1");
+    deepStrictEqual(val, "1");
   });
 
   it("returns nested dates as strings", async () => {
@@ -33,7 +35,7 @@ describe("getNestedPrimitiveValue", () => {
     obj.foo.bar.a = date;
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual(date.toISOString());
+    deepStrictEqual(val, date.toISOString());
   });
 
   it("returns invalid dates as null", async () => {
@@ -41,42 +43,42 @@ describe("getNestedPrimitiveValue", () => {
     obj.foo.bar.a = date;
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual(null);
+    deepStrictEqual(val, null);
   });
 
   it("returns objects as null", async () => {
     obj.foo.bar.a = {};
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual(null);
+    deepStrictEqual(val, null);
   });
 
   it("returns arrays as null", async () => {
     obj.foo.bar.a = [];
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual(null);
+    deepStrictEqual(val, null);
   });
 
   it("returns non-existent fields as null", async () => {
     obj.foo = {};
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-    expect(val).toEqual(null);
+    deepStrictEqual(val, null);
   });
 
   it("returns array index values", async () => {
     obj.foo.bar.a = ["a", "b"];
 
     const val = getNestedPrimitiveValue(obj, "foo__bar__a__1");
-    expect(val).toEqual("b");
+    deepStrictEqual(val, "b");
   });
 
   it("returns null/undefined as null", async () => {
     obj.foo.bar.a = undefined;
-    expect(getNestedPrimitiveValue(obj, "foo__bar__a")).toEqual(null);
+    deepStrictEqual(getNestedPrimitiveValue(obj, "foo__bar__a"), null);
 
     obj.foo.bar.a = null;
-    expect(getNestedPrimitiveValue(obj, "foo__bar__a")).toEqual(null);
+    deepStrictEqual(getNestedPrimitiveValue(obj, "foo__bar__a"), null);
   });
 });

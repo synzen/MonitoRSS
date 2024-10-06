@@ -4,104 +4,160 @@ import {
   teardownIntegrationTests,
 } from "../src/shared/utils/setup-integration-tests";
 import { FeedEventHandlerService } from "../src/feed-event-handler/feed-event-handler.service";
-import { FeedArticleField } from "../src/articles/entities";
-import { EntityManager, EntityRepository } from "@mikro-orm/core";
-import { Interceptable, MockAgent, setGlobalDispatcher } from "undici";
-import { readFileSync } from "fs";
-import { join } from "path";
-import { ConfigService } from "@nestjs/config";
-import { FeedV2Event, MediumKey } from "../src/shared";
-
-const feedId = "feed-id";
-const feedHost = "https://feed.com";
-const feedPath = "/rss";
-
-const feedText = readFileSync(
-  join(__dirname, "data", "rss-2-feed.xml"),
-  "utf-8"
-);
+import {
+  Article,
+  ArticleDeliveryContentType,
+  ArticleDeliveryState,
+  ArticleDeliveryStatus,
+  ArticleDiscordFormatted,
+  FeedResponseRequestStatus,
+} from "../src/shared";
+import { describe, before, after, it, beforeEach } from "node:test";
+import { FeedFetcherService } from "../src/feed-fetcher/feed-fetcher.service";
+import { DiscordMediumService } from "../src/delivery/mediums/discord-medium.service";
+import { deepStrictEqual } from "assert";
+import testFeedV2Event from "./data/test-feed-v2-event";
+import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "./data/test-rss-feed";
+import { randomUUID } from "crypto";
 
 describe("App (e2e)", () => {
   let feedEventHandler: FeedEventHandlerService;
-  let configService: ConfigService;
-  let articlesRepo: EntityRepository<FeedArticleField>;
-  let client: Interceptable;
+  const feedFetcherService: FeedFetcherService = {
+    fetchWithGrpc: async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed(),
+      bodyHash: "bodyhash",
+    }),
+  } as never;
+  const discordMediumService = {
+    deliverArticle: async (article: ArticleDiscordFormatted) =>
+      [
+        {
+          id: article.flattened.id,
+          articleIdHash: article.flattened.idHash,
+          status: ArticleDeliveryStatus.Sent,
+          mediumId: "medium-id",
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+        },
+      ] as ArticleDeliveryState[],
+    formatArticle: async (article: Article) => article,
+    close: async () => ({}),
+  };
 
-  beforeAll(async () => {
-    const { init } = await setupIntegrationTests({
+  before(async () => {
+    const { uncompiledModule, init } = await setupIntegrationTests({
       imports: [AppModule.forFeedListenerService()],
     });
 
+    uncompiledModule
+      .overrideProvider(FeedFetcherService)
+      .useValue(feedFetcherService)
+      .overrideProvider(DiscordMediumService)
+      .useValue(discordMediumService);
+
     const { module } = await init();
     feedEventHandler = module.get(FeedEventHandlerService);
-    configService = module.get(ConfigService);
-    const em = module.get(EntityManager);
-    articlesRepo = em.getRepository(FeedArticleField);
   });
 
-  beforeEach(() => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
-    client = agent.get(
-      configService.getOrThrow("USER_FEEDS_FEED_REQUESTS_API_URL")
-    );
-    setGlobalDispatcher(agent);
-    jest.resetAllMocks();
-    jest.spyOn(console, "error").mockImplementation();
-  });
-
-  afterAll(async () => {
+  after(async () => {
     await teardownIntegrationTests();
   });
 
-  it("sends new articles", async () => {
-    const event: FeedV2Event = {
-      data: {
-        articleDayLimit: 1,
-        feed: {
-          id: feedId,
-          blockingComparisons: [],
-          passingComparisons: [],
-          url: feedHost + feedPath,
+  beforeEach(async () => {
+    await feedEventHandler.handleV2Event(testFeedV2Event);
+  });
+
+  it("sends new articles based on guid", async () => {
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: "new-article",
         },
-        mediums: [
-          {
-            id: "medium-id",
-            key: MediumKey.Discord,
-            filters: null,
-            details: {
-              guildId: "1",
-              channel: { id: "channel 1" },
-              content: "1",
-              embeds: [],
-              webhook: null,
-            },
-          },
-        ],
+      ]),
+      bodyHash: randomUUID(),
+    });
+
+    const results = await feedEventHandler.handleV2Event(testFeedV2Event);
+    deepStrictEqual(results?.length, 1);
+  });
+
+  it("does not send new articles if blocked by comparisons", async () => {
+    const feedEventWithBlockingComparisons = {
+      ...testFeedV2Event,
+      data: {
+        ...testFeedV2Event.data,
+        feed: {
+          ...testFeedV2Event.data.feed,
+          blockingComparisons: ["title"],
+        },
       },
     };
 
-    // Pre-initialize the database with articles of this feed
-    await articlesRepo.nativeInsert({
-      id: -1,
-      feed_id: feedId,
-      created_at: new Date(),
-      field_name: "id",
-      field_value: "some-random-id",
+    // Initialize the comparisons storage first
+    await feedEventHandler.handleV2Event(feedEventWithBlockingComparisons);
+
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: randomUUID(),
+          title: DEFAULT_TEST_ARTICLES[0].title,
+        },
+      ]),
+      bodyHash: randomUUID(),
     });
 
-    client
-      .intercept({
-        path: "/api/requests",
-        method: "POST",
-      })
-      .reply(200, {
-        requestStatus: "success",
-        response: {
-          body: feedText,
-        },
-      });
+    const results = await feedEventHandler.handleV2Event(
+      feedEventWithBlockingComparisons
+    );
 
-    await feedEventHandler.handleV2Event(event);
+    deepStrictEqual(results?.length, 0);
+  });
+
+  it("sends new articles based on passing comparisons", async () => {
+    const feedEventWithPassingComparisons = {
+      ...testFeedV2Event,
+      data: {
+        ...testFeedV2Event.data,
+        feed: {
+          ...testFeedV2Event.data.feed,
+          passingComparisons: ["title"],
+        },
+      },
+    };
+
+    const initialArticles = [
+      {
+        guid: randomUUID(),
+        title: DEFAULT_TEST_ARTICLES[0].title,
+      },
+    ];
+
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed(initialArticles),
+      bodyHash: randomUUID(),
+    });
+
+    // Initialize the comparisons storage first
+    await feedEventHandler.handleV2Event(feedEventWithPassingComparisons);
+
+    feedFetcherService.fetchWithGrpc = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: initialArticles[0].guid,
+          title: initialArticles[0].title + "-different",
+        },
+      ]),
+      bodyHash: randomUUID(),
+    });
+
+    const results = await feedEventHandler.handleV2Event(
+      feedEventWithPassingComparisons
+    );
+
+    deepStrictEqual(results?.length, 1);
   });
 });

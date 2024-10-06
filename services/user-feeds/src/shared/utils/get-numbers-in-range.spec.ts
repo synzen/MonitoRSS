@@ -1,15 +1,17 @@
 import { getNumbersInRange } from "./get-numbers-in-range";
+import { describe, it } from "node:test";
+import assert from "assert";
 
 describe("getNumbersInRange", () => {
   it("throws if max is less than min", () => {
-    expect(() => {
+    assert.throws(() => {
       getNumbersInRange({
         countToGet: 1,
         max: 1,
         min: 2,
         random: true,
       });
-    }).toThrow();
+    });
   });
 
   it("should return an array of numbers", () => {
@@ -19,7 +21,7 @@ describe("getNumbersInRange", () => {
       min: 1,
       random: true,
     });
-    expect(result).toEqual([1]);
+    assert.deepStrictEqual(result, [1]);
   });
 
   it("should return the correct number of numbers", () => {
@@ -30,7 +32,7 @@ describe("getNumbersInRange", () => {
       random: true,
     });
 
-    expect(result).toHaveLength(5);
+    assert.strictEqual(result.length, 5);
   });
 
   it("should return the correct numbers when random is true", () => {
@@ -41,9 +43,13 @@ describe("getNumbersInRange", () => {
       random: true,
     });
 
-    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).toEqual(
-      expect.arrayContaining(result)
-    );
+    const possibilities = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    assert.deepStrictEqual(result.length, 5);
+
+    result.forEach((num) => {
+      assert.deepStrictEqual(possibilities.includes(num), true);
+    });
   });
 
   it("should return the correct numbers when random is false", () => {
@@ -54,7 +60,7 @@ describe("getNumbersInRange", () => {
       random: false,
     });
 
-    expect(result).toEqual([1, 2, 3, 4, 5]);
+    assert.deepStrictEqual(result, [1, 2, 3, 4, 5]);
   });
 
   it(
@@ -68,7 +74,7 @@ describe("getNumbersInRange", () => {
         random: false,
       });
 
-      expect(result).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      assert.deepStrictEqual(result, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     }
   );
 });

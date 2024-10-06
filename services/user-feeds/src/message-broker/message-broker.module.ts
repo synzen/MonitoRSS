@@ -40,7 +40,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
   constructor(private readonly amqp: AmqpConnection) {}
 
   async onApplicationShutdown(signal?: string | undefined) {
-    logger.info(`Received ${signal}. Shutting down amqp connection...`);
+    logger.info(`Received signal ${signal}. Shutting down amqp connection...`);
 
     try {
       await this.amqp.managedConnection.close();

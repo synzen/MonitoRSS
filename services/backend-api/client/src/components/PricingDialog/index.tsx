@@ -25,14 +25,17 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { captureException } from "@sentry/react";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { ProductKey } from "../../constants";
 import { useSubscriptionProducts } from "../../features/subscriptionProducts";
-import { usePaddleCheckout } from "../../hooks/usePaddleCheckout";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../constants/externalPropertiesMaxArticles";
+import CheckoutSummary from "./CheckoutSummary";
+import { usePaddleContext } from "../../contexts/PaddleContext";
+import { PricePreview } from "../../types/PricePreview";
 
 interface Props {
   isOpen: boolean;
@@ -189,39 +192,26 @@ interface ChangeSubscriptionDetails {
 }
 
 export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Props) => {
-  const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
-  const {
-    status: userStatus,
-    error: userError,
-    data: userData,
-  } = useUserMe({
-    checkForSubscriptionCreated,
-  });
+  const { openCheckout, updateCheckout, getPricePreview, checkoutLoadedData, resetCheckoutData } =
+    usePaddleContext();
+  const [pricePreviewErrored, setPricePreviewErrored] = useState(false);
+  const [isLoadingPricePreview, setIsLoadingPricePreview] = useState(true);
+  const [products, setProducts] = useState<Array<PricePreview>>();
+  const { status: userStatus, error: userError, data: userData } = useUserMe();
+  const [checkingOutPriceId, setCheckingOutPriceId] = useState<string>();
   const [interval, setInterval] = useState<"month" | "year">(initialInterval);
   const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
-  const paidSubscriptionExists =
-    userData && userData?.result.subscription.product.key !== ProductKey.Free;
   const userBillingInterval = userData?.result.subscription.billingInterval;
   const billingPeriodEndsAt = userData?.result.subscription.billingPeriod?.end;
-
-  const onCheckoutSuccess = () => {
-    setCheckForSubscriptionCreated(true);
-  };
-
-  const {
-    openCheckout,
-    pricePreview: products,
-    isLoadingPricePreview,
-    pricePreviewErrored,
-  } = usePaddleCheckout({
-    onCheckoutSuccess,
-    priceIds: !isOpen
-      ? undefined
-      : subProducts?.data.products.flatMap((p) => p.prices.map((pr) => pr.id)),
-  });
   const initialFocusRef = useRef<HTMLInputElement>(null);
+
+  const onClosePricingModal = () => {
+    setCheckingOutPriceId(undefined);
+    resetCheckoutData();
+    onClose();
+  };
 
   const onChangeInterval = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -241,6 +231,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
     onClose();
 
     if (userData.result.subscription.product.key === ProductKey.Free) {
+      setCheckingOutPriceId(priceId);
       openCheckout({
         priceId,
       });
@@ -272,16 +263,46 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
   }, [isLoadingPricePreview, initialFocusRef.current]);
 
   useEffect(() => {
-    if (checkForSubscriptionCreated && paidSubscriptionExists) {
-      setCheckForSubscriptionCreated(false);
-    }
-  }, [checkForSubscriptionCreated, paidSubscriptionExists]);
-
-  useEffect(() => {
     if (userBillingInterval) {
       setInterval(userBillingInterval);
     }
   }, [userBillingInterval]);
+
+  useEffect(() => {
+    if (!checkoutLoadedData) {
+      setCheckingOutPriceId(undefined);
+    }
+  }, [!!checkoutLoadedData]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    async function execute() {
+      if (!subProducts) {
+        return;
+      }
+
+      try {
+        setIsLoadingPricePreview(true);
+        const pricePreview = await getPricePreview(
+          subProducts.data.products.flatMap((p) =>
+            p.prices.map((pr) => pr.id).filter((pr) => pr.startsWith("pri_"))
+          )
+        );
+
+        setProducts(pricePreview);
+      } catch (err) {
+        setPricePreviewErrored(true);
+        captureException(err);
+      } finally {
+        setIsLoadingPricePreview(false);
+      }
+    }
+
+    execute();
+  }, [!!subProducts, isOpen]);
 
   const biggestPriceLength = products
     ? Math.max(
@@ -295,31 +316,43 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
   const priceTextSize = getIdealPriceTextSize(biggestPriceLength);
   const userSubscription = userData?.result.subscription;
   const userTierIndex = tiers?.findIndex((p) => p.productId === userSubscription?.product.key);
-
-  if (checkForSubscriptionCreated) {
-    return (
-      <Stack
-        backdropFilter="blur(3px)"
-        alignItems="center"
-        justifyContent="center"
-        height="100vh"
-        position="absolute"
-        background="blackAlpha.700"
-        top={0}
-        left={0}
-        width="100vw"
-        zIndex={10}
-      >
-        <Spinner />
-        <Text>Provisioning benefits...</Text>
-      </Stack>
-    );
-  }
-
   const failedToLoadPrices = pricePreviewErrored || subProductsError || userError;
+
+  console.log("🚀 ~ PricingDialog ~ checkingOutPriceId:", checkingOutPriceId);
 
   return (
     <Box>
+      <Box display={checkingOutPriceId ? "block" : "none"}>
+        <CheckoutSummary
+          onChangeInterval={(newInterval) => {
+            const product = subProducts?.data.products.find((p) =>
+              p.prices.find((pr) => pr.id === checkingOutPriceId)
+            );
+
+            if (!product) {
+              return;
+            }
+
+            const price = product.prices.find((pr) => pr.interval === newInterval);
+
+            if (!price) {
+              return;
+            }
+
+            updateCheckout({
+              priceId: price.id,
+            });
+          }}
+          checkoutData={checkoutLoadedData}
+          onClose={() => {
+            setCheckingOutPriceId(undefined);
+          }}
+          onGoBack={() => {
+            setCheckingOutPriceId(undefined);
+            onOpen();
+          }}
+        />
+      </Box>
       <ChangeSubscriptionDialog
         products={products}
         isDowngrade={changeSubscriptionDetails?.isDowngrade}
@@ -340,7 +373,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
         }}
       />
       <Modal
-        onClose={onClose}
+        onClose={onClosePricingModal}
         isOpen={isOpen}
         isCentered
         size="6xl"

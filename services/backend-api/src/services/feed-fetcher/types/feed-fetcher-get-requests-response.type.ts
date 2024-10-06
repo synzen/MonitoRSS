@@ -7,6 +7,7 @@ import {
   IsObject,
   IsOptional,
   IsPositive,
+  IsString,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
@@ -24,9 +25,8 @@ class Request {
   @Type(() => Number)
   createdAt: number;
 
-  @IsNumber()
-  @Type(() => Number)
-  id: number;
+  @IsString()
+  id: string;
 
   @IsIn(Object.values(FeedFetcherRequestStatus))
   status: FeedFetcherRequestStatus;

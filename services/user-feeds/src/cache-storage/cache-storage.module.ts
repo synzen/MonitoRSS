@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, OnApplicationShutdown } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { CacheStorageService } from "./cache-storage.service";
 import { RedisClient } from "./constants/redis-client.constant";
@@ -56,4 +56,18 @@ import logger from "../shared/utils/logger";
   ],
   exports: [CacheStorageService],
 })
-export class CacheStorageModule {}
+export class CacheStorageModule implements OnApplicationShutdown {
+  constructor(private readonly cacheStorageService: CacheStorageService) {}
+
+  async onApplicationShutdown() {
+    try {
+      await this.cacheStorageService.closeClient();
+
+      logger.info(`Successfully closed redis client`);
+    } catch (err) {
+      logger.error("Failed to close redis client", {
+        error: (err as Error).stack,
+      });
+    }
+  }
+}

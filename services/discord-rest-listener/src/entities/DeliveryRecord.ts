@@ -27,8 +27,15 @@ class DeliveryRecord {
   @Property()
   feedURL: string;
 
-  @Property()
-  channel: string;
+  @Property({
+    nullable: true,
+  })
+  channel?: string;
+
+  @Property({
+    nullable: true
+  })
+  webhookId?: string;
 
   @Property()
   delivered: boolean;
@@ -51,12 +58,13 @@ class DeliveryRecord {
   constructor(data: {
     articleID: string,
     feedURL: string,
-    channel: string,
+    channel?: string,
     deliveryId: string,
     executionTimeSeconds: number,
     feedId: string
+    webhookId?: string
   }, delivered: boolean) {
-    const { deliveryId, articleID, channel, feedURL, executionTimeSeconds, feedId } = data
+    const { deliveryId, articleID, channel, feedURL, executionTimeSeconds, feedId, webhookId } = data
     this.articleID = articleID
     this.feedURL = feedURL
     this.channel = channel
@@ -64,6 +72,7 @@ class DeliveryRecord {
     this.deliveryId = deliveryId
     this.executionTimeSeconds = executionTimeSeconds
     this.feedId = feedId
+    this.webhookId = webhookId
   }
 }
 

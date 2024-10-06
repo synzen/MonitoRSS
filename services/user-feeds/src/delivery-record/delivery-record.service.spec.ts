@@ -3,7 +3,6 @@ import { EntityRepository } from "@mikro-orm/postgresql";
 import {
   ArticleDeliveryContentType,
   ArticleDeliveryErrorCode,
-  ArticleDeliveryRejectedCode,
   ArticleDeliveryState,
   ArticleDeliveryStatus,
   clearDatabase,
@@ -13,12 +12,14 @@ import {
 import { DeliveryRecordService } from "./delivery-record.service";
 import { DeliveryRecord } from "./entities";
 import dayjs from "dayjs";
+import { describe, it, afterEach, before, after } from "node:test";
+import { deepStrictEqual } from "node:assert";
 
 describe("DeliveryRecordService", () => {
   let service: DeliveryRecordService;
   let deliveryRecordRepo: EntityRepository<DeliveryRecord>;
 
-  beforeAll(async () => {
+  before(async () => {
     const { init } = await setupIntegrationTests(
       {
         providers: [DeliveryRecordService],
@@ -40,12 +41,12 @@ describe("DeliveryRecordService", () => {
     await clearDatabase();
   });
 
-  afterAll(async () => {
+  after(async () => {
     await teardownIntegrationTests();
   });
 
   it("should be defined", () => {
-    expect(service).toBeDefined();
+    deepStrictEqual(typeof service, "object");
   });
 
   describe("store", () => {
@@ -69,13 +70,16 @@ describe("DeliveryRecordService", () => {
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(2);
+      deepStrictEqual(records.length, 2);
+
       const ids = records.map((record) => record.id);
-      expect(ids).toEqual(["1", "2"]);
+      deepStrictEqual(ids, ["1", "2"]);
+
       const feedIds = records.map((record) => record.feed_id);
-      expect(feedIds).toEqual([feedId, feedId]);
+      deepStrictEqual(feedIds, [feedId, feedId]);
+
       const statuses = records.map((record) => record.status);
-      expect(statuses).toEqual([
+      deepStrictEqual(statuses, [
         ArticleDeliveryStatus.Sent,
         ArticleDeliveryStatus.Sent,
       ]);
@@ -105,23 +109,35 @@ describe("DeliveryRecordService", () => {
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(2);
-      expect(records).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Failed,
-            error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-            internal_message: "internal-message",
-          }),
-          expect.objectContaining({
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Failed,
-            error_code: ArticleDeliveryErrorCode.Internal,
-            internal_message: "internal-message-2",
-          }),
-        ])
+      deepStrictEqual(records.length, 2);
+
+      const noChannelOrWebhookRecord = records.find(
+        (record) =>
+          record.error_code === ArticleDeliveryErrorCode.NoChannelOrWebhook
       );
+
+      deepStrictEqual(
+        noChannelOrWebhookRecord?.internal_message,
+        "internal-message"
+      );
+      deepStrictEqual(
+        noChannelOrWebhookRecord.status,
+        ArticleDeliveryStatus.Failed
+      );
+      deepStrictEqual(noChannelOrWebhookRecord.feed_id, feedId);
+      deepStrictEqual(noChannelOrWebhookRecord.article_id_hash, "hash");
+
+      const internalErrorRecord = records.find(
+        (record) => record.error_code === ArticleDeliveryErrorCode.Internal
+      );
+
+      deepStrictEqual(
+        internalErrorRecord?.internal_message,
+        "internal-message-2"
+      );
+      deepStrictEqual(internalErrorRecord.status, ArticleDeliveryStatus.Failed);
+      deepStrictEqual(internalErrorRecord.feed_id, feedId);
+      deepStrictEqual(internalErrorRecord.article_id_hash, "hash2");
     });
 
     it("stores rejected articles correctly", async () => {
@@ -131,40 +147,46 @@ describe("DeliveryRecordService", () => {
           id: "1",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
           internalMessage: "internal-message",
           articleIdHash: "hash",
+          externalDetail: "",
         },
         {
           id: "2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Rejected,
-          errorCode: ArticleDeliveryRejectedCode.BadRequest,
+          errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
           internalMessage: "internal-message-2",
           articleIdHash: "hash2",
+          externalDetail: "",
         },
       ];
       await service.store(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(2);
-      expect(records).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Rejected,
-            error_code: ArticleDeliveryRejectedCode.BadRequest,
-            internal_message: "internal-message",
-          }),
-          expect.objectContaining({
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Rejected,
-            error_code: ArticleDeliveryRejectedCode.BadRequest,
-            internal_message: "internal-message-2",
-          }),
-        ])
+      deepStrictEqual(records.length, 2);
+
+      const record1 = records.find((record) => record.id === "1");
+      deepStrictEqual(record1?.status, ArticleDeliveryStatus.Rejected);
+      deepStrictEqual(
+        record1?.error_code,
+        ArticleDeliveryErrorCode.ThirdPartyBadRequest
       );
+      deepStrictEqual(record1?.internal_message, "internal-message");
+      deepStrictEqual(record1?.feed_id, feedId);
+      deepStrictEqual(record1?.article_id_hash, "hash");
+
+      const record2 = records.find((record) => record.id === "2");
+      deepStrictEqual(record2?.status, ArticleDeliveryStatus.Rejected);
+      deepStrictEqual(
+        record2?.error_code,
+        ArticleDeliveryErrorCode.ThirdPartyBadRequest
+      );
+      deepStrictEqual(record2?.internal_message, "internal-message-2");
+      deepStrictEqual(record2?.feed_id, feedId);
+      deepStrictEqual(record2?.article_id_hash, "hash2");
     });
 
     it("stores pending delivery states correctly", async () => {
@@ -190,18 +212,25 @@ describe("DeliveryRecordService", () => {
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(2);
-      expect(records).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: "id-1",
-            status: ArticleDeliveryStatus.PendingDelivery,
-          }),
-          expect.objectContaining({
-            id: "id-2",
-            status: ArticleDeliveryStatus.PendingDelivery,
-          }),
-        ])
+      deepStrictEqual(records.length, 2);
+
+      const record1 = records.find((record) => record.id === "id-1");
+      deepStrictEqual(record1?.status, ArticleDeliveryStatus.PendingDelivery);
+      deepStrictEqual(record1?.feed_id, feedId);
+      deepStrictEqual(record1?.article_id_hash, "hash");
+      deepStrictEqual(
+        record1?.content_type,
+        ArticleDeliveryContentType.DiscordArticleMessage
+      );
+
+      const record2 = records.find((record) => record.id === "id-2");
+      deepStrictEqual(record2?.status, ArticleDeliveryStatus.PendingDelivery);
+      deepStrictEqual(record2?.feed_id, feedId);
+      deepStrictEqual(record2?.article_id_hash, "hash2");
+      deepStrictEqual(record2?.parent?.id, "id-1");
+      deepStrictEqual(
+        record2?.content_type,
+        ArticleDeliveryContentType.DiscordArticleMessage
       );
     });
 
@@ -213,31 +242,31 @@ describe("DeliveryRecordService", () => {
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
           articleIdHash: "hash",
+          externalDetail: "",
         },
         {
           id: "id-2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.FilteredOut,
           articleIdHash: "hash2",
+          externalDetail: "",
         },
       ];
       await service.store(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
-      expect(records).toHaveLength(2);
-      expect(records).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.FilteredOut,
-          }),
-          expect.objectContaining({
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.FilteredOut,
-          }),
-        ])
-      );
+      deepStrictEqual(records.length, 2);
+
+      const record1 = records.find((record) => record.id === "id-1");
+      deepStrictEqual(record1?.status, ArticleDeliveryStatus.FilteredOut);
+      deepStrictEqual(record1?.feed_id, feedId);
+      deepStrictEqual(record1?.article_id_hash, "hash");
+
+      const record2 = records.find((record) => record.id === "id-2");
+      deepStrictEqual(record2?.status, ArticleDeliveryStatus.FilteredOut);
+      deepStrictEqual(record2?.feed_id, feedId);
+      deepStrictEqual(record2?.article_id_hash, "hash2");
     });
   });
 
@@ -262,12 +291,13 @@ describe("DeliveryRecordService", () => {
         }
       );
 
-      expect(updatedRecord).toMatchObject({
-        id: existingRecord.id,
-        status: ArticleDeliveryStatus.Failed,
-        error_code: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-        internal_message: "internal-message",
-      });
+      deepStrictEqual(updatedRecord.status, ArticleDeliveryStatus.Failed);
+      deepStrictEqual(
+        updatedRecord.error_code,
+        ArticleDeliveryErrorCode.NoChannelOrWebhook
+      );
+      deepStrictEqual(updatedRecord.internal_message, "internal-message");
+      deepStrictEqual(updatedRecord.feed_id, "feed-id");
     });
 
     it("updates the status of a delivery record", async () => {
@@ -290,11 +320,12 @@ describe("DeliveryRecordService", () => {
         existingRecord.id
       );
 
-      expect(updatedRecord.status).toEqual(ArticleDeliveryStatus.Failed);
-      expect(updatedRecord.error_code).toEqual(
+      deepStrictEqual(updatedRecord.status, ArticleDeliveryStatus.Failed);
+      deepStrictEqual(
+        updatedRecord.error_code,
         ArticleDeliveryErrorCode.NoChannelOrWebhook
       );
-      expect(updatedRecord.internal_message).toEqual("internal-message");
+      deepStrictEqual(updatedRecord.internal_message, "internal-message");
     });
   });
 
@@ -348,7 +379,7 @@ describe("DeliveryRecordService", () => {
         60 * 60 * 2 // 2 hours
       );
 
-      expect(count).toBe(2);
+      deepStrictEqual(count, 2);
     });
   });
 
@@ -401,7 +432,7 @@ describe("DeliveryRecordService", () => {
       60 * 60 * 2 // 2 hours
     );
 
-    expect(count).toBe(2);
+    deepStrictEqual(count, 2);
   });
 
   it("returns the correct number with duplicate article id hashes with medium id", async () => {
@@ -453,6 +484,6 @@ describe("DeliveryRecordService", () => {
       60 * 60 * 2 // 2 hours
     );
 
-    expect(count).toBe(2);
+    deepStrictEqual(count, 2);
   });
 });

@@ -1,4 +1,6 @@
 import { replaceTemplateString } from "./replace-template-string";
+import { describe, it } from "node:test";
+import { deepStrictEqual, throws } from "node:assert";
 
 describe("replaceTemplateString", () => {
   it("returns the input if the string is falsy", () => {
@@ -8,7 +10,7 @@ describe("replaceTemplateString", () => {
       },
       undefined
     );
-    expect(str).toEqual(undefined);
+    deepStrictEqual(str, undefined);
   });
 
   it("replaces {{empty}} with empty text", () => {
@@ -19,7 +21,7 @@ describe("replaceTemplateString", () => {
     const str = "{{empty}}";
     const outputStr = replaceTemplateString(object, str);
 
-    expect(outputStr).toEqual("");
+    deepStrictEqual(outputStr, "");
   });
 
   it("replaces top-level values", () => {
@@ -31,7 +33,7 @@ describe("replaceTemplateString", () => {
     const str = "foo: {{foo}}, bar: {{bar}}";
     const outputStr = replaceTemplateString(object, str);
 
-    expect(outputStr).toEqual("foo: 1, bar: 2");
+    deepStrictEqual(outputStr, "foo: 1, bar: 2");
   });
 
   it("replaces all instances", () => {
@@ -43,7 +45,7 @@ describe("replaceTemplateString", () => {
     const str = "foo: {{foo}}, bar: {{bar}}, foo: {{foo}}";
     const outputStr = replaceTemplateString(object, str);
 
-    expect(outputStr).toEqual("foo: 1, bar: 2, foo: 1");
+    deepStrictEqual(outputStr, "foo: 1, bar: 2, foo: 1");
   });
 
   it("throws an error when object values are not strings", () => {
@@ -53,7 +55,7 @@ describe("replaceTemplateString", () => {
     };
 
     const str = "foo: {{foo}}, bar: {{bar}}";
-    expect(() => replaceTemplateString(object as never, str)).toThrowError();
+    throws(() => replaceTemplateString(object as never, str), Error);
   });
 
   it("works with split options", () => {
@@ -62,7 +64,7 @@ describe("replaceTemplateString", () => {
     };
 
     const str = "foo: {{foo}}";
-    expect(
+    deepStrictEqual(
       replaceTemplateString(object as never, str, {
         split: {
           func: (str, { appendString }) => str.slice(0, 1) + appendString,
@@ -74,8 +76,9 @@ describe("replaceTemplateString", () => {
             },
           ],
         },
-      })
-    ).toEqual("foo: a...");
+      }),
+      "foo: a..."
+    );
   });
 
   it("works with || when there is no fallback support", () => {
@@ -84,7 +87,7 @@ describe("replaceTemplateString", () => {
     };
 
     const str = "foo: {{foo||bar}}";
-    expect(replaceTemplateString(object, str)).toEqual("foo: 2");
+    deepStrictEqual(replaceTemplateString(object, str), "foo: 2");
   });
 
   describe("with fallback support", () => {
@@ -94,11 +97,12 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar}}";
-      expect(
+      deepStrictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toEqual("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
 
     it("works with multiple fallbacks", () => {
@@ -107,22 +111,24 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar||baz}}";
-      expect(
+      deepStrictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toEqual("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
 
     it("works with text fallback", () => {
       const object = {};
 
       const str = "foo: {{foo||bar||text::hello world}}";
-      expect(
+      deepStrictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toEqual("foo: hello world");
+        }),
+        "foo: hello world"
+      );
     });
 
     it("stops at the first available fallback", () => {
@@ -132,11 +138,12 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar||baz}}";
-      expect(
+      deepStrictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toEqual("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
 
     it("stops at the first available fallback", () => {
@@ -146,11 +153,12 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar||baz}}";
-      expect(
+      deepStrictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toEqual("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
   });
 });

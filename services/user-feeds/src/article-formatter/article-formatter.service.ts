@@ -13,6 +13,10 @@ import {
 import vm from "node:vm";
 import { CustomPlaceholderRegexEvalException } from "../shared/exceptions";
 import dayjs from "dayjs";
+import tz from "dayjs/plugin/timezone";
+
+// Add for tests to import this file exclusively
+dayjs.extend(tz);
 
 @Injectable()
 export class ArticleFormatterService {
