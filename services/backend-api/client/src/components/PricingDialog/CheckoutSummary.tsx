@@ -186,7 +186,10 @@ const CheckoutSummary = ({ onClose, onGoBack, checkoutData, onChangeInterval }: 
                   <Tr>
                     <Td py={2} px="0">
                       <Text fontSize="sm" color="whiteAlpha.700">
-                        Next charge on {expirationFormatted}
+                        Next charge on{" "}
+                        <Skeleton display="inline" isLoaded={isLoaded}>
+                          {expirationFormatted}
+                        </Skeleton>
                       </Text>
                     </Td>
                     <Td py={2} px="0" isNumeric textAlign="end">
