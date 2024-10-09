@@ -653,7 +653,19 @@ export class UserFeedsService {
     return this.feedHandlerService.getDeliveryLogs(feedId, { limit, skip });
   }
 
-  async updateFeedById(id: string, updates: UpdateFeedInput) {
+  async updateFeedById(
+    { id, disabledCode }: { id: string; disabledCode?: UserFeedDisabledCode },
+    updates: UpdateFeedInput
+  ) {
+    let userBenefits: Awaited<
+      ReturnType<typeof this.supportersService.getBenefitsOfDiscordUser>
+    > | null = null;
+
+    const foundUser = await this.userFeedModel
+      .findById(new Types.ObjectId(id))
+      .select("user")
+      .lean();
+
     const useUpdateObject: UpdateQuery<UserFeedDocument> = {
       $set: {},
       $unset: {
@@ -674,6 +686,34 @@ export class UserFeedsService {
     }
 
     if (updates.disabledCode) {
+      if (!foundUser) {
+        throw new Error(`User ${id} not found while updating refresh rate`);
+      }
+
+      if (!userBenefits) {
+        userBenefits = await this.supportersService.getBenefitsOfDiscordUser(
+          foundUser.user.discordUserId
+        );
+      }
+
+      if (
+        updates.disabledCode === null &&
+        disabledCode === UserFeedDisabledCode.ExceededFeedLimit
+      ) {
+        const currentFeedCount = await this.userFeedModel.countDocuments({
+          "user.discordUserId": foundUser.user.discordUserId,
+          disabledCode: {
+            $ne: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+        });
+
+        if (userBenefits.maxUserFeeds <= currentFeedCount) {
+          throw new FeedLimitReachedException(
+            `Cannot enable feed ${id} because user ${foundUser.user.discordUserId} has reached the feed limit`
+          );
+        }
+      }
+
       useUpdateObject.$set!.disabledCode = updates.disabledCode;
     }
 
@@ -702,19 +742,17 @@ export class UserFeedsService {
     }
 
     if (updates.userRefreshRateSeconds) {
-      const found = await this.userFeedModel
-        .findById(new Types.ObjectId(id))
-        .select("user")
-        .lean();
-
-      if (!found) {
-        throw new Error(`Feed ${id} not found while updating refresh rate`);
+      if (!foundUser) {
+        throw new Error(`User ${id} not found while updating refresh rate`);
       }
 
-      const { refreshRateSeconds: fastestPossibleRate } =
-        await this.supportersService.getBenefitsOfDiscordUser(
-          found.user.discordUserId
+      if (!userBenefits) {
+        userBenefits = await this.supportersService.getBenefitsOfDiscordUser(
+          foundUser.user.discordUserId
         );
+      }
+
+      const { refreshRateSeconds: fastestPossibleRate } = userBenefits;
 
       if (
         updates.userRefreshRateSeconds === null ||
@@ -729,7 +767,7 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds < fastestPossibleRate
       ) {
         throw new Error(
-          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${found.user.discordUserId}`
+          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${foundUser.user.discordUserId}`
         );
       } else {
         useUpdateObject.$set!.userRefreshRateSeconds =

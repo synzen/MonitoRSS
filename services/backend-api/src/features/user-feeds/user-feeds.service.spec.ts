@@ -617,7 +617,10 @@ describe("UserFeedsService", () => {
         .mockResolvedValue({} as never);
 
       await expect(
-        service.updateFeedById(feed._id.toHexString(), updateBody)
+        service.updateFeedById(
+          { disabledCode: undefined, id: feed._id.toHexString() },
+          updateBody
+        )
       ).rejects.toThrow(BannedFeedException);
     });
 
@@ -626,7 +629,10 @@ describe("UserFeedsService", () => {
       jest.spyOn(feedFetcherService, "fetchFeed").mockRejectedValue(err);
 
       await expect(
-        service.updateFeedById(feed._id.toHexString(), updateBody)
+        service.updateFeedById(
+          { disabledCode: undefined, id: feed._id.toHexString() },
+          updateBody
+        )
       ).rejects.toThrow(err);
     });
 
@@ -636,7 +642,7 @@ describe("UserFeedsService", () => {
         .mockResolvedValue({} as never);
 
       const entity = await service.updateFeedById(
-        feed._id.toHexString(),
+        { disabledCode: undefined, id: feed._id.toHexString() },
         updateBody
       );
 
@@ -651,9 +657,12 @@ describe("UserFeedsService", () => {
     });
 
     it("unsets the refresh rate seconds if it is the original", async () => {
-      await service.updateFeedById(feed._id.toHexString(), {
-        userRefreshRateSeconds: userRefreshRateSeconds,
-      });
+      await service.updateFeedById(
+        { disabledCode: undefined, id: feed._id.toHexString() },
+        {
+          userRefreshRateSeconds: userRefreshRateSeconds,
+        }
+      );
 
       const found = await userFeedModel.findById(feed._id).lean();
 
@@ -661,9 +670,12 @@ describe("UserFeedsService", () => {
     });
 
     it("sets the refresh rate seconds if it is slower than the original", async () => {
-      await service.updateFeedById(feed._id.toHexString(), {
-        userRefreshRateSeconds: userRefreshRateSeconds + 100,
-      });
+      await service.updateFeedById(
+        { disabledCode: undefined, id: feed._id.toHexString() },
+        {
+          userRefreshRateSeconds: userRefreshRateSeconds + 100,
+        }
+      );
 
       const found = await userFeedModel.findById(feed._id).lean();
 
@@ -672,16 +684,22 @@ describe("UserFeedsService", () => {
 
     it("throws if the refresh rate seconds is faster than the original", async () => {
       await expect(
-        service.updateFeedById(feed._id.toHexString(), {
-          userRefreshRateSeconds: userRefreshRateSeconds - 100,
-        })
+        service.updateFeedById(
+          { disabledCode: undefined, id: feed._id.toHexString() },
+          {
+            userRefreshRateSeconds: userRefreshRateSeconds - 100,
+          }
+        )
       ).rejects.toThrowError();
     });
 
     it("sets null disabled code correctly", async () => {
-      await service.updateFeedById(feed._id.toHexString(), {
-        disabledCode: null,
-      });
+      await service.updateFeedById(
+        { disabledCode: undefined, id: feed._id.toHexString() },
+        {
+          disabledCode: null,
+        }
+      );
 
       const found = await userFeedModel.findById(feed._id).lean();
 
@@ -690,7 +708,10 @@ describe("UserFeedsService", () => {
     });
 
     it("does not update anything if no updates are provided", async () => {
-      const entity = await service.updateFeedById(feed._id.toHexString(), {});
+      const entity = await service.updateFeedById(
+        { disabledCode: undefined, id: feed._id.toHexString() },
+        {}
+      );
 
       expect(entity).toMatchObject({
         _id: feed._id,

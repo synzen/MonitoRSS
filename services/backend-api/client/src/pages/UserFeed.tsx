@@ -372,7 +372,7 @@ export const UserFeed: React.FC = () => {
                                 error={updateError?.message}
                               />
                             )}
-                            {feed && !feed.disabledCode && (
+                            {feed && feed.disabledCode !== UserFeedDisabledCode.Manual && (
                               <ConfirmModal
                                 title={t("pages.userFeed.disableFeedConfirmTitle")}
                                 description={t("pages.userFeed.disableFeedConfirmDescription")}

@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -399,12 +398,8 @@ export class UserFeedsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
   ): Promise<UpdateUserFeedOutputDto> {
-    if (disabledCode && feed.disabledCode) {
-      throw new ForbiddenException("Feed is already disabled");
-    }
-
     const updated = (await this.userFeedsService.updateFeedById(
-      feed._id.toHexString(),
+      { id: feed._id.toHexString(), disabledCode: feed.disabledCode },
       {
         title,
         url,
