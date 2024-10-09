@@ -154,7 +154,7 @@ async function schedulePruneAndCreatePartitions(app) {
         );
         process.exit(1);
       });
-  }, 60000);
+  }, 60000 * 24);
 }
 
 bootstrap();

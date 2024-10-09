@@ -11,7 +11,6 @@ import dayjs from "dayjs";
 import { MikroORM } from "@mikro-orm/core";
 import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
-import { randomUUID } from "crypto";
 
 const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
   ArticleDeliveryStatus;
@@ -33,7 +32,7 @@ export class DeliveryRecordService {
       const { status: articleStatus } = articleState;
 
       let record: DeliveryRecord;
-      const recordId = randomUUID();
+      const recordId = articleState.id;
 
       if (articleStatus === Sent) {
         record = new DeliveryRecord({
