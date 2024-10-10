@@ -257,7 +257,8 @@ export class MessageBrokerEventsService {
 
     const relevantFeeds = await this.userFeedModel
       .find({
-        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+        // ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
+        url: lookupKey || url,
         disabledCode: {
           $exists: false,
         },
