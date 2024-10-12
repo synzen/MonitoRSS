@@ -6,13 +6,13 @@ import { INestApplicationContext } from "@nestjs/common";
 async function pruneAndCreatePartitions(app: INestApplicationContext) {
   const orm = app.get(MikroORM);
   const connection = orm.em.getConnection();
-  const twoMonthsAgoDate = dayjs().subtract(2, "month");
+  const sixMonthsAgoDate = dayjs().subtract(6, "month");
   const nextMonthDate = dayjs().add(1, "month");
   const nextNextMonthDate = dayjs().add(2, "month");
 
   try {
-    const tableNameToDrop = `feed_article_field_partitioned_y${twoMonthsAgoDate.year()}m${
-      twoMonthsAgoDate.month() + 1
+    const tableNameToDrop = `feed_article_field_partitioned_y${sixMonthsAgoDate.year()}m${
+      sixMonthsAgoDate.month() + 1
     }`;
 
     const dropResult = await connection.execute(

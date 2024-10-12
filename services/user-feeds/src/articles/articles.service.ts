@@ -66,7 +66,7 @@ export class ArticlesService {
     private readonly partitionedFieldStoreService: PartitionedFeedArticleFieldStoreService,
     private readonly configService: ConfigService
   ) {
-    this.usePartitionedTables = false;
+    this.usePartitionedTables = true;
   }
 
   async doFeedArticlesExistInCache(data: {
