@@ -5,14 +5,14 @@ import { ArticleParserModule } from "../article-parser/article-parser.module";
 import { CacheStorageModule } from "../cache-storage/cache-storage.module";
 import { FeedFetcherModule } from "../feed-fetcher/feed-fetcher.module";
 import { ArticlesService } from "./articles.service";
-import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
+import { FeedArticleCustomComparison } from "./entities";
 import { PartitionedFeedArticleFieldStoreService } from "./partitioned-feed-article-field-store.service";
 
 @Module({
   controllers: [],
   providers: [ArticlesService, PartitionedFeedArticleFieldStoreService],
   imports: [
-    MikroOrmModule.forFeature([FeedArticleField, FeedArticleCustomComparison]),
+    MikroOrmModule.forFeature([FeedArticleCustomComparison]),
     ArticleParserModule,
     FeedFetcherModule,
     CacheStorageModule,
