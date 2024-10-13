@@ -542,8 +542,6 @@ export class ArticlesService {
 
     try {
       await this.orm.em.transactional(async (em) => {
-        em.persist(fieldsToSave);
-
         await this.partitionedFieldStoreService.persist(fieldsToSave, em);
 
         await this.storeArticleComparisons(
