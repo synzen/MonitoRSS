@@ -1,5 +1,4 @@
 import { Box, FormErrorMessage, FormHelperText } from "@chakra-ui/react";
-import { useTranslation } from "react-i18next";
 import { FiHash, FiMessageCircle } from "react-icons/fi";
 import { BsMegaphoneFill } from "react-icons/bs";
 import { ThemedSelect } from "@/components";

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getServerChannels, GetServerChannelsOutput } from "../api";
@@ -23,7 +23,10 @@ export const useDiscordServerChannels = ({ serverId, include }: Props) => {
     },
   ];
 
-  const { data, status, error, isFetching } = useQuery<GetServerChannelsOutput, ApiAdapterError>(
+  const { data, status, error, isFetching, refetch } = useQuery<
+    GetServerChannelsOutput,
+    ApiAdapterError
+  >(
     queryKey,
     async () => {
       if (!serverId) {
@@ -38,12 +41,26 @@ export const useDiscordServerChannels = ({ serverId, include }: Props) => {
     {
       enabled: !!accessData?.result.authorized && !hadError && !!serverId,
       onError: () => setHadError(true),
-      /**
-       * New channels may be created when window is out-of-focus
-       */
-      refetchOnWindowFocus: true,
     }
   );
+
+  // New channels may be created when window is out-of-focus
+  // react-query's built-in refetchOnWindowFocus isn't working as expected
+  useEffect(() => {
+    function onFocus() {
+      if (isFetching) {
+        return;
+      }
+
+      refetch();
+    }
+
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [refetch, isFetching]);
 
   return {
     data,
