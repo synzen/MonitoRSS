@@ -73,6 +73,10 @@ export class EnvironmentVariables {
 
   @IsString()
   USER_FEEDS_REDIS_URI: string;
+
+  @IsBoolean()
+  @IsOptional()
+  USER_FEEDS_USE_PARTITIONED_TABLES?: boolean;
 }
 
 export function validateConfig(

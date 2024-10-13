@@ -58,6 +58,8 @@ export function config(options?: {
     USER_FEEDS_REDIS_DISABLE_CLUSTER:
       process.env.USER_FEEDS_REDIS_DISABLE_CLUSTER === "true",
     USER_FEEDS_REDIS_URI: process.env.USER_FEEDS_REDIS_URI as string,
+    USER_FEEDS_USE_PARTITIONED_TABLES:
+      process.env.USER_FEEDS_USE_PARTITIONED_TABLES === "true",
   } as const;
 
   if (!options?.skipValidation) {

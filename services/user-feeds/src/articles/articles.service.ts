@@ -1,7 +1,8 @@
+/* eslint-disable max-len */
 import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
-import { FeedArticleCustomComparison, FeedArticleField } from "./entities";
+import { FeedArticleCustomComparison } from "./entities";
 import FeedParser, { Item } from "feedparser";
 import { ArticleIDResolver } from "./utils";
 import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
@@ -31,6 +32,9 @@ import { deflate, inflate } from "zlib";
 import { promisify } from "util";
 import { parse, valid } from "node-html-parser";
 import { chunkArray } from "../shared/utils/chunk-array";
+import { PartitionedFeedArticleFieldStoreService } from "./partitioned-feed-article-field-store.service";
+import { ConfigService } from "@nestjs/config";
+import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -49,14 +53,14 @@ type XmlParsedArticlesOutput = {
 @Injectable()
 export class ArticlesService {
   constructor(
-    @InjectRepository(FeedArticleField)
-    private readonly articleFieldRepo: EntityRepository<FeedArticleField>,
     @InjectRepository(FeedArticleCustomComparison)
     private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
     private readonly articleParserService: ArticleParserService,
     private readonly orm: MikroORM,
     private readonly feedFetcherService: FeedFetcherService,
-    private readonly cacheStorageService: CacheStorageService
+    private readonly cacheStorageService: CacheStorageService,
+    private readonly partitionedFieldStoreService: PartitionedFeedArticleFieldStoreService,
+    private readonly configService: ConfigService
   ) {}
 
   async doFeedArticlesExistInCache(data: {
@@ -509,17 +513,7 @@ export class ArticlesService {
   }
 
   async hasPriorArticlesStored(feedId: string) {
-    const result = await this.articleFieldRepo.findOne(
-      {
-        feed_id: feedId,
-        is_hashed: true,
-      },
-      {
-        fields: ["id"],
-      }
-    );
-
-    return !!result;
+    return this.partitionedFieldStoreService.hasArticlesStoredForFeed(feedId);
   }
 
   async storeArticles(
@@ -533,24 +527,23 @@ export class ArticlesService {
       skipIdStorage?: boolean;
     }
   ) {
-    const fieldsToSave: FeedArticleField[] = [];
+    const fieldsToSave: PartitionedFeedArticleFieldInsert[] = [];
 
     for (let i = 0; i < articles.length; ++i) {
       const article = articles[i];
 
-      fieldsToSave.push(
-        new FeedArticleField({
-          feed_id: feedId,
-          field_name: "id",
-          field_value: article.flattened.idHash,
-          is_hashed: true,
-        })
-      );
+      fieldsToSave.push({
+        feedId: feedId,
+        fieldName: "id",
+        fieldHashedValue: article.flattened.idHash,
+        createdAt: new Date(),
+      });
     }
 
     try {
       await this.orm.em.transactional(async (em) => {
-        em.persist(fieldsToSave);
+        await this.partitionedFieldStoreService.persist(fieldsToSave, em);
+
         await this.storeArticleComparisons(
           em,
           feedId,
@@ -606,7 +599,7 @@ export class ArticlesService {
 
     em.persist(comparisonNamesToStore);
 
-    const fieldsToSave: FeedArticleField[] = [];
+    const fieldsToSave: PartitionedFeedArticleFieldInsert[] = [];
 
     for (let i = 0; i < articles.length; ++i) {
       const article = articles[i];
@@ -617,19 +610,17 @@ export class ArticlesService {
         if (fieldValue) {
           const hashedValue = sha1.copy().update(fieldValue).digest("hex");
 
-          fieldsToSave.push(
-            new FeedArticleField({
-              feed_id: feedId,
-              field_name: field,
-              field_value: hashedValue,
-              is_hashed: true,
-            })
-          );
+          fieldsToSave.push({
+            feedId: feedId,
+            fieldName: field,
+            fieldHashedValue: hashedValue,
+            createdAt: new Date(),
+          });
         }
       });
     }
 
-    em.persist(fieldsToSave);
+    await this.partitionedFieldStoreService.persist(fieldsToSave, em);
   }
 
   async filterForNewArticles(
@@ -640,21 +631,15 @@ export class ArticlesService {
       articles.map((article) => [article.flattened.idHash, article])
     );
     const articleIds = Array.from(mapOfArticles.keys());
-    const foundFieldVals = await this.articleFieldRepo.find(
-      {
-        feed_id: feedId,
-        field_name: "id",
-        field_value: {
-          $in: articleIds,
-        },
-        is_hashed: true,
-      },
-      {
-        fields: ["field_value"],
-      }
-    );
 
-    const foundIds = new Set(foundFieldVals.map((f) => f.field_value));
+    const foundIds = new Set(
+      (
+        await this.partitionedFieldStoreService.findIdFieldsForFeed(
+          feedId,
+          articleIds
+        )
+      ).map((r) => r.field_hashed_value)
+    );
 
     return articleIds
       .filter((id) => !foundIds.has(id))
@@ -687,10 +672,7 @@ export class ArticlesService {
     article: Article,
     fieldKeys: string[]
   ) {
-    const queries: Pick<
-      FeedArticleField,
-      "feed_id" | "field_name" | "field_value" | "is_hashed"
-    >[] = [];
+    const queries: Array<{ name: string; value: string }> = [];
 
     for (const key of fieldKeys) {
       const value = getNestedPrimitiveValue(article.flattened, key);
@@ -698,29 +680,11 @@ export class ArticlesService {
       if (value) {
         const hashedValue = sha1.copy().update(value).digest("hex");
 
-        queries.push({
-          feed_id: feedId,
-          field_name: key,
-          field_value: hashedValue,
-          is_hashed: true,
-        });
+        queries.push({ name: key, value: hashedValue });
       }
     }
 
-    if (queries.length === 0) {
-      return false;
-    }
-
-    const foundOne = await this.articleFieldRepo.findOne(
-      {
-        $or: queries,
-      },
-      {
-        fields: ["id"],
-      }
-    );
-
-    return !!foundOne;
+    return this.partitionedFieldStoreService.someFieldsExist(feedId, queries);
   }
 
   async getArticlesFromXml(
@@ -969,9 +933,7 @@ export class ArticlesService {
   }
 
   async deleteInfoForFeed(feedId: string) {
-    await this.articleFieldRepo.nativeDelete({
-      feed_id: feedId,
-    });
+    await this.partitionedFieldStoreService.deleteAllForFeed(feedId);
 
     await this.articleCustomComparisonRepo.nativeDelete({
       feed_id: feedId,

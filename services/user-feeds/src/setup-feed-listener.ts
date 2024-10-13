@@ -17,6 +17,8 @@ export async function setupFeedListener() {
   }, 60000);
 
   logger.info("Feed handler service initialized");
+
+  return { app };
 }
 
 async function tryDbConnection(orm: MikroORM, currentTries = 0) {
