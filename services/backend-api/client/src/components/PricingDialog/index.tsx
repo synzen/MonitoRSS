@@ -318,8 +318,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
   const userTierIndex = tiers?.findIndex((p) => p.productId === userSubscription?.product.key);
   const failedToLoadPrices = pricePreviewErrored || subProductsError || userError;
 
-  console.log("🚀 ~ PricingDialog ~ checkingOutPriceId:", checkingOutPriceId);
-
   return (
     <Box>
       <Box display={checkingOutPriceId ? "block" : "none"}>
