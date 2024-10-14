@@ -196,24 +196,50 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         alignItems="center"
                         textAlign="left"
                       >
-                        What is a valid RSS feed?
+                        What is an RSS feed?
                         <AccordionIcon />
                       </Flex>
                     </AccordionButton>
                     <AccordionPanel>
                       <Text fontSize={13}>
-                        An RSS feed is not any regular web page - it is a specially-formatted
-                        webpage with XML text that&apos;s designed to contain news articles.
-                        <br />
-                        <br />
-                        You can usually find RSS feed pages by searching for the name of the site
-                        plus &quot;RSS feed&quot;, such as &quot;IGN RSS feeds&quot;, or contact the
-                        site owner for the RSS feed link. An example of an RSS feed link is{" "}
+                        An RSS feed is a specially-formatted webpage with XML text that&apos;s
+                        designed to contain news articles. An example of an RSS feed link is{" "}
                         <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
                         <br />
                         <br />
                         To see if a link is a valid RSS feed, you may search for &quot;online feed
                         validators&quot; and input feed URLs to test.
+                      </Text>
+                    </AccordionPanel>
+                  </AccordionItem>
+                  <AccordionItem
+                    border="none"
+                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                  >
+                    <AccordionButton border="none">
+                      <Flex
+                        flex="1"
+                        gap={4}
+                        fontSize={13}
+                        color="blue.200"
+                        alignItems="center"
+                        textAlign="left"
+                      >
+                        How do I find RSS feeds?
+                        <AccordionIcon />
+                      </Flex>
+                    </AccordionButton>
+                    <AccordionPanel>
+                      <Text fontSize={13}>
+                        You can find RSS feed pages by searching for what you&apos;re looking for,
+                        plus &quot;RSS feed&quot;, such as &quot;podcast RSS feeds&quot;. You may
+                        also contact site owners for links to RSS feeds they may have. An example
+                        RSS feed link is{" "}
+                        <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
+                        <br />
+                        <br />
+                        You may also try submitting links to regular webpages and MonitoRSS will
+                        attempt to find RSS feeds related to the webpage.
                       </Text>
                     </AccordionPanel>
                   </AccordionItem>
