@@ -79,9 +79,9 @@ export default class PartitionedRequestsStoreService {
       await em.rollback(transaction);
 
       throw err;
+    } finally {
+      this.pendingInserts.length = 0;
     }
-
-    this.pendingInserts.length = 0;
   }
 
   async getLatestNextRetryDate(lookupKey: string): Promise<Date | null> {
