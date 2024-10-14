@@ -1,29 +1,48 @@
 import { Migration } from '@mikro-orm/migrations';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
+
+const nextMonth = dayjs().utc().add(1, 'month').startOf('month')
+const thisMonth = dayjs().utc().startOf('month')
+const oneMonthAgo  = dayjs().utc().subtract(1, 'month').startOf('month')
+const twoMonthsAgo = dayjs().utc().subtract(2, 'month').startOf('month')
+const threeMonthsAgo = dayjs().utc().subtract(3, 'month').startOf('month')
+const fourMonthsAgo = dayjs().utc().subtract(4, 'month').startOf('month')
+const fiveMonthsAgo = dayjs().utc().subtract(5, 'month').startOf('month')
+
 
 const ranges = [
   {
-    from: '2024-09-01T00:00:00.000Z',
-    to: '2024-10-01T00:00:00.000Z',
+    from: thisMonth.toISOString(),
+    to: nextMonth.toISOString(),
+    tableName: `feed_article_field_partitioned_y${thisMonth.year()}m${thisMonth.month() + 1}`,
   },
   {
-    from: '2024-08-01T00:00:00.000Z',
-    to: '2024-09-01T00:00:00.000Z',
+    from: oneMonthAgo.toISOString(),
+    to: thisMonth.toISOString(),
+    tableName: `feed_article_field_partitioned_y${oneMonthAgo.year()}m${oneMonthAgo.month() + 1}`,
   },
   {
-    from: '2024-07-01T00:00:00.000Z',
-    to: '2024-08-01T00:00:00.000Z',
+    from: twoMonthsAgo.toISOString(),
+    to: oneMonthAgo.toISOString(),
+    tableName: `feed_article_field_partitioned_y${twoMonthsAgo.year()}m${twoMonthsAgo.month() + 1}`,
   },
   {
-    from: '2024-06-01T00:00:00.000Z',
-    to: '2024-07-01T00:00:00.000Z',
+    from: threeMonthsAgo.toISOString(),
+    to: twoMonthsAgo.toISOString(),
+    tableName: `feed_article_field_partitioned_y${threeMonthsAgo.year()}m${threeMonthsAgo.month() + 1}`,
   },
   {
-    from: '2024-05-01T00:00:00.000Z',
-    to: '2024-06-01T00:00:00.000Z',
+    from: fourMonthsAgo.toISOString(),
+    to: threeMonthsAgo.toISOString(),
+    tableName: `feed_article_field_partitioned_y${fourMonthsAgo.year()}m${fourMonthsAgo.month() + 1}`,
   },
   {
-    from: '2024-04-01T00:00:00.000Z',
-    to: '2024-05-01T00:00:00.000Z',
+    from: fiveMonthsAgo.toISOString(),
+    to: fourMonthsAgo.toISOString(),
+    tableName: `feed_article_field_partitioned_y${fiveMonthsAgo.year()}m${fiveMonthsAgo.month() + 1}`,
   },
 ]
 
@@ -35,7 +54,7 @@ export class Migration20241013162508 extends Migration {
     
     // create new partitions by month
     for (const range of ranges) {
-      const tableName = `feed_article_field_partitioned_y${range.from.slice(0, 4)}m${range.from.slice(5, 7)}`;
+      const tableName = range.tableName
       this.addSql(`CREATE TABLE ${tableName} (LIKE feed_article_field_partitioned INCLUDING DEFAULTS INCLUDING CONSTRAINTS)`);
       this.addSql(`INSERT INTO ${tableName} (SELECT * FROM feed_article_field_partitioned_oldvalues WHERE created_at >= '${range.from}' AND created_at < '${range.to}');`);
       this.addSql(`ALTER TABLE feed_article_field_partitioned ATTACH PARTITION ${tableName} FOR VALUES FROM ('${range.from}') TO ('${range.to}');`);
@@ -55,7 +74,7 @@ export class Migration20241013162508 extends Migration {
     `)
 
     for (const range of ranges) {
-      const tableName = `feed_article_field_partitioned_y${range.from.slice(0, 4)}m${range.from.slice(5, 7)}`;
+      const tableName = range.tableName
       this.addSql(`INSERT INTO feed_article_field_partitioned_oldvalues (SELECT * FROM ${tableName});`);
       this.addSql(`ALTER TABLE feed_article_field_partitioned DETACH PARTITION ${tableName};`);
       this.addSql(`DROP TABLE ${tableName};`);

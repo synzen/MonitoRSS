@@ -7,6 +7,7 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
   const orm = app.get(MikroORM);
   const connection = orm.em.getConnection();
   const sixMonthsAgoDate = dayjs().subtract(6, "month");
+  const thisMonthDate = dayjs();
   const nextMonthDate = dayjs().add(1, "month");
   const nextNextMonthDate = dayjs().add(2, "month");
 
@@ -15,35 +16,46 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       sixMonthsAgoDate.month() + 1
     }`;
 
-    const dropResult = await connection.execute(
-      `DROP TABLE IF EXISTS ${tableNameToDrop};`
-    );
-
-    logger.debug(`Old partition ${tableNameToDrop} dropped`, {
-      dropResult,
-    });
+    logger.debug(`Old partition ${tableNameToDrop} dropped`);
   } catch (err) {
     logger.error("Failed to drop old partition", {
       error: (err as Error).stack,
     });
   }
 
-  const tableNameToCreate = `feed_article_field_partitioned_y${nextMonthDate.year()}m${
-    nextMonthDate.month() + 1
-  }`;
+  const tablesToCreate = [
+    {
+      from: thisMonthDate,
+      to: nextMonthDate,
+      tableName: `feed_article_field_partitioned_y${thisMonthDate.year()}m${
+        thisMonthDate.month() + 1
+      }`,
+    },
+    {
+      from: nextMonthDate,
+      to: nextNextMonthDate,
+      tableName: `feed_article_field_partitioned_y${nextMonthDate.year()}m${
+        nextMonthDate.month() + 1
+      }`,
+    },
+  ];
 
   try {
-    const result = await connection.execute(
-      `CREATE TABLE IF NOT EXISTS` +
-        ` ${tableNameToCreate}` +
-        ` PARTITION OF feed_article_field_partitioned` +
-        ` FOR VALUES FROM ('${nextMonthDate.toISOString()}')` +
-        ` TO ('${nextNextMonthDate.toISOString()}');`
-    );
-
-    logger.debug(`Partition table "${tableNameToCreate}" created`, {
-      result,
+    tablesToCreate.map(async ({ from, to, tableName }) => {
+      await connection.execute(
+        `CREATE TABLE IF NOT EXISTS` +
+          ` ${tableName}` +
+          ` PARTITION OF feed_article_field_partitioned` +
+          ` FOR VALUES FROM ('${from.toISOString()}')` +
+          ` TO ('${to.toISOString()}');`
+      );
     });
+
+    logger.debug(
+      `Partition tables ${tablesToCreate
+        .map(({ tableName }) => tableName)
+        .join(", ")} created`
+    );
   } catch (err) {
     logger.error("Failed to create table partitions", {
       error: (err as Error).stack,
