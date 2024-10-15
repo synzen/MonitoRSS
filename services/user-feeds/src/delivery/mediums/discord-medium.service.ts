@@ -224,7 +224,10 @@ export class DiscordMediumService implements DeliveryMedium {
 
       if (!firstResponse.success) {
         throw new Error(
-          `Failed to create initial thread for forum channel ${channelId}: ${firstResponse.detail}`
+          `Failed to create initial thread for forum channel ${channelId}: ` +
+            `${firstResponse.detail}. Body: ${JSON.stringify(
+              firstResponse.body
+            )}`
         );
       }
 
@@ -503,7 +506,9 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (!res.success) {
       throw new Error(
-        `Failed to create initial thread for webhok forum ${webhookId}: ${res.detail}`
+        `Failed to create initial thread for webhok forum ${webhookId}: ${
+          res.detail
+        }. Body: ${JSON.stringify(res.body)}`
       );
     }
 
@@ -610,7 +615,9 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (!res.success) {
       throw new Error(
-        `Failed to create initial thread for forum channel ${channelId}: ${res.detail}`
+        `Failed to create initial thread for forum channel ${channelId}: ${
+          res.detail
+        }. Body: ${JSON.stringify(res.body)}`
       );
     }
 
