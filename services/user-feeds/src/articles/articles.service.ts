@@ -684,6 +684,10 @@ export class ArticlesService {
       }
     }
 
+    if (queries.length === 0) {
+      return false;
+    }
+
     return this.partitionedFieldStoreService.someFieldsExist(feedId, queries);
   }
 
@@ -919,13 +923,13 @@ export class ArticlesService {
 
     const articlesToSend = await Promise.all(
       seenArticles.map(async (article) => {
-        const shouldBlock = await this.articleFieldsSeenBefore(
+        const shouldPass = await this.articleFieldsSeenBefore(
           id,
           article,
           relevantComparisons
         );
 
-        return shouldBlock ? null : article;
+        return shouldPass ? null : article;
       })
     );
 

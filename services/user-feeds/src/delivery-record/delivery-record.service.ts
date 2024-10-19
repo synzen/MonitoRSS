@@ -20,7 +20,7 @@ const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
 @Injectable()
 export class DeliveryRecordService {
   pendingInserts: PartitionedDeliveryRecordInsert[] = [];
-  usePartitions = false;
+  usePartitions = true;
 
   constructor(
     @InjectRepository(DeliveryRecord)
@@ -287,7 +287,7 @@ export class DeliveryRecordService {
 
     let childRecords: DeliveryRecord[];
 
-    if (this.usePartitions) {
+    if (records.length && this.usePartitions) {
       const found = await this.orm.em.getConnection().execute(
         `
       SELECT id, status, error_code, medium_id,
@@ -308,7 +308,7 @@ export class DeliveryRecordService {
           },
         };
       });
-    } else {
+    } else if (records.length) {
       childRecords = await this.recordRepo.find(
         {
           feed_id: feedId,

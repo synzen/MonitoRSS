@@ -86,6 +86,12 @@ export class PartitionedFeedArticleFieldStoreService {
   ) {
     const connection = this.orm.em.getConnection();
 
+    if (fields.length === 0) {
+      throw new Error(
+        `No fields provided while checking if some fields exist for feed ${feedId}`
+      );
+    }
+
     const results = await connection.execute(
       `SELECT 1` +
         ` FROM feed_article_field_partitioned` +
