@@ -1,4 +1,8 @@
 import { Migration } from '@mikro-orm/migrations';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 export class Migration20240924220729 extends Migration {
 
@@ -11,8 +15,9 @@ export class Migration20240924220729 extends Migration {
       created_at TIMESTAMPTZ DEFAULT now() NOT NULL
       ) PARTITION BY RANGE (created_at);`);
 
-    this.addSql(`CREATE TABLE feed_article_field_partitioned_oldvalues PARTITION OF feed_article_field_partitioned FOR VALUES FROM ('2022-09-24 22:07:29') TO ('2024-10-01T00:00:00.000Z');`);
-    this.addSql(`CREATE TABLE feed_article_field_partitioned_y2024m10 PARTITION OF feed_article_field_partitioned FOR VALUES FROM ('2024-10-01T00:00:00.000Z') TO ('2024-11-01T00:00:00.000Z');`);
+    const endDate = dayjs().utc().subtract(5, 'month').startOf('month')
+
+    this.addSql(`CREATE TABLE feed_article_field_partitioned_oldvalues PARTITION OF feed_article_field_partitioned FOR VALUES FROM ('2000-09-24 22:07:29') TO ('${endDate.toISOString()}');`);
 
     this.addSql(`CREATE INDEX feed_article_field_partitioned_createdat_index ON feed_article_field_partitioned (created_at);`);
     this.addSql('CREATE INDEX feed_article_field_partitioned_feedid_fieldname_fieldvalue_index ON feed_article_field_partitioned (feed_id, field_name, field_hashed_value);');
