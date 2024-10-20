@@ -30,6 +30,15 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       tableName: `feed_article_field_partitioned_y${thisMonthDate.year()}m${
         thisMonthDate.month() + 1
       }`,
+      partitionParent: "feed_article_field_partitioned",
+    },
+    {
+      from: thisMonthDate,
+      to: nextMonthDate,
+      tableName: `delivery_records_partitioned_y${thisMonthDate.year()}m${
+        thisMonthDate.month() + 1
+      }`,
+      partitionParent: "delivery_record_partitioned",
     },
     {
       from: nextMonthDate,
@@ -37,15 +46,24 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       tableName: `feed_article_field_partitioned_y${nextMonthDate.year()}m${
         nextMonthDate.month() + 1
       }`,
+      partitionParent: "feed_article_field_partitioned",
+    },
+    {
+      from: nextMonthDate,
+      to: nextNextMonthDate,
+      tableName: `delivery_records_partitioned_y${nextMonthDate.year()}m${
+        nextMonthDate.month() + 1
+      }`,
+      partitionParent: "delivery_record_partitioned",
     },
   ];
 
   try {
-    tablesToCreate.map(async ({ from, to, tableName }) => {
+    tablesToCreate.map(async ({ from, to, tableName, partitionParent }) => {
       await connection.execute(
         `CREATE TABLE IF NOT EXISTS` +
           ` ${tableName}` +
-          ` PARTITION OF feed_article_field_partitioned` +
+          ` PARTITION OF ${partitionParent}` +
           ` FOR VALUES FROM ('${from.toISOString()}')` +
           ` TO ('${to.toISOString()}');`
       );

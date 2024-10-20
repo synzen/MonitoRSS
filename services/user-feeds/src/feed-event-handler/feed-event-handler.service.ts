@@ -431,6 +431,7 @@ export class FeedEventHandlerService {
 
       try {
         await this.orm.em.flush();
+        await this.deliveryRecordService.flushPendingInserts();
       } catch (err) {
         if (err instanceof UniqueConstraintViolationException) {
           logger.warn(
