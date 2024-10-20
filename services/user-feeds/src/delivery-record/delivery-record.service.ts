@@ -7,7 +7,6 @@ import {
   ArticleDeliveryStatus,
 } from "../shared";
 import { DeliveryRecord } from "./entities";
-import dayjs from "dayjs";
 import { MikroORM } from "@mikro-orm/core";
 import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
@@ -20,7 +19,6 @@ const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
 @Injectable()
 export class DeliveryRecordService {
   pendingInserts: PartitionedDeliveryRecordInsert[] = [];
-  usePartitions = true;
 
   constructor(
     @InjectRepository(DeliveryRecord)
@@ -173,62 +171,24 @@ export class DeliveryRecordService {
     { mediumId, feedId }: { mediumId?: string; feedId?: string },
     secondsInPast: number
   ) {
-    if (this.usePartitions) {
-      // Use partitioned table for faster count
-      const query = await this.orm.em.getConnection().execute(
-        `
+    // Use partitioned table for faster count
+    const query = await this.orm.em.getConnection().execute(
+      `
       SELECT COUNT(*) FROM delivery_record_partitioned
       WHERE created_at >= NOW() - INTERVAL '${secondsInPast} seconds'
       AND status IN (?, ?)
       ${mediumId ? "AND medium_id = ?" : ""}
       ${feedId ? "AND feed_id = ?" : ""}
       `,
-        [
-          Sent,
-          Rejected,
-          ...(mediumId ? [mediumId] : []),
-          ...(feedId ? [feedId] : []),
-        ]
-      );
+      [
+        Sent,
+        Rejected,
+        ...(mediumId ? [mediumId] : []),
+        ...(feedId ? [feedId] : []),
+      ]
+    );
 
-      return Number(query[0].count);
-    }
-
-    // Convert initial counts to the same query below
-    const subquery = this.recordRepo
-      .createQueryBuilder()
-      .count()
-      .where({
-        ...(mediumId
-          ? {
-              medium_id: mediumId,
-            }
-          : {}),
-        ...(feedId
-          ? {
-              feed_id: feedId,
-            }
-          : {}),
-      })
-      .andWhere({
-        status: {
-          $in: [Sent, Rejected],
-        },
-      })
-      .andWhere({
-        created_at: {
-          $gte: dayjs().subtract(secondsInPast, "second").toDate(),
-        },
-      })
-      .groupBy("article_id_hash");
-
-    const query = await this.recordRepo
-      .createQueryBuilder()
-      .count()
-      .from(subquery, "subquery")
-      .execute("get");
-
-    return Number(query.count);
+    return Number(query[0].count);
   }
 
   async getDeliveryLogs({
@@ -240,23 +200,8 @@ export class DeliveryRecordService {
     skip: number;
     feedId: string;
   }): Promise<GetUserFeedDeliveryRecordsOutputDto["result"]["logs"]> {
-    const selectFields: Array<keyof DeliveryRecord> = [
-      "id",
-      "status",
-      "error_code",
-      "medium_id",
-      "content_type",
-      "external_detail",
-      "article_id_hash",
-      "created_at",
-      "parent",
-    ];
-
-    let records: DeliveryRecord[];
-
-    if (this.usePartitions) {
-      records = await this.orm.em.getConnection().execute(
-        `
+    const records: DeliveryRecord[] = await this.orm.em.getConnection().execute(
+      `
       SELECT id, status, error_code, medium_id,
         content_type, external_detail, article_id_hash, created_at
       FROM delivery_record_partitioned
@@ -266,28 +211,12 @@ export class DeliveryRecordService {
       LIMIT ?
       OFFSET ?
     `,
-        [feedId, limit, skip]
-      );
-    } else {
-      records = await this.recordRepo.find(
-        {
-          feed_id: feedId,
-          parent: null,
-        },
-        {
-          limit,
-          orderBy: {
-            created_at: "DESC",
-          },
-          fields: selectFields,
-          offset: skip,
-        }
-      );
-    }
+      [feedId, limit, skip]
+    );
 
     let childRecords: DeliveryRecord[];
 
-    if (records.length && this.usePartitions) {
+    if (records.length) {
       const found = await this.orm.em.getConnection().execute(
         `
       SELECT id, status, error_code, medium_id,
@@ -308,18 +237,6 @@ export class DeliveryRecordService {
           },
         };
       });
-    } else if (records.length) {
-      childRecords = await this.recordRepo.find(
-        {
-          feed_id: feedId,
-          parent: {
-            $in: records.map((record) => record.id),
-          },
-        },
-        {
-          fields: selectFields,
-        }
-      );
     }
 
     return records.map((record) => {
