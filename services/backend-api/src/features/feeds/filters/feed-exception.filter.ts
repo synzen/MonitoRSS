@@ -51,7 +51,7 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     },
     [FeedRequestException.name]: {
       status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.FEED_PARSE_FAILED,
+      code: ApiErrorCode.FEED_FETCH_FAILED,
     },
     [FeedForbiddenException.name]: {
       status: HttpStatus.BAD_REQUEST,
