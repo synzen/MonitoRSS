@@ -44,8 +44,10 @@ export class FeedFetcherService implements OnModuleInit {
   async fetch(
     url: string,
     options?: {
+      executeFetch?: boolean;
       executeFetchIfNotInCache?: boolean;
       retries?: number;
+      hashToCompare?: string;
     }
   ) {
     const serviceUrl = this.SERVICE_HOST;
@@ -61,6 +63,8 @@ export class FeedFetcherService implements OnModuleInit {
               url,
               executeFetchIfNotExists:
                 options?.executeFetchIfNotInCache ?? false,
+              executeFetch: options?.executeFetch ?? false,
+              hashToCompare: options?.hashToCompare || undefined,
             }),
             headers: {
               "content-type": "application/json",
@@ -69,7 +73,7 @@ export class FeedFetcherService implements OnModuleInit {
             },
           }),
         {
-          retries: options?.retries ?? 5,
+          retries: options?.retries ?? 2,
           randomize: true,
         }
       ));

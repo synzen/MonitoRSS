@@ -306,7 +306,7 @@ export class ArticleParserService {
               }
 
               if (!parsedBody) {
-                const res = await this.feedFetcherService.fetchWithGrpc(
+                const res = await this.feedFetcherService.fetch(
                   sourceFieldValue,
                   {
                     executeFetchIfNotInCache: true,

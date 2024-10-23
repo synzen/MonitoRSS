@@ -299,11 +299,11 @@ export class FeedEventHandlerService {
       }
 
       let response: Awaited<
-        ReturnType<typeof this.feedFetcherService.fetchWithGrpc>
+        ReturnType<typeof this.feedFetcherService.fetch>
       > | null = null;
 
       try {
-        response = await this.feedFetcherService.fetchWithGrpc(url, {
+        response = await this.feedFetcherService.fetch(url, {
           hashToCompare: lastHashSaved || undefined,
         });
       } catch (err) {

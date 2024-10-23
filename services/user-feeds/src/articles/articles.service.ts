@@ -201,7 +201,7 @@ export class ArticlesService {
       };
     }
 
-    const response = await this.feedFetcherService.fetchWithGrpc(url, {
+    const response = await this.feedFetcherService.fetch(url, {
       executeFetchIfNotInCache: true,
       executeFetch,
     });
