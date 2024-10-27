@@ -18,33 +18,20 @@ export class PartitionedFeedArticleFieldStoreService {
   ) {
     const connection = em.getConnection();
 
-    try {
-      await Promise.all(
-        inserts.map(async (insert) => {
-          await connection.execute(
-            `INSERT INTO feed_article_field_partitioned ` +
-              `(feed_id, field_name, field_hashed_value, created_at) VALUES (?, ?, ?, ?)`,
-            [
-              insert.feedId,
-              insert.fieldName,
-              insert.fieldHashedValue,
-              insert.createdAt,
-            ]
-          );
-        })
-      );
-    } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((err as any).code === "23505") {
-        logger.warn("Duplicate key error while inserting feed article field", {
-          error: (err as Error).stack,
-        });
-      } else {
-        logger.error("Error while inserting partitioned feed article field", {
-          error: (err as Error).stack,
-        });
-      }
-    }
+    await Promise.all(
+      inserts.map(async (insert) => {
+        await connection.execute(
+          `INSERT INTO feed_article_field_partitioned ` +
+            `(feed_id, field_name, field_hashed_value, created_at) VALUES (?, ?, ?, ?)`,
+          [
+            insert.feedId,
+            insert.fieldName,
+            insert.fieldHashedValue,
+            insert.createdAt,
+          ]
+        );
+      })
+    );
   }
 
   async hasArticlesStoredForFeed(feedId: string) {
