@@ -614,11 +614,53 @@ export class DiscordMediumService implements DeliveryMedium {
     });
 
     if (!res.success) {
-      throw new Error(
-        `Failed to create initial thread for forum channel ${channelId}: ${
-          res.detail
-        }. Body: ${JSON.stringify(res.body)}`
-      );
+      if (res.status === 404) {
+        return [
+          {
+            id: details.deliveryId,
+            status: ArticleDeliveryStatus.Rejected,
+            mediumId: details.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+            internalMessage: `Response: ${JSON.stringify(res.body)}`,
+            externalDetail:
+              "Unknown channel. Update the connection to use a different channel.",
+          },
+        ];
+      } else if (res.status === 403) {
+        return [
+          {
+            id: details.deliveryId,
+            status: ArticleDeliveryStatus.Rejected,
+            mediumId: details.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
+            internalMessage: `Response: ${JSON.stringify(res.body)}`,
+            externalDetail: "Missing permissions",
+          },
+        ];
+      } else if (res.status === 400) {
+        return [
+          {
+            id: details.deliveryId,
+            status: ArticleDeliveryStatus.Rejected,
+            mediumId: details.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
+            internalMessage: `Response: ${JSON.stringify(res.body)}`,
+            externalDetail: JSON.stringify(res.body, null, 2),
+          },
+        ];
+      } else {
+        throw new Error(
+          `Failed to create initial thread for forum channel ${channelId}: ${
+            res.detail
+          }. Body: ${JSON.stringify(res.body)}`
+        );
+      }
     }
 
     const threadId = (res.body as Record<string, unknown>).id as string;

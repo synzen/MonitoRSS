@@ -152,23 +152,12 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish(
-        "",
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-        {
-          data: {
-            rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
-            articleId,
-            rejectedMessage: responseBody,
-            medium: {
-              id: record.medium_id,
-            },
-            feed: {
-              id: record.feed_id,
-            },
-          },
-        }
-      );
+      this.emitBadFormatMediumEvent({
+        feedId: record.feed_id,
+        mediumId: record.medium_id,
+        responseBody,
+        articleId,
+      });
     } else if (result.status >= 500) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
@@ -187,21 +176,10 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish(
-        "",
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-        {
-          data: {
-            rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
-            medium: {
-              id: record.medium_id,
-            },
-            feed: {
-              id: record.feed_id,
-            },
-          },
-        }
-      );
+      this.emitMissingPermissionsMediumEvent({
+        feedId: record.feed_id,
+        mediumId: record.medium_id,
+      });
     } else if (result.status === 404) {
       const record = await this.deliveryRecordService.updateDeliveryStatus(
         deliveryRecordId,
@@ -213,21 +191,10 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish(
-        "",
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-        {
-          data: {
-            rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,
-            medium: {
-              id: record.medium_id,
-            },
-            feed: {
-              id: record.feed_id,
-            },
-          },
-        }
-      );
+      this.emitMissingMediumEvent({
+        feedId: record.feed_id,
+        mediumId: record.medium_id,
+      });
     } else if (result.status < 200 || result.status > 400) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
@@ -431,6 +398,33 @@ export class FeedEventHandlerService {
 
       try {
         await this.orm.em.flush();
+        deliveryStates.forEach((state) => {
+          if (state.status !== ArticleDeliveryStatus.Rejected) {
+            return;
+          }
+
+          if (state.errorCode === ArticleDeliveryErrorCode.NoChannelOrWebhook) {
+            this.emitMissingMediumEvent({
+              feedId: event.data.feed.id,
+              mediumId: state.mediumId,
+            });
+          } else if (
+            state.errorCode === ArticleDeliveryErrorCode.ThirdPartyForbidden
+          ) {
+            this.emitMissingPermissionsMediumEvent({
+              feedId: event.data.feed.id,
+              mediumId: state.mediumId,
+            });
+          } else if (
+            state.errorCode === ArticleDeliveryErrorCode.ThirdPartyBadRequest
+          ) {
+            this.emitBadFormatMediumEvent({
+              feedId: event.data.feed.id,
+              mediumId: state.mediumId,
+              responseBody: state.externalDetail || "",
+            });
+          }
+        });
       } catch (err) {
         if (err instanceof UniqueConstraintViolationException) {
           logger.warn(
@@ -582,6 +576,84 @@ export class FeedEventHandlerService {
         }
       );
     }
+  }
+
+  private emitMissingMediumEvent({
+    feedId,
+    mediumId,
+  }: {
+    feedId: string;
+    mediumId: string;
+  }) {
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+      {
+        data: {
+          rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,
+          medium: {
+            id: mediumId,
+          },
+          feed: {
+            id: feedId,
+          },
+        },
+      }
+    );
+  }
+
+  private emitBadFormatMediumEvent({
+    feedId,
+    mediumId,
+    articleId,
+    responseBody,
+  }: {
+    feedId: string;
+    mediumId: string;
+    articleId?: string;
+    responseBody: string;
+  }) {
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+      {
+        data: {
+          rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
+          articleId,
+          rejectedMessage: responseBody,
+          medium: {
+            id: mediumId,
+          },
+          feed: {
+            id: feedId,
+          },
+        },
+      }
+    );
+  }
+
+  private emitMissingPermissionsMediumEvent({
+    mediumId,
+    feedId,
+  }: {
+    mediumId: string;
+    feedId: string;
+  }) {
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+      {
+        data: {
+          rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
+          medium: {
+            id: mediumId,
+          },
+          feed: {
+            id: feedId,
+          },
+        },
+      }
+    );
   }
 
   private async updateFeedArticlesInCache({
