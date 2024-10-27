@@ -60,6 +60,10 @@ export function config(options?: {
     USER_FEEDS_REDIS_URI: process.env.USER_FEEDS_REDIS_URI as string,
     USER_FEEDS_USE_PARTITIONED_TABLES:
       process.env.USER_FEEDS_USE_PARTITIONED_TABLES === "true",
+    USER_FEEDS_PREFETCH_COUNT: parseInt(
+      (process.env.USER_FEEDS_PREFETCH_COUNT as string) || "100",
+      10
+    ),
   } as const;
 
   if (!options?.skipValidation) {

@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
@@ -77,6 +78,10 @@ export class EnvironmentVariables {
   @IsBoolean()
   @IsOptional()
   USER_FEEDS_USE_PARTITIONED_TABLES?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  USER_FEEDS_PREFETCH_COUNT?: number;
 }
 
 export function validateConfig(
