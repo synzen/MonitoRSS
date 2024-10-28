@@ -315,7 +315,7 @@ export class UserFeedsService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
-    const { finalUrl } = await this.checkUrlIsValid(url);
+    const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(url);
 
     const created = await this.userFeedModel.create({
       title,
@@ -326,6 +326,11 @@ export class UserFeedsService {
       },
       refreshRateSeconds,
       maxDailyArticles,
+      dateCheckOptions: enableDateChecks
+        ? {
+            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
+          }
+        : undefined,
     });
 
     return created;
@@ -1476,7 +1481,9 @@ export class UserFeedsService {
     );
   }
 
-  private async checkUrlIsValid(url: string): Promise<{ finalUrl: string }> {
+  private async checkUrlIsValid(
+    url: string
+  ): Promise<{ finalUrl: string; enableDateChecks: boolean }> {
     const getArticlesResponse = await this.feedHandlerService.getArticles({
       url,
       formatter: {
@@ -1489,6 +1496,7 @@ export class UserFeedsService {
           stripImages: false,
         },
       },
+      selectProperties: ["date"],
       limit: 1,
       skip: 0,
       findRssFromHtml: true,
@@ -1499,6 +1507,7 @@ export class UserFeedsService {
       requestStatus,
       url: finalUrl,
       attemptedToResolveFromHtml,
+      articles,
     } = getArticlesResponse;
 
     if (requestStatus === GetArticlesResponseRequestStatus.Success) {
@@ -1513,6 +1522,7 @@ export class UserFeedsService {
 
       return {
         finalUrl: finalUrl || url,
+        enableDateChecks: !!articles[0]?.date,
       };
     } else if (requestStatus === GetArticlesResponseRequestStatus.TimedOut) {
       throw new FeedFetchTimeoutException(`Feed fetch timed out`);
