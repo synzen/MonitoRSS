@@ -5,12 +5,14 @@ import {
   MikroORM,
 } from "@mikro-orm/core";
 import { Injectable } from "@nestjs/common";
-import logger from "../shared/utils/logger";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
 
 @Injectable()
 export class PartitionedFeedArticleFieldStoreService {
-  constructor(private readonly orm: MikroORM) {}
+  connection: Connection;
+  constructor(private readonly orm: MikroORM) {
+    this.connection = this.orm.em.getConnection();
+  }
 
   async persist(
     inserts: PartitionedFeedArticleFieldInsert[],
@@ -18,26 +20,24 @@ export class PartitionedFeedArticleFieldStoreService {
   ) {
     const connection = em.getConnection();
 
-    await Promise.all(
-      inserts.map(async (insert) => {
-        await connection.execute(
-          `INSERT INTO feed_article_field_partitioned ` +
-            `(feed_id, field_name, field_hashed_value, created_at) VALUES (?, ?, ?, ?)`,
-          [
-            insert.feedId,
-            insert.fieldName,
-            insert.fieldHashedValue,
-            insert.createdAt,
-          ]
-        );
-      })
+    const allValues = inserts.flatMap((insert) => [
+      insert.feedId,
+      insert.fieldName,
+      insert.fieldHashedValue,
+      insert.createdAt,
+    ]);
+
+    const values = inserts.map(() => "(?, ?, ?, ?)").join(", ");
+
+    await connection.execute(
+      `INSERT INTO feed_article_field_partitioned ` +
+        `(feed_id, field_name, field_hashed_value, created_at) VALUES ${values}`,
+      allValues
     );
   }
 
   async hasArticlesStoredForFeed(feedId: string) {
-    const connection = this.orm.em.getConnection();
-
-    const [result] = await connection.execute(
+    const [result] = await this.connection.execute(
       `SELECT 1 AS result FROM feed_article_field_partitioned WHERE feed_id = ? LIMIT 1`,
       [feedId]
     );
@@ -53,9 +53,7 @@ export class PartitionedFeedArticleFieldStoreService {
       field_hashed_value: string;
     }>
   > {
-    const connection = this.orm.em.getConnection();
-
-    const results = await connection.execute(
+    const results = await this.connection.execute(
       `SELECT field_hashed_value` +
         ` FROM feed_article_field_partitioned` +
         ` WHERE feed_id = ? AND field_name = 'id' AND field_hashed_value IN (${ids
@@ -71,9 +69,7 @@ export class PartitionedFeedArticleFieldStoreService {
     feedId: string,
     fields: Array<{ name: string; value: string }>
   ) {
-    const connection = this.orm.em.getConnection();
-
-    const results = await connection.execute(
+    const results = await this.connection.execute(
       `SELECT 1` +
         ` FROM feed_article_field_partitioned` +
         ` WHERE feed_id = ? AND (${fields
@@ -86,9 +82,7 @@ export class PartitionedFeedArticleFieldStoreService {
   }
 
   async deleteAllForFeed(feedId: string) {
-    const connection = this.orm.em.getConnection();
-
-    await connection.execute(
+    await this.connection.execute(
       `DELETE FROM feed_article_field_partitioned WHERE feed_id = ?`,
       [feedId]
     );
