@@ -10,6 +10,8 @@ import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-fiel
 @Injectable()
 export class PartitionedFeedArticleFieldStoreService {
   connection: Connection;
+  TABLE_NAME = "feed_article_field_partitioned";
+
   constructor(private readonly orm: MikroORM) {
     this.connection = this.orm.em.getConnection();
   }
@@ -30,7 +32,7 @@ export class PartitionedFeedArticleFieldStoreService {
     const values = inserts.map(() => "(?, ?, ?, ?)").join(", ");
 
     await connection.execute(
-      `INSERT INTO feed_article_field_partitioned ` +
+      `INSERT INTO ${this.TABLE_NAME} ` +
         `(feed_id, field_name, field_hashed_value, created_at) VALUES ${values}`,
       allValues
     );
@@ -38,7 +40,7 @@ export class PartitionedFeedArticleFieldStoreService {
 
   async hasArticlesStoredForFeed(feedId: string) {
     const [result] = await this.connection.execute(
-      `SELECT 1 AS result FROM feed_article_field_partitioned WHERE feed_id = ? LIMIT 1`,
+      `SELECT 1 AS result FROM ${this.TABLE_NAME} WHERE feed_id = ? LIMIT 1`,
       [feedId]
     );
 
@@ -55,7 +57,7 @@ export class PartitionedFeedArticleFieldStoreService {
   > {
     const results = await this.connection.execute(
       `SELECT field_hashed_value` +
-        ` FROM feed_article_field_partitioned` +
+        ` FROM ${this.TABLE_NAME}` +
         ` WHERE feed_id = ? AND field_name = 'id' AND field_hashed_value IN (${ids
           .map(() => "?")
           .join(", ")})`,
@@ -71,7 +73,7 @@ export class PartitionedFeedArticleFieldStoreService {
   ) {
     const results = await this.connection.execute(
       `SELECT 1` +
-        ` FROM feed_article_field_partitioned` +
+        ` FROM ${this.TABLE_NAME}` +
         ` WHERE feed_id = ? AND (${fields
           .map(() => `field_name = ? AND field_hashed_value = ?`)
           .join(" OR ")}) LIMIT 1`,
@@ -83,7 +85,7 @@ export class PartitionedFeedArticleFieldStoreService {
 
   async deleteAllForFeed(feedId: string) {
     await this.connection.execute(
-      `DELETE FROM feed_article_field_partitioned WHERE feed_id = ?`,
+      `DELETE FROM ${this.TABLE_NAME} WHERE feed_id = ?`,
       [feedId]
     );
   }
