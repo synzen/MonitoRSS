@@ -34,28 +34,12 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       partitionParent: "feed_article_field_partitioned",
     },
     {
-      from: thisMonthDate,
-      to: nextMonthDate,
-      tableName: `delivery_records_partitioned_y${thisMonthDate.year()}m${
-        thisMonthDate.month() + 1
-      }`,
-      partitionParent: "delivery_record_partitioned",
-    },
-    {
       from: nextMonthDate,
       to: nextNextMonthDate,
       tableName: `feed_article_field_partitioned_y${nextMonthDate.year()}m${
         nextMonthDate.month() + 1
       }`,
       partitionParent: "feed_article_field_partitioned",
-    },
-    {
-      from: nextMonthDate,
-      to: nextNextMonthDate,
-      tableName: `delivery_records_partitioned_y${nextMonthDate.year()}m${
-        nextMonthDate.month() + 1
-      }`,
-      partitionParent: "delivery_record_partitioned",
     },
   ];
 
