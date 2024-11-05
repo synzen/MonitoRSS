@@ -5,6 +5,7 @@ import {
   MikroORM,
 } from "@mikro-orm/core";
 import { Injectable } from "@nestjs/common";
+import logger from "../shared/utils/logger";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
 
 @Injectable()
@@ -20,6 +21,10 @@ export class PartitionedFeedArticleFieldStoreService {
     inserts: PartitionedFeedArticleFieldInsert[],
     em: EntityManager<IDatabaseDriver<Connection>>
   ) {
+    if (inserts.length === 0) {
+      return;
+    }
+
     const connection = em.getConnection();
 
     const allValues = inserts.flatMap((insert) => [
@@ -31,11 +36,20 @@ export class PartitionedFeedArticleFieldStoreService {
 
     const values = inserts.map(() => "(?, ?, ?, ?)").join(", ");
 
-    await connection.execute(
+    const sql =
       `INSERT INTO ${this.TABLE_NAME} ` +
-        `(feed_id, field_name, field_hashed_value, created_at) VALUES ${values}`,
-      allValues
-    );
+      `(feed_id, field_name, field_hashed_value, created_at) VALUES ${values}`;
+
+    try {
+      await connection.execute(sql, allValues);
+    } catch (err) {
+      logger.error("Error inserting into feed_article_field_partitioned", {
+        sql,
+        allValues,
+        stack: (err as Error).stack,
+      });
+      throw err;
+    }
   }
 
   async hasArticlesStoredForFeed(feedId: string) {
