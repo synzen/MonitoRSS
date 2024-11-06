@@ -15,7 +15,7 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
-import { fetch } from 'undici';
+import { fetch, ProxyAgent } from 'undici';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -52,6 +52,7 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
 
 interface FetchOptions {
   headers?: Record<string, string>;
+  proxyUri?: string;
 }
 
 interface FetchResponse {
@@ -409,7 +410,18 @@ export class FeedFetcherService {
       });
     }
 
-    const r = await fetch(url, useOptions);
+    let agent: ProxyAgent | undefined;
+
+    if (options?.proxyUri) {
+      agent = new ProxyAgent({
+        connect: {
+          timeout: this.feedRequestTimeoutMs,
+        },
+        uri: options.proxyUri,
+      });
+    }
+
+    const r = await fetch(url, { ...useOptions, dispatcher: agent });
 
     clearTimeout(timer);
 
@@ -425,6 +437,18 @@ export class FeedFetcherService {
       convertHeaderValue(r.headers.get('last-modified')),
     );
     headers.set('server', convertHeaderValue(r.headers.get('server')));
+
+    if (
+      !options?.proxyUri &&
+      this.proxyUrl &&
+      r.status === HttpStatus.TOO_MANY_REQUESTS
+    ) {
+      return this.fetchFeedResponse(
+        url,
+        { ...options, proxyUri: this.proxyUrl },
+        log,
+      );
+    }
 
     return {
       headers,
