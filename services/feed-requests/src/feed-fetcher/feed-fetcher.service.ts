@@ -15,11 +15,20 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
+import { fetch } from 'undici';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
 
 const sha1 = createHash('sha1');
+
+const convertHeaderValue = (val?: string | string[] | null) => {
+  if (Array.isArray(val)) {
+    return val.join(',');
+  }
+
+  return val || '';
+};
 
 const trimHeadersForStorage = (obj?: HeadersInit) => {
   if (!obj) {
@@ -42,14 +51,22 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
 };
 
 interface FetchOptions {
-  userAgent?: string;
-  headers?: HeadersInit;
+  headers?: Record<string, string>;
+}
+
+interface FetchResponse {
+  ok: boolean;
+  status: number;
+  headers: Map<'etag' | 'last-modified' | 'server' | 'content-type', string>;
+  text: () => Promise<string>;
+  arrayBuffer: () => Promise<ArrayBuffer>;
 }
 
 @Injectable()
 export class FeedFetcherService {
   defaultUserAgent: string;
   feedRequestTimeoutMs: number;
+  proxyUrl?: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -63,6 +80,7 @@ export class FeedFetcherService {
     this.feedRequestTimeoutMs = this.configService.getOrThrow(
       'FEED_REQUESTS_REQUEST_TIMEOUT_MS',
     );
+    this.proxyUrl = this.configService.get('FEED_REQUESTS_PROXY_URL');
   }
 
   async getRequests({ skip, limit, url }: GetFeedRequestsInput) {
@@ -159,8 +177,19 @@ export class FeedFetcherService {
     responseText?: string | null;
   }> {
     const fetchOptions: FetchOptions = {
-      userAgent: this.configService.get<string>('feedUserAgent'),
-      headers: options?.headers,
+      headers: {
+        ...options?.headers,
+        'user-agent':
+          this.configService.get<string>('feedUserAgent') ||
+          this.defaultUserAgent,
+        accept: 'text/html,text/xml,application/xml,application/rss+xml',
+        /**
+         * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
+         * Appears to be temporary error given that the page says they're working on fixing it
+         */
+        'Sec-Fetch-Mode': 'navigate',
+        'sec-fetch-site': 'none',
+      },
     };
     const request = new Request();
     request.source = options?.source;
@@ -358,26 +387,18 @@ export class FeedFetcherService {
     url: string,
     options?: FetchOptions,
     log?: boolean,
-  ): Promise<ReturnType<typeof fetch>> {
+  ): Promise<FetchResponse> {
     const controller = new AbortController();
 
     const timer = setTimeout(() => {
       controller.abort();
     }, this.feedRequestTimeoutMs);
 
-    const useOptions: RequestInit = {
+    const useOptions = {
       headers: {
         ...options?.headers,
-        'user-agent': options?.userAgent || this.defaultUserAgent,
-        accept: 'text/html,text/xml,application/xml,application/rss+xml',
-        /**
-         * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
-         * Appears to be temporary error given that the page says they're working on fixing it
-         */
-        'Sec-Fetch-Mode': 'navigate',
-        'sec-fetch-site': 'none',
       },
-      redirect: 'follow',
+      redirect: 'follow' as const,
       signal: controller.signal,
     };
 
@@ -388,15 +409,34 @@ export class FeedFetcherService {
       });
     }
 
-    const res = await fetch(url, useOptions);
+    const r = await fetch(url, useOptions);
 
     clearTimeout(timer);
 
-    return res;
+    const headers: FetchResponse['headers'] = new Map();
+
+    headers.set('etag', convertHeaderValue(r.headers.get('etag')));
+    headers.set(
+      'content-type',
+      convertHeaderValue(r.headers.get('content-type')),
+    );
+    headers.set(
+      'last-modified',
+      convertHeaderValue(r.headers.get('last-modified')),
+    );
+    headers.set('server', convertHeaderValue(r.headers.get('server')));
+
+    return {
+      headers,
+      ok: r.status >= 200 && r.status < 300,
+      status: r.status,
+      text: () => r.text(),
+      arrayBuffer: () => r.arrayBuffer(),
+    };
   }
 
   private async maybeDecodeResponse(
-    res: Awaited<ReturnType<typeof fetch>>,
+    res: Awaited<FetchResponse>,
   ): Promise<string> {
     const charset = res.headers
       .get('content-type')

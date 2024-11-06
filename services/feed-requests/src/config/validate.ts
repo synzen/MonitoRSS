@@ -80,6 +80,10 @@ export class EnvironmentVariables {
 
   @IsNumber()
   FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT!: number;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_PROXY_URL?: string;
 }
 
 export function validateConfig(

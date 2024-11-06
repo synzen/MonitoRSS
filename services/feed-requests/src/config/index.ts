@@ -56,6 +56,7 @@ export default function config(): EnvironmentVariables {
     FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: Number(
       process.env.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT || '3',
     ),
+    FEED_REQUESTS_PROXY_URL: process.env.FEED_REQUESTS_PROXY_URL,
   };
 
   setGlobalDispatcher(

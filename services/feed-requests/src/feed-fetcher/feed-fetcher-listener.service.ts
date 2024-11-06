@@ -153,6 +153,7 @@ export class FeedFetcherListenerService {
                   url,
                   lookupKey,
                   requestStatus: request?.status,
+                  statusCode: request?.response?.statusCode,
                   errorMessage: request?.errorMessage,
                 },
               );
