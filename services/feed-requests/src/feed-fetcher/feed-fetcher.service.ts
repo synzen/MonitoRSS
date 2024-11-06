@@ -16,6 +16,7 @@ import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 import { fetch, ProxyAgent } from 'undici';
+import { FeatureFlaggerService } from '../feature-flagger/feature-flagger.service';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -74,6 +75,7 @@ export class FeedFetcherService {
     private readonly objectFileStorageService: ObjectFileStorageService,
     private readonly cacheStorageService: CacheStorageService,
     private readonly partitionedRequestsStore: PartitionedRequestsStoreService,
+    private readonly featureFlaggerService: FeatureFlaggerService,
   ) {
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
@@ -438,7 +440,14 @@ export class FeedFetcherService {
     );
     headers.set('server', convertHeaderValue(r.headers.get('server')));
 
+    const eligibleForProxy = this.featureFlaggerService.evaluateFeedUrl(
+      'request-proxies',
+      url,
+      'off',
+    );
+
     if (
+      eligibleForProxy === 'on' &&
       !options?.proxyUri &&
       this.proxyUrl &&
       r.status === HttpStatus.TOO_MANY_REQUESTS

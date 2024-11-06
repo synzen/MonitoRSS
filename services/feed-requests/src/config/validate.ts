@@ -84,6 +84,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   FEED_REQUESTS_PROXY_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  FEED_REQUESTS_SPLIT_SDK_KEY?: string;
 }
 
 export function validateConfig(
