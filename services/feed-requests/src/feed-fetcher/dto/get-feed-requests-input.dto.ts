@@ -1,5 +1,20 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsString, Max, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+class GetFeedRequestsLookupDetailsDto {
+  @IsString()
+  @IsNotEmpty()
+  key!: string;
+}
 
 export class GetFeedRequestsInputDto {
   @IsNumber()
@@ -16,4 +31,10 @@ export class GetFeedRequestsInputDto {
   @IsString()
   @IsNotEmpty()
   url!: string;
+
+  @IsObject()
+  @IsOptional()
+  @Type(() => GetFeedRequestsLookupDetailsDto)
+  @ValidateNested()
+  lookupDetails?: GetFeedRequestsLookupDetailsDto;
 }

@@ -633,15 +633,18 @@ export class UserFeedsService {
     skip,
     limit,
     url,
+    requestLookupKey,
   }: {
     skip: number;
     limit: number;
     url: string;
+    requestLookupKey?: string;
   }) {
     return this.feedFetcherApiService.getRequests({
       limit,
       skip,
       url,
+      requestLookupKey,
     });
   }
 
@@ -834,13 +837,21 @@ export class UserFeedsService {
       );
     }
 
-    await this.feedFetcherService.fetchFeed(feed.url, {
-      fetchOptions: {
-        useServiceApi: true,
-        useServiceApiCache: false,
-        debug: feed.debug,
-      },
-    });
+    await this.feedFetcherService.fetchFeed(
+      feed.url,
+      feed.feedRequestLookupKey
+        ? {
+            key: feed.feedRequestLookupKey,
+          }
+        : undefined,
+      {
+        fetchOptions: {
+          useServiceApi: true,
+          useServiceApiCache: false,
+          debug: feed.debug,
+        },
+      }
+    );
 
     return this.userFeedModel
       .findByIdAndUpdate(
@@ -879,9 +890,17 @@ export class UserFeedsService {
 
     const requestDate = new Date();
 
-    const res = await this.feedFetcherApiService.fetchAndSave(feed.url, {
-      getCachedResponse: false,
-    });
+    const res = await this.feedFetcherApiService.fetchAndSave(
+      feed.url,
+      feed.feedRequestLookupKey
+        ? {
+            key: feed.feedRequestLookupKey,
+          }
+        : undefined,
+      {
+        getCachedResponse: false,
+      }
+    );
 
     await this.userFeedModel
       .findByIdAndUpdate(feed._id, {

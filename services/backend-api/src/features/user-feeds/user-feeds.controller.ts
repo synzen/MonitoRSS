@@ -206,6 +206,7 @@ export class UserFeedsController {
       url: feed.url,
       limit,
       skip,
+      requestLookupKey: feed.feedRequestLookupKey,
     });
 
     return requests;

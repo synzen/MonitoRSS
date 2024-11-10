@@ -169,10 +169,12 @@ export default class PartitionedRequestsStoreService {
     limit,
     skip,
     url,
+    lookupKey,
   }: {
     skip: number;
     limit: number;
     url: string;
+    lookupKey?: string;
   }): Promise<Request[]> {
     const em = this.orm.em.getConnection();
 
@@ -182,7 +184,7 @@ export default class PartitionedRequestsStoreService {
        ORDER BY created_at DESC
        LIMIT ?
        OFFSET ?`,
-      [url, limit, skip],
+      [lookupKey || url, limit, skip],
     );
 
     return results.map((result) => ({

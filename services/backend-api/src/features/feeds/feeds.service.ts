@@ -128,7 +128,7 @@ export class FeedsService {
       throw new FeedLimitReachedException();
     }
 
-    await this.feedFetcherSevice.fetchFeed(url, {
+    await this.feedFetcherSevice.fetchFeed(url, undefined, {
       fetchOptions: {
         useServiceApi: isFeedV2,
         useServiceApiCache: false,
@@ -428,7 +428,7 @@ export class FeedsService {
       throw new Error(`Feed ${feedId} must be converted to a personal feed`);
     }
 
-    await this.feedFetcherSevice.fetchFeed(feed.url, {
+    await this.feedFetcherSevice.fetchFeed(feed.url, undefined, {
       fetchOptions: {
         useServiceApi: true,
         useServiceApiCache: false,

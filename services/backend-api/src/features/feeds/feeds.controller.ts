@@ -239,15 +239,19 @@ export class FeedsController {
   async getFeedArticles(
     @Param("feedId", GetFeedPipe) feed: DetailedFeed
   ): Promise<GetFeedArticlesOutputDto> {
-    const { articles } = await this.feedFetcherService.fetchFeed(feed.url, {
-      formatTables: feed.formatTables,
-      imgLinksExistence: feed.imgLinksExistence,
-      imgPreviews: feed.imgPreviews,
-      fetchOptions: {
-        useServiceApi: feed.isFeedv2 || false,
-        useServiceApiCache: true,
-      },
-    });
+    const { articles } = await this.feedFetcherService.fetchFeed(
+      feed.url,
+      undefined,
+      {
+        formatTables: feed.formatTables,
+        imgLinksExistence: feed.imgLinksExistence,
+        imgPreviews: feed.imgPreviews,
+        fetchOptions: {
+          useServiceApi: feed.isFeedv2 || false,
+          useServiceApiCache: true,
+        },
+      }
+    );
 
     return {
       result: articles.map((a) => a.toJSON()),

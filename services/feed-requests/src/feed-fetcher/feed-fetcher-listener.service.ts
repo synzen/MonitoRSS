@@ -47,16 +47,6 @@ export class FeedFetcherListenerService {
 
   @RabbitSubscribe({
     exchange: '',
-    queue: 'url.fetch',
-  })
-  async onBrokerFetchRequest(message: {
-    data: { url: string; rateSeconds: number };
-  }) {
-    await this.onBrokerFetchRequestHandler(message);
-  }
-
-  @RabbitSubscribe({
-    exchange: '',
     queue: 'url.fetch-batch',
     queueOptions: {
       channel: 'fetchBatch',
@@ -68,31 +58,6 @@ export class FeedFetcherListenerService {
       event: message,
     });
     await this.onBrokerFetchRequestBatchHandler(message);
-  }
-
-  @UseRequestContext()
-  private async onBrokerFetchRequestHandler(message: {
-    data: { url: string; rateSeconds: number };
-  }): Promise<void> {
-    const url = message?.data?.url;
-    const rateSeconds = message?.data?.rateSeconds;
-
-    if (!url || rateSeconds == null) {
-      logger.error(
-        `Received fetch request message has no url and/or rateSeconds, skipping`,
-        {
-          message,
-        },
-      );
-
-      return;
-    }
-
-    logger.debug(`Fetch request message received for url ${url}`);
-
-    await this.em.flush();
-
-    logger.debug(`Fetch request message processed for url ${url}`);
   }
 
   @UseRequestContext()

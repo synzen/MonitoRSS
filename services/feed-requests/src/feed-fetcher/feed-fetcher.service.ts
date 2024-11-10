@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
-import { GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
@@ -17,6 +16,7 @@ import PartitionedRequestsStoreService from '../partitioned-requests-store/parti
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 import { fetch, ProxyAgent } from 'undici';
 import { FeatureFlaggerService } from '../feature-flagger/feature-flagger.service';
+import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -86,11 +86,17 @@ export class FeedFetcherService {
     this.proxyUrl = this.configService.get('FEED_REQUESTS_PROXY_URL');
   }
 
-  async getRequests({ skip, limit, url }: GetFeedRequestsInput) {
+  async getRequests({
+    skip,
+    limit,
+    url,
+    lookupDetails,
+  }: GetFeedRequestsInputDto) {
     return this.partitionedRequestsStore.getRequests({
       limit,
       skip,
       url,
+      lookupKey: lookupDetails?.key,
     });
   }
 
