@@ -221,7 +221,7 @@ export class FeedFetcherListenerService {
 
     const { skip, nextRetryDate, failedAttemptsCount } =
       await this.shouldSkipAfterPreviousFailedAttempt({
-        lookupKey: lookupKey || url,
+        lookupKey,
         url,
       });
 
@@ -244,7 +244,7 @@ export class FeedFetcherListenerService {
     );
 
     if (request.status === RequestStatus.REFUSED_LARGE_FEED) {
-      this.emitRejectedUrl({ url });
+      this.emitRejectedUrl({ url, lookupKey });
     } else if (request.status !== RequestStatus.OK) {
       const nextRetryDate = this.calculateNextRetryDate(
         new Date(),
@@ -330,18 +330,29 @@ export class FeedFetcherListenerService {
     };
   }
 
-  emitRejectedUrl({ url }: { url: string }) {
+  emitRejectedUrl({
+    url,
+    lookupKey,
+  }: {
+    url: string;
+    lookupKey: string | undefined;
+  }) {
     try {
-      logger.info(`Emitting rejected url for feeds with url "${url}" `, {
-        url,
-      });
+      logger.info(
+        `Emitting rejected url for feeds with url "${url}", lookupkey ${lookupKey} `,
+        {
+          url,
+          lookupKey,
+        },
+      );
 
       this.amqpConnection.publish<{
-        data: { url: string; status: RequestStatus };
+        data: { url: string; lookupKey?: string; status: RequestStatus };
       }>('', 'url.rejected.disable-feeds', {
         data: {
           url,
           status: RequestStatus.REFUSED_LARGE_FEED,
+          lookupKey,
         },
       });
     } catch (err) {
