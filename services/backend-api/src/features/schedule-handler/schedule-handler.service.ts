@@ -71,6 +71,7 @@ export class ScheduleHandlerService {
 
     const urlsToDebug = new Set(feedsToDebug.map((f) => f.url));
 
+    // With batched URLs
     const urlsCursor =
       this.getUrlsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
 
@@ -100,6 +101,7 @@ export class ScheduleHandlerService {
       }
     }
 
+    // With feed request lookup keys
     const unbatchedUrlsCursor =
       this.getUnbatchedUrlsQueryMatchingRefreshRate(
         refreshRateSeconds

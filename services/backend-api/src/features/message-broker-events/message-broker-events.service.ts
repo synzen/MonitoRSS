@@ -213,10 +213,11 @@ export class MessageBrokerEventsService {
     createQueueIfNotExists: true,
   })
   async handleUrlRejectedDisableFeedsEvent({
-    data: { url, status },
+    data: { url, status, lookupKey },
   }: {
     data: {
       url: string;
+      lookupKey?: string;
       status: Extract<
         FeedFetcherFetchStatus,
         FeedFetcherFetchStatus.RefusedLargeFeed
@@ -229,7 +230,7 @@ export class MessageBrokerEventsService {
       await this.userFeedModel
         .updateMany(
           {
-            url,
+            ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
             disabledCode: {
               $exists: false,
             },
@@ -257,8 +258,7 @@ export class MessageBrokerEventsService {
 
     const relevantFeeds = await this.userFeedModel
       .find({
-        // ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
-        url: lookupKey || url,
+        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
         disabledCode: {
           $exists: false,
         },
