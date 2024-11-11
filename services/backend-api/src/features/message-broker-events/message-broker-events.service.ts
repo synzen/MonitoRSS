@@ -561,6 +561,11 @@ export class MessageBrokerEventsService {
       articleDayLimit: maxDailyArticles,
       feed: {
         id: userFeed._id.toHexString(),
+        requestLookupDetails: userFeed.feedRequestLookupKey
+          ? {
+              key: userFeed.feedRequestLookupKey,
+            }
+          : undefined,
         url: userFeed.url,
         passingComparisons: userFeed.passingComparisons || [],
         blockingComparisons: userFeed.blockingComparisons || [],

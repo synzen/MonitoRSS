@@ -18,6 +18,7 @@ interface BatchRequestMessage {
     lookupKey?: string;
     url: string;
     saveToObjectStorage?: boolean;
+    headers?: Record<string, string>;
   }>;
   rateSeconds: number;
 }
@@ -84,47 +85,50 @@ export class FeedFetcherListenerService {
 
     try {
       const results = await Promise.allSettled(
-        message.data.map(async ({ url, lookupKey, saveToObjectStorage }) => {
-          let request: PartitionedRequestInsert | undefined = undefined;
+        message.data.map(
+          async ({ url, lookupKey, saveToObjectStorage, headers }) => {
+            let request: PartitionedRequestInsert | undefined = undefined;
 
-          try {
-            const result = await this.handleBrokerFetchRequest({
-              lookupKey,
-              url,
-              rateSeconds,
-              saveToObjectStorage,
-            });
-
-            if (result) {
-              request = result.request;
-            }
-
-            if (result.successful) {
-              await this.emitFetchCompleted({
+            try {
+              const result = await this.handleBrokerFetchRequest({
                 lookupKey,
                 url,
-                rateSeconds: rateSeconds,
+                rateSeconds,
+                saveToObjectStorage,
+                headers,
               });
-            }
-          } finally {
-            if (message.timestamp) {
-              const nowTs = Date.now();
-              const finishedTs = nowTs - message.timestamp;
 
-              logger.datadog(
-                `Finished handling feed requests batch event URL in ${finishedTs}s`,
-                {
-                  duration: finishedTs,
-                  url,
+              if (result) {
+                request = result.request;
+              }
+
+              if (result.successful) {
+                await this.emitFetchCompleted({
                   lookupKey,
-                  requestStatus: request?.status,
-                  statusCode: request?.response?.statusCode,
-                  errorMessage: request?.errorMessage,
-                },
-              );
+                  url,
+                  rateSeconds: rateSeconds,
+                });
+              }
+            } finally {
+              if (message.timestamp) {
+                const nowTs = Date.now();
+                const finishedTs = nowTs - message.timestamp;
+
+                logger.datadog(
+                  `Finished handling feed requests batch event URL in ${finishedTs}s`,
+                  {
+                    duration: finishedTs,
+                    url,
+                    lookupKey,
+                    requestStatus: request?.status,
+                    statusCode: request?.response?.statusCode,
+                    errorMessage: request?.errorMessage,
+                  },
+                );
+              }
             }
-          }
-        }),
+          },
+        ),
       );
 
       for (let i = 0; i < results.length; ++i) {
@@ -159,6 +163,7 @@ export class FeedFetcherListenerService {
     url: string;
     rateSeconds: number;
     saveToObjectStorage?: boolean;
+    headers?: Record<string, string>;
   }): Promise<{
     successful: boolean;
     request?: PartitionedRequestInsert;
@@ -203,8 +208,13 @@ export class FeedFetcherListenerService {
       url,
       {
         saveResponseToObjectStorage: data.saveToObjectStorage,
-        lookupKey,
+        lookupDetails: data.lookupKey
+          ? {
+              key: data.lookupKey,
+            }
+          : undefined,
         source: RequestSource.Schedule,
+        headers: data.headers,
       },
     );
 

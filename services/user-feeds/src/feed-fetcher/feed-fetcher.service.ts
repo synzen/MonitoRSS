@@ -19,6 +19,7 @@ import { ClientGrpc } from "@nestjs/microservices/interfaces";
 import { lastValueFrom, Observable } from "rxjs";
 import logger from "../shared/utils/logger";
 import { Metadata } from "@grpc/grpc-js";
+import { FeedRequestLookupDetails } from "../shared/types/feed-request-lookup-details.type";
 
 @Injectable()
 export class FeedFetcherService implements OnModuleInit {
@@ -48,6 +49,7 @@ export class FeedFetcherService implements OnModuleInit {
       executeFetchIfNotInCache?: boolean;
       retries?: number;
       hashToCompare?: string;
+      lookupDetails: FeedRequestLookupDetails | undefined;
     }
   ) {
     const serviceUrl = this.SERVICE_HOST;
@@ -65,6 +67,7 @@ export class FeedFetcherService implements OnModuleInit {
                 options?.executeFetchIfNotInCache ?? false,
               executeFetch: options?.executeFetch ?? false,
               hashToCompare: options?.hashToCompare || undefined,
+              lookupDetails: options?.lookupDetails,
             }),
             headers: {
               "content-type": "application/json",

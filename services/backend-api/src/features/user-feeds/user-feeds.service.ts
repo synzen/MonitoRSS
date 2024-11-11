@@ -783,11 +783,22 @@ export class UserFeedsService {
       }
     }
 
-    return this.userFeedModel
+    const u = await this.userFeedModel
       .findByIdAndUpdate(id, useUpdateObject, {
         new: true,
       })
       .lean();
+
+    if (updates.url) {
+      // All stored articles of the old feed are now irrelevant
+      this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
+        "",
+        MessageBrokerQueue.FeedDeleted,
+        { data: { feed: { id } } }
+      );
+    }
+
+    return u;
   }
 
   async deleteFeedById(id: string) {

@@ -311,6 +311,7 @@ export class ArticleParserService {
                   {
                     executeFetchIfNotInCache: true,
                     retries: 3,
+                    lookupDetails: undefined,
                   }
                 );
 

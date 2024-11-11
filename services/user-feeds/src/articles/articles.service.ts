@@ -35,6 +35,7 @@ import { chunkArray } from "../shared/utils/chunk-array";
 import { PartitionedFeedArticleFieldStoreService } from "./partitioned-feed-article-field-store.service";
 import { ConfigService } from "@nestjs/config";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
+import { FeedRequestLookupDetails } from "../shared/types/feed-request-lookup-details.type";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -44,6 +45,7 @@ interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
   externalFeedProperties?: ExternalFeedPropertyDto[];
   findRssFromHtml?: boolean;
+  requestLookupDetails: FeedRequestLookupDetails | undefined;
 }
 
 type XmlParsedArticlesOutput = {
@@ -140,7 +142,7 @@ export class ArticlesService {
     }
   ) {
     try {
-      return await this.fetchFeedArticles(originalUrl, options);
+      return await this.fetchFeedArticles(originalUrl, { ...options });
     } catch (err) {
       if (!(err instanceof InvalidFeedException)) {
         throw err;
@@ -175,9 +177,11 @@ export class ArticlesService {
       externalFeedProperties,
       findRssFromHtml,
       executeFetch,
+      requestLookupDetails,
     }: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
       executeFetch?: boolean;
+      requestLookupDetails: FeedRequestLookupDetails | undefined;
     }
   ): Promise<{
     output: XmlParsedArticlesOutput | null;
@@ -186,13 +190,17 @@ export class ArticlesService {
   }> {
     const cachedArticles = await this.getFeedArticlesFromCache({
       url,
-      options: { formatOptions, externalFeedProperties },
+      options: { formatOptions, externalFeedProperties, requestLookupDetails },
     });
 
     if (cachedArticles) {
       await this.refreshFeedArticlesCacheExpiration({
         url,
-        options: { formatOptions, externalFeedProperties },
+        options: {
+          formatOptions,
+          externalFeedProperties,
+          requestLookupDetails,
+        },
       });
 
       return {
@@ -204,6 +212,7 @@ export class ArticlesService {
     const response = await this.feedFetcherService.fetch(url, {
       executeFetchIfNotInCache: true,
       executeFetch,
+      lookupDetails: requestLookupDetails,
     });
 
     if (!response.body) {
@@ -222,7 +231,11 @@ export class ArticlesService {
 
       await this.setFeedArticlesInCache({
         url,
-        options: { formatOptions, externalFeedProperties },
+        options: {
+          formatOptions,
+          externalFeedProperties,
+          requestLookupDetails,
+        },
         data: fromXml,
       });
 
@@ -241,11 +254,13 @@ export class ArticlesService {
             return this.fetchFeedArticles(newUrl.origin + rssUrl, {
               formatOptions,
               externalFeedProperties,
+              requestLookupDetails,
             });
           } else {
             return this.fetchFeedArticles(rssUrl, {
               formatOptions,
               externalFeedProperties,
+              requestLookupDetails,
             });
           }
         }
@@ -258,11 +273,16 @@ export class ArticlesService {
   async fetchFeedArticle(
     url: string,
     id: string,
-    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
+    {
+      formatOptions,
+      externalFeedProperties,
+      requestLookupDetails,
+    }: FetchFeedArticleOptions
   ) {
     const { output: result } = await this.fetchFeedArticles(url, {
       formatOptions,
       externalFeedProperties,
+      requestLookupDetails,
     });
 
     if (!result) {
@@ -288,11 +308,16 @@ export class ArticlesService {
 
   async fetchRandomFeedArticle(
     url: string,
-    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
+    {
+      formatOptions,
+      externalFeedProperties,
+      requestLookupDetails,
+    }: FetchFeedArticleOptions
   ) {
     const { output: result } = await this.fetchFeedArticles(url, {
       formatOptions,
       externalFeedProperties,
+      requestLookupDetails,
     });
 
     if (!result) {
@@ -961,6 +986,11 @@ export class ArticlesService {
       },
       externalFeedProperties: !!options.externalFeedProperties?.length
         ? options.externalFeedProperties
+        : undefined,
+      requestLookupDetails: options.requestLookupDetails
+        ? {
+            key: options.requestLookupDetails.key,
+          }
         : undefined,
     };
 

@@ -20,6 +20,7 @@ import { GetUserFeedArticlesFormatterDto } from "./shared";
 import { CustomPlaceholder } from "../../article-formatter/types/format-options";
 import { ExternalFeedPropertyDto } from "../../article-formatter/types";
 import { SelectPropertyType } from "../constants/select-property-type.constants";
+import { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 
 export class CustomPlaceholderStepDto {
   @IsString()
@@ -77,6 +78,16 @@ class FiltersDto {
   search?: string;
 }
 
+class LookupDetails implements FeedRequestLookupDetails {
+  @IsString()
+  @IsNotEmpty()
+  key: string;
+
+  @IsOptional()
+  @IsObject()
+  headers?: Record<string, string>;
+}
+
 export class GetUserFeedArticlesInputDto {
   @IsString()
   @IsNotEmpty()
@@ -132,4 +143,10 @@ export class GetUserFeedArticlesInputDto {
   @IsBoolean()
   @IsOptional()
   executeFetch?: boolean;
+
+  @IsOptional()
+  @IsObject()
+  @Type(() => LookupDetails)
+  @ValidateNested()
+  requestLookupDetails?: LookupDetails;
 }

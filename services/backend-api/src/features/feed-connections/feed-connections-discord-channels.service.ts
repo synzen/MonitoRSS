@@ -933,6 +933,11 @@ export class FeedConnectionsDiscordChannelsService {
             user?.preferences?.dateLocale,
         },
         externalProperties: useExternalProperties,
+        requestLookupDetails: userFeed.feedRequestLookupKey
+          ? {
+              key: userFeed.feedRequestLookupKey,
+            }
+          : undefined,
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {

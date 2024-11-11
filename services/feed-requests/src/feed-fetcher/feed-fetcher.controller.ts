@@ -116,7 +116,7 @@ export class FeedFetcherController {
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url, {
           saveResponseToObjectStorage: data.debug,
-          lookupKey: data.lookupDetails?.key,
+          lookupDetails: data.lookupDetails ? data.lookupDetails : undefined,
           source: undefined,
           headers: data.lookupDetails?.headers,
         });
@@ -152,11 +152,11 @@ export class FeedFetcherController {
     ) {
       if (data.executeFetchIfNotExists) {
         const savedData = await this.feedFetcherService.fetchAndSaveResponse(
-          data.url,
+          data.lookupDetails?.url || data.url,
           {
             flushEntities: true,
             saveResponseToObjectStorage: data.debug,
-            lookupKey: data.lookupDetails?.key,
+            lookupDetails: data.lookupDetails,
             source: undefined,
             headers: data.lookupDetails?.headers,
           },

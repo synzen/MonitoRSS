@@ -3,6 +3,7 @@ import {
   DiscordMediumEvent,
   ExternalPropertyDto,
 } from "../../../common";
+import { FeedRequestLookupDetails } from "../../../common/types/feed-request-lookup-details.type";
 import {
   FeedConnectionDiscordChannelType,
   FeedConnectionDiscordWebhookType,
@@ -21,6 +22,7 @@ export interface SendTestDiscordChannelArticleInput {
         dateLocale?: string;
       };
       externalProperties: Array<ExternalPropertyDto> | undefined | null;
+      requestLookupDetails: FeedRequestLookupDetails | undefined;
     };
     article?: {
       id: string;

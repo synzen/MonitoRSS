@@ -175,7 +175,11 @@ export class FeedFetcherService {
   async fetchAndSaveResponse(
     url: string,
     options?: {
-      lookupKey: string | undefined;
+      lookupDetails:
+        | {
+            key: string;
+          }
+        | undefined;
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string>;
@@ -202,7 +206,7 @@ export class FeedFetcherService {
     };
     const request = new Request();
     request.source = options?.source;
-    request.lookupKey = options?.lookupKey || url;
+    request.lookupKey = options?.lookupDetails?.key || url;
     request.url = url;
     request.fetchOptions = {
       ...fetchOptions,

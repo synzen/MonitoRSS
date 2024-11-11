@@ -272,6 +272,7 @@ export class FeedEventHandlerService {
       try {
         response = await this.feedFetcherService.fetch(url, {
           hashToCompare: lastHashSaved || undefined,
+          lookupDetails: event.data.feed.requestLookupDetails,
         });
       } catch (err) {
         if (
@@ -676,6 +677,7 @@ export class FeedEventHandlerService {
       options: {
         formatOptions,
         externalFeedProperties: event.data.feed.externalProperties,
+        requestLookupDetails: event.data.feed.requestLookupDetails,
       },
     };
 
