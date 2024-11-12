@@ -14,8 +14,7 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
-import { fetch, ProxyAgent } from 'undici';
-import { FeatureFlaggerService } from '../feature-flagger/feature-flagger.service';
+import { fetch } from 'undici';
 import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
@@ -68,14 +67,12 @@ interface FetchResponse {
 export class FeedFetcherService {
   defaultUserAgent: string;
   feedRequestTimeoutMs: number;
-  proxyUrl?: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly objectFileStorageService: ObjectFileStorageService,
     private readonly cacheStorageService: CacheStorageService,
     private readonly partitionedRequestsStore: PartitionedRequestsStoreService,
-    private readonly featureFlaggerService: FeatureFlaggerService,
   ) {
     this.defaultUserAgent = this.configService.getOrThrow(
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
@@ -83,7 +80,6 @@ export class FeedFetcherService {
     this.feedRequestTimeoutMs = this.configService.getOrThrow(
       'FEED_REQUESTS_REQUEST_TIMEOUT_MS',
     );
-    this.proxyUrl = this.configService.get('FEED_REQUESTS_PROXY_URL');
   }
 
   async getRequests({ skip, limit, url, lookupKey }: GetFeedRequestsInputDto) {
@@ -417,18 +413,7 @@ export class FeedFetcherService {
       });
     }
 
-    let agent: ProxyAgent | undefined;
-
-    if (options?.proxyUri) {
-      agent = new ProxyAgent({
-        connect: {
-          timeout: this.feedRequestTimeoutMs,
-        },
-        uri: options.proxyUri,
-      });
-    }
-
-    const r = await fetch(url, { ...useOptions, dispatcher: agent });
+    const r = await fetch(url, { ...useOptions });
 
     clearTimeout(timer);
 
@@ -444,25 +429,6 @@ export class FeedFetcherService {
       convertHeaderValue(r.headers.get('last-modified')),
     );
     headers.set('server', convertHeaderValue(r.headers.get('server')));
-
-    const eligibleForProxy = this.featureFlaggerService.evaluateFeedUrl(
-      'request-proxies',
-      url,
-      'off',
-    );
-
-    if (
-      eligibleForProxy === 'on' &&
-      !options?.proxyUri &&
-      this.proxyUrl &&
-      r.status === HttpStatus.TOO_MANY_REQUESTS
-    ) {
-      return this.fetchFeedResponse(
-        url,
-        { ...options, proxyUri: this.proxyUrl },
-        log,
-      );
-    }
 
     return {
       headers,
