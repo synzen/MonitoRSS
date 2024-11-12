@@ -39,6 +39,7 @@ export const feedV2EventSchemaDateChecks = z.object({
 
 export const feedV2EventRequestLookupDetails = z.object({
   key: z.string(),
+  url: z.string().optional(),
   headers: z.record(z.string(), z.string()).optional(),
 });
 

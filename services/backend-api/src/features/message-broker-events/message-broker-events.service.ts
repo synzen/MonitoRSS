@@ -557,17 +557,23 @@ export class MessageBrokerEventsService {
       }));
 
     const allMediums = discordChannelMediums.concat(discordWebhookMediums);
-
+    const requestLookupDetails = getFeedRequestLookupDetails({
+      feed: userFeed,
+      user: {
+        externalCredentials: user?.externalCredentials,
+      },
+    });
     const publishData = {
       articleDayLimit: maxDailyArticles,
       feed: {
         id: userFeed._id.toHexString(),
-        requestLookupDetails: getFeedRequestLookupDetails({
-          feed: userFeed,
-          user: {
-            externalCredentials: user?.externalCredentials,
-          },
-        }),
+        requestLookupDetails: requestLookupDetails
+          ? {
+              key: requestLookupDetails.key,
+              url: requestLookupDetails.url,
+              headers: requestLookupDetails.headers,
+            }
+          : undefined,
         url: userFeed.url,
         passingComparisons: userFeed.passingComparisons || [],
         blockingComparisons: userFeed.blockingComparisons || [],
