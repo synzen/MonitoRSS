@@ -10,6 +10,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { getCommonFeedAggregateStages } from "../../common/utils";
+import { UserExternalCredential } from "../users/entities/user.entity";
 
 @Injectable()
 export class ScheduleHandlerService {
@@ -82,6 +83,9 @@ export class ScheduleHandlerService {
       requestOptions?: {
         headers?: Record<string, string>;
       };
+      user?: {
+        credentials: UserExternalCredential[];
+      };
     }[] = [];
 
     for await (const { _id: url } of urlsCursor) {
@@ -153,12 +157,23 @@ export class ScheduleHandlerService {
       withLookupKeys: true,
     });
 
-    pipeline.push({
-      $project: {
-        url: 1,
-        feedRequestLookupKey: 1,
+    pipeline.push(
+      {
+        $lookup: {
+          from: "users",
+          localField: "user.id",
+          foreignField: "_id",
+          as: "users",
+        },
       },
-    });
+      {
+        $project: {
+          url: 1,
+          feedRequestLookupKey: 1,
+          "users.credentials": 1,
+        },
+      }
+    );
 
     return this.userFeedModel.aggregate(pipeline);
   }

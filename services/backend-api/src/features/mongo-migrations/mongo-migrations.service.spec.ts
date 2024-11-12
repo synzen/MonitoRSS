@@ -20,10 +20,12 @@ import {
 
 import { MongoMigrationsModule } from "./mongo-migrations.module";
 import { MongoMigrationsService } from "./mongo-migrations.service";
+import { User, UserFeature, UserModel } from "../users/entities/user.entity";
 
 describe("MongoDB Migrations Service", () => {
   let module: TestingModule;
   let userFeedModel: UserFeedModel;
+  let userModel: UserModel;
   let migrationModel: MongoMigrationModel;
   let service: MongoMigrationsService;
 
@@ -32,13 +34,14 @@ describe("MongoDB Migrations Service", () => {
       providers: [],
       imports: [
         MongooseTestModule.forRoot(),
-        MongooseModule.forFeature([UserFeedFeature]),
+        MongooseModule.forFeature([UserFeedFeature, UserFeature]),
         MongoMigrationsModule,
       ],
     });
 
     ({ module } = await init());
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
+    userModel = module.get<UserModel>(getModelToken(User.name));
     migrationModel = module.get<MongoMigrationModel>(
       getModelToken(MongoMigration.name)
     );
@@ -106,6 +109,49 @@ describe("MongoDB Migrations Service", () => {
         regexSearch: "search",
         regexSearchFlags: "gmi",
         type: CustomPlaceholderStepType.Regex,
+      });
+    });
+
+    it("should add user ids to user feed documents", async () => {
+      const inserted = await userModel.collection.insertOne({
+        discordUserId: "discord-user-id",
+      });
+
+      const toInsert = {
+        url: "https://example.com",
+        feedRequestLookupKey: "https://example.com",
+        title: "title",
+        user: {
+          discordUserId: "discord-user-id",
+        },
+        connections: {
+          discordChannels: [
+            {
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              name: "name",
+              details: {
+                embeds: [],
+                formatter: {},
+              },
+              customPlaceholders: [],
+            },
+          ],
+        },
+      };
+
+      await userFeedModel.collection.insertOne(toInsert);
+
+      await service.applyMigrations();
+
+      const feed = await userFeedModel.findOne({}).lean();
+
+      expect(feed).toMatchObject({
+        ...toInsert,
+        user: {
+          ...toInsert.user,
+          id: inserted.insertedId,
+        },
       });
     });
 

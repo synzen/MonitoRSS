@@ -16,7 +16,15 @@ async function bootstrap() {
     );
     await app.init();
     logger.info(`Applying migrations...`);
-    await applyMongoMigrations(app);
+    applyMongoMigrations(app)
+      .then(() => {
+        logger.info(`Migrations applied`);
+      })
+      .catch((err) => {
+        logger.error(`Failed to apply migrations`, {
+          stack: err.stack,
+        });
+      });
 
     setInterval(() => {
       runTimerSync(app);

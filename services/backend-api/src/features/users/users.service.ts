@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { UpdateQuery } from "mongoose";
+import { ObjectId, UpdateQuery } from "mongoose";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
 import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
@@ -138,6 +138,15 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  async getIdByDiscordId(discordUserId: string): Promise<ObjectId | null> {
+    const user = await this.userModel
+      .findOne({ discordUserId })
+      .select("_id")
+      .lean();
+
+    return user?._id || null;
   }
 
   async getByDiscordId(

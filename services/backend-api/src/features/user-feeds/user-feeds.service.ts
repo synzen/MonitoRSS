@@ -64,6 +64,7 @@ import {
   FeedRequestException,
   NoFeedOnHtmlPageException,
 } from "../../services/feed-fetcher/exceptions";
+import { UsersService } from "../users/users.service";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -104,7 +105,8 @@ export class UserFeedsService {
     private readonly feedHandlerService: FeedHandlerService,
     private readonly feedFetcherApiService: FeedFetcherApiService,
     private readonly amqpConnection: AmqpConnection,
-    private readonly feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService
+    private readonly feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService,
+    private readonly usersService: UsersService
   ) {}
 
   async formatForHttpResponse(feed: UserFeed, discordUserId: string) {
@@ -304,8 +306,11 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    const { maxUserFeeds, maxDailyArticles, refreshRateSeconds } =
-      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+    const [{ maxUserFeeds, maxDailyArticles, refreshRateSeconds }, userId] =
+      await Promise.all([
+        this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+        this.usersService.getIdByDiscordId(discordUserId),
+      ]);
 
     const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
       discordUserId
@@ -322,6 +327,7 @@ export class UserFeedsService {
       url: finalUrl,
       inputUrl: url,
       user: {
+        id: userId,
         discordUserId,
       },
       refreshRateSeconds,

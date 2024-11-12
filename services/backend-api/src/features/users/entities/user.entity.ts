@@ -1,5 +1,5 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Model, Types } from "mongoose";
+import { Document, Model, Types, Schema as MongooseSchema } from "mongoose";
 
 @Schema({
   timestamps: false,
@@ -32,6 +32,25 @@ export class UserFeatureFlags {
 }
 
 export const UserFeatureFlagsSchema =
+  SchemaFactory.createForClass(UserFeatureFlags);
+
+@Schema({
+  timestamps: false,
+  _id: false,
+})
+export class UserExternalCredential {
+  @Prop({
+    required: true,
+  })
+  type: string;
+
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+  })
+  data: Record<string, unknown>;
+}
+
+export const UserExternalCredentialSchema =
   SchemaFactory.createForClass(UserFeatureFlags);
 
 @Schema({
@@ -69,6 +88,11 @@ export class User {
     required: false,
   })
   enableBilling?: boolean;
+
+  @Prop({
+    type: [UserExternalCredentialSchema],
+  })
+  externalCredentials?: UserExternalCredential[];
 
   createdAt: Date;
 
