@@ -10,7 +10,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { getCommonFeedAggregateStages } from "../../common/utils";
-import { UserExternalCredential } from "../users/entities/user.entity";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 
 @Injectable()
 export class ScheduleHandlerService {
@@ -80,12 +80,7 @@ export class ScheduleHandlerService {
       url: string;
       saveToObjectStorage?: boolean;
       lookupKey?: string;
-      requestOptions?: {
-        headers?: Record<string, string>;
-      };
-      user?: {
-        credentials: UserExternalCredential[];
-      };
+      headers?: Record<string, string>;
     }[] = [];
 
     for await (const { _id: url } of urlsCursor) {
@@ -115,6 +110,7 @@ export class ScheduleHandlerService {
       _id,
       url,
       feedRequestLookupKey,
+      users,
     } of unbatchedUrlsCursor) {
       if (!url || !feedRequestLookupKey) {
         throw new Error(
@@ -122,10 +118,24 @@ export class ScheduleHandlerService {
         );
       }
 
+      const user = users[0];
+      const externalCredentials = user?.externalCredentials;
+
+      const lookupDetails = getFeedRequestLookupDetails({
+        feed: {
+          url: url,
+          feedRequestLookupKey,
+        },
+        user: {
+          externalCredentials: externalCredentials,
+        },
+      });
+
       urlBatch.push({
-        url,
+        url: lookupDetails?.url || url,
         saveToObjectStorage: urlsToDebug.has(url),
         lookupKey: feedRequestLookupKey,
+        headers: lookupDetails?.headers,
       });
 
       if (urlBatch.length === 25) {
@@ -157,23 +167,13 @@ export class ScheduleHandlerService {
       withLookupKeys: true,
     });
 
-    pipeline.push(
-      {
-        $lookup: {
-          from: "users",
-          localField: "user.id",
-          foreignField: "_id",
-          as: "users",
-        },
+    pipeline.push({
+      $project: {
+        url: 1,
+        feedRequestLookupKey: 1,
+        users: 1,
       },
-      {
-        $project: {
-          url: 1,
-          feedRequestLookupKey: 1,
-          "users.credentials": 1,
-        },
-      }
-    );
+    });
 
     return this.userFeedModel.aggregate(pipeline);
   }

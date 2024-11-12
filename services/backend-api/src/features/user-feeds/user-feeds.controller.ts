@@ -241,6 +241,7 @@ export class UserFeedsController {
     const input: GetFeedArticlePropertiesInput = {
       url: feed.url,
       customPlaceholders,
+      feed,
     };
 
     const { properties, requestStatus } =
@@ -274,6 +275,7 @@ export class UserFeedsController {
     const input: GetFeedArticlesInput = {
       limit,
       url: feed.url,
+      feed,
       random,
       filters,
       discordUserId: feed.user.discordUserId,

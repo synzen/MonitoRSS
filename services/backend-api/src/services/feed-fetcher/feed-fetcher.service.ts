@@ -50,7 +50,7 @@ export class FeedFetcherService {
 
   async fetchFeed(
     url: string,
-    lookupDetails: FeedRequestLookupDetails | undefined,
+    lookupDetails: FeedRequestLookupDetails | null,
     options: FetchFeedOptions
   ): Promise<FeedFetchResult> {
     let inputStream: NodeJS.ReadableStream;
@@ -109,7 +109,7 @@ export class FeedFetcherService {
 
   async fetchFeedStreamFromApiService(
     url: string,
-    lookupDetails: FeedRequestLookupDetails | undefined,
+    lookupDetails: FeedRequestLookupDetails | null,
     options?: {
       getCachedResponse?: boolean;
       debug?: boolean;

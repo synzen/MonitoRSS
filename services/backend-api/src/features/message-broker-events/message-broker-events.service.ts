@@ -38,6 +38,7 @@ import {
   UserFeedHealthStatus,
 } from "../user-feeds/types";
 import { User, UserDocument } from "../users/entities/user.entity";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 
 @Injectable()
 export class MessageBrokerEventsService {
@@ -561,11 +562,12 @@ export class MessageBrokerEventsService {
       articleDayLimit: maxDailyArticles,
       feed: {
         id: userFeed._id.toHexString(),
-        requestLookupDetails: userFeed.feedRequestLookupKey
-          ? {
-              key: userFeed.feedRequestLookupKey,
-            }
-          : undefined,
+        requestLookupDetails: getFeedRequestLookupDetails({
+          feed: userFeed,
+          user: {
+            externalCredentials: user?.externalCredentials,
+          },
+        }),
         url: userFeed.url,
         passingComparisons: userFeed.passingComparisons || [],
         blockingComparisons: userFeed.blockingComparisons || [],

@@ -65,6 +65,8 @@ import {
   NoFeedOnHtmlPageException,
 } from "../../services/feed-fetcher/exceptions";
 import { UsersService } from "../users/users.service";
+import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -320,7 +322,10 @@ export class UserFeedsService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
-    const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(url);
+    const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(
+      url,
+      null
+    );
 
     const created = await this.userFeedModel.create({
       title,
@@ -356,6 +361,10 @@ export class UserFeedsService {
       throw new Error(`Feed ${feedId} not found while cloning`);
     }
 
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      found.user.discordUserId
+    );
+
     const { maxUserFeeds } =
       await this.supportersService.getBenefitsOfDiscordUser(
         found.user.discordUserId
@@ -375,7 +384,15 @@ export class UserFeedsService {
     let finalUrl = found.url;
 
     if (data?.url && data.url !== found.url) {
-      finalUrl = (await this.checkUrlIsValid(data.url)).finalUrl;
+      finalUrl = (
+        await this.checkUrlIsValid(
+          data.url,
+          getFeedRequestLookupDetails({
+            feed: found,
+            user,
+          })
+        )
+      ).finalUrl;
       inputUrl = data.url;
     }
 
@@ -675,10 +692,17 @@ export class UserFeedsService {
       ReturnType<typeof this.supportersService.getBenefitsOfDiscordUser>
     > | null = null;
 
-    const foundUser = await this.userFeedModel
+    const feed = await this.userFeedModel
       .findById(new Types.ObjectId(id))
-      .select("user")
       .lean();
+
+    if (!feed) {
+      throw new Error(`Feed ${id} not found while updating feed`);
+    }
+
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
 
     const useUpdateObject: UpdateQuery<UserFeedDocument> = {
       $set: {},
@@ -694,19 +718,21 @@ export class UserFeedsService {
     }
 
     if (updates.url) {
-      const { finalUrl } = await this.checkUrlIsValid(updates.url);
+      const { finalUrl } = await this.checkUrlIsValid(
+        updates.url,
+        getFeedRequestLookupDetails({
+          feed,
+          user,
+        })
+      );
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
     }
 
     if (updates.disabledCode) {
-      if (!foundUser) {
-        throw new Error(`User ${id} not found while updating refresh rate`);
-      }
-
       if (!userBenefits) {
         userBenefits = await this.supportersService.getBenefitsOfDiscordUser(
-          foundUser.user.discordUserId
+          user.discordUserId
         );
       }
 
@@ -715,7 +741,7 @@ export class UserFeedsService {
         disabledCode === UserFeedDisabledCode.ExceededFeedLimit
       ) {
         const currentFeedCount = await this.userFeedModel.countDocuments({
-          "user.discordUserId": foundUser.user.discordUserId,
+          "user.discordUserId": user.discordUserId,
           disabledCode: {
             $ne: UserFeedDisabledCode.ExceededFeedLimit,
           },
@@ -723,7 +749,7 @@ export class UserFeedsService {
 
         if (userBenefits.maxUserFeeds <= currentFeedCount) {
           throw new FeedLimitReachedException(
-            `Cannot enable feed ${id} because user ${foundUser.user.discordUserId} has reached the feed limit`
+            `Cannot enable feed ${id} because user ${user.discordUserId} has reached the feed limit`
           );
         }
       }
@@ -756,13 +782,9 @@ export class UserFeedsService {
     }
 
     if (updates.userRefreshRateSeconds) {
-      if (!foundUser) {
-        throw new Error(`User ${id} not found while updating refresh rate`);
-      }
-
       if (!userBenefits) {
         userBenefits = await this.supportersService.getBenefitsOfDiscordUser(
-          foundUser.user.discordUserId
+          user.discordUserId
         );
       }
 
@@ -781,7 +803,7 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds < fastestPossibleRate
       ) {
         throw new Error(
-          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${foundUser.user.discordUserId}`
+          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${user.discordUserId}`
         );
       } else {
         useUpdateObject.$set!.userRefreshRateSeconds =
@@ -854,13 +876,16 @@ export class UserFeedsService {
       );
     }
 
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
+
     await this.feedFetcherService.fetchFeed(
       feed.url,
-      feed.feedRequestLookupKey
-        ? {
-            key: feed.feedRequestLookupKey,
-          }
-        : undefined,
+      getFeedRequestLookupDetails({
+        feed,
+        user,
+      }),
       {
         fetchOptions: {
           useServiceApi: true,
@@ -906,14 +931,16 @@ export class UserFeedsService {
     }
 
     const requestDate = new Date();
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
 
     const res = await this.feedFetcherApiService.fetchAndSave(
       feed.url,
-      feed.feedRequestLookupKey
-        ? {
-            key: feed.feedRequestLookupKey,
-          }
-        : undefined,
+      getFeedRequestLookupDetails({
+        feed,
+        user,
+      }),
       {
         getCachedResponse: false,
       }
@@ -977,42 +1004,45 @@ export class UserFeedsService {
     skip,
     formatter,
     discordUserId,
+    feed,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
-    const user = await this.userModel.findOne(
-      {
-        discordUserId,
-      },
-      {
-        preferences: 1,
-      }
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      discordUserId
     );
 
-    return this.feedHandlerService.getArticles({
-      url,
-      limit,
-      random,
-      filters,
-      skip: skip || 0,
-      selectProperties,
-      selectPropertyTypes,
-      formatter: {
-        ...formatter,
-        options: {
-          ...formatter?.options,
-          dateFormat:
-            formatter.options.dateFormat || user?.preferences?.dateFormat,
-          dateTimezone:
-            formatter.options.dateTimezone || user?.preferences?.dateTimezone,
-          dateLocale:
-            formatter.options.dateLocale || user?.preferences?.dateLocale,
+    return this.feedHandlerService.getArticles(
+      {
+        url,
+        limit,
+        random,
+        filters,
+        skip: skip || 0,
+        selectProperties,
+        selectPropertyTypes,
+        formatter: {
+          ...formatter,
+          options: {
+            ...formatter?.options,
+            dateFormat:
+              formatter.options.dateFormat || user?.preferences?.dateFormat,
+            dateTimezone:
+              formatter.options.dateTimezone || user?.preferences?.dateTimezone,
+            dateLocale:
+              formatter.options.dateLocale || user?.preferences?.dateLocale,
+          },
         },
       },
-    });
+      getFeedRequestLookupDetails({
+        feed,
+        user,
+      })
+    );
   }
 
   async getFeedArticleProperties({
     url,
     customPlaceholders,
+    feed,
   }: GetFeedArticlePropertiesInput): Promise<GetFeedArticlePropertiesOutput> {
     const input: GetArticlesInput = {
       url,
@@ -1033,8 +1063,18 @@ export class UserFeedsService {
       },
     };
 
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
+
     const { articles, requestStatus } =
-      await this.feedHandlerService.getArticles(input);
+      await this.feedHandlerService.getArticles(
+        input,
+        getFeedRequestLookupDetails({
+          feed,
+          user,
+        })
+      );
 
     const properties = Array.from(
       new Set(articles.map((article) => Object.keys(article)).flat())
@@ -1518,26 +1558,30 @@ export class UserFeedsService {
   }
 
   private async checkUrlIsValid(
-    url: string
+    url: string,
+    lookupDetails: FeedRequestLookupDetails | null
   ): Promise<{ finalUrl: string; enableDateChecks: boolean }> {
-    const getArticlesResponse = await this.feedHandlerService.getArticles({
-      url,
-      formatter: {
-        options: {
-          dateFormat: undefined,
-          dateLocale: undefined,
-          dateTimezone: undefined,
-          disableImageLinkPreviews: false,
-          formatTables: false,
-          stripImages: false,
+    const getArticlesResponse = await this.feedHandlerService.getArticles(
+      {
+        url,
+        formatter: {
+          options: {
+            dateFormat: undefined,
+            dateLocale: undefined,
+            dateTimezone: undefined,
+            disableImageLinkPreviews: false,
+            formatTables: false,
+            stripImages: false,
+          },
         },
+        selectProperties: ["date"],
+        limit: 1,
+        skip: 0,
+        findRssFromHtml: true,
+        executeFetch: true,
       },
-      selectProperties: ["date"],
-      limit: 1,
-      skip: 0,
-      findRssFromHtml: true,
-      executeFetch: true,
-    });
+      lookupDetails
+    );
 
     const {
       requestStatus,

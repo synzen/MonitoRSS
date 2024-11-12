@@ -57,6 +57,8 @@ import logger from "../../utils/logger";
 import { WebhookMissingPermissionsException } from "../discord-webhooks/exceptions";
 import { UserFeedConnectionEventsService } from "../user-feed-connection-events/user-feed-connection-events.service";
 import { User, UserModel } from "../users/entities/user.entity";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
+import { UsersService } from "../users/users.service";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -147,7 +149,8 @@ export class FeedConnectionsDiscordChannelsService {
     private readonly discordWebhooksService: DiscordWebhooksService,
     private readonly discordApiService: DiscordAPIService,
     private readonly discordAuthService: DiscordAuthService,
-    private readonly connectionEventsService: UserFeedConnectionEventsService
+    private readonly connectionEventsService: UserFeedConnectionEventsService,
+    private readonly usersService: UsersService
   ) {}
 
   async createDiscordChannelConnection({
@@ -1010,21 +1013,18 @@ export class FeedConnectionsDiscordChannelsService {
     includeCustomPlaceholderPreviews,
     externalProperties,
   }: CreatePreviewInput) {
-    const user = await this.userModel
-      .findOne(
-        {
-          discordUserId: userFeed.user.discordUserId,
-        },
-        {
-          preferences: 1,
-        }
-      )
-      .lean();
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId
+    );
 
     const payload: CreateDiscordChannelPreviewInput["details"] = {
       type: "discord",
       includeCustomPlaceholderPreviews,
       feed: {
+        requestLookupDetails: getFeedRequestLookupDetails({
+          feed: userFeed,
+          user,
+        }),
         url: userFeed.url,
         formatOptions: {
           ...feedFormatOptions,

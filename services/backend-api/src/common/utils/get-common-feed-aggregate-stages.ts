@@ -71,6 +71,7 @@ export function getCommonFeedAggregateStages({
       },
     },
     {
+      // For their preferences when for user feed events
       $lookup: {
         from: "users",
         localField: "user.discordUserId",

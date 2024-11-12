@@ -86,17 +86,12 @@ export class FeedFetcherService {
     this.proxyUrl = this.configService.get('FEED_REQUESTS_PROXY_URL');
   }
 
-  async getRequests({
-    skip,
-    limit,
-    url,
-    lookupDetails,
-  }: GetFeedRequestsInputDto) {
+  async getRequests({ skip, limit, url, lookupKey }: GetFeedRequestsInputDto) {
     return this.partitionedRequestsStore.getRequests({
       limit,
       skip,
       url,
-      lookupKey: lookupDetails?.key,
+      lookupKey,
     });
   }
 

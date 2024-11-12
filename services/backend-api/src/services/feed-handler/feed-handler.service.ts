@@ -26,6 +26,7 @@ import {
   SendTestArticleResult,
 } from "./types";
 import { CreatePreviewOutput } from "./types/create-preview-output.type";
+import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
 
 export interface FeedHandlerRateLimitsResponse {
   results: {
@@ -227,18 +228,21 @@ export class FeedHandlerService {
     return result;
   }
 
-  async getArticles({
-    url,
-    limit,
-    random,
-    skip,
-    filters,
-    selectProperties,
-    selectPropertyTypes,
-    formatter,
-    findRssFromHtml,
-    executeFetch,
-  }: GetArticlesInput): Promise<GetArticlesResponse["result"]> {
+  async getArticles(
+    {
+      url,
+      limit,
+      random,
+      skip,
+      filters,
+      selectProperties,
+      selectPropertyTypes,
+      formatter,
+      findRssFromHtml,
+      executeFetch,
+    }: GetArticlesInput,
+    lookupDetails: FeedRequestLookupDetails | null
+  ): Promise<GetArticlesResponse["result"]> {
     const body = {
       url,
       limit,
@@ -250,6 +254,12 @@ export class FeedHandlerService {
       formatter,
       findRssFromHtml,
       executeFetch,
+      requestLookupDetails: lookupDetails
+        ? {
+            key: lookupDetails.key,
+            headers: lookupDetails.headers,
+          }
+        : undefined,
     };
 
     const res = await fetch(`${this.host}/v1/user-feeds/get-articles`, {

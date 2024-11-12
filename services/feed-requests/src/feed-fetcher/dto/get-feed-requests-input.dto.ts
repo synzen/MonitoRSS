@@ -2,19 +2,11 @@ import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsNumber,
-  IsObject,
   IsOptional,
   IsString,
   Max,
   Min,
-  ValidateNested,
 } from 'class-validator';
-
-class GetFeedRequestsLookupDetailsDto {
-  @IsString()
-  @IsNotEmpty()
-  key!: string;
-}
 
 export class GetFeedRequestsInputDto {
   @IsNumber()
@@ -32,9 +24,7 @@ export class GetFeedRequestsInputDto {
   @IsNotEmpty()
   url!: string;
 
-  @IsObject()
+  @IsString()
   @IsOptional()
-  @Type(() => GetFeedRequestsLookupDetailsDto)
-  @ValidateNested()
-  lookupDetails?: GetFeedRequestsLookupDetailsDto;
+  lookupKey?: string;
 }

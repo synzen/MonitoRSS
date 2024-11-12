@@ -241,7 +241,7 @@ export class FeedsController {
   ): Promise<GetFeedArticlesOutputDto> {
     const { articles } = await this.feedFetcherService.fetchFeed(
       feed.url,
-      undefined,
+      null,
       {
         formatTables: feed.formatTables,
         imgLinksExistence: feed.imgLinksExistence,

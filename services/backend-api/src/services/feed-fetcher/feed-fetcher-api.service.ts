@@ -30,7 +30,7 @@ export class FeedFetcherApiService {
 
   async fetchAndSave(
     url: string,
-    lookupDetails: FeedRequestLookupDetails | undefined,
+    lookupDetails: FeedRequestLookupDetails | null,
     options?: FeedFetchOptions
   ): Promise<FeedFetcherFetchFeedResponse> {
     if (!this.host) {

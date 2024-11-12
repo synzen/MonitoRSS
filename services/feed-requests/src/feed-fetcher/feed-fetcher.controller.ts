@@ -59,7 +59,7 @@ export class FeedFetcherController {
     const nextRetryDate =
       requests[0] && requests[0].status !== RequestStatus.OK
         ? await this.feedFetcherService.getLatestRetryDate({
-            lookupKey: dto.lookupDetails?.key || dto.url,
+            lookupKey: dto.lookupKey || dto.url,
           })
         : null;
 
