@@ -59,6 +59,7 @@ import { UserFeedConnectionEventsService } from "../user-feed-connection-events/
 import { User, UserModel } from "../users/entities/user.entity";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 import { UsersService } from "../users/users.service";
+import { ConfigService } from "@nestjs/config";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -150,7 +151,8 @@ export class FeedConnectionsDiscordChannelsService {
     private readonly discordApiService: DiscordAPIService,
     private readonly discordAuthService: DiscordAuthService,
     private readonly connectionEventsService: UserFeedConnectionEventsService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService
   ) {}
 
   async createDiscordChannelConnection({
@@ -1024,6 +1026,7 @@ export class FeedConnectionsDiscordChannelsService {
         requestLookupDetails: getFeedRequestLookupDetails({
           feed: userFeed,
           user,
+          decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
         }),
         url: userFeed.url,
         formatOptions: {

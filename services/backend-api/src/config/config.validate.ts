@@ -191,6 +191,14 @@ export class EnvironmentVariables {
   @IsString({ each: true })
   @IsOptional()
   BACKEND_API_SENTRY_PROJECT_IDS?: string[];
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_ENCRYPTION_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_REDDIT_CLIENT_ID?: string;
 }
 
 export function validateConfig(

@@ -39,6 +39,7 @@ import {
 } from "../user-feeds/types";
 import { User, UserDocument } from "../users/entities/user.entity";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MessageBrokerEventsService {
@@ -46,7 +47,8 @@ export class MessageBrokerEventsService {
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly amqpConnection: AmqpConnection,
     private readonly supportersService: SupportersService,
-    private readonly notificationsService: NotificationsService
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService
   ) {}
 
   @RabbitSubscribe({
@@ -562,6 +564,7 @@ export class MessageBrokerEventsService {
       user: {
         externalCredentials: user?.externalCredentials,
       },
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
     });
     const publishData = {
       articleDayLimit: maxDailyArticles,

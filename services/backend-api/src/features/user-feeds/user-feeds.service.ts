@@ -53,7 +53,6 @@ import {
 import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import dayjs from "dayjs";
-import { User, UserModel } from "../users/entities/user.entity";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import { CreateDiscordChannelConnectionOutputDto } from "../feed-connections/dto";
 import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
@@ -67,6 +66,7 @@ import {
 import { UsersService } from "../users/users.service";
 import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
+import { ConfigService } from "@nestjs/config";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -100,7 +100,7 @@ export class UserFeedsService {
     private readonly limitOverrideModel: UserFeedLimitOverrideModel,
     @InjectModel(LegacyFeedConversionJob.name)
     private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
-    @InjectModel(User.name) private readonly userModel: UserModel,
+    private readonly configService: ConfigService,
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
@@ -390,6 +390,7 @@ export class UserFeedsService {
           getFeedRequestLookupDetails({
             feed: found,
             user,
+            decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
           })
         )
       ).finalUrl;
@@ -723,6 +724,7 @@ export class UserFeedsService {
         getFeedRequestLookupDetails({
           feed,
           user,
+          decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
         })
       );
       useUpdateObject.$set!.url = finalUrl;
@@ -885,6 +887,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
       }),
       {
         fetchOptions: {
@@ -940,6 +943,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
       }),
       {
         getCachedResponse: false,
@@ -1035,6 +1039,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
       })
     );
   }
@@ -1073,6 +1078,7 @@ export class UserFeedsService {
         getFeedRequestLookupDetails({
           feed,
           user,
+          decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
         })
       );
 

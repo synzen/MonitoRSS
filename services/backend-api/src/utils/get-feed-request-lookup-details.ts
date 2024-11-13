@@ -1,29 +1,34 @@
 import { FeedRequestLookupDetails } from "../common/types/feed-request-lookup-details.type";
 import { UserFeed } from "../features/user-feeds/entities";
 import { User } from "../features/users/entities/user.entity";
+import decrypt from "./decrypt";
 
 function getFeedRequestLookupDetails({
   feed: { url, feedRequestLookupKey },
   user: { externalCredentials },
+  decryptionKey,
 }: {
   feed: Pick<UserFeed, "feedRequestLookupKey" | "url">;
   user: Pick<User, "externalCredentials">;
+  decryptionKey: string | undefined;
 }): FeedRequestLookupDetails | null {
+  if (!decryptionKey || !feedRequestLookupKey) {
+    return null;
+  }
+
   if (!/^http(s?):\/\/(www.)?(old\.)?reddit\.com/i.test(url)) {
     return null;
   }
 
-  if (!feedRequestLookupKey) {
-    return null;
-  }
-
-  const accessToken = externalCredentials?.find(
+  const encryptedToken = externalCredentials?.find(
     (cred) => cred.type === "reddit"
-  )?.data?.accessToken;
+  )?.data?.accessToken as string | undefined;
 
-  if (!accessToken) {
+  if (!encryptedToken) {
     return null;
   }
+
+  const decrypted = decrypt(encryptedToken, decryptionKey);
 
   const u = new URL(url);
   const urlToFetch = `https://oauth.reddit.com${u.pathname}${u.search}`;
@@ -32,7 +37,7 @@ function getFeedRequestLookupDetails({
     key: feedRequestLookupKey,
     url: urlToFetch,
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${decrypted}`,
     },
   };
 }
