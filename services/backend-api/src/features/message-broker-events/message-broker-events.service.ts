@@ -564,7 +564,7 @@ export class MessageBrokerEventsService {
       user: {
         externalCredentials: user?.externalCredentials,
       },
-      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
     });
     const publishData = {
       articleDayLimit: maxDailyArticles,

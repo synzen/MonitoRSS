@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { ObjectId, UpdateQuery } from "mongoose";
+import { ObjectId, Types, UpdateQuery } from "mongoose";
 import { SubscriptionStatus } from "../../common/constants/subscription-status.constants";
 import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
@@ -22,6 +22,9 @@ import {
   SupporterModel,
 } from "../supporters/entities/supporter.entity";
 import logger from "../../utils/logger";
+import { UserExternalCredentialType } from "../../common/constants/user-external-credential-type.constants";
+import encrypt from "../../utils/encrypt";
+import { ConfigService } from "@nestjs/config";
 
 function getPrettySubscriptioNameFromKey(key: string) {
   if (key === "free") {
@@ -56,6 +59,18 @@ export interface GetUserByDiscordIdOutput {
   };
 }
 
+type UpdateExternalCredentialsInput = {
+  userId: Types.ObjectId;
+  externalCredentialId: Types.ObjectId;
+} & {
+  type: UserExternalCredentialType.Reddit;
+  expireAt: Date;
+  data: {
+    refreshToken: string;
+    accessToken: string;
+  };
+};
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -65,7 +80,8 @@ export class UsersService {
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(Supporter.name)
     private readonly supporterModel: SupporterModel,
-    private readonly paddleService: PaddleService
+    private readonly paddleService: PaddleService,
+    private readonly configService: ConfigService
   ) {}
 
   async initDiscordUser(
@@ -306,5 +322,41 @@ export class UsersService {
     }
 
     return this.getByDiscordId(discordUserId);
+  }
+
+  async updateExternalCredentials(input: UpdateExternalCredentialsInput) {
+    const encryptionHexKey = this.configService.get(
+      "BACKEND_API_ENCRYPTION_KEY_HEX"
+    );
+
+    if (!encryptionHexKey) {
+      throw new Error(
+        "Encryption key not set while updating external credentials"
+      );
+    }
+
+    const setQueries = Object.entries(input.data).reduce(
+      (acc, [key, value]) => {
+        acc[`externalCredentials.$.${key}`] = encrypt(value, encryptionHexKey);
+
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    await this.userModel.updateOne(
+      {
+        _id: input.userId,
+        externalCredentials: {
+          $elemMatch: {
+            _id: input.externalCredentialId,
+            type: input.type,
+          },
+        },
+      },
+      {
+        $set: setQueries,
+      }
+    );
   }
 }

@@ -129,7 +129,7 @@ export class ScheduleHandlerService {
         user: {
           externalCredentials: externalCredentials,
         },
-        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
       });
 
       urlBatch.push({

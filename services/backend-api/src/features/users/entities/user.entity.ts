@@ -1,5 +1,6 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Model, Types, Schema as MongooseSchema } from "mongoose";
+import { UserExternalCredentialType } from "../../../common/constants/user-external-credential-type.constants";
 
 @Schema({
   timestamps: false,
@@ -36,18 +37,26 @@ export const UserFeatureFlagsSchema =
 
 @Schema({
   timestamps: false,
-  _id: false,
 })
 export class UserExternalCredential {
+  _id: Types.ObjectId;
+
   @Prop({
     required: true,
+    type: String,
   })
-  type: string;
+  type: UserExternalCredentialType;
 
   @Prop({
     type: MongooseSchema.Types.Mixed,
   })
   data: Record<string, unknown>;
+
+  @Prop({
+    required: false,
+    type: Date,
+  })
+  expireAt?: Date;
 }
 
 export const UserExternalCredentialSchema =

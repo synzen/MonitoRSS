@@ -390,7 +390,9 @@ export class UserFeedsService {
           getFeedRequestLookupDetails({
             feed: found,
             user,
-            decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+            decryptionKey: this.configService.get(
+              "BACKEND_API_ENCRYPTION_KEY_HEX"
+            ),
           })
         )
       ).finalUrl;
@@ -724,7 +726,9 @@ export class UserFeedsService {
         getFeedRequestLookupDetails({
           feed,
           user,
-          decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+          decryptionKey: this.configService.get(
+            "BACKEND_API_ENCRYPTION_KEY_HEX"
+          ),
         })
       );
       useUpdateObject.$set!.url = finalUrl;
@@ -887,7 +891,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
-        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
       }),
       {
         fetchOptions: {
@@ -943,7 +947,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
-        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
       }),
       {
         getCachedResponse: false,
@@ -1039,7 +1043,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
-        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
       })
     );
   }
@@ -1078,7 +1082,9 @@ export class UserFeedsService {
         getFeedRequestLookupDetails({
           feed,
           user,
-          decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+          decryptionKey: this.configService.get(
+            "BACKEND_API_ENCRYPTION_KEY_HEX"
+          ),
         })
       );
 

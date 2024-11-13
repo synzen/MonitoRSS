@@ -1026,7 +1026,9 @@ export class FeedConnectionsDiscordChannelsService {
         requestLookupDetails: getFeedRequestLookupDetails({
           feed: userFeed,
           user,
-          decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY"),
+          decryptionKey: this.configService.get(
+            "BACKEND_API_ENCRYPTION_KEY_HEX"
+          ),
         }),
         url: userFeed.url,
         formatOptions: {

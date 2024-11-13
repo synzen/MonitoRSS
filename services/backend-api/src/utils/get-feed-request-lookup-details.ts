@@ -1,7 +1,9 @@
+import { UserExternalCredentialType } from "../common/constants/user-external-credential-type.constants";
 import { FeedRequestLookupDetails } from "../common/types/feed-request-lookup-details.type";
 import { UserFeed } from "../features/user-feeds/entities";
 import { User } from "../features/users/entities/user.entity";
 import decrypt from "./decrypt";
+import { getRedditUrlRegex } from "./get-reddit-url-regex";
 
 function getFeedRequestLookupDetails({
   feed: { url, feedRequestLookupKey },
@@ -16,12 +18,12 @@ function getFeedRequestLookupDetails({
     return null;
   }
 
-  if (!/^http(s?):\/\/(www.)?(old\.)?reddit\.com/i.test(url)) {
+  if (!getRedditUrlRegex().test(url)) {
     return null;
   }
 
   const encryptedToken = externalCredentials?.find(
-    (cred) => cred.type === "reddit"
+    (cred) => cred.type === UserExternalCredentialType.Reddit
   )?.data?.accessToken as string | undefined;
 
   if (!encryptedToken) {

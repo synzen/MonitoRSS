@@ -3,10 +3,12 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsHexadecimal,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
   validateSync,
 } from "class-validator";
@@ -194,11 +196,22 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  BACKEND_API_ENCRYPTION_KEY?: string;
+  BACKEND_API_ENCRYPTION_KEY_HEX?: string;
 
   @IsString()
   @IsOptional()
   BACKEND_API_REDDIT_CLIENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(64)
+  @MinLength(64)
+  @IsHexadecimal()
+  BACKEND_API_REDDIT_CLIENT_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  BACKEND_API_REDDIT_REDIRECT_URI?: string;
 }
 
 export function validateConfig(

@@ -25,6 +25,7 @@ import { MessageBrokerEventsModule } from "./features/message-broker-events/mess
 import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions/supporter-subscriptions.module";
 import { MongoMigrationsModule } from "./features/mongo-migrations/mongo-migrations.module";
 import logger from "./utils/logger";
+import { RedditApiModule } from "./services/apis/reddit/reddit-api.module";
 
 @Module({
   imports: [
@@ -89,7 +90,11 @@ export class AppModule {
 
     return {
       ...original,
-      imports: [...(original.imports || []), ScheduleHandlerModule.forRoot()],
+      imports: [
+        ...(original.imports || []),
+        ScheduleHandlerModule.forRoot(),
+        RedditApiModule,
+      ],
     };
   }
 

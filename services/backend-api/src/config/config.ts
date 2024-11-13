@@ -109,8 +109,10 @@ export default function config(options?: {
     BACKEND_API_SENTRY_HOST: process.env.BACKEND_API_SENTRY_HOST,
     BACKEND_API_SENTRY_PROJECT_IDS:
       process.env.BACKEND_API_SENTRY_PROJECT_IDS?.split(",") || [],
-    BACKEND_API_ENCRYPTION_KEY: process.env.BACKEND_API_ENCRYPTION_KEY,
+    BACKEND_API_ENCRYPTION_KEY_HEX: process.env.BACKEND_API_ENCRYPTION_KEY_HEX,
     BACKEND_API_REDDIT_CLIENT_ID: process.env.BACKEND_API_REDDIT_CLIENT_ID,
+    BACKEND_API_REDDIT_CLIENT_SECRET: process.env
+      .BACKEND_API_REDDIT_CLIENT_SECRET as string,
   };
 
   if (!options?.skipValidation) {
