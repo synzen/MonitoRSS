@@ -182,15 +182,11 @@ async function refreshRedditCredentials(app: INestApplicationContext) {
           decrypt(encryptedRefreshToken, encryptionKey)
         );
 
-        await usersService.updateExternalCredentials({
+        await usersService.setRedditCredentials({
           userId: user._id,
-          externalCredentialId: redditCredential._id,
-          expireAt: dayjs().add(expiresIn, "second").toDate(),
-          type: UserExternalCredentialType.Reddit,
-          data: {
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-          },
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          expiresIn,
         });
 
         logger.info(

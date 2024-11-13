@@ -25,6 +25,7 @@ import logger from "../../utils/logger";
 import { UserExternalCredentialType } from "../../common/constants/user-external-credential-type.constants";
 import encrypt from "../../utils/encrypt";
 import { ConfigService } from "@nestjs/config";
+import dayjs from "dayjs";
 
 function getPrettySubscriptioNameFromKey(key: string) {
   if (key === "free") {
@@ -58,18 +59,6 @@ export interface GetUserByDiscordIdOutput {
     };
   };
 }
-
-type UpdateExternalCredentialsInput = {
-  userId: Types.ObjectId;
-  externalCredentialId: Types.ObjectId;
-} & {
-  type: UserExternalCredentialType.Reddit;
-  expireAt: Date;
-  data: {
-    refreshToken: string;
-    accessToken: string;
-  };
-};
 
 @Injectable()
 export class UsersService {
@@ -324,39 +313,87 @@ export class UsersService {
     return this.getByDiscordId(discordUserId);
   }
 
-  async updateExternalCredentials(input: UpdateExternalCredentialsInput) {
+  async setRedditCredentials({
+    userId,
+    accessToken,
+    expiresIn,
+    refreshToken,
+  }: {
+    userId: Types.ObjectId;
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  }) {
+    const useExpireAt = dayjs().add(expiresIn, "second").toDate();
+
+    const existing = await this.userModel.findOne({
+      _id: userId,
+      "externalCredentials.type": UserExternalCredentialType.Reddit,
+    });
+
+    const ecryptedData = this.encryptObjectValues({
+      accessToken,
+      refreshToken,
+    });
+
+    const credentialId = existing?.externalCredentials?.find(
+      (c) => c.type === UserExternalCredentialType.Reddit
+    )?._id;
+
+    if (!credentialId) {
+      await this.userModel.updateOne(
+        {
+          _id: userId,
+        },
+        {
+          $push: {
+            externalCredentials: {
+              type: UserExternalCredentialType.Reddit,
+              data: ecryptedData,
+              expireAt: useExpireAt,
+            },
+          },
+        }
+      );
+    } else {
+      const setQueries = Object.entries(ecryptedData).reduce(
+        (acc, [key, value]) => {
+          acc[`externalCredentials.$.${key}`] = value;
+
+          return acc;
+        },
+        {} as Record<string, string>
+      );
+
+      await await this.userModel.updateOne(
+        {
+          _id: userId,
+          externalCredentials: {
+            $elemMatch: {
+              _id: credentialId,
+            },
+          },
+        },
+        {
+          $set: setQueries,
+        }
+      );
+    }
+  }
+
+  private encryptObjectValues(input: Record<string, string>) {
     const encryptionHexKey = this.configService.get(
       "BACKEND_API_ENCRYPTION_KEY_HEX"
     );
 
     if (!encryptionHexKey) {
-      throw new Error(
-        "Encryption key not set while updating external credentials"
-      );
+      throw new Error("Encryption key not set while encrypting object values");
     }
 
-    const setQueries = Object.entries(input.data).reduce(
-      (acc, [key, value]) => {
-        acc[`externalCredentials.$.${key}`] = encrypt(value, encryptionHexKey);
+    return Object.entries(input).reduce((acc, [key, value]) => {
+      acc[key] = encrypt(value, encryptionHexKey);
 
-        return acc;
-      },
-      {} as Record<string, string>
-    );
-
-    await this.userModel.updateOne(
-      {
-        _id: input.userId,
-        externalCredentials: {
-          $elemMatch: {
-            _id: input.externalCredentialId,
-            type: input.type,
-          },
-        },
-      },
-      {
-        $set: setQueries,
-      }
-    );
+      return acc;
+    }, {} as Record<string, string>);
   }
 }

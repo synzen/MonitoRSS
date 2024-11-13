@@ -26,6 +26,7 @@ import { SupporterSubscriptionsModule } from "./features/supporter-subscriptions
 import { MongoMigrationsModule } from "./features/mongo-migrations/mongo-migrations.module";
 import logger from "./utils/logger";
 import { RedditApiModule } from "./services/apis/reddit/reddit-api.module";
+import { RedditLoginModule } from "./features/reddit-login/reddit-login.module";
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ export class AppModule {
       imports: [
         ...(original.imports || []),
         MessageBrokerEventsModule.forRoot(),
+        RedditLoginModule,
       ],
     };
   }
