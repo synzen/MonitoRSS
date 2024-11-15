@@ -39,7 +39,7 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
 
   for (const key in obj) {
     if (obj[key]) {
-      newObj[key] = obj[key];
+      newObj[key.toLowerCase()] = obj[key];
     }
   }
 
@@ -135,11 +135,19 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
+    const logDebug =
+      url ===
+      'https://www.clanaod.net/forums/external.php?type=RSS2&forumids=102';
+
     const request = await this.partitionedRequestsStore.getLatestRequest(
       lookupKey || url,
     );
 
     if (!request) {
+      if (logDebug) {
+        logger.warn(`Running debug on schedule: no request was found`);
+      }
+
       return null;
     }
 
@@ -153,6 +161,13 @@ export class FeedFetcherService {
             await inflatePromise(Buffer.from(compressedText, 'base64'))
           ).toString()
         : '';
+
+      if (logDebug) {
+        logger.warn(
+          `Running debug on schedule: got cache key ${request.response.redisCacheKey}`,
+          { text },
+        );
+      }
 
       return {
         request,

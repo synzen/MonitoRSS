@@ -1,6 +1,7 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Model, Types, Schema as MongooseSchema } from "mongoose";
 import { UserExternalCredentialType } from "../../../common/constants/user-external-credential-type.constants";
+import { UserExternalCredentialStatus } from "../../../common/constants/user-external-credential-status.constants";
 
 @Schema({
   timestamps: false,
@@ -48,9 +49,18 @@ export class UserExternalCredential {
   type: UserExternalCredentialType;
 
   @Prop({
-    type: MongooseSchema.Types.Mixed,
+    required: true,
+    enum: Object.values(UserExternalCredentialStatus),
+    type: String,
+    default: UserExternalCredentialStatus.Active,
   })
-  data: Record<string, unknown>;
+  status: UserExternalCredentialStatus = UserExternalCredentialStatus.Active;
+
+  @Prop({
+    type: MongooseSchema.Types.Map,
+    of: MongooseSchema.Types.Mixed,
+  })
+  data: Record<string, string>;
 
   @Prop({
     required: false,
@@ -59,8 +69,9 @@ export class UserExternalCredential {
   expireAt?: Date;
 }
 
-export const UserExternalCredentialSchema =
-  SchemaFactory.createForClass(UserFeatureFlags);
+export const UserExternalCredentialSchema = SchemaFactory.createForClass(
+  UserExternalCredential
+);
 
 @Schema({
   timestamps: true,
@@ -115,3 +126,9 @@ export const UserFeature: ModelDefinition = {
   name: User.name,
   schema: UserSchema,
 };
+
+UserSchema.index({
+  "externalCredentials.expireAt": 1,
+  "externalCredentials.status": 1,
+  "externalCredentials.type": 1,
+});

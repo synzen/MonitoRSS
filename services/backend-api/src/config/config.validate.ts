@@ -196,6 +196,9 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  @MaxLength(64)
+  @MinLength(64)
+  @IsHexadecimal()
   BACKEND_API_ENCRYPTION_KEY_HEX?: string;
 
   @IsString()
@@ -204,9 +207,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  @MaxLength(64)
-  @MinLength(64)
-  @IsHexadecimal()
   BACKEND_API_REDDIT_CLIENT_SECRET?: string;
 
   @IsString()

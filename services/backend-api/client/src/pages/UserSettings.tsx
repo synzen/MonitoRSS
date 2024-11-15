@@ -7,6 +7,7 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
+  Badge,
   Box,
   Button,
   Divider,
@@ -256,6 +257,8 @@ export const UserSettings = () => {
       </Text>
     );
   }
+
+  const redditConnected = data?.result.externalAccounts?.some((a) => a.type === "reddit");
 
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
@@ -518,6 +521,44 @@ export const UserSettings = () => {
                 </Stack>
               </>
             )}
+            <Divider />
+            <Stack spacing={6}>
+              <Heading size="md">Integrations</Heading>
+              <HStack
+                justifyContent="space-between"
+                borderStyle="solid"
+                alignItems="flex-start"
+                borderWidth={1}
+                borderColor="gray.700"
+                rounded="md"
+                p={4}
+                gap={4}
+              >
+                <Stack>
+                  <Stack spacing={1}>
+                    <Text fontWeight={600}>Reddit</Text>
+                    <Text color="whiteAlpha.600" fontSize="sm">
+                      Allows MonitoRSS to use rate limits specific to your Reddit account, which has
+                      much higher rate limit quotas than the global rate limits. All Reddit feeds
+                      will automatically use your Reddit account if connected.
+                    </Text>
+                  </Stack>
+                  <Box>
+                    {redditConnected && <Badge colorScheme="green">Connected</Badge>}
+                    {!redditConnected && <Badge>Not Connected</Badge>}
+                  </Box>
+                </Stack>
+                <Box>
+                  <Button
+                    onClick={() => {
+                      window.location.href = `/api/v1/reddit/login`;
+                    }}
+                  >
+                    {redditConnected ? "Reconnect" : "Connect"}
+                  </Button>
+                </Box>
+              </HStack>
+            </Stack>
             <Divider />
             <FormProvider {...formMethods}>
               <form onSubmit={handleSubmit(onSubmit)}>

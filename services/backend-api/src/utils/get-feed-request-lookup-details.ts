@@ -10,7 +10,7 @@ function getFeedRequestLookupDetails({
   user: { externalCredentials },
   decryptionKey,
 }: {
-  feed: Pick<UserFeed, "feedRequestLookupKey" | "url">;
+  feed: Pick<UserFeed, "url" | "feedRequestLookupKey">;
   user: Pick<User, "externalCredentials">;
   decryptionKey: string | undefined;
 }): FeedRequestLookupDetails | null {

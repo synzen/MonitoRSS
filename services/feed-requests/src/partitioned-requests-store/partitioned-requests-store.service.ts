@@ -179,7 +179,8 @@ export default class PartitionedRequestsStoreService {
     const em = this.orm.em.getConnection();
 
     const results = await em.execute(
-      `SELECT id, created_at, next_retry_date, status, response_status_code FROM request_partitioned
+      `SELECT id, url, created_at, next_retry_date, status, response_status_code,` +
+        ` fetch_options FROM request_partitioned
        WHERE lookup_key = ?
        ORDER BY created_at DESC
        LIMIT ?
@@ -191,7 +192,9 @@ export default class PartitionedRequestsStoreService {
       id: result.id,
       createdAt: new Date(result.created_at),
       nextRetryDate: result.next_retry_date,
+      url: result.url,
       status: result.status,
+      fetchOptions: result.fetch_options,
       response: result.response_status_code
         ? {
             statusCode: result.response_status_code,

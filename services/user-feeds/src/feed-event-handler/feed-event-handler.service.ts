@@ -42,6 +42,7 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { z } from "zod";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
+
 @Injectable()
 export class FeedEventHandlerService {
   constructor(
@@ -270,10 +271,13 @@ export class FeedEventHandlerService {
       > | null = null;
 
       try {
-        response = await this.feedFetcherService.fetch(url, {
-          hashToCompare: lastHashSaved || undefined,
-          lookupDetails: event.data.feed.requestLookupDetails,
-        });
+        response = await this.feedFetcherService.fetch(
+          event.data.feed.requestLookupDetails?.url || url,
+          {
+            hashToCompare: lastHashSaved || undefined,
+            lookupDetails: event.data.feed.requestLookupDetails,
+          }
+        );
       } catch (err) {
         if (
           err instanceof FeedRequestInternalException ||
@@ -331,6 +335,25 @@ export class FeedEventHandlerService {
           useParserRules: getParserRules({ url: event.data.feed.url }),
           externalFeedProperties: event.data.feed.externalProperties,
         });
+
+      if (event.data.feed.id === "655137973a0f40021f26444b") {
+        logger.warn(`Running debug on schedule: article ids`, {
+          event,
+          response,
+          lastHashSaved: lastHashSaved || "n/a",
+          articleIds: allArticles.map((a) => {
+            if (
+              a.flattened.idHash === "73a3149d0a053b5fd7140e3d6ee352dfe2d4bc0e"
+            ) {
+              logger.warn(
+                `Running debug on schedule: found non owning article`
+              );
+            }
+
+            return a.flattened.id;
+          }),
+        });
+      }
 
       await this.updateFeedArticlesInCache({ event, articles: allArticles });
 

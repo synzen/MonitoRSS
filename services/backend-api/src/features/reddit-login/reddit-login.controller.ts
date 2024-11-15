@@ -26,7 +26,7 @@ export class RedditLoginController {
   @Get("callback")
   @Header("Cache-Control", "no-store")
   async callback(
-    @Res({ passthrough: true }) res: FastifyReply,
+    @Res() res: FastifyReply,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @Query("error") error?: string,
@@ -38,11 +38,15 @@ export class RedditLoginController {
     const redirect = `${origin}/settings`;
 
     if (error) {
-      return res.redirect(303, redirect);
+      res.redirect(303, redirect);
+
+      return;
     }
 
     if (!code) {
-      return "No code available";
+      res.send("No code available");
+
+      return;
     }
 
     const user = await this.usersService.getOrCreateUserByDiscordId(
@@ -60,6 +64,8 @@ export class RedditLoginController {
       expiresIn,
       refreshToken,
     });
+
+    await this.usersService.syncLookupKeys({ userIds: [user._id] });
 
     res.redirect(303, redirect);
   }

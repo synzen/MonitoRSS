@@ -341,7 +341,7 @@ export class FeedFetcherListenerService {
   emitFailedUrl({ lookupKey, url }: { lookupKey?: string; url: string }) {
     try {
       logger.info(
-        `Disabling feeds with lookup key "${lookupKey}" due to failure threshold `,
+        `Disabling feeds with lookup key "${lookupKey}" and url ${url} due to failure threshold `,
       );
 
       this.amqpConnection.publish<{

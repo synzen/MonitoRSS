@@ -113,6 +113,8 @@ export default function config(options?: {
     BACKEND_API_REDDIT_CLIENT_ID: process.env.BACKEND_API_REDDIT_CLIENT_ID,
     BACKEND_API_REDDIT_CLIENT_SECRET: process.env
       .BACKEND_API_REDDIT_CLIENT_SECRET as string,
+    BACKEND_API_REDDIT_REDIRECT_URI: process.env
+      .BACKEND_API_REDDIT_REDIRECT_URI as string,
   };
 
   if (!options?.skipValidation) {

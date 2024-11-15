@@ -26,7 +26,8 @@ export const useRefreshUserFeed = () => {
       );
 
       return queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] === "user-feeds",
+        predicate: (query) =>
+          query.queryKey[0] === "user-feeds" || query.queryKey[0] === "user-feed-requests",
       });
     },
   });

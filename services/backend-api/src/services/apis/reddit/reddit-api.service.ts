@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { URL } from "node:url";
+import { RedditAppRevokedException } from "./errors/reddit-app-revoked.exception";
 
 export interface RedditAccessToken {
   access_token: string;
@@ -23,11 +23,9 @@ export class RedditApiService {
     this.clientSecret = this.configService.get<string>(
       "BACKEND_API_REDDIT_CLIENT_SECRET"
     );
-    const { origin } = new URL(
-      this.configService.getOrThrow<string>("BACKEND_API_LOGIN_REDIRECT_URI")
+    this.redirectUri = this.configService.get<string>(
+      "BACKEND_API_REDDIT_REDIRECT_URI"
     );
-
-    this.redirectUri = `${origin}/api/v1/reddit/callback`;
   }
 
   getAuthorizeUrl(scopes = "read", state = "state") {
@@ -107,6 +105,13 @@ export class RedditApiService {
     });
 
     if (!res.ok) {
+      // Reddit returns a 400 for this case
+      if (res.status === 400) {
+        throw new RedditAppRevokedException(
+          "Reddit application has been revoked by user"
+        );
+      }
+
       let body = "";
 
       try {

@@ -906,16 +906,15 @@ export class FeedConnectionsDiscordChannelsService {
         }))
       : undefined;
 
-    const user = await this.userModel
-      .findOne(
-        {
-          discordUserId: userFeed.user.discordUserId,
-        },
-        {
-          preferences: 1,
-        }
-      )
-      .lean();
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId
+    );
+
+    const requestLookupDetails = getFeedRequestLookupDetails({
+      feed: userFeed,
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+      user,
+    });
 
     const payload: SendTestDiscordChannelArticleInput["details"] = {
       type: "discord",
@@ -938,11 +937,7 @@ export class FeedConnectionsDiscordChannelsService {
             user?.preferences?.dateLocale,
         },
         externalProperties: useExternalProperties,
-        requestLookupDetails: userFeed.feedRequestLookupKey
-          ? {
-              key: userFeed.feedRequestLookupKey,
-            }
-          : undefined,
+        requestLookupDetails: requestLookupDetails || undefined,
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {

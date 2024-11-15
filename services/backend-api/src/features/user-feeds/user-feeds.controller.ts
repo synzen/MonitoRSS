@@ -39,7 +39,6 @@ import {
   GetUserFeedDeliveryLogsInputDto,
   GetUserFeedOutputDto,
   GetUserFeedRequestsInputDto,
-  GetUserFeedRequestsOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
   UpdateUserFeedInputDto,
@@ -201,15 +200,13 @@ export class UserFeedsController {
     [{ feed }]: GetUserFeedsPipeOutput,
     @NestedQuery(TransformValidationPipe)
     { limit, skip }: GetUserFeedRequestsInputDto
-  ): Promise<GetUserFeedRequestsOutputDto> {
-    const requests = await this.userFeedsService.getFeedRequests({
+  ) {
+    return this.userFeedsService.getFeedRequests({
       url: feed.url,
       limit,
       skip,
-      requestLookupKey: feed.feedRequestLookupKey,
+      feed,
     });
-
-    return requests;
   }
 
   @Get("/:feed/delivery-logs")

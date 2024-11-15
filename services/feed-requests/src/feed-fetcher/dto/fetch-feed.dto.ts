@@ -37,10 +37,6 @@ class GetFeedRequestsLookupDetailsDto {
   @IsObject()
   @IsOptional()
   headers!: Record<string, string>;
-
-  @IsString()
-  @IsOptional()
-  url?: string;
 }
 
 export class FetchFeedDto {

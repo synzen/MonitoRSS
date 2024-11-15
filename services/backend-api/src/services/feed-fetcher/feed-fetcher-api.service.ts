@@ -6,7 +6,6 @@ import { URLSearchParams } from "url";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherFetchFeedResponse } from "./types/feed-fetcher-fetch-feed-response.type";
-import { FeedFetcherGetRequestsResponse } from "./types/feed-fetcher-get-requests-response.type";
 import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
 
 interface FeedFetchOptions {
@@ -109,14 +108,7 @@ export class FeedFetcherApiService {
 
     await this.validateResponseStatus(response);
 
-    const responseBody = await response.json();
-
-    const body = await this.validateResponseJson(
-      FeedFetcherGetRequestsResponse,
-      responseBody as Record<string, unknown>
-    );
-
-    return body;
+    return response.json();
   }
 
   private async validateResponseStatus(res: Response) {

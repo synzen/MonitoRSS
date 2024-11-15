@@ -53,7 +53,9 @@ export const feedV2EventSchema = z.object({
       formatOptions: feedV2EventSchemaFormatOptions.optional(),
       dateChecks: feedV2EventSchemaDateChecks.optional(),
       externalProperties: z.array(externalFeedPropertySchema).optional(),
-      requestLookupDetails: feedV2EventRequestLookupDetails.optional(),
+      requestLookupDetails: feedV2EventRequestLookupDetails
+        .optional()
+        .nullable(),
     }),
     mediums: z.array(mediumPayloadSchema).min(1),
     articleDayLimit: z.number(),

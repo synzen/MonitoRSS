@@ -1,4 +1,4 @@
-import { InferType, bool, object, string } from "yup";
+import { InferType, array, bool, object, string } from "yup";
 import { ProductKey } from "../../../constants";
 
 export const UserMeSchema = object({
@@ -39,6 +39,11 @@ export const UserMeSchema = object({
       enabled: bool(),
     }).optional(),
   }).optional(),
+  externalAccounts: array(
+    object({
+      type: string().required(),
+    })
+  ),
 });
 
 export type UserMe = InferType<typeof UserMeSchema>;

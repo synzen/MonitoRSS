@@ -67,6 +67,7 @@ import { UsersService } from "../users/users.service";
 import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 import { ConfigService } from "@nestjs/config";
+import { User, UserModel } from "../users/entities/user.entity";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -94,6 +95,7 @@ interface UpdateFeedInput {
 @Injectable()
 export class UserFeedsService {
   constructor(
+    @InjectModel(User.name) private readonly userModel: UserModel,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(UserFeedLimitOverride.name)
@@ -656,21 +658,29 @@ export class UserFeedsService {
   }
 
   async getFeedRequests({
+    feed,
     skip,
     limit,
     url,
-    requestLookupKey,
   }: {
+    feed: UserFeed;
     skip: number;
     limit: number;
     url: string;
-    requestLookupKey?: string;
   }) {
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user: await this.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId
+      ),
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
+
     return this.feedFetcherApiService.getRequests({
       limit,
       skip,
-      url,
-      requestLookupKey,
+      url: lookupDetails?.url || url,
+      requestLookupKey: lookupDetails?.key,
     });
   }
 
@@ -865,6 +875,9 @@ export class UserFeedsService {
   }
 
   async retryFailedFeed(feedId: string) {
+    await this.usersService.syncLookupKeys({
+      feedIds: [new Types.ObjectId(feedId)],
+    });
     const feed = await this.userFeedModel.findById(feedId);
 
     if (!feed) {
@@ -886,13 +899,15 @@ export class UserFeedsService {
       feed.user.discordUserId
     );
 
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
+
     await this.feedFetcherService.fetchFeed(
-      feed.url,
-      getFeedRequestLookupDetails({
-        feed,
-        user,
-        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
-      }),
+      lookupDetails?.url || feed.url,
+      lookupDetails,
       {
         fetchOptions: {
           useServiceApi: true,
@@ -942,17 +957,23 @@ export class UserFeedsService {
       feed.user.discordUserId
     );
 
+    await this.usersService.syncLookupKeys({
+      feedIds: [feed._id],
+    });
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
+
     const res = await this.feedFetcherApiService.fetchAndSave(
-      feed.url,
-      getFeedRequestLookupDetails({
-        feed,
-        user,
-        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
-      }),
+      lookupDetails?.url || feed.url,
+      lookupDetails,
       {
         getCachedResponse: false,
       }
     );
+    feed.disabledCode === UserFeedDisabledCode.FailedRequests;
 
     await this.userFeedModel
       .findByIdAndUpdate(feed._id, {
@@ -963,6 +984,12 @@ export class UserFeedsService {
               ? UserFeedHealthStatus.Ok
               : feed.healthStatus,
         },
+        ...(res.requestStatus === FeedFetcherFetchStatus.Success &&
+          feed.disabledCode === UserFeedDisabledCode.FailedRequests && {
+            $unset: {
+              disabledCode: "",
+            },
+          }),
       })
       .lean();
 

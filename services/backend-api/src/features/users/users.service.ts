@@ -6,11 +6,9 @@ import { SubscriptionStatus } from "../../common/constants/subscription-status.c
 import { CreditBalanceDetails } from "../../common/types/credit-balance-details.type";
 import { SubscriptionDetails } from "../../common/types/subscription-details.type";
 import { formatCurrency } from "../../utils/format-currency";
-import { Feed, FeedModel } from "../feeds/entities/feed.entity";
 import { PaddleService } from "../paddle/paddle.service";
 import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
 import { SupportersService } from "../supporters/supporters.service";
-import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import {
   User,
   UserDocument,
@@ -26,6 +24,10 @@ import { UserExternalCredentialType } from "../../common/constants/user-external
 import encrypt from "../../utils/encrypt";
 import { ConfigService } from "@nestjs/config";
 import dayjs from "dayjs";
+import { UserExternalCredentialStatus } from "../../common/constants/user-external-credential-status.constants";
+import { UserFeed, UserFeedModel } from "../user-feeds/entities";
+import { randomUUID } from "crypto";
+import { getRedditUrlRegex } from "../../utils/get-reddit-url-regex";
 
 function getPrettySubscriptioNameFromKey(key: string) {
   if (key === "free") {
@@ -58,15 +60,15 @@ export interface GetUserByDiscordIdOutput {
       enabled: boolean;
     };
   };
+  externalAccounts: Array<{ type: "reddit" }>;
 }
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: UserModel,
-    private readonly supportersService: SupportersService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel,
+    private readonly supportersService: SupportersService,
     @InjectModel(Supporter.name)
     private readonly supporterModel: SupporterModel,
     private readonly paddleService: PaddleService,
@@ -168,6 +170,16 @@ export class UsersService {
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
 
+    const externalAccounts: GetUserByDiscordIdOutput["externalAccounts"] = [];
+
+    if (
+      user.externalCredentials?.find(
+        (c) => c.type === UserExternalCredentialType.Reddit
+      )
+    ) {
+      externalAccounts.push({ type: "reddit" });
+    }
+
     const { maxPatreonPledge, allowExternalProperties } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
@@ -189,6 +201,7 @@ export class UsersService {
             enabled: allowExternalProperties,
           },
         },
+        externalAccounts,
       };
     }
 
@@ -222,6 +235,7 @@ export class UsersService {
         creditBalance: {
           availableFormatted: creditAvailableBalanceFormatted,
         },
+        externalAccounts,
         subscription: freeSubscription,
         isOnPatreon,
         migratedToPersonalFeeds: true,
@@ -241,6 +255,7 @@ export class UsersService {
       creditBalance: {
         availableFormatted: creditAvailableBalanceFormatted,
       },
+      externalAccounts,
       subscription: {
         product: {
           key: subscription.product.key,
@@ -326,21 +341,35 @@ export class UsersService {
   }) {
     const useExpireAt = dayjs().add(expiresIn, "second").toDate();
 
-    const existing = await this.userModel.findOne({
-      _id: userId,
-      "externalCredentials.type": UserExternalCredentialType.Reddit,
-    });
-
     const ecryptedData = this.encryptObjectValues({
       accessToken,
       refreshToken,
     });
 
-    const credentialId = existing?.externalCredentials?.find(
-      (c) => c.type === UserExternalCredentialType.Reddit
-    )?._id;
+    const setQueries = Object.entries(ecryptedData).reduce(
+      (acc, [key, value]) => {
+        acc[`externalCredentials.$.${key}`] = value;
 
-    if (!credentialId) {
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    const result = await this.userModel.updateOne(
+      {
+        _id: userId,
+        externalCredentials: {
+          $elemMatch: {
+            type: UserExternalCredentialType.Reddit,
+          },
+        },
+      },
+      {
+        $set: { ...setQueries, "externalCredentials.$.expireAt": useExpireAt },
+      }
+    );
+
+    if (!result.modifiedCount) {
       await this.userModel.updateOne(
         {
           _id: userId,
@@ -355,30 +384,129 @@ export class UsersService {
           },
         }
       );
-    } else {
-      const setQueries = Object.entries(ecryptedData).reduce(
-        (acc, [key, value]) => {
-          acc[`externalCredentials.$.${key}`] = value;
+    }
+  }
 
-          return acc;
+  async revokeRedditCredentials(
+    userId: Types.ObjectId,
+    credentialId: Types.ObjectId
+  ) {
+    await this.userModel.updateOne(
+      {
+        _id: userId,
+        "externalCredentials._id": credentialId,
+      },
+      {
+        $set: {
+          "externalCredentials.$.status": UserExternalCredentialStatus.Revoked,
         },
-        {} as Record<string, string>
-      );
+      }
+    );
+  }
 
-      await await this.userModel.updateOne(
+  async syncLookupKeys(data?: {
+    feedIds?: Types.ObjectId[];
+    userIds?: Types.ObjectId[];
+  }) {
+    // Add lookup keys as necessary
+    const feedIdsToUpdate = this.userModel
+      .aggregate([
         {
-          _id: userId,
-          externalCredentials: {
-            $elemMatch: {
-              _id: credentialId,
+          $match: {
+            ...(data?.userIds?.length
+              ? {
+                  _id: {
+                    $in: data.userIds,
+                  },
+                }
+              : {}),
+            externalCredentials: {
+              $elemMatch: {
+                expireAt: {
+                  $gt: new Date(),
+                },
+                status: UserExternalCredentialStatus.Active,
+                type: UserExternalCredentialType.Reddit,
+              },
             },
           },
         },
         {
-          $set: setQueries,
+          $lookup: {
+            from: "userfeeds",
+            localField: "discordUserId",
+            foreignField: "user.discordUserId",
+            as: "feeds",
+          },
+        },
+        {
+          $unwind: {
+            path: "$feeds",
+          },
+        },
+        {
+          $match: {
+            "feeds.url": getRedditUrlRegex(),
+            ...(data?.feedIds?.length
+              ? {
+                  "feeds._id": {
+                    $in: data.feedIds,
+                  },
+                }
+              : {}),
+          },
+        },
+        {
+          $project: {
+            feedId: "$feeds._id",
+            lookupKey: "$feeds.feedRequestLookupKey",
+            _id: 0,
+          },
+        },
+      ])
+      .cursor();
+
+    const validLookupKeys: string[] = [];
+
+    for await (const { feedId, lookupKey } of feedIdsToUpdate) {
+      if (lookupKey) {
+        validLookupKeys.push(lookupKey);
+        logger.debug(`Feed ${feedId} already has a lookup key, skipping`);
+        continue;
+      }
+
+      logger.debug(`Updating lookup key for feed ${feedId}`);
+      const newLookupKey = randomUUID();
+      await this.userFeedModel.updateOne(
+        {
+          _id: feedId,
+        },
+        {
+          $set: {
+            feedRequestLookupKey: newLookupKey,
+          },
         }
       );
+
+      validLookupKeys.push(newLookupKey);
     }
+
+    // Remove lookup keys
+    const { modifiedCount } = await this.userFeedModel.updateMany(
+      {
+        feedRequestLookupKey: {
+          $exists: true,
+          $nin: validLookupKeys,
+        },
+      },
+      {
+        $unset: {
+          feedRequestLookupKey: "",
+        },
+      }
+    );
+
+    logger.info(`Removed ${modifiedCount} lookup keys`);
   }
 
   private encryptObjectValues(input: Record<string, string>) {
