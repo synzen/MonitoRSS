@@ -119,6 +119,7 @@ export class FeedFetcherController {
           lookupDetails: data.lookupDetails ? data.lookupDetails : undefined,
           source: undefined,
           headers: data.lookupDetails?.headers,
+          flushEntities: true,
         });
       } catch (err) {
         logger.error(`Failed to fetch and save response of feed ${data.url}`, {
@@ -152,7 +153,7 @@ export class FeedFetcherController {
     ) {
       if (data.executeFetchIfNotExists) {
         const savedData = await this.feedFetcherService.fetchAndSaveResponse(
-          data.lookupDetails?.url || data.url,
+          data.url,
           {
             flushEntities: true,
             saveResponseToObjectStorage: data.debug,
