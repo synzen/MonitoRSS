@@ -491,22 +491,85 @@ export class UsersService {
       validLookupKeys.push(newLookupKey);
     }
 
-    // Remove lookup keys
-    const { modifiedCount } = await this.userFeedModel.updateMany(
+    // Remove lookup keys as necessary
+    const feedIdsToRemove = this.userModel.aggregate([
       {
-        feedRequestLookupKey: {
-          $exists: true,
-          $nin: validLookupKeys,
+        $match: {
+          ...(data?.userIds?.length
+            ? {
+                _id: {
+                  $in: data.userIds,
+                },
+              }
+            : {}),
+          $or: [
+            {
+              externalCredentials: {
+                $elemMatch: {
+                  type: UserExternalCredentialType.Reddit,
+                  expireAt: {
+                    $lte: new Date(),
+                  },
+                },
+              },
+            },
+            {
+              externalCredentials: {
+                $elemMatch: {
+                  type: UserExternalCredentialType.Reddit,
+                  status: UserExternalCredentialStatus.Revoked,
+                },
+              },
+            },
+          ],
         },
       },
       {
-        $unset: {
-          feedRequestLookupKey: "",
+        $lookup: {
+          from: "userfeeds",
+          localField: "discordUserId",
+          foreignField: "user.discordUserId",
+          as: "feeds",
         },
-      }
-    );
+      },
+      {
+        $unwind: {
+          path: "$feeds",
+        },
+      },
+      {
+        $match: {
+          "feeds.url": getRedditUrlRegex(),
+          ...(data?.feedIds?.length
+            ? {
+                "feeds._id": {
+                  $in: data.feedIds,
+                },
+              }
+            : {}),
+        },
+      },
+      {
+        $project: {
+          feedId: "$feeds._id",
+          _id: 0,
+        },
+      },
+    ]);
 
-    logger.info(`Removed ${modifiedCount} lookup keys`);
+    for await (const { feedId } of feedIdsToRemove) {
+      logger.info(`Removing lookup key for feed ${feedId}`);
+      await this.userFeedModel.updateOne(
+        {
+          _id: feedId,
+        },
+        {
+          $unset: {
+            feedRequestLookupKey: "",
+          },
+        }
+      );
+    }
   }
 
   private encryptObjectValues(input: Record<string, string>) {

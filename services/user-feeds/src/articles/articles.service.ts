@@ -209,11 +209,14 @@ export class ArticlesService {
       };
     }
 
-    const response = await this.feedFetcherService.fetch(url, {
-      executeFetchIfNotInCache: true,
-      executeFetch,
-      lookupDetails: requestLookupDetails,
-    });
+    const response = await this.feedFetcherService.fetch(
+      requestLookupDetails?.url || url,
+      {
+        executeFetchIfNotInCache: true,
+        executeFetch,
+        lookupDetails: requestLookupDetails,
+      }
+    );
 
     if (!response.body) {
       return {

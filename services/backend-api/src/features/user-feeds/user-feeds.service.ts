@@ -68,6 +68,7 @@ import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 import { ConfigService } from "@nestjs/config";
 import { User, UserModel } from "../users/entities/user.entity";
+import { randomUUID } from "crypto";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -310,11 +311,13 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    const [{ maxUserFeeds, maxDailyArticles, refreshRateSeconds }, userId] =
+    const [{ maxUserFeeds, maxDailyArticles, refreshRateSeconds }, user] =
       await Promise.all([
         this.supportersService.getBenefitsOfDiscordUser(discordUserId),
-        this.usersService.getIdByDiscordId(discordUserId),
+        this.usersService.getOrCreateUserByDiscordId(discordUserId),
       ]);
+
+    const userId = user._id;
 
     const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
       discordUserId
@@ -324,9 +327,18 @@ export class UserFeedsService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
+    const tempLookupDetails = getFeedRequestLookupDetails({
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+      feed: {
+        url,
+        feedRequestLookupKey: randomUUID(),
+      },
+      user,
+    });
+
     const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(
       url,
-      null
+      tempLookupDetails
     );
 
     const created = await this.userFeedModel.create({
@@ -339,6 +351,7 @@ export class UserFeedsService {
       },
       refreshRateSeconds,
       maxDailyArticles,
+      feedRequestLookupKey: tempLookupDetails?.key,
       dateCheckOptions: enableDateChecks
         ? {
             oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
@@ -408,7 +421,10 @@ export class UserFeedsService {
       url: finalUrl,
       inputUrl,
       connections: {},
+      feedRequestLookupKey: undefined,
     });
+
+    await this.usersService.syncLookupKeys({ feedIds: [newFeedId] });
 
     for (const c of found.connections.discordChannels) {
       await this.feedConnectionsDiscordChannelsService.cloneConnection(

@@ -83,6 +83,10 @@ class LookupDetails implements FeedRequestLookupDetails {
   @IsNotEmpty()
   key: string;
 
+  @IsString()
+  @IsOptional()
+  url?: string | undefined;
+
   @IsOptional()
   @IsObject()
   headers?: Record<string, string>;

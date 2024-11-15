@@ -257,6 +257,7 @@ export class FeedHandlerService {
       requestLookupDetails: lookupDetails
         ? {
             key: lookupDetails.key,
+            url: lookupDetails.url,
             headers: lookupDetails.headers,
           }
         : undefined,
