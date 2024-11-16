@@ -126,6 +126,26 @@ export class RedditApiService {
     return (await res.json()) as RedditAccessToken;
   }
 
+  async revokeRefreshToken(refreshToken: string) {
+    const res = await fetch("https://www.reddit.com/api/v1/revoke_token", {
+      method: "POST",
+      headers: this.getAccessTokenHeaders(),
+      body: `token=${refreshToken}&token_type_hint=refresh_token`,
+    });
+
+    if (!res.ok) {
+      let body = "";
+
+      try {
+        body = await res.text();
+      } catch (err) {}
+
+      throw new Error(
+        `Failed to revoke reddit refresh token. Status: ${res.status}. Body: ${body}`
+      );
+    }
+  }
+
   private getAccessTokenHeaders() {
     return {
       "Content-Type": "application/x-www-form-urlencoded",

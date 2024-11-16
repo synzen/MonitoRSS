@@ -50,6 +50,7 @@ import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionPr
 import { PricingDialogContext } from "../contexts";
 import { DatePreferencesForm } from "../components/DatePreferencesForm";
 import { usePaddleContext } from "../contexts/PaddleContext";
+import { useRemoveRedditLogin } from "../features/feed/hooks/useRemoveRedditLogin";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -163,7 +164,18 @@ export const UserSettings = () => {
     formState: { isSubmitting, errors },
     reset,
   } = formMethods;
+  const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
+    useRemoveRedditLogin();
   const hasLoaded = status !== "loading";
+
+  const onClickRemoveRedditLogin = async () => {
+    try {
+      await removeRedditLogin();
+      notifySuccess("Reddit login removed successfully");
+    } catch (err) {
+      notifyError("Failed to remove Reddit", err as Error);
+    }
+  };
 
   useEffect(() => {
     reset(convertUserMeToFormData(data));
@@ -533,6 +545,7 @@ export const UserSettings = () => {
                 rounded="md"
                 p={4}
                 gap={4}
+                flexWrap="wrap"
               >
                 <Stack>
                   <Stack spacing={1}>
@@ -548,15 +561,29 @@ export const UserSettings = () => {
                     </Text>
                   </Stack>
                 </Stack>
-                <Box>
+                <HStack>
                   <Button
+                    size="sm"
                     onClick={() => {
                       window.location.href = `/api/v1/reddit/login`;
                     }}
                   >
                     {redditConnected ? "Reconnect" : "Connect"}
                   </Button>
-                </Box>
+                  {redditConnected && (
+                    <Button
+                      colorScheme="red"
+                      variant="outline"
+                      size="sm"
+                      isLoading={removeRedditLoginStatus === "loading"}
+                      onClick={() => {
+                        onClickRemoveRedditLogin();
+                      }}
+                    >
+                      Disconnect
+                    </Button>
+                  )}
+                </HStack>
               </HStack>
             </Stack>
             <Divider />

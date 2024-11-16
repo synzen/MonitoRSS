@@ -387,6 +387,42 @@ export class UsersService {
     }
   }
 
+  async getRedditCredentials(userId: Types.ObjectId) {
+    const user = await this.userModel
+      .findOne(
+        { _id: userId },
+        {
+          externalCredentials: 1,
+        }
+      )
+      .lean();
+
+    if (!user) {
+      return null;
+    }
+
+    const redditCredentials = user.externalCredentials?.find(
+      (c) => c.type === UserExternalCredentialType.Reddit
+    );
+
+    return redditCredentials;
+  }
+
+  async removeRedditCredentials(userId: Types.ObjectId) {
+    await this.userModel.updateOne(
+      {
+        _id: userId,
+      },
+      {
+        $pull: {
+          externalCredentials: {
+            type: UserExternalCredentialType.Reddit,
+          },
+        },
+      }
+    );
+  }
+
   async revokeRedditCredentials(
     userId: Types.ObjectId,
     credentialId: Types.ObjectId

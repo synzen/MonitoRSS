@@ -1,4 +1,12 @@
-import { Controller, Get, Header, Query, Res } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Query,
+  Res,
+} from "@nestjs/common";
 import { RedditApiService } from "../../services/apis/reddit/reddit-api.service";
 import { FastifyReply } from "fastify";
 import { ConfigService } from "@nestjs/config";
@@ -6,6 +14,7 @@ import { URL } from "node:url";
 import { UsersService } from "../users/users.service";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
+import decrypt from "../../utils/decrypt";
 
 @Controller("reddit")
 export class RedditLoginController {
@@ -21,6 +30,38 @@ export class RedditLoginController {
     const authorizationUri = this.redditApiService.getAuthorizeUrl();
 
     res.redirect(303, authorizationUri);
+  }
+
+  @Get("remove")
+  @Header("Cache-Control", "no-store")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    const encryptionKey = this.configService.get(
+      "BACKEND_API_ENCRYPTION_KEY_HEX"
+    );
+
+    if (!encryptionKey) {
+      throw new Error("Encryption key not found");
+    }
+
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      discordUserId
+    );
+
+    const redditCreds = await this.usersService.getRedditCredentials(user._id);
+
+    if (!redditCreds?.data.refreshToken) {
+      return;
+    }
+
+    await this.redditApiService.revokeRefreshToken(
+      decrypt(redditCreds.data.refreshToken, encryptionKey)
+    );
+
+    await this.usersService.removeRedditCredentials(user._id);
   }
 
   @Get("callback")
