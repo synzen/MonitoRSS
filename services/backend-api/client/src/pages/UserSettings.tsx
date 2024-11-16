@@ -51,6 +51,7 @@ import { PricingDialogContext } from "../contexts";
 import { DatePreferencesForm } from "../components/DatePreferencesForm";
 import { usePaddleContext } from "../contexts/PaddleContext";
 import { useRemoveRedditLogin } from "../features/feed/hooks/useRemoveRedditLogin";
+import { RedditLoginButton } from "../components/RedditLoginButton/RedditLoginButton";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -147,7 +148,7 @@ const ChangePaymentMethodUrlButton = () => {
 };
 
 export const UserSettings = () => {
-  const { status, fetchStatus, error, data, refetch } = useUserMe();
+  const { status, error, data, refetch } = useUserMe();
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
@@ -167,20 +168,6 @@ export const UserSettings = () => {
   const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
     useRemoveRedditLogin();
   const hasLoaded = status !== "loading";
-
-  useEffect(() => {
-    const messageListener = (e: MessageEvent) => {
-      if (e.data === "reddit") {
-        refetch();
-      }
-    };
-
-    window.addEventListener("message", messageListener);
-
-    return () => {
-      window.removeEventListener("message", messageListener);
-    };
-  }, []);
 
   const onClickRemoveRedditLogin = async () => {
     try {
@@ -576,19 +563,7 @@ export const UserSettings = () => {
                   </Stack>
                 </Stack>
                 <HStack>
-                  <Button
-                    size="sm"
-                    isLoading={fetchStatus === "fetching"}
-                    onClick={() => {
-                      window.open(
-                        `/api/v1/reddit/login`,
-                        "_blank",
-                        "popup=true,width=600,height=600"
-                      );
-                    }}
-                  >
-                    {redditConnected ? "Reconnect" : "Connect"}
-                  </Button>
+                  <RedditLoginButton />
                   {redditConnected && (
                     <Button
                       colorScheme="red"

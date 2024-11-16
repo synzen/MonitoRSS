@@ -37,6 +37,8 @@ import { notifySuccess } from "../../../../utils/notifySuccess";
 import { pages } from "../../../../constants";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
+import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
 
 const formSchema = object({
   title: string().required(),
@@ -52,6 +54,11 @@ interface Props {
   trigger?: React.ReactElement;
 }
 
+const RESOLVABLE_ERRORS: string[] = [
+  ApiErrorCode.FEED_REQUEST_FORBIDDEN,
+  ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+];
+
 export const AddUserFeedDialog = ({ trigger }: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
@@ -60,6 +67,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     control,
     reset,
     formState: { errors, isSubmitting },
+    getValues,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
@@ -101,6 +109,8 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     totalFeeds < discordUserMe.maxUserFeeds;
 
   const isLoading = discordUserStatus === "loading" || userFeedsStatus === "loading";
+
+  const canResolveError = error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
 
   return (
     <>
@@ -270,7 +280,20 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                   </AccordionItem>
                 </Accordion>
                 {error && (
-                  <InlineErrorAlert title="Failed to add feed" description={error.message} />
+                  <InlineErrorAlert
+                    title="Failed to add feed"
+                    description={
+                      <Stack>
+                        <Text>{error.message}</Text>
+                      </Stack>
+                    }
+                  />
+                )}
+                {canResolveError && (
+                  <FixFeedRequestsCTA
+                    url={getValues().url}
+                    onCorrected={() => onSubmit(getValues())}
+                  />
                 )}
               </Stack>
             </ModalBody>

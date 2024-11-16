@@ -1,8 +1,17 @@
-import { Alert, AlertDescription, AlertTitle, Box, Button, Flex, HStack } from "@chakra-ui/react";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Box,
+  Button,
+  Flex,
+  HStack,
+  Stack,
+} from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { UserFeedArticleRequestStatus, UserFeedHealthStatus } from "../../types";
+import { UserFeedArticleRequestStatus } from "../../types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import {
   getErrorMessageForArticleRequestStatus,
@@ -14,6 +23,9 @@ import { notifyError } from "../../../../utils/notifyError";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
 import { pages } from "../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
+import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
+
+const RESOLVABLE_STATUS_CODES = [429, 403, 401];
 
 export const UserFeedHealthAlert = () => {
   const { t } = useTranslation();
@@ -21,7 +33,6 @@ export const UserFeedHealthAlert = () => {
   const { data, status } = useUserFeedRequestsWithPagination({
     feedId: userFeed.id,
     data: {},
-    disabled: userFeed.healthStatus !== UserFeedHealthStatus.Failing,
   });
   const { mutateAsync, status: manualRequestStatus } = useCreateUserFeedManualRequest();
   const navigate = useNavigate();
@@ -52,45 +63,53 @@ export const UserFeedHealthAlert = () => {
     }
   };
 
-  if (userFeed.healthStatus !== UserFeedHealthStatus.Failing || status === "loading") {
-    return null;
-  }
-
   const nextRetryTimestamp = data?.result.nextRetryTimestamp
     ? dayjs.unix(data.result.nextRetryTimestamp)
     : null;
+
+  if (!nextRetryTimestamp || status === "loading") {
+    return null;
+  }
+
   const fallbackNextRetryTimestamp = dayjs().add(userFeed.refreshRateSeconds, "seconds");
 
+  const firstStatusCode = data?.result.requests?.[0]?.response?.statusCode;
+
   return (
-    <Alert status="warning" borderRadius="md">
-      <Box>
-        <AlertTitle>Requests are currently failing</AlertTitle>
-        <AlertDescription display="block">
-          <Flex flexDirection="column" gap={4}>
-            We&apos;ve been unable to successfully fetch this feed. Attempts will continue
-            automatically. The next earliest automatic attempt will be on{" "}
-            {(nextRetryTimestamp || fallbackNextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss")}.
-            You may also manually attempt a request via the button below.
-            <HStack>
-              <Button isLoading={manualRequestStatus === "loading"} onClick={handleManualAttempt}>
-                <span>Attempt request</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  navigate(
-                    pages.userFeed(userFeed.id, {
-                      tab: UserFeedTabSearchParam.Logs,
-                    })
-                  )
-                }
-              >
-                View request history
-              </Button>
-            </HStack>
-          </Flex>
-        </AlertDescription>
-      </Box>
-    </Alert>
+    <Stack>
+      <Alert status="warning" borderRadius="md">
+        <Box>
+          <AlertTitle>Requests are currently failing</AlertTitle>
+          <AlertDescription display="block">
+            <Flex flexDirection="column" gap={4}>
+              We&apos;ve been unable to successfully fetch this feed. Attempts will continue
+              automatically. The next earliest automatic attempt will be on{" "}
+              {(nextRetryTimestamp || fallbackNextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss")}.
+              You may also manually attempt a request via the button below.
+              <HStack>
+                <Button isLoading={manualRequestStatus === "loading"} onClick={handleManualAttempt}>
+                  <span>Attempt request</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    navigate(
+                      pages.userFeed(userFeed.id, {
+                        tab: UserFeedTabSearchParam.Logs,
+                      })
+                    )
+                  }
+                >
+                  View request history
+                </Button>
+              </HStack>
+            </Flex>
+          </AlertDescription>
+        </Box>
+      </Alert>
+      {firstStatusCode && RESOLVABLE_STATUS_CODES.includes(firstStatusCode) && (
+        <FixFeedRequestsCTA url={userFeed.url} />
+      )}
+    </Stack>
   );
 };

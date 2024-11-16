@@ -30,4 +30,5 @@ export const pages = {
       opts?.tab ? opts.tab : ""
     }`,
   userFeedsFaq: () => "/feeds/faq",
+  loginReddit: () => "/api/v1/reddit/login",
 };

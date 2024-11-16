@@ -1,13 +1,19 @@
 import { Alert, AlertDescription, AlertIcon, AlertTitle, Box } from "@chakra-ui/react";
-import { useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
 interface Props {
   title?: string;
-  description?: string;
+  description?: string | ReactNode;
   scrollIntoViewOnMount?: boolean;
+  hideIcon?: boolean;
 }
 
-export const InlineErrorAlert = ({ title, description, scrollIntoViewOnMount }: Props) => {
+export const InlineErrorAlert = ({
+  title,
+  description,
+  scrollIntoViewOnMount,
+  hideIcon,
+}: Props) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,7 +24,7 @@ export const InlineErrorAlert = ({ title, description, scrollIntoViewOnMount }: 
 
   return (
     <Alert status="error" ref={ref}>
-      <AlertIcon />
+      {!hideIcon && <AlertIcon />}
       <Box>
         <AlertTitle display="block">{title}</AlertTitle>
         <AlertDescription display="block">{description}</AlertDescription>

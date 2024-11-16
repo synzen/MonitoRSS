@@ -20,7 +20,7 @@
     },
     "errors": {
       "somethingWentWrong": "Something went wrong.",
-      "tryAgainLater": "Please try again later.",
+      "tryAgainLater": "Please try again later, or contact support@monitorss.xyz for assistance.",
       "detailsTitle": "Details",
       "failedToSave": "Failed to save changes",
       "supporterRequiredAccess": "This server needs to be backed by a supporter to access this.",
@@ -138,7 +138,7 @@
       "manuallyDisabledDescription": "Article delivery is paused until it is re-enabled.",
       "manuallyDisabledEnableButtonText": "Re-enable",
       "disableFeedButtonText": "Disable",
-      "disableFeedConfirmTitle": "Are you sure?",
+      "disableFeedConfirmTitle": "Are you sure you want to disable this feed?",
       "disableFeedConfirmDescription": "Articles will not be delivered until it is re-enabled.",
       "connectionFailureTitle": "Disabled due to too many connection failures",
       "connectionFailureText": "There has been too many connection failures within a short period of time. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",
