@@ -8,6 +8,7 @@ Delivers highly-customized news feeds to Discord!
     - [Self Host](#self-host)
       - [Customize Site Domain](#customize-site-domain)
       - [Enable Email Notifications](#enable-email-notifications)
+      - [Enable Reddit Logins](#enable-reddit-logins)
       - [Updating](#updating)
   - [Migrating from v6](#migrating-from-v6)
 
@@ -46,7 +47,7 @@ Docker is required to easily coordinate and run multiple services at once.
 
 1. Set up your domain to point to the server running the control panel on localhost
 2. Update all references to `http://localhost:8000` in your `.env.prod` to your desired domain. For example, `https://mynewdomain.com`.
-3. Add `{DOMAIN_HERE}/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page, replacing `DOMAIN_HERE` with the value you set in step 1
+3. Add `{DOMAIN_HERE}/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page, replacing `{DOMAIN_HERE}` with the value you set in step 1
 
 #### Enable Email Notifications
 
@@ -58,6 +59,16 @@ While email notifications are available so that you may get notified when feeds 
 - `BACKEND_API_SMTP_FROM`
 
 Make sure to opt into email notifications in the control panel's user settings page afterwards.
+
+#### Enable Reddit Logins
+
+1. Create a Reddit application at https://www.reddit.com/prefs/apps as a "web app".
+2. Add `{DOMAIN_HERE}/api/v1/reddit/callback` to the list of redirect URIs in your Reddit application settings, replacing `{DOMAIN_HERE}` with your domain that you're using to access the control panel.
+3. Copy the redirect URI you just added and set it as `BACKEND_API_REDDIT_REDIRECT_URI` in your `.env.prod` file.
+4. Copy the Reddit application's client ID (under "web app" label) and set it as `BACKEND_API_REDDIT_CLIENT_ID` in your `.env.prod` file.
+5. Copy the Reddit application's secret and set it as `BACKEND_API_REDDIT_CLIENT_SECRET` in your `.env.prod` file.
+6. Generate a 64-digit hexadecimal string and set it as `BACKEND_API_ENCRYPTION_KEY_HEX` in your `.env.prod` file. One option is to use an online generator such as [this one](https://www.browserling.com/tools/random-hex).
+
 
 #### Updating
 
