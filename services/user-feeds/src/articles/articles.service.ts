@@ -45,7 +45,7 @@ interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
   externalFeedProperties?: ExternalFeedPropertyDto[];
   findRssFromHtml?: boolean;
-  requestLookupDetails: FeedRequestLookupDetails | undefined;
+  requestLookupDetails: FeedRequestLookupDetails | undefined | null;
 }
 
 type XmlParsedArticlesOutput = {
@@ -181,7 +181,7 @@ export class ArticlesService {
     }: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
       executeFetch?: boolean;
-      requestLookupDetails: FeedRequestLookupDetails | undefined;
+      requestLookupDetails: FeedRequestLookupDetails | undefined | null;
     }
   ): Promise<{
     output: XmlParsedArticlesOutput | null;

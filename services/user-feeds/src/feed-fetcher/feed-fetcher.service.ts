@@ -49,7 +49,7 @@ export class FeedFetcherService implements OnModuleInit {
       executeFetchIfNotInCache?: boolean;
       retries?: number;
       hashToCompare?: string;
-      lookupDetails: FeedRequestLookupDetails | undefined;
+      lookupDetails: FeedRequestLookupDetails | undefined | null;
     }
   ) {
     const serviceUrl = this.SERVICE_HOST;
