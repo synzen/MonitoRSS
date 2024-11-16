@@ -536,17 +536,17 @@ export const UserSettings = () => {
               >
                 <Stack>
                   <Stack spacing={1}>
-                    <Text fontWeight={600}>Reddit</Text>
+                    <HStack alignItems="center" gap={2}>
+                      <Text fontWeight={600}>Reddit</Text>
+                      {redditConnected && <Badge colorScheme="green">Connected</Badge>}
+                      {!redditConnected && <Badge>Not Connected</Badge>}
+                    </HStack>
                     <Text color="whiteAlpha.600" fontSize="sm">
                       Allows MonitoRSS to use rate limits specific to your Reddit account, which has
                       much higher rate limit quotas than the global rate limits. All Reddit feeds
                       will automatically use your Reddit account if connected.
                     </Text>
                   </Stack>
-                  <Box>
-                    {redditConnected && <Badge colorScheme="green">Connected</Badge>}
-                    {!redditConnected && <Badge>Not Connected</Badge>}
-                  </Box>
                 </Stack>
                 <Box>
                   <Button

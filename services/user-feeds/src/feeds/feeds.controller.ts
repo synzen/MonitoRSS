@@ -299,7 +299,9 @@ export class FeedsController {
               .optional()
               .nullable()
               .default(null),
-            requestLookupDetails: feedV2EventRequestLookupDetails.optional(),
+            requestLookupDetails: feedV2EventRequestLookupDetails
+              .optional()
+              .nullable(),
           }),
           article: z
             .object({
@@ -459,7 +461,9 @@ export class FeedsController {
               .optional()
               .nullable()
               .default(null),
-            requestLookupDetails: feedV2EventRequestLookupDetails.optional(),
+            requestLookupDetails: feedV2EventRequestLookupDetails
+              .optional()
+              .nullable(),
           }),
           article: z.object({
             id: z.string(),
