@@ -312,24 +312,6 @@ export class UserFeedsController {
     };
   }
 
-  @Get("/:feedId/retry")
-  @UseFilters(RetryUserFeedFilter, FeedExceptionFilter)
-  async retryFailedFeed(
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken,
-    @Param("feedId", GetUserFeedsPipe())
-    [{ feed }]: GetUserFeedsPipeOutput
-  ): Promise<GetUserFeedOutputDto> {
-    const updatedFeed = (await this.userFeedsService.retryFailedFeed(
-      feed._id.toHexString()
-    )) as UserFeed;
-
-    return this.userFeedsService.formatForHttpResponse(
-      updatedFeed,
-      discordUserId
-    );
-  }
-
   @Post("/:feedId/manual-request")
   @UseFilters(RetryUserFeedFilter, FeedExceptionFilter)
   async createManualRequest(
