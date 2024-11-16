@@ -10,7 +10,6 @@ import {
 import { RedditApiService } from "../../services/apis/reddit/reddit-api.service";
 import { FastifyReply } from "fastify";
 import { ConfigService } from "@nestjs/config";
-import { URL } from "node:url";
 import { UsersService } from "../users/users.service";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
@@ -73,13 +72,8 @@ export class RedditLoginController {
     @Query("error") error?: string,
     @Query("code") code?: string
   ) {
-    const { origin } = new URL(
-      this.configService.getOrThrow<string>("BACKEND_API_LOGIN_REDIRECT_URI")
-    );
-    const redirect = `${origin}/settings`;
-
     if (error) {
-      res.redirect(303, redirect);
+      res.type("text/html").send(`<script>window.close();</script>`);
 
       return;
     }
@@ -108,6 +102,10 @@ export class RedditLoginController {
 
     await this.usersService.syncLookupKeys({ userIds: [user._id] });
 
-    res.redirect(303, redirect);
+    res.type("text/html").send(`
+      <script>
+        window.opener.postMessage('reddit', '*');
+        window.close();
+      </script>`);
   }
 }

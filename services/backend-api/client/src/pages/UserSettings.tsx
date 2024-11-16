@@ -147,7 +147,7 @@ const ChangePaymentMethodUrlButton = () => {
 };
 
 export const UserSettings = () => {
-  const { status, error, data, refetch } = useUserMe();
+  const { status, fetchStatus, error, data, refetch } = useUserMe();
   const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
@@ -167,6 +167,20 @@ export const UserSettings = () => {
   const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
     useRemoveRedditLogin();
   const hasLoaded = status !== "loading";
+
+  useEffect(() => {
+    const messageListener = (e: MessageEvent) => {
+      if (e.data === "reddit") {
+        refetch();
+      }
+    };
+
+    window.addEventListener("message", messageListener);
+
+    return () => {
+      window.removeEventListener("message", messageListener);
+    };
+  }, []);
 
   const onClickRemoveRedditLogin = async () => {
     try {
@@ -516,7 +530,7 @@ export const UserSettings = () => {
                                   </Box>
                                 )}
                                 {!subscriptionPendingCancellation && (
-                                  <Button size="sm" variant="outline" onClick={onOpenPricingDialog}>
+                                  <Button size="sm" onClick={onOpenPricingDialog}>
                                     <span>Manage Subscription</span>
                                   </Button>
                                 )}
@@ -564,8 +578,13 @@ export const UserSettings = () => {
                 <HStack>
                   <Button
                     size="sm"
+                    isLoading={fetchStatus === "fetching"}
                     onClick={() => {
-                      window.location.href = `/api/v1/reddit/login`;
+                      window.open(
+                        `/api/v1/reddit/login`,
+                        "_blank",
+                        "popup=true,width=600,height=600"
+                      );
                     }}
                   >
                     {redditConnected ? "Reconnect" : "Connect"}
@@ -573,7 +592,7 @@ export const UserSettings = () => {
                   {redditConnected && (
                     <Button
                       colorScheme="red"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       isLoading={removeRedditLoginStatus === "loading"}
                       onClick={() => {
