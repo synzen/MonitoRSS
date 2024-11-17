@@ -388,6 +388,13 @@ export class FeedFetcherListenerService {
     rateSeconds: number;
   }) {
     try {
+      logger.debug(
+        `Emitting fetch completed event for feeds with url "${url}", lookupkey ${lookupKey} `,
+        {
+          url,
+          lookupKey,
+        },
+      );
       this.amqpConnection.publish<{
         data: {
           lookupKey?: string;

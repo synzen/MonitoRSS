@@ -104,6 +104,7 @@ export class MessageBrokerEventsService {
       rateSeconds: number;
     };
   }) {
+    logger.debug("Got url fetched event", { lookupKey, url, rateSeconds });
     const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
       ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
       healthStatus: {

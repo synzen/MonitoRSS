@@ -23,7 +23,7 @@ export function getCommonFeedAggregateStages({
         }
       : {}),
     feedRequestLookupKey: {
-      $exists: withLookupKeys || false,
+      $exists: feedRequestLookupKey ? true : withLookupKeys || false,
     },
     $or: [
       {
