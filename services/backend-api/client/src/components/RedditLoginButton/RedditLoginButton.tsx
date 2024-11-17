@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Button } from "@chakra-ui/react";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useUserMe } from "../../features/discordUser";
 import { openRedditLogin } from "../../utils/openRedditLogin";
 
@@ -40,6 +41,7 @@ export const RedditLoginButton = ({ size, colorScheme, onConnected }: Props) => 
       isDisabled={fetchStatus === "fetching"}
       onClick={() => openRedditLogin()}
       colorScheme={colorScheme}
+      rightIcon={<ExternalLinkIcon />}
     >
       {redditConnected ? "Reconnect" : "Connect"}
     </Button>

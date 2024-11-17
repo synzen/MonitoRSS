@@ -32,9 +32,14 @@ export const FixFeedRequestsCTA = ({ url, onCorrected }: Props) => {
                 Reddit has stringent rate limits by default. With your account connected, you will
                 have access to higher quotas for Reddit feeds that may allow requests to go through.
               </Text>
-              <Box>
-                <RedditLoginButton size="md" colorScheme="green" onConnected={onCorrected} />
-              </Box>
+              <Stack>
+                <Box>
+                  <RedditLoginButton size="md" colorScheme="green" onConnected={onCorrected} />
+                </Box>
+                <Text color="whiteAlpha.700" fontSize="sm">
+                  A window will pop up prompting for login.
+                </Text>
+              </Stack>
             </Stack>
           </AlertDescription>
         </Box>
