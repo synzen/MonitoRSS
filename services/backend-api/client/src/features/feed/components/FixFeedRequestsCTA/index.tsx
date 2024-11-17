@@ -37,7 +37,7 @@ export const FixFeedRequestsCTA = ({ url, onCorrected }: Props) => {
                   <RedditLoginButton size="md" colorScheme="green" onConnected={onCorrected} />
                 </Box>
                 <Text color="whiteAlpha.700" fontSize="sm">
-                  A window will pop up prompting for login.
+                  A window will pop up prompting for authorization.
                 </Text>
               </Stack>
             </Stack>
