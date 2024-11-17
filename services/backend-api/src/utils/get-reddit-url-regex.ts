@@ -1,2 +1,2 @@
 export const getRedditUrlRegex = () =>
-  /^http(s?):\/\/(www.)?(old\.)?reddit\.com/i;
+  /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\/r\//i;
