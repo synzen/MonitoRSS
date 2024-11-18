@@ -40,6 +40,7 @@ function getFeedRequestLookupDetails({
     url: urlToFetch,
     headers: {
       Authorization: `Bearer ${decrypted}`,
+      "user-agent": "MonitoRSS:1.0",
     },
   };
 }

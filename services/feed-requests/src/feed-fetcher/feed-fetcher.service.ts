@@ -197,7 +197,6 @@ export class FeedFetcherService {
   }> {
     const fetchOptions: FetchOptions = {
       headers: {
-        ...options?.headers,
         'user-agent':
           this.configService.get<string>('feedUserAgent') ||
           this.defaultUserAgent,
@@ -208,6 +207,7 @@ export class FeedFetcherService {
          */
         'Sec-Fetch-Mode': 'navigate',
         'sec-fetch-site': 'none',
+        ...options?.headers,
       },
     };
     const request = new Request();

@@ -174,7 +174,7 @@ export class MessageBrokerEventsService {
           allowExternalProperties = benefits.allowExternalProperties;
         }
 
-        this.emitDeliverFeedArticlesEvent({
+        await this.emitDeliverFeedArticlesEvent({
           userFeed: feed,
           maxDailyArticles: feed.maxDailyArticles as number,
           parseCustomPlaceholders: allowCustomPlaceholders,
