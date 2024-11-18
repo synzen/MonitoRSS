@@ -11,7 +11,7 @@ import {
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { UserFeedArticleRequestStatus } from "../../types";
+import { UserFeedArticleRequestStatus, UserFeedDisabledCode } from "../../types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import {
   getErrorMessageForArticleRequestStatus,
@@ -67,7 +67,11 @@ export const UserFeedHealthAlert = () => {
     ? dayjs.unix(data.result.nextRetryTimestamp)
     : null;
 
-  if (!nextRetryTimestamp || status === "loading") {
+  if (
+    !nextRetryTimestamp ||
+    status === "loading" ||
+    userFeed.disabledCode === UserFeedDisabledCode.FailedRequests
+  ) {
     return null;
   }
 
