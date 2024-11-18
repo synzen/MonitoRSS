@@ -64,7 +64,21 @@ export class FeedEventHandlerService {
     queue: MessageBrokerQueue.FeedDeliverArticles,
   })
   async handleV2Event(event: FeedV2Event): Promise<void> {
+    const cacheKey = `processing-${event.data.feed.id}`;
+
     try {
+      const isAlreadyProcessing = await this.cacheStorageService.set({
+        key: cacheKey,
+        body: "1",
+        getOldValue: true,
+      });
+
+      if (isAlreadyProcessing) {
+        logger.info(
+          `User feed event for feed ${event.data.feed.id} is already being processed, ignoring`
+        );
+      }
+
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
       await this.handleV2EventWithDb(event);
     } catch (err) {
@@ -72,6 +86,8 @@ export class FeedEventHandlerService {
         feedId: event.data.feed.id,
         error: (err as Error).stack,
       });
+    } finally {
+      await this.cacheStorageService.del(cacheKey);
     }
   }
 
@@ -215,8 +231,6 @@ export class FeedEventHandlerService {
 
   @UseRequestContext()
   async handleV2EventWithDb(event: FeedV2Event) {
-    const cacheKey = `processing-${event.data.feed.id}`;
-
     try {
       feedV2EventSchema.parse(event);
     } catch (err) {
@@ -267,7 +281,7 @@ export class FeedEventHandlerService {
       }
 
       let response: Awaited<
-        ReturnType<typeof this.feedFetcherService.fetch>
+        ReturnType<typeof FeedFetcherService.prototype.fetch>
       > | null = null;
 
       try {
@@ -547,8 +561,6 @@ export class FeedEventHandlerService {
       });
 
       throw err;
-    } finally {
-      await this.cacheStorageService.del(cacheKey);
     }
   }
 
