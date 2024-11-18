@@ -1244,7 +1244,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     try {
       return {
-        success: isOkStatus,
+        success: true,
         status: res.status,
         body: (await res.json()) as Record<string, unknown>,
         detail: !isOkStatus ? `Bad status code: ${res.status}` : undefined,
