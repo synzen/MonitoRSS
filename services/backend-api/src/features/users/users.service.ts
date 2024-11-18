@@ -348,12 +348,16 @@ export class UsersService {
 
     const setQueries = Object.entries(ecryptedData).reduce(
       (acc, [key, value]) => {
-        acc[`externalCredentials.$.${key}`] = value;
+        acc[`externalCredentials.$.data.${key}`] = value;
 
         return acc;
       },
       {} as Record<string, string>
     );
+    const finalSetQuery = {
+      ...setQueries,
+      "externalCredentials.$.expireAt": useExpireAt,
+    };
 
     const result = await this.userModel.updateOne(
       {
@@ -365,7 +369,7 @@ export class UsersService {
         },
       },
       {
-        $set: { ...setQueries, "externalCredentials.$.expireAt": useExpireAt },
+        $set: finalSetQuery,
       }
     );
 
