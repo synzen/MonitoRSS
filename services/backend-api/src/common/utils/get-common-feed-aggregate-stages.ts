@@ -22,9 +22,11 @@ export function getCommonFeedAggregateStages({
           feedRequestLookupKey,
         }
       : {}),
-    feedRequestLookupKey: {
-      $exists: feedRequestLookupKey ? true : withLookupKeys || false,
-    },
+    feedRequestLookupKey: feedRequestLookupKey
+      ? feedRequestLookupKey
+      : {
+          $exists: withLookupKeys || false,
+        },
     $or: [
       {
         "connections.discordChannels.0": {
