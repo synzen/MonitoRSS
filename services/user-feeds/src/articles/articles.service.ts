@@ -3,9 +3,8 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import { FeedArticleCustomComparison } from "./entities";
-import FeedParser, { Item } from "feedparser";
-import { ArticleIDResolver } from "./utils";
-import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
+import { Item } from "feedparser";
+import { InvalidFeedException } from "./exceptions";
 import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
 import {
   EntityManager,
@@ -13,7 +12,10 @@ import {
   UniqueConstraintViolationException,
 } from "@mikro-orm/core";
 import { Article, UserFeedFormatOptions } from "../shared/types";
-import { ArticleParserService } from "../article-parser/article-parser.service";
+import {
+  ArticleParserService,
+  XmlParsedArticlesOutput,
+} from "../article-parser/article-parser.service";
 import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-options.type";
 import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
@@ -25,17 +27,17 @@ import { createHash } from "crypto";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
-import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
 import { ExternalFeedPropertyDto } from "../article-formatter/types";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
 import { deflate, inflate } from "zlib";
 import { promisify } from "util";
 import { parse, valid } from "node-html-parser";
-import { chunkArray } from "../shared/utils/chunk-array";
 import { PartitionedFeedArticleFieldStoreService } from "./partitioned-feed-article-field-store.service";
 import { ConfigService } from "@nestjs/config";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
 import { FeedRequestLookupDetails } from "../shared/types/feed-request-lookup-details.type";
+import { pool, Pool } from "workerpool";
+import { join } from "path";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -48,12 +50,10 @@ interface FetchFeedArticleOptions {
   requestLookupDetails: FeedRequestLookupDetails | undefined | null;
 }
 
-type XmlParsedArticlesOutput = {
-  articles: Article[];
-};
-
 @Injectable()
 export class ArticlesService {
+  feedParserPool: Pool;
+
   constructor(
     @InjectRepository(FeedArticleCustomComparison)
     private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
@@ -63,7 +63,14 @@ export class ArticlesService {
     private readonly cacheStorageService: CacheStorageService,
     private readonly partitionedFieldStoreService: PartitionedFeedArticleFieldStoreService,
     private readonly configService: ConfigService
-  ) {}
+  ) {
+    this.feedParserPool = pool(
+      join(__dirname, "articles.feed-parser.worker.js"),
+      {
+        workerType: "thread",
+      }
+    );
+  }
 
   async doFeedArticlesExistInCache(data: {
     url: string;
@@ -226,11 +233,18 @@ export class ArticlesService {
     }
 
     try {
-      const fromXml = await this.getArticlesFromXml(response.body, {
-        formatOptions,
-        useParserRules: getParserRules({ url }),
-        externalFeedProperties,
-      });
+      const fromXml: Awaited<
+        ReturnType<
+          (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
+        >
+      > = await this.feedParserPool.exec("getArticlesFromXml", [
+        response.body,
+        {
+          formatOptions,
+          useParserRules: getParserRules({ url }),
+          externalFeedProperties,
+        },
+      ]);
 
       await this.setFeedArticlesInCache({
         url,
@@ -361,11 +375,20 @@ export class ArticlesService {
       externalFeedProperties?: ExternalFeedProperty[];
     }
   ): Promise<{ articlesToDeliver: Article[]; allArticles: Article[] }> {
-    const { articles } = await this.getArticlesFromXml(feedXml, {
-      formatOptions,
-      useParserRules,
-      externalFeedProperties,
-    });
+    const {
+      articles,
+    }: Awaited<
+      ReturnType<
+        (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
+      >
+    > = await this.feedParserPool.exec("getArticlesFromXml", [
+      feedXml,
+      {
+        formatOptions,
+        useParserRules,
+        externalFeedProperties,
+      },
+    ]);
 
     logger.debug(`Found articles:`, {
       titles: articles.map((a) => a.flattened.title),
@@ -717,162 +740,6 @@ export class ArticlesService {
     }
 
     return this.partitionedFieldStoreService.someFieldsExist(feedId, queries);
-  }
-
-  async getArticlesFromXml(
-    xml: string,
-    options: {
-      timeout?: number;
-      formatOptions: UserFeedFormatOptions;
-      useParserRules: PostProcessParserRule[] | undefined;
-      externalFeedProperties?: Array<ExternalFeedProperty>;
-    }
-  ): Promise<XmlParsedArticlesOutput> {
-    const feedparser = new FeedParser({});
-    const idResolver = new ArticleIDResolver();
-    const rawArticles: FeedParser.Item[] = [];
-
-    const promise = new Promise<{
-      articles: Article[];
-    }>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new FeedParseTimeoutException());
-      }, options?.timeout || 10000);
-
-      feedparser.on("error", (err: Error) => {
-        if (
-          err.message === "Not a feed" ||
-          err.message.startsWith("Unexpected end")
-        ) {
-          reject(new InvalidFeedException("Invalid feed"));
-        } else {
-          reject(err);
-        }
-      });
-
-      feedparser.on("readable", function (this: FeedParser) {
-        let item;
-
-        do {
-          item = this.read();
-
-          if (item) {
-            idResolver.recordArticle(item as never);
-            rawArticles.push(item);
-          }
-        } while (item);
-      });
-
-      feedparser.on("end", async () => {
-        clearTimeout(timeout);
-
-        if (rawArticles.length === 0) {
-          return resolve({ articles: [] });
-        }
-
-        clearTimeout(timeout);
-        const idType = idResolver.getIDType();
-
-        if (!idType) {
-          return reject(
-            new Error("No ID type found when parsing articles for feed")
-          );
-        }
-
-        try {
-          const mappedArticles = await Promise.all(
-            rawArticles.map(async (rawArticle) => {
-              const id = ArticleIDResolver.getIDTypeValue(
-                rawArticle as never,
-                idType
-              );
-
-              const {
-                flattened,
-                injectArticleContent,
-                hasArticleContentInjection,
-              } = await this.articleParserService.flatten(rawArticle as never, {
-                formatOptions: options.formatOptions,
-                useParserRules: options.useParserRules,
-                externalFeedProperties: options.externalFeedProperties,
-              });
-
-              return {
-                flattened: {
-                  ...flattened,
-                  id,
-                  idHash: sha1.copy().update(id).digest("hex"),
-                },
-                raw: {
-                  date:
-                    !!rawArticle.date && dayjs(rawArticle.date).isValid()
-                      ? rawArticle.date.toISOString()
-                      : undefined,
-                  pubdate:
-                    !!rawArticle.pubdate && dayjs(rawArticle.pubdate).isValid()
-                      ? rawArticle.pubdate.toISOString()
-                      : undefined,
-                },
-                injectArticleContent,
-                hasArticleContentInjection,
-              };
-            })
-          );
-
-          // check for duplicate id hashes
-          const idHashes = new Set<string>();
-
-          for (const article of mappedArticles) {
-            const idHash = article.flattened.idHash;
-
-            if (!idHash) {
-              return reject(new Error("Some articles are missing id hash"));
-            }
-
-            if (idHashes.has(article.flattened.idHash)) {
-              logger.warn(
-                `Feed has duplicate article id hash: ${article.flattened.idHash}`,
-                {
-                  id: article.flattened.id,
-                  idHash,
-                }
-              );
-            }
-
-            idHashes.add(article.flattened.idHash);
-          }
-
-          if (
-            mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT &&
-            mappedArticles.some((a) => a.hasArticleContentInjection)
-          ) {
-            const chunked = chunkArray(mappedArticles, 25);
-
-            for (const chunk of chunked) {
-              await Promise.all(
-                chunk.map((a) => a.injectArticleContent(a.flattened))
-              );
-
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-
-          resolve({
-            articles: mappedArticles.map((a) => ({
-              flattened: a.flattened,
-              raw: a.raw,
-            })),
-          });
-        } catch (err) {
-          reject(err);
-        }
-      });
-    });
-
-    feedparser.write(xml);
-    feedparser.end();
-
-    return promise;
   }
 
   async checkBlockingComparisons(

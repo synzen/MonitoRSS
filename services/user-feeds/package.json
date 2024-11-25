@@ -59,6 +59,7 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "undici": "^5.22.0",
+    "workerpool": "^9.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
