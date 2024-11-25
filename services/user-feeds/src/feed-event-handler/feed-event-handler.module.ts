@@ -38,6 +38,7 @@ export class FeedEventHandlerModule {
         MessageBrokerModule.forRoot(),
         ResponseHashModule,
         CacheStorageModule,
+        ArticlesModule,
       ],
     };
   }

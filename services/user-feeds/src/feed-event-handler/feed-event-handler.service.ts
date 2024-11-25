@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { Injectable } from "@nestjs/common";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { ArticlesService } from "../articles/articles.service";
@@ -42,6 +43,7 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { z } from "zod";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
+import { PartitionedFeedArticleFieldStoreService } from "../articles/partitioned-feed-article-field-store.service";
 
 @Injectable()
 export class FeedEventHandlerService {
@@ -56,6 +58,7 @@ export class FeedEventHandlerService {
     @InjectRepository(FeedRetryRecord)
     private readonly feedRetryRecordRepo: EntityRepository<FeedRetryRecord>,
     private readonly cacheStorageService: CacheStorageService,
+    private readonly partitionedFeedArticleStoreService: PartitionedFeedArticleFieldStoreService,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
@@ -436,6 +439,7 @@ export class FeedEventHandlerService {
 
       try {
         await this.orm.em.flush();
+        await this.partitionedFeedArticleStoreService.flush(this.orm.em);
         deliveryStates.forEach((state) => {
           if (state.status !== ArticleDeliveryStatus.Rejected) {
             return;

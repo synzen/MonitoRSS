@@ -593,7 +593,9 @@ export class ArticlesService {
 
     try {
       await this.orm.em.transactional(async (em) => {
-        await this.partitionedFieldStoreService.persist(fieldsToSave, em);
+        await this.partitionedFieldStoreService.markForPersistence(
+          fieldsToSave
+        );
 
         await this.storeArticleComparisons(
           em,
@@ -671,7 +673,7 @@ export class ArticlesService {
       });
     }
 
-    await this.partitionedFieldStoreService.persist(fieldsToSave, em);
+    await this.partitionedFieldStoreService.markForPersistence(fieldsToSave);
   }
 
   async filterForNewArticles(

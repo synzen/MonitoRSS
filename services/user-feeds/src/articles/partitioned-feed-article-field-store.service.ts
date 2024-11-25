@@ -12,18 +12,26 @@ import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-fiel
 export class PartitionedFeedArticleFieldStoreService {
   connection: Connection;
   TABLE_NAME = "feed_article_field_partitioned";
+  toInsert: PartitionedFeedArticleFieldInsert[] = [];
 
   constructor(private readonly orm: MikroORM) {
     this.connection = this.orm.em.getConnection();
   }
 
-  async persist(
-    inserts: PartitionedFeedArticleFieldInsert[],
-    em: EntityManager<IDatabaseDriver<Connection>>
-  ) {
+  async markForPersistence(inserts: PartitionedFeedArticleFieldInsert[]) {
     if (inserts.length === 0) {
       return;
     }
+
+    this.toInsert.push(...inserts);
+  }
+
+  async flush(em: EntityManager<IDatabaseDriver<Connection>>) {
+    if (this.toInsert.length === 0) {
+      return;
+    }
+
+    const inserts = this.toInsert;
 
     const connection = em.getConnection();
 
@@ -49,6 +57,8 @@ export class PartitionedFeedArticleFieldStoreService {
         stack: (err as Error).stack,
       });
       throw err;
+    } finally {
+      this.toInsert = [];
     }
   }
 
