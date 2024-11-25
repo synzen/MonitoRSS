@@ -14,7 +14,7 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
-import { fetch } from 'undici';
+import { request } from 'undici';
 import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
@@ -428,29 +428,43 @@ export class FeedFetcherService {
       });
     }
 
-    const r = await fetch(url, { ...useOptions });
+    const r = await request(url, {
+      headers: useOptions.headers,
+      signal: useOptions.signal,
+    });
+
+    const normalizedHeaders = Object.entries(r.headers).reduce(
+      (acc, [key, val]) => {
+        if (typeof val === 'string') {
+          acc.set(key.toLowerCase(), val);
+        }
+
+        return acc;
+      },
+      new Map<string, string>(),
+    );
 
     clearTimeout(timer);
 
     const headers: FetchResponse['headers'] = new Map();
 
-    headers.set('etag', convertHeaderValue(r.headers.get('etag')));
+    headers.set('etag', convertHeaderValue(normalizedHeaders.get('etag')));
     headers.set(
       'content-type',
-      convertHeaderValue(r.headers.get('content-type')),
+      convertHeaderValue(normalizedHeaders.get('content-type')),
     );
     headers.set(
       'last-modified',
-      convertHeaderValue(r.headers.get('last-modified')),
+      convertHeaderValue(normalizedHeaders.get('last-modified')),
     );
-    headers.set('server', convertHeaderValue(r.headers.get('server')));
+    headers.set('server', convertHeaderValue(normalizedHeaders.get('server')));
 
     return {
       headers,
-      ok: r.status >= 200 && r.status < 300,
-      status: r.status,
-      text: () => r.text(),
-      arrayBuffer: () => r.arrayBuffer(),
+      ok: r.statusCode >= 200 && r.statusCode < 300,
+      status: r.statusCode,
+      text: () => r.body.text(),
+      arrayBuffer: () => r.body.arrayBuffer(),
     };
   }
 
