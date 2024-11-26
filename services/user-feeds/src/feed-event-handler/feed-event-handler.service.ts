@@ -353,25 +353,6 @@ export class FeedEventHandlerService {
           externalFeedProperties: event.data.feed.externalProperties,
         });
 
-      if (event.data.feed.id === "655137973a0f40021f26444b") {
-        logger.warn(`Running debug on schedule: article ids`, {
-          event,
-          response,
-          lastHashSaved: lastHashSaved || "n/a",
-          articleIds: allArticles.map((a) => {
-            if (
-              a.flattened.idHash === "73a3149d0a053b5fd7140e3d6ee352dfe2d4bc0e"
-            ) {
-              logger.warn(
-                `Running debug on schedule: found non owning article`
-              );
-            }
-
-            return a.flattened.id;
-          }),
-        });
-      }
-
       await this.updateFeedArticlesInCache({ event, articles: allArticles });
 
       // START TEMPORARY - Should revisit this for a more robust retry strategy
@@ -548,16 +529,10 @@ export class FeedEventHandlerService {
             attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
           });
           await this.orm.em.flush();
+          await this.partitionedFeedArticleStoreService.flush(this.orm.em);
         }
-      } else {
-        logger.error(
-          `Error while handling feed event: ${(err as Error).message}`,
-          {
-            err,
-            feedId: event.data.feed.id,
-            stack: (err as Error).stack,
-          }
-        );
+
+        return;
       }
 
       this.logEventFinish(event, {

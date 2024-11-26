@@ -233,18 +233,11 @@ export class ArticlesService {
     }
 
     try {
-      const fromXml: Awaited<
-        ReturnType<
-          (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
-        >
-      > = await this.feedParserPool.exec("getArticlesFromXml", [
-        response.body,
-        {
-          formatOptions,
-          useParserRules: getParserRules({ url }),
-          externalFeedProperties,
-        },
-      ]);
+      const fromXml = await this.getArticlesFromXml(response.body, {
+        formatOptions,
+        useParserRules: getParserRules({ url }),
+        externalFeedProperties,
+      });
 
       await this.setFeedArticlesInCache({
         url,
@@ -375,20 +368,11 @@ export class ArticlesService {
       externalFeedProperties?: ExternalFeedProperty[];
     }
   ): Promise<{ articlesToDeliver: Article[]; allArticles: Article[] }> {
-    const {
-      articles,
-    }: Awaited<
-      ReturnType<
-        (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
-      >
-    > = await this.feedParserPool.exec("getArticlesFromXml", [
-      feedXml,
-      {
-        formatOptions,
-        useParserRules,
-        externalFeedProperties,
-      },
-    ]);
+    const { articles } = await this.getArticlesFromXml(feedXml, {
+      formatOptions,
+      useParserRules,
+      externalFeedProperties,
+    });
 
     logger.debug(`Found articles:`, {
       titles: articles.map((a) => a.flattened.title),
@@ -905,5 +889,21 @@ export class ArticlesService {
     }
 
     return elem.getAttribute("href") || null;
+  }
+
+  private async getArticlesFromXml(
+    ...args: Parameters<ArticleParserService["getArticlesFromXml"]>
+  ): ReturnType<
+    (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
+  > {
+    try {
+      return await this.feedParserPool.exec("getArticlesFromXml", args);
+    } catch (err) {
+      if (err instanceof Error && err.message === "Invalid feed") {
+        throw new InvalidFeedException(err.message);
+      }
+
+      throw err;
+    }
   }
 }
