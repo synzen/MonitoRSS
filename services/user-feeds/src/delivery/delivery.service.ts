@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
+import { DuplicateArticleException } from "../articles/exceptions/duplicate-article.exception";
+import { CacheStorageService } from "../cache-storage/cache-storage.service";
 import {
   Article,
   ArticleDeliveryErrorCode,
@@ -25,7 +27,8 @@ export class DeliveryService {
   constructor(
     private readonly discordMediumService: DiscordMediumService,
     private readonly articleFiltersService: ArticleFiltersService,
-    private readonly articleRateLimitService: ArticleRateLimitService
+    private readonly articleRateLimitService: ArticleRateLimitService,
+    private readonly cacheStorageService: CacheStorageService
   ) {}
 
   private mediumServices: Record<MediumKey, DeliveryMedium> = {
@@ -165,6 +168,19 @@ export class DeliveryService {
         }
       }
 
+      const cacheKey = `delivery:${event.data.feed.id}:${medium.id}:${article.flattened.idHash}`;
+
+      const oldVal = await this.cacheStorageService.set({
+        key: cacheKey,
+        getOldValue: true,
+        expSeconds: 60 * 3,
+        body: "1",
+      });
+
+      if (oldVal) {
+        throw new DuplicateArticleException(`Article already delivered to feed ${event.data.feed.id}, medium ${medium.id}, article ${formattedArticle.flattened.id}`);
+      }
+
       const articleStates = await mediumService.deliverArticle(
         formattedArticle,
         {
@@ -197,7 +213,11 @@ export class DeliveryService {
         ];
       }
 
-      logger.error(`Failed to deliver article to medium ${medium.key}`, {
+      if (err instanceof DuplicateArticleException) {
+        throw err;
+      }
+
+      logger.error(`Failed to deliver article to medium ${medium.key}: ${(err as Error).message}`, {
         event,
         error: (err as Error).stack,
       });
