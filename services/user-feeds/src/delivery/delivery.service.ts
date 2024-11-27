@@ -178,7 +178,12 @@ export class DeliveryService {
       });
 
       if (oldVal) {
-        throw new DuplicateArticleException(`Article already delivered to feed ${event.data.feed.id}, medium ${medium.id}, article ${formattedArticle.flattened.id}`);
+        logger.warn(
+          `Article already delivered to feed ${event.data.feed.id}, medium ${medium.id},` +
+            ` article ${formattedArticle.flattened.id}`
+        );
+
+        return [];
       }
 
       const articleStates = await mediumService.deliverArticle(
@@ -213,14 +218,15 @@ export class DeliveryService {
         ];
       }
 
-      if (err instanceof DuplicateArticleException) {
-        throw err;
-      }
-
-      logger.error(`Failed to deliver article to medium ${medium.key}: ${(err as Error).message}`, {
-        event,
-        error: (err as Error).stack,
-      });
+      logger.error(
+        `Failed to deliver article to medium ${medium.key}: ${
+          (err as Error).message
+        }`,
+        {
+          event,
+          error: (err as Error).stack,
+        }
+      );
 
       return [
         {
