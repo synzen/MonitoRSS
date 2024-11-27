@@ -398,6 +398,8 @@ export class ArticlesService {
     const priorArticlesStored = await this.hasPriorArticlesStored(id);
 
     if (!priorArticlesStored) {
+      logger.debug(`No prior articles stored for feed ${id}`);
+
       await this.storeArticles(id, articles, {
         comparisonFields: [...blockingComparisons, ...passingComparisons],
       });
@@ -896,6 +898,10 @@ export class ArticlesService {
   ): ReturnType<
     (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
   > {
+    if (process.env.NODE_ENV === "test") {
+      return this.articleParserService.getArticlesFromXml(...args);
+    }
+
     try {
       return await this.feedParserPool.exec("getArticlesFromXml", args);
     } catch (err) {

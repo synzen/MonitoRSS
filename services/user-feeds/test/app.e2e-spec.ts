@@ -19,11 +19,12 @@ import { deepStrictEqual } from "assert";
 import testFeedV2Event from "./data/test-feed-v2-event";
 import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "./data/test-rss-feed";
 import { randomUUID } from "crypto";
+import pruneAndCreatePartitions from "../src/shared/utils/prune-and-create-partitions";
 
 describe("App (e2e)", () => {
   let feedEventHandler: FeedEventHandlerService;
   const feedFetcherService: FeedFetcherService = {
-    fetchWithGrpc: async () => ({
+    fetch: async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
       body: getTestRssFeed(),
       bodyHash: "bodyhash",
@@ -55,8 +56,10 @@ describe("App (e2e)", () => {
       .overrideProvider(DiscordMediumService)
       .useValue(discordMediumService);
 
-    const { module } = await init();
-    feedEventHandler = module.get(FeedEventHandlerService);
+    const { module: appModule } = await init();
+    feedEventHandler = appModule.get(FeedEventHandlerService);
+
+    await pruneAndCreatePartitions(appModule);
   });
 
   after(async () => {
@@ -68,7 +71,7 @@ describe("App (e2e)", () => {
   });
 
   it("sends new articles based on guid", async () => {
-    feedFetcherService.fetchWithGrpc = async () => ({
+    feedFetcherService.fetch = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
       body: getTestRssFeed([
         {
@@ -99,7 +102,7 @@ describe("App (e2e)", () => {
       feedEventWithBlockingComparisons
     );
 
-    feedFetcherService.fetchWithGrpc = async () => ({
+    feedFetcherService.fetch = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
       body: getTestRssFeed([
         {
@@ -136,7 +139,7 @@ describe("App (e2e)", () => {
       },
     ];
 
-    feedFetcherService.fetchWithGrpc = async () => ({
+    feedFetcherService.fetch = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
       body: getTestRssFeed(initialArticles),
       bodyHash: randomUUID(),
@@ -145,7 +148,7 @@ describe("App (e2e)", () => {
     // Initialize the comparisons storage first
     await feedEventHandler.handleV2EventWithDb(feedEventWithPassingComparisons);
 
-    feedFetcherService.fetchWithGrpc = async () => ({
+    feedFetcherService.fetch = async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
       body: getTestRssFeed([
         {

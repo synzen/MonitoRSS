@@ -51,6 +51,6 @@ services:
       - USER_FEEDS_REDIS_URI=redis://redis:6379
       - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
       - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq:5672
-      # - LOG_LEVEL=debug
+      - LOG_LEVEL=debug
     tty: true
     command: ${TEST_COMMAND}

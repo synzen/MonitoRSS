@@ -17,11 +17,7 @@ import {
   UserFeedFormatOptions,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
-import {
-  MikroORM,
-  UniqueConstraintViolationException,
-  UseRequestContext,
-} from "@mikro-orm/core";
+import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
@@ -419,8 +415,6 @@ export class FeedEventHandlerService {
       );
 
       try {
-        await this.orm.em.flush();
-        await this.partitionedFeedArticleStoreService.flush(this.orm.em);
         deliveryStates.forEach((state) => {
           if (state.status !== ArticleDeliveryStatus.Rejected) {
             return;
@@ -449,20 +443,10 @@ export class FeedEventHandlerService {
           }
         });
       } catch (err) {
-        if (err instanceof UniqueConstraintViolationException) {
-          logger.warn(
-            `Failed to flush ORM due to unique constraint violation`,
-            {
-              event,
-              error: (err as Error).stack,
-            }
-          );
-        } else {
-          logger.error(`Failed to flush ORM while handling feed event`, {
-            event,
-            error: (err as Error).stack,
-          });
-        }
+        logger.error(`Failed to flush ORM while handling feed event`, {
+          event,
+          error: (err as Error).stack,
+        });
       }
 
       await this.responseHashService.set({
@@ -528,8 +512,6 @@ export class FeedEventHandlerService {
             feed_id: event.data.feed.id,
             attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
           });
-          await this.orm.em.flush();
-          await this.partitionedFeedArticleStoreService.flush(this.orm.em);
         }
 
         return;
@@ -540,6 +522,16 @@ export class FeedEventHandlerService {
       });
 
       throw err;
+    } finally {
+      try {
+        await this.orm.em.flush();
+        await this.partitionedFeedArticleStoreService.flush(this.orm.em);
+      } catch (err) {
+        logger.error(`Failed to flush ORM while handling feed event`, {
+          event,
+          error: (err as Error).stack,
+        });
+      }
     }
   }
 
