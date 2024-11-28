@@ -1,4 +1,4 @@
-name: Create and publish Docker images
+name: Docker images
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ env:
   BOT_PRESENCE_IMAGE_NAME: ${{ github.repository }}-bot-presence
 
 jobs:
-  build-push-user-feeds:
+  user-feeds:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,7 +51,7 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
-  build-push-feed-requests:
+  feed-requests:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,7 +88,7 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
-  build-push-monolith:
+  monolith:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -126,7 +126,7 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
-  build-push-bot-presence:
+  bot-presence:
     runs-on: ubuntu-latest
     permissions:
       contents: read
