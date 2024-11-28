@@ -61,6 +61,8 @@ export class RedditLoginController {
     );
 
     await this.usersService.removeRedditCredentials(user._id);
+
+    await this.usersService.syncLookupKeys({ userIds: [user._id] });
   }
 
   @Get("callback")

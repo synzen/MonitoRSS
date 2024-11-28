@@ -402,7 +402,7 @@ export const ExternalPropertiesTabSection = () => {
     <FormProvider {...formData}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={8} mb={24}>
-          <Box>
+          <Stack spacing={4}>
             <Stack>
               <Heading as="h2" size="md">
                 External Properties
@@ -415,14 +415,14 @@ export const ExternalPropertiesTabSection = () => {
                 selector.
               </Text>
             </Stack>
-            {!eligible ? <Box mb={4}>{alertComponent}</Box> : undefined}
+            {!eligible ? <Box>{alertComponent}</Box> : undefined}
             <SubscriberBlockText
               feature={BlockableFeature.ArticleInjections}
               supporterTier={SupporterTier.T2}
               alternateText={`While you can use this feature, you must be a ${SupporterTier.T2} supporter to
               have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
             />
-          </Box>
+          </Stack>
           {fields?.map((a, fieldIndex) => {
             return (
               <Box

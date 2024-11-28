@@ -561,6 +561,11 @@ export class UsersService {
                 },
               },
             },
+            {
+              "externalCredentials.0": {
+                $exists: false,
+              },
+            },
           ],
         },
       },
