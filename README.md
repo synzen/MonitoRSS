@@ -8,7 +8,7 @@ Delivers highly-customized news feeds to Discord!
     - [Self Host](#self-host)
       - [Customize Site Domain](#customize-site-domain)
       - [Enable Email Notifications](#enable-email-notifications)
-      - [Enable Reddit Logins](#enable-reddit-logins)
+      - [Enable Reddit Authorizations](#enable-reddit-authorizations)
       - [Updating](#updating)
   - [Migrating from v6](#migrating-from-v6)
 
@@ -60,7 +60,7 @@ While email notifications are available so that you may get notified when feeds 
 
 Make sure to opt into email notifications in the control panel's user settings page afterwards.
 
-#### Enable Reddit Logins
+#### Enable Reddit Authorizations
 
 1. Create a Reddit application at https://www.reddit.com/prefs/apps as a "web app".
 2. Add `{DOMAIN_HERE}/api/v1/reddit/callback` to the list of redirect URIs in your Reddit application settings, replacing `{DOMAIN_HERE}` with your domain that you're using to access the control panel.
@@ -72,10 +72,10 @@ Make sure to opt into email notifications in the control panel's user settings p
 
 #### Updating
 
+Images are automatically built and pushed to Docker Hub on every commit to the `main` branch, so there is technically no need to pull the latest files in. To update your local instance:
+
 1. Make a backup of your MongoDB data just in case
-2. Pull the latest files from the main branch
-3. Stop containers with `docker compose down`
-4. Rebuild containers with `docker compose up -d --build`
+2. Rebuild and rerun containers with `docker compose up -d --build`
 
 ## Migrating from v6
 
