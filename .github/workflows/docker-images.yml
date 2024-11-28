@@ -12,7 +12,7 @@ env:
   FEED_REQUESTS_IMAGE_NAME: ${{ github.repository }}-feed-requests
   MONOLITH_IMAGE_NAME: ${{ github.repository }}-monolith
   BOT_PRESENCE_IMAGE_NAME: ${{ github.repository }}-bot-presence
-  DISCORD_REST_LISTENER_NAME: ${{ github.repository }}-discord-rest-listener
+  DISCORD_REST_LISTENER_IMAGE_NAME: ${{ github.repository }}-discord-rest-listener
 
 jobs:
   user-feeds:
