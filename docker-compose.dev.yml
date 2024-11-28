@@ -89,19 +89,7 @@ services:
       - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
       - FEED_REQUESTS_S3_API_KEY_ID=1
       - FEED_REQUESTS_S3_API_KEY=1
-
-  feed-requests-postgres-migration:
-    extends:
-      file: docker-compose.base.yml
-      service: feed-requests-postgres-migration
-    command: "npm run migration:local:up"
-    env_file:
-      - ./.env.local
-    environment:
-      - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
-      - FEED_REQUESTS_S3_API_KEY_ID=1
-      - FEED_REQUESTS_S3_API_KEY=1
-      - LOG_LEVEL=debug
+      - FEED_REQUESTS_START_TARGET=service
 
   feed-requests-api:
     extends:
@@ -116,6 +104,21 @@ services:
     command: npm run start:local
     env_file:
       - ./.env.local
+    environment:
+      - FEED_REQUESTS_START_TARGET=api
+
+  feed-requests-postgres-migration:
+    extends:
+      file: docker-compose.base.yml
+      service: feed-requests-postgres-migration
+    command: "npm run migration:local:up"
+    env_file:
+      - ./.env.local
+    environment:
+      - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
+      - FEED_REQUESTS_S3_API_KEY_ID=1
+      - FEED_REQUESTS_S3_API_KEY=1
+      - LOG_LEVEL=debug
 
   user-feeds-service:
     extends:
