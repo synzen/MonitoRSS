@@ -242,7 +242,7 @@ services:
   schedule-emitter-service:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/web/api.Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: build
     restart: on-failure:10
     depends_on:
@@ -259,12 +259,12 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
     networks:
       - monitorss-default
+    command: npm run start:schedule-emitter:local
 
-  # Schedule emitter
   legacy-feed-bulk-converter-service:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: build
     restart: on-failure:10
     depends_on:
@@ -283,12 +283,13 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
     networks:
       - monitorss-default
+    command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
 
   # Web - Backend api
   web-api:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/web/api.Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: build
     restart: on-failure:5
     depends_on:
@@ -297,6 +298,12 @@ services:
       - feed-requests-service
     ports:
       - "8000:8000"
+    healthcheck:
+      test: "wget http://localhost:8000/api/v1/health -q -O - > /dev/null 2>&1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    command: ["node", "dist/main"]
     environment:
       - BACKEND_API_NODE_ENV=local
       - BACKEND_API_PORT=8000

@@ -132,3 +132,7 @@ UserSchema.index({
   "externalCredentials.status": 1,
   "externalCredentials.type": 1,
 });
+
+UserSchema.index({
+  "externalCredentials.0": 1,
+});

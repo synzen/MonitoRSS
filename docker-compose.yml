@@ -84,7 +84,7 @@ services:
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
-      target: build
+      target: prod
     command: "npm run migration:local:up"
     env_file:
       - ./.env.prod
@@ -105,6 +105,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: user-feeds-postgres-migration
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: prod
     env_file:
       - ./.env.prod
 
@@ -114,7 +118,7 @@ services:
       service: legacy-feed-bulk-converter-service
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: prod
     command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
     env_file:
@@ -126,7 +130,7 @@ services:
       service: schedule-emitter-service
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/schedule-emitter/Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: prod
     command: ["node", "dist/scripts/schedule-emitter.js"]
     env_file:
