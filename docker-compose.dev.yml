@@ -168,7 +168,6 @@ services:
     environment:
       - NODE_ENV=local
       - LOG_LEVEL=debug
-    command: npm run start:schedule-emitter:local
 
   # Schedule emitter
   legacy-feed-bulk-converter-service:
