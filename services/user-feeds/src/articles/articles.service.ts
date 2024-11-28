@@ -666,22 +666,74 @@ export class ArticlesService {
     feedId: string,
     articles: Article[]
   ): Promise<Article[]> {
+    /**
+     * feed has a, b, c
+     *
+     * a - 5 months ago
+     * b - 10 days ago
+     * c - never stored
+     *
+     * Ideal state: c should be delivered, a should be re-stored for efficient lookups
+     *
+     * FIRST PASS - see if any of the articles have been stored within one month
+     *  db returns b
+     *  filter for articles that are not in the db, so we have a and c
+     *
+     *  a and c are candidates for delivery
+     *
+     * SECOND PASS - from the candidates, see if any have been stored older than one month
+     *  db returns a
+     *
+     * filter for articles that are neither in the first pass nor the second pass (a,b), and these
+     * are eligible for delivery
+     *
+     * re-store all articles found in the second pass
+     */
     const mapOfArticles = new Map(
       articles.map((article) => [article.flattened.idHash, article])
     );
     const articleIds = Array.from(mapOfArticles.keys());
+    // Do a first pass to see if any of the articles have been stored within one month
+    const idsStoredInPastMonth = (
+      await this.partitionedFieldStoreService.findIdFieldsForFeed(
+        feedId,
+        articleIds,
+        false
+      )
+    ).map((r) => r.field_hashed_value);
+    const idsStoredInPastMonthSet = new Set(idsStoredInPastMonth);
 
-    const foundIds = new Set(
-      (
-        await this.partitionedFieldStoreService.findIdFieldsForFeed(
-          feedId,
-          articleIds
-        )
-      ).map((r) => r.field_hashed_value)
+    const articleIdsPossibleForDelivery = articleIds.filter(
+      (id) => !idsStoredInPastMonthSet.has(id)
+    );
+
+    if (articleIdsPossibleForDelivery.length === 0) {
+      return [];
+    }
+
+    // Do a second pass to see if any of the articles have been stored older than one month
+    const idsStoredOlderThanOneMonth = (
+      await this.partitionedFieldStoreService.findIdFieldsForFeed(
+        feedId,
+        articleIdsPossibleForDelivery,
+        true
+      )
+    ).map((r) => r.field_hashed_value);
+
+    const articlesOlderThanOneMonthToStore = idsStoredOlderThanOneMonth
+      .map((id) => mapOfArticles.get(id))
+      .filter((a): a is Exclude<typeof a, undefined> => !!a);
+
+    if (articlesOlderThanOneMonthToStore.length) {
+      await this.storeArticles(feedId, articlesOlderThanOneMonthToStore);
+    }
+
+    const allStored = new Set(
+      idsStoredInPastMonth.concat(idsStoredOlderThanOneMonth)
     );
 
     return articleIds
-      .filter((id) => !foundIds.has(id))
+      .filter((id) => !allStored.has(id))
       .map((id) => mapOfArticles.get(id)) as Article[];
   }
 

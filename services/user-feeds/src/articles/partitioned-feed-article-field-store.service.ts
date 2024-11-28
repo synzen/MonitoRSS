@@ -5,6 +5,7 @@ import {
   MikroORM,
 } from "@mikro-orm/core";
 import { Injectable } from "@nestjs/common";
+import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
 
@@ -73,19 +74,23 @@ export class PartitionedFeedArticleFieldStoreService {
 
   async findIdFieldsForFeed(
     feedId: string,
-    ids: string[]
+    ids: string[],
+    olderThanOneMonth: boolean
   ): Promise<
     Array<{
       field_hashed_value: string;
     }>
   > {
+    const oneMonthAgo = dayjs().subtract(1, "month").toISOString();
     const results = await this.connection.execute(
       `SELECT field_hashed_value` +
         ` FROM ${this.TABLE_NAME}` +
-        ` WHERE feed_id = ? AND field_name = 'id' AND field_hashed_value IN (${ids
+        ` WHERE ${
+          olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
+        } AND feed_id = ? AND field_name = 'id' AND field_hashed_value IN (${ids
           .map(() => "?")
           .join(", ")})`,
-      [feedId, ...ids]
+      [oneMonthAgo, feedId, ...ids]
     );
 
     return results;
