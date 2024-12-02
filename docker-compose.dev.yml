@@ -94,7 +94,7 @@ services:
   feed-requests-api:
     extends:
       file: docker-compose.base.yml
-      service: feed-requests-api
+      service: feed-requests-service
     volumes:
       - ./services/feed-requests:/usr/src/app
       - /usr/src/app/node_modules/
