@@ -74,8 +74,10 @@ Make sure to opt into email notifications in the control panel's user settings p
 
 Images are automatically built and pushed to Docker Hub on every commit to the `main` branch, so there is technically no need to pull the latest files in. To update your local instance:
 
-1. Make a backup of your MongoDB data just in case
-2. Rebuild and rerun containers with `docker compose up -d --build`
+1. Make a backup of your MongoDB data just in case since data migrations may occur
+2. Stop containers with `docker compose rm --stop -f`
+3. Pull latest images with `docker compose pull`
+4. Start containers with `docker compose up -d`
 
 ## Migrating from v6
 
