@@ -989,23 +989,38 @@ export class UserFeedsService {
         getCachedResponse: false,
       }
     );
-    feed.disabledCode === UserFeedDisabledCode.FailedRequests;
+
+    const isRequestSuccessful =
+      res.requestStatus === FeedFetcherFetchStatus.Success;
+    let canBeEnabled = isRequestSuccessful;
+
+    if (
+      isRequestSuccessful &&
+      feed.disabledCode === UserFeedDisabledCode.InvalidFeed
+    ) {
+      const res2 = await this.getFeedArticleProperties({
+        feed,
+        url: feed.url,
+      });
+
+      canBeEnabled =
+        isRequestSuccessful &&
+        res2.requestStatus === GetArticlesResponseRequestStatus.Success;
+    }
 
     await this.userFeedModel
       .findByIdAndUpdate(feed._id, {
         $set: {
           lastManualRequestAt: requestDate,
-          healthStatus:
-            res.requestStatus === FeedFetcherFetchStatus.Success
-              ? UserFeedHealthStatus.Ok
-              : feed.healthStatus,
+          healthStatus: isRequestSuccessful
+            ? UserFeedHealthStatus.Ok
+            : feed.healthStatus,
         },
-        ...(res.requestStatus === FeedFetcherFetchStatus.Success &&
-          feed.disabledCode === UserFeedDisabledCode.FailedRequests && {
-            $unset: {
-              disabledCode: "",
-            },
-          }),
+        ...(canBeEnabled && {
+          $unset: {
+            disabledCode: "",
+          },
+        }),
       })
       .lean();
 
