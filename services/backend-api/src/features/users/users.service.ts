@@ -592,6 +592,9 @@ export class UsersService {
                 },
               }
             : {}),
+          feedRequestLookupKey: {
+            $exists: true,
+          },
         },
       },
       {
