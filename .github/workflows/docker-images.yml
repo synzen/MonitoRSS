@@ -36,10 +36,15 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.USER_FEEDS_IMAGE_NAME }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64,linux/arm64
           context: services/user-feeds
           target: build
           push: true
@@ -73,10 +78,15 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.FEED_REQUESTS_IMAGE_NAME }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64,linux/arm64
           context: services/feed-requests
           target: build
           push: true
@@ -110,10 +120,15 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.MONOLITH_IMAGE_NAME }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64,linux/arm64
           context: services/backend-api
           file: services/backend-api/dockerfiles/web/mixed.Dockerfile
           target: prod
@@ -148,10 +163,15 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.BOT_PRESENCE_IMAGE_NAME }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64,linux/arm64
           context: services/bot-presence
           target: prod
           push: true
@@ -185,10 +205,15 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.DISCORD_REST_LISTENER_IMAGE_NAME }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64,linux/arm64
           context: services/discord-rest-listener
           target: prod
           push: true
