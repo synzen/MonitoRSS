@@ -172,7 +172,7 @@ export class DeliveryService {
       const oldVal = await this.cacheStorageService.set({
         key: cacheKey,
         getOldValue: true,
-        expSeconds: 60 * 15,
+        expSeconds: 60 * 60,
         body: "1",
       });
 
