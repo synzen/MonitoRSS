@@ -49,6 +49,4 @@ COPY --from=build-prod /usr/src/app/dist dist
 COPY --from=build-prod /usr/src/app/client/dist client/dist
 
 ENV BACKEND_API_PORT=3000
-HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD wget http://localhost:8000/api/v1/health -q -O - > /dev/null 2>&1
 
-CMD [ "node", "./dist/main" ]
