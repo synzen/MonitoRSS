@@ -1,4 +1,4 @@
-FROM node:21 AS build
+FROM node:22 AS build
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -8,7 +8,7 @@ RUN npm install && cd client && npm install
 
 COPY . ./
 
-FROM node:21 AS build-prod
+FROM node:22 AS build-prod
 
 
 ARG VITE_FRESHDESK_WIDGET_ID
@@ -38,7 +38,7 @@ RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
 # Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
-FROM node:21-slim AS prod
+FROM node:22-slim AS prod
 
 RUN apt-get update && apt-get install -y wget
 WORKDIR /usr/src/app

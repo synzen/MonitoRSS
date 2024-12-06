@@ -1,4 +1,4 @@
-FROM node:18 AS build
+FROM node:22 AS build
 
 RUN apt install curl
 
@@ -23,7 +23,7 @@ RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
-FROM node:18-alpine AS prod
+FROM node:22-alpine AS prod
 
 WORKDIR /usr/src/app
 
