@@ -61,7 +61,7 @@ services:
       file: ./docker-compose.base.yml
       service: feed-requests-postgres-migration
     image: ghcr.io/synzen/monitorss-feed-requests:main
-    command: "npm run migration:prod:up"
+    command: "npm run migration:up"
     env_file:
       - ./.env.prod
     environment:
@@ -83,7 +83,7 @@ services:
       file: ./docker-compose.base.yml
       service: user-feeds-postgres-migration
     image: ghcr.io/synzen/monitorss-user-feeds:main
-    command: "npm run migration:prod:up"
+    command: "npm run migration:up"
     env_file:
       - ./.env.prod
     environment:
