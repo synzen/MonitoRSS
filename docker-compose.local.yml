@@ -4,10 +4,15 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: bot-presence-service
-    image: ghcr.io/synzen/monitorss-bot-presence:main
+    build:
+      context: services/bot-presence
+      dockerfile: Dockerfile
+      target: prod
     command: ["node", "dist/main.js"]
     env_file:
       - ./.env.prod
+    environment:
+      - NODE_ENV=production
 
   feed-requests-redis-cache:
     extends:
@@ -38,7 +43,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: discord-rest-listener-service
-    image: ghcr.io/synzen/monitorss-discord-rest-listener:main
+    build:
+      context: services/discord-rest-listener
+      dockerfile: Dockerfile
+      target: prod
     command: ["node", "build/app.js"]
     env_file:
       - ./.env.prod
@@ -49,7 +57,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: feed-requests-service
-    image: ghcr.io/synzen/monitorss-feed-requests:main
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
     command: ["node", "dist/main.js"]
     env_file:
       - ./.env.prod
@@ -60,8 +71,11 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: feed-requests-postgres-migration
-    image: ghcr.io/synzen/monitorss-feed-requests:main
-    command: "npm run migration:prod:up"
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    command: "npm run migration:up"
     env_file:
       - ./.env.prod
     environment:
@@ -71,7 +85,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: user-feeds-service
-    image: ghcr.io/synzen/monitorss-user-feeds:main
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: build
     command: ["node", "dist/main.js"]
     env_file:
       - ./.env.prod
@@ -82,8 +99,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: user-feeds-postgres-migration
-    image: ghcr.io/synzen/monitorss-user-feeds:main
-    command: "npm run migration:prod:up"
+    build:
+      context: services/user-feeds
+      dockerfile: Dockerfile
+      target: build
     env_file:
       - ./.env.prod
     environment:
@@ -93,7 +112,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: legacy-feed-bulk-converter-service
-    image: ghcr.io/synzen/monitorss-monolith:main
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/mixed.Dockerfile
+      target: prod
     command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
     env_file:
       - ./.env.prod
@@ -104,7 +126,10 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: schedule-emitter-service
-    image: ghcr.io/synzen/monitorss-monolith:main
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/mixed.Dockerfile
+      target: prod
     command: ["node", "dist/scripts/schedule-emitter.js"]
     env_file:
       - ./.env.prod
@@ -112,7 +137,10 @@ services:
       - NODE_ENV=production
 
   monolith:
-    image: ghcr.io/synzen/monitorss-monolith:main
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/mixed.Dockerfile
+      target: prod
     restart: on-failure:3
     depends_on:
       - mongo

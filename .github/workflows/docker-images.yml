@@ -41,7 +41,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: services/user-feeds
-          target: prod
+          target: build
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -78,7 +78,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: services/feed-requests
-          target: prod
+          target: build
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

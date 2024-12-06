@@ -8,12 +8,15 @@ RUN npm install
 
 COPY . ./
 
+RUN npm run build
+
+# There seems to be a bug where nest build completes before it actually finishes building
+RUN sleep 1
+
 FROM build AS build-prod
 
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app ./
-
-RUN npm run build
 
 RUN apt install curl
 RUN curl -sf https://gobinaries.com/tj/node-prune | sh

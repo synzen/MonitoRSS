@@ -110,7 +110,7 @@ services:
       context: services/feed-requests
       dockerfile: Dockerfile
       target: build
-    command: "npm run migration:local:up"
+    command: "npm run migration:up"
     depends_on:
       feed-requests-postgres-db:
         condition: service_started
@@ -194,7 +194,7 @@ services:
       context: services/user-feeds
       dockerfile: Dockerfile
       target: build
-    command: npm run migration:local:up
+    command: npm run migration:up
     depends_on:
       - user-feeds-postgres-db
     environment:
