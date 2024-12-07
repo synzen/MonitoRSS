@@ -26,6 +26,7 @@ import { plainToClass } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { Metadata } from '@grpc/grpc-js';
 import { ConfigService } from '@nestjs/config';
+import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
 
 @Controller({
   version: '1',
@@ -36,6 +37,7 @@ export class FeedFetcherController {
     private readonly feedFetcherService: FeedFetcherService,
     private readonly orm: MikroORM,
     private readonly configService: ConfigService,
+    private readonly hostRateLimiterService: HostRateLimiterService,
   ) {
     this.API_KEY = this.configService.getOrThrow<string>(
       'FEED_REQUESTS_API_KEY',
@@ -63,6 +65,8 @@ export class FeedFetcherController {
           })
         : null;
 
+    const globalRateLimit = this.hostRateLimiterService.getLimitForUrl(dto.url);
+
     return {
       result: {
         requests: requests.map((r) => ({
@@ -77,6 +81,12 @@ export class FeedFetcherController {
         })),
         // unix timestamp in seconds
         nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
+        feedHostGlobalRateLimit: globalRateLimit
+          ? {
+              intervalSec: globalRateLimit.data.intervalSec,
+              requestLimit: globalRateLimit.data.requestLimit,
+            }
+          : null,
       },
     };
   }

@@ -156,6 +156,8 @@ services:
       - LOG_LEVEL=debug
       - USER_FEEDS_START_TARGET=api
       - NODE_ENV=local
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
 
   user-feeds-postgres-migration:
     extends:
@@ -210,6 +212,8 @@ services:
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
       - LOG_LEVEL=debug
       - NODE_ENV=local
+      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
     command: npm run start:local
     networks:
       - monitorss-default

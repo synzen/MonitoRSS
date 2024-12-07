@@ -1,4 +1,5 @@
 import {
+  Alert,
   Badge,
   Box,
   Button,
@@ -92,6 +93,14 @@ export const RequestHistory = () => {
           title={t("common.errors.somethingWentWrong")}
           description={error.message}
         />
+      )}
+      {data?.result.feedHostGlobalRateLimit && (
+        <Alert rounded="md">
+          To stay in compliance with rate limits, MonitoRSS is forced to globally limit the number
+          of requests made to this feed&apos;s host to have a maximum of{" "}
+          {data.result.feedHostGlobalRateLimit.requestLimit} request(s) per{" "}
+          {data.result.feedHostGlobalRateLimit.intervalSec} seconds.
+        </Alert>
       )}
       {hasNoData && (
         <Text color="whiteAlpha.700">

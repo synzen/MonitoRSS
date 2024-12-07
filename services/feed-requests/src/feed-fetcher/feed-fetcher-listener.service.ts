@@ -11,6 +11,7 @@ import { FeedFetcherService } from './feed-fetcher.service';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
+import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -35,6 +36,7 @@ export class FeedFetcherListenerService {
     private readonly orm: MikroORM, // For @UseRequestContext decorator
     private readonly em: EntityManager,
     private readonly partitionedRequestsStoreService: PartitionedRequestsStoreService,
+    private readonly hostRateLimiterService: HostRateLimiterService,
   ) {
     this.maxFailAttempts = this.configService.get(
       'FEED_REQUESTS_MAX_FAIL_ATTEMPTS',
@@ -90,6 +92,15 @@ export class FeedFetcherListenerService {
             let request: PartitionedRequestInsert | undefined = undefined;
 
             try {
+              const { isRateLimited } =
+                await this.hostRateLimiterService.incrementUrlCount(url);
+
+              if (isRateLimited) {
+                logger.debug(`Host ${url} is rate limited, skipping`);
+
+                return;
+              }
+
               const result = await this.handleBrokerFetchRequest({
                 lookupKey,
                 url,
