@@ -724,6 +724,7 @@ const handlers = [
         result: {
           requests: mockUserFeedRequests,
           nextRetryTimestamp: Math.floor(new Date(2020).getTime() / 1000),
+          feedHostGlobalRateLimit: null,
         },
       })
     )
