@@ -82,18 +82,35 @@ export class PartitionedFeedArticleFieldStoreService {
     }>
   > {
     const oneMonthAgo = dayjs().subtract(1, "month").toISOString();
-    const results = await this.connection.execute(
-      `SELECT field_hashed_value` +
-        ` FROM ${this.TABLE_NAME}` +
-        ` WHERE ${
-          olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
-        } AND feed_id = ? AND field_name = 'id' AND field_hashed_value IN (${ids
-          .map(() => "?")
-          .join(", ")})`,
-      [oneMonthAgo, feedId, ...ids]
-    );
 
-    return results;
+    if (ids.length < 60) {
+      return this.connection.execute(
+        `SELECT field_hashed_value` +
+          ` FROM ${this.TABLE_NAME}` +
+          ` WHERE ${
+            olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
+          } AND feed_id = ? AND field_name = 'id' AND field_hashed_value IN (${ids
+            .map(() => "?")
+            .join(", ")})`,
+        [oneMonthAgo, feedId, ...ids]
+      );
+    } else {
+      const parenthesized = ids.map(() => `(?)`).join(",");
+
+      const result = await this.connection.execute(
+        `SELECT field_hashed_value` +
+          ` FROM ${this.TABLE_NAME}` +
+          ` INNER JOIN (VALUES ${parenthesized}) vals(v) ON (
+          field_hashed_value = v)` +
+          ` WHERE ${
+            olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
+          } AND feed_id = ? AND field_name = 'id'` +
+          ``,
+        [...ids, oneMonthAgo, feedId]
+      );
+
+      return result;
+    }
   }
 
   async someFieldsExist(
