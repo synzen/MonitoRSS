@@ -83,20 +83,20 @@ describe("App (e2e)", () => {
     await runEvent(testFeedV2Event);
   });
 
-  // it("sends new articles based on guid", async () => {
-  //   feedFetcherService.fetch = async () => ({
-  //     requestStatus: FeedResponseRequestStatus.Success,
-  //     body: getTestRssFeed([
-  //       {
-  //         guid: "new-article",
-  //       },
-  //     ]),
-  //     bodyHash: randomUUID(),
-  //   });
+  it("sends new articles based on guid", async () => {
+    feedFetcherService.fetch = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: "new-article",
+        },
+      ]),
+      bodyHash: randomUUID(),
+    });
 
-  //   const results = await runEvent(testFeedV2Event);
-  //   deepStrictEqual(results?.length, 1);
-  // });
+    const results = await runEvent(testFeedV2Event);
+    deepStrictEqual(results?.length, 1);
+  });
 
   it("does not send new articles if blocked by comparisons", async () => {
     const feedEventWithBlockingComparisons = {
@@ -127,52 +127,75 @@ describe("App (e2e)", () => {
     const results = await runEvent(feedEventWithBlockingComparisons);
 
     deepStrictEqual(results?.length, 0);
-
-    const results2 = await runEvent(feedEventWithBlockingComparisons);
-    console.log("🚀 ~ it ~ results2:", results2);
   });
 
-  // it("sends new articles based on passing comparisons", async () => {
-  //   const feedEventWithPassingComparisons = {
-  //     ...testFeedV2Event,
-  //     data: {
-  //       ...testFeedV2Event.data,
-  //       feed: {
-  //         ...testFeedV2Event.data.feed,
-  //         passingComparisons: ["title"],
-  //       },
-  //     },
-  //   };
+  it("sends new articles based on passing comparisons", async () => {
+    const feedEventWithPassingComparisons = {
+      ...testFeedV2Event,
+      data: {
+        ...testFeedV2Event.data,
+        feed: {
+          ...testFeedV2Event.data.feed,
+          passingComparisons: ["title"],
+        },
+      },
+    };
 
-  //   const initialArticles = [
-  //     {
-  //       guid: randomUUID(),
-  //       title: DEFAULT_TEST_ARTICLES[0].title,
-  //     },
-  //   ];
+    const initialArticles = [
+      {
+        guid: randomUUID(),
+        title: DEFAULT_TEST_ARTICLES[0].title,
+      },
+    ];
 
-  //   feedFetcherService.fetch = async () => ({
-  //     requestStatus: FeedResponseRequestStatus.Success,
-  //     body: getTestRssFeed(initialArticles),
-  //     bodyHash: randomUUID(),
-  //   });
+    feedFetcherService.fetch = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed(initialArticles),
+      bodyHash: randomUUID(),
+    });
 
-  //   // Initialize the comparisons storage first
-  //   await runEvent(feedEventWithPassingComparisons);
+    // Initialize the comparisons storage first
+    await runEvent(feedEventWithPassingComparisons);
 
-  //   feedFetcherService.fetch = async () => ({
-  //     requestStatus: FeedResponseRequestStatus.Success,
-  //     body: getTestRssFeed([
-  //       {
-  //         guid: initialArticles[0].guid,
-  //         title: initialArticles[0].title + "-different",
-  //       },
-  //     ]),
-  //     bodyHash: randomUUID(),
-  //   });
+    feedFetcherService.fetch = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed([
+        {
+          guid: initialArticles[0].guid,
+          title: initialArticles[0].title + "-different",
+        },
+      ]),
+      bodyHash: randomUUID(),
+    });
 
-  //   const results = await runEvent(feedEventWithPassingComparisons);
+    const results = await runEvent(feedEventWithPassingComparisons);
 
-  //   deepStrictEqual(results?.length, 1);
-  // });
+    deepStrictEqual(results?.length, 1);
+  });
+
+  it("does not send new articles based on passing comparisons if there are no new articles", async () => {
+    const feedEventWithPassingComparisons = {
+      ...testFeedV2Event,
+      data: {
+        ...testFeedV2Event.data,
+        feed: {
+          ...testFeedV2Event.data.feed,
+          passingComparisons: ["rss:title__#"],
+        },
+      },
+    };
+
+    // Initialize the comparisons storage first
+    await runEvent(feedEventWithPassingComparisons);
+
+    feedFetcherService.fetch = async () => ({
+      requestStatus: FeedResponseRequestStatus.Success,
+      body: getTestRssFeed(),
+      bodyHash: randomUUID(),
+    });
+
+    const results = await runEvent(feedEventWithPassingComparisons);
+
+    deepStrictEqual(results?.length, 0);
+  });
 });

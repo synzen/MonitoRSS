@@ -5,7 +5,6 @@ import { Injectable } from "@nestjs/common";
 import { FeedArticleCustomComparison } from "./entities";
 import { Item } from "feedparser";
 import { InvalidFeedException } from "./exceptions";
-import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
 import {
   EntityManager,
   MikroORM,
@@ -644,7 +643,7 @@ export class ArticlesService {
       const article = articles[i];
 
       comparisonFields.forEach((field) => {
-        const fieldValue = getNestedPrimitiveValue(article.flattened, field);
+        const fieldValue = article.flattened[field];
 
         if (fieldValue) {
           const hashedValue = sha1.copy().update(fieldValue).digest("hex");
@@ -766,7 +765,7 @@ export class ArticlesService {
     const queries: Array<{ name: string; value: string }> = [];
 
     for (const key of fieldKeys) {
-      const value = getNestedPrimitiveValue(article.flattened, key);
+      const value = article.flattened[key];
 
       if (value) {
         const hashedValue = sha1.copy().update(value).digest("hex");
