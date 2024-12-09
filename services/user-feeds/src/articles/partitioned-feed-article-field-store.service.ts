@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { PostgreSqlDriver } from "@mikro-orm/postgresql";
 
 interface AsyncStore {
   toInsert: PartitionedFeedArticleFieldInsert[];
@@ -21,7 +22,7 @@ export class PartitionedFeedArticleFieldStoreService {
   connection: Connection;
   TABLE_NAME = "feed_article_field_partitioned";
 
-  constructor(private readonly orm: MikroORM) {
+  constructor(private readonly orm: MikroORM<PostgreSqlDriver>) {
     this.connection = this.orm.em.getConnection();
   }
 
@@ -127,25 +128,30 @@ export class PartitionedFeedArticleFieldStoreService {
         [oneMonthAgo, feedId, ...ids]
       );
     } else {
-      const temporaryTableName = `current_article_ids_${feedId}`;
-      const sql =
-        `CREATE TEMP TABLE ${temporaryTableName} AS` +
-        ` SELECT * FROM (VALUES ${ids.map(() => "(?)").join(", ")}) AS t(id)`;
+      const result = await this.orm.em.transactional(async (em) => {
+        const temporaryTableName = `current_article_ids_${feedId}`;
+        const sql =
+          `CREATE TEMP TABLE ${temporaryTableName} AS` +
+          ` SELECT * FROM (VALUES ${ids.map(() => "(?)").join(", ")}) AS t(id)`;
 
-      await this.connection.execute(sql, ids);
+        await em.execute(sql, ids);
 
-      const result = await this.connection.execute(
-        `SELECT field_hashed_value` +
-          ` FROM ${this.TABLE_NAME}` +
-          ` INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)` +
-          ` WHERE ${
-            olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
-          } AND feed_id = ? AND field_name = 'id'` +
-          ``,
-        [oneMonthAgo, feedId]
-      );
+        const result = await em.execute(
+          `SELECT field_hashed_value` +
+            ` FROM ${this.TABLE_NAME}` +
+            ` INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)` +
+            ` WHERE ${
+              olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
+            } AND feed_id = ? AND field_name = 'id'` +
+            ``,
+          [oneMonthAgo, feedId]
+        );
 
-      await this.connection.execute(`DROP TABLE ${temporaryTableName}`);
+        await em.execute(`DROP TABLE ${temporaryTableName}`);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return result as any;
+      });
 
       return result;
     }
