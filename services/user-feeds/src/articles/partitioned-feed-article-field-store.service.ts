@@ -130,19 +130,20 @@ export class PartitionedFeedArticleFieldStoreService {
       const temporaryTableName = `current_article_ids_${feedId}`;
       const sql =
         `CREATE TEMP TABLE ${temporaryTableName} AS` +
-        ` SELECT * FROM (VALUES ${ids.map(() => "(?)").join(", ")}) AS t(id)` +
-        ` SELECT field_hashed_value` +
-        ` FROM ${this.TABLE_NAME}` +
-        ` INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)` +
-        ` WHERE ${
-          olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
-        } AND feed_id = ? AND field_name = 'id'`;
+        ` SELECT * FROM (VALUES ${ids.map(() => "(?)").join(", ")}) AS t(id)`;
 
-      const result = await this.connection.execute(sql, [
-        ...ids,
-        oneMonthAgo,
-        feedId,
-      ]);
+      await this.connection.execute(sql, ids);
+
+      const result = await this.connection.execute(
+        `SELECT field_hashed_value` +
+          ` FROM ${this.TABLE_NAME}` +
+          ` INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)` +
+          ` WHERE ${
+            olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
+          } AND feed_id = ? AND field_name = 'id'` +
+          ``,
+        [oneMonthAgo, feedId]
+      );
 
       await this.connection.execute(`DROP TABLE ${temporaryTableName}`);
 
