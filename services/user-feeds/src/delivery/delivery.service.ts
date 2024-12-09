@@ -172,7 +172,7 @@ export class DeliveryService {
       const priorDeliveryDate = await this.cacheStorageService.set({
         key: cacheKey,
         getOldValue: true,
-        expSeconds: 60 * 60 * 24,
+        expSeconds: 60 * 30,
         body: new Date().toISOString(),
       });
 
