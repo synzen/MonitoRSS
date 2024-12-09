@@ -76,10 +76,14 @@ export class FeedEventHandlerService {
         logger.info(
           `User feed event for feed ${event.data.feed.id} is already being processed, ignoring`
         );
+
+        return;
       }
 
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
-      await this.handleV2EventWithDb(event);
+      await this.partitionedFeedArticleStoreService.startContext(
+        async () => await this.handleV2EventWithDb(event)
+      );
     } catch (err) {
       logger.error(`Failed to handle feed event`, {
         feedId: event.data.feed.id,
@@ -263,12 +267,6 @@ export class FeedEventHandlerService {
         },
       } = event;
 
-      this.debugLog(
-        `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
-        {},
-        event.debug
-      );
-
       let lastHashSaved: string | null = null;
 
       if (
@@ -282,6 +280,12 @@ export class FeedEventHandlerService {
       let response: Awaited<
         ReturnType<typeof FeedFetcherService.prototype.fetch>
       > | null = null;
+
+      this.debugLog(
+        `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
+        {},
+        event.debug
+      );
 
       try {
         response = await this.feedFetcherService.fetch(
@@ -307,9 +311,9 @@ export class FeedEventHandlerService {
           );
 
           response = null;
+        } else {
+          throw err;
         }
-
-        return;
       }
 
       if (!response || !response.body) {
@@ -454,7 +458,9 @@ export class FeedEventHandlerService {
         hash: response.bodyHash,
       });
 
-      this.logEventFinish(event);
+      this.logEventFinish(event, {
+        numberOfArticles: allArticles.length,
+      });
 
       return deliveryStates;
     } catch (err) {
@@ -565,6 +571,7 @@ export class FeedEventHandlerService {
     event: FeedV2Event,
     meta?: {
       error?: Error;
+      numberOfArticles?: number;
     }
   ) {
     if (event.timestamp) {
@@ -580,6 +587,7 @@ export class FeedEventHandlerService {
           feedId: event.data.feed.id,
           feedURL: event.data.feed.url,
           error: meta?.error,
+          numberOfArticles: meta?.numberOfArticles,
         }
       );
     }

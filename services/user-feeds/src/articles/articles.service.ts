@@ -414,7 +414,7 @@ export class ArticlesService {
 
     if (debug) {
       logger.datadog(
-        `Debug feed ${id}: ${newArticles.length} new articles determined`,
+        `Debug feed ${id}: ${newArticles.length} new articles determined from ID checks`,
         {
           articles: newArticles.map((a) => ({
             id: a.flattened.id,
@@ -498,7 +498,7 @@ export class ArticlesService {
       logger.datadog(
         `Debug feed ${id}: ${articlesPostDateCheck.length} articles after date checks`,
         {
-          articles: newArticles.map((a) => ({
+          articles: articlesPostDateCheck.map((a) => ({
             id: a.flattened.id,
             title: a.flattened.title,
           })),

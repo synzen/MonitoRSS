@@ -169,17 +169,31 @@ export class DeliveryService {
 
       const cacheKey = `delivery:${event.data.feed.id}:${medium.id}:${article.flattened.idHash}`;
 
-      const oldVal = await this.cacheStorageService.set({
+      const priorDeliveryDate = await this.cacheStorageService.set({
         key: cacheKey,
         getOldValue: true,
-        expSeconds: 60 * 60,
-        body: "1",
+        expSeconds: 60 * 60 * 24,
+        body: new Date().toISOString(),
       });
 
-      if (oldVal) {
+      if (priorDeliveryDate) {
+        const secondsElapsed =
+          priorDeliveryDate !== "1"
+            ? Math.round(
+                (new Date().getTime() - new Date(priorDeliveryDate).getTime()) /
+                  1000
+              )
+            : undefined;
+
         logger.warn(
           `Article already delivered to feed ${event.data.feed.id}, medium ${medium.id},` +
-            ` article ${formattedArticle.flattened.id}`
+            ` article ${formattedArticle.flattened.id}`,
+          {
+            articleIdHash: formattedArticle.flattened.idHash,
+            secondsElapsed,
+            feedId: event.data.feed.id,
+            mediumId: medium.id,
+          }
         );
 
         return [];

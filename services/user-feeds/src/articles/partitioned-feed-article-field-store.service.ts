@@ -8,15 +8,31 @@ import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+interface AsyncStore {
+  toInsert: PartitionedFeedArticleFieldInsert[];
+}
+
+const asyncLocalStorage = new AsyncLocalStorage<AsyncStore>();
 
 @Injectable()
 export class PartitionedFeedArticleFieldStoreService {
   connection: Connection;
   TABLE_NAME = "feed_article_field_partitioned";
-  toInsert: PartitionedFeedArticleFieldInsert[] = [];
 
   constructor(private readonly orm: MikroORM) {
     this.connection = this.orm.em.getConnection();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async startContext<T>(cb: () => Promise<T>) {
+    return asyncLocalStorage.run(
+      {
+        toInsert: [],
+      },
+      cb
+    );
   }
 
   async markForPersistence(inserts: PartitionedFeedArticleFieldInsert[]) {
@@ -24,15 +40,31 @@ export class PartitionedFeedArticleFieldStoreService {
       return;
     }
 
-    this.toInsert.push(...inserts);
+    const store = asyncLocalStorage.getStore();
+
+    if (!store) {
+      throw new Error(
+        "No context was started for PartitionedFeedArticleFieldStoreService"
+      );
+    }
+
+    store.toInsert.push(...inserts);
   }
 
   async flush(em: EntityManager<IDatabaseDriver<Connection>>) {
-    if (this.toInsert.length === 0) {
-      return;
+    const store = asyncLocalStorage.getStore();
+
+    if (!store) {
+      throw new Error(
+        "No context was started for PartitionedFeedArticleFieldStoreService"
+      );
     }
 
-    const inserts = this.toInsert;
+    const { toInsert: inserts } = store;
+
+    if (inserts.length === 0) {
+      return;
+    }
 
     const connection = em.getConnection();
 
@@ -59,7 +91,7 @@ export class PartitionedFeedArticleFieldStoreService {
       });
       throw err;
     } finally {
-      this.toInsert = [];
+      store.toInsert = [];
     }
   }
 
@@ -83,7 +115,7 @@ export class PartitionedFeedArticleFieldStoreService {
   > {
     const oneMonthAgo = dayjs().subtract(1, "month").toISOString();
 
-    if (ids.length < 60) {
+    if (ids.length < 70) {
       return this.connection.execute(
         `SELECT field_hashed_value` +
           ` FROM ${this.TABLE_NAME}` +
@@ -95,19 +127,24 @@ export class PartitionedFeedArticleFieldStoreService {
         [oneMonthAgo, feedId, ...ids]
       );
     } else {
-      const parenthesized = ids.map(() => `(?)`).join(",");
+      const temporaryTableName = `current_article_ids_${feedId}`;
+      const sql =
+        `CREATE TEMP TABLE ${temporaryTableName} AS` +
+        ` SELECT * FROM (VALUES ${ids.map(() => "(?)").join(", ")}) AS t(id)` +
+        ` SELECT field_hashed_value` +
+        ` FROM ${this.TABLE_NAME}` +
+        ` INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)` +
+        ` WHERE ${
+          olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
+        } AND feed_id = ? AND field_name = 'id'`;
 
-      const result = await this.connection.execute(
-        `SELECT field_hashed_value` +
-          ` FROM ${this.TABLE_NAME}` +
-          ` INNER JOIN (VALUES ${parenthesized}) vals(v) ON (
-          field_hashed_value = v)` +
-          ` WHERE ${
-            olderThanOneMonth ? `created_at <= ?` : `created_at > ?`
-          } AND feed_id = ? AND field_name = 'id'` +
-          ``,
-        [...ids, oneMonthAgo, feedId]
-      );
+      const result = await this.connection.execute(sql, [
+        ...ids,
+        oneMonthAgo,
+        feedId,
+      ]);
+
+      await this.connection.execute(`DROP TABLE ${temporaryTableName}`);
 
       return result;
     }
