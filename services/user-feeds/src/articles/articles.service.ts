@@ -565,15 +565,17 @@ export class ArticlesService {
   ) {
     const fieldsToSave: PartitionedFeedArticleFieldInsert[] = [];
 
-    for (let i = 0; i < articles.length; ++i) {
-      const article = articles[i];
+    if (!options?.skipIdStorage) {
+      for (let i = 0; i < articles.length; ++i) {
+        const article = articles[i];
 
-      fieldsToSave.push({
-        feedId: feedId,
-        fieldName: "id",
-        fieldHashedValue: article.flattened.idHash,
-        createdAt: new Date(),
-      });
+        fieldsToSave.push({
+          feedId: feedId,
+          fieldName: "id",
+          fieldHashedValue: article.flattened.idHash,
+          createdAt: new Date(),
+        });
+      }
     }
 
     try {
