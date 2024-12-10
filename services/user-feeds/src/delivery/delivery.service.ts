@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { randomUUID } from "crypto";
 import { ArticleFiltersService } from "../article-filters/article-filters.service";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
@@ -11,6 +10,7 @@ import {
   MediumPayload,
 } from "../shared";
 import { RegexEvalException } from "../shared/exceptions";
+import { generateDeliveryId } from "../shared/utils/generate-delivery-id";
 import logger from "../shared/utils/logger";
 import { DeliveryMedium } from "./mediums/delivery-medium.interface";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
@@ -100,8 +100,7 @@ export class DeliveryService {
         event,
         article,
         medium,
-        limitState,
-        randomUUID()
+        limitState
       );
 
       results.push(...articleStates);
@@ -114,14 +113,13 @@ export class DeliveryService {
     event: FeedV2Event,
     article: Article,
     medium: MediumPayload,
-    limitState: LimitState,
-    deliveryId: string
+    limitState: LimitState
   ): Promise<ArticleDeliveryState[]> {
     try {
       if (limitState.remaining <= 0 || limitState.remainingInMedium <= 0) {
         return [
           {
-            id: deliveryId,
+            id: generateDeliveryId(),
             mediumId: medium.id,
             status:
               limitState.remaining <= 0
@@ -153,7 +151,7 @@ export class DeliveryService {
         if (!result) {
           return [
             {
-              id: deliveryId,
+              id: generateDeliveryId(),
               mediumId: medium.id,
               status: ArticleDeliveryStatus.FilteredOut,
               articleIdHash: article.flattened.idHash,
@@ -167,42 +165,9 @@ export class DeliveryService {
         }
       }
 
-      const cacheKey = `delivery:${event.data.feed.id}:${medium.id}:${article.flattened.idHash}`;
-
-      const priorDeliveryDate = await this.cacheStorageService.set({
-        key: cacheKey,
-        getOldValue: true,
-        expSeconds: 60 * 30,
-        body: new Date().toISOString(),
-      });
-
-      if (priorDeliveryDate) {
-        const secondsElapsed =
-          priorDeliveryDate !== "1"
-            ? Math.round(
-                (new Date().getTime() - new Date(priorDeliveryDate).getTime()) /
-                  1000
-              )
-            : undefined;
-
-        logger.warn(
-          `Article already delivered to feed ${event.data.feed.id}, medium ${medium.id},` +
-            ` article ${formattedArticle.flattened.id}`,
-          {
-            articleIdHash: formattedArticle.flattened.idHash,
-            secondsElapsed,
-            feedId: event.data.feed.id,
-            mediumId: medium.id,
-          }
-        );
-
-        return [];
-      }
-
       const articleStates = await mediumService.deliverArticle(
         formattedArticle,
         {
-          deliveryId,
           mediumId: medium.id,
           deliverySettings: medium.details,
           feedDetails: event.data.feed,
@@ -218,7 +183,7 @@ export class DeliveryService {
       if (err instanceof RegexEvalException) {
         return [
           {
-            id: deliveryId,
+            id: generateDeliveryId(),
             mediumId: medium.id,
             status: ArticleDeliveryStatus.Rejected,
             articleIdHash: article.flattened.idHash,
@@ -243,7 +208,7 @@ export class DeliveryService {
 
       return [
         {
-          id: deliveryId,
+          id: generateDeliveryId(),
           mediumId: medium.id,
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.Internal,

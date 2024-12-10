@@ -4,7 +4,7 @@ const testFeedV2Event: FeedV2Event = {
   timestamp: new Date().getTime(),
   debug: true,
   data: {
-    articleDayLimit: 1,
+    articleDayLimit: 100,
     feed: {
       id: "6755bb6828cc1c723cf53880",
       blockingComparisons: [],
