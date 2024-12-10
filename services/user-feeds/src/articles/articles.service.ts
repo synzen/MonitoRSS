@@ -445,6 +445,19 @@ export class ArticlesService {
       newArticles,
       storedComparisons
     );
+
+    if (debug) {
+      logger.datadog(
+        `Debug feed ${id}: ${articlesPastBlocks.length} articles past blocking comparisons`,
+        {
+          articles: articlesPastBlocks.map((a) => ({
+            id: a.flattened.id,
+            title: a.flattened.title,
+          })),
+        }
+      );
+    }
+
     const articlesPassedComparisons = await this.checkPassingComparisons(
       {
         id,
@@ -453,6 +466,18 @@ export class ArticlesService {
       seenArticles,
       storedComparisons
     );
+
+    if (debug) {
+      logger.datadog(
+        `Debug feed ${id}: ${articlesPassedComparisons.length} articles past passing comparisons`,
+        {
+          articles: articlesPassedComparisons.map((a) => ({
+            id: a.flattened.id,
+            title: a.flattened.title,
+          })),
+        }
+      );
+    }
 
     // any new comparisons stored must re-store all articles
     if (newArticles.length > 0) {
@@ -840,29 +865,14 @@ export class ArticlesService {
       return [];
     }
 
-    const storedComparisonResults = await this.areComparisonsStored(
-      id,
-      passingComparisons
-    );
-
-    const relevantComparisons = storedComparisonResults
-      .filter((r) => r.isStored)
-      .map((r) => r.field);
-
-    if (relevantComparisons.length === 0) {
-      /**
-       * Just store the comparison values, otherwise all articles would get delivered since none
-       * of the comparison values have been seen before.
-       */
-      return [];
-    }
+    // All passing comparisons are confirmed to be stored
 
     const articlesToSend = await Promise.all(
       seenArticles.map(async (article) => {
         const shouldPass = await this.articleFieldsSeenBefore(
           id,
           article,
-          relevantComparisons
+          currentlyStoredComparisons
         );
 
         return shouldPass ? null : article;
