@@ -15,6 +15,13 @@ const RATE_LIMITED_HOSTS = new Map<string, RateLimitData>([
       intervalSec: 2,
     },
   ],
+  [
+    'nasdaq.com',
+    {
+      requestLimit: 1,
+      intervalSec: 30,
+    },
+  ],
 ]);
 
 @Injectable()

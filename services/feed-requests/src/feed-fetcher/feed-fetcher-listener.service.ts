@@ -12,6 +12,9 @@ import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
+import retryUntilTrue, {
+  RetryException,
+} from '../shared/utils/retry-until-true';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -65,16 +68,16 @@ export class FeedFetcherListenerService {
 
   @UseRequestContext()
   private async onBrokerFetchRequestBatchHandler(
-    message: BatchRequestMessage,
+    batchRequest: BatchRequestMessage,
   ): Promise<void> {
-    const urls = message?.data?.map((u) => u.url);
-    const rateSeconds = message?.rateSeconds;
+    const urls = batchRequest?.data?.map((u) => u.url);
+    const rateSeconds = batchRequest?.rateSeconds;
 
-    if (!message.data || rateSeconds == null) {
+    if (!batchRequest.data || rateSeconds == null) {
       logger.error(
         `Received fetch batch request message has no urls and/or rateSeconds, skipping`,
         {
-          event: message,
+          event: batchRequest,
         },
       );
 
@@ -82,64 +85,86 @@ export class FeedFetcherListenerService {
     }
 
     logger.debug(`Fetch batch request message received for batch urls`, {
-      event: message,
+      event: batchRequest,
     });
 
     try {
       const results = await Promise.allSettled(
-        message.data.map(
-          async ({ url, lookupKey, saveToObjectStorage, headers }) => {
-            let request: PartitionedRequestInsert | undefined = undefined;
+        batchRequest.data.map(async (message) => {
+          const { url, lookupKey, saveToObjectStorage, headers } = message;
+          let request: PartitionedRequestInsert | undefined = undefined;
 
-            try {
-              const { isRateLimited } =
-                await this.hostRateLimiterService.incrementUrlCount(url);
+          try {
+            await retryUntilTrue(
+              async () => {
+                const { isRateLimited } =
+                  await this.hostRateLimiterService.incrementUrlCount(url);
 
-              if (isRateLimited) {
-                logger.debug(`Host ${url} is rate limited, skipping`);
+                if (isRateLimited) {
+                  logger.debug(
+                    `Host ${url} is still rate limited, retrying later`,
+                  );
+                }
 
-                return;
-              }
+                return !isRateLimited;
+              },
+              5000,
+              (rateSeconds * 1000) / 1.5, // 1.5 is the backoff factor of retryUntilTrue
+            );
 
-              const result = await this.handleBrokerFetchRequest({
+            const result = await this.handleBrokerFetchRequest({
+              lookupKey,
+              url,
+              rateSeconds,
+              saveToObjectStorage,
+              headers,
+            });
+
+            if (result) {
+              request = result.request;
+            }
+
+            if (result.successful) {
+              await this.emitFetchCompleted({
                 lookupKey,
                 url,
-                rateSeconds,
-                saveToObjectStorage,
-                headers,
+                rateSeconds: rateSeconds,
               });
-
-              if (result) {
-                request = result.request;
-              }
-
-              if (result.successful) {
-                await this.emitFetchCompleted({
-                  lookupKey,
-                  url,
-                  rateSeconds: rateSeconds,
-                });
-              }
-            } finally {
-              if (message.timestamp) {
-                const nowTs = Date.now();
-                const finishedTs = nowTs - message.timestamp;
-
-                logger.datadog(
-                  `Finished handling feed requests batch event URL in ${finishedTs}s`,
-                  {
-                    duration: finishedTs,
-                    url,
-                    lookupKey,
-                    requestStatus: request?.status,
-                    statusCode: request?.response?.statusCode,
-                    errorMessage: request?.errorMessage,
-                  },
-                );
-              }
             }
-          },
-        ),
+          } catch (err) {
+            if (err instanceof RetryException) {
+              logger.error(
+                `Error while retrying due to host rate limits: ${err.message}`,
+                {
+                  event: message,
+                  err: (err as Error).stack,
+                },
+              );
+            } else {
+              logger.error(`Error processing fetch request message`, {
+                event: message,
+                err: (err as Error).stack,
+              });
+            }
+          } finally {
+            if (batchRequest.timestamp) {
+              const nowTs = Date.now();
+              const finishedTs = nowTs - batchRequest.timestamp;
+
+              logger.datadog(
+                `Finished handling feed requests batch event URL in ${finishedTs}s`,
+                {
+                  duration: finishedTs,
+                  url,
+                  lookupKey,
+                  requestStatus: request?.status,
+                  statusCode: request?.response?.statusCode,
+                  errorMessage: request?.errorMessage,
+                },
+              );
+            }
+          }
+        }),
       );
 
       for (let i = 0; i < results.length; ++i) {
@@ -163,7 +188,7 @@ export class FeedFetcherListenerService {
       });
     } catch (err) {
       logger.error(`Error processing fetch batch request message`, {
-        event: message,
+        event: batchRequest,
         err: (err as Error).stack,
       });
     }
