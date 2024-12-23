@@ -101,8 +101,8 @@ export class FeedFetcherListenerService {
                   await this.hostRateLimiterService.incrementUrlCount(url);
 
                 if (isRateLimited) {
-                  logger.debug(
-                    `Host ${url} is still rate limited, retrying later`,
+                  logger.info(
+                    `Host of ${url} is still rate limited, retrying later`,
                   );
                 }
 
