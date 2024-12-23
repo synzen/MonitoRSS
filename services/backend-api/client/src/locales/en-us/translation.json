@@ -127,7 +127,7 @@
       "discordWebhookMenuItem": "Discord Webhook",
       "articleDailyLimit": "Article Daily Limit",
       "connectionSectionDescription": "New articles are automatically delivered to every connection when new articles are found. You may add as many connections as you want, but every article that is delivered counts towards the feed's article limit.",
-      "articleDailyLimitHint": "Maximum number of articles within the past 24 hour timeframe, calculated from the time of every article delivery attempt."
+      "articleDailyLimitHint": "Maximum number of articles per feed within the past 24 hour timeframe, calculated from the time of every article delivery attempt."
     },
     "userFeed": {
       "deleteConfirmTitle": "Delete feed",
