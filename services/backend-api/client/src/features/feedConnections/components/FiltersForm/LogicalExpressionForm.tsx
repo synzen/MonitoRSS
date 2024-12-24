@@ -5,6 +5,8 @@ import {
   Button,
   CloseButton,
   Flex,
+  FormControl,
+  FormErrorMessage,
   Menu,
   MenuButton,
   MenuItem,
@@ -12,8 +14,9 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { FieldError, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 import {
   FilterExpression,
   FilterExpressionType,
@@ -26,6 +29,7 @@ import {
 } from "../../types";
 import { AnyAllSelector } from "./AnyAllSelector";
 import { Condition } from "./Condition";
+import { getNestedField } from "../../../../utils/getNestedField";
 
 interface Props {
   onDeleted: () => void;
@@ -34,15 +38,34 @@ interface Props {
 }
 
 export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }: Props) => {
-  const { control, setValue } = useFormContext();
+  const {
+    control,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useFormContext();
+  const childrenName = `${prefix}children`;
+  const childrenError = getNestedField<FieldError>(errors, childrenName);
   const { fields, append, remove, insert } = useFieldArray({
     control,
-    name: `${prefix}children`,
+    name: childrenName,
   });
   const operator: LogicalExpressionOperator = useWatch({
     control,
     name: `${prefix}op`,
   });
+  // console.log("🚀 ~ LogicalExpressionForm ~ errors:", errors);
+  // console.log("🚀 ~ useEffect ~ childrenName:", childrenName);
+  useEffect(() => {
+    if (fields.length === 0) {
+      setError(childrenName, {
+        type: "required",
+      });
+    } else if (childrenError?.type === "required") {
+      clearErrors(childrenName);
+    }
+  }, [fields.length, childrenError?.type]);
 
   const { t } = useTranslation();
 
@@ -111,15 +134,6 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
     append(toInsert);
   };
 
-  const numberOfRelational =
-    (
-      fields as Array<
-        FilterExpression & {
-          id: string;
-        }
-      >
-    )?.filter((child) => child?.type === FilterExpressionType.Relational).length || 0;
-
   return (
     <Stack {...containerProps}>
       <Box
@@ -144,35 +158,40 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
           <CloseButton aria-label="Delete condition group" onClick={onDeleted} />
         </Flex>
         <Stack>
-          <Stack spacing={2} marginTop={4} width="100%">
-            {(fields as Array<FilterExpression & { id: string }>)?.map((child, childIndex) => {
-              if (child?.type === FilterExpressionType.Logical) {
-                return (
-                  <LogicalExpressionForm
-                    key={child.id}
-                    onDeleted={() => onChildDeleted(childIndex)}
-                    prefix={`${prefix}children.${childIndex}.`}
-                  />
-                );
-              }
+          {!!fields.length && (
+            <Stack spacing={2} marginTop={4} width="100%">
+              {(fields as Array<FilterExpression & { id: string }>)?.map((child, childIndex) => {
+                if (child?.type === FilterExpressionType.Logical) {
+                  return (
+                    <LogicalExpressionForm
+                      key={child.id}
+                      onDeleted={() => onChildDeleted(childIndex)}
+                      prefix={`${prefix}children.${childIndex}.`}
+                    />
+                  );
+                }
 
-              if (child?.type === FilterExpressionType.Relational) {
-                return (
-                  <Condition
-                    key={child.id}
-                    onDelete={() => onChildDeleted(childIndex)}
-                    prefix={`${prefix}children.${childIndex}.`}
-                    deletable={numberOfRelational > 1}
-                  />
-                );
-              }
+                if (child?.type === FilterExpressionType.Relational) {
+                  return (
+                    <Condition
+                      key={child.id}
+                      onDelete={() => onChildDeleted(childIndex)}
+                      prefix={`${prefix}children.${childIndex}.`}
+                      deletable
+                    />
+                  );
+                }
 
-              return null;
-            })}
-          </Stack>
+                return null;
+              })}
+            </Stack>
+          )}
+          <FormControl isInvalid={childrenError?.type === "required"}>
+            <FormErrorMessage my={4}>At least one condition is required.</FormErrorMessage>
+          </FormControl>
           <Box>
             <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} variant="ghost">
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
                 {t("features.feedConnections.components.filtersForm.addButtonText")}
               </MenuButton>
               <MenuList>

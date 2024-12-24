@@ -873,7 +873,7 @@ const handlers = [
   rest.patch("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) => {
     return res(
       ctx.delay(500),
-      ctx.status(400),
+      ctx.status(200),
       ctx.json<UpdateDiscordChannelConnectionOutput>({
         result: mockFeedChannelConnections[0],
       })

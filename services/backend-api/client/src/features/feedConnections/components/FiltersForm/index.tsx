@@ -49,6 +49,7 @@ export const FiltersForm = ({
     resetField,
     reset,
   } = formMethods;
+
   // @ts-ignore cyclical references in typescript types
   const watchedExpression = useWatch({
     control,
@@ -67,10 +68,12 @@ export const FiltersForm = ({
   };
 
   const onSaveExpression = async ({ expression: finalExpression }: FormData) => {
-    await onSave(finalExpression);
-    reset({
-      expression: finalExpression,
-    });
+    try {
+      await onSave(finalExpression);
+      reset({
+        expression: finalExpression,
+      });
+    } catch (err) {}
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
